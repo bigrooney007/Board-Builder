@@ -16,6 +16,7 @@ export const StepFour = ({ data, update, errors, onBack, onSubmit, submitting, s
   <TextAreaField name="additional_information" label="Is there anything else we should know about your present board?" value={data.additional_information} update={update} error={errors.additional_information} required={false} />
   <label className={`confirmation-check ${data.confirmation_accepted ? "selected" : ""}`} data-testid="confirmation-accepted-field"><input type="checkbox" checked={data.confirmation_accepted} onChange={(event) => update("confirmation_accepted", event.target.checked)} data-testid="confirmation-accepted-checkbox" /><span>I confirm that the information provided is accurate and that Nonprofit Board Builder may contact me about transforming our board.</span></label>
   <FieldError name="confirmation_accepted" message={errors.confirmation_accepted} />
+  <label className={`confirmation-check optional-consent ${data.marketing_consent ? "selected" : ""}`} data-testid="nonprofit-marketing-consent-field"><input type="checkbox" checked={data.marketing_consent} onChange={(event) => update("marketing_consent", event.target.checked)} data-testid="nonprofit-marketing-consent-checkbox" /><span>Yes, email me future board-building resources, services and offers from Nonprofit Board Builder. I understand that I can unsubscribe at any time.</span></label>
   {submitError && <p className="submit-error" data-testid="assessment-submit-error">{submitError}</p>}
   <FormActions onBack={onBack} onNext={onSubmit} final submitting={submitting} />
 </div>;

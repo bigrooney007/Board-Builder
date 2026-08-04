@@ -20,7 +20,7 @@ const discoveries = [
   ["The Best Way to Transform the Board", "Determine whether the organization needs guidance, one-on-one support or complete help executing the board transformation."],
 ];
 
-export const LandingPage = ({ onStart }) => (
+export const LandingPage = ({ onStart, onJoin }) => (
   <main data-testid="landing-page">
     <nav className="site-nav" data-testid="site-navigation">
       <a className="brand" href="#top" data-testid="brand-logo-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="brand-logo-image" /></a>
@@ -30,6 +30,7 @@ export const LandingPage = ({ onStart }) => (
         <a href="#tools-materials" data-testid="tools-materials-link">Tools and Materials</a>
         <a href="#success-stories" data-testid="success-stories-link">Success Stories</a>
         <a href="#my-story" data-testid="my-story-link">My Story</a>
+        <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">Join a Board</button>
         <button onClick={onStart} className="nav-text-button" data-testid="board-assessment-link">Board Assessment</button>
       </div>
       <button onClick={onStart} className="button button-small" data-testid="nav-start-assessment-button">Tell Us About Your Present Board</button>
@@ -79,6 +80,8 @@ export const LandingPage = ({ onStart }) => (
 
     <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><button onClick={onStart} className="button" data-testid="final-start-assessment-button">Tell Us About Your Present Board <ArrowRight size={18} /></button></section>
 
-    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">About</a><a href="#how-it-works" data-testid="footer-how-it-works-link">How It Works</a><a href="#footer" data-testid="footer-contact-link">Contact</a><a href="#footer" data-testid="footer-privacy-link">Privacy Policy</a><a href="#footer" data-testid="footer-terms-link">Terms</a></div></footer>
+    <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">Professional board service</p><h2>Are You a Professional Looking to Join a Nonprofit Board?</h2><p>Create your professional profile, tell us the causes you care about and receive board opportunities that match your skills, experience, location and availability.</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">Join the Board Applicant Network <ArrowRight size={18} /></button></section>
+
+    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">About</a><a href="#how-it-works" data-testid="footer-how-it-works-link">How It Works</a><a href="#footer" data-testid="footer-contact-link">Contact</a><a href="/privacy-policy" data-testid="footer-privacy-link">Privacy Policy</a><a href="/terms" data-testid="footer-terms-link">Terms</a></div></footer>
   </main>
 );

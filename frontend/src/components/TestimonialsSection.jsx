@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ImagePlus, Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImagePlus, Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -88,8 +88,13 @@ const TestimonialCard = ({ testimonial, index }) => {
 };
 
 export const TestimonialsSection = () => {
-  const featured = testimonials.filter((item) => item.featured);
-  const supporting = testimonials.filter((item) => !item.featured);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return undefined;
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % testimonials.length), 7000);
+    return () => window.clearInterval(timer);
+  }, [paused]);
   return (
     <section id="success-stories" className="section testimonials-section" data-testid="testimonials-section">
       <div className="testimonials-heading">
@@ -97,12 +102,10 @@ export const TestimonialsSection = () => {
         <h2 data-testid="testimonials-heading">Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems</h2>
         <p data-testid="testimonials-supporting-text">Founders and executive directors have worked with the Nonprofit Board Builder to recruit board members, activate their boards, build fundraising systems, recruit volunteers and create a clear structure for moving their missions forward.</p>
       </div>
-      <div className="featured-testimonials" data-testid="featured-testimonials-grid">
-        {featured.map((testimonial, index) => <TestimonialCard testimonial={testimonial} index={index} key={testimonial.name} />)}
+      <div className="testimonial-slideshow" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} data-testid="testimonial-slideshow">
+        <div className="testimonial-track" style={{ transform: `translateX(-${active * 100}%)` }}>{testimonials.map((testimonial, index) => <div className="testimonial-slide" key={testimonial.name} aria-hidden={active !== index}><TestimonialCard testimonial={testimonial} index={index} /></div>)}</div>
       </div>
-      <div className="supporting-testimonials" data-testid="supporting-testimonials-grid">
-        {supporting.map((testimonial, index) => <TestimonialCard testimonial={testimonial} index={index + featured.length} key={testimonial.name} />)}
-      </div>
+      <div className="testimonial-controls"><button onClick={() => setActive((active - 1 + testimonials.length) % testimonials.length)} aria-label="Previous testimonial" data-testid="testimonial-previous-button"><ChevronLeft /></button><div className="testimonial-dots">{testimonials.map((testimonial, index) => <button className={active === index ? "active" : ""} onClick={() => setActive(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={testimonial.name} data-testid={`testimonial-dot-${index + 1}`} />)}</div><span data-testid="testimonial-slide-count">{active + 1} / {testimonials.length}</span><button onClick={() => setActive((active + 1) % testimonials.length)} aria-label="Next testimonial" data-testid="testimonial-next-button"><ChevronRight /></button></div>
     </section>
   );
 };

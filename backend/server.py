@@ -12,6 +12,9 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from email_service import send_owner_assessment_email
+from applicant_routes import create_applicant_router
+from auth_service import seed_admin
+from resend_service import sync_nonprofit_leader
 
 
 ROOT_DIR = Path(__file__).parent
@@ -69,6 +72,7 @@ class BoardAssessmentCreate(BaseModel):
     support_required: str = Field(min_length=1)
     additional_information: Optional[str] = ""
     confirmation_accepted: bool
+    marketing_consent: bool = False
 
 
 class AssessmentResponse(BaseModel):
@@ -100,6 +104,8 @@ async def create_assessment(payload: BoardAssessmentCreate):
             "submitted_at": now.isoformat(),
             "status": "New Board Assessment",
             "owner_email_status": "Pending",
+            "marketing_consent_at": now.isoformat() if payload.marketing_consent else "",
+            "marketing_resend_status": "Pending" if payload.marketing_consent else "Not Requested",
         }
     )
 
@@ -120,6 +126,24 @@ async def create_assessment(payload: BoardAssessmentCreate):
             {"$set": {"owner_email_status": "Failed", "owner_email_error": str(exc)[:500]}},
         )
 
+    if payload.marketing_consent:
+        try:
+            contact_id = await sync_nonprofit_leader(document)
+            await db.board_assessments.update_one(
+                {"assessment_number": assessment_number},
+                {"$set": {
+                    "marketing_resend_status": "Synced",
+                    "marketing_resend_contact_id": contact_id,
+                    "marketing_resend_error": "",
+                }},
+            )
+        except Exception as exc:
+            logger.error("Nonprofit leader Resend sync failed for %s: %s", assessment_number, exc)
+            await db.board_assessments.update_one(
+                {"assessment_number": assessment_number},
+                {"$set": {"marketing_resend_status": "Failed", "marketing_resend_error": str(exc)[:500]}},
+            )
+
     return AssessmentResponse(
         assessment_number=assessment_number,
         organization_name=payload.organization_name,
@@ -131,10 +155,12 @@ async def create_assessment(payload: BoardAssessmentCreate):
 
 
 app.include_router(api_router)
+app.include_router(create_applicant_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_origins=[] if os.environ.get("CORS_ORIGINS") == "*" else os.environ["CORS_ORIGINS"].split(","),
+    allow_origin_regex=r"https?://.*" if os.environ.get("CORS_ORIGINS") == "*" else None,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -143,6 +169,15 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
+
+
+@app.on_event("startup")
+async def startup_tasks():
+    await db.board_applicants.create_index("email", unique=True)
+    await db.board_applicants.create_index("applicant_id", unique=True)
+    await db.users.create_index("email", unique=True)
+    await db.login_attempts.create_index("identifier", unique=True)
+    await seed_admin(db)
 
 
 @app.on_event("shutdown")
