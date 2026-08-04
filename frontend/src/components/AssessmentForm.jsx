@@ -13,14 +13,14 @@ const initialData = {
   name: "", email: "", phone: "", organization_name: "", website: "", mission: "", city: "", state_region: "", country: "", annual_budget: "", most_important_board_result: "",
   bylaws_board_size: "", current_board_size: "", active_board_members: "", inactive_board_members: "", present_board_condition: [], board_type: "", commitment_conversations: "", willing_to_allow_step_down: "", bylaw_clarity: "",
   new_board_members_needed: "", recruitment_timeline: "", areas_carried_alone: [], missing_skills_networks: "", expected_new_member_benefit: "", people_already_identified: "", benefits_of_joining: "", previous_recruitment_experience: "",
-  present_fundraising_involvement: "", board_support_areas: [], written_fundraising_strategy: "", individual_responsibilities: "", board_participation_in_planning: "", missing_fundraising_elements: [], desired_result: "", support_required: "", additional_information: "", confirmation_accepted: false, marketing_consent: false,
+  present_fundraising_involvement: "", board_support_areas: [], written_fundraising_strategy: "", individual_responsibilities: "", board_participation_in_planning: "", missing_fundraising_elements: [], desired_result: "", support_required: "", execution_preference: "", additional_information: "", confirmation_accepted: false, email_permission: false,
 };
 
 const requiredByStep = [
   ["name", "email", "phone", "organization_name", "mission", "city", "state_region", "country", "annual_budget", "most_important_board_result"],
   ["bylaws_board_size", "current_board_size", "active_board_members", "inactive_board_members", "present_board_condition", "board_type", "commitment_conversations", "willing_to_allow_step_down", "bylaw_clarity"],
   ["new_board_members_needed", "recruitment_timeline", "areas_carried_alone", "missing_skills_networks", "expected_new_member_benefit", "people_already_identified", "benefits_of_joining", "previous_recruitment_experience"],
-  ["present_fundraising_involvement", "board_support_areas", "written_fundraising_strategy", "individual_responsibilities", "board_participation_in_planning", "missing_fundraising_elements", "desired_result", "support_required", "confirmation_accepted"],
+  ["present_fundraising_involvement", "board_support_areas", "written_fundraising_strategy", "individual_responsibilities", "board_participation_in_planning", "missing_fundraising_elements", "desired_result", "support_required", "execution_preference", "confirmation_accepted"],
 ];
 
 export const AssessmentForm = ({ onComplete, onHome }) => {

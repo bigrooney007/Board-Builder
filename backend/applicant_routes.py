@@ -13,7 +13,7 @@ from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
 from applicant_models import ApplicantAdminUpdate, ApplicantResponse, AdminLogin, BoardApplicantCreate
 from auth_service import ACCESS_MINUTES, authenticate_admin, create_access_token, verify_password
-from resend_service import send_applicant_confirmation, sync_board_applicant
+from resend_service import send_applicant_confirmation, send_automation_error, sync_board_applicant
 
 
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}
@@ -109,6 +109,11 @@ def create_applicant_router(db) -> APIRouter:
         except Exception as exc:
             document["resend_segment_status"] = "Failed"
             document["resend_sync_error"] = str(exc)[:500]
+            await send_automation_error(
+                db, failure_key=f"applicant-sync:{applicant_id}:{now_iso}", automation="Board applicant Resend contact sync",
+                contact_or_report_type="board applicant", error=str(exc), submission_saved=True,
+                email_sent=False, corrective_action="Review the Resend API key, Board Applicants segment and applicant updates Topic, then sync this applicant contact again.",
+            )
 
         try:
             email_id = await send_applicant_confirmation(document)
@@ -254,8 +259,8 @@ def create_applicant_router(db) -> APIRouter:
     @router.get("/admin/nonprofit-contacts")
     async def nonprofit_contacts(admin=Depends(current_admin)):
         contacts = await db.board_assessments.find(
-            {"marketing_consent": True},
-            {"_id": 0, "name": 1, "email": 1, "phone": 1, "organization_name": 1, "country": 1, "submitted_at": 1, "marketing_consent_at": 1, "marketing_resend_status": 1},
+            {"email_permission": True},
+            {"_id": 0, "name": 1, "email": 1, "phone": 1, "organization_name": 1, "country": 1, "submitted_at": 1, "email_permission_at": 1, "resend_sync_status": 1},
         ).sort("submitted_at", -1).to_list(2000)
         return contacts
 

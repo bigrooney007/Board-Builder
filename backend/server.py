@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import secrets
@@ -15,6 +16,9 @@ from email_service import send_owner_assessment_email
 from applicant_routes import create_applicant_router
 from auth_service import seed_admin
 from resend_service import sync_nonprofit_leader
+from resend_service import send_automation_error
+from automation_routes import create_automation_router
+from automation_service import automation_loop
 
 
 ROOT_DIR = Path(__file__).parent
@@ -26,6 +30,7 @@ db = client[os.environ["DB_NAME"]]
 app = FastAPI(title="Nonprofit Board Builder")
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
+automation_task = None
 
 
 class BoardAssessmentCreate(BaseModel):
@@ -70,9 +75,10 @@ class BoardAssessmentCreate(BaseModel):
     missing_fundraising_elements: List[str] = Field(min_length=1)
     desired_result: str = Field(min_length=1)
     support_required: str = Field(min_length=1)
+    execution_preference: str = Field(min_length=1)
     additional_information: Optional[str] = ""
     confirmation_accepted: bool
-    marketing_consent: bool = False
+    email_permission: bool = False
 
 
 class AssessmentResponse(BaseModel):
@@ -98,14 +104,17 @@ async def create_assessment(payload: BoardAssessmentCreate):
     now = datetime.now(timezone.utc)
     assessment_number = make_assessment_number(now)
     document = payload.model_dump(mode="json")
+    document["email"] = str(payload.email).lower()
     document.update(
         {
             "assessment_number": assessment_number,
             "submitted_at": now.isoformat(),
             "status": "New Board Assessment",
             "owner_email_status": "Pending",
-            "marketing_consent_at": now.isoformat() if payload.marketing_consent else "",
-            "marketing_resend_status": "Pending" if payload.marketing_consent else "Not Requested",
+            "email_permission_at": now.isoformat() if payload.email_permission else "",
+            "email_permission_source": "/",
+            "resend_contact_id": "",
+            "resend_sync_status": "Pending" if payload.email_permission else "Not Requested",
         }
     )
 
@@ -126,22 +135,44 @@ async def create_assessment(payload: BoardAssessmentCreate):
             {"$set": {"owner_email_status": "Failed", "owner_email_error": str(exc)[:500]}},
         )
 
-    if payload.marketing_consent:
+    if payload.email_permission:
+        existing_contact = await db.nonprofit_contacts.find_one({"email": document["email"]}, {"_id": 0})
+        contact = {
+            "name": document["name"], "email": document["email"], "phone": document["phone"],
+            "organization_name": document["organization_name"], "country": document["country"],
+            "city": document["city"], "state_region": document["state_region"],
+            "email_permission": True, "email_permission_at": now.isoformat(),
+            "email_permission_source": "/", "created_at": existing_contact["created_at"] if existing_contact else now.isoformat(),
+            "latest_assessment_at": now.isoformat(), "latest_assessment_number": assessment_number,
+            "resend_contact_id": existing_contact.get("resend_contact_id", "") if existing_contact else "",
+            "resend_sync_status": "Pending",
+        }
+        await db.nonprofit_contacts.update_one({"email": document["email"]}, {"$set": contact}, upsert=True)
         try:
-            contact_id = await sync_nonprofit_leader(document)
+            contact_id = await sync_nonprofit_leader(contact)
             await db.board_assessments.update_one(
                 {"assessment_number": assessment_number},
                 {"$set": {
-                    "marketing_resend_status": "Synced",
-                    "marketing_resend_contact_id": contact_id,
-                    "marketing_resend_error": "",
+                    "resend_sync_status": "Synced", "resend_contact_id": contact_id, "resend_sync_error": "",
                 }},
+            )
+            await db.nonprofit_contacts.update_one(
+                {"email": document["email"]},
+                {"$set": {"resend_sync_status": "Synced", "resend_contact_id": contact_id, "resend_sync_error": ""}},
             )
         except Exception as exc:
             logger.error("Nonprofit leader Resend sync failed for %s: %s", assessment_number, exc)
             await db.board_assessments.update_one(
                 {"assessment_number": assessment_number},
-                {"$set": {"marketing_resend_status": "Failed", "marketing_resend_error": str(exc)[:500]}},
+                {"$set": {"resend_sync_status": "Failed", "resend_sync_error": str(exc)[:500]}},
+            )
+            await db.nonprofit_contacts.update_one(
+                {"email": document["email"]}, {"$set": {"resend_sync_status": "Failed", "resend_sync_error": str(exc)[:500]}}
+            )
+            await send_automation_error(
+                db, failure_key=f"nonprofit-sync:{assessment_number}", automation="Nonprofit leader Resend contact sync",
+                contact_or_report_type="nonprofit leader", error=str(exc), submission_saved=True,
+                email_sent=email_sent, corrective_action="Review the Resend API key, Nonprofit Leaders segment and nonprofit updates Topic, then update the contact in Resend.",
             )
 
     return AssessmentResponse(
@@ -156,6 +187,7 @@ async def create_assessment(payload: BoardAssessmentCreate):
 
 app.include_router(api_router)
 app.include_router(create_applicant_router(db))
+app.include_router(create_automation_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -173,13 +205,22 @@ logging.basicConfig(
 
 @app.on_event("startup")
 async def startup_tasks():
+    global automation_task
     await db.board_applicants.create_index("email", unique=True)
     await db.board_applicants.create_index("applicant_id", unique=True)
     await db.users.create_index("email", unique=True)
     await db.login_attempts.create_index("identifier", unique=True)
+    await db.nonprofit_contacts.create_index("email", unique=True)
+    await db.weekly_reports.create_index([("report_type", 1), ("period_start_key", 1)], unique=True)
+    await db.weekly_report_recipients.create_index([("report_id", 1), ("email", 1)], unique=True)
+    await db.weekly_report_recipients.create_index("token_hash", unique=True)
+    await db.automation_errors.create_index("failure_key", unique=True)
     await seed_admin(db)
+    automation_task = asyncio.create_task(automation_loop(db))
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    if automation_task:
+        automation_task.cancel()
     client.close()

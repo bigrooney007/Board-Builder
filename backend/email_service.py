@@ -57,6 +57,10 @@ SECTION_FIELDS = [
             ("Additional information", "additional_information"),
         ],
     ),
+    (
+        "Execution Preference",
+        [("How the organization prefers to execute its board transformation", "execution_preference")],
+    ),
 ]
 
 

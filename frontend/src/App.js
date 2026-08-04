@@ -7,6 +7,7 @@ import { ConfirmationScreen } from "@/components/ConfirmationScreen";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
+import TrackedActionPage from "@/pages/TrackedActionPage";
 
 const HomeExperience = () => {
   const [view, setView] = useState("home");
@@ -21,5 +22,5 @@ const HomeExperience = () => {
 };
 
 export default function App() {
-  return <BrowserRouter><Routes><Route path="/" element={<HomeExperience />} /><Route path="/join-a-board" element={<JoinBoardPage />} /><Route path="/privacy-policy" element={<LegalPage type="privacy" />} /><Route path="/terms" element={<LegalPage type="terms" />} /><Route path="/admin" element={<AdminPage />} /></Routes></BrowserRouter>;
+  return <BrowserRouter><Routes><Route path="/" element={<HomeExperience />} /><Route path="/join-a-board" element={<JoinBoardPage />} /><Route path="/privacy-policy" element={<LegalPage type="privacy" />} /><Route path="/terms" element={<LegalPage type="terms" />} /><Route path="/board-transformation-ready" element={<TrackedActionPage type="board-transformation-ready" />} /><Route path="/available-to-serve" element={<TrackedActionPage type="available-to-serve" />} /><Route path="/admin" element={<AdminPage />} /></Routes></BrowserRouter>;
 }
