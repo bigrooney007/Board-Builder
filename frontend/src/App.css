@@ -88,7 +88,7 @@ p { line-height: 1.72; }
 .testimonial-card:hover { transform: translateY(-4px); border-color: #a8cdbd; box-shadow: 0 22px 46px rgba(10,61,41,.11); }
 .testimonial-card.featured:nth-child(2) { background: var(--forest); border-color: var(--forest); color: #fff; }
 .testimonial-card.supporting { padding: 23px; }
-.testimonial-card-top { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; margin-bottom: 22px; }
+.testimonial-card-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-bottom: 22px; }
 .client-avatar { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #dcefe7; color: var(--forest); font: 800 14px "Manrope"; border: 3px solid #fff; box-shadow: 0 0 0 1px #c5dbd0; }
 .client-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .client-identity { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -96,8 +96,6 @@ p { line-height: 1.72; }
 .client-identity span { color: #6b786f; font-size: 11px; line-height: 1.35; }
 .testimonial-card.featured:nth-child(2) .client-identity strong { color: #fff; }
 .testimonial-card.featured:nth-child(2) .client-identity span { color: #bbd2c6; }
-.organization-logo { width: 30px; height: 30px; border: 1px solid #cddbd3; background: #f7faf8; border-radius: 4px; display: grid; place-items: center; overflow: hidden; color: var(--green); font: 800 11px "Manrope"; }
-.organization-logo img { width: 100%; height: 100%; object-fit: contain; }
 .quote-mark { color: #91cdbb; }
 .testimonial-card blockquote { color: #45544b; font-size: 14px; line-height: 1.72; margin: 0 0 24px; flex-grow: 1; }
 .testimonial-card.supporting blockquote { font-size: 13px; line-height: 1.68; }
@@ -106,11 +104,6 @@ p { line-height: 1.72; }
 .testimonial-result span { display: block; color: var(--green); text-transform: uppercase; letter-spacing: .14em; font-size: 9px; margin-bottom: 4px; }
 .testimonial-card.featured:nth-child(2) .testimonial-result { color: #fff; border-color: #32644f; }
 .testimonial-card.featured:nth-child(2) .testimonial-result span { color: #64d1b4; }
-.testimonial-media-controls { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-top: 15px; }
-.photo-replace-control { position: relative; display: inline-flex; align-items: center; gap: 5px; color: #7a887f; font-size: 9px; font-weight: 700; cursor: pointer; }
-.photo-replace-control:hover { color: var(--green); }
-.photo-replace-control input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.testimonial-card.featured:nth-child(2) .photo-replace-control { color: #a8c5b7; }
 
 .discovery { max-width: none; padding-left: max(calc((100vw - 1240px)/2), 32px); padding-right: max(calc((100vw - 1240px)/2), 32px); background: var(--cream); }
 .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 60px; }
@@ -194,9 +187,6 @@ p { line-height: 1.72; }
 .founder-photo-frame:before { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.5); z-index: 1; pointer-events: none; }
 .founder-photo-frame img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; }
 .founder-photo-frame > span { position: absolute; left: 24px; bottom: 24px; z-index: 2; padding: 8px 12px; background: rgba(6,47,33,.88); color: #fff; font-size: 11px; font-weight: 700; }
-.founder-photo-control { position: relative; margin-top: 36px; min-height: 45px; border: 1px dashed #9ab9aa; color: var(--green); background: #f6faf8; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
-.founder-photo-control:hover { background: #ebf5f0; }
-.founder-photo-control input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .founder-story-copy h2 { color: var(--forest); font-size: clamp(36px, 4vw, 54px); line-height: 1.12; margin-bottom: 28px; }
 .founder-identity { padding-left: 18px; border-left: 3px solid var(--green); display: flex; flex-direction: column; margin-bottom: 25px; }
 .founder-identity strong { color: var(--forest); font: 800 16px "Manrope"; }
@@ -430,7 +420,6 @@ p { line-height: 1.72; }
   .testimonial-card, .testimonial-card.supporting { padding: 23px 19px; }
   .testimonial-slide .testimonial-card { min-height: 0; }
   .testimonial-card-top { grid-template-columns: auto 1fr auto; }
-  .organization-logo { display: none; }
   .tools-list { gap: 58px; }
   .mock-app { padding: 18px 13px; }
   .mock-app-header { align-items: flex-start; }

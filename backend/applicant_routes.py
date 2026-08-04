@@ -137,7 +137,7 @@ def create_applicant_router(db) -> APIRouter:
     @router.post("/auth/login")
     async def admin_login(credentials: AdminLogin, request: Request, response: Response):
         email = str(credentials.email).lower()
-        identifier = f"{request.client.host if request.client else 'unknown'}:{email}"
+        identifier = email
         attempt = await db.login_attempts.find_one({"identifier": identifier}, {"_id": 0})
         if attempt and attempt.get("locked_until"):
             locked_until = datetime.fromisoformat(attempt["locked_until"])

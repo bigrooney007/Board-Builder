@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, ImagePlus, Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -52,37 +52,17 @@ const testimonials = [
 const initialsFor = (name) => name.replace("Pastor ", "").split(" ").map((part) => part[0]).join("").slice(0, 2);
 
 const TestimonialCard = ({ testimonial, index }) => {
-  const [photo, setPhoto] = useState("");
-  const [logo, setLogo] = useState("");
-  useEffect(() => () => {
-    if (photo) URL.revokeObjectURL(photo);
-    if (logo) URL.revokeObjectURL(logo);
-  }, [photo, logo]);
-  const replacePhoto = (event) => {
-    const file = event.target.files?.[0];
-    if (file) setPhoto(URL.createObjectURL(file));
-  };
-  const replaceLogo = (event) => {
-    const file = event.target.files?.[0];
-    if (file) setLogo(URL.createObjectURL(file));
-  };
-
   return (
     <article className={`testimonial-card ${testimonial.featured ? "featured" : "supporting"}`} data-testid={`testimonial-card-${index + 1}`}>
       <div className="testimonial-card-top">
         <div className="client-avatar" data-testid={`testimonial-avatar-${index + 1}`}>
-          {photo ? <img src={photo} alt={`${testimonial.name} approved portrait`} data-testid={`testimonial-photo-${index + 1}`} /> : <span data-testid={`testimonial-initials-${index + 1}`}>{initialsFor(testimonial.name)}</span>}
+          <span data-testid={`testimonial-initials-${index + 1}`}>{initialsFor(testimonial.name)}</span>
         </div>
         <div className="client-identity"><strong data-testid={`testimonial-name-${index + 1}`}>{testimonial.name}</strong><span data-testid={`testimonial-organization-${index + 1}`}>{testimonial.organization}</span></div>
-        <div className="organization-logo" data-testid={`testimonial-organization-logo-${index + 1}`}>{logo ? <img src={logo} alt={`${testimonial.organization} approved logo`} /> : <span>{testimonial.organization.charAt(0)}</span>}</div>
         <Quote className="quote-mark" size={27} aria-hidden="true" />
       </div>
       <blockquote data-testid={`testimonial-quote-${index + 1}`}>“{testimonial.quote}”</blockquote>
       <p className="testimonial-result" data-testid={`testimonial-result-${index + 1}`}><span>Result</span>{testimonial.result}</p>
-      <div className="testimonial-media-controls">
-        <label className="photo-replace-control" data-testid={`testimonial-photo-replace-control-${index + 1}`}><ImagePlus size={14} /> {photo ? "Replace approved photo" : "Add approved photo"}<input type="file" accept="image/*" onChange={replacePhoto} data-testid={`testimonial-photo-upload-${index + 1}`} /></label>
-        <label className="photo-replace-control" data-testid={`testimonial-logo-replace-control-${index + 1}`}><ImagePlus size={14} /> {logo ? "Replace organization logo" : "Add organization logo"}<input type="file" accept="image/*" onChange={replaceLogo} data-testid={`testimonial-logo-upload-${index + 1}`} /></label>
-      </div>
     </article>
   );
 };

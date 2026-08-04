@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, BriefcaseBusiness, GraduationCap, HeartHandshake, ImagePlus, Map, TrendingUp } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, GraduationCap, HeartHandshake, Map, TrendingUp } from "lucide-react";
 
 const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
@@ -12,23 +11,11 @@ const credibility = [
 ];
 
 export const FounderStorySection = ({ onStart }) => {
-  const [photo, setPhoto] = useState(founderPhotoUrl);
-  const [localPhoto, setLocalPhoto] = useState("");
-  useEffect(() => () => localPhoto && URL.revokeObjectURL(localPhoto), [localPhoto]);
-  const replacePhoto = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const objectUrl = URL.createObjectURL(file);
-    setLocalPhoto(objectUrl);
-    setPhoto(objectUrl);
-  };
-
   return (
     <>
       <section id="my-story" className="founder-section" data-testid="founder-story-section">
         <div className="founder-photo-panel">
-          <div className="founder-photo-frame"><img src={photo} alt="Rooney Akpesiri, the Nonprofit Board Builder" data-testid="founder-photo" /><span data-testid="founder-photo-caption">Rooney Akpesiri</span></div>
-          <label className="founder-photo-control" data-testid="founder-photo-placeholder"><ImagePlus size={17} />Upload Rooney’s Photograph<input type="file" accept="image/*" onChange={replacePhoto} data-testid="founder-photo-upload-input" /></label>
+          <div className="founder-photo-frame"><img src={founderPhotoUrl} alt="Rooney Akpesiri, the Nonprofit Board Builder" data-testid="founder-photo" /><span data-testid="founder-photo-caption">Rooney Akpesiri</span></div>
         </div>
         <div className="founder-story-copy">
           <p className="eyebrow" data-testid="founder-story-eyebrow">The story behind the process</p>
