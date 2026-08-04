@@ -20,12 +20,25 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - Complete database submission, unique metadata, owner email template with all answers under four required headings, and confirmation screen.
 - One E2E assessment was submitted and fully verified in MongoDB; confirmation and mobile layout passed.
 - Final homepage verification passed after correcting the three tool caption titles; no product defects remain in the added homepage sections.
+- Added required nonprofit `execution_preference`, separate weekly-email consent metadata, owner-email inclusion, duplicate-safe nonprofit contact records, and exact Resend nonprofit syncing.
+- Updated applicant consent wording and duplicate-safe applicant syncing to the exact Board Applicants Segment and applicant Topics.
+- Created four exact Resend Segments and three Topics for nonprofit leaders, board applicants, and both 72-hour No Action audiences.
+- Added duplicate-safe weekly nonprofit and applicant aggregate Broadcast automation, with editable Monday/Wednesday Eastern schedules intentionally disabled pending owner approval.
+- Added secure tracked text actions for board transformation readiness and applicant availability, mobile SMS handoff, desktop copy controls, click records, and No Action segment removal.
+- Added 72-hour No Action processing, backend report/recipient records, aggregate-only email content, native unsubscribe/preference links, and deduplicated owner automation-error emails.
+- Updated Privacy Policy for weekly emails, aggregate reporting, consent records, tracked engagement, correction/deletion, Resend processing, and no sale of personal information.
+- Single isolated E2E verification passed 11/11 backend checks plus public UI flows; test Broadcasts targeted an owner-only temporary segment and never the live audiences.
 
 ## Prioritized Backlog
 - **P0:** Provide `RESEND_API_KEY`, `SENDER_EMAIL`, and `OWNER_NOTIFICATION_EMAIL`/`OWNER_EMAIL` in backend environment; owner delivery cannot run without them.
 - **P0:** Repeat the single E2E submission after email configuration and confirm one delivered email contains all answers.
 - **P1:** None within approved scope.
 - **P2:** None within approved scope.
+
+## Weekly Automation Activation
+- `NONPROFIT_WEEKLY_REPORT_ENABLED=false`
+- `APPLICANT_WEEKLY_REPORT_ENABLED=false`
+- Both remain disabled by explicit owner choice until approval to activate.
 
 ## Next Tasks
 1. Add the missing owner-email environment settings.
