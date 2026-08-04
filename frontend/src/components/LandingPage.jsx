@@ -1,4 +1,7 @@
 import { ArrowRight, Check, RefreshCcw, Rocket, Users } from "lucide-react";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
+import { ProductToolsSection } from "@/components/ProductToolsSection";
+import { FounderStorySection } from "@/components/FounderStorySection";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
@@ -24,7 +27,10 @@ export const LandingPage = ({ onStart }) => (
       <div className="nav-links">
         <a href="#how-it-works" data-testid="how-it-works-link">How It Works</a>
         <a href="#what-we-fix" data-testid="what-we-fix-link">What We Help You Fix</a>
-        <button onClick={onStart} className="nav-text-button" data-testid="tell-us-nav-link">Tell Us About Your Board</button>
+        <a href="#tools-materials" data-testid="tools-materials-link">Tools and Materials</a>
+        <a href="#success-stories" data-testid="success-stories-link">Success Stories</a>
+        <a href="#my-story" data-testid="my-story-link">My Story</a>
+        <button onClick={onStart} className="nav-text-button" data-testid="board-assessment-link">Board Assessment</button>
       </div>
       <button onClick={onStart} className="button button-small" data-testid="nav-start-assessment-button">Tell Us About Your Present Board</button>
     </nav>
@@ -53,6 +59,8 @@ export const LandingPage = ({ onStart }) => (
       </div>
     </section>
 
+    <TestimonialsSection />
+
     <section id="what-we-fix" className="section discovery" data-testid="discovery-section">
       <div className="section-heading"><div><p className="eyebrow" data-testid="discovery-eyebrow">Clarity before action</p><h2 data-testid="discovery-heading">Discover Exactly What Your Board Needs</h2></div><p data-testid="discovery-intro">Your board should become one of the strongest forces moving your mission and fundraising forward.</p></div>
       <div className="discovery-grid">
@@ -65,7 +73,11 @@ export const LandingPage = ({ onStart }) => (
       <button onClick={onStart} className="button button-light" data-testid="middle-start-assessment-button">Start My Board Assessment <ArrowRight size={18} /></button>
     </section>
 
-    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Your Board Should Be Helping Your Nonprofit Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board and we will show you what needs to change.</p><button onClick={onStart} className="button" data-testid="final-start-assessment-button">Tell Us About Your Present Board <ArrowRight size={18} /></button></section>
+    <ProductToolsSection />
+
+    <FounderStorySection onStart={onStart} />
+
+    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><button onClick={onStart} className="button" data-testid="final-start-assessment-button">Tell Us About Your Present Board <ArrowRight size={18} /></button></section>
 
     <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">About</a><a href="#how-it-works" data-testid="footer-how-it-works-link">How It Works</a><a href="#footer" data-testid="footer-contact-link">Contact</a><a href="#footer" data-testid="footer-privacy-link">Privacy Policy</a><a href="#footer" data-testid="footer-terms-link">Terms</a></div></footer>
   </main>
