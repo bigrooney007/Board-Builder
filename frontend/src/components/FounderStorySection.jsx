@@ -10,7 +10,7 @@ const credibility = [
   [TrendingUp, "Contributed to raising more than $5 million"],
 ];
 
-export const FounderStorySection = ({ onStart }) => {
+export const FounderStorySection = () => {
   return (
     <>
       <section id="my-story" className="founder-section" data-testid="founder-story-section">
@@ -28,7 +28,7 @@ export const FounderStorySection = ({ onStart }) => {
             <p>Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.</p>
             <p>Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time.</p>
           </div>
-          <button onClick={onStart} className="button" data-testid="founder-start-assessment-button">Tell Me About Your Present Board <ArrowRight size={18} /></button>
+          <div className="founder-offer-choices" data-testid="founder-offer-choices"><a className="button" href="/reactivate" data-testid="founder-reactivate-button">Reactivate My Board</a><a className="button" href="/recruit" data-testid="founder-recruit-button">Recruit My Board</a><a className="button" href="/activate" data-testid="founder-activate-button">Activate My Board to Raise Money <ArrowRight size={16} /></a></div>
         </div>
       </section>
       <section className="credibility-strip" data-testid="founder-credibility-strip">

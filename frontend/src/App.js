@@ -7,20 +7,22 @@ import { ConfirmationScreen } from "@/components/ConfirmationScreen";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
-import TrackedActionPage from "@/pages/TrackedActionPage";
+import FunnelLandingPage from "@/funnels/FunnelLandingPage";
+import FunnelResultPage from "@/funnels/FunnelResultPage";
+import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
 
 const HomeExperience = () => {
-  const [view, setView] = useState("home");
+  const navigate = useNavigate();
+  return <LandingPage onJoin={() => navigate("/join-a-board")} />;
+};
+
+const LegacyAssessmentPage = () => {
   const [confirmation, setConfirmation] = useState(null);
   const navigate = useNavigate();
-  const startAssessment = () => { setView("assessment"); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const returnHome = () => { setConfirmation(null); setView("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const completeAssessment = (result) => { setConfirmation(result); setView("confirmation"); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  if (view === "assessment") return <AssessmentForm onComplete={completeAssessment} onHome={returnHome} />;
-  if (view === "confirmation") return <ConfirmationScreen confirmation={confirmation} onHome={returnHome} />;
-  return <LandingPage onStart={startAssessment} onJoin={() => navigate("/join-a-board")} />;
+  if (confirmation) return <ConfirmationScreen confirmation={confirmation} onHome={() => navigate("/")} />;
+  return <AssessmentForm onComplete={setConfirmation} onHome={() => navigate("/")} />;
 };
 
 export default function App() {
-  return <BrowserRouter><Routes><Route path="/" element={<HomeExperience />} /><Route path="/join-a-board" element={<JoinBoardPage />} /><Route path="/privacy-policy" element={<LegalPage type="privacy" />} /><Route path="/terms" element={<LegalPage type="terms" />} /><Route path="/board-transformation-ready" element={<TrackedActionPage type="board-transformation-ready" />} /><Route path="/available-to-serve" element={<TrackedActionPage type="available-to-serve" />} /><Route path="/admin" element={<AdminPage />} /></Routes></BrowserRouter>;
+  return <BrowserRouter><Routes><Route path="/" element={<HomeExperience />} /><Route path="/board-assessment" element={<LegacyAssessmentPage />} /><Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} /><Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} /><Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} /><Route path="/recruit/result/:token" element={<FunnelResultPage offerSource="recruitment" />} /><Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} /><Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} /><Route path="/recruit/options" element={<FunnelOptionsPage offerSource="recruitment" />} /><Route path="/reactivate/options" element={<FunnelOptionsPage offerSource="reactivation" />} /><Route path="/activate/options" element={<FunnelOptionsPage offerSource="fundraising_activation" />} /><Route path="/join-a-board" element={<JoinBoardPage />} /><Route path="/privacy-policy" element={<LegalPage type="privacy" />} /><Route path="/terms" element={<LegalPage type="terms" />} /><Route path="/admin" element={<AdminPage />} /></Routes></BrowserRouter>;
 }

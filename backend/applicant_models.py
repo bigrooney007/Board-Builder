@@ -44,8 +44,7 @@ class BoardApplicantCreate(BaseModel):
     commitment_answer: str = Field(min_length=1)
     understands_unpaid: str = Field(min_length=1)
     profile_sharing_permission: bool
-    board_opportunity_consent: bool
-    other_offers_consent: bool = False
+    board_opportunity_consent: bool = True
     privacy_accepted: bool
 
     @field_validator("country")
@@ -62,7 +61,7 @@ class BoardApplicantCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_permissions(self):
-        if not self.profile_sharing_permission or not self.board_opportunity_consent or not self.privacy_accepted:
+        if not self.profile_sharing_permission or not self.privacy_accepted:
             raise ValueError("Required applicant permissions must be accepted.")
         if self.previous_board_experience.startswith("Yes") and not self.board_experience_details:
             raise ValueError("Board experience details are required for current or previous board members.")

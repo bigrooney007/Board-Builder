@@ -13,7 +13,12 @@ from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
 from applicant_models import ApplicantAdminUpdate, ApplicantResponse, AdminLogin, BoardApplicantCreate
 from auth_service import ACCESS_MINUTES, authenticate_admin, create_access_token, verify_password
-from resend_service import send_applicant_confirmation, send_automation_error, sync_board_applicant
+from resend_service import (
+    send_applicant_confirmation,
+    send_automation_error,
+    send_owner_applicant_profile,
+    sync_board_applicant,
+)
 
 
 ALLOWED_RESUME_EXTENSIONS = {".pdf", ".doc", ".docx"}
@@ -79,7 +84,8 @@ def create_applicant_router(db) -> APIRouter:
             "status": existing.get("status", "New Applicant") if existing else "New Applicant",
             "resend_contact_id": existing.get("resend_contact_id", "") if existing else "",
             "resend_segment_status": "Pending",
-            "confirmation_email_status": "Pending",
+            "confirmation_email_status": "Pending" if created else "Not Sent — Existing Profile",
+            "owner_notification_status": "Pending",
             "internal_notes": existing.get("internal_notes", "") if existing else "",
         })
 
@@ -101,6 +107,17 @@ def create_applicant_router(db) -> APIRouter:
             {"email": normalized_email}, {"$set": document}, upsert=True,
         )
 
+        owner_notification_sent = False
+        try:
+            owner_email_id = await send_owner_applicant_profile(document)
+            owner_notification_sent = True
+            document["owner_notification_status"] = "Sent"
+            document["owner_notification_email_id"] = owner_email_id
+            document["owner_notification_error"] = ""
+        except Exception as exc:
+            document["owner_notification_status"] = "Failed"
+            document["owner_notification_error"] = str(exc)[:500]
+
         try:
             contact_id = await sync_board_applicant(document)
             document["resend_contact_id"] = contact_id
@@ -110,23 +127,31 @@ def create_applicant_router(db) -> APIRouter:
             document["resend_segment_status"] = "Failed"
             document["resend_sync_error"] = str(exc)[:500]
             await send_automation_error(
-                db, failure_key=f"applicant-sync:{applicant_id}:{now_iso}", automation="Board applicant Resend contact sync",
-                contact_or_report_type="board applicant", error=str(exc), submission_saved=True,
-                email_sent=False, corrective_action="Review the Resend API key, Board Applicants segment and applicant updates Topic, then sync this applicant contact again.",
+                db, failure_key=f"applicant-sync:{applicant_id}:{now_iso}",
+                process="Board applicant Resend contact sync", contact_email=normalized_email,
+                error=str(exc), submission_saved=True, owner_notification_sent=owner_notification_sent,
+                corrective_action="Review the Resend API key, Board Applicants Segment and Nonprofit Board Opportunities Topic, then sync this applicant contact again.",
             )
 
-        try:
-            email_id = await send_applicant_confirmation(document)
-            document["confirmation_email_status"] = "Sent"
-            document["confirmation_email_id"] = email_id
-            document["confirmation_email_error"] = ""
-        except Exception as exc:
-            document["confirmation_email_status"] = "Failed"
-            document["confirmation_email_error"] = str(exc)[:500]
+        if created:
+            try:
+                email_id = await send_applicant_confirmation(document)
+                document["confirmation_email_status"] = "Sent"
+                document["confirmation_email_id"] = email_id
+                document["confirmation_email_error"] = ""
+            except Exception as exc:
+                document["confirmation_email_status"] = "Failed"
+                document["confirmation_email_error"] = str(exc)[:500]
+                await send_automation_error(
+                    db, failure_key=f"applicant-confirmation:{applicant_id}",
+                    process="One-time board applicant confirmation email", contact_email=normalized_email,
+                    error=str(exc), submission_saved=True, owner_notification_sent=owner_notification_sent,
+                    corrective_action="Review the board applicant sender verification and send the short confirmation manually if required.",
+                )
 
         await db.board_applicants.update_one(
             {"email": normalized_email},
-            {"$set": {key: value for key, value in document.items() if key.startswith("resend_") or key.startswith("confirmation_")}},
+            {"$set": {key: value for key, value in document.items() if key.startswith("resend_") or key.startswith("confirmation_") or key.startswith("owner_notification_")}},
         )
         return ApplicantResponse(
             applicant_id=applicant_id,

@@ -1,7 +1,7 @@
 import html
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable
 
 import resend
 
@@ -9,30 +9,27 @@ import resend
 SEGMENTS = {
     "nonprofit_leaders": "Nonprofit Board Builder — Nonprofit Leaders",
     "board_applicants": "Nonprofit Board Builder — Board Applicants",
-    "nonprofit_no_action": "Nonprofit Board Builder — Nonprofit Weekly No Action",
-    "applicant_no_action": "Nonprofit Board Builder — Applicant Weekly No Action",
 }
 
 TOPICS = {
-    "nonprofit_updates": (
-        "Board Building Updates for Nonprofits",
-        "Weekly board applicant reports, board recruitment and reactivation strategies, fundraising activation, services and relevant offers.",
+    "board_building": (
+        "Board Building Opportunities for Nonprofits",
+        "Weekly board-building sales emails, recruitment information, board reactivation and fundraising activation strategies, services and relevant offers.",
     ),
-    "applicant_updates": (
-        "Board Opportunities and Applicant Updates",
-        "Nonprofit board opportunities, weekly applicant network reports and information directly connected to joining and serving on boards.",
-    ),
-    "applicant_resources": (
-        "Board Applicant Resources and Offers",
-        "Training, resources, events and professional offers for board applicants who explicitly request them.",
+    "board_opportunities": (
+        "Nonprofit Board Opportunities",
+        "Genuine board opportunities, invitations to apply and information directly connected to an active board opportunity or introduction.",
     ),
 }
 
 CONTACT_PROPERTIES = [
-    "contact_type", "country", "city", "state_region", "job_title",
-    "professional_field", "causes", "board_types", "fundraising_strengths",
-    "organization_name", "submission_id", "first_submission_at",
-    "latest_submission_at", "nonprofit_action_url", "applicant_action_url",
+    "contact_type", "phone_number", "country", "city", "state_region",
+    "job_title", "employer", "professional_field", "skills", "causes",
+    "board_types", "geographic_preferences", "participation_preferences",
+    "availability", "fundraising_strengths", "organization_name", "submission_id",
+    "present_board_size", "active_board_members", "inactive_board_members",
+    "recruitment_need", "fundraising_need", "execution_preference",
+    "first_submission_at", "latest_submission_at",
 ]
 
 
@@ -47,30 +44,28 @@ def value(item: Any, key: str) -> Any:
 async def provision_resend_resources() -> Dict[str, str]:
     configure_resend()
     result: Dict[str, str] = {}
-    segment_response = await resend.Segments.list_async({"limit": 100})
-    existing_segments = {value(item, "name"): value(item, "id") for item in value(segment_response, "data") or []}
-    for env_key, name in SEGMENTS.items():
-        segment_id = existing_segments.get(name)
+    segments = await resend.Segments.list_async({"limit": 100})
+    segment_map = {value(item, "name"): value(item, "id") for item in value(segments, "data") or []}
+    for key, name in SEGMENTS.items():
+        segment_id = segment_map.get(name)
         if not segment_id:
             segment_id = value(await resend.Segments.create_async({"name": name}), "id")
-        result[f"segment_{env_key}"] = segment_id
+        result[f"segment_{key}"] = segment_id
 
-    topic_response = await resend.Topics.list_async({"limit": 100})
-    existing_topics = {value(item, "name"): value(item, "id") for item in value(topic_response, "data") or []}
-    for env_key, (name, description) in TOPICS.items():
-        topic_id = existing_topics.get(name)
+    topics = await resend.Topics.list_async({"limit": 100})
+    topic_map = {value(item, "name"): value(item, "id") for item in value(topics, "data") or []}
+    for key, (name, description) in TOPICS.items():
+        topic_id = topic_map.get(name)
         if not topic_id:
             topic_id = value(await resend.Topics.create_async({
-                "name": name,
-                "description": description,
-                "default_subscription": "opt_out",
+                "name": name, "description": description, "default_subscription": "opt_out",
             }), "id")
-        result[f"topic_{env_key}"] = topic_id
+        result[f"topic_{key}"] = topic_id
 
-    property_response = await resend.ContactProperties.list_async({"limit": 100})
-    existing_properties = {value(item, "key") for item in value(property_response, "data") or []}
+    properties = await resend.ContactProperties.list_async({"limit": 100})
+    existing = {value(item, "key") for item in value(properties, "data") or []}
     for key in CONTACT_PROPERTIES:
-        if key not in existing_properties:
+        if key not in existing:
             await resend.ContactProperties.create_async({"key": key, "type": "string", "fallback_value": ""})
     return result
 
@@ -87,15 +82,12 @@ def clean_properties(properties: Dict[str, Any]) -> Dict[str, str]:
 
 async def upsert_contact(
     *, email: str, first_name: str, last_name: str, properties: Dict[str, Any],
-    segment_id: str, topic_updates: Iterable[Dict[str, str]],
+    segment_id: str, topic_id: str,
 ) -> str:
     configure_resend()
     params = {
-        "email": email,
-        "first_name": first_name,
-        "last_name": last_name,
-        "unsubscribed": False,
-        "properties": clean_properties(properties),
+        "email": email, "first_name": first_name, "last_name": last_name,
+        "unsubscribed": False, "properties": clean_properties(properties),
     }
     try:
         contact = await resend.Contacts.get_async(email=email)
@@ -106,134 +98,143 @@ async def upsert_contact(
         response = await resend.Contacts.create_async(params)
         contact_id = value(response, "id")
     await resend.ContactSegments.add_async({"segment_id": segment_id, "email": email})
-    updates = list(topic_updates)
-    if updates:
-        await resend.ContactsTopics.update_async({"email": email, "topics": updates})
+    await resend.ContactsTopics.update_async({
+        "email": email, "topics": [{"id": topic_id, "subscription": "opt_in"}],
+    })
     return contact_id
 
 
-async def update_contact_properties(email: str, properties: Dict[str, Any]) -> str:
-    configure_resend()
-    contact = await resend.Contacts.get_async(email=email)
-    existing = value(contact, "properties") or {}
-    response = await resend.Contacts.update_async({
-        "email": email,
-        "properties": clean_properties({**existing, **properties}),
-    })
-    return value(response, "id") or value(contact, "id")
-
-
-async def sync_board_applicant(profile: Dict[str, Any]) -> str:
-    topics = [
-        {"id": os.environ["RESEND_TOPIC_APPLICANT_UPDATES_ID"], "subscription": "opt_in"},
-        {
-            "id": os.environ["RESEND_TOPIC_APPLICANT_RESOURCES_ID"],
-            "subscription": "opt_in" if profile.get("other_offers_consent") else "opt_out",
-        },
-    ]
-    return await upsert_contact(
-        email=profile["email"], first_name=profile["first_name"], last_name=profile["last_name"],
-        properties={
-            "contact_type": "Board Applicant", "country": profile["country"],
-            "city": profile["city"], "state_region": profile["state_region"],
-            "job_title": profile["job_title"], "professional_field": profile["professional_field"],
-            "causes": profile["causes"], "board_types": profile["board_types"],
-            "fundraising_strengths": profile["fundraising_activities"],
-            "submission_id": profile["applicant_id"], "first_submission_at": profile["created_at"],
-            "latest_submission_at": profile["updated_at"],
-        },
-        segment_id=os.environ["RESEND_SEGMENT_BOARD_APPLICANTS_ID"], topic_updates=topics,
-    )
-
-
 async def sync_nonprofit_leader(contact: Dict[str, Any]) -> str:
-    name_parts = contact["name"].strip().split(" ", 1)
+    parts = contact["name"].strip().split(" ", 1)
     return await upsert_contact(
-        email=contact["email"], first_name=name_parts[0],
-        last_name=name_parts[1] if len(name_parts) > 1 else "",
+        email=contact["email"], first_name=parts[0], last_name=parts[1] if len(parts) > 1 else "",
         properties={
-            "contact_type": "Nonprofit Leader", "country": contact["country"],
-            "city": contact["city"], "state_region": contact["state_region"],
-            "organization_name": contact["organization_name"],
+            "contact_type": "Nonprofit Leader", "phone_number": contact["phone"],
+            "country": contact["country"], "city": contact["city"],
+            "state_region": contact["state_region"], "organization_name": contact["organization_name"],
             "submission_id": contact["latest_assessment_number"],
+            "present_board_size": contact["present_board_size"],
+            "active_board_members": contact["active_board_members"],
+            "inactive_board_members": contact["inactive_board_members"],
+            "recruitment_need": contact["recruitment_need"],
+            "fundraising_need": contact["fundraising_need"],
+            "execution_preference": contact["execution_preference"],
             "first_submission_at": contact["created_at"],
             "latest_submission_at": contact["latest_assessment_at"],
         },
-        segment_id=os.environ["RESEND_SEGMENT_NONPROFIT_LEADERS_ID"],
-        topic_updates=[{"id": os.environ["RESEND_TOPIC_NONPROFIT_UPDATES_ID"], "subscription": "opt_in"}],
+        segment_id=os.environ["RESEND_NONPROFIT_LEADERS_SEGMENT_ID"],
+        topic_id=os.environ["RESEND_BOARD_BUILDING_TOPIC_ID"],
     )
 
 
-async def add_to_segment(email: str, segment_id: str) -> None:
-    configure_resend()
-    await resend.ContactSegments.add_async({"segment_id": segment_id, "email": email})
+async def sync_board_applicant(profile: Dict[str, Any]) -> str:
+    return await upsert_contact(
+        email=profile["email"], first_name=profile["first_name"], last_name=profile["last_name"],
+        properties={
+            "contact_type": "Board Applicant", "phone_number": profile["phone"],
+            "country": profile["country"], "city": profile["city"],
+            "state_region": profile["state_region"], "job_title": profile["job_title"],
+            "employer": profile.get("employer", ""), "professional_field": profile["professional_field"],
+            "skills": profile["skills"], "causes": profile["causes"],
+            "board_types": profile["board_types"],
+            "geographic_preferences": profile["geographic_preferences"],
+            "participation_preferences": profile["participation_preferences"],
+            "availability": profile["availability"],
+            "fundraising_strengths": profile["fundraising_activities"],
+            "submission_id": profile["applicant_id"],
+            "first_submission_at": profile["created_at"],
+            "latest_submission_at": profile["updated_at"],
+        },
+        segment_id=os.environ["RESEND_BOARD_APPLICANTS_SEGMENT_ID"],
+        topic_id=os.environ["RESEND_BOARD_OPPORTUNITIES_TOPIC_ID"],
+    )
 
 
-async def remove_from_segment(email: str, segment_id: str) -> None:
-    configure_resend()
-    try:
-        await resend.ContactSegments.remove_async({"segment_id": segment_id, "email": email})
-    except Exception:
-        pass
+async def sync_existing_applicants_once(db) -> Dict[str, int]:
+    run_key = "existing_board_applicant_resend_sync_v1"
+    existing_run = await db.automation_runs.find_one({"run_key": run_key}, {"_id": 0})
+    if existing_run and existing_run.get("status") == "Completed":
+        return {"processed": existing_run["processed"], "synced": existing_run["synced"], "failed": existing_run["failed"]}
+    applicants = await db.board_applicants.find({}, {"_id": 0}).to_list(100000)
+    processed = synced = failed = 0
+    for applicant in applicants:
+        processed += 1
+        try:
+            contact_id = await sync_board_applicant(applicant)
+            await db.board_applicants.update_one(
+                {"email": applicant["email"]},
+                {"$set": {"resend_contact_id": contact_id, "resend_segment_status": "Synced", "resend_sync_error": ""}},
+            )
+            synced += 1
+        except Exception as exc:
+            failed += 1
+            await db.board_applicants.update_one(
+                {"email": applicant["email"]},
+                {"$set": {"resend_segment_status": "Failed", "resend_sync_error": str(exc)[:500]}},
+            )
+            await send_automation_error(
+                db, failure_key=f"existing-applicant-sync:{applicant['applicant_id']}",
+                process="Existing board applicant one-time Resend sync",
+                contact_email=applicant["email"], error=str(exc), submission_saved=True,
+                owner_notification_sent=False,
+                corrective_action="Review the applicant contact and Resend API access, then update this contact manually in the Board Applicants Segment.",
+            )
+    await db.automation_runs.update_one(
+        {"run_key": run_key},
+        {"$set": {"run_key": run_key, "status": "Completed", "processed": processed,
+                  "synced": synced, "failed": failed, "completed_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"processed": processed, "synced": synced, "failed": failed}
 
 
 async def create_segment_broadcast(
-    *, segment_id: str, sender: str, subject: str, html_content: str, name: str,
-    send: bool = True,
+    *, segment_id: str, sender: str, subject: str, html_content: str, name: str, send: bool = True,
 ) -> str:
     configure_resend()
     response = await resend.Broadcasts.create_async({
-        "segment_id": segment_id,
-        "from": sender,
-        "subject": subject,
-        "html": html_content,
-        "name": name,
-        "send": send,
+        "segment_id": segment_id, "from": sender, "subject": subject,
+        "html": html_content, "name": name, "send": send,
     })
     return value(response, "id")
 
 
 async def send_automation_error(
-    db, *, failure_key: str, automation: str, contact_or_report_type: str,
-    error: str, submission_saved: bool, email_sent: bool, corrective_action: str,
+    db, *, failure_key: str, process: str, contact_email: str, error: str,
+    submission_saved: bool, owner_notification_sent: bool, corrective_action: str,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    inserted = await db.automation_errors.update_one(
+    result = await db.automation_errors.update_one(
         {"failure_key": failure_key},
         {"$setOnInsert": {
-            "failure_key": failure_key, "automation": automation,
-            "contact_or_report_type": contact_or_report_type, "date_time": now,
-            "error": error[:1000], "submission_saved": submission_saved,
-            "email_sent": email_sent, "corrective_action": corrective_action,
-            "notification_status": "Pending",
+            "failure_key": failure_key, "process": process, "contact_email": contact_email,
+            "date_time": now, "error": error[:1000], "submission_saved": submission_saved,
+            "owner_notification_sent": owner_notification_sent,
+            "corrective_action": corrective_action, "notification_status": "Pending",
         }},
         upsert=True,
     )
-    if not inserted.upserted_id:
+    if not result.upserted_id:
         return
-    safe = lambda item: html.escape(str(item))
+    safe = lambda item: html.escape(str(item or "Not applicable"))
     body = f"""
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#17221c;max-width:700px;margin:auto;">
-      <h1 style="color:#8b1f1f;">Nonprofit Board Builder Automation Error</h1>
-      <p><strong>Automation affected:</strong> {safe(automation)}<br>
-      <strong>Contact or report type:</strong> {safe(contact_or_report_type)}<br>
-      <strong>Date and time:</strong> {safe(now)}<br>
-      <strong>Error:</strong> {safe(error)}<br>
-      <strong>Underlying form submission saved:</strong> {"Yes" if submission_saved else "No"}<br>
-      <strong>Email sent:</strong> {"Yes" if email_sent else "No"}</p>
+    <div style="max-width:600px;margin:auto;background:#ffffff;color:#000000;font-family:Arial,sans-serif;font-size:18px;line-height:1.55;padding:28px;">
+      <h1 style="font-size:29px;color:#000000;">Nonprofit Board Builder Automation Error</h1>
+      <p><strong>Process affected:</strong> {safe(process)}<br><strong>Applicant or nonprofit email:</strong> {safe(contact_email)}<br>
+      <strong>Date and time:</strong> {safe(now)}<br><strong>Error:</strong> {safe(error)}<br>
+      <strong>Form submission saved:</strong> {"Yes" if submission_saved else "No"}<br>
+      <strong>Owner notification sent:</strong> {"Yes" if owner_notification_sent else "No"}</p>
       <p><strong>Corrective action required:</strong> {safe(corrective_action)}</p>
     </div>"""
     configure_resend()
     try:
-        response = await resend.Emails.send_async({
-            "from": os.environ["NONPROFIT_SENDER"],
-            "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
-            "subject": "Nonprofit Board Builder Automation Error — Action Required",
-            "html": body,
+        email_response = await resend.Emails.send_async({
+            "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
+            "subject": "Nonprofit Board Builder Automation Error", "html": body,
         })
         await db.automation_errors.update_one(
             {"failure_key": failure_key},
-            {"$set": {"notification_status": "Sent", "notification_email_id": value(response, "id")}},
+            {"$set": {"notification_status": "Sent", "notification_email_id": value(email_response, "id")}},
         )
     except Exception as exc:
         await db.automation_errors.update_one(
@@ -242,31 +243,45 @@ async def send_automation_error(
         )
 
 
-def list_text(values: Iterable[str]) -> str:
-    return ", ".join(values) if values else "Not provided"
-
-
 async def send_applicant_confirmation(profile: Dict[str, Any]) -> str:
     configure_resend()
-    safe = lambda item: html.escape(str(item or "Not provided"))
-    content = f"""
-    <div style="font-family:Arial,sans-serif;color:#17221c;line-height:1.65;max-width:680px;margin:auto;">
-      <h1 style="color:#083d2a;">Welcome to the Nonprofit Board Builder Applicant Network</h1>
-      <p>Hi {safe(profile['first_name'])},</p><p>Your professional profile and board preferences have been saved.</p>
-      <p>We will email you whenever we have a nonprofit board opportunity that matches your experience, interests, preferred causes, location and availability.</p>
-      <h2 style="color:#087e5b;font-size:20px;">Your Applicant Details</h2>
-      <p><strong>Applicant ID:</strong> {safe(profile['applicant_id'])}<br><strong>Country:</strong> {safe(profile['country'])}<br>
-      <strong>City:</strong> {safe(profile['city'])}<br><strong>Professional field:</strong> {safe(profile['professional_field'])}<br>
-      <strong>Preferred causes:</strong> {safe(list_text(profile['causes']))}<br><strong>Preferred board types:</strong> {safe(list_text(profile['board_types']))}<br>
-      <strong>Availability:</strong> {safe(profile['availability'])}</p>
-      <h2 style="color:#087e5b;font-size:20px;">Important</h2>
-      <p>Please save:<br><strong>boardapplicants@nonprofitboardbuilder.com</strong><br>to your contacts, favourites or safe-sender list so our board-opportunity emails do not go into spam.</p>
-      <p>You can unsubscribe from future board-opportunity emails at any time.</p>
-      <p>—<br><strong>Nonprofit Board Builder</strong><br>Helping nonprofits build powerhouse fundraising boards.</p>
-      <p style="color:#68766d;font-size:12px;">{safe(os.environ['POSTAL_ADDRESS'])}</p>
+    first_name = html.escape(profile["first_name"])
+    body = f"""
+    <div style="max-width:600px;margin:auto;background:#ffffff;color:#000000;font-family:Arial,sans-serif;font-size:18px;line-height:1.55;padding:28px;">
+      <h1 style="margin:0 0 22px;color:#000000;font-size:29px;">Your Board Applicant Profile Has Been Saved</h1>
+      <p>Hi {first_name},</p>
+      <p>Thank you for joining the Nonprofit Board Builder Applicant Network.</p>
+      <p>We have saved your professional background, skills, causes, location and board preferences.</p>
+      <p>We will contact you when we have a genuine nonprofit board opportunity that may align with your profile.</p>
+      <p>Please save boardapplicants@nonprofitboardbuilder.com to your contacts so you do not miss an opportunity.</p>
+      <p>Completing a profile does not guarantee placement or an introduction.</p>
+      <p><strong>Nonprofit Board Builder — Board Opportunities</strong></p>
+      <p>{os.environ['POSTAL_ADDRESS']}<br><a style="color:#000000;" href="{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}">Unsubscribe</a></p>
     </div>"""
     response = await resend.Emails.send_async({
         "from": os.environ["BOARD_APPLICANT_SENDER"], "to": [profile["email"]],
-        "subject": "Your Board Applicant Profile Has Been Saved", "html": content,
+        "subject": "Your Board Applicant Profile Has Been Saved", "html": body,
+    })
+    return value(response, "id")
+
+
+async def send_owner_applicant_profile(profile: Dict[str, Any]) -> str:
+    configure_resend()
+    excluded = {"resume_file_id", "resend_sync_error", "confirmation_email_error", "owner_notification_error"}
+    rows = []
+    for key, item in profile.items():
+        if key in excluded:
+            continue
+        label = key.replace("_", " ").title()
+        display = ", ".join(item) if isinstance(item, list) else item
+        rows.append(f"<tr><td style='padding:8px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(label)}</td><td style='padding:8px;border-bottom:1px solid #dddddd;'>{html.escape(str(display or 'Not provided'))}</td></tr>")
+    body = f"""
+    <div style="max-width:760px;margin:auto;background:#ffffff;color:#000000;font-family:Arial,sans-serif;font-size:16px;line-height:1.5;padding:28px;">
+      <h1 style="font-size:28px;color:#000000;">Board Applicant Profile — {html.escape(profile['first_name'])} {html.escape(profile['last_name'])}</h1>
+      <table style="width:100%;border-collapse:collapse;">{''.join(rows)}</table>
+    </div>"""
+    response = await resend.Emails.send_async({
+        "from": os.environ["BOARD_APPLICANT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
+        "subject": f"New Board Applicant — {profile['first_name']} {profile['last_name']}", "html": body,
     })
     return value(response, "id")

@@ -9,14 +9,14 @@ const initialData = {
   job_title: "", employer: "", professional_field: "", years_experience: "", skills: [], other_skill: "", professional_summary: "", resume: null,
   causes: [], other_cause: "", board_types: [], participation_preferences: [], geographic_preferences: "", availability: "", monthly_commitment: "",
   previous_board_experience: "", board_experience_details: "", fundraising_activities: [], professional_relationships: "", reason_for_joining: "", commitment_answer: "", understands_unpaid: "",
-  profile_sharing_permission: false, board_opportunity_consent: false, other_offers_consent: false, privacy_accepted: false,
+  profile_sharing_permission: false, privacy_accepted: false,
 };
 
 const required = [
   ["first_name", "last_name", "email", "phone", "country", "city", "state_region"],
   ["job_title", "professional_field", "years_experience", "skills", "professional_summary"],
   ["causes", "board_types", "participation_preferences", "geographic_preferences", "availability", "monthly_commitment"],
-  ["previous_board_experience", "fundraising_activities", "professional_relationships", "reason_for_joining", "commitment_answer", "understands_unpaid", "profile_sharing_permission", "board_opportunity_consent", "privacy_accepted"],
+  ["previous_board_experience", "fundraising_activities", "professional_relationships", "reason_for_joining", "commitment_answer", "understands_unpaid", "profile_sharing_permission", "privacy_accepted"],
 ];
 
 export const ApplicantForm = ({ onComplete }) => {

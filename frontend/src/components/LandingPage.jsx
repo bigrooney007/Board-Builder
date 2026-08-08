@@ -6,9 +6,9 @@ import { FounderStorySection } from "@/components/FounderStorySection";
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
 const stages = [
-  { number: "01", icon: RefreshCcw, title: "Reactivate Your Present Board", text: "Identify the board members who can be recommitted, re-engaged and given meaningful responsibilities based on their strengths, experience and relationships." },
-  { number: "02", icon: Users, title: "Recruit the Board Members You Are Missing", text: "Identify and recruit people with the fundraising experience, professional skills and networks required to complement your present board." },
-  { number: "03", icon: Rocket, title: "Activate Your Board to Start Raising Money", text: "Help present and new board members take responsibility for fundraising in their areas of strength while contributing to the strategy, team, materials and consistent execution required to raise money." },
+  { number: "01", icon: RefreshCcw, title: "Reactivate Your Present Board", text: "Identify the board members who can be recommitted, re-engaged and given meaningful responsibilities based on their strengths, experience and relationships.", button: "Reactivate My Board", path: "/reactivate" },
+  { number: "02", icon: Users, title: "Recruit the Board Members You Are Missing", text: "Identify and recruit people with the fundraising experience, professional skills and networks required to complement your present board.", button: "Recruit My Board", path: "/recruit" },
+  { number: "03", icon: Rocket, title: "Activate Your Board to Start Raising Money", text: "Help present and new board members take responsibility for fundraising in their areas of strength while contributing to the strategy, team, materials and consistent execution required to raise money.", button: "Activate My Board to Raise Money", path: "/activate" },
 ];
 
 const discoveries = [
@@ -20,7 +20,9 @@ const discoveries = [
   ["The Best Way to Transform the Board", "Determine whether the organization needs guidance, one-on-one support or complete help executing the board transformation."],
 ];
 
-export const LandingPage = ({ onStart, onJoin }) => (
+const OfferChoices = ({ location }) => <div className={`offer-choices ${location}`} data-testid={`${location}-offer-choices`}><a className="button" href="/reactivate" data-testid={`${location}-reactivate-button`}>Reactivate My Board</a><a className="button" href="/recruit" data-testid={`${location}-recruit-button`}>Recruit My Board</a><a className="button" href="/activate" data-testid={`${location}-activate-button`}>Activate My Board to Raise Money</a></div>;
+
+export const LandingPage = ({ onJoin }) => (
   <main data-testid="landing-page">
     <nav className="site-nav" data-testid="site-navigation">
       <a className="brand" href="#top" data-testid="brand-logo-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="brand-logo-image" /></a>
@@ -31,9 +33,9 @@ export const LandingPage = ({ onStart, onJoin }) => (
         <a href="#success-stories" data-testid="success-stories-link">Success Stories</a>
         <a href="#my-story" data-testid="my-story-link">My Story</a>
         <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">Join a Board</button>
-        <button onClick={onStart} className="nav-text-button" data-testid="board-assessment-link">Board Assessment</button>
+        <a href="#how-it-works" data-testid="board-solutions-link">Board Solutions</a>
       </div>
-      <button onClick={onStart} className="button button-small" data-testid="nav-start-assessment-button">Tell Us About Your Present Board</button>
+      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">Reactivate</a><a href="/recruit">Recruit</a><a href="/activate">Activate</a></div>
     </nav>
 
     <section id="top" className="hero" data-testid="hero-section">
@@ -42,8 +44,8 @@ export const LandingPage = ({ onStart, onJoin }) => (
         <h1 data-testid="hero-headline">Build the Powerhouse <em>Fundraising Board</em> Your Nonprofit Needs to Succeed</h1>
         <p className="hero-lead" data-testid="hero-supporting-text">Tell us about your present board.</p>
         <p data-testid="hero-description">We will review your board, identify what needs to change, show you which board members can be reactivated, and tell you the exact type of board members you may need to recruit to complement your present board and strengthen your fundraising.</p>
-        <button onClick={onStart} className="button" data-testid="hero-start-assessment-button">Tell Us About Your Present Board <ArrowRight size={18} /></button>
-        <p className="hero-note" data-testid="hero-response-time"><Check size={17} /> Complete the short board assessment and look out for our response within 24 hours.</p>
+        <OfferChoices location="hero" />
+        <p className="hero-note" data-testid="hero-response-time"><Check size={17} /> Choose the board problem you want to solve and build your starting point.</p>
       </div>
       <div className="hero-visual" aria-hidden="true">
         <div className="visual-grid" />
@@ -56,7 +58,7 @@ export const LandingPage = ({ onStart, onJoin }) => (
       <p className="eyebrow" data-testid="transformation-eyebrow">A practical path forward</p>
       <h2 data-testid="transformation-heading">We Help You Transform Your Board in Three Stages</h2>
       <div className="stage-grid">
-        {stages.map(({ number, icon: Icon, title, text }, index) => <article className="stage-card" key={title} data-testid={`transformation-stage-${index + 1}`}><div className="stage-top"><span>{number}</span><Icon size={25} /></div><h3>{title}</h3><p>{text}</p></article>)}
+        {stages.map(({ number, icon: Icon, title, text, button, path }, index) => <article className="stage-card" key={title} data-testid={`transformation-stage-${index + 1}`}><div className="stage-top"><span>{number}</span><Icon size={25} /></div><h3>{title}</h3><p>{text}</p><a className="stage-action" href={path} data-testid={`stage-offer-button-${index + 1}`}>{button} <ArrowRight size={15} /></a></article>)}
       </div>
     </section>
 
@@ -71,14 +73,14 @@ export const LandingPage = ({ onStart, onJoin }) => (
 
     <section className="assessment-cta" data-testid="assessment-call-to-action">
       <div><p className="eyebrow light" data-testid="assessment-cta-eyebrow">Start with the truth about your board</p><h2 data-testid="assessment-cta-heading">Tell Us What Is Happening With Your Present Board</h2><p data-testid="assessment-cta-text">Complete the assessment below. We will review your answers and tell you what to do to transform your present board into a powerhouse fundraising board.</p></div>
-      <button onClick={onStart} className="button button-light" data-testid="middle-start-assessment-button">Start My Board Assessment <ArrowRight size={18} /></button>
+      <OfferChoices location="middle" />
     </section>
 
     <ProductToolsSection />
 
-    <FounderStorySection onStart={onStart} />
+    <FounderStorySection />
 
-    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><button onClick={onStart} className="button" data-testid="final-start-assessment-button">Tell Us About Your Present Board <ArrowRight size={18} /></button></section>
+    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><OfferChoices location="final" /></section>
 
     <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">Professional board service</p><h2>Are You a Professional Looking to Join a Nonprofit Board?</h2><p>Create your professional profile, tell us the causes you care about and receive board opportunities that match your skills, experience, location and availability.</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">Join the Board Applicant Network <ArrowRight size={18} /></button></section>
 
