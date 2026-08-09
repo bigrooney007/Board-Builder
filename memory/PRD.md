@@ -49,3 +49,9 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - Lead nurture: 3 Resend segments (Recruitment/Reactivation/Fundraising Activation Leads), one active category per contact (latest offer wins), 12 fixed approved templates (no AI), Tuesday 7:00 AM ET rotation 1→4 with duplicate-week protection, failed sends never advance rotation, owner error alerts, recruitment purchase removes lead from nurture (nurture_status=customer). Board Applicants excluded from all recurring emails.
 - Flags remain false: BLOG_AUTOMATION_ENABLED, LEAD_NURTURE_ENABLED (plus BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE, RECRUITMENT_97_LIVE, RECRUITMENT_497_LIVE). Owner enables after approval.
 - Final Phase 4 test: backend all pass; frontend 22/22 pass. 3 test blog posts remain published for review.
+
+## Blog Preview Dashboard (June 2026) — Complete
+- Automation now creates drafts as "Pending Review" (marketing_loop publish_now=False); owner alert email sent via Resend when a draft is ready. Drafts stay pending until acted upon (no auto-publish timeout, per user choice).
+- New admin endpoints: GET /api/admin/blog/posts, PATCH /api/admin/blog/posts/{id} (inline edit, slug updates only for unpublished), POST .../approve, .../reject, .../regenerate. POST /api/blog/generate now defaults publish_now=false.
+- New "Blog Posts" tab at /admin (AdminPage.jsx: BlogAdminSection + BlogPreview): status badges, per-category "New Draft" buttons, full rendered preview with CTA, inline edit form, Approve & Publish / Reject / Regenerate. Published posts: edit only (409 guards on approve/reject/regenerate).
+- Tested: iteration_6.json — backend 11/11 pass, frontend Playwright all pass. Regression suite: /app/backend/tests/test_blog_preview_dashboard.py.
