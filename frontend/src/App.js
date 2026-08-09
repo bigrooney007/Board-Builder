@@ -15,6 +15,8 @@ import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthP
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
 import { DashboardPage } from "@/member/DashboardPage";
 import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
+import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
+import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 
 const HomeExperience = () => {
   const navigate = useNavigate();
@@ -56,6 +58,10 @@ export default function App() {
           <Route path="/app/recruitment/basic/module/:moduleNumber" element={<CourseModulePage productSlug="basic" />} />
           <Route path="/app/recruitment/self-guided" element={<CourseOverviewPage productSlug="self-guided" />} />
           <Route path="/app/recruitment/self-guided/module/:moduleNumber" element={<CourseModulePage productSlug="self-guided" />} />
+          <Route path="/app/recruitment/self-guided/materials" element={<MaterialsLibraryPage />} />
+          <Route path="/board-opportunities/:slug/apply" element={<OpportunityApplyPage />} />
+          <Route path="/apply/:token" element={<SavedProfileApplyPage />} />
+          <Route path="/sign/:token" element={<SignAgreementPage />} />
         </Routes>
       </MemberAuthProvider>
     </BrowserRouter>

@@ -1,0 +1,180 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowDown, ArrowUp, ExternalLink, Globe, Lock, Plus, Trash2 } from "lucide-react";
+import { memberApi } from "../api";
+import { MaterialCard } from "./MaterialCard";
+
+export const useMaterials = (applicationId = "") => {
+  const [byType, setByType] = useState({});
+  const [loaded, setLoaded] = useState(false);
+  const refresh = useCallback(async () => {
+    try {
+      const response = await memberApi.get("/workspace/materials", { params: applicationId ? { application_id: applicationId } : {} });
+      const map = {};
+      response.data.materials.forEach((material) => { if ((material.application_id || "") === applicationId) map[material.type] = material; });
+      // fetch full versions (list endpoint omits structured but includes display_text) — list keeps display_text
+      setByType(map);
+    } catch { /* ignore */ }
+    setLoaded(true);
+  }, [applicationId]);
+  useEffect(() => { refresh(); }, [refresh]);
+  return { byType, refresh, loaded };
+};
+
+export const Module2Strategy = ({ profileConfirmed }) => {
+  const { byType, refresh } = useMaterials();
+  return (
+    <div data-testid="module2-workspace">
+      <section className="workspace-panel">
+        <h2>Your Recruitment Strategy</h2>
+        {!profileConfirmed && <p className="workspace-note" data-testid="strategy-locked-note"><Lock size={14} /> Complete and confirm your Recruitment Profile in Module 1 to generate your strategy.</p>}
+      </section>
+      <MaterialCard
+        type="recruitment_strategy"
+        title="Board Recruitment Strategy"
+        buttonLabel="Generate My Board Recruitment Strategy"
+        description="Your strategy is generated from your public Recruitment form and your confirmed Module 1 profile. The saved version becomes the Approved Recruitment Strategy used by later modules."
+        material={byType.recruitment_strategy}
+        refresh={refresh}
+      />
+    </div>
+  );
+};
+
+const LAUNCH_TOOLS = [
+  ["board_opportunity", "Board Opportunity", "Generate My Board Opportunity"],
+  ["application_questions", "Board Application Form", "Generate My Board Application Form"],
+  ["linkedin_post", "LinkedIn Recruitment Post", "Generate My LinkedIn Recruitment Post"],
+  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Posts"],
+  ["recruitment_emails", "Recruitment Emails", "Generate My Recruitment Emails"],
+  ["linkedin_launch_instructions", "LinkedIn Launch Instructions", "Generate My LinkedIn Launch Instructions"],
+];
+
+export const Module3Launch = () => {
+  const { byType, refresh } = useMaterials();
+  const [opportunity, setOpportunity] = useState(null);
+  const [coreQuestions, setCoreQuestions] = useState([]);
+  const [readiness, setReadiness] = useState({});
+  const [customQuestions, setCustomQuestions] = useState([]);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
+
+  const loadOpportunity = useCallback(async () => {
+    try {
+      const response = await memberApi.get("/workspace/opportunity");
+      setOpportunity(response.data.opportunity);
+      setCoreQuestions(response.data.core_questions);
+      setReadiness(response.data.readiness);
+      setCustomQuestions(response.data.opportunity.custom_questions || []);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { loadOpportunity(); }, [loadOpportunity]);
+
+  const refreshAll = async () => { await refresh(); await loadOpportunity(); };
+
+  const move = (index, delta) => {
+    const next = [...customQuestions];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setCustomQuestions(next);
+  };
+
+  const saveApplication = async () => {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await memberApi.put("/workspace/opportunity/application", { custom_questions: customQuestions });
+      setMessage("Board Application saved.");
+      await loadOpportunity();
+    } catch (err) { setError(err.response?.data?.detail || "Could not save the application."); }
+    setBusy(false);
+  };
+
+  const publish = async () => {
+    if (!window.confirm("Publishing will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.\n\nPublish and Launch Recruitment?")) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await memberApi.post("/workspace/opportunity/publish");
+      setMessage(`Recruitment campaign published. Network announcement: ${response.data.broadcast_status}.`);
+      await loadOpportunity();
+    } catch (err) { setError(err.response?.data?.detail || "Could not publish the campaign."); }
+    setBusy(false);
+  };
+
+  const closeCampaign = async () => {
+    if (!window.confirm("Close this recruitment campaign? The application page will show Applications Closed. Existing applications and materials remain.")) return;
+    try { await memberApi.post("/workspace/opportunity/close"); await loadOpportunity(); } catch (err) { setError(err.response?.data?.detail || "Could not close the campaign."); }
+  };
+
+  const publicUrl = opportunity ? `/board-opportunities/${opportunity.slug}/apply` : "";
+
+  return (
+    <div data-testid="module3-workspace">
+      {LAUNCH_TOOLS.map(([type, title, buttonLabel]) => (
+        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} material={byType[type]} refresh={refreshAll} />
+      ))}
+
+      <section className="workspace-panel" data-testid="application-editor">
+        <h2>Your Board Application</h2>
+        <p>Every application always contains the required core questions below. Claude adds up to 5 organization-specific questions that you can edit, reorder, delete or replace.</p>
+        <h3>Required Core Questions (cannot be removed)</h3>
+        <ol className="core-question-list">{coreQuestions.map((question) => <li key={question.id}>{question.label}{question.required ? "" : " (optional)"}</li>)}<li>Upload résumé/CV (required)</li></ol>
+        <h3>Organization-Specific Questions</h3>
+        {customQuestions.length === 0 && <p className="workspace-note">Generate the Board Application Form above or add your own questions.</p>}
+        {customQuestions.map((question, index) => (
+          <div className="custom-question-row" key={question.id} data-testid={`custom-question-${index + 1}`}>
+            <input value={question.label} onChange={(event) => setCustomQuestions(customQuestions.map((item, itemIndex) => itemIndex === index ? { ...item, label: event.target.value } : item))} />
+            <button className="icon-button" onClick={() => move(index, -1)} aria-label="Move up"><ArrowUp size={15} /></button>
+            <button className="icon-button" onClick={() => move(index, 1)} aria-label="Move down"><ArrowDown size={15} /></button>
+            <button className="icon-button" onClick={() => setCustomQuestions(customQuestions.filter((item, itemIndex) => itemIndex !== index))} aria-label="Delete question" data-testid={`delete-question-${index + 1}`}><Trash2 size={15} /></button>
+          </div>
+        ))}
+        <div className="custom-question-row add">
+          <input placeholder="Add your own question" value={newQuestion} onChange={(event) => setNewQuestion(event.target.value)} data-testid="add-question-input" />
+          <button className="button button-back" onClick={() => { if (newQuestion.trim()) { setCustomQuestions([...customQuestions, { id: "", label: newQuestion.trim(), type: "textarea" }]); setNewQuestion(""); } }} data-testid="add-question-button"><Plus size={15} /> Add</button>
+        </div>
+        <div className="material-actions">
+          <button className="button" disabled={busy} onClick={saveApplication} data-testid="save-application-button">Save Board Application</button>
+          <button className="button button-back" onClick={() => setPreview(!preview)} data-testid="preview-application-button">{preview ? "Hide Preview" : "Preview Application"}</button>
+        </div>
+        {preview && (
+          <div className="application-preview" data-testid="application-preview">
+            <h3>Application Preview — {opportunity?.organization_name}</h3>
+            {[...coreQuestions.map((q) => q.label + (q.required ? " *" : "")), "Upload résumé/CV *", ...customQuestions.map((q) => q.label)].map((label) => (
+              <div className="preview-question" key={label}><span>{label}</span><i /></div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="workspace-panel publish-panel" data-testid="publish-panel">
+        <h2>Publish Recruitment Campaign</h2>
+        <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{opportunity?.status || "Draft"}</strong></p>
+        <ul className="readiness-list">
+          <li className={readiness.strategy_approved ? "done" : ""} data-testid="readiness-strategy">Recruitment Strategy approved</li>
+          <li className={readiness.opportunity_saved ? "done" : ""} data-testid="readiness-opportunity">Board Opportunity saved</li>
+          <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application saved</li>
+        </ul>
+        {opportunity?.status === "Published" && (
+          <p className="member-success" data-testid="published-info">
+            Published {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "TEST MODE — sent only to the owner test address" : "live"}).
+            <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a>
+          </p>
+        )}
+        {message && <p className="member-success">{message}</p>}
+        {error && <p className="submit-error" data-testid="publish-error">{error}</p>}
+        <div className="material-actions">
+          {opportunity?.status !== "Published" && opportunity?.status !== "Closed" && (
+            <button className="button" disabled={busy || !(readiness.strategy_approved && readiness.opportunity_saved && readiness.application_saved)} onClick={publish} data-testid="publish-button">Publish and Launch Recruitment</button>
+          )}
+          {opportunity?.status === "Published" && <button className="button button-back" onClick={closeCampaign} data-testid="close-campaign-button">Close Recruitment Campaign</button>}
+          {opportunity?.status === "Closed" && <p className="workspace-note">This campaign is closed. Applications show “Applications Closed”. All data remains.</p>}
+        </div>
+        <p className="material-meta">Publishing makes the application public at <Link to={publicUrl}>{publicUrl || "…"}</Link> and initiates one Board Applicant Network announcement. Duplicate broadcasts are prevented automatically.</p>
+      </section>
+    </div>
+  );
+};

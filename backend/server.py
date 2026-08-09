@@ -22,6 +22,8 @@ from funnel_routes import create_funnel_router
 from payment_routes import create_payment_router, create_stripe_webhook_router
 from member_routes import create_member_router
 from course_routes import create_course_router
+from workspace_routes import create_workspace_router
+from public_opportunity_routes import create_public_opportunity_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -198,6 +200,8 @@ app.include_router(create_payment_router(db))
 app.include_router(create_stripe_webhook_router(db))
 app.include_router(create_member_router(db))
 app.include_router(create_course_router(db))
+app.include_router(create_workspace_router(db))
+app.include_router(create_public_opportunity_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -238,6 +242,17 @@ async def startup_tasks():
     )
     await db.course_videos.create_index([("product", 1), ("module_number", 1)], unique=True)
     await db.support_requests.create_index("support_request_id", unique=True)
+    await db.recruitment_profiles.create_index("user_id", unique=True)
+    await db.generated_materials.create_index("material_id", unique=True)
+    await db.generated_materials.create_index([("user_id", 1), ("type", 1), ("application_id", 1)], unique=True)
+    await db.opportunities.create_index("opportunity_id", unique=True)
+    await db.opportunities.create_index("slug", unique=True)
+    await db.opportunities.create_index("user_id", unique=True)
+    await db.opportunity_applications.create_index("application_id", unique=True)
+    await db.opportunity_applications.create_index([("opportunity_id", 1), ("applicant_email", 1)], unique=True)
+    await db.apply_tokens.create_index("token", unique=True)
+    await db.signature_requests.create_index("request_id", unique=True)
+    await db.signature_requests.create_index("token", unique=True)
     await seed_admin(db)
     automation_task = asyncio.create_task(automation_loop(db))
 

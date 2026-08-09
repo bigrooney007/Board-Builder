@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Circle, FileText, LifeBuoy, Lock, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, FileText, FolderOpen, LifeBuoy, PlayCircle } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { Module1Profile } from "./workspace/Module1Profile";
+import { Module2Strategy, Module3Launch } from "./workspace/WorkspaceModules";
+import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 
 const PRODUCT_META = {
   basic: { key: "recruitment_basic", endpoint: "/courses/recruitment/basic", base: "/app/recruitment/basic", label: "Board Recruitment — $97 Program" },
@@ -119,6 +122,13 @@ export const CourseOverviewPage = ({ productSlug }) => {
         </header>
         {forbidden && <ForbiddenCard />}
         {error && <p className="submit-error">{error}</p>}
+        {course && productSlug === "self-guided" && (
+          <Link className="module-list-item materials-link" to="/app/recruitment/self-guided/materials" data-testid="materials-library-link">
+            <FolderOpen size={21} className="module-done" />
+            <div><span>Workspace</span><h2>My Recruitment Materials</h2></div>
+            <ArrowRight size={17} />
+          </Link>
+        )}
         {course && (
           <div className="module-list">
             {course.modules.map((module) => (
@@ -148,40 +158,20 @@ const BasicResources = ({ module }) => (
   </section>
 );
 
-const SelfGuidedSections = ({ module }) => (
-  <>
-    {module.workspace && (
-      <section className="workspace-panel" data-testid="workspace-panel">
-        <h2>{module.workspace.heading}</h2>
-        <p>{module.workspace.text}</p>
-        <p className="workspace-note">{module.workspace.note}</p>
-      </section>
-    )}
-    {module.future_areas && (
-      <section className="future-areas" data-testid="future-areas">
-        <h2>Applicant Management (Coming With Execution Tools)</h2>
-        <p>{module.tools_helper}</p>
-        <div className="future-area-grid">{module.future_areas.map((area) => <div className="future-area" key={area}><Lock size={14} /> {area}</div>)}</div>
-      </section>
-    )}
-    {module.disabled_tools && module.disabled_tools.length > 0 && (
-      <section className="module-tools" data-testid="module-tools">
-        <h2>Execution Tools</h2>
-        <div className="tool-buttons">
-          {module.disabled_tools.map((tool) => <button className="button tool-button" key={tool} disabled data-testid={`tool-${tool.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`}><Lock size={15} /> {tool}</button>)}
-        </div>
-        {module.tools_helper && <p className="tools-helper" data-testid="tools-helper">{module.tools_helper}</p>}
-      </section>
-    )}
-    {module.linkedin_section && (
-      <section className="linkedin-section" data-testid="linkedin-section">
-        <h2>{module.linkedin_section.heading}</h2>
-        {module.linkedin_section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-      </section>
-    )}
-    {module.background_note && <p className="background-note" data-testid="background-note">{module.background_note}</p>}
-  </>
-);
+const SelfGuidedWorkspace = ({ moduleNumber }) => {
+  const [profileConfirmed, setProfileConfirmed] = useState(false);
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    memberApi.get("/workspace/profile").then((response) => { setProfileConfirmed(response.data.confirmed); setChecked(true); }).catch(() => setChecked(true));
+  }, [moduleNumber]);
+  if (!checked) return <section className="workspace-panel">Loading your workspace…</section>;
+  if (moduleNumber === 1) return <Module1Profile onConfirmed={() => setProfileConfirmed(true)} />;
+  if (moduleNumber === 2) return <Module2Strategy profileConfirmed={profileConfirmed} />;
+  if (moduleNumber === 3) return <Module3Launch />;
+  if (moduleNumber === 4) return <Module4Applicants />;
+  if (moduleNumber === 5) return <Module5References />;
+  return <Module6Onboarding />;
+};
 
 export const CourseModulePage = ({ productSlug }) => {
   const { meta, course, error, forbidden, reload } = useCourse(productSlug);
@@ -220,7 +210,7 @@ export const CourseModulePage = ({ productSlug }) => {
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} />
-            {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedSections module={module} />}
+            {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             <div className="module-nav" data-testid="module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Module</button>
               <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="mark-complete-button">

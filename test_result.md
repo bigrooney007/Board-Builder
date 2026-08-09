@@ -270,3 +270,89 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Phase 2 build complete. Please test backend per current_focus. Admin creds in /app/memory/test_credentials.md. Live purchase flags must stay FALSE — for checkout tests use internal_test:true with admin auth (Bearer or cookie). Stripe checkout sessions cannot be completed via API; verify claim-purchase returns 402 for unpaid sessions, and test entitlement access control by inserting entitlements directly into db.members. Do NOT modify Board Applicant Network. Do NOT flip env flags."
+
+## PHASE 3 (appended by main agent)
+backend:
+  - task: "Module 1 recruitment profile API (get/save/confirm with lead prefill)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/workspace_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET/PUT /api/workspace/profile (PUT unsets confirmed), POST /api/workspace/profile/confirm. Prefill from recruitment funnel lead."
+  - task: "Claude generation endpoint with structured outputs, versioning, no auto-regeneration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/workspace_routes.py, ai_service.py, workspace_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/workspace/generate (requires confirmed profile; per-application types require owned application_id). 18 generation types with fixed JSON schemas. Saves input/output/date/type/user/module/status in generated_materials with versions. GET/PUT materials, set current version. Manually verified one Claude call returns valid structured JSON."
+  - task: "Opportunity lifecycle: application form editing, publish with duplicate-broadcast protection, close, test-mode broadcast"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/workspace_routes.py, opportunity_emails.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/workspace/opportunity, PUT /opportunity/application, POST /opportunity/publish (requires strategy+opportunity+application; atomic broadcast_initiated guard; test mode emails OWNER_TEST_EMAIL only), POST /opportunity/close."
+  - task: "Public application endpoints: hosted apply, saved-profile tokens, receipt emails, auto interview guide"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/public_opportunity_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET/POST /api/public/board-opportunities/{slug}[/apply] (core question validation, CV GridFS, duplicate prevention by email, receipt email, background one-attempt interview guide), GET/POST /api/public/apply/{token} confirm + apply-updated (+optional profile update)."
+  - task: "Applicant workspace: list/detail/status/notes/references/background-check/CV download/guide retry"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/workspace_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "All scoped to owner_user_id (tenant isolation). Statuses Applied/Reviewing/Interview/Selected/Not Selected/Withdrawn."
+  - task: "E-signature workflow: prepare immutable snapshot, send, public sign, confirmations, signed download"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/workspace_routes.py, public_opportunity_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/workspace/signatures/prepare (Selected only), /send (email link), GET/POST /api/public/sign/{token}, download at /api/workspace/signatures/{id}/download."
+
+frontend:
+  - task: "Phase 3 workspace UI in self-guided modules 1-6 + materials library + public apply/sign pages"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/member/workspace/*, /app/frontend/src/public/OpportunityPages.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Module1 5-step form+summary+confirm, Module2 strategy MaterialCard, Module3 six generators+application editor+publish panel, Module4 applicant workspace, Module5 references, Module6 selected-only onboarding+signatures. Routes: /app/recruitment/self-guided/materials, /board-opportunities/:slug/apply, /apply/:token, /sign/:token. Phase 2 video/nav/progress/support box preserved."
+
+agent_communication:
+  - agent: "main"
+    message: "Phase 3 built. Test per Phase 3 tasks. MUST NOT change env flags (BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE=false, RECRUITMENT_497_LIVE=false). Create $497 test member by registering then setting entitlements in Mongo. Claude generations cost credits — generate each type at most once where feasible; strategy + opportunity + application_questions + interview guide are the critical ones. Clean up test data afterwards. Do NOT modify reactivation/activation or Board Applicant Network code."
