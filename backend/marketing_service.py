@@ -161,15 +161,42 @@ async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str,
             "title": article["title"].strip(), "slug": slug, "excerpt": article["excerpt"].strip(),
             "body": article["body"].strip(), "cta_label": config["cta_label"], "cta_button": config["cta_button"],
             "cta_url": config["cta_url"], "generation_status": "Generated", "validation_status": "Passed",
-            "publication_status": "Published" if publish_now else "Scheduled", "error": "",
+            "publication_status": "Published" if publish_now else "Pending Review", "error": "",
         }
         if publish_now:
             update["published_at"] = now_tz().isoformat()
         await db.blog_posts.update_one(query, {"$set": update})
+        if not publish_now:
+            await send_owner_alert("New Blog Draft Ready for Your Review", [("Category", config["name"]), ("Title", update["title"]), ("Scheduled date", scheduled_date), ("Review at", f"{os.environ.get('PUBLIC_ORIGIN', 'https://nonprofitboardbuilder.com')}/admin")])
         return {"status": update["publication_status"], "slug": slug, "title": update["title"]}
     except Exception as exc:
         await db.blog_posts.update_one(query, {"$set": {"publication_status": "Failed", "error": str(exc)[:500]}})
         await send_owner_alert("Nonprofit Board Builder Blog Automation Error", [("Category", config["name"]), ("Schedule", scheduled_date), ("Error", str(exc)[:500]), ("Generation occurred", "Attempted"), ("Validation occurred", "See error"), ("Published", "No")])
+        return {"status": "Failed", "error": str(exc)[:300]}
+
+
+async def regenerate_blog_post(db, post: dict) -> dict:
+    """Replace an unpublished draft's content with a freshly generated article."""
+    category_key = post["category_key"]
+    query = {"blog_post_id": post["blog_post_id"]}
+    await db.blog_posts.update_one(query, {"$set": {"publication_status": "Generating"}})
+    recent = await db.blog_posts.find({"category_key": category_key, "publication_status": "Published"}, {"_id": 0, "title": 1}).sort("published_at", -1).to_list(12)
+    recent_titles = [item["title"] for item in recent if item.get("title")]
+    existing_slugs = {item["slug"] async for item in db.blog_posts.find({"slug": {"$ne": ""}, "blog_post_id": {"$ne": post["blog_post_id"]}}, {"_id": 0, "slug": 1})}
+    try:
+        article = await claude_blog(category_key, recent_titles)
+        errors = validate_article(article, category_key, recent_titles, existing_slugs)
+        if errors:
+            article = await claude_blog(category_key, recent_titles, correction="\n".join(errors), draft=article)
+            errors = validate_article(article, category_key, recent_titles, existing_slugs)
+        if errors:
+            await db.blog_posts.update_one(query, {"$set": {"publication_status": "Validation Failed", "error": "; ".join(errors)}})
+            return {"status": "Validation Failed", "errors": errors}
+        update = {"title": article["title"].strip(), "slug": slugify_title(article["title"]), "excerpt": article["excerpt"].strip(), "body": article["body"].strip(), "publication_status": "Pending Review", "error": "", "regenerated_at": now_tz().isoformat()}
+        await db.blog_posts.update_one(query, {"$set": update})
+        return {"status": "Pending Review"}
+    except Exception as exc:
+        await db.blog_posts.update_one(query, {"$set": {"publication_status": "Failed", "error": str(exc)[:500]}})
         return {"status": "Failed", "error": str(exc)[:300]}
 
 
@@ -285,7 +312,7 @@ async def marketing_loop(db) -> None:
                 publish_time = os.environ.get("BLOG_PUBLISH_TIME", "08:00")
                 for key, config in CATEGORIES.items():
                     if now.weekday() == config["day"] and now.strftime("%H:%M") >= publish_time:
-                        await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=True)
+                        await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=False)
             if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true":
                 now = now_tz("LEAD_NURTURE_TIMEZONE")
                 day_name = os.environ.get("LEAD_NURTURE_DAY", "Tuesday")

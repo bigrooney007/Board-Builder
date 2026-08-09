@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from auth_service import authenticate_admin
-from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, now_tz
+from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, now_tz, regenerate_blog_post, slugify_title
 
 PUBLIC_FIELDS = {"_id": 0, "blog_post_id": 1, "title": 1, "slug": 1, "category": 1, "category_key": 1, "excerpt": 1, "published_at": 1, "cta_label": 1, "cta_button": 1, "cta_url": 1}
 
@@ -13,7 +13,7 @@ PUBLIC_FIELDS = {"_id": 0, "blog_post_id": 1, "title": 1, "slug": 1, "category":
 class BlogGenerate(BaseModel):
     category: str
     scheduled_date: Optional[str] = ""
-    publish_now: bool = True
+    publish_now: bool = False
 
     @field_validator("category")
     @classmethod
@@ -25,6 +25,12 @@ class BlogGenerate(BaseModel):
 
 class NurtureTestSend(BaseModel):
     test_email: Optional[str] = ""
+
+
+class BlogEdit(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    excerpt: str = ""
+    body: str = Field(min_length=50)
 
 
 def create_marketing_router(db) -> APIRouter:
@@ -53,6 +59,67 @@ def create_marketing_router(db) -> APIRouter:
         if result.get("skipped"):
             raise HTTPException(status_code=409, detail=result["reason"])
         return result
+
+    @router.get("/admin/blog/posts")
+    async def admin_list_posts(request: Request):
+        await authenticate_admin(request, db)
+        posts = await db.blog_posts.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        return {"posts": posts, "categories": [{"key": key, "name": config["name"]} for key, config in CATEGORIES.items()]}
+
+    @router.patch("/admin/blog/posts/{blog_post_id}")
+    async def admin_edit_post(blog_post_id: str, payload: BlogEdit, request: Request):
+        await authenticate_admin(request, db)
+        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        update = {"title": payload.title.strip(), "excerpt": payload.excerpt.strip(), "body": payload.body.strip(), "edited_at": now_tz().isoformat()}
+        if post["publication_status"] != "Published":
+            new_slug = slugify_title(update["title"])
+            conflict = await db.blog_posts.find_one({"slug": new_slug, "blog_post_id": {"$ne": blog_post_id}}, {"_id": 1})
+            if conflict:
+                raise HTTPException(status_code=409, detail="Another post already uses this title. Choose a different title.")
+            update["slug"] = new_slug
+        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
+        post.update(update)
+        return {"post": post}
+
+    @router.post("/admin/blog/posts/{blog_post_id}/approve")
+    async def admin_approve_post(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        if post["publication_status"] == "Published":
+            raise HTTPException(status_code=409, detail="This article is already published")
+        if not post.get("title") or not post.get("body"):
+            raise HTTPException(status_code=400, detail="This draft has no content to publish. Regenerate it first.")
+        update = {"publication_status": "Published", "published_at": now_tz().isoformat(), "approved_at": now_tz().isoformat(), "error": ""}
+        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
+        return {"post": {**post, **update}}
+
+    @router.post("/admin/blog/posts/{blog_post_id}/reject")
+    async def admin_reject_post(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        if post["publication_status"] == "Published":
+            raise HTTPException(status_code=409, detail="Published articles cannot be rejected")
+        update = {"publication_status": "Rejected", "rejected_at": now_tz().isoformat()}
+        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
+        return {"post": {**post, **update}}
+
+    @router.post("/admin/blog/posts/{blog_post_id}/regenerate")
+    async def admin_regenerate_post(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        if post["publication_status"] == "Published":
+            raise HTTPException(status_code=409, detail="Published articles cannot be regenerated")
+        result = await regenerate_blog_post(db, post)
+        fresh = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        return {**result, "post": fresh}
 
     @router.post("/nurture/test-send")
     async def nurture_test(payload: NurtureTestSend, request: Request):

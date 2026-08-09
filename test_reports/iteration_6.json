@@ -1,0 +1,29 @@
+{
+  "summary": "Tested the new Blog Preview Dashboard (backend + UI). 11 backend pytest tests all pass covering admin listing, public visibility gate for Pending/Rejected, duplicate-category-per-day 409, PATCH edit updating slug on unpublished drafts, PATCH duplicate-title 409, reject-pending flow, approve/reject/regenerate 409 guards on Published posts, and regenerate-on-rejected producing fresh Pending draft (real Claude call ~60s). Frontend E2E via Playwright verified admin login, Blog Posts tab, row list with statuses, opening Pending Review preview shows Approve/Edit/Regenerate/Reject buttons, Published preview shows only Edit Draft, Edit->Cancel restores content, and public /blog regression lists 4 published articles with no draft leakage.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_blog_preview_dashboard.py",
+    "/app/test_reports/pytest/blog_preview_dashboard.xml",
+    "/app/test_reports/playwright/blog_admin_ui.jpg"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "admin_edit_post correctly skips slug regeneration for Published posts, preventing broken permalinks after edits to live articles.",
+    "approve/reject/regenerate all return 409 with clear messages when the target is Published; approve additionally rejects empty drafts with 400 (regenerate first).",
+    "Public GET /api/blog/posts and /api/blog/posts/{slug} filter strictly on publication_status == 'Published' so Pending/Rejected/Generating/Failed are never leaked.",
+    "regenerate_blog_post reuses the same blog_post_id and updates slug from new title; if Claude fails it sets publication_status='Failed' with error string, which admin UI surfaces via admin-blog-preview-error.",
+    "Minor observation (not fixed): frontend admin-blog-tab hides the top-level 'Send board-opportunity broadcast' instruction only when Applicants tab is off — cosmetic, no functional impact."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_blog_preview_dashboard.py",
+    "/app/test_reports/iteration_6.json"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (all Playwright assertions passed)"},
+  "test_credentials": "Admin cookie login via /api/auth/login with rooney@nonprofitboardbuilder.com (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Regenerated one previously-Rejected draft into a Pending Review draft in category 'reactivation' (uses ~1 Claude call). Rejected one Pending Review draft during test_reject_pending_and_public_invisible. No writes to Resend / Stripe.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Blog admin regression suite is /app/backend/tests/test_blog_preview_dashboard.py. It is idempotent-ish but each run may consume 1 Claude generation if no Pending Review draft exists. To conserve budget, ensure at least one Pending Review draft exists before rerunning. Category 'recruitment' already has today's published post so duplicate-guard test relies on that; if that post is removed, the duplicate 409 test will actually create a fresh recruitment draft.",
+  "rca of the issue": "No defects observed. Blog Preview Dashboard behaves as specified end-to-end."
+}
