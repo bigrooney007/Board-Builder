@@ -390,17 +390,22 @@ backend:
 frontend:
   - task: "Public /blog + /blog/:slug pages and compact homepage Latest Articles slider"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/pages/BlogPages.jsx, LandingPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Blog list with category filters, article page with deterministic category CTA, homepage slider (max 6, prev/next/swipe, Read All Articles) placed before join-network section."
+      - working: true
+        agent: "testing"
+        comment: "✓ All Phase 4 frontend tests passed. HOMEPAGE DESKTOP (1920x800): Blog slider section with 'Latest From Nonprofit Board Builder' heading displays one compact article card at a time (category, title, excerpt, Read Article link). Previous/Next buttons (data-testid blog-slider-previous/next) change counter correctly (1/3 → 2/3 → 1/3). 'Read All Articles' button (data-testid read-all-articles-button) links to /blog. Slider positioned before join-network section. Homepage unchanged: hero has no offer buttons, three stage CTAs present, Book a Call With Rooney button present. /BLOG PAGE: Heading 'Nonprofit Board Builder Insights' correct. Filter buttons All/Board Recruitment/Board Reactivation/Board Fundraising Activation all present (data-testid blog-filter-all/recruitment/reactivation/fundraising_activation). 3 article cards display with title, category, date, excerpt, Read Article. Board Reactivation filter works (1 card), All filter restores 3 cards. ARTICLE PAGES: Recruitment article has category tag, title, date, 14 paragraphs, 5 subheadings. CTA section (data-testid article-cta) button says 'See How We Can Help You Recruit' and links to /recruit. Reactivation article CTA links to /reactivate. MOBILE (390x844): Article page has no horizontal scrolling, CTA button visible. /blog page responsive, no horizontal scrolling. Homepage blog slider visible and functional on mobile."
 agent_communication:
   - agent: "main"
     message: "Phase 4 built. Test blog + nurture per PHASE 4 tasks. Claude blog generation costs credits: generate exactly one article per category (3 total). NEVER flip env flags. Nurture test sends go only to owner test email. Do not email live segments or Board Applicants. Clean up test leads/posts records afterwards EXCEPT keep the 3 published test blog posts for frontend verification."
   - agent: "testing"
     message: "Phase 4 backend testing complete. All tests passed. Blog generation and lead nurture working correctly. 3 published blog posts kept in database for frontend verification (recruitment, reactivation, fundraising_activation). Test data cleaned up. Env flags verified unchanged (BLOG_AUTOMATION_ENABLED=false, LEAD_NURTURE_ENABLED=false). Ready for frontend testing."
+  - agent: "testing"
+    message: "Phase 4 frontend testing complete. All tests passed. Blog feature fully functional on desktop and mobile. Homepage slider, /blog page with filters, article pages with category-specific CTAs all working correctly. 3 published blog posts verified (Board Recruitment, Board Reactivation, Board Fundraising Activation). No issues found. Ready for main agent to summarize and finish."
