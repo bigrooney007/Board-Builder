@@ -1,0 +1,237 @@
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, FileText, LifeBuoy, Lock, PlayCircle } from "lucide-react";
+import { memberApi } from "./api";
+import { useMemberAuth } from "./MemberAuthContext";
+import { MemberShell } from "./MemberShell";
+
+const PRODUCT_META = {
+  basic: { key: "recruitment_basic", endpoint: "/courses/recruitment/basic", base: "/app/recruitment/basic", label: "Board Recruitment — $97 Program" },
+  "self-guided": { key: "recruitment_self_guided", endpoint: "/courses/recruitment/self-guided", base: "/app/recruitment/self-guided", label: "Board Recruitment — $497 Self-Guided System" },
+};
+
+const embedUrl = (url) => {
+  if (!url) return "";
+  const watch = url.match(/[?&]v=([\w-]{6,})/);
+  if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
+  const short = url.match(/youtu\.be\/([\w-]{6,})/);
+  if (short) return `https://www.youtube.com/embed/${short[1]}`;
+  if (url.includes("/embed/")) return url;
+  return url;
+};
+
+const useCourse = (productSlug) => {
+  const meta = PRODUCT_META[productSlug];
+  const { member, loading } = useMemberAuth();
+  const navigate = useNavigate();
+  const [course, setCourse] = useState(null);
+  const [error, setError] = useState("");
+  const [forbidden, setForbidden] = useState(false);
+  const load = React.useCallback(() => {
+    memberApi.get(meta.endpoint).then((response) => setCourse(response.data)).catch((err) => {
+      if (err.response?.status === 401) navigate("/login");
+      else if (err.response?.status === 403) setForbidden(true);
+      else setError("We could not load this course.");
+    });
+  }, [meta.endpoint, navigate]);
+  useEffect(() => {
+    if (loading) return;
+    if (!member) { navigate("/login"); return; }
+    load();
+  }, [loading, member, navigate, load]);
+  return { meta, course, error, forbidden, reload: load };
+};
+
+const ForbiddenCard = () => (
+  <div className="member-card" data-testid="course-forbidden">
+    <h2>This Program Is Not Included in Your Account</h2>
+    <p>Your account does not include access to this program. If you believe this is a mistake, please contact us.</p>
+    <Link className="button" to="/app">Back to My Board Builder</Link>
+  </div>
+);
+
+const VideoBlock = ({ module, testPrefix }) => {
+  const src = embedUrl(module.youtube_url);
+  return src ? (
+    <div className="module-video" data-testid={`${testPrefix}-video-embed`}>
+      <iframe src={src} title={module.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+    </div>
+  ) : (
+    <div className="module-video placeholder" data-testid={`${testPrefix}-video-placeholder`}>
+      <PlayCircle size={38} />
+      <h3>Training Video Coming Soon</h3>
+      <p>The training video for this module will appear here as soon as it is published.</p>
+    </div>
+  );
+};
+
+const SupportBox = ({ productKey, moduleNumber, supportTypes }) => {
+  const [supportType, setSupportType] = useState("");
+  const [message, setMessage] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async (event) => {
+    event.preventDefault(); setError("");
+    if (!supportType) { setError("Please choose what you need help with."); return; }
+    setBusy(true);
+    try {
+      const response = await memberApi.post("/support-requests", { product: productKey, module_number: moduleNumber, support_type: supportType, message });
+      setConfirmation(response.data.message);
+    } catch (err) { setError(err.response?.data?.detail || "We could not send your request. Please try again."); }
+    setBusy(false);
+  };
+  return (
+    <section className="support-box" data-testid="module-support-box">
+      <div className="support-box-heading"><LifeBuoy size={22} /><h2>Need Help With This Step?</h2></div>
+      <p>If you are stuck, need clarification or want help executing this part of the process, send us a request.</p>
+      {confirmation ? (
+        <p className="member-success" data-testid="support-confirmation">{confirmation}</p>
+      ) : (
+        <form onSubmit={submit}>
+          <label className="field"><span>What do you need help with? <b>*</b></span>
+            <select value={supportType} onChange={(event) => setSupportType(event.target.value)} data-testid="support-type-select">
+              <option value="">Select one</option>
+              {(supportTypes || []).map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Tell us what you need help with <b>*</b></span>
+            <textarea rows="4" value={message} onChange={(event) => setMessage(event.target.value)} required data-testid="support-message-textarea" />
+          </label>
+          {error && <p className="submit-error" data-testid="support-error">{error}</p>}
+          <button className="button" type="submit" disabled={busy} data-testid="support-submit-button">{busy ? "Sending…" : "Request Support"}</button>
+        </form>
+      )}
+    </section>
+  );
+};
+
+export const CourseOverviewPage = ({ productSlug }) => {
+  const { meta, course, error, forbidden } = useCourse(productSlug);
+  return (
+    <MemberShell>
+      <main className="member-page" data-testid={`course-overview-${productSlug}`}>
+        <header className="member-page-heading">
+          <p className="eyebrow">Board Recruitment</p>
+          <h1>{meta.label}</h1>
+          {course && <p data-testid="course-progress-summary">{course.percent_complete}% complete · {course.modules_completed} of {course.modules.length} modules finished</p>}
+          {course && <div className="dashboard-progress-bar"><i style={{ width: `${course.percent_complete}%` }} /></div>}
+        </header>
+        {forbidden && <ForbiddenCard />}
+        {error && <p className="submit-error">{error}</p>}
+        {course && (
+          <div className="module-list">
+            {course.modules.map((module) => (
+              <Link className="module-list-item" to={`${meta.base}/module/${module.number}`} key={module.number} data-testid={`module-link-${module.number}`}>
+                {module.completed ? <CheckCircle2 className="module-done" size={21} /> : <Circle className="module-todo" size={21} />}
+                <div><span>Module {module.number}</span><h2>{module.title}</h2></div>
+                <ArrowRight size={17} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
+    </MemberShell>
+  );
+};
+
+const BasicResources = ({ module }) => (
+  <section className="module-resources" data-testid="module-resources">
+    <h2>Module Resources</h2>
+    {module.resources.map((resource) => (
+      <details className="resource-item" key={resource.title} data-testid={`resource-${resource.title.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`}>
+        <summary><FileText size={16} /> {resource.title}</summary>
+        <p>{resource.content}</p>
+        {resource.steps && <ol className="linkedin-steps" data-testid="linkedin-launch-steps">{resource.steps.map((step) => <li key={step}>{step}</li>)}</ol>}
+      </details>
+    ))}
+  </section>
+);
+
+const SelfGuidedSections = ({ module }) => (
+  <>
+    {module.workspace && (
+      <section className="workspace-panel" data-testid="workspace-panel">
+        <h2>{module.workspace.heading}</h2>
+        <p>{module.workspace.text}</p>
+        <p className="workspace-note">{module.workspace.note}</p>
+      </section>
+    )}
+    {module.future_areas && (
+      <section className="future-areas" data-testid="future-areas">
+        <h2>Applicant Management (Coming With Execution Tools)</h2>
+        <p>{module.tools_helper}</p>
+        <div className="future-area-grid">{module.future_areas.map((area) => <div className="future-area" key={area}><Lock size={14} /> {area}</div>)}</div>
+      </section>
+    )}
+    {module.disabled_tools && module.disabled_tools.length > 0 && (
+      <section className="module-tools" data-testid="module-tools">
+        <h2>Execution Tools</h2>
+        <div className="tool-buttons">
+          {module.disabled_tools.map((tool) => <button className="button tool-button" key={tool} disabled data-testid={`tool-${tool.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`}><Lock size={15} /> {tool}</button>)}
+        </div>
+        {module.tools_helper && <p className="tools-helper" data-testid="tools-helper">{module.tools_helper}</p>}
+      </section>
+    )}
+    {module.linkedin_section && (
+      <section className="linkedin-section" data-testid="linkedin-section">
+        <h2>{module.linkedin_section.heading}</h2>
+        {module.linkedin_section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      </section>
+    )}
+    {module.background_note && <p className="background-note" data-testid="background-note">{module.background_note}</p>}
+  </>
+);
+
+export const CourseModulePage = ({ productSlug }) => {
+  const { meta, course, error, forbidden, reload } = useCourse(productSlug);
+  const { moduleNumber } = useParams();
+  const navigate = useNavigate();
+  const number = Number(moduleNumber);
+  const [marking, setMarking] = useState(false);
+  const module = course?.modules.find((item) => item.number === number);
+
+  useEffect(() => {
+    if (!course || !module) return;
+    memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: "viewed" }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course?.product, number]);
+
+  const markComplete = async () => {
+    setMarking(true);
+    try {
+      await memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: module.completed ? "uncompleted" : "completed" });
+      reload();
+    } catch { /* ignore */ }
+    setMarking(false);
+  };
+
+  return (
+    <MemberShell>
+      <main className="member-page module-page" data-testid={`course-module-page-${productSlug}`}>
+        {forbidden && <ForbiddenCard />}
+        {error && <p className="submit-error">{error}</p>}
+        {course && !module && <div className="member-card"><h2>Module Not Found</h2><Link className="button" to={meta.base}>Back to Course</Link></div>}
+        {module && (
+          <>
+            <header className="member-page-heading">
+              <Link className="module-breadcrumb" to={meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {meta.label}</Link>
+              <p className="eyebrow">Module {module.number} of {course.modules.length}</p>
+              <h1 data-testid="module-title">{module.title}</h1>
+            </header>
+            <VideoBlock module={module} testPrefix={`module-${module.number}`} />
+            {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedSections module={module} />}
+            <div className="module-nav" data-testid="module-navigation">
+              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Module</button>
+              <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="mark-complete-button">
+                {module.completed ? <><CheckCircle2 size={16} /> Module Completed</> : "Mark This Module Complete"}
+              </button>
+              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Module <ArrowRight size={16} /></button>
+            </div>
+            <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />
+          </>
+        )}
+      </main>
+    </MemberShell>
+  );
+};

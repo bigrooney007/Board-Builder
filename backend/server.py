@@ -20,6 +20,8 @@ from resend_service import send_automation_error
 from automation_service import automation_loop
 from funnel_routes import create_funnel_router
 from payment_routes import create_payment_router, create_stripe_webhook_router
+from member_routes import create_member_router
+from course_routes import create_course_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -194,6 +196,8 @@ app.include_router(create_applicant_router(db))
 app.include_router(create_funnel_router(db))
 app.include_router(create_payment_router(db))
 app.include_router(create_stripe_webhook_router(db))
+app.include_router(create_member_router(db))
+app.include_router(create_course_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -225,6 +229,15 @@ async def startup_tasks():
     await db.funnel_leads.create_index("result_token", unique=True)
     await db.funnel_leads.create_index([("offer_source", 1), ("created_at", -1)])
     await db.payment_transactions.create_index("session_id", unique=True)
+    await db.members.create_index("email", unique=True)
+    await db.members.create_index("user_id", unique=True)
+    await db.purchases.create_index("session_id", unique=True)
+    await db.password_resets.create_index("token", unique=True)
+    await db.course_progress.create_index(
+        [("user_id", 1), ("product", 1), ("module_number", 1)], unique=True
+    )
+    await db.course_videos.create_index([("product", 1), ("module_number", 1)], unique=True)
+    await db.support_requests.create_index("support_request_id", unique=True)
     await seed_admin(db)
     automation_task = asyncio.create_task(automation_loop(db))
 

@@ -9,8 +9,8 @@ import resend
 
 REQUIRED_ANSWERS = {
     "recruitment": {
-        "present_board", "active_board", "additional_needed", "priorities",
-        "capacity_areas", "recruitment_methods", "timeline",
+        "new_members_needed", "present_board", "active_board", "board_type",
+        "accomplish", "strengthen_areas", "timeline",
     },
     "reactivation": {
         "present_board", "active_board", "inactive_situations", "recommitment_conversations",
@@ -42,21 +42,13 @@ def create_lead_id(now: datetime) -> str:
 
 
 def recruitment_result(answers: Dict[str, Any]) -> Dict[str, Any]:
-    methods = answers["recruitment_methods"]
-    if answers["additional_needed"] == "I am not sure":
-        observation = "You do not need to decide how many people to recruit before clarifying what the organization needs from its board. Start with the gaps, then determine the number of people required to fill them."
-    elif any(item in methods for item in ["Professional recruitment campaign", "Formal board application and interview process"]):
-        observation = "You already have experience with structured board recruitment. Your next step is to make the recruitment campaign intentionally reflect your present organizational priorities and the capacity your board is missing."
-    elif any(item in methods for item in ["Friends or family", "Personal invitations"]):
-        observation = "Your present board was built primarily through personal relationships. Your next recruitment process should start with what the organization needs, then intentionally look for people who can strengthen those areas."
-    else:
-        observation = "Your next recruitment process should begin with the priorities and capacity gaps you identified, then intentionally reach people who can strengthen those areas."
     return {
-        "present_board": answers["present_board"], "active_board": answers["active_board"],
-        "additional_needed": answers["additional_needed"], "priorities": answers["priorities"],
-        "capacity_areas": answers["capacity_areas"], "recruitment_methods": methods,
-        "observation": observation,
-        "next_step": "The next step is to turn these priorities into board-member profiles, build your recruitment strategy, launch the campaign, review applicants, interview the strongest prospects and onboard the people you select.",
+        "present_board": answers.get("present_board", ""), "active_board": answers.get("active_board", ""),
+        "new_members_needed": answers.get("new_members_needed", answers.get("additional_needed", "")),
+        "accomplish": answers.get("accomplish", answers.get("priorities", "")),
+        "strengthen_areas": answers.get("strengthen_areas", answers.get("capacity_areas", [])),
+        "board_type": answers.get("board_type", ""),
+        "next_step": "The next step is to choose how you want to recruit your board.",
     }
 
 

@@ -10,6 +10,11 @@ import LegalPage from "@/pages/LegalPage";
 import FunnelLandingPage from "@/funnels/FunnelLandingPage";
 import FunnelResultPage from "@/funnels/FunnelResultPage";
 import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
+import { MemberAuthProvider } from "@/member/MemberAuthContext";
+import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
+import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
+import { DashboardPage } from "@/member/DashboardPage";
+import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 
 const HomeExperience = () => {
   const navigate = useNavigate();
@@ -24,5 +29,35 @@ const LegacyAssessmentPage = () => {
 };
 
 export default function App() {
-  return <BrowserRouter><Routes><Route path="/" element={<HomeExperience />} /><Route path="/board-assessment" element={<LegacyAssessmentPage />} /><Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} /><Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} /><Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} /><Route path="/recruit/result/:token" element={<FunnelResultPage offerSource="recruitment" />} /><Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} /><Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} /><Route path="/recruit/options" element={<FunnelOptionsPage offerSource="recruitment" />} /><Route path="/reactivate/options" element={<FunnelOptionsPage offerSource="reactivation" />} /><Route path="/activate/options" element={<FunnelOptionsPage offerSource="fundraising_activation" />} /><Route path="/join-a-board" element={<JoinBoardPage />} /><Route path="/privacy-policy" element={<LegalPage type="privacy" />} /><Route path="/terms" element={<LegalPage type="terms" />} /><Route path="/admin" element={<AdminPage />} /></Routes></BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <MemberAuthProvider>
+        <Routes>
+          <Route path="/" element={<HomeExperience />} />
+          <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
+          <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
+          <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
+          <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
+          <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />
+          <Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} />
+          <Route path="/recruit/options" element={<FunnelOptionsPage offerSource="recruitment" />} />
+          <Route path="/reactivate/options" element={<FunnelOptionsPage offerSource="reactivation" />} />
+          <Route path="/activate/options" element={<FunnelOptionsPage offerSource="fundraising_activation" />} />
+          <Route path="/join-a-board" element={<JoinBoardPage />} />
+          <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/app" element={<DashboardPage />} />
+          <Route path="/app/recruitment/basic" element={<CourseOverviewPage productSlug="basic" />} />
+          <Route path="/app/recruitment/basic/module/:moduleNumber" element={<CourseModulePage productSlug="basic" />} />
+          <Route path="/app/recruitment/self-guided" element={<CourseOverviewPage productSlug="self-guided" />} />
+          <Route path="/app/recruitment/self-guided/module/:moduleNumber" element={<CourseModulePage productSlug="self-guided" />} />
+        </Routes>
+      </MemberAuthProvider>
+    </BrowserRouter>
+  );
 }

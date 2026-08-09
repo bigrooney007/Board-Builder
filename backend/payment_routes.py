@@ -25,18 +25,27 @@ def create_payment_router(db) -> APIRouter:
 
     @router.get("/config")
     async def payment_config():
-        return {"paid_programs_live": os.environ["PAID_PROGRAMS_LIVE"].lower() == "true", "stripe_mode": os.environ["STRIPE_MODE"]}
+        return {
+            "paid_programs_live": os.environ["PAID_PROGRAMS_LIVE"].lower() == "true",
+            "recruitment_97_live": os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true",
+            "recruitment_497_live": os.environ.get("RECRUITMENT_497_LIVE", "false").lower() == "true",
+            "stripe_mode": os.environ["STRIPE_MODE"],
+        }
 
     @router.post("/checkout")
     async def create_checkout(payload: CheckoutRequest, request: Request):
-        paid_live = os.environ["PAID_PROGRAMS_LIVE"].lower() == "true"
+        lead = await db.funnel_leads.find_one({"lead_id": payload.lead_id}, {"_id": 0})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
+        if lead["offer_source"] == "recruitment":
+            flag = "RECRUITMENT_97_LIVE" if payload.tier == "97" else "RECRUITMENT_497_LIVE"
+            paid_live = os.environ.get(flag, "false").lower() == "true"
+        else:
+            paid_live = os.environ["PAID_PROGRAMS_LIVE"].lower() == "true"
         if not paid_live:
             if not payload.internal_test:
                 raise HTTPException(status_code=403, detail="Program access is not open yet")
             await authenticate_admin(request, db)
-        lead = await db.funnel_leads.find_one({"lead_id": payload.lead_id}, {"_id": 0})
-        if not lead:
-            raise HTTPException(status_code=404, detail="Lead not found")
         price_env = PRICE_ENV.get((lead["offer_source"], payload.tier))
         if not price_env:
             raise HTTPException(status_code=400, detail="This tier is not available for the selected offer")
@@ -47,10 +56,14 @@ def create_payment_router(db) -> APIRouter:
             "recruitment": "/recruit/options", "reactivation": "/reactivate/options",
             "fundraising_activation": "/activate/options",
         }[lead["offer_source"]]
+        if lead["offer_source"] == "recruitment":
+            success_url = f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}"
+        else:
+            success_url = f"{payload.origin_url}{option_path}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}"
         kwargs = {
             "line_items": [{"price": os.environ[price_env], "quantity": 1}], "mode": "payment",
             "customer_email": lead["email"],
-            "success_url": f"{payload.origin_url}{option_path}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+            "success_url": success_url,
             "cancel_url": f"{payload.origin_url}{option_path}?checkout=cancelled",
             "metadata": {
                 "lead_id": lead["lead_id"], "email": lead["email"], "organization": lead["organization"],
