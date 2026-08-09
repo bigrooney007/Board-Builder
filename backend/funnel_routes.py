@@ -36,6 +36,11 @@ def create_funnel_router(db) -> APIRouter:
             "owner_email_id": lead.get("owner_email_id", ""),
             "owner_email_error": lead.get("owner_email_error", ""),
         }})
+        try:
+            from marketing_service import sync_lead_nurture
+            await sync_lead_nurture(db, lead)
+        except Exception:
+            pass
         return FunnelLeadResponse(**lead)
 
     @router.get("/result/{result_token}", response_model=LeadResultResponse)

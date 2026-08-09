@@ -105,6 +105,14 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         await db.funnel_leads.update_one(
             {"lead_id": lead_id}, {"$set": {"member_user_id": member["user_id"], "updated_at": now}}
         )
+    try:
+        from marketing_service import stop_recruitment_nurture
+        await stop_recruitment_nurture(db, member["email"])
+        lead = await db.funnel_leads.find_one({"lead_id": lead_id}, {"_id": 0, "email": 1}) if lead_id else None
+        if lead and lead["email"].lower() != member["email"].lower():
+            await stop_recruitment_nurture(db, lead["email"])
+    except Exception:
+        pass
     return purchase
 
 

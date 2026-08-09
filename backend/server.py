@@ -24,6 +24,8 @@ from member_routes import create_member_router
 from course_routes import create_course_router
 from workspace_routes import create_workspace_router
 from public_opportunity_routes import create_public_opportunity_router
+from marketing_routes import create_marketing_router
+from marketing_service import marketing_loop
 
 
 ROOT_DIR = Path(__file__).parent
@@ -202,6 +204,7 @@ app.include_router(create_member_router(db))
 app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
 app.include_router(create_public_opportunity_router(db))
+app.include_router(create_marketing_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -253,8 +256,13 @@ async def startup_tasks():
     await db.apply_tokens.create_index("token", unique=True)
     await db.signature_requests.create_index("request_id", unique=True)
     await db.signature_requests.create_index("token", unique=True)
+    await db.blog_posts.create_index([("category_key", 1), ("scheduled_date", 1)], unique=True)
+    await db.blog_posts.create_index("slug")
+    await db.nurture_sends.create_index([("segment", 1), ("scheduled_week", 1)], unique=True)
+    await db.nurture_contacts.create_index("email", unique=True)
     await seed_admin(db)
     automation_task = asyncio.create_task(automation_loop(db))
+    app.state.marketing_task = asyncio.create_task(marketing_loop(db))
 
 
 @app.on_event("shutdown")

@@ -356,3 +356,51 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Phase 3 built. Test per Phase 3 tasks. MUST NOT change env flags (BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE=false, RECRUITMENT_497_LIVE=false). Create $497 test member by registering then setting entitlements in Mongo. Claude generations cost credits — generate each type at most once where feasible; strategy + opportunity + application_questions + interview guide are the critical ones. Clean up test data afterwards. Do NOT modify reactivation/activation or Board Applicant Network code."
+
+## PHASE 4 (appended by main agent)
+backend:
+  - task: "Public blog APIs + Claude generation with validation, correction attempt, duplicate scheduled-post protection"
+    implemented: true
+    working: true
+    file: "/app/backend/marketing_service.py, marketing_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "GET /api/blog/posts(?category)/{slug}. Admin POST /api/blog/generate {category, publish_now}. Validation: word count, em dash, banned phrases, stats claims, duplicate slug/title. Unique index category_key+scheduled_date. Owner alerts on failure."
+      - working: true
+        agent: "testing"
+        comment: "✓ Blog generation tested successfully. Generated 3 posts (recruitment, reactivation, fundraising_activation) with Claude. All posts validated: word count 650-1200, no em dash, no banned phrases, correct CTAs (/recruit, /reactivate, /activate), excerpts present. Duplicate protection working (409 on same category+date). Public APIs working: GET /api/blog/posts returns posts sorted newest first, category filter works, nonexistent slug returns 404. Unauthenticated POST /api/blog/generate returns 401. 3 published blog posts kept in database for frontend verification."
+  - task: "Lead nurture: segments, one-active-category rule, fixed Tuesday rotation, duplicate-week protection, purchase removal"
+    implemented: true
+    working: true
+    file: "/app/backend/marketing_service.py, funnel_routes.py, member_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "sync_lead_nurture on every funnel lead (latest offer wins, removed from other segments). 12 fixed templates (no Claude). run_weekly_nurture: unique nurture_sends key segment+scheduled_week, rotation only advances on success, test mode emails OWNER_TEST_EMAIL only. Admin POST /api/nurture/test-send, GET /api/nurture/status. stop_recruitment_nurture on verified recruitment purchase. Flags BLOG_AUTOMATION_ENABLED=false, LEAD_NURTURE_ENABLED=false."
+      - working: true
+        agent: "testing"
+        comment: "✓ Lead nurture tested successfully. Enrollment working: created recruitment lead → nurture_contacts has active_offer_source='recruitment', then created reactivation lead with same email → updated to 'reactivation' (latest wins). Created fundraising_activation lead → active_offer_source='fundraising_activation'. Tuesday send working: POST /api/nurture/test-send sent all 3 segments with template 1, correct CTAs (/recruit/options, /reactivate/options, /activate/options), correct subject for recruitment template 1. Rotation: last_sent=1 for all segments. Duplicate protection working: second test-send skipped all segments with duplicate reason, rotation unchanged. Purchase removal working: registered member → simulated stop_recruitment_nurture → nurture_status='customer', active_offer_source=''. Board applicants excluded from nurture_contacts. GET /api/nurture/status shows blog_automation_enabled='false', lead_nurture_enabled='false'. Phase 3 preserved: workspace profile without auth returns 401, payment config shows recruitment_497_live=false."
+frontend:
+  - task: "Public /blog + /blog/:slug pages and compact homepage Latest Articles slider"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/BlogPages.jsx, LandingPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Blog list with category filters, article page with deterministic category CTA, homepage slider (max 6, prev/next/swipe, Read All Articles) placed before join-network section."
+agent_communication:
+  - agent: "main"
+    message: "Phase 4 built. Test blog + nurture per PHASE 4 tasks. Claude blog generation costs credits: generate exactly one article per category (3 total). NEVER flip env flags. Nurture test sends go only to owner test email. Do not email live segments or Board Applicants. Clean up test leads/posts records afterwards EXCEPT keep the 3 published test blog posts for frontend verification."
+  - agent: "testing"
+    message: "Phase 4 backend testing complete. All tests passed. Blog generation and lead nurture working correctly. 3 published blog posts kept in database for frontend verification (recruitment, reactivation, fundraising_activation). Test data cleaned up. Env flags verified unchanged (BLOG_AUTOMATION_ENABLED=false, LEAD_NURTURE_ENABLED=false). Ready for frontend testing."

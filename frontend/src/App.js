@@ -17,6 +17,7 @@ import { DashboardPage } from "@/member/DashboardPage";
 import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
+import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
 const HomeExperience = () => {
   const navigate = useNavigate();
@@ -62,6 +63,8 @@ export default function App() {
           <Route path="/board-opportunities/:slug/apply" element={<OpportunityApplyPage />} />
           <Route path="/apply/:token" element={<SavedProfileApplyPage />} />
           <Route path="/sign/:token" element={<SignAgreementPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>
       </MemberAuthProvider>
     </BrowserRouter>

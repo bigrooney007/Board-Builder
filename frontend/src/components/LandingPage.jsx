@@ -1,6 +1,7 @@
 import { ArrowRight, Check, RefreshCcw, Rocket, Users } from "lucide-react";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FounderStorySection } from "@/components/FounderStorySection";
+import { BlogSlider } from "@/pages/BlogPages";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
@@ -77,6 +78,8 @@ export const LandingPage = ({ onJoin }) => (
     <FounderStorySection />
 
     <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><OfferChoices location="final" /></section>
+
+    <BlogSlider />
 
     <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">Professional board service</p><h2>Are You a Professional Looking to Join a Nonprofit Board?</h2><p>Create your professional profile, tell us the causes you care about and receive board opportunities that match your skills, experience, location and availability.</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">Join the Board Applicant Network <ArrowRight size={18} /></button></section>
 
