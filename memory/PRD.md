@@ -43,3 +43,9 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 ## Next Tasks
 1. Add the missing owner-email environment settings.
 2. Repeat the specified E2E flow once to verify delivery.
+## Phase 4 (Blog + Lead Nurture) — Complete
+- Public /blog + /blog/:slug pages with 3 categories, deterministic category CTAs, homepage "Latest From Nonprofit Board Builder" compact slider (max 6, prev/next/swipe).
+- Claude blog generation (marketing_service.py) with strict voice/writing rules, validation (word count, em dash, banned phrases, stats claims, duplicate slug/title), one automatic correction attempt, owner failure emails, unique category+scheduled_date key. Schedule: Mon Recruitment / Wed Reactivation / Fri Activation 8:00 AM ET.
+- Lead nurture: 3 Resend segments (Recruitment/Reactivation/Fundraising Activation Leads), one active category per contact (latest offer wins), 12 fixed approved templates (no AI), Tuesday 7:00 AM ET rotation 1→4 with duplicate-week protection, failed sends never advance rotation, owner error alerts, recruitment purchase removes lead from nurture (nurture_status=customer). Board Applicants excluded from all recurring emails.
+- Flags remain false: BLOG_AUTOMATION_ENABLED, LEAD_NURTURE_ENABLED (plus BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE, RECRUITMENT_97_LIVE, RECRUITMENT_497_LIVE). Owner enables after approval.
+- Final Phase 4 test: backend all pass; frontend 22/22 pass. 3 test blog posts remain published for review.
