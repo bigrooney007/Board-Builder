@@ -320,7 +320,7 @@ async def marketing_loop(db) -> None:
                 publish_time = os.environ.get("BLOG_PUBLISH_TIME", "08:00")
                 for key, config in CATEGORIES.items():
                     if now.weekday() == config["day"] and now.strftime("%H:%M") >= publish_time:
-                        await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=False)
+                        await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=True)
             if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true":
                 now = now_tz("LEAD_NURTURE_TIMEZONE")
                 day_name = os.environ.get("LEAD_NURTURE_DAY", "Tuesday")

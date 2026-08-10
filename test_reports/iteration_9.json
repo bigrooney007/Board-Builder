@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 9 verification: scheduler auto-publish behavior after main agent restored publish_now=True in marketing_loop. Wrote /app/backend/tests/test_auto_publish_scheduler.py with 6 tests using monkeypatched claude_blog + send_owner_alert (no live LLM/email calls). All 6 tests PASS.",
+  "verdicts": {
+    "scheduled_validated_articles_publish_automatically": "Yes",
+    "manual_articles_remain_Pending_Review": "Yes",
+    "failed_validation_no_publish_plus_owner_alert": "Yes"
+  },
+  "tests_executed": [
+    "test_publish_now_true_publishes_valid_article: PASS -- publication_status='Published', published_at set, 1 claude_blog call, no owner alert",
+    "test_publish_now_false_creates_pending_review: PASS -- publication_status='Pending Review', no published_at, 'Draft Ready' owner alert sent",
+    "test_validation_fails_twice_no_publish_and_alerts_owner: PASS -- exactly 2 claude_blog calls (initial + 1 correction), publication_status='Validation Failed', no published_at, send_owner_alert invoked with 'Failed Validation' subject",
+    "test_marketing_loop_uses_publish_now_true: PASS -- source of marketing_service.marketing_loop contains 'publish_now=True' and references CATEGORIES + weekday()",
+    "test_manual_generate_default_is_publish_now_false: PASS -- marketing_routes.BlogGenerate has 'publish_now: bool = False' default",
+    "test_public_blog_posts_only_returns_published: PASS -- GET /api/blog/posts returns only posts with published_at set; publication_status not projected to public"
+  ],
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_auto_publish_scheduler.py",
+    "/app/test_reports/pytest/iteration_9_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "marketing_loop is flag-gated by BLOG_AUTOMATION_ENABLED env var (currently 'false' in this environment) -- verified in-code path only, not live cron, per user constraint.",
+    "In create_scheduled_blog_post the initial insert uses publication_status='Generating'; on failure path (exception) it sets 'Failed' and alerts owner -- consistent behavior."
+  ],
+  "updated_files": ["/app/backend/tests/test_auto_publish_scheduler.py"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "not tested (backend-only per request)"},
+  "test_credentials": "Not needed; tests bypass admin auth by calling marketing_service directly with monkeypatched mocks.",
+  "seed_data_creation": "Tests inserted 3 transient blog_posts docs tagged with TEST-AUTOPUB-<uuid> scheduled_date; all removed by fixture teardown. Verified 0 leftover after run. Existing manual draft 'your-board-is-not-raising-money-because-they-do-not-feel-authorized-to' still Pending Review, untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Auto-publish scheduler fix verified end-to-end at the marketing_service layer. Reusable regression suite at /app/backend/tests/test_auto_publish_scheduler.py -- fully mocked (no LLM/email), safe to rerun. Existing iteration_7/8 suites not re-executed per user directive.",
+  "mocks_used": [
+    "marketing_service.claude_blog -> returns synthetic valid or invalid article dict",
+    "marketing_service.send_owner_alert -> captured invocation list; no real Resend call"
+  ]
+}
