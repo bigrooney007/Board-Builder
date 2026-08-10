@@ -1,0 +1,34 @@
+{
+  "summary": "Rerun of the ONE blocked test from iteration_7 (live blog generation, previously blocked by LLM budget cap). Budget is now topped up. One deliberate Claude call made via POST /api/blog/generate with category=fundraising_activation. Endpoint returned 201, article persisted as Pending Review draft, validation Passed. All length + voice + content rules verified. NO frontend testing performed (per instruction). NO other tests rerun.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_live_blog_generation.py",
+    "/app/test_reports/pytest/live_blog_iter8.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "marketing_service claude_blog prompt is producing on-target output (468 words, mid-range of 350-550 target).",
+    "validate_article passed cleanly (validation_status='Passed', no errors, publication_status='Pending Review').",
+    "create_scheduled_blog_post correctly writes cta_url='/activate' and cta_label for fundraising_activation category."
+  ],
+  "updated_files": ["/app/backend/tests/test_live_blog_generation.py"],
+  "success_rate": {"backend": "100% (1/1 rerun test passed)", "frontend": "not tested (per task)"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem - login OK.",
+  "seed_data_creation": "One Pending Review blog draft persisted in db.blog_posts (slug='your-board-is-not-raising-money-because-they-do-not-feel-authorized-to', category=fundraising_activation, scheduled_date=2026-08-10). Left as Pending Review (not published) per instructions.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration_7 recruitment/testimonial/frontend tests are already passing and were NOT rerun in iter8. Only the previously-blocked blog generation was rerun and PASSED. LLM budget top-up confirmed working (one live Claude call succeeded in ~20s).",
+  "live_blog_generation_verdict": {
+    "endpoint_call": "PASSED (POST /api/blog/generate -> 201, status='Pending Review')",
+    "length_rules": "PASSED (body = 468 words, inside 350-550 target, well under 650 hard max, well over 300 min)",
+    "voice_content_rules": "PASSED (real-scenario opener 'You have board members who seem genuinely committed...', names the ONE problem 'authorization' within first paragraph, NOT a numbered step-by-step guide, NO em dash, NO fabricated stats/studies/percentages, NO fake testimonials with named clients)",
+    "cta_rules": "PASSED (fundraising_activation -> cta_url='/activate', cta_label='Ready to Activate Your Board Around Fundraising?')",
+    "validation": "PASSED (publication_status='Pending Review', validation_status='Passed', no errors, title/slug/excerpt/body all populated in db.blog_posts)",
+    "generated_article_title": "Your Board Is Not Raising Money Because They Do Not Feel Authorized To",
+    "generated_article_words": 468,
+    "generated_article_slug": "your-board-is-not-raising-money-because-they-do-not-feel-authorized-to",
+    "category_used": "fundraising_activation (first choice, no 409 collision)"
+  },
+  "rca of the issue": "N/A - the iteration_7 blocker (LLM budget exceeded) was environmental. After user top-up, live Claude generation via emergentintegrations completed successfully in ~20s. No code changes were required or made."
+}
