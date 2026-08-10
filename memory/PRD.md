@@ -55,3 +55,11 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - New admin endpoints: GET /api/admin/blog/posts, PATCH /api/admin/blog/posts/{id} (inline edit, slug updates only for unpublished), POST .../approve, .../reject, .../regenerate. POST /api/blog/generate now defaults publish_now=false.
 - New "Blog Posts" tab at /admin (AdminPage.jsx: BlogAdminSection + BlogPreview): status badges, per-category "New Draft" buttons, full rendered preview with CTA, inline edit form, Approve & Publish / Reject / Regenerate. Published posts: edit only (409 guards on approve/reject/regenerate).
 - Tested: iteration_6.json — backend 11/11 pass, frontend Playwright all pass. Regression suite: /app/backend/tests/test_blog_preview_dashboard.py.
+
+## Conversion + Blog Copy Update (June 2026) — Complete
+- /recruit/options rewritten: headline "Choose the Level of Support You Want Recruiting Your Board"; concise transformation cards — $97 Do It Yourself, $497 Self-Guided Recruitment (Most Popular ribbon), $3,497 Done With You (Calendly link); no feature lists on recruitment cards; testimonials moved BELOW offers on /recruit/options, /reactivate/options, /activate/options (content unchanged).
+- Recruitment form: two overlapping questions merged into multi-select accomplish_areas (19 options + conditional Other textarea); new required support_preference radio-cards (diy/self_guided/done_with_you/undecided); still 3-step with progress/back; redirect direct to /recruit/options; matching offer gets "Matches the support you selected" badge via sessionStorage.
+- Backend: REQUIRED_ANSWERS updated, support_preference validated + stored top-level on lead, owner email includes "Preferred Level of Support" and "What They Need Their New Board Members to Help Accomplish". Reactivation/Activation funnels unchanged.
+- Blog: prompt + validation retargeted to 350-550 words (abs max 650, min 300), straight-to-the-problem one-idea style, no step-by-step guides, short-paragraph check. Schedules/duplicate protection/CTAs untouched.
+- Tested: iteration_7.json — frontend 100%, backend 11/12 (blog live generation blocked: EMERGENT_LLM_KEY budget EXHAUSTED — user must add balance; validation rules unit-tested and passing).
+- KNOWN: /app/backend/tests/test_blog_preview_dashboard.py still assumes old 700-1100 word rule (do not use as authority).

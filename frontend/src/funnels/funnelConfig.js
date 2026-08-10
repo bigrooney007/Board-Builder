@@ -11,7 +11,7 @@ const contactFields = [
   { type: "select", name: "country", label: "Country", options: ["United States", "United Kingdom", "Other"], scope: "contact" },
 ];
 
-const capacityAreas = ["Fundraising", "Corporate partnerships", "Major donors", "Grant development", "Finance", "Governance", "Marketing and communications", "Community relationships", "Strategic planning", "Legal", "Technology", "Program development", "Operations", "Professional introductions and connections", "Lived experience", "Other"];
+const accomplishAreas = ["Raise money", "Build corporate partnerships", "Connect with major donors", "Strengthen grant development", "Strengthen finance and financial oversight", "Strengthen governance", "Improve strategic planning", "Strengthen marketing and communications", "Build community relationships", "Provide legal expertise", "Strengthen technology", "Strengthen programs", "Strengthen operations", "Make professional introductions and connections", "Bring important lived experience or community perspective", "Help the organization grow", "Expand programs or services", "Increase visibility", "Other"];
 const strategicOptions = ["Yes", "We have a strategic plan, but the board was not meaningfully involved", "We started but did not complete it", "No", "We do not currently have a strategic plan", "I am not sure"];
 
 export const funnelConfigs = {
@@ -38,14 +38,20 @@ export const funnelConfigs = {
       {
         heading: "Tell Us What You Need From the New Board Members",
         fields: [
-          { type: "textarea", name: "accomplish", label: "What do you most need the new board members to help your organization accomplish?", helper: "Tell us the most important results you need the board to help your organization achieve.", scope: "answers" },
-          { type: "choices", name: "strengthen_areas", label: "Which areas would you most like the new board members to strengthen?", options: capacityAreas, scope: "answers" },
+          { type: "choices", name: "accomplish_areas", label: "What Do You Need the New Board Members to Help Your Organization Accomplish?", helper: "Select everything you want your new board members to help strengthen or achieve.", options: accomplishAreas, scope: "answers" },
+          { type: "textarea", name: "accomplish_other", label: "What else do you need your new board members to help accomplish?", scope: "answers", required: false, showIf: (answers) => (answers.accomplish_areas || []).includes("Other") },
           { type: "select", name: "timeline", label: "How soon would you like to begin recruiting?", options: ["Immediately", "Within 30 days", "Within 60 days", "Within 90 days", "I am exploring my options"], scope: "answers" },
+          { type: "radio_cards", name: "support_preference", label: "How Much Support Do You Want Recruiting Your Board?", scope: "answers", options: [
+            { value: "diy", title: "Do It Yourself", description: "I want the knowledge and resources I need to confidently recruit my board myself." },
+            { value: "self_guided", title: "Self-Guided Recruitment", description: "I want guidance while I recruit my board so I can confidently get the right people in place." },
+            { value: "done_with_you", title: "Done With You", description: "I want someone to work with me to help get the board members my organization needs." },
+            { value: "undecided", title: "I’m Not Sure Yet", description: "Let me see the options and decide." },
+          ] },
         ],
       },
     ],
-    optionsHeading: "Choose How You Want to Recruit Your Board",
-    optionsSupporting: "You can learn the process and execute it yourself, follow our self-guided execution system, or have us work directly with you through the recruitment process.",
+    optionsHeading: "Choose the Level of Support You Want Recruiting Your Board",
+    optionsSupporting: "Whether you want to do it yourself, have the system guide you, or have us work directly with you, choose the level of support that works for you.",
     option97: "Get the Instructions and Execute It Yourself",
     option497: "Follow the Self-Guided Board Recruitment System",
     option3497: "Recruit My Board With Me",

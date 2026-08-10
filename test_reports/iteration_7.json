@@ -1,0 +1,41 @@
+{
+  "summary": "Final single-pass regression of the recruitment support_preference + accomplish_areas rework and the new blog prompt (350-550 words / max 650). Backend pytest suite: 11 passed, 1 skipped, 0 failed (blog end-to-end generation could not run — LLM budget exceeded in this preview environment). Frontend E2E via Playwright: /recruit 3-step form renders correctly with the new combined multi-select accomplish_areas, conditional accomplish_other textarea, required support_preference radio-cards; old textarea/strengthen_areas questions are gone; Back preserves answers; submission with self_guided redirects DIRECTLY to /recruit/options; new concise offers render (no <li> feature list on $97/$497 cards), Most Popular ribbon + calendly link intact, 'Matches the support you selected' badge appears on the $497 card only; testimonial carousel is BELOW the pricing grid on /recruit/options, /reactivate/options, and /activate/options; /reactivate & /activate offer cards still contain their unchanged <li> feature lists; mobile 390px renders with cards stacked vertically, ribbon visible, no horizontal overflow; payment buttons show 'Program Access Opening Soon' as expected with live flags false.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/blog/generate", "issue": "Could not verify LLM-generated draft word count end-to-end because litellm returned 'Budget has been exceeded' (Current cost 12.7651211 vs Max 12.76314312). Endpoint returned 201 with status='Failed' and the persisted stub was cleaned up. This is an environment/billing limit, NOT a code defect. Validation code that enforces 300-650 words was verified via direct unit tests (TestValidateArticleWordCount)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_recruitment_and_blog.py",
+    "/app/test_reports/pytest/recruit_blog.xml"
+  ],
+  "action_items": [
+    "Top up / raise the EMERGENT_LLM_KEY budget (currently exceeded by ~$0.002) so blog auto-generation can resume — the scheduled Tuesday/Thursday runs will otherwise persist 'Failed' stub posts until budget is added.",
+    "OPTIONAL: consider deleting or regenerating pre-existing published blog posts that were written under the old 700-1100 word rule (e.g. reactivation post 'The Reason Your Board Went Quiet…' at 1099 words) so live content matches the new short-form voice."
+  ],
+  "critical_code_review_comments": [
+    "funnel_service.validate_answers: raises 422-friendly ValueError for invalid/missing support_preference — verified.",
+    "funnel_routes: top-level lead['support_preference'] correctly written to Mongo only for recruitment — verified via pymongo.",
+    "FunnelStepForm: sessionStorage funnelLeadContext now carries support_preference so FunnelOptionsPage can render MatchBadge without an extra API call — clean.",
+    "FunnelOptionsPage: matched === '' when funnelLeadContext missing prevents accidental badge display before form completion — verified.",
+    "marketing_service.validate_article: min=300, max=650 word bounds correctly enforced (unit-tested). The error message string says '300-650' but the assertion text is 'outside the 350-550 target (absolute maximum 650)' which is slightly confusing but functionally correct.",
+    "marketing_service uses `if body and not 300 <= words <= 650` — good, no false failure on empty body.",
+    "regenerate_blog_post does NOT re-check publication_status before overwriting — safe because it's admin-gated, but callers rely on that."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_recruitment_and_blog.py (new)"
+  ],
+  "success_rate": {"backend": "92% (11/12 executed, 1 blocked by LLM budget)", "frontend": "100%"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem (from /app/memory/test_credentials.md) — login OK.",
+  "seed_data_creation": "Created ~10 TEST_ recruitment/reactivation/activation leads during testing; all cleaned up via db.funnel_leads.delete_many({name:/^TEST/}) (24 removed). No blog data left behind.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_blog_preview_dashboard.py still assumes the old 700-1100 word rule and MUST be updated before running as pass/fail authority. The new test suite that covers the current 300-650 rule is /app/backend/tests/test_recruitment_and_blog.py. LLM budget was exhausted during this run — if a future agent needs to test blog generation live, they must first verify EMERGENT_LLM_KEY / ANTHROPIC_API_KEY has remaining budget or add funds.",
+  "rca of the issue": "Blog generation live test blocked by external LLM billing cap, not application code. Recruitment/support_preference rework is fully working end-to-end (backend validation, Mongo persistence, owner-email rows, frontend flow, match badge, testimonials repositioning, mobile layout)."
+}

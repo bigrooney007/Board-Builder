@@ -25,6 +25,8 @@ def create_funnel_router(db) -> APIRouter:
             "offer_source": offer_source, "created_at": now.isoformat(), "updated_at": now.isoformat(),
             "owner_email_status": "Pending", "selected_tier": "",
         })
+        if offer_source == "recruitment":
+            lead["support_preference"] = str(payload.answers.get("support_preference", ""))
         await db.funnel_leads.insert_one(lead.copy())
         try:
             email_id = await send_owner_lead_email(lead)

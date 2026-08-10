@@ -7,10 +7,12 @@ from typing import Any, Dict
 import resend
 
 
+SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "self_guided": "Self-Guided Recruitment", "done_with_you": "Done With You", "undecided": "I'm Not Sure Yet"}
+
 REQUIRED_ANSWERS = {
     "recruitment": {
         "new_members_needed", "present_board", "active_board", "board_type",
-        "accomplish", "strengthen_areas", "timeline",
+        "accomplish_areas", "timeline", "support_preference",
     },
     "reactivation": {
         "present_board", "active_board", "inactive_situations", "recommitment_conversations",
@@ -31,6 +33,8 @@ def validate_answers(source: str, answers: Dict[str, Any]) -> None:
             missing.append(key)
     if missing:
         raise ValueError(f"Missing required answers: {', '.join(sorted(missing))}")
+    if source == "recruitment" and answers.get("support_preference") not in SUPPORT_PREFERENCES:
+        raise ValueError("Support preference must be one of: diy, self_guided, done_with_you, undecided")
     present = int(answers["present_board"])
     active = int(answers["active_board"])
     if present < 0 or active < 0 or active > present:
@@ -45,8 +49,8 @@ def recruitment_result(answers: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "present_board": answers.get("present_board", ""), "active_board": answers.get("active_board", ""),
         "new_members_needed": answers.get("new_members_needed", answers.get("additional_needed", "")),
-        "accomplish": answers.get("accomplish", answers.get("priorities", "")),
-        "strengthen_areas": answers.get("strengthen_areas", answers.get("capacity_areas", [])),
+        "accomplish": answers.get("accomplish_areas", answers.get("accomplish", answers.get("priorities", ""))),
+        "strengthen_areas": answers.get("accomplish_areas", answers.get("strengthen_areas", answers.get("capacity_areas", []))),
         "board_type": answers.get("board_type", ""),
         "next_step": "The next step is to choose how you want to recruit your board.",
     }
@@ -121,7 +125,17 @@ async def send_owner_lead_email(lead: Dict[str, Any]) -> str:
         ("Offer source", lead["offer_source"]), ("Submission ID", lead["lead_id"]),
         ("Date and time", lead["created_at"]),
     ]
-    rows.extend((key.replace("_", " ").title(), ", ".join(value) if isinstance(value, list) else value) for key, value in lead["answers"].items())
+    answers = dict(lead["answers"])
+    if lead["offer_source"] == "recruitment":
+        support = answers.pop("support_preference", "")
+        accomplish = answers.pop("accomplish_areas", [])
+        other = str(answers.pop("accomplish_other", "") or "").strip()
+        accomplish_text = ", ".join(accomplish) if isinstance(accomplish, list) else str(accomplish)
+        if other:
+            accomplish_text = f"{accomplish_text}. Other: {other}" if accomplish_text else f"Other: {other}"
+        rows.append(("Preferred Level of Support", SUPPORT_PREFERENCES.get(support, support or "Not provided")))
+        rows.append(("What They Need Their New Board Members to Help Accomplish", accomplish_text or "Not provided"))
+    rows.extend((key.replace("_", " ").title(), ", ".join(value) if isinstance(value, list) else value) for key, value in answers.items())
     table = "".join(f"<tr><td style='padding:9px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(str(label))}</td><td style='padding:9px;border-bottom:1px solid #dddddd;'>{html.escape(str(value))}</td></tr>" for label, value in rows)
     response = await resend.Emails.send_async({
         "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],

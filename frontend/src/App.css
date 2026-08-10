@@ -816,3 +816,20 @@ p { line-height: 1.72; }
 .blog-edit-form label { display: grid; gap: 6px; color: #435249; font-size: 12px; font-weight: 800; }
 .blog-edit-form input, .blog-edit-form textarea { width: 100%; border: 1px solid #c8d5cc; padding: 12px; font-size: 14px; font-family: inherit; resize: vertical; }
 .blog-reject-button { color: #9c3535; }
+
+/* Conversion update: simple offer cards, match badge, support radio cards */
+.match-badge { display: inline-block; align-self: flex-start; margin-bottom: 12px; padding: 5px 13px; background: var(--green); color: #fff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; border-radius: 20px; }
+.pricing-card.high-support .match-badge { background: #65d4b7; color: var(--forest); }
+.pricing-card.matched { box-shadow: 0 24px 55px rgba(8,126,91,.24); }
+.pricing-card.most-popular { position: relative; border-width: 3px; }
+.popular-ribbon { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 6px 18px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; border-radius: 20px; white-space: nowrap; }
+.pricing-card.simple-offer p { font-size: 16px; line-height: 1.7; flex: 1; }
+.pricing-card.simple-offer .button { margin-top: 24px; }
+.options-page .offer-testimonials { margin-top: 55px; }
+.radio-cards { display: grid; gap: 12px; }
+.radio-card { position: relative; display: grid; gap: 4px; padding: 16px 18px; border: 1px solid #c8d5cd; background: #fff; cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+.radio-card input { position: absolute; opacity: 0; }
+.radio-card.selected { border-color: var(--green); background: #e9f6f0; box-shadow: 0 0 0 2px rgba(8,126,91,.16); }
+.radio-card strong { color: var(--forest); font-size: 15px; }
+.radio-card span { color: #57655c; font-size: 13px; line-height: 1.5; }
+@media (max-width: 900px) { .pricing-card.most-popular { transform: none; } .popular-ribbon { top: -13px; } }

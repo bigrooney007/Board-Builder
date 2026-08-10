@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { FunnelChoices, FunnelSelect, FunnelText, FunnelTextarea } from "./FunnelFormControls";
+import { FunnelChoices, FunnelRadioCards, FunnelSelect, FunnelText, FunnelTextarea } from "./FunnelFormControls";
 import { funnelConfigs } from "./funnelConfig";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -34,10 +34,12 @@ export const FunnelStepForm = ({ offerSource }) => {
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
 
+  const visibleFields = (step) => step.fields.filter((field) => !field.showIf || field.showIf(answers));
+
   const validateStep = () => {
     const step = config.steps[stepIndex];
     const found = {};
-    step.fields.forEach((field) => {
+    visibleFields(step).forEach((field) => {
       const value = valueFor(field);
       const required = field.required !== false;
       if (required && (value === "" || (Array.isArray(value) && !value.length))) {
@@ -63,7 +65,7 @@ export const FunnelStepForm = ({ offerSource }) => {
     setSubmitting(true); setSubmitError("");
     try {
       const response = await axios.post(`${API}/funnel-leads/${offerSource}`, { ...contact, answers });
-      sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization }));
+      sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization, support_preference: answers.support_preference || "" }));
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
       else navigate(`/${config.slug}/result/${response.data.result_token}`);
     } catch (error) {
@@ -89,11 +91,12 @@ export const FunnelStepForm = ({ offerSource }) => {
           <h2 data-testid={`${offerSource}-form-heading`}>{step.heading}</h2>
         </div>
         <div className="step-fields" key={stepIndex} data-testid={`${offerSource}-step-${stepIndex + 1}`}>
-          {step.fields.map((field) => {
+          {visibleFields(step).map((field) => {
             const shared = { name: field.name, label: field.label, value: valueFor(field), error: errors[field.name], update: (name, value) => update(name, value, field.scope) };
             if (field.type === "select") return <FunnelSelect key={field.name} {...shared} options={field.options} />;
-            if (field.type === "textarea") return <FunnelTextarea key={field.name} {...shared} helper={field.helper} />;
-            if (field.type === "choices") return <FunnelChoices key={field.name} {...shared} options={field.options} />;
+            if (field.type === "textarea") return <FunnelTextarea key={field.name} {...shared} helper={field.helper} required={field.required !== false} />;
+            if (field.type === "choices") return <FunnelChoices key={field.name} {...shared} options={field.options} helper={field.helper} />;
+            if (field.type === "radio_cards") return <FunnelRadioCards key={field.name} {...shared} options={field.options} />;
             return <FunnelText key={field.name} {...shared} type={field.inputType || "text"} required={field.required !== false} />;
           })}
         </div>

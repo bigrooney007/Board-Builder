@@ -73,9 +73,11 @@ async def send_owner_alert(subject: str, rows: list) -> None:
 BLOG_SYSTEM = (
     "You are Rooney Akpesiri, the Nonprofit Board Builder. You write for nonprofit founders and Executive Directors in American English. "
     "You help nonprofits reactivate their present board, recruit the board members they are missing, and activate their board to raise money. "
-    "You sound human and experienced, use normal paragraph structure, make one clear argument about one problem, explain why the problem occurs, "
-    "challenge an assumption where appropriate, and show the better way forward, naturally positioning the relevant Nonprofit Board Builder offer. "
-    "STRICT RULES: never use an em dash character. No choppy one-sentence-paragraph AI style. No generic filler. No fake quotations, statistics, research, "
+    "You sound like someone who has actually worked with nonprofit founders and boards. Every article makes ONE clear point about ONE specific problem. "
+    "Get to the problem within the first two or three sentences. Never open with broad industry commentary, generic nonprofit observations, long context sections or motivational filler. "
+    "Open with a real, recognizable situation, for example: a founder carrying the organization alone, seven board members but only two doing anything, board members attending meetings but taking no responsibility, a founder who recruited friends because they needed names on the board, board members told to fundraise without knowing what that means. Use situations, never fabricated named client stories. "
+    "Explain what is actually going wrong and the perspective the leader needs, then show what changes when the issue is handled properly. Provide useful insight without teaching every execution step; do not write step-by-step numbered guides unless the topic strictly requires it. "
+    "STRICT RULES: never use an em dash character. Use normal paragraph structure, not choppy one-sentence-paragraph AI style. No generic filler. No fake quotations, statistics, research, "
     "case studies, client stories, testimonials or platform claims. Never use phrases like 'In today's fast-paced world', 'In the ever-evolving landscape', "
     "'It's important to note', 'Let's dive in', 'Game changer', 'Unlock the power', 'Navigate the complexities', 'Revolutionize'. "
     "Respond ONLY with one valid JSON object, no markdown fences."
@@ -87,14 +89,16 @@ async def claude_blog(category_key: str, recent_titles: list, correction: str = 
     api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
     chat = LlmChat(api_key=api_key, session_id=f"blog-{uuid.uuid4()}", system_message=BLOG_SYSTEM).with_model("anthropic", os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"))
     if correction and draft:
-        prompt = f"Your previous {config['name']} article draft failed validation.\nFailures:\n{correction}\n\nPrevious draft JSON:\n{json.dumps(draft)}\n\nFix ONLY the validation failures. Keep the same topic unless the failure requires a new topic. Return JSON: {{\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (700-1100 words, use lines starting with '## ' as subheadings, blank line between paragraphs)}}"
+        prompt = f"Your previous {config['name']} article draft failed validation.\nFailures:\n{correction}\n\nPrevious draft JSON:\n{json.dumps(draft)}\n\nFix ONLY the validation failures. Keep the same topic unless the failure requires a new topic. Return JSON: {{\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (350-550 words, absolute maximum 650, use lines starting with '## ' as subheadings only if they genuinely help, blank line between paragraphs)}}"
     else:
         prompt = (
             f"Write one new blog article in the category: {config['name']}.\n"
             f"Recent published titles in this category (choose a topic and angle that does NOT substantially repeat any of them):\n"
             + ("\n".join(f"- {title}" for title in recent_titles) if recent_titles else "- (none yet)")
-            + "\n\nThe article must target 700 to 1,100 words, have a compelling headline, natural introduction, useful body with a few meaningful '## ' subheadings, and a practical conclusion. "
-            "Do not write the CTA; the application appends it. Vary the angle from the recent titles.\n"
+            + "\n\nThe article must target 350 to 550 words and must never exceed 650 words. Do not pad the article to reach a minimum; if the point is made naturally in around 350 words, stop. "
+            "Make one specific point well (for example 'Why Adding More People Will Not Fix an Inactive Board', not 'Everything You Need to Know About Building a Strong Board'). "
+            "Use at most one or two short '## ' subheadings, and only if they genuinely help. End by making the next step clear and moving the reader toward the solution; never end with generic tips or 'hopefully this helps'. "
+            "Do not write the CTA link or button; the application appends it. Vary the angle from the recent titles.\n"
             "Return JSON: {\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (paragraphs separated by blank lines, subheadings as lines starting with '## ')}"
         )
     response = await chat.send_message(UserMessage(text=prompt))
@@ -114,8 +118,12 @@ def validate_article(article: dict, category_key: str, recent_titles: list, exis
     if not body:
         errors.append("Article body empty")
     words = len(re.findall(r"\S+", body))
-    if body and not 650 <= words <= 1200:
-        errors.append(f"Word count {words} outside 700-1100 target")
+    if body and not 300 <= words <= 650:
+        errors.append(f"Word count {words} outside the 350-550 target (absolute maximum 650)")
+    blocks = [block.strip() for block in re.split(r"\n{2,}", body) if block.strip() and not block.strip().startswith("## ")]
+    short_paragraphs = sum(1 for block in blocks if len(re.findall(r"\S+", block)) < 12)
+    if blocks and short_paragraphs > 3:
+        errors.append("Too many one-sentence paragraphs; use normal paragraph structure")
     full = f"{title}\n{excerpt}\n{body}"
     if "—" in full:
         errors.append("Contains em dash character")
