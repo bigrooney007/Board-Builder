@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
+import { BrandingPanel, useBranding } from "./ApplicantModules";
 
 export const SKILL_OPTIONS = ["Fundraising", "Corporate Partnerships", "Major Donors", "Grant Development", "Finance", "Accounting", "Governance", "Legal", "Marketing", "Communications", "Public Relations", "Community Relationships", "Strategic Planning", "Human Resources", "Technology", "Program Development", "Operations", "Government/Public Policy", "Healthcare", "Education", "Professional/Business Connections", "Lived Experience", "Other"];
 
@@ -25,6 +26,7 @@ const SkillPicker = ({ label, values, other, onToggle, onOther, testId, error })
 
 export const Module1Profile = ({ onConfirmed }) => {
   const { byType, refresh } = useMaterials();
+  const [branding, setBranding] = useBranding();
   const [data, setData] = useState({ current_board_skills: [], current_board_skills_other: "", desired_board_skills: [], desired_board_skills_other: "", ideal_board_additional_notes: "" });
   const [errors, setErrors] = useState({});
   const [loaded, setLoaded] = useState(false);
@@ -77,6 +79,11 @@ export const Module1Profile = ({ onConfirmed }) => {
             <span className="field-helper">Enter the mission statement you want applicants, board members and supporters to see in your Recruitment materials. You only enter it once — it is used automatically everywhere it belongs.</span>
             {errors.mission && <p className="field-error">{errors.mission}</p>}
           </label>
+        </div>
+        <div data-testid="module1-branding-section">
+          <BrandingPanel branding={branding} setBranding={setBranding}
+            heading="Add Your Organization Branding (optional)"
+            description="We will use your logo and colors to professionally brand the Recruitment materials and documents we create for your organization. You only add them once — if you skip this, a professional neutral design is used." />
         </div>
         <SkillPicker
           label="What skills, experience and strengths are already represented on your present board?"

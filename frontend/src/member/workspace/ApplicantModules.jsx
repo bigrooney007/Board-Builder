@@ -448,7 +448,7 @@ export const useBranding = () => {
   return [branding, setBranding];
 };
 
-const BrandingPanel = ({ branding, setBranding }) => {
+export const BrandingPanel = ({ branding, setBranding, heading = "Document Branding", description = "Confirm the logo and brand colors used when designing your final documents. If you leave the colors empty, a professional neutral template is used. Nothing is applied without your confirmation here." }) => {
   const [message, setMessage] = useState("");
   const onLogo = (event) => {
     const file = event.target.files?.[0];
@@ -464,8 +464,8 @@ const BrandingPanel = ({ branding, setBranding }) => {
   };
   return (
     <div className="detail-section" data-testid="branding-panel">
-      <h3>Document Branding</h3>
-      <p className="material-description">Confirm the logo and brand colors used when designing your final documents. If you leave the colors empty, a professional neutral template is used. Nothing is applied without your confirmation here.</p>
+      <h3>{heading}</h3>
+      <p className="material-description">{description}</p>
       <div className="two-col-fields">
         <label className="field"><span>Organization logo (optional)</span><input type="file" accept="image/*" onChange={onLogo} data-testid="branding-logo-input" /></label>
         <label className="field"><span>Primary color</span><input type="color" value={branding.primary_color || "#1d3a2f"} onChange={(event) => setBranding({ ...branding, primary_color: event.target.value })} data-testid="branding-primary" /></label>
