@@ -180,22 +180,26 @@ const ReferenceLibrarySection = () => {
         <button className="button button-small" disabled={busy} onClick={upload} data-testid="reference-upload-button">{busy ? "Uploading…" : "Upload Reference"}</button>
       </div>
       {message && <p className="admin-message" data-testid="reference-message">{message}</p>}
-      <div className="admin-table-wrap"><table className="admin-table">
-        <thead><tr>{["Title", "Module", "Tags", "Status", "Uploaded", "Actions"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
-        <tbody>
-          {items.length === 0 && <tr><td colSpan="6" data-testid="reference-empty">No reference materials yet.</td></tr>}
-          {items.map((item) => (
-            <tr key={item.reference_id} data-testid={`reference-row-${item.reference_id}`}>
-              <td>{item.title}</td>
-              <td>{item.module === 0 ? "General" : `Module ${item.module}`}</td>
-              <td>{(item.resource_types || []).join(", ")}</td>
-              <td><span className={`blog-status-badge ${item.approved ? "published" : "pending"}`} data-testid={`reference-status-${item.reference_id}`}>{item.approved ? "Approved — in use" : "Not approved"}</span></td>
-              <td>{item.uploaded_at?.slice(0, 10)}</td>
-              <td><button className="table-link" onClick={() => toggleApprove(item)} data-testid={`reference-approve-${item.reference_id}`}>{item.approved ? "Revoke" : "Approve"}</button> <button className="table-link" onClick={() => remove(item)} data-testid={`reference-delete-${item.reference_id}`}>Delete</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table></div>
+      <div className="reference-list">
+        {items.length === 0 && <p className="reference-empty" data-testid="reference-empty">No reference materials yet.</p>}
+        {items.map((item) => (
+          <div className="reference-card" key={item.reference_id} data-testid={`reference-row-${item.reference_id}`}>
+            <div className="reference-card-info">
+              <h3 className="reference-card-title">{item.title}</h3>
+              <p className="reference-card-meta">
+                {item.module === 0 ? "General / all modules" : `Module ${item.module}`}
+                {(item.resource_types || []).length > 0 && <> · Tags: {(item.resource_types || []).join(", ")}</>}
+                {item.uploaded_at && <> · Uploaded {item.uploaded_at.slice(0, 10)}</>}
+              </p>
+              <span className={`blog-status-badge ${item.approved ? "published" : "pending"}`} data-testid={`reference-status-${item.reference_id}`}>{item.approved ? "Approved for AI Reference" : "Not Approved"}</span>
+            </div>
+            <div className="reference-card-actions">
+              <button className={`button button-small ${item.approved ? "button-back" : ""}`} onClick={() => toggleApprove(item)} data-testid={`reference-approve-${item.reference_id}`}>{item.approved ? "Revoke Approval" : "Approve for AI Reference"}</button>
+              <button className="table-link reference-delete-link" onClick={() => remove(item)} data-testid={`reference-delete-${item.reference_id}`}>Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
     </section>
   );
 };
