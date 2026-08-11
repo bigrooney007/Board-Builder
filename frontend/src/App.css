@@ -895,3 +895,19 @@ p { line-height: 1.72; }
   .checkout-card h1 { font-size: 28px; }
   .admin-header-actions { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
+
+/* Consolidated funnel hero banner */
+.funnel-hero-banner { position: relative; overflow: hidden; color: #fff; background: linear-gradient(145deg, #074832, #0a7b59); padding: 92px max(calc((100vw - 1240px)/2), 32px) 84px; }
+.funnel-hero-banner:before { content: ""; position: absolute; inset: 0; opacity: .22; background-image: linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px); background-size: 42px 42px; }
+.funnel-hero-banner > * { position: relative; z-index: 1; }
+.funnel-hero-banner .eyebrow { color: #72dfc1; text-transform: uppercase; letter-spacing: .2em; font-size: 12px; font-weight: 800; }
+.funnel-hero-banner h1 { color: #fff; font-size: clamp(37px, 4.6vw, 60px); line-height: 1.07; max-width: 880px; margin: 16px 0 20px; }
+.funnel-hero-banner-supporting { color: #dcefe6; max-width: 760px; font-size: 18px; line-height: 1.65; font-weight: 600; }
+.funnel-hero-banner-secondary { color: #b9d8ca; max-width: 720px; font-size: 15px; line-height: 1.65; margin-top: 12px; }
+.funnel-hero-banner i { position: absolute; z-index: 0; width: 190px; height: 190px; border-radius: 50%; right: -45px; bottom: -55px; border: 42px solid rgba(255,255,255,.12); }
+@media (max-width: 760px) {
+  .funnel-hero-banner { padding: 58px 20px 50px; }
+  .funnel-hero-banner h1 { font-size: 31px; }
+  .funnel-hero-banner-supporting { font-size: 15px; }
+  .funnel-hero-banner i { width: 120px; height: 120px; border-width: 26px; right: -35px; bottom: -40px; }
+}

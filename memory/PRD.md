@@ -72,3 +72,6 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - After payment: account creation now lands on Module 1 (self-guided/basic) instead of dashboard.
 - SEO: usePageMeta/PAGE_META (seo.js) + index.html defaults for title/description/OG/Twitter across home, recruit, process, checkout, reactivate, activate, blog.
 - Tested: iteration_10.json — backend 14/14, frontend all product checks pass. Regression suite /app/backend/tests/test_recruitment_funnel_upgrade.py.
+
+## Landing Page Hero Consolidation (June 2026) — Complete
+- /recruit, /reactivate, /activate: duplicate hero removed; colored banner (dark green gradient + grid + circle) is now the hero containing label/title/subtitle (existing copy verbatim); no hero CTA; order Banner -> Form -> Testimonials on all three. CSS: .funnel-hero-banner. Old .funnel-hero/.funnel-hero-mark styles unused on these pages. Verified via screenshots desktop + 390px mobile.
