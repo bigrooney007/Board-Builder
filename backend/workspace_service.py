@@ -79,23 +79,100 @@ REFERENCE_RULES = (
 
 
 MODULE_KEYWORDS = {
-    1: ["board members your organization needs", "board matrix", "board gap", "skills assessment", "identify the board"],
-    2: ["recruitment strategy", "strategy"],
-    3: ["board opportunity", "application", "linkedin", "social", "recruitment email", "launch"],
+    1: ["board members your organization needs", "board matrix", "board gap", "skills assessment", "identify the board", "board audit"],
+    2: ["recruitment strategy", "outreach strategy", "recruitment channels"],
+    3: ["board opportunity", "board application", "linkedin", "social media", "recruitment email", "job post"],
     4: ["interview"],
     5: ["reference", "background check"],
     6: ["onboard", "board manual", "agreement", "orientation", "conflict of interest", "confidentiality"],
 }
 
+GENERATION_KEYWORDS = {
+    "powerhouse_board_blueprint": ["board audit", "board matrix", "board composition", "skills gap", "board at a glance", "board needs"],
+    "recruitment_strategy": ["recruitment strategy", "outreach strategy", "recruitment channels", "personal network", "public board recruitment", "national database of board candidates"],
+    "board_opportunity": ["board opportunity", "board recruitment post", "board position"],
+    "application_questions": ["application question", "board application", "application form"],
+    "linkedin_post": ["linkedin post", "linkedin"],
+    "social_posts": ["social media outreach", "social media", "facebook", "instagram"],
+    "recruitment_emails": ["email newsletter", "recruitment email", "email outreach"],
+    "linkedin_launch_instructions": ["linkedin/boardbuild", "boardsource", "idealist", "volunteer match", "linkedin"],
+    "board_recruitment_job_post": ["linkedin job post", "job post", "board recruitment job"],
+    "personal_invitation_email": ["personal invitation", "invitation email", "personal network"],
+    "personal_invitation_message": ["personal invitation", "invitation message", "personal network"],
+    "general_interview_invitation": ["interview invitation", "invite you to interview", "schedule an interview"],
+    "general_rejection_email": ["decided to move forward", "not move forward", "rejection"],
+    "conditional_offer": ["conditional board position offer", "conditional offer", "pending reference"],
+    "after_interview_rejection": ["after careful consideration", "decided to move forward", "rejection"],
+    "onboarding_script": ["welcome & introductions", "orientation", "onboarding"],
+    "interview_guide": ["interview questions", "interview guide", "candidate interview", "interview agenda"],
+    "interview_invitation": ["interview invitation", "schedule an interview", "invite you to interview"],
+    "after_interview_email": ["after the interview", "thank you for interviewing", "following your interview"],
+    "reference_request_email": ["reference request", "reference email", "references"],
+    "reference_call_script": ["reference call", "reference questions", "reference check"],
+    "reference_evaluation_form": ["reference evaluation", "reference check", "reference form"],
+    "onboarding_agenda": ["welcome & introductions", "onboarding agenda", "orientation agenda", "review of board documents"],
+    "organization_overview": ["organizational overview", "organization overview", "about the organization"],
+    "board_manual": ["board manual", "board orientation", "board responsibilities"],
+    "board_member_agreement": ["board member agreement", "board agreement"],
+    "confidentiality_agreement": ["confidentiality and conflict of interest agreement", "confidentiality"],
+    "conflict_of_interest_agreement": ["conflict of interest policy", "conflict of interest"],
+    "ninety_day_plan": ["90 day", "ninety day", "90-day", "first 90"],
+}
 
-def slice_reference(text: str, module: int) -> str:
+REFERENCE_BUDGET = 8000
+MODULE_FALLBACK_BUDGET = 4000
+
+
+def _align_to_paragraph(text: str, start: int, end: int):
+    ps = text.rfind("\n\n", 0, start)
+    start = ps + 2 if ps != -1 else 0
+    pe = text.find("\n\n", end)
+    end = pe if pe != -1 else len(text)
+    return start, min(end, start + 3000)
+
+
+def _find_windows(text: str, lowered: str, keywords) -> list:
+    windows = []
+    for kw in keywords:
+        pos = 0
+        while True:
+            i = lowered.find(kw, pos)
+            if i == -1:
+                break
+            s, e = _align_to_paragraph(text, max(0, i - 300), i + len(kw) + 1200)
+            windows.append([s, e])
+            pos = i + len(kw)
+    return windows
+
+
+def _merge_windows(windows: list) -> list:
+    windows.sort(key=lambda w: w[0])
+    merged = []
+    for s, e in windows:
+        if merged and s <= merged[-1][1] + 200:
+            merged[-1][1] = max(merged[-1][1], e)
+        else:
+            merged.append([s, e])
+    return merged
+
+
+def slice_reference(text: str, module: int, gen_key: str = "", budget: int = REFERENCE_BUDGET) -> str:
     lowered = text.lower()
-    for keyword in MODULE_KEYWORDS.get(module, []):
-        index = lowered.find(keyword)
-        if index != -1:
-            start = max(0, index - 1500)
-            return text[start:start + 8000]
-    return text[:8000]
+    windows = _find_windows(text, lowered, GENERATION_KEYWORDS.get(gen_key, []))
+    if not windows:
+        windows = _find_windows(text, lowered, MODULE_KEYWORDS.get(module, []))
+        budget = min(budget, MODULE_FALLBACK_BUDGET)
+    if not windows:
+        return ""
+    parts, total = [], 0
+    for s, e in _merge_windows(windows):
+        if total >= budget:
+            break
+        chunk = text[s:min(e, s + (budget - total))].strip()
+        if chunk:
+            parts.append(chunk)
+            total += len(chunk)
+    return "\n\n[...]\n\n".join(parts)
 
 
 async def reference_context(db, gen_key: str) -> str:
@@ -108,7 +185,17 @@ async def reference_context(db, gen_key: str) -> str:
     if not docs:
         return ""
     docs.sort(key=lambda d: 0 if gen_key in (d.get("resource_types") or []) else (1 if d.get("module") == module else 2))
-    parts = [f"REFERENCE EXAMPLE — {d['title']}:\n{slice_reference(d['content_text'], module)}" for d in docs[:2]]
+    remaining = REFERENCE_BUDGET
+    parts = []
+    for d in docs[:2]:
+        if remaining <= 0:
+            break
+        excerpt = slice_reference(d["content_text"], module, gen_key, budget=remaining)
+        if excerpt:
+            parts.append(f"REFERENCE EXAMPLE — {d['title']}:\n{excerpt}")
+            remaining -= len(excerpt)
+    if not parts:
+        return ""
     return REFERENCE_RULES + "\n\n" + "\n\n".join(parts)
 
 
