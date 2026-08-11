@@ -17,13 +17,11 @@ const strategicOptions = ["Yes", "We have a strategic plan, but the board was no
 export const funnelConfigs = {
   recruitment: {
     slug: "recruit", eyebrow: "Board Recruitment",
-    heading: "Recruit the Board Your Nonprofit Needs",
-    supporting: "Tell Me About the Board You Want to Recruit and I Will Tell You How I Can Help.",
-    supportingParagraph: "Whether you need one new board member or need to rebuild most of your board, tell us what you are trying to accomplish and the kind of board you want to build.",
+    heading: "Start the Process of Recruiting the Board Your Nonprofit Needs",
+    supporting: "Enter your organization details below and we will show you the 6-step process to build a board that commits, helps raise money and works with you to build the organization your mission deserves.",
     formHeading: "Tell Us About the Board You Want to Recruit",
-    heroCta: "Tell Me About the Board I Want to Recruit",
     submit: "Show Me How You Can Help",
-    redirectAfterSubmit: "options",
+    redirectAfterSubmit: "process",
     steps: [
       { heading: "Tell Us About You and Your Organization", fields: contactFields },
       {
@@ -41,11 +39,11 @@ export const funnelConfigs = {
           { type: "choices", name: "accomplish_areas", label: "What Do You Need the New Board Members to Help Your Organization Accomplish?", helper: "Select everything you want your new board members to help strengthen or achieve.", options: accomplishAreas, scope: "answers" },
           { type: "textarea", name: "accomplish_other", label: "What else do you need your new board members to help accomplish?", scope: "answers", required: false, showIf: (answers) => (answers.accomplish_areas || []).includes("Other") },
           { type: "select", name: "timeline", label: "How soon would you like to begin recruiting?", options: ["Immediately", "Within 30 days", "Within 60 days", "Within 90 days", "I am exploring my options"], scope: "answers" },
-          { type: "radio_cards", name: "support_preference", label: "How Much Support Do You Want Recruiting Your Board?", scope: "answers", options: [
-            { value: "diy", title: "Do It Yourself", description: "I want the knowledge and resources I need to confidently recruit my board myself." },
-            { value: "self_guided", title: "Self-Guided Recruitment", description: "I want guidance while I recruit my board so I can confidently get the right people in place." },
-            { value: "done_with_you", title: "Done With You", description: "I want someone to work with me to help get the board members my organization needs." },
-            { value: "undecided", title: "I’m Not Sure Yet", description: "Let me see the options and decide." },
+          { type: "radio_cards", name: "support_preference", label: "What Kind of Support Would Be Most Helpful to You?", scope: "answers", options: [
+            { value: "diy", title: "I want to learn the process and execute it myself" },
+            { value: "guided", title: "I want guidance and support while I recruit my board" },
+            { value: "done_with_you", title: "I would prefer someone to work directly with me" },
+            { value: "undecided", title: "I’m not sure yet" },
           ] },
         ],
       },

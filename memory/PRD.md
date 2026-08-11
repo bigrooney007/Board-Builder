@@ -63,3 +63,12 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - Blog: prompt + validation retargeted to 350-550 words (abs max 650, min 300), straight-to-the-problem one-idea style, no step-by-step guides, short-paragraph check. Schedules/duplicate protection/CTAs untouched.
 - Tested: iteration_7.json — frontend 100%, backend 11/12 (blog live generation blocked: EMERGENT_LLM_KEY budget EXHAUSTED — user must add balance; validation rules unit-tested and passing).
 - KNOWN: /app/backend/tests/test_blog_preview_dashboard.py still assumes old 700-1100 word rule (do not use as authority).
+
+## Recruitment Funnel Upgrade + Owner Review Mode (June 2026) — Complete
+- One-offer journey: /recruit (hero no CTA -> 3-step form -> testimonials) -> /recruit/process (LOCKED 6-stage framework page, both CTAs -> /recruit/checkout) -> /recruit/checkout ($497 Guided Board Recruitment only; What You Walk Away With incl. clickable Recruitment Guarantee modal; Before You Start; terms checkbox recorded in terms_agreements collection; existing Stripe tier 497 reused). /recruit/options no longer in the active journey (route kept).
+- Support question reworded: "What Kind of Support Would Be Most Helpful to You?" values diy/guided/done_with_you/undecided (self_guided still accepted server-side for compat).
+- Owner Review Mode (TEMPORARY, env OWNER_RECRUITMENT_REVIEW_MODE=true + admin auth only): banner, blank-form navigation (no lead/email), "Continue in Owner Review Mode" checkout bypass -> modules 1-6 via review_mode_member fallback in authenticate_member; progress writes skipped; no side effects. /admin has "Review Recruitment Experience" button. Set flag false after owner's second test.
+- RECRUITMENT_GUARANTEE_TERMS env added (EMPTY — owner must supply final terms; fallback generic copy shown, configured=false). No dedicated Refund Policy document exists (checkbox links to /terms).
+- After payment: account creation now lands on Module 1 (self-guided/basic) instead of dashboard.
+- SEO: usePageMeta/PAGE_META (seo.js) + index.html defaults for title/description/OG/Twitter across home, recruit, process, checkout, reactivate, activate, blog.
+- Tested: iteration_10.json — backend 14/14, frontend all product checks pass. Regression suite /app/backend/tests/test_recruitment_funnel_upgrade.py.

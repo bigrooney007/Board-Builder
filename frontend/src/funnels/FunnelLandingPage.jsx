@@ -3,18 +3,13 @@ import { FunnelLayout } from "./FunnelLayout";
 import { FunnelStepForm } from "./FunnelStepForm";
 import { funnelConfigs } from "./funnelConfig";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-
-const recruitmentStages = [
-  ["01", "Identify", "Understand what the organization needs from the board."],
-  ["02", "Strategize", "Build the recruitment process around those needs."],
-  ["03", "Launch", "Take the opportunity to the right people and places."],
-  ["04", "Interview", "Determine which applicants can genuinely strengthen the board."],
-  ["05", "Verify", "Conduct references and appropriate background checks."],
-  ["06", "Onboard", "Prepare selected board members to understand the organization, expectations and their responsibilities."],
-];
+import { PAGE_META, usePageMeta } from "@/seo";
 
 export default function FunnelLandingPage({ offerSource }) {
   const config = funnelConfigs[offerSource];
+  const meta = PAGE_META[offerSource] || PAGE_META.recruitment;
+  usePageMeta(meta[0], meta[1]);
+  const isRecruitment = offerSource === "recruitment";
   const scrollToForm = () => document.getElementById("offer-form")?.scrollIntoView({ behavior: "smooth" });
   return (
     <FunnelLayout>
@@ -24,8 +19,8 @@ export default function FunnelLandingPage({ offerSource }) {
             <p className="eyebrow" data-testid={`${offerSource}-eyebrow`}>{config.eyebrow}</p>
             <h1 data-testid={`${offerSource}-headline`}>{config.heading}</h1>
             <p className="funnel-supporting" data-testid={`${offerSource}-supporting`}>{config.supporting}</p>
-            {config.supportingParagraph && <p data-testid={`${offerSource}-supporting-paragraph`}>{config.supportingParagraph}</p>}
-            <button className="button" onClick={scrollToForm} data-testid={`${offerSource}-hero-button`}>{config.heroCta} <ArrowRight size={18} /></button>
+            {!isRecruitment && config.supportingParagraph && <p data-testid={`${offerSource}-supporting-paragraph`}>{config.supportingParagraph}</p>}
+            {!isRecruitment && <button className="button" onClick={scrollToForm} data-testid={`${offerSource}-hero-button`}>{config.heroCta} <ArrowRight size={18} /></button>}
           </div>
           <div className="funnel-hero-mark" aria-hidden="true">
             <span>{offerSource === "recruitment" ? "RECRUIT" : offerSource === "reactivation" ? "REACTIVATE" : "ACTIVATE"}</span>
@@ -33,15 +28,17 @@ export default function FunnelLandingPage({ offerSource }) {
             <i />
           </div>
         </section>
-        {offerSource === "recruitment" && (
-          <section className="section recruitment-process" data-testid="recruitment-process-section">
-            <p className="eyebrow">From needs to onboarding</p>
-            <h2>A Complete Board Recruitment Process</h2>
-            <div className="recruitment-process-grid">{recruitmentStages.map(([number, title, text]) => <article key={title}><span>{number}</span><h3>{title}</h3><p>{text}</p></article>)}</div>
-          </section>
+        {isRecruitment ? (
+          <>
+            <FunnelStepForm offerSource={offerSource} />
+            <TestimonialCarousel heading="See What Other Nonprofit Leaders Have Accomplished" idPrefix="recruit-landing" />
+          </>
+        ) : (
+          <>
+            <TestimonialCarousel heading="Nonprofit Leaders We Have Helped Build Stronger Boards" idPrefix={`${config.slug}-landing`} />
+            <FunnelStepForm offerSource={offerSource} />
+          </>
         )}
-        <TestimonialCarousel heading="Nonprofit Leaders We Have Helped Build Stronger Boards" idPrefix={`${config.slug}-landing`} />
-        <FunnelStepForm offerSource={offerSource} />
       </main>
     </FunnelLayout>
   );

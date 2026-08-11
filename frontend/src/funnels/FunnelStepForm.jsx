@@ -4,6 +4,7 @@ import axios from "axios";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { FunnelChoices, FunnelRadioCards, FunnelSelect, FunnelText, FunnelTextarea } from "./FunnelFormControls";
 import { funnelConfigs } from "./funnelConfig";
+import { useReviewMode } from "@/reviewMode";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const emptyContact = { name: "", email: "", phone: "", organization: "", website: "", city: "", state_region: "", country: "" };
@@ -19,6 +20,8 @@ const emptyAnswers = (config) => {
 export const FunnelStepForm = ({ offerSource }) => {
   const config = funnelConfigs[offerSource];
   const navigate = useNavigate();
+  const reviewMode = useReviewMode();
+  const reviewBypass = reviewMode && offerSource === "recruitment";
   const totalSteps = config.steps.length;
   const [stepIndex, setStepIndex] = useState(0);
   const [contact, setContact] = useState(emptyContact);
@@ -56,10 +59,14 @@ export const FunnelStepForm = ({ offerSource }) => {
 
   const goBack = () => { setSubmitError(""); setStepIndex((current) => Math.max(0, current - 1)); window.scrollTo({ top: document.getElementById("offer-form")?.offsetTop - 90 || 0, behavior: "smooth" }); };
   const goForward = async () => {
-    if (!validateStep()) return;
+    if (!reviewBypass && !validateStep()) return;
     if (stepIndex < totalSteps - 1) {
       setStepIndex((current) => current + 1);
       window.scrollTo({ top: document.getElementById("offer-form")?.offsetTop - 90 || 0, behavior: "smooth" });
+      return;
+    }
+    if (reviewBypass) {
+      navigate("/recruit/process");
       return;
     }
     setSubmitting(true); setSubmitError("");
@@ -67,6 +74,7 @@ export const FunnelStepForm = ({ offerSource }) => {
       const response = await axios.post(`${API}/funnel-leads/${offerSource}`, { ...contact, answers });
       sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization, support_preference: answers.support_preference || "" }));
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
+      else if (config.redirectAfterSubmit === "process") navigate(`/${config.slug}/process`);
       else navigate(`/${config.slug}/result/${response.data.result_token}`);
     } catch (error) {
       setSubmitError(error.response?.data?.detail || "We could not save your submission. Please try again.");

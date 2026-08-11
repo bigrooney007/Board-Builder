@@ -25,6 +25,7 @@ from course_routes import create_course_router
 from workspace_routes import create_workspace_router
 from public_opportunity_routes import create_public_opportunity_router
 from marketing_routes import create_marketing_router
+from review_routes import create_review_router
 from marketing_service import marketing_loop
 
 
@@ -205,6 +206,7 @@ app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
 app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
+app.include_router(create_review_router(db))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

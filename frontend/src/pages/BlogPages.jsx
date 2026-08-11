@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
+import { PAGE_META, usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
@@ -18,6 +19,7 @@ const PostCard = ({ post }) => (
 );
 
 export const BlogPage = () => {
+  usePageMeta(...PAGE_META.blog);
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("");

@@ -7,7 +7,7 @@ from typing import Any, Dict
 import resend
 
 
-SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "self_guided": "Self-Guided Recruitment", "done_with_you": "Done With You", "undecided": "I'm Not Sure Yet"}
+SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "guided": "Guided Support", "self_guided": "Self-Guided Recruitment", "done_with_you": "Done With You", "undecided": "I'm Not Sure Yet"}
 
 REQUIRED_ANSWERS = {
     "recruitment": {
@@ -34,7 +34,7 @@ def validate_answers(source: str, answers: Dict[str, Any]) -> None:
     if missing:
         raise ValueError(f"Missing required answers: {', '.join(sorted(missing))}")
     if source == "recruitment" and answers.get("support_preference") not in SUPPORT_PREFERENCES:
-        raise ValueError("Support preference must be one of: diy, self_guided, done_with_you, undecided")
+        raise ValueError("Support preference must be one of: diy, guided, done_with_you, undecided")
     present = int(answers["present_board"])
     active = int(answers["active_board"])
     if present < 0 or active < 0 or active > present:

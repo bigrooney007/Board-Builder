@@ -55,15 +55,18 @@ export const PurchaseSuccessPage = () => {
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError("");
     try {
+      let claimedNow = "";
       if (mode === "register") {
         if (form.password !== form.confirm_password) throw new Error("Passwords do not match");
         const response = await register({ ...form, session_id: sessionId });
-        setClaimed(response.claimed);
+        claimedNow = response.claimed;
+        setClaimed(claimedNow);
       } else {
         const response = await login(form.email, form.password, sessionId);
-        setClaimed(response.claimed);
+        claimedNow = response.claimed;
+        setClaimed(claimedNow);
       }
-      navigate("/app");
+      navigate(claimedNow === "recruitment_self_guided" ? "/app/recruitment/self-guided/module/1" : claimedNow === "recruitment_basic" ? "/app/recruitment/basic/module/1" : "/app");
     } catch (err) {
       setError(err.response?.data?.detail || err.message || "We could not complete this step.");
       setBusy(false);

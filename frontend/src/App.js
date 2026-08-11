@@ -10,6 +10,8 @@ import LegalPage from "@/pages/LegalPage";
 import FunnelLandingPage from "@/funnels/FunnelLandingPage";
 import FunnelResultPage from "@/funnels/FunnelResultPage";
 import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
+import RecruitProcessPage from "@/funnels/RecruitProcessPage";
+import RecruitCheckoutPage from "@/funnels/RecruitCheckoutPage";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
@@ -18,8 +20,10 @@ import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
+import { PAGE_META, usePageMeta } from "@/seo";
 
 const HomeExperience = () => {
+  usePageMeta(...PAGE_META.home);
   const navigate = useNavigate();
   return <LandingPage onJoin={() => navigate("/join-a-board")} />;
 };
@@ -39,6 +43,8 @@ export default function App() {
           <Route path="/" element={<HomeExperience />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
+          <Route path="/recruit/process" element={<RecruitProcessPage />} />
+          <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />
           <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
           <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />

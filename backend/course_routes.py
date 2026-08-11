@@ -109,6 +109,8 @@ def create_course_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         allowed = {"recruitment_basic", "recruitment_self_guided"} if payload.product == "recruitment_basic" else {"recruitment_self_guided"}
         require_entitlement(member, allowed)
+        if member.get("review_mode"):
+            return {"status": "ok", "modules_completed": 0, "percent_complete": 0, "review_mode": True}
         now = datetime.now(timezone.utc).isoformat()
         update = {"$set": {"last_visited_at": now, "updated_at": now},
                   "$setOnInsert": {"created_at": now}}
