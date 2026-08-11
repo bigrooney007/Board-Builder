@@ -117,6 +117,7 @@ GENERATION_KEYWORDS = {
     "confidentiality_agreement": ["confidentiality and conflict of interest agreement", "confidentiality"],
     "conflict_of_interest_agreement": ["conflict of interest policy", "conflict of interest"],
     "ninety_day_plan": ["90 day", "ninety day", "90-day", "first 90"],
+    "first_board_meeting_invitation": ["first board meeting", "board meeting invitation", "meeting invitation"],
 }
 
 REFERENCE_BUDGET = 8000

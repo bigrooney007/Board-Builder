@@ -76,6 +76,16 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 ## Landing Page Hero Consolidation (June 2026) — Complete
 - /recruit, /reactivate, /activate: duplicate hero removed; colored banner (dark green gradient + grid + circle) is now the hero containing label/title/subtitle (existing copy verbatim); no hero CTA; order Banner -> Form -> Testimonials on all three. CSS: .funnel-hero-banner. Old .funnel-hero/.funnel-hero-mark styles unused on these pages. Verified via screenshots desktop + 390px mobile.
 
+## Recruitment Modules 1–6 Execution Flow Correction (June 2026) — Complete, iteration_13 100% pass
+- Module 1: five-step wizard REMOVED; one-page skills/gaps intake (current skills, desired skills, optional notes — 23 standard options + Other); org info never re-asked; profile auto-saves + auto-confirms as part of "Identify the Board Members I Need" (MaterialCard beforeGenerate).
+- Module 2: intake + Generate in one panel; required marks; answers save automatically as part of Generate (no hidden Save).
+- Module 3: custom-question builder/+ icons REMOVED; "Generate My Board Application" = standard core-question form via NEW non-AI endpoint POST /api/workspace/opportunity/application/generate (auto-saved, link + Copy Link immediately visible); Personal Invitation Email shown only when Module 2 intake says founder knows people; Publish Recruitment Campaign remains the only email/publish trigger.
+- Module 4: external applicant intake = Name + CV only (backend email now optional, source "LinkedIn / External"); per-applicant View Application / View CV / Generate Interview Guide / Interview Invitation; decision emails REMOVED from Module 4.
+- Module 5: three subsections — Verify (reference tools for ALL applicant sources + background-check search), Decide (Conditional Board Appointment Email + After-Interview Rejection, both now module 5), Prepare (Organization Overview, Board Manual, 3 agreements — now org-level per_application=False module 5 — + Board Member Profile Form panel moved here).
+- Module 6: shows Selected members; signature workflow uses org-level agreements (prepare falls back to application_id="" material); Module 5 docs shown read-only ("prepare it in Module 5" if missing); Onboarding Script kept in Module 6 (org-level); NEW first_board_meeting_invitation generation type + panel asking only meeting details.
+- Regression suite: /app/backend/tests/test_modules_1_to_6_refactor.py (no Claude calls). Test data cleaned from owner-review-admin tenant after run.
+- Known minor (deliberately not built per owner's no-new-features rule): no DELETE endpoint for applicants.
+
 ## Platform Refinement + Reference Library (June 2026) — Complete
 - Owner Review auth fix: authenticate_member falls back to review-mode admin; checkout enterReview refreshes member context; no second login. Verified iteration_11 (all pass).
 - Testimonials LOCKED in /app/frontend/src/components/testimonialsData.js (8 exact founder-supplied entries incl. 2 Donna Kargel + Cyrena verbatim; typos preserved; no Result rows). All carousels/sections import it. Duplicate React keys fixed in both testimonial components.

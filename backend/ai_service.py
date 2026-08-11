@@ -66,9 +66,9 @@ GENERATION_TYPES = {
     }},
     "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {"subject": "string", "body": "string — general invitation to a board introductory/interview conversation, with [APPLICANT NAME] and scheduling placeholders"}},
     "general_rejection_email": {"module": 4, "title": "General Applicant Rejection Email", "per_application": False, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who will not be invited to the interview stage, with [APPLICANT NAME] placeholder"}},
-    "conditional_offer": {"module": 4, "title": "Conditional Board Position Offer", "per_application": True, "schema": {"subject": "string", "body": "string — clearly states that the board position remains conditional/pending completion of the relevant reference or background checks and the organization's final appointment requirements. Use the words 'conditional board position offer'; NEVER 'confidential board position'."}},
-    "after_interview_rejection": {"module": 4, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
-    "onboarding_script": {"module": 6, "title": "Board Member Onboarding Script", "per_application": True, "schema": {
+    "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {"subject": "string", "body": "string — tells the applicant the organization would like them to join the board; clearly states the appointment remains conditional/pending completion of the relevant reference or background checks and the organization's final appointment requirements where relevant; explains what happens next and any profile forms or agreements they need to complete. Use the words 'conditional board appointment'; NEVER 'confidential board position'. Never make false statements about legal requirements."}},
+    "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
+    "onboarding_script": {"module": 6, "title": "Board Member Onboarding Script", "per_application": False, "schema": {
         "sections": [{"title": "string — welcome; mission and story as supplied; what the organization needs; the board member's role and responsibility; expectations; how they can begin contributing; questions; next steps", "talking_points": ["string — practical founder-facing talking points for the onboarding conversation or meeting"]}],
     }},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
@@ -85,24 +85,24 @@ GENERATION_TYPES = {
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {"subject": "string", "body": "string — concise invitation"}},
     "after_interview_email": {"module": 4, "title": "After-Interview Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful email matching the chosen result"}},
     "reference_request_email": {"module": 5, "title": "Reference Request Email", "per_application": True, "schema": {"subject": "string", "body": "string"}},
-    "reference_call_script": {"module": 5, "title": "Reference Call Script", "per_application": True, "schema": {"introduction": "string", "questions": ["string"], "closing": "string"}},
+    "reference_call_script": {"module": 5, "title": "Reference Call Guide", "per_application": True, "schema": {"introduction": "string", "questions": ["string"], "closing": "string"}},
     "reference_evaluation_form": {"module": 5, "title": "Reference Evaluation Form", "per_application": True, "schema": {"sections": [{"title": "string", "items": ["string"]}]}},
     "onboarding_agenda": {"module": 6, "title": "Onboarding Agenda", "per_application": True, "schema": {
         "items": [{"topic": "string — cover welcome; introductions; mission/program overview; organizational priorities; board role; governance expectations; fundraising expectations; committees/responsibilities; important policies; next 90 days; questions; next meeting/action", "details": "string"}],
     }},
-    "organization_overview": {"module": 6, "title": "Organization Overview", "per_application": True, "schema": {
+    "organization_overview": {"module": 5, "title": "Organization Overview", "per_application": False, "schema": {
         "sections": [{"title": "string — mission; history where supplied; programs; people served; priorities; leadership; board role; fundraising priorities; key terminology; important contacts. When information is missing use content 'Information to Add' — never invent", "content": "string"}],
     }},
-    "board_manual": {"module": 6, "title": "Board Manual", "per_application": True, "schema": {
+    "board_manual": {"module": 5, "title": "Board Manual", "per_application": False, "schema": {
         "sections": [{"title": "string — organization overview; mission; board purpose; board responsibilities; meeting expectations; governance expectations; fundraising expectations; committees; conflict-of-interest expectations; confidentiality expectations; communication; key policies; annual expectations; new-board-member 90-day expectations", "content": "string"}],
     }},
-    "board_member_agreement": {"module": 6, "title": "Board Member Agreement", "per_application": True, "agreement": True, "schema": {
+    "board_member_agreement": {"module": 5, "title": "Board Member Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string — board member name; organization; board term where known; attendance; participation; governance responsibilities; confidentiality; conflicts of interest; fundraising responsibility; committee/service responsibility; preparation for meetings; organizational representation; agreed commitments", "content": "string"}], "acknowledgement": "string",
     }},
-    "confidentiality_agreement": {"module": 6, "title": "Confidentiality Agreement", "per_application": True, "agreement": True, "schema": {
+    "confidentiality_agreement": {"module": 5, "title": "Confidentiality Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string — confidential organizational information; donor information; financial information; staff information; board discussions; program/client information where appropriate; electronic information; use/disclosure expectations; return/deletion of confidential information where appropriate. Do not invent jurisdiction-specific legal clauses when jurisdiction information is unavailable", "content": "string"}], "acknowledgement": "string",
     }},
-    "conflict_of_interest_agreement": {"module": 6, "title": "Conflict of Interest Agreement", "per_application": True, "agreement": True, "schema": {
+    "conflict_of_interest_agreement": {"module": 5, "title": "Conflict of Interest Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string — duty to disclose actual/potential conflicts; financial interests; business relationships; family/personal relationships; gifts or benefits where relevant; disclosure process; recusal where appropriate; annual disclosure expectation", "content": "string"}], "acknowledgement": "string",
     }},
     "ninety_day_plan": {"module": 6, "title": "New Board Member 90-Day Plan", "per_application": True, "schema": {
@@ -110,6 +110,9 @@ GENERATION_TYPES = {
         "days_31_60": ["string — begin assigned responsibilities and relationship building"],
         "days_61_90": ["string — take ownership of agreed board/fundraising responsibilities"],
         "notes": "string — customized to candidate strengths, assigned responsibility, organizational priorities and fundraising expectations",
+    }},
+    "first_board_meeting_invitation": {"module": 6, "title": "First Board Meeting Invitation Email", "per_application": False, "schema": {
+        "subject": "string", "body": "string — one professional, warm, editable email inviting the newly assembled board to its first board meeting and beginning their service together. Use the supplied meeting details exactly; where a detail was not supplied write '[To be confirmed]'. Never invent meeting logistics.",
     }},
 }
 

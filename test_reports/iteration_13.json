@@ -1,0 +1,72 @@
+{
+  "summary": "Iteration 13 verified the Modules 1-6 customer-experience refactor described in the review request. Zero Claude generation calls were made, zero publishes/broadcasts triggered, zero signature emails sent, and the founder Reference Library approve button was not touched. 7/7 backend pytest passed in /app/backend/tests/test_modules_1_to_6_refactor.py. Playwright walkthrough (owner review mode) confirmed all six module URLs render the expected structure, data-testids, absence of removed controls, and correct conditional visibility. Only one TEST external applicant was created ('TEST_ExternalCandidate_Modules' via backend test + 'TEST External Candidate' via UI); neither could be fully deleted (no DELETE endpoint on /api/workspace/applications/{id}, returned 405 — noted as minor).",
+  "verdicts": {
+    "backend": {
+      "unauth_workspace_applications_401": "PASS",
+      "generate_standard_application_no_ai_no_email": "PASS (status=generated, application_saved=True, core_questions returned, readiness.application_saved=True after GET)",
+      "external_applicant_name_only_201": "PASS (source='LinkedIn / External', full_name persisted)",
+      "external_applicant_missing_name_422": "PASS",
+      "generation_registry_module_reassignments": "PASS (conditional_offer=5, after_interview_rejection=5, organization_overview/board_manual/board_member_agreement/confidentiality_agreement/conflict_of_interest_agreement all module=5 and per_application=False, first_board_meeting_invitation module=6 per_application=False)",
+      "external_applicant_signature_name_required_email_optional": "PASS (source inspection: 'name: str = Form(...)' and 'email: str = Form(\"\")')",
+      "publish_endpoint_exists_but_not_called": "PASS (OPTIONS handshake only, no POST)"
+    },
+    "frontend": {
+      "admin_login": "PASS",
+      "course_overview_six_titles_locked": "PASS (all six exact titles present)",
+      "owner_review_banner_visible": "PASS",
+      "module1_new_one_page_intake": "PASS (module1-intake, module1-current-skills, module1-desired-skills, module1-additional-notes, generate-powerhouse_board_blueprint all present; old module1-profile-form absent; no 'Step X of 5' text)",
+      "module2_single_panel_with_generate": "PASS (heading, intake-know-people, intake-recruit-outside, generate-recruitment_strategy present; no 'Save My Answers' button)",
+      "module3_application_editor_and_publish": "PASS (application-editor + publish-panel + publish-button + application-saved-note + application-link + copy-application-link visible; generate-application-button correctly hidden because application_saved was already true from backend test; no '+ Add Question', no add-question-input, no custom-question rows, no 'Save Board Application' text)",
+      "module3_launch_tools": "PASS (social_posts, board_recruitment_job_post, linkedin_post, linkedin_launch_instructions, board_opportunity, recruitment_emails, personal_invitation_message all rendered)",
+      "module3_personal_invitation_email_conditional": "PASS (Personal Invitation Email card correctly NOT shown because owner-review-admin Module 2 intake does not have know_people=Yes/Some)",
+      "module4_external_form_name_and_cv_only": "PASS (only external-applicant-name + external-applicant-cv present; no email/phone/linkedin/notes testids)",
+      "module4_add_external_via_ui": "PASS (created 'TEST External Candidate', appears with source 'LinkedIn / External')",
+      "module4_applicant_detail": "PASS (interview-guide-panel, generate-interview-guide-button, applicant-status-select present)",
+      "module4_no_decision_generators": "PASS (no generate-conditional_offer, no generate-after_interview_rejection in Module 4)",
+      "module4_general_tools_present": "PASS (module4-general-tools panel present)",
+      "module5_three_subsections": "PASS (module5-verify-section + module5-decide-section + module5-prepare-section)",
+      "module5_verify_reference_cards_for_external": "PASS (selecting external applicant renders reference-check-tools with reference_request_email, reference_call_script, reference_evaluation_form generator cards)",
+      "module5_decide_cards_for_external": "PASS (decision-tools renders conditional_offer + after_interview_rejection cards)",
+      "module5_prepare_org_docs": "PASS (organization_overview, board_manual, board_member_agreement, confidentiality_agreement, conflict_of_interest_agreement cards + board-profile-panel with generate-board-profile-form)",
+      "module6_new_board_members_section": "PASS (module6-members-section shows 1 Selected applicant row after status set to Selected in Module 4)",
+      "module6_resources_from_module5": "PASS (5 prepared-* cards; text 'Generate in Module 5' / 'prepare it in Module 5' present 8 times, no duplicate generators)",
+      "module6_first_meeting_panel": "PASS (first-meeting-panel + meeting-date/time/timezone/location/prepare fields present; generate button NOT clicked)",
+      "module6_script_section": "PASS (module6-script-section present)",
+      "mobile_390px_no_overflow_m1": "PASS (documentElement scrollWidth <= clientWidth)",
+      "mobile_390px_no_overflow_m3": "PASS"
+    }
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/workspace/applications/{id}", "issue": "Not implemented (returned 405). Prevents clean teardown of TEST external applicants created during testing. Owner UI does not surface a delete either — consider adding for QA-friendliness and for founders who want to remove test/spam applicants."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_modules_1_to_6_refactor.py",
+    "/app/test_reports/pytest/iteration_13.xml"
+  ],
+  "action_items": [
+    "Optional: add DELETE /api/workspace/applications/{id} (owner-scoped) so QA + founders can remove test/spam applicants — one TEST external applicant is left in the owner-review-admin tenant from this run.",
+    "Optional cleanup: delete the two TEST applicants from db.opportunity_applications where owner_user_id='owner-review-admin' and profile_snapshot.full_name starts with 'TEST' (created during this iteration)."
+  ],
+  "critical_code_review_comments": [
+    "workspace_routes.add_external_applicant still accepts email/phone/linkedin/notes as Form fields even though the new UI never sends them. Harmless (all default to ''), but if the intent is strict name-only, tighten the endpoint to reject non-empty email/phone/linkedin so a stale front-end never silently persists PII the founder no longer intended to collect.",
+    "Module3 ApplicationPanel silently ignores /workspace/opportunity/application/generate failures beyond a generic error string. Consider surfacing the backend detail (e.g., 401/403) more prominently since this endpoint has no confirmation step.",
+    "opportunity_readiness treats application_saved as bool(custom_questions is not None AND opportunity.application_saved). The custom_questions check is now vestigial — the new endpoint always sets custom_questions=[]. Fine today but a future 'skip application' path could regress the readiness check unexpectedly.",
+    "ai_service.GENERATION_TYPES 'personal_invitation_email' has no conditional-visibility flag on the backend; the front-end alone decides whether to render the card based on Module 2 intake. If a future customer manually visits /api/workspace/generate with type=personal_invitation_email without answering the intake, generation will succeed with no upstream guard."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_modules_1_to_6_refactor.py",
+    "/app/test_reports/iteration_13.json",
+    "/app/test_reports/pytest/iteration_13.xml"
+  ],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% of executed UI checks"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com used via /app/memory/test_credentials.md. Owner Review Mode banner is active (OWNER_RECRUITMENT_REVIEW_MODE=true). No new members were registered — all workspace endpoints were exercised as user_id 'owner-review-admin' via admin cookie.",
+  "seed_data_creation": "2 TEST external applicants left in db.opportunity_applications for owner_user_id='owner-review-admin': 'TEST_ExternalCandidate_Modules' (created via backend test, source 'LinkedIn / External') and 'TEST External Candidate' (created via Module 4 UI, status later set to Selected). No DELETE endpoint exists to clean these up. Also: opportunities.application_saved is now true for owner-review-admin (previous iterations left it false). No generated_materials were created — zero Claude calls.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_modules_1_to_6_refactor.py is the regression suite for the Modules 1-6 refactor. It is safe to re-run — it makes NO Claude calls and NO publishes/emails. It does create ONE TEST external applicant per run in the owner-review-admin tenant (the DELETE endpoint is not implemented). Iteration 13 also confirms the Module 3 generate-application-button is hidden once opportunities.application_saved=True — this is expected. To retest the pre-generation state, first reset db.opportunities for user_id='owner-review-admin' by unsetting application_saved.",
+  "rca_of_the_issue": "N/A — no product bugs found. Modules 1-6 refactor matches the review specification. Only findings are minor: (a) missing DELETE endpoint for external applicants makes teardown harder, and (b) add_external_applicant still accepts (but ignores) legacy email/phone/linkedin/notes form fields."
+}

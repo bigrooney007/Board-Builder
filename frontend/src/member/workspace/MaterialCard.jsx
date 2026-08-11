@@ -12,7 +12,7 @@ export const printText = (title, text) => {
 
 export const currentVersion = (material) => material?.versions?.find((v) => v.version === material.current_version);
 
-export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false }) => {
+export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false, beforeGenerate }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
@@ -33,9 +33,13 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
     if (isRegenerate && !window.confirm("This will create another version of this material. Continue?")) return;
     setBusy(true); setError("");
     try {
+      if (beforeGenerate) {
+        const proceed = await beforeGenerate();
+        if (proceed === false) { setBusy(false); return; }
+      }
       await memberApi.post("/workspace/generate", { type, application_id: applicationId, instructions });
       await refresh();
-    } catch (err) { setError(err.response?.data?.detail || "Generation failed. Your information is preserved — you can try again."); }
+    } catch (err) { setError(err.response?.data?.detail || err.message || "Generation failed. Your information is preserved — you can try again."); }
     setBusy(false);
   };
 

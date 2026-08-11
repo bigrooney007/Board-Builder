@@ -178,7 +178,7 @@ def create_workspace_router(db) -> APIRouter:
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
-    async def add_external_applicant(request: Request, name: str = Form(...), email: str = Form(...), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form(""), cv: UploadFile = File(None)):
+    async def add_external_applicant(request: Request, name: str = Form(...), cv: UploadFile = File(None), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
         member = await current_member(request)
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
@@ -191,7 +191,7 @@ def create_workspace_router(db) -> APIRouter:
             cv_text = extract_cv_text(content, cv.filename)
         application = {
             "application_id": new_id(), "owner_user_id": member["user_id"], "opportunity_id": "",
-            "applicant_email": email.strip().lower(), "source": "External / LinkedIn", "status": "New",
+            "applicant_email": email.strip().lower(), "source": "LinkedIn / External", "status": "New",
             "profile_snapshot": {"full_name": name.strip(), "email": email.strip().lower(), "phone": phone.strip(), "linkedin": linkedin.strip(), "profession": "", "city": "", "state_region": ""},
             "answers": {}, "notes": notes.strip(), "cv_file_id": cv_file_id, "cv_filename": cv_filename, "cv_text": cv_text,
             "interview_guide": {"status": "Pending"}, "references": [], "background_check": {"status": "Not started"},
@@ -316,6 +316,17 @@ def create_workspace_router(db) -> APIRouter:
             {"user_id": member["user_id"]},
             {"$set": {"custom_questions": questions, "application_saved": True, "updated_at": now_iso()}})
         return {"status": "saved", "custom_questions": questions}
+
+    @router.post("/opportunity/application/generate")
+    async def generate_standard_application(request: Request):
+        """Creates and automatically saves the standard Board Application. No AI call, no emails sent."""
+        member = await current_member(request)
+        await ensure_opportunity(member["user_id"], member)
+        await db.opportunities.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"custom_questions": [], "application_saved": True, "updated_at": now_iso()}})
+        opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0})
+        return {"status": "generated", "opportunity": opportunity, "core_questions": CORE_QUESTIONS}
 
     @router.post("/opportunity/publish")
     async def publish_opportunity(request: Request):
@@ -455,7 +466,9 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Agreements can only be prepared for Selected board members")
         material = await get_current_material(db, user_id, payload.agreement_type, payload.application_id)
         if not material or not material["current"]:
-            raise HTTPException(status_code=409, detail="Generate and save the agreement before preparing it for signature")
+            material = await get_current_material(db, user_id, payload.agreement_type, "")
+        if not material or not material["current"]:
+            raise HTTPException(status_code=409, detail="Generate and save the agreement in Module 5 before preparing it for signature")
         ts = now_iso()
         snapshot = application.get("profile_snapshot", {})
         record = {
