@@ -998,3 +998,5 @@ p { line-height: 1.72; }
 .results-support-panel { text-align: left; }
 @media (max-width: 640px) { .hosted-agreement { padding: 28px 20px; } .candidate-card-actions { width: 100%; } }
 @media print { .hosted-agreement-page { background: #fff; padding: 0; } .hosted-agreement { box-shadow: none; } .hosted-agreement-sign button, .hosted-agreement-signed .button { display: none; } }
+.field-helper { font-size: 0.78rem; color: #5a6a61; margin-top: 4px; display: block; }
+.link-button { background: none; border: none; color: #087e5b; text-decoration: underline; cursor: pointer; font-size: 0.82rem; padding: 0; }

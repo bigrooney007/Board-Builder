@@ -48,6 +48,8 @@ export const Module1Profile = ({ onConfirmed }) => {
 
   const saveAndConfirm = async () => {
     const found = {};
+    if (!data.organization_name.trim()) found.organization_name = "Enter your organization name.";
+    if (!data.mission.trim()) found.mission = "Enter your mission statement.";
     if (!data.current_board_skills.length) found.current = "Select at least one option (or Other).";
     if (!data.desired_board_skills.length) found.desired = "Select at least one option (or Other).";
     setErrors(found);
@@ -65,6 +67,17 @@ export const Module1Profile = ({ onConfirmed }) => {
       <section className="workspace-panel" data-testid="module1-intake">
         <h2>Identify the Board Members Your Organization Needs</h2>
         <p className="material-description">You have already told us about your organization and the kind of board you want to build. Now tell us what your present board already brings and what you believe is missing. We will use that information to identify the exact board-member profiles your organization should recruit.</p>
+        <div className="two-col-fields">
+          <label className="field"><span>Organization name <b>*</b></span>
+            <input value={data.organization_name} onChange={(event) => setData({ ...data, organization_name: event.target.value })} data-testid="module1-organization-name" />
+            {errors.organization_name && <p className="field-error">{errors.organization_name}</p>}
+          </label>
+          <label className="field"><span>What is your organization's mission statement? <b>*</b></span>
+            <textarea rows="3" value={data.mission} onChange={(event) => setData({ ...data, mission: event.target.value })} data-testid="module1-mission" />
+            <span className="field-helper">Enter the mission statement you want applicants, board members and supporters to see in your Recruitment materials. You only enter it once — it is used automatically everywhere it belongs.</span>
+            {errors.mission && <p className="field-error">{errors.mission}</p>}
+          </label>
+        </div>
         <SkillPicker
           label="What skills, experience and strengths are already represented on your present board?"
           values={data.current_board_skills} other={data.current_board_skills_other}

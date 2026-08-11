@@ -257,7 +257,7 @@ export const SignAgreementPage = () => {
   const sign = async () => {
     setBusy(true); setError("");
     try {
-      const response = await axios.post(`${API}/public/sign/${token}`, { ...form, signature_method: method, signature_image: method === "drawn" ? drawnImage : "" });
+      const response = await axios.post(`${API}/public/sign/${token}`, { ...form, signature_method: method, signature_image: method === "typed" ? "" : drawnImage });
       setDone(response.data.message);
       await load();
     } catch (err) { setError(err.response?.data?.detail || "Your signature could not be recorded."); }
@@ -301,16 +301,31 @@ export const SignAgreementPage = () => {
                 <label className="field"><span>Date <b>*</b></span><input value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} data-testid="sign-date-input" /></label>
               </div>
               <div className="signature-method-toggle" data-testid="signature-method-toggle">
-                <button type="button" className={`button button-small ${method === "typed" ? "" : "button-back"}`} onClick={() => setMethod("typed")} data-testid="method-typed">Type My Signature</button>
-                <button type="button" className={`button button-small ${method === "drawn" ? "" : "button-back"}`} onClick={() => setMethod("drawn")} data-testid="method-drawn">Draw My Signature</button>
+                <button type="button" className={`button button-small ${method === "typed" ? "" : "button-back"}`} onClick={() => setMethod("typed")} data-testid="method-typed">Type My Name to Sign</button>
+                <button type="button" className={`button button-small ${method === "typed" ? "button-back" : ""}`} onClick={() => setMethod("drawn")} data-testid="method-drawn">Use My Signature</button>
               </div>
               {method === "typed" ? (
                 form.typed_signature && <p className="typed-signature-display" data-testid="typed-signature-preview">{form.typed_signature}</p>
               ) : (
-                <SignatureCanvas onChange={setDrawnImage} />
+                <>
+                  <SignatureCanvas onChange={(image) => { setDrawnImage(image); setMethod("drawn"); }} />
+                  <label className="field" style={{ marginTop: 6 }}>
+                    <span>Or upload a saved signature image (PNG or JPG)</span>
+                    <input type="file" accept="image/png,image/jpeg" data-testid="signature-upload-input" onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      if (!["image/png", "image/jpeg"].includes(file.type)) { setError("Use a PNG or JPG signature image."); return; }
+                      if (file.size > 200000) { setError("Signature image must be under 200KB."); return; }
+                      const reader = new FileReader();
+                      reader.onload = () => { setDrawnImage(reader.result); setMethod("uploaded"); setError(""); };
+                      reader.readAsDataURL(file);
+                    }} />
+                  </label>
+                  {method === "uploaded" && drawnImage && <img src={drawnImage} alt="Signature preview" className="signed-signature-image" data-testid="uploaded-signature-preview" />}
+                </>
               )}
               {error && <p className="submit-error" data-testid="sign-error">{error}</p>}
-              <button className="button" disabled={busy || !form.agreed || !form.typed_signature || !form.email || (method === "drawn" && !drawnImage)} onClick={sign} data-testid="sign-agreement-button">{busy ? "Recording…" : "Sign Agreement"}</button>
+              <button className="button" disabled={busy || !form.agreed || !form.typed_signature || !form.email || (method !== "typed" && !drawnImage)} onClick={sign} data-testid="sign-agreement-button">{busy ? "Recording…" : "Sign Agreement"}</button>
               <p className="material-meta">This electronic signature process does not constitute legal advice. The organization remains responsible for determining whether its document and signature process meets its legal requirements.</p>
             </section>
           )}

@@ -49,6 +49,10 @@ def slugify(text: str) -> str:
 
 def profile_context_text(profile_data: dict, lead: dict = None) -> str:
     parts = []
+    if profile_data.get("mission"):
+        parts.append(f"MISSION STATEMENT (use this exact saved mission wherever the mission belongs — never write a placeholder for it): {profile_data['mission']}")
+    if profile_data.get("organization_name") and not lead:
+        parts.append(f"ORGANIZATION NAME: {profile_data['organization_name']}")
     if lead:
         board_type = (lead.get("answers") or {}).get("board_type", "") or (profile_data or {}).get("board_kind", "")
         if board_type:

@@ -141,6 +141,21 @@ SYSTEM_MESSAGE = (
     "You must respond with a single valid JSON object matching the requested schema exactly — no markdown, no code fences, no commentary."
 )
 
+SYSTEM_MESSAGE += (
+    "FINISHED CONTENT STANDARD: you are creating the FINAL version of a professional nonprofit recruitment resource, not a template, outline, draft or notes. "
+    "The organization's real name, mission, board type, roles, meeting details, links and candidate names are supplied in the context — use them everywhere they belong. "
+    "NEVER output placeholders or template tokens such as [Organization Name], [Mission], [Mission Statement], [Board Type], [Candidate Name], [Meeting Frequency], [Location], [Board Role], [Organization Website], [Insert ...], 'Information to Add', 'To Be Confirmed' or 'TBD'. "
+    "The ONLY permitted placeholder is [APPLICANT NAME] and only in explicitly general reusable templates. "
+    "If a scheduling link was not supplied, never invent one and never write [Scheduling Link] — omit the line or ask the reader to reply to arrange a time. "
+    "Never invent organization facts (programs, impact numbers, founding year, history, requirements, priorities) that were not supplied; write around unknown nonessential details naturally. "
+    "Never write advice to the founder inside the resource such as 'Add your mission here', 'Insert meeting frequency', 'Consider adding' or 'You may want to'. "
+    "FORMATTING: begin every paragraph flush left with NO first-line indentation, NO leading spaces or tabs, NO blockquote or hanging indents. Use blank lines between paragraphs. "
+)
+
+def _flush_left(text: str) -> str:
+    return re.sub(r"(?m)^[ \t]+", "", text or "").strip()
+
+
 
 def _format_value(value, indent=0):
     pad = "  " * indent
@@ -215,17 +230,17 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
         for criterion in structured.get("selection_criteria", []):
             lines.append(f"- {criterion}")
         lines.extend(["", STRATEGY_TIMELINE_TEXT, "", STRATEGY_ROADMAP_TEXT, "", STRATEGY_NEXT_STEP_TEXT])
-        return "\n".join(line.rstrip() for line in lines).strip()
+        return _flush_left("\n".join(line.rstrip() for line in lines))
     if generation_type == "powerhouse_board_blueprint":
         lines = ["THE BOARD MEMBERS YOUR ORGANIZATION NEEDS", ""]
         for index, role in enumerate(structured.get("priority_roles", [])[:5], 1):
             lines.extend([f"{index}. {role.get('role_name', '')}", role.get("summary", ""), ""])
-        return "\n".join(lines).strip()
+        return _flush_left("\n".join(lines))
     lines = [meta["title"].upper(), ""]
     lines.extend(_format_value(structured))
     if meta.get("agreement"):
         lines.extend(["", REVIEW_WARNING])
-    return "\n".join(line.rstrip() for line in lines).strip()
+    return _flush_left("\n".join(line.rstrip() for line in lines))
 
 
 def blueprint_detailed_text(structured: dict) -> str:
@@ -238,7 +253,7 @@ def blueprint_detailed_text(structured: dict) -> str:
         if role.get("relevant_skills"):
             lines.append("Relevant skills: " + ", ".join(role["relevant_skills"]))
         lines.append("")
-    return "\n".join(lines).strip()
+    return _flush_left("\n".join(lines))
 
 
 def parse_json_response(text: str) -> dict:

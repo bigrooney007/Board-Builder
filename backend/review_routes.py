@@ -52,7 +52,12 @@ def create_review_router(db) -> APIRouter:
         if not material:
             raise HTTPException(status_code=404, detail="This shared resource is not available")
         current = next((v for v in material["versions"] if v["version"] == material["current_version"]), None)
-        return {"title": material["title"], "display_text": current["display_text"] if current else ""}
+        profile = await db.recruitment_profiles.find_one({"user_id": material["user_id"]}, {"_id": 0, "branding": 1})
+        branding = (profile or {}).get("branding", {})
+        org = (await db.opportunities.find_one({"user_id": material["user_id"]}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", "")
+        return {"title": material["title"], "display_text": current["display_text"] if current else "",
+                "organization_name": org, "logo_data": branding.get("logo_data", ""),
+                "primary_color": branding.get("primary_color", ""), "secondary_color": branding.get("secondary_color", "")}
 
     @router.get("/board-profile/{token}")
     async def board_profile_meta(token: str):

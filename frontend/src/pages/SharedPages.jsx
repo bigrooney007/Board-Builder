@@ -10,20 +10,29 @@ export function SharedResourcePage() {
   const [resource, setResource] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "robots"; meta.content = "noindex, nofollow";
+    document.head.appendChild(meta);
+    return () => document.head.removeChild(meta);
+  }, []);
+  useEffect(() => {
     axios.get(`${API}/shared/${token}`).then((response) => setResource(response.data)).catch(() => setError("This shared resource is not available."));
   }, [token]);
+  const primary = resource?.primary_color || "#1d3a2f";
   return (
-    <FunnelLayout>
-      <main className="shared-resource-page" data-testid="shared-resource-page">
-        {error && <p className="submit-error">{error}</p>}
-        {resource && (
-          <article className="shared-resource-card">
+    <main className="hosted-agreement-page" data-testid="shared-resource-page">
+      {error && <div className="member-card" style={{ margin: "60px auto", maxWidth: 480 }}><h2>{error}</h2></div>}
+      {resource && (
+        <article className="hosted-agreement" style={{ "--agreement-primary": primary }}>
+          <header className="hosted-agreement-head">
+            {resource.logo_data && <img src={resource.logo_data} alt={`${resource.organization_name} logo`} className="hosted-agreement-logo" />}
+            {resource.organization_name && <p className="hosted-agreement-org">{resource.organization_name}</p>}
             <h1 data-testid="shared-resource-title">{resource.title}</h1>
-            <pre className="material-display" data-testid="shared-resource-body">{resource.display_text}</pre>
-          </article>
-        )}
-      </main>
-    </FunnelLayout>
+          </header>
+          <div className="hosted-agreement-body" data-testid="shared-resource-body">{resource.display_text}</div>
+        </article>
+      )}
+    </main>
   );
 }
 

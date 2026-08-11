@@ -580,6 +580,91 @@ def create_refinement_router(db) -> APIRouter:
         return Response(content=buffer.getvalue(), media_type="application/pdf",
                         headers={"Content-Disposition": 'attachment; filename="Board Recruitment Strategy.pdf"'})
 
+    @router.get("/workspace/material-pdf/{material_id}")
+    async def material_pdf(material_id: str, request: Request):
+        from io import BytesIO
+        import base64 as b64
+        from fastapi.responses import Response
+        from reportlab.lib.pagesizes import LETTER
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.lib.colors import HexColor
+        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, KeepTogether, Image
+        member = await current_member(request)
+        material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0})
+        if not material:
+            raise HTTPException(status_code=404, detail="Material not found")
+        current = next((v for v in material["versions"] if v["version"] == material["current_version"]), None)
+        text = (current or {}).get("display_text", "")
+        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1})
+        branding = (profile or {}).get("branding", {})
+        org = (await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", "")
+        primary = branding.get("primary_color") or "#1d3a2f"
+        title = material["title"]
+        buffer = BytesIO()
+        doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=20 * mm, bottomMargin=20 * mm, title=title)
+        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
+
+        def footer(canvas, _doc):
+            canvas.saveState()
+            canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(HexColor("#6b7a72"))
+            canvas.drawString(doc.leftMargin, 12 * mm, f"{org} — {title}" if org else title)
+            canvas.drawRightString(doc.leftMargin + doc.width, 12 * mm, f"Page {canvas.getPageNumber()}")
+            canvas.restoreState()
+
+        doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=footer)])
+        h1 = ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=19, leading=24, textColor=HexColor(primary), spaceAfter=4)
+        h3 = ParagraphStyle("h3", fontName="Helvetica-Bold", fontSize=11, leading=15, textColor=HexColor(primary), spaceBefore=12, spaceAfter=4, keepWithNext=1)
+        body = ParagraphStyle("body", fontName="Helvetica", fontSize=10.5, leading=16, spaceAfter=7, firstLineIndent=0)
+        bullet = ParagraphStyle("bullet", parent=body, leftIndent=12, spaceAfter=4)
+        meta = ParagraphStyle("meta", parent=body, textColor=HexColor("#5a6a61"))
+        esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;")
+        story = []
+        logo = branding.get("logo_data", "")
+        if logo.startswith("data:image"):
+            try:
+                image_bytes = b64.b64decode(logo.split(",", 1)[1])
+                img = Image(BytesIO(image_bytes))
+                ratio = img.imageWidth / max(img.imageHeight, 1)
+                img.drawHeight = 15 * mm
+                img.drawWidth = min(15 * mm * ratio, 58 * mm)
+                img.hAlign = "LEFT"
+                story.extend([img, Spacer(1, 6)])
+            except Exception:
+                pass
+        story.append(Paragraph(esc(title), h1))
+        if org:
+            story.append(Paragraph(esc(org), meta))
+        story.append(Spacer(1, 8))
+        lines = [line.rstrip() for line in text.split("\n")]
+        if lines and lines[0].strip().upper() == title.upper():
+            lines = lines[1:]
+        buffer_paragraph = []
+
+        def flush():
+            if buffer_paragraph:
+                story.append(Paragraph(esc(" ".join(buffer_paragraph)), body))
+                buffer_paragraph.clear()
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                flush()
+                continue
+            if stripped.startswith("- ") or stripped.startswith("• "):
+                flush()
+                story.append(Paragraph(f"• {esc(stripped[2:])}", bullet))
+            elif stripped == stripped.upper() and 2 < len(stripped) < 80 and any(c.isalpha() for c in stripped):
+                flush()
+                story.append(Paragraph(esc(stripped.title() if len(stripped) > 45 else stripped), h3))
+            else:
+                buffer_paragraph.append(stripped)
+        flush()
+        doc.build(story)
+        return Response(content=buffer.getvalue(), media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{title}.pdf"'})
+
     @router.post("/workspace/applications/{application_id}/decision")
     async def candidate_decision(application_id: str, payload: dict, request: Request):
         """Move Forward / Do Not Move Forward. Never sends emails; prepares candidate-specific links idempotently."""

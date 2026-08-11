@@ -33,6 +33,16 @@ export const printBranded = (title, text, branding = {}) => {
   win.print();
 };
 
+export const downloadMaterialPdf = async (material) => {
+  try {
+    const response = await memberApi.get(`/workspace/material-pdf/${material.material_id}`, { responseType: "blob" });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = url; link.download = `${material.title || "Document"}.pdf`; link.click();
+    URL.revokeObjectURL(url);
+  } catch { window.alert("The PDF could not be downloaded."); }
+};
+
 export const currentVersion = (material) => material?.versions?.find((v) => v.version === material.current_version);
 
 export const SendMaterialButton = ({ type, applicationId, label = "Send", sentAt = "", onSent }) => {
@@ -137,7 +147,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
             {!hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> Edit</button>}
             <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? "Generating…" : "Regenerate"}</button>
             {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>}
-            {!hideDisplay && <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>}
+            {!hideDisplay && <button className="button button-back" onClick={() => downloadMaterialPdf(material)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>}
             {shareable && <button className="button button-back" onClick={copyShareLink} data-testid={`share-${type}`}><Copy size={14} /> Copy Share Link</button>}
             {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> Approve</button>}
             {extraActions}

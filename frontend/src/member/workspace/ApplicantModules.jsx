@@ -514,25 +514,29 @@ export const BoardProfilePanel = () => {
 
 const docStage = (material) => !material ? "Not Started" : material.status === "Approved" ? "Approved" : "Draft";
 
+const TIMEZONES = ["Eastern Time (ET)", "Central Time (CT)", "Mountain Time (MT)", "Pacific Time (PT)", "Alaska Time", "Hawaii Time", "UTC", "Other"];
+
 const OnboardingSessionPanel = ({ session, setSession }) => {
   const [message, setMessage] = useState("");
   const save = async () => {
     await memberApi.put("/workspace/onboarding-session", session);
-    setMessage("Onboarding session saved. It is reused for every candidate's Conditional Appointment.");
+    setMessage("Onboarding session saved. It is reused automatically for every candidate joining this session.");
   };
   return (
     <div className="detail-section" data-testid="onboarding-session-panel">
-      <h3>Board Onboarding Session</h3>
-      <p className="material-description">The Conditional Appointment email also invites the candidate to your Board Onboarding Session. Save the session once and reuse it for every candidate.</p>
       <div className="two-col-fields">
-        <label className="field"><span>Date</span><input value={session.date || ""} onChange={(event) => setSession({ ...session, date: event.target.value })} data-testid="session-date" /></label>
-        <label className="field"><span>Time</span><input value={session.time || ""} onChange={(event) => setSession({ ...session, time: event.target.value })} data-testid="session-time" /></label>
-        <label className="field"><span>Timezone</span><input value={session.timezone || ""} onChange={(event) => setSession({ ...session, timezone: event.target.value })} data-testid="session-timezone" /></label>
-        <label className="field"><span>Format</span><select value={session.format || ""} onChange={(event) => setSession({ ...session, format: event.target.value })} data-testid="session-format"><option value="">Select</option>{["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}</select></label>
-        {(session.format === "Virtual" || session.format === "Hybrid") && <label className="field"><span>Meeting link</span><input value={session.link || ""} onChange={(event) => setSession({ ...session, link: event.target.value })} data-testid="session-link" /></label>}
-        {(session.format === "In Person" || session.format === "Hybrid") && <label className="field"><span>Location</span><input value={session.location || ""} onChange={(event) => setSession({ ...session, location: event.target.value })} data-testid="session-location" /></label>}
+        <label className="field"><span>What date would you like to hold the Board Onboarding Session?</span><input type="date" value={session.date || ""} onChange={(event) => setSession({ ...session, date: event.target.value })} data-testid="session-date" /></label>
+        <label className="field"><span>What time would you like to hold the session?</span><input type="time" value={session.time || ""} onChange={(event) => setSession({ ...session, time: event.target.value })} data-testid="session-time" /></label>
+        <label className="field"><span>What timezone should we use?</span>
+          <select value={TIMEZONES.includes(session.timezone) ? session.timezone : (session.timezone ? "Other" : "")} onChange={(event) => setSession({ ...session, timezone: event.target.value === "Other" ? (TIMEZONES.includes(session.timezone) ? "" : session.timezone || "") || "Other" : event.target.value })} data-testid="session-timezone">
+            <option value="">Select timezone</option>{TIMEZONES.map((zone) => <option key={zone}>{zone}</option>)}
+          </select>
+        </label>
+        <label className="field"><span>How will the onboarding session be held?</span><select value={session.format || ""} onChange={(event) => setSession({ ...session, format: event.target.value })} data-testid="session-format"><option value="">Select</option>{["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}</select></label>
+        {(session.format === "Virtual" || session.format === "Hybrid") && <label className="field"><span>What meeting link should we include? (Zoom, Google Meet, Teams or another link)</span><input value={session.link || ""} onChange={(event) => setSession({ ...session, link: event.target.value })} data-testid="session-link" /></label>}
+        {(session.format === "In Person" || session.format === "Hybrid") && <label className="field"><span>Where will the onboarding session take place?</span><input value={session.location || ""} onChange={(event) => setSession({ ...session, location: event.target.value })} data-testid="session-location" /></label>}
       </div>
-      <label className="field"><span>Anything the candidate should prepare (optional)</span><textarea rows="2" value={session.prepare || ""} onChange={(event) => setSession({ ...session, prepare: event.target.value })} /></label>
+      <label className="field"><span>Is there anything you would like the new board members to prepare before the session? (optional)</span><textarea rows="2" value={session.prepare || ""} onChange={(event) => setSession({ ...session, prepare: event.target.value })} data-testid="session-prepare" /></label>
       <button className="button button-back" onClick={save} data-testid="save-session-button">Save Onboarding Session</button>
       {message && <p className="member-success">{message}</p>}
     </div>
@@ -575,17 +579,31 @@ const CandidateStatusList = ({ application }) => {
     memberApi.get("/workspace/signatures", { params: { application_id: application.application_id } }).then((r) => setSignatures(r.data.signatures)).catch(() => {});
     memberApi.get(`/workspace/board-profile-link/${application.application_id}`).then((r) => setProfileLink(r.data)).catch(() => {});
   }, [application.application_id]);
+  const signatureRecord = (type) => signatures.find((s) => s.agreement_type === type);
   const signatureStatus = (type) => {
-    const record = signatures.find((s) => s.agreement_type === type);
+    const record = signatureRecord(type);
     if (!record) return "Not Sent";
     if (record.status === "Signed") return "Signed";
     return record.status === "Sent" ? "Sent" : "Ready to Send";
+  };
+  const copyLink = async (token) => {
+    await navigator.clipboard?.writeText(`${window.location.origin}/sign/${token}`);
   };
   return (
     <ul className="readiness-list" data-testid="candidate-status-list">
       <li className={application.reference_check_status === "Completed" ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
       <li className={["Completed", "Not Required"].includes(application.background_check?.status) ? "done" : ""}>Background Check: {application.background_check?.status || "Not recorded"}</li>
-      {AGREEMENTS.map(([type, title]) => <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>{title}: {signatureStatus(type)}</li>)}
+      {AGREEMENTS.map(([type, title]) => {
+        const record = signatureRecord(type);
+        return (
+          <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>
+            {title}: {signatureStatus(type)}
+            {record && record.status !== "Signed" && record.token && (
+              <button className="link-button" onClick={() => copyLink(record.token)} data-testid={`copy-sign-link-${type}`} style={{ marginLeft: 8 }}>Copy Review &amp; Sign Link</button>
+            )}
+          </li>
+        );
+      })}
       <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Ready" : "Not Sent"}</li>
       <li className={application.emails_sent?.conditional_offer ? "done" : ""}>Conditional Appointment: {application.emails_sent?.conditional_offer ? "Sent" : "Not Prepared"}</li>
     </ul>
@@ -700,10 +718,10 @@ export const Module5References = () => {
       </section>
 
       <section className="workspace-panel" data-testid="module5-decide-section">
-        <h2>Communicate Your Decision</h2>
-        <p className="material-description">After references and any background checks, communicate your decision. The Conditional Appointment email is also the candidate's onboarding invitation — it automatically includes the candidate's secure links. Nothing is ever pasted manually.</p>
+        <h2>Schedule the Board Onboarding Session</h2>
+        <p className="material-description">Choose when you would like to meet with your new board members for onboarding. This information will automatically be included in their Conditional Appointment email, along with each candidate's secure links — nothing is ever pasted manually.</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
-        {!detail && <p className="workspace-note">Choose a candidate above to prepare their decision communication.</p>}
+        {!detail && <p className="workspace-note">Choose a candidate above to prepare their Conditional Appointment email.</p>}
         {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} key={`dec-${detail.application_id}`} />}
       </section>
     </div>

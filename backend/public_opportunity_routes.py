@@ -281,15 +281,15 @@ def create_public_opportunity_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This agreement has already been signed")
         if not payload.agreed:
             raise HTTPException(status_code=422, detail="You must confirm that you have read and agree to the document")
-        method = payload.signature_method if payload.signature_method in {"typed", "drawn"} else "typed"
-        if method == "drawn" and not payload.signature_image.startswith("data:image"):
-            raise HTTPException(status_code=422, detail="Draw your signature before submitting, or switch to the typed signature option")
+        method = payload.signature_method if payload.signature_method in {"typed", "drawn", "uploaded"} else "typed"
+        if method in {"drawn", "uploaded"} and not payload.signature_image.startswith("data:image"):
+            raise HTTPException(status_code=422, detail="Add your signature before submitting, or switch to the typed signature option")
         if len(payload.signature_image) > 300000:
             raise HTTPException(status_code=413, detail="The drawn signature image is too large")
         ts = now_iso()
         signed = {"typed_signature": payload.typed_signature, "email": payload.email.lower(),
                   "date": payload.date, "signed_at": ts, "method": method,
-                  "signature_image": payload.signature_image if method == "drawn" else ""}
+                  "signature_image": payload.signature_image if method in {"drawn", "uploaded"} else ""}
         result = await db.signature_requests.update_one(
             {"token": token, "status": {"$ne": "Signed"}},
             {"$set": {"status": "Signed", "signed": signed, "updated_at": ts}})

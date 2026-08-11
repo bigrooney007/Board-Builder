@@ -4,7 +4,7 @@ import { ArrowLeft, Download, ExternalLink, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
 import { useMemberAuth } from "../MemberAuthContext";
 import { MemberShell } from "../MemberShell";
-import { MaterialCard, SendMaterialButton, currentVersion, printBranded } from "./MaterialCard";
+import { MaterialCard, SendMaterialButton, downloadMaterialPdf } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { useBranding } from "./ApplicantModules";
 
@@ -14,7 +14,6 @@ const BoardMemberResultCard = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const snapshot = application.profile_snapshot || {};
   const portfolio = byType.board_member_portfolio;
-  const version = currentVersion(portfolio);
   return (
     <div className="board-member-result" data-testid={`board-member-${application.application_id}`}>
       <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">Board Member</span></h3>
@@ -22,8 +21,8 @@ const BoardMemberResultCard = ({ application, branding, onChanged }) => {
       <MaterialCard type="board_member_portfolio" title="Board Member Portfolio" buttonLabel="Generate Board Member Portfolio"
         description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included."
         applicationId={application.application_id} material={portfolio} refresh={refresh} approvable
-        extraActions={portfolio?.status === "Approved" && version ? (
-          <button className="button button-back" onClick={() => printBranded("Board Member Portfolio", version.display_text, branding)} data-testid={`portfolio-pdf-${application.application_id}`}><Download size={14} /> Create Portfolio PDF</button>
+        extraActions={portfolio?.status === "Approved" ? (
+          <button className="button button-back" onClick={() => downloadMaterialPdf(portfolio)} data-testid={`portfolio-pdf-${application.application_id}`}><Download size={14} /> Create Portfolio PDF</button>
         ) : null} />
       {portfolio?.status === "Approved" && (
         <MaterialCard type="portfolio_email" title="Email to Board Member" buttonLabel="Generate Portfolio Email"

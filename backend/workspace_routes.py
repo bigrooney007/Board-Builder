@@ -183,6 +183,11 @@ def create_workspace_router(db) -> APIRouter:
         profile = await get_profile(db, user_id)
         if not profile.get("confirmed"):
             raise HTTPException(status_code=409, detail="Complete Module 1 before generating materials")
+        lead_doc = await get_lead(db, member)
+        org_name_check = (lead_doc or {}).get("organization", "") or profile.get("data", {}).get("organization_name", "")
+        mission_check = profile.get("data", {}).get("mission", "")
+        if not org_name_check or not mission_check:
+            raise HTTPException(status_code=422, detail="Add your organization name and mission statement in Module 1 first. They are required so every recruitment material is finished and organization-specific.")
         context = await build_org_context(db, user_id, member)
         reference = await reference_context(db, payload.type)
         if reference:
@@ -647,7 +652,7 @@ def create_workspace_router(db) -> APIRouter:
         query = {"owner_user_id": member["user_id"]}
         if application_id:
             query["application_id"] = application_id
-        records = await db.signature_requests.find(query, {"_id": 0, "token": 0}).sort("created_at", -1).to_list(200)
+        records = await db.signature_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
         return {"signatures": records}
 
     @router.get("/signatures/{request_id}/download")
