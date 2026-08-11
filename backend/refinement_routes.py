@@ -730,6 +730,32 @@ def create_refinement_router(db) -> APIRouter:
         prepared["board_member_profile"] = "Ready"
         return {"status": "Moving Forward", "prepared": prepared}
 
+    @router.post("/admin/reset-review-data")
+    async def reset_review_data(request: Request):
+        """One-time scoped cleanup: deletes ONLY records belonging to the dedicated owner-review-admin tenant."""
+        await authenticate_admin(request, db)
+        rid = "owner-review-admin"
+        review_app_ids = [a["application_id"] async for a in db.opportunity_applications.find({"user_id": rid}, {"application_id": 1})]
+        deleted = {}
+        for name in sorted(await db.list_collection_names()):
+            if name.startswith("system.") or "." in name:
+                continue
+            conditions = [{"user_id": rid}, {"owner_user_id": rid}]
+            if review_app_ids:
+                conditions.append({"application_id": {"$in": review_app_ids}})
+            result = await db[name].delete_many({"$or": conditions})
+            if result.deleted_count:
+                deleted[name] = result.deleted_count
+        progress = await db.admin_review_progress.delete_many({})
+        if progress.deleted_count:
+            deleted["admin_review_progress"] = progress.deleted_count
+        remaining = 0
+        for name in await db.list_collection_names():
+            if name.startswith("system.") or "." in name:
+                continue
+            remaining += await db[name].count_documents({"$or": [{"user_id": rid}, {"owner_user_id": rid}]})
+        return {"deleted": deleted, "remaining_review_documents": remaining}
+
     # ---------- Owner review progress ----------
     @router.get("/workspace/board-profile-link/{application_id}")
     async def get_profile_link_status(application_id: str, request: Request):
