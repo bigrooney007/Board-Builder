@@ -19,6 +19,97 @@ const Login = ({ onLogin }) => {
   return <main className="admin-login-page" data-testid="admin-login-page"><form className="admin-login-card" onSubmit={submit}><div className="admin-login-icon"><Users size={27} /></div><p className="eyebrow">Owner access</p><h1>Board Applicants Administration</h1><p>Private access for the Nonprofit Board Builder owner.</p><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required data-testid="admin-email-input" /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required data-testid="admin-password-input" /></label>{error && <p className="submit-error" data-testid="admin-login-error">{error}</p>}<button className="button" type="submit" data-testid="admin-login-button">Log In</button></form></main>;
 };
 
+const ReviewResumePanel = () => {
+  const [progress, setProgress] = useState(null);
+  useEffect(() => { client.get("/review-mode/progress").then((response) => setProgress(response.data.progress)).catch(() => {}); }, []);
+  if (!progress) return null;
+  const reset = async () => {
+    if (!window.confirm("Start the Recruitment review from the beginning? This only resets your saved review position.")) return;
+    try { await client.delete("/review-mode/progress"); } catch { /* ignore */ }
+    window.location.href = "/recruit";
+  };
+  return (
+    <div className="review-resume-panel" data-testid="review-resume-panel">
+      <div>
+        <h3>Recruitment Experience Review</h3>
+        <p>Last reviewed: <strong data-testid="review-last-label">{progress.last_label || progress.last_route}</strong></p>
+        <p>Last activity: {progress.updated_at ? new Date(progress.updated_at).toLocaleString() : ""}</p>
+      </div>
+      <div className="review-resume-actions">
+        <a className="button button-small" href={progress.last_route} data-testid="resume-review-button">Resume Recruitment Review</a>
+        <button className="button button-back button-small" onClick={reset} data-testid="review-start-over-button">Start From Beginning</button>
+      </div>
+    </div>
+  );
+};
+
+const ImportApplicants = ({ refresh }) => {
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState(null);
+  const [consent, setConsent] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const send = async (commit) => {
+    setError("");
+    if (!file) { setError("Choose a CSV file first."); return; }
+    if (!consent) { setError("Please confirm you have permission to contact these people."); return; }
+    setBusy(true);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const response = await client.post(`/admin/applicants-import?confirmed=true&commit=${commit}`, form);
+      if (commit) { setResult(response.data.summary); setPreview(null); refresh(); }
+      else { setResult(null); setPreview(response.data); }
+    } catch (err) { setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Import failed."); }
+    setBusy(false);
+  };
+  const rows = (summary, isPreview) => [
+    [isPreview ? "New applicants to import" : "Imported", summary.imported],
+    [isPreview ? "Existing applicants to update" : "Updated", summary.updated],
+    ["Skipped — duplicate", summary.skipped_duplicate],
+    ["Skipped — invalid email", summary.skipped_invalid_email],
+    ["Skipped — unsubscribed/withdrawn", summary.skipped_unsubscribed],
+    ...(isPreview ? [] : [["Failed", summary.failed], ["Synced to Resend", summary.resend_synced]]),
+  ];
+  return (
+    <>
+      <button className="button button-back button-small" onClick={() => setOpen(!open)} data-testid="admin-import-toggle">Import Board Applicants</button>
+      {open && (
+        <div className="admin-import-panel" data-testid="admin-import-panel">
+          <h3>Import Existing Board Applicants</h3>
+          <p>Upload a CSV with at least an Email column (First Name, Last Name, Phone, City, State, Country, LinkedIn, Professional Title and Employer columns are recognized automatically). Existing applicants are matched by email — their richer information and unsubscribe status are preserved. The import itself never sends any email.</p>
+          <input type="file" accept=".csv,text/csv" onChange={(event) => { setFile(event.target.files[0]); setPreview(null); setResult(null); }} data-testid="admin-import-file" />
+          <label className="terms-check">
+            <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} data-testid="admin-import-consent" />
+            <span>I confirm these people gave permission to be contacted about board opportunities.</span>
+          </label>
+          {error && <p className="submit-error" data-testid="admin-import-error">{error}</p>}
+          {preview && (
+            <div className="admin-import-summary" data-testid="admin-import-preview">
+              <h4>Preview — nothing has been imported yet</h4>
+              <ul>{rows(preview.summary, true).map(([label, value]) => <li key={label}>{label}: <strong>{value}</strong></li>)}</ul>
+              {preview.sample?.length > 0 && <p>Sample: {preview.sample.join(", ")}</p>}
+            </div>
+          )}
+          {result && (
+            <div className="admin-import-summary" data-testid="admin-import-result">
+              <h4>Import complete</h4>
+              <ul>{rows(result, false).map(([label, value]) => <li key={label}>{label}: <strong>{value}</strong></li>)}</ul>
+            </div>
+          )}
+          <div className="material-actions">
+            {!preview && <button className="button button-small" disabled={busy} onClick={() => send(false)} data-testid="admin-import-preview-button">{busy ? "Reading…" : "Preview Import"}</button>}
+            {preview && <button className="button button-small" disabled={busy} onClick={() => send(true)} data-testid="admin-import-confirm-button">{busy ? "Importing…" : "Confirm Import"}</button>}
+            <button className="button button-back button-small" onClick={() => { setOpen(false); setPreview(null); setResult(null); }}>Close</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 const Profile = ({ applicant, close, refresh }) => {
   const [status, setStatus] = useState(applicant.status);
   const [notes, setNotes] = useState(applicant.internal_notes || "");
@@ -242,5 +333,5 @@ export default function AdminPage() {
   const logout = async () => { await client.post("/auth/logout"); setUser(false); };
   if (checking) return <div className="admin-loading" data-testid="admin-loading">Checking administrator access…</div>;
   if (!user) return <Login onLogin={setUser} />;
-  return <main className="admin-page" data-testid="admin-dashboard"><header className="admin-header"><div><p className="eyebrow">Private administrator area</p><h1>Board Applicant Network</h1></div><div className="admin-header-actions"><a className="button button-small" href="/recruit" data-testid="admin-review-recruitment-button">Review Recruitment Experience</a><button onClick={logout} data-testid="admin-logout-button"><LogOut size={17} /> Log out</button></div></header><div className="admin-broadcast-note" data-testid="admin-broadcast-instruction">Send board-opportunity and nonprofit broadcasts through the Resend Broadcast dashboard using the Board Applicants or Nonprofit Leaders segment.</div><nav className="admin-tabs"><button className={tab === "applicants" ? "active" : ""} onClick={() => setTab("applicants")} data-testid="admin-applicants-tab">Board Applicants</button><button className={tab === "nonprofits" ? "active" : ""} onClick={() => setTab("nonprofits")} data-testid="admin-nonprofits-tab">Nonprofit Contacts</button><button className={tab === "blog" ? "active" : ""} onClick={() => setTab("blog")} data-testid="admin-blog-tab">Blog Posts</button><button className={tab === "reference" ? "active" : ""} onClick={() => setTab("reference")} data-testid="admin-reference-tab">Reference Library</button></nav>{tab === "applicants" ? <section><div className="admin-filters"><label className="search-filter"><Search size={15} /><input placeholder="Search name or email" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} data-testid="admin-applicant-search" /></label><select value={filters.country} onChange={(event) => setFilters({ ...filters, country: event.target.value })} data-testid="admin-country-filter"><option value="" label="All countries" /><option value="United States" label="United States" /><option value="United Kingdom" label="United Kingdom" /></select>{Object.entries(filterOptions).map(([key, options]) => <select key={key} value={filters[key]} onChange={(event) => setFilters({ ...filters, [key]: event.target.value })} data-testid={`admin-${key.replace("_", "-")}-filter`}><option value="" label={`All ${key.replace("_", " ")}`} />{options.map((option) => <option value={option} label={option} key={option} />)}</select>)}<button className="button button-small" onClick={loadApplicants} data-testid="admin-apply-filters-button">Apply Filters</button><a className="button button-back button-small" href={`${API}/admin/applicants-export.csv?ids=${selected.join(",")}`} data-testid="admin-export-csv-link"><Download size={15} /> Export {selected.length ? "Selected" : "All"}</a></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th><input type="checkbox" aria-label="Select all applicants" checked={applicants.length > 0 && selected.length === applicants.length} onChange={(event) => setSelected(event.target.checked ? applicants.map((item) => item.applicant_id) : [])} data-testid="admin-select-all-applicants" /></th>{["Applicant ID", "Name", "Email", "Phone", "Country / City", "Job title", "Professional field", "Main expertise", "Preferred causes", "Preferred board type", "Availability", "Status", "Resend", "Created"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead><tbody>{applicants.map((item) => <tr key={item.applicant_id} data-testid={`admin-applicant-row-${item.applicant_id}`}><td><input type="checkbox" checked={selected.includes(item.applicant_id)} onChange={() => setSelected((current) => current.includes(item.applicant_id) ? current.filter((id) => id !== item.applicant_id) : [...current, item.applicant_id])} /></td><td><button className="table-link" onClick={() => openProfile(item.applicant_id)}>{item.applicant_id}</button></td><td>{item.first_name} {item.last_name}</td><td>{item.email}</td><td>{item.phone}</td><td>{item.country}<small>{item.city}</small></td><td>{item.job_title}</td><td>{item.professional_field}</td><td>{item.skills?.[0]}</td><td>{item.causes?.[0]}</td><td>{item.board_types?.[0]}</td><td>{item.availability}</td><td>{item.status}</td><td><span className={`sync-badge ${item.resend_segment_status?.toLowerCase()}`}>{item.resend_segment_status}</span></td><td>{item.created_at?.slice(0, 10)}</td></tr>)}</tbody></table></div></section> : tab === "nonprofits" ? <section className="nonprofit-admin-section"><div className="admin-table-wrap"><table className="admin-table"><thead><tr>{["Name", "Email", "Phone", "Organization", "Country", "Assessment date", "Consent date", "Resend"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead><tbody>{nonprofits.map((item) => <tr key={`${item.email}-${item.submitted_at}`}><td>{item.name}</td><td>{item.email}</td><td>{item.phone}</td><td>{item.organization_name}</td><td>{item.country}</td><td>{item.submitted_at?.slice(0, 10)}</td><td>{item.email_permission_at?.slice(0, 10)}</td><td>{item.resend_sync_status}</td></tr>)}</tbody></table></div></section> : tab === "blog" ? <BlogAdminSection posts={blogPosts} categories={blogCategories} generating={generating} notice={blogNotice} onGenerate={generateDraft} onRefresh={loadBlog} onOpen={setBlogPreview} /> : <ReferenceLibrarySection />}{blogPreview && <BlogPreview post={blogPreview} close={() => setBlogPreview(null)} refresh={loadBlog} />}{profile && <Profile applicant={profile} close={() => setProfile(null)} refresh={loadApplicants} />}</main>;
+  return <main className="admin-page" data-testid="admin-dashboard"><header className="admin-header"><div><p className="eyebrow">Private administrator area</p><h1>Board Applicant Network</h1></div><div className="admin-header-actions"><a className="button button-small" href="/recruit" data-testid="admin-review-recruitment-button">Review Recruitment Experience</a><button onClick={logout} data-testid="admin-logout-button"><LogOut size={17} /> Log out</button></div></header><div className="admin-broadcast-note" data-testid="admin-broadcast-instruction">Send board-opportunity and nonprofit broadcasts through the Resend Broadcast dashboard using the Board Applicants or Nonprofit Leaders segment.</div><ReviewResumePanel /><nav className="admin-tabs"><button className={tab === "applicants" ? "active" : ""} onClick={() => setTab("applicants")} data-testid="admin-applicants-tab">Board Applicants</button><button className={tab === "nonprofits" ? "active" : ""} onClick={() => setTab("nonprofits")} data-testid="admin-nonprofits-tab">Nonprofit Contacts</button><button className={tab === "blog" ? "active" : ""} onClick={() => setTab("blog")} data-testid="admin-blog-tab">Blog Posts</button><button className={tab === "reference" ? "active" : ""} onClick={() => setTab("reference")} data-testid="admin-reference-tab">Reference Library</button></nav>{tab === "applicants" ? <section><div className="admin-filters"><label className="search-filter"><Search size={15} /><input placeholder="Search name or email" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} data-testid="admin-applicant-search" /></label><select value={filters.country} onChange={(event) => setFilters({ ...filters, country: event.target.value })} data-testid="admin-country-filter"><option value="" label="All countries" /><option value="United States" label="United States" /><option value="United Kingdom" label="United Kingdom" /></select>{Object.entries(filterOptions).map(([key, options]) => <select key={key} value={filters[key]} onChange={(event) => setFilters({ ...filters, [key]: event.target.value })} data-testid={`admin-${key.replace("_", "-")}-filter`}><option value="" label={`All ${key.replace("_", " ")}`} />{options.map((option) => <option value={option} label={option} key={option} />)}</select>)}<button className="button button-small" onClick={loadApplicants} data-testid="admin-apply-filters-button">Apply Filters</button><a className="button button-back button-small" href={`${API}/admin/applicants-export.csv?ids=${selected.join(",")}`} data-testid="admin-export-csv-link"><Download size={15} /> Export {selected.length ? "Selected" : "All"}</a><ImportApplicants refresh={loadApplicants} /></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th><input type="checkbox" aria-label="Select all applicants" checked={applicants.length > 0 && selected.length === applicants.length} onChange={(event) => setSelected(event.target.checked ? applicants.map((item) => item.applicant_id) : [])} data-testid="admin-select-all-applicants" /></th>{["Applicant ID", "Name", "Email", "Phone", "Country / City", "Job title", "Professional field", "Main expertise", "Preferred causes", "Preferred board type", "Availability", "Status", "Resend", "Created"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead><tbody>{applicants.map((item) => <tr key={item.applicant_id} data-testid={`admin-applicant-row-${item.applicant_id}`}><td><input type="checkbox" checked={selected.includes(item.applicant_id)} onChange={() => setSelected((current) => current.includes(item.applicant_id) ? current.filter((id) => id !== item.applicant_id) : [...current, item.applicant_id])} /></td><td><button className="table-link" onClick={() => openProfile(item.applicant_id)}>{item.applicant_id}</button></td><td>{item.first_name} {item.last_name}</td><td>{item.email}</td><td>{item.phone}</td><td>{item.country}<small>{item.city}</small></td><td>{item.job_title}</td><td>{item.professional_field}</td><td>{item.skills?.[0]}</td><td>{item.causes?.[0]}</td><td>{item.board_types?.[0]}</td><td>{item.availability}</td><td>{item.status}</td><td><span className={`sync-badge ${item.resend_segment_status?.toLowerCase()}`}>{item.resend_segment_status}</span></td><td>{item.created_at?.slice(0, 10)}</td></tr>)}</tbody></table></div></section> : tab === "nonprofits" ? <section className="nonprofit-admin-section"><div className="admin-table-wrap"><table className="admin-table"><thead><tr>{["Name", "Email", "Phone", "Organization", "Country", "Assessment date", "Consent date", "Resend"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead><tbody>{nonprofits.map((item) => <tr key={`${item.email}-${item.submitted_at}`}><td>{item.name}</td><td>{item.email}</td><td>{item.phone}</td><td>{item.organization_name}</td><td>{item.country}</td><td>{item.submitted_at?.slice(0, 10)}</td><td>{item.email_permission_at?.slice(0, 10)}</td><td>{item.resend_sync_status}</td></tr>)}</tbody></table></div></section> : tab === "blog" ? <BlogAdminSection posts={blogPosts} categories={blogCategories} generating={generating} notice={blogNotice} onGenerate={generateDraft} onRefresh={loadBlog} onOpen={setBlogPreview} /> : <ReferenceLibrarySection />}{blogPreview && <BlogPreview post={blogPreview} close={() => setBlogPreview(null)} refresh={loadBlog} />}{profile && <Profile applicant={profile} close={() => setProfile(null)} refresh={loadApplicants} />}</main>;
 }

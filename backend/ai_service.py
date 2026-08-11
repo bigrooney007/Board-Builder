@@ -14,30 +14,25 @@ REVIEW_WARNING = "This document is generated as a working template. Review it ag
 
 # generation type registry: module, title, schema description (JSON the model must return)
 GENERATION_TYPES = {
-    "powerhouse_board_blueprint": {"module": 1, "title": "Your Powerhouse Board Blueprint", "per_application": False, "schema": {
-        "present_board_brings": "string — concise summary of what the present board already brings, from the founder's information only",
-        "what_is_missing": "string — the important gaps between the current board and the board needed to achieve the founder's stated goals",
-        "powerhouse_board_description": "string — what a powerhouse board looks like for THIS organization: the combination of skills, experience, relationships, credibility and fundraising capacity appropriate to this nonprofit and its stated objectives. Never generic.",
-        "candidate_profiles": [{"profile_name": "string — e.g. 'Corporate Partnership & Business Development Leader'", "why_your_board_needs_this_person": "string", "professional_background_to_look_for": "string", "skills_and_experience": ["string"], "valuable_relationships_networks": "string", "how_this_person_can_help": "string", "fundraising_contribution": "string", "board_gap_this_person_fills": "string"}],
-    }},
+    "powerhouse_board_blueprint": {"module": 1, "title": "The Board Members Your Organization Needs", "per_application": False, "schema": {
+        "priority_roles": [{"role_name": "string — e.g. 'Fundraising & Philanthropy Leader'", "summary": "string — exactly TWO concise sentences: (1) why this role complements the existing board; (2) what this person will help accomplish based on the type of board the organization said it wants to build"}],
+        "detailed_roles": [{"role_name": "string — SAME roles as priority_roles, same order, no extras", "why_this_role_matters": "string", "professional_background_to_look_for": "string", "relevant_skills": ["string"], "useful_networks": "string", "how_this_role_contributes": "string", "how_this_complements_the_present_board": "string"}],
+        "internal_analysis": {"present_board_brings": "string — internal use only", "important_gaps": "string — internal use only", "board_needed": "string — internal use only"},
+    }, "note": "priority_roles: NO MORE THAN FIVE roles. If the customer said they want to recruit fewer than five people, produce exactly that number. detailed_roles must contain the SAME roles only."},
     "recruitment_strategy": {"module": 2, "title": "Board Recruitment Strategy", "per_application": False, "schema": {
-        "objective": "string — what the organization is trying to accomplish through recruitment",
-        "board_members_to_recruit": {"number": "string — the founder's stated number, do not override", "note": "string — empty unless their information creates a clear conflict; then: 'You indicated that you want to recruit [X] people. Based on the requirements you described, you may want to review whether this number gives you enough capacity to cover every priority.'"},
-        "candidate_profiles": [{"profile_name": "string", "why_needed": "string", "skills": ["string"], "relevant_experience": "string", "useful_relationships": "string", "fundraising_contribution": "string", "priorities_supported": "string"}],
-        "recruitment_positioning": "string — why a qualified professional should want to join this board",
-        "recruitment_channels": [{"channel": "string (LinkedIn, Board Applicant Network, professional associations, community networks, personal introductions, existing supporters — where appropriate)", "how_to_use": "string"}],
-        "selection_criteria": ["string"],
-        "recruitment_timeline": [{"period": "string", "actions": "string"}],
-        "launch_plan": ["string — what to do first, second and next"],
+        "executive_summary": "string — exactly TWO sentences summarizing how this organization will recruit the board members identified in Module 1",
+        "channels": [{"channel": "string — ONLY one of: 'Public Outreach', 'Personal Network', 'Referral Network'. Include ONLY channels the customer's intake answers make available. Never include a channel they said they cannot or do not want to use.", "instructions": "string — concise practical instructions for using this channel to reach the priority board roles"}],
     }},
     "board_opportunity": {"module": 3, "title": "Board Opportunity", "per_application": False, "schema": {
-        "title": "string — board opportunity title", "organization_name": "string", "mission": "string",
-        "why_recruiting": "string", "what_accomplish": "string", "number_sought": "string",
-        "candidate_profiles": ["string"], "responsibilities": ["string"], "fundraising_expectations": "string",
-        "meeting_structure": "string", "time_commitment": "string", "geographic_requirements": "string",
-        "benefits_of_serving": "string", "application_deadline": "string — or 'Open until positions are filled'",
-        "how_to_apply": "string",
-    }},
+        "title": "string — professional board opportunity title",
+        "introduction": "string — 2 to 4 sentence organization/opportunity introduction",
+        "about_the_organization": "string — the organization and its mission in natural prose",
+        "who_we_are_looking_for": "string — the priority board roles from Module 1, concisely, in natural prose or a short list",
+        "what_board_members_will_contribute": "string",
+        "board_expectations": "string",
+        "meeting_time_and_location": "string — meeting frequency, time commitment and location/geographic information as supplied",
+        "how_to_apply": "string — must contain the exact application URL supplied in the context",
+    }, "note": "Write as a real professional board opportunity announcement. Never print internal field labels such as 'Why Recruiting:' or 'Fundraising Contribution:'. Use only the priority roles identified in Module 1 — never invent 10-12 candidate profiles."},
     "application_questions": {"module": 3, "title": "Board Application — Organization-Specific Questions", "per_application": False, "schema": {
         "custom_questions": [{"label": "string — the question", "type": "one of: text, textarea, yes_no", "why": "string — why this question matters for this organization"}],
     }},
@@ -64,8 +59,14 @@ GENERATION_TYPES = {
     "personal_invitation_message": {"module": 3, "title": "Personal Invitation Message", "per_application": False, "schema": {
         "message": "string — a concise direct message version for LinkedIn, Facebook, text or another direct-message channel, includes the application link placeholder [APPLICATION LINK]",
     }},
+    "referral_request_email": {"module": 3, "title": "Referral Request Email", "per_application": False, "schema": {
+        "subject": "string", "body": "string — a professional email asking board members, supporters and colleagues to share the board opportunity with qualified people in their networks, includes the application link placeholder [APPLICATION LINK]",
+    }},
+    "referral_request_message": {"module": 3, "title": "Referral Request Message", "per_application": False, "schema": {
+        "message": "string — a concise direct-message version of the referral request for LinkedIn, text or other channels, includes the application link placeholder [APPLICATION LINK]",
+    }},
     "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {"subject": "string", "body": "string — general invitation to a board introductory/interview conversation, with [APPLICANT NAME] and scheduling placeholders"}},
-    "general_rejection_email": {"module": 4, "title": "General Applicant Rejection Email", "per_application": False, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who will not be invited to the interview stage, with [APPLICANT NAME] placeholder"}},
+    "general_rejection_email": {"module": 4, "title": "Application Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant the organization has decided not to invite to interview"}},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {"subject": "string", "body": "string — tells the applicant the organization would like them to join the board; clearly states the appointment remains conditional/pending completion of the relevant reference or background checks and the organization's final appointment requirements where relevant; explains what happens next and any profile forms or agreements they need to complete. Use the words 'conditional board appointment'; NEVER 'confidential board position'. Never make false statements about legal requirements."}},
     "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
     "onboarding_script": {"module": 6, "title": "Board Member Onboarding Script", "per_application": False, "schema": {
@@ -83,6 +84,12 @@ GENERATION_TYPES = {
         "scorecard": [{"category": "string — from the founder's approved selection criteria", "description": "string"}],
     }},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {"subject": "string", "body": "string — concise invitation"}},
+    "after_interview_thank_you": {"module": 4, "title": "After-Interview Thank-You Email", "per_application": True, "schema": {"subject": "string", "body": "string — thanks the applicant for their time and their interest in the mission, tells them the organization is completing its review and that they will receive a decision/follow-up shortly. NEVER states or implies whether they were accepted or rejected."}},
+    "formal_appointment_email": {"module": 6, "title": "Formal Board Appointment Email", "per_application": True, "schema": {"subject": "string", "body": "string — formally welcomes the person as a Board Member or Advisory Board Member (match the organization's selected board type), confirms their appointment, and covers next steps such as the first board meeting where information was supplied"}},
+    "board_member_portfolio": {"module": 6, "title": "Board Member Portfolio", "per_application": True, "schema": {
+        "sections": [{"title": "string — cover: professional summary/bio; board role and why they were recruited; skills and expertise; relevant networks and relationships; board and leadership experience; fundraising interests; committee interests; agreed board responsibilities where known", "content": "string"}],
+    }, "note": "Use ONLY the application, CV, board role and Board Member Profile Form information supplied. NEVER include referee responses, internal interview notes, selection scoring or internal evaluation material."},
+    "portfolio_email": {"module": 6, "title": "Board Member Portfolio Email", "per_application": True, "schema": {"subject": "string", "body": "string — a short professional email to the board member sharing their completed Board Member Portfolio"}},
     "after_interview_email": {"module": 4, "title": "After-Interview Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful email matching the chosen result"}},
     "reference_request_email": {"module": 5, "title": "Reference Request Email", "per_application": True, "schema": {"subject": "string", "body": "string"}},
     "reference_call_script": {"module": 5, "title": "Reference Call Guide", "per_application": True, "schema": {"introduction": "string", "questions": ["string"], "closing": "string"}},
@@ -120,7 +127,13 @@ SYSTEM_MESSAGE = (
     "You are the Nonprofit Board Builder recruitment assistant. You work ONLY from the information provided in the prompt: "
     "the nonprofit's submitted information, the confirmed recruitment profile, previously approved recruitment materials, and "
     "applicant application information and CV where provided. Never invent facts, real people, statistics or history that was not provided. "
-    "When required information is missing, write 'Information to Add'. Never claim documents have been reviewed by a lawyer and never give legal advice. "
+    "WRITING RULES: everything you write must sound like it was professionally written by a real nonprofit founder, executive director or experienced nonprofit consultant. "
+    "Never use emojis, smileys, decorative icons, unnecessary symbols, exaggerated marketing language, inflated adjectives, or generic AI phrases such as 'pivotal moment', 'unlock', 'game-changing', 'transformative journey', 'dive into' or similar. "
+    "Prefer straightforward sentences. Avoid repetitive introductions, excessive headings and excessive bullet lists. Write as the organization or founder where appropriate. "
+    "Emails must read like real professional emails. Formal documents must read like real organizational documents. "
+    "BOARD TYPE: always match the organization's selected board type. If they are building an Advisory Board, refer to the Advisory Board, Advisory Board Members, Advisory Board Opportunity, Advisory Board Application and Advisory Board Appointment where appropriate, and focus on professional expertise, strategic advice, relationships, introductions, subject-matter expertise, community connections, mission support and fundraising support where the organization expects it. Never automatically state that Advisory Board Members govern the nonprofit, hold fiduciary responsibility, vote as Directors, oversee the Executive Director or carry statutory governance duties unless the organization explicitly supplied those responsibilities. If a governing/working board, use appropriate director/board-member terminology and keep the organization's stated expectations at full strength. "
+    "Never write the phrase 'Information to Add' in anything intended to be publicly shared or sent to another person; instead use the neutral placeholder in square brackets naming exactly what is missing, e.g. '[Application deadline]'. "
+    "Never claim documents have been reviewed by a lawyer and never give legal advice. "
     "You must respond with a single valid JSON object matching the requested schema exactly — no markdown, no code fences, no commentary."
 )
 
@@ -150,11 +163,29 @@ def _format_value(value, indent=0):
 
 def structured_to_display(generation_type: str, structured: dict) -> str:
     meta = GENERATION_TYPES[generation_type]
+    if generation_type == "powerhouse_board_blueprint":
+        lines = ["THE BOARD MEMBERS YOUR ORGANIZATION NEEDS", ""]
+        for index, role in enumerate(structured.get("priority_roles", [])[:5], 1):
+            lines.extend([f"{index}. {role.get('role_name', '')}", role.get("summary", ""), ""])
+        return "\n".join(lines).strip()
     lines = [meta["title"].upper(), ""]
     lines.extend(_format_value(structured))
     if meta.get("agreement"):
         lines.extend(["", REVIEW_WARNING])
     return "\n".join(line.rstrip() for line in lines).strip()
+
+
+def blueprint_detailed_text(structured: dict) -> str:
+    lines = ["BOARD RECRUITMENT PROFILE — DETAILED REPORT", ""]
+    for index, role in enumerate(structured.get("detailed_roles", []) or structured.get("priority_roles", []), 1):
+        lines.append(f"{index}. {role.get('role_name', '')}")
+        for key in ["why_this_role_matters", "professional_background_to_look_for", "useful_networks", "how_this_role_contributes", "how_this_complements_the_present_board"]:
+            if role.get(key):
+                lines.append(f"{key.replace('_', ' ').capitalize()}: {role[key]}")
+        if role.get("relevant_skills"):
+            lines.append("Relevant skills: " + ", ".join(role["relevant_skills"]))
+        lines.append("")
+    return "\n".join(lines).strip()
 
 
 def parse_json_response(text: str) -> dict:
@@ -177,6 +208,7 @@ async def generate_structured(generation_type: str, context: str, instructions: 
     prompt = (
         f"GENERATION TYPE: {meta['title']}\n\n"
         f"CONTEXT (the only information you may use):\n{context}\n\n"
+        + (f"SPECIAL REQUIREMENTS: {meta['note']}\n\n" if meta.get("note") else "")
         + (f"ADDITIONAL INSTRUCTIONS:\n{instructions}\n\n" if instructions else "")
         + "Respond with one JSON object matching exactly this schema (descriptions explain each field):\n"
         + json.dumps(meta["schema"], indent=1)

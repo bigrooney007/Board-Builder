@@ -57,23 +57,38 @@ def create_review_router(db) -> APIRouter:
     @router.get("/board-profile/{token}")
     async def board_profile_meta(token: str):
         record = await db.board_profile_forms.find_one({"share_token": token}, {"_id": 0})
-        if not record:
+        if record:
+            return {"organization_name": record["organization_name"], "prefill": {}}
+        link = await db.board_profile_links.find_one({"token": token}, {"_id": 0})
+        if not link:
             raise HTTPException(status_code=404, detail="This form is not available")
-        return {"organization_name": record["organization_name"]}
+        org = await db.opportunities.find_one({"user_id": link["user_id"]}, {"_id": 0, "organization_name": 1})
+        prefill = link.get("prefill", {})
+        return {"organization_name": (org or {}).get("organization_name", ""),
+                "prefill": {"full_name": prefill.get("full_name", ""), "email": prefill.get("email", ""),
+                            "professional_title": prefill.get("professional_title", ""), "employer": prefill.get("employer", ""),
+                            "linkedin": prefill.get("linkedin", ""), "location": prefill.get("location", "")}}
 
     @router.post("/board-profile/{token}", status_code=201)
     async def board_profile_submit(token: str, payload: dict):
         record = await db.board_profile_forms.find_one({"share_token": token}, {"_id": 0})
+        link = None
         if not record:
-            raise HTTPException(status_code=404, detail="This form is not available")
-        allowed = ["full_name", "preferred_name", "email", "phone", "location", "professional_title", "employer", "bio", "linkedin", "skills", "professional_experience", "board_experience", "fundraising_strengths", "relationships", "committees_of_interest", "availability"]
+            link = await db.board_profile_links.find_one({"token": token}, {"_id": 0})
+            if not link:
+                raise HTTPException(status_code=404, detail="This form is not available")
+        user_id = record["user_id"] if record else link["user_id"]
+        allowed = ["full_name", "preferred_name", "email", "phone", "location", "professional_title", "employer", "bio", "linkedin", "skills", "professional_experience", "board_experience", "fundraising_strengths", "relationships", "committees_of_interest", "availability", "areas_to_support", "time_commitment", "why_joined"]
         data = {key: str(payload.get(key, ""))[:4000] for key in allowed}
         if not data["full_name"].strip() or not data["email"].strip():
             raise HTTPException(status_code=422, detail="Full name and email are required")
         await db.board_profile_responses.insert_one({
-            "response_id": secrets.token_hex(8), "user_id": record["user_id"], "share_token": token,
+            "response_id": secrets.token_hex(8), "user_id": user_id, "share_token": token,
+            "application_id": (link or {}).get("application_id", ""),
             "data": data, "submitted_at": datetime.now(timezone.utc).isoformat(),
         })
+        if link:
+            await db.board_profile_links.update_one({"token": token}, {"$set": {"status": "Completed", "completed_at": datetime.now(timezone.utc).isoformat()}})
         return {"status": "submitted"}
 
     @router.post("/terms-agreements", status_code=201)

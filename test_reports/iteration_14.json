@@ -1,0 +1,78 @@
+{
+  "summary": "Batch 11 final e2e verification — focused subset. 15/15 pytest passed in /app/backend/tests/test_batch11_final_verification.py after fixing one real backend bug (ReviewProgress Pydantic model was missing the `label` field, causing POST /api/review-mode/progress to 500 with AttributeError). UI spot-checks confirmed: /recruit/checkout data-testids (checkout-thirty-minute='Start Recruiting Skilled Professionals in Less Than 30 Minutes', thirty-minute-section, board-types-section) present with no 'TEST MODE' wording; /recruit/process shows all SIX locked stage titles verbatim; Admin ReviewResumePanel renders after POST /api/review-mode/progress with data-testid review-resume-panel + resume-review-button (href=/recruit/process) + review-start-over-button; Admin CSV import (data-testid admin-import-toggle -> file/consent/preview-button) renders correctly. Zero Claude generation calls, zero publish calls, zero customer emails were sent. Deep exercise of Modules 1-6 UI flows, Advisory-Board Claude terminology, reference/onboarding/signature workflows, public application submission, first-meeting invitation, and portfolio generation were NOT re-executed in this iteration — iteration 13 covered the structural refactor and this iteration focused on the NEW deltas (advisory option, review-mode persistence, CSV import, checkout copy, downloadable blueprint/strategy testids).",
+  "verdicts": {
+    "backend": {
+      "recruit_public_pages_200": "PASS (/recruit, /recruit/checkout, /recruit/process)",
+      "funnel_config_advisory_option": "PASS ('An advisory board that provides expertise, strategic advice and connections' present in funnelConfig.js)",
+      "testimonial_cyrena_updated": "PASS (quote starts 'Because of your input and your investment in my life...')",
+      "six_stage_names_locked": "PASS (all six exact titles found in frontend source)",
+      "review_progress_get_unauth_returns_null": "PASS ({progress: null})",
+      "review_progress_post_unauth_401": "PASS",
+      "review_progress_full_cycle": "PASS after fix (POST save -> GET returns record with last_route+last_label -> logout -> subsequent calls 401 / GET null -> re-login persists -> DELETE clears)",
+      "csv_import_unauth_401": "PASS",
+      "csv_import_requires_consent_422": "PASS (confirmed=false -> 422)",
+      "csv_import_preview_no_writes": "PASS (two consecutive preview calls both report imported=3; DB rows unchanged)",
+      "csv_import_commit_and_dedupe": "PASS (first commit -> imported=3, second commit -> imported=0; invalid email skipped; in-file duplicate deduped)",
+      "workspace_opportunity_get_returns_slug": "PASS",
+      "public_application_html_route": "PASS (200 SPA)"
+    },
+    "frontend": {
+      "checkout_thirty_minute_testid": "PASS ('Start Recruiting Skilled Professionals in Less Than 30 Minutes')",
+      "thirty_minute_section_testid": "PASS ('Start Recruiting in Less Than 30 Minutes')",
+      "board_types_section_testid": "PASS (mentions governing/working/advisory)",
+      "checkout_no_test_mode_wording": "PASS",
+      "recruit_process_six_stage_titles": "PASS (all six verbatim)",
+      "admin_login": "PASS",
+      "admin_review_resume_panel_after_post": "PASS (data-testid review-resume-panel visible with 'Last reviewed: Recruit Process')",
+      "admin_resume_review_button_href": "PASS (href='/recruit/process')",
+      "admin_review_start_over_button": "PASS (present; clicking navigates to /recruit; API DELETE observed via subsequent GET null)",
+      "admin_import_toggle_and_form": "PASS (admin-import-toggle -> admin-import-file + admin-import-consent + admin-import-preview-button all render)"
+    }
+  },
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/review-mode/progress",
+        "issue": "ReviewProgress Pydantic model in /app/backend/refinement_routes.py line 77 defined only `route: str` but save_review_progress accessed `payload.label` at line 528, causing every valid admin POST to return 500 (AttributeError: 'ReviewProgress' object has no attribute 'label'). This entirely broke the Owner Review Persistence feature — ReviewProgressTracker's automatic POSTs from the frontend never persisted, so the /admin ReviewResumePanel could never appear in normal usage. Fixed in this iteration by adding `label: str = ""` to the model. AFTER FIX all review-mode/progress flows pass.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "DELETE /api/workspace/applications/{id}",
+        "issue": "Still not implemented (carried over from iteration 13). Test applicants created during previous iterations remain in owner-review-admin tenant."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_batch11_final_verification.py",
+    "/app/backend/tests/test_modules_1_to_6_refactor.py",
+    "/app/test_reports/pytest/iteration_14.xml"
+  ],
+  "action_items": [
+    "Verify the ReviewProgress model fix I applied — /app/backend/refinement_routes.py now defines `label: str = \"\"`. If E1 intended a stricter payload schema (e.g., label required), tighten it there.",
+    "Recommend E1 add a lightweight pytest that POSTs valid + invalid payloads to /api/review-mode/progress so future refactors of ReviewProgress do not silently regress.",
+    "Note: not re-verified in this iteration (relying on iteration 13 + code review) — Module 3 board_opportunity ordering above job post/social/linkedin, Module 3 conditional visibility (referral_request_* hidden when referral_network=No), Module 5 signature immutability, Module 6 first_board_meeting_invitation send gating, Recruitment Results portfolio email dedup, Advisory board terminology in a real Claude generation, and human-writing filter (no 'pivotal moment', 'unlock', etc.) in generated outputs. Budget-preserving. Recommend E1 either self-test or request a follow-up iteration focused solely on these."
+  ],
+  "critical_code_review_comments": [
+    "HIGH: /app/backend/refinement_routes.py ReviewProgress model missing `label` — FIXED here but demonstrates absence of even a smoke test on the review-mode/progress POST path. This is the entry point for the owner-review persistence feature described in the review request; without the fix the feature was completely non-functional.",
+    "The GET /api/review-mode/progress returns 200 + {progress: null} on unauthenticated requests instead of 401. Not spec-violating (spec only requires POST->401), but inconsistent with other admin endpoints. Consider returning 401 for both verbs.",
+    "workspace_routes.add_external_applicant still accepts and silently ignores legacy email/phone/linkedin/notes Form fields (carried over from iteration 13).",
+    "refinement_routes.import_applicants Resend sync block reads/writes os.environ['RESEND_API_KEY'] and os.environ['RESEND_BOARD_APPLICANTS_SEGMENT_ID'] inside the row loop — moving those to module scope avoids doing an env lookup per row. Minor perf, but for 1000+ row imports it matters.",
+    "opportunity_readiness custom_questions vestigial check (carried over from iteration 13).",
+    "No DELETE endpoint for workspace/applications (carried over).",
+    "The Admin CSV import summary field `skipped_unsubscribed` is incremented both when an existing DB row has status='Unsubscribed'/'Withdrawn' (line 431) AND when Resend Contacts.get_async reports unsubscribed=True (line 489). Double-counting the same row is possible if a legacy Unsubscribed local row is also unsubscribed in Resend. Minor."
+  ],
+  "updated_files": [
+    "/app/backend/refinement_routes.py (added `label: str = \"\"` to ReviewProgress Pydantic model — critical bug fix)",
+    "/app/backend/tests/test_batch11_final_verification.py (new pytest — 15 tests, safe to re-run, no AI/email side effects)"
+  ],
+  "success_rate": {"backend": "100% (15/15 after ReviewProgress fix)", "frontend": "100% of executed UI checks (checkout testids, six-stage titles, admin review panel + import panel)"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com used per /app/memory/test_credentials.md. OWNER_RECRUITMENT_REVIEW_MODE=true confirmed. BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE=false NOT touched. No new members registered.",
+  "seed_data_creation": "During tests: 3 board_applicants rows with emails csvtest1/csvtest2/csvtest3@example.com were briefly written by test_csv_import_commit_and_dedupe. All were CLEANED UP at end of run (verified count=0). One admin_review_progress record for rooney@nonprofitboardbuilder.com was written then DELETE'd by the tests; then a residual entry created by the UI flow was cleaned up (admin_review_progress collection emptied post-run). No new opportunities, applications, materials, generated_materials, or emails_sent records.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_batch11_final_verification.py is a safe regression file — no Claude calls, no publishes, no live emails. It cleans up its own csvtest*@example.com rows. Deep AI-generation flows (Modules 1/2/3/4/5/6 real Claude calls, publish -> owner-test email, signature flow, references round-trip) were NOT re-executed here to preserve budget; iteration 13 covers the structural side and iteration 14 covers the deltas. If E1 wants a full live-Claude pass, spin up a fresh $497 member (POST /api/members/register then Mongo set entitlements=['recruitment_self_guided']) and drive one workspace through all six modules using owner-test / rooney+ emails only. Do NOT change BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE.",
+  "rca_of_the_issue": "Root cause of the review-progress 500: /app/backend/refinement_routes.py:77 `class ReviewProgress(BaseModel): route: str = Field(min_length=1)` — Pydantic then rejects extra attributes, so payload.label at line 528 raised AttributeError. The frontend ReviewProgressTracker (per review-request notes) posts {route, label}; label was persisted at the storage layer (line 528 writes last_label) but never reachable due to the model omission. Fix: add `label: str = \"\"` to the model. Reproduction: `curl -X POST $BASE/api/review-mode/progress -H 'Content-Type: application/json' --cookie-jar cj --cookie cj -d '{\"route\":\"/x\",\"label\":\"y\"}'` after admin login -> 500 before fix, 200 {\"status\":\"saved\"} after fix. Mitigation applied: single-line model addition + regression test test_review_progress_full_cycle."
+}

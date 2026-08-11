@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Copy, Download, Pencil, Printer, RefreshCw, Sparkles } from "lucide-react";
+import { CheckCircle2, Copy, Download, Pencil, Printer, RefreshCw, Send, Sparkles } from "lucide-react";
 import { memberApi } from "../api";
 
 export const printText = (title, text) => {
@@ -10,15 +10,61 @@ export const printText = (title, text) => {
   win.print();
 };
 
+export const printBranded = (title, text, branding = {}) => {
+  const win = window.open("", "_blank");
+  if (!win) return;
+  const primary = branding.primary_color || "#1d3a2f";
+  const secondary = branding.secondary_color || "#f4f1ea";
+  const logo = branding.logo_data ? `<img src="${branding.logo_data}" alt="" style="max-height:70px;max-width:220px;object-fit:contain;" />` : "";
+  win.document.write(`<html><head><title>${title}</title><style>
+    body{font-family:Georgia,'Times New Roman',serif;color:#1b1b1b;margin:0;}
+    .doc{max-width:780px;margin:0 auto;padding:48px 56px;}
+    .head{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid ${primary};padding-bottom:18px;margin-bottom:30px;}
+    .head h1{font-size:24px;color:${primary};margin:0;}
+    .band{background:${secondary};padding:10px 16px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:${primary};margin-bottom:26px;}
+    pre{white-space:pre-wrap;font-family:inherit;line-height:1.7;font-size:14.5px;}
+    @media print { .doc{padding:24px 8px;} }
+  </style></head><body><div class="doc">
+    <div class="head"><h1>${title.replace(/</g, "&lt;")}</h1>${logo}</div>
+    <div class="band">${(branding.organization_name || "").replace(/</g, "&lt;")}</div>
+    <pre>${text.replace(/</g, "&lt;")}</pre>
+  </div></body></html>`);
+  win.document.close();
+  win.print();
+};
+
 export const currentVersion = (material) => material?.versions?.find((v) => v.version === material.current_version);
 
-export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false, beforeGenerate }) => {
+export const SendMaterialButton = ({ type, applicationId, label = "Send", sentAt = "", onSent }) => {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const send = async () => {
+    if (!window.confirm(`This will email the current saved version directly to the applicant${sentAt ? " AGAIN (it was already sent)" : ""}. Send now?`)) return;
+    setBusy(true); setMessage("");
+    try {
+      const response = await memberApi.post("/workspace/send-material", { type, application_id: applicationId, resend: Boolean(sentAt) });
+      setMessage(`Sent to ${response.data.to}.`);
+      if (onSent) onSent();
+    } catch (err) { setMessage(err.response?.data?.detail || "The email could not be sent."); }
+    setBusy(false);
+  };
+  return (
+    <>
+      {sentAt && <span className="blog-status-badge published" data-testid={`sent-${type}`}>Sent {new Date(sentAt).toLocaleString()}</span>}
+      <button className="button button-back" disabled={busy} onClick={send} data-testid={`send-${type}`}><Send size={14} /> {busy ? "Sending…" : label}</button>
+      {message && <p className="member-success" data-testid={`send-${type}-message`}>{message}</p>}
+    </>
+  );
+};
+
+export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false, beforeGenerate, approvable = false, hideDisplay = false, summary = null, extraActions = null }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [shareMessage, setShareMessage] = useState("");
   const version = currentVersion(material);
+  const approved = material?.status === "Approved";
 
   const copyShareLink = async () => {
     try {
@@ -53,6 +99,13 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
     setBusy(false);
   };
 
+  const approve = async () => {
+    setBusy(true);
+    try { await memberApi.post(`/workspace/materials/${material.material_id}/approve`); await refresh(); }
+    catch (err) { setError(err.response?.data?.detail || "Could not approve."); }
+    setBusy(false);
+  };
+
   const setCurrent = async (versionNumber) => {
     await memberApi.post(`/workspace/materials/${material.material_id}/current`, { version: Number(versionNumber) });
     await refresh();
@@ -61,8 +114,8 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
   return (
     <section className="material-card" data-testid={testId || `material-${type}`}>
       <div className="material-card-head">
-        <h3>{title}</h3>
-        {material && (
+        <h3>{title}{approvable && material && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{approved ? "Approved" : "Draft"}</span>}</h3>
+        {material && !hideDisplay && (
           <label className="version-select">Version
             <select value={material.current_version} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>
               {material.versions.map((v) => <option key={v.version} value={v.version}>Version {v.version}{v.version === material.current_version ? " (Current)" : ""}{v.source === "edited" ? " — edited" : ""}</option>)}
@@ -79,17 +132,19 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
       )}
       {material && version && !editing && (
         <>
-          <pre className="material-display" data-testid={`material-${type}-display`}>{version.display_text}</pre>
+          {hideDisplay ? summary : <pre className="material-display" data-testid={`material-${type}-display`}>{version.display_text}</pre>}
           <div className="material-actions">
-            <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> Edit</button>
+            {!hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> Edit</button>}
             <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? "Generating…" : "Regenerate"}</button>
-            <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>
-            <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`print-${type}`}><Printer size={14} /> Print</button>
-            <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>
+            {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>}
+            {!hideDisplay && <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>}
             {shareable && <button className="button button-back" onClick={copyShareLink} data-testid={`share-${type}`}><Copy size={14} /> Copy Share Link</button>}
+            {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> Approve</button>}
+            {extraActions}
           </div>
+          {approvable && !approved && <p className="workspace-note">Read it, edit anything you want changed, then approve it before use. Editing an approved resource returns it to Draft for re-approval.</p>}
           {shareMessage && <p className="member-success">{shareMessage}</p>}
-          <p className="material-meta">Created {new Date(version.created_at).toLocaleString()} · Status: {material.status}</p>
+          <p className="material-meta">Created {new Date(version.created_at).toLocaleString()} · Status: {approvable ? (approved ? "Approved" : "Draft") : material.status}</p>
         </>
       )}
       {editing && (

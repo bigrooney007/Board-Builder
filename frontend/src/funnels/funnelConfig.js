@@ -30,7 +30,7 @@ export const funnelConfigs = {
           { type: "select", name: "new_members_needed", label: "How many new board members would you like to recruit?", options: ["1", "2", "3", "4", "5", "6+", "I am not sure yet"], scope: "answers" },
           { type: "text", name: "present_board", label: "How many people are presently on your board?", inputType: "number", scope: "answers" },
           { type: "text", name: "active_board", label: "How many of them are consistently active?", inputType: "number", scope: "answers" },
-          { type: "select", name: "board_type", label: "What kind of board are you trying to build?", options: ["A governing board focused mainly on oversight and accountability", "A working board that actively helps execute", "A fundraising board that actively helps raise money", "A board combining governance, fundraising and practical support", "I am not sure yet"], scope: "answers" },
+          { type: "select", name: "board_type", label: "What kind of board are you trying to build?", options: ["A governing board focused mainly on oversight and accountability", "A working board that actively helps execute", "A fundraising board that actively helps raise money", "An advisory board that provides expertise, strategic advice and connections", "A board combining governance, fundraising and practical support", "I am not sure yet"], scope: "answers" },
         ],
       },
       {

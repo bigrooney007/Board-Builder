@@ -84,6 +84,7 @@ export default function RecruitCheckoutPage() {
           <div className="checkout-card">
             <p className="eyebrow" data-testid="checkout-label">Guided Board Recruitment</p>
             <h1 data-testid="checkout-heading">Build the Stronger Board Your Nonprofit Has Been Missing</h1>
+            <p className="checkout-thirty" data-testid="checkout-thirty-minute">Start Recruiting Skilled Professionals in Less Than 30 Minutes</p>
             <p className="checkout-price" data-testid="checkout-price">$497 <span>One Time</span></p>
             <p data-testid="checkout-sales-copy">Recruit the committed, capable board members your nonprofit needs to move forward. Get the knowledge, resources, guidance, support and accountability you need to confidently build a stronger board around your mission. You will have what you need to execute and direct access to Rooney whenever you need help along the way. Your investment is also protected by our Recruitment Guarantee.</p>
           </div>
@@ -104,6 +105,20 @@ export default function RecruitCheckoutPage() {
               <h3>Recruitment Guarantee</h3>
               <p>Your investment is protected by our money-back Recruitment Guarantee. Click to read the Recruitment Guarantee terms.</p>
             </article>
+          </div>
+        </section>
+        <section className="before-start-section" data-testid="thirty-minute-section">
+          <p className="eyebrow">Begin quickly</p>
+          <h2>Start Recruiting in Less Than 30 Minutes</h2>
+          <div className="before-start-list">
+            <article><p>Move from knowing you need new board members to knowing exactly who to recruit and having what you need to begin reaching skilled professionals. Follow the guided process and you can start your recruitment campaign in less than 30 minutes.</p></article>
+          </div>
+        </section>
+        <section className="before-start-section" data-testid="board-types-section">
+          <p className="eyebrow">Every kind of board</p>
+          <h2>Build the Board Your Organization Needs</h2>
+          <div className="before-start-list">
+            <article><p>Use the guided process to recruit committed professionals for your governing, working or advisory board based on the skills, relationships and experience your organization needs.</p></article>
           </div>
         </section>
         <section className="before-start-section" data-testid="before-start-section">

@@ -55,6 +55,9 @@ class ApplicationUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     background_check: Optional[dict] = None
+    interview_completed: Optional[bool] = None
+    candidate_email: Optional[str] = None
+    board_role: Optional[str] = None
 
 
 class ReferenceRecord(BaseModel):
@@ -141,6 +144,34 @@ def create_workspace_router(db) -> APIRouter:
             {"$set": {"confirmed": True, "recruitment_profile_confirmed": True, "confirmed_at": ts, "updated_at": ts}})
         return {"status": "confirmed", "confirmed_at": ts}
 
+    MODULE3_LINK_TYPES = {"board_opportunity", "linkedin_post", "social_posts", "recruitment_emails", "board_recruitment_job_post",
+                          "personal_invitation_email", "personal_invitation_message", "referral_request_email", "referral_request_message",
+                          "linkedin_launch_instructions"}
+    ONBOARDING_DOC_TYPES = ["organization_overview", "board_manual", "board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]
+
+    def origin_of(request: Request) -> str:
+        return os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+
+    def replace_link(value, url):
+        if isinstance(value, str):
+            return value.replace("[APPLICATION LINK]", url)
+        if isinstance(value, list):
+            return [replace_link(item, url) for item in value]
+        if isinstance(value, dict):
+            return {k: replace_link(v, url) for k, v in value.items()}
+        return value
+
+    async def ensure_share_token(user_id: str, material_type: str) -> str:
+        material = await db.generated_materials.find_one({"user_id": user_id, "type": material_type, "application_id": ""}, {"_id": 0, "material_id": 1})
+        if not material:
+            return ""
+        existing = await db.share_links.find_one({"material_id": material["material_id"]}, {"_id": 0})
+        if existing:
+            return existing["share_token"]
+        token = secrets.token_urlsafe(24)
+        await db.share_links.insert_one({"share_token": token, "material_id": material["material_id"], "user_id": user_id, "created_at": now_iso()})
+        return token
+
     # ---------- Generation (deliberate button clicks only) ----------
     @router.post("/generate")
     async def generate(payload: GenerateRequest, request: Request):
@@ -151,30 +182,119 @@ def create_workspace_router(db) -> APIRouter:
         meta = GENERATION_TYPES[payload.type]
         profile = await get_profile(db, user_id)
         if not profile.get("confirmed"):
-            raise HTTPException(status_code=409, detail="Confirm your Recruitment Profile in Module 1 before generating materials")
+            raise HTTPException(status_code=409, detail="Complete Module 1 before generating materials")
         context = await build_org_context(db, user_id, member)
         reference = await reference_context(db, payload.type)
         if reference:
             context = f"{context}\n\n{reference}"
+        origin = origin_of(request)
+        opportunity = await ensure_opportunity(user_id, member)
+        apply_url = f"{origin}/board-opportunities/{opportunity['slug']}/apply"
+        if payload.type in MODULE3_LINK_TYPES:
+            context += f"\n\nBOARD APPLICATION URL (insert this exact URL wherever the application link belongs): {apply_url}"
         application_id = ""
+        application = None
         if meta.get("per_application"):
             if not payload.application_id:
                 raise HTTPException(status_code=422, detail="This material is generated for a specific applicant")
             application = await owned_application(user_id, payload.application_id)
             application_id = application["application_id"]
-            context += "\n\n" + application_context_text(application)
-        if payload.type == "application_questions":
-            context += "\n\nThe application already contains these required core questions (do not repeat them):\n" + "\n".join(q["label"] for q in CORE_QUESTIONS)
+            if payload.type == "board_member_portfolio":
+                context += "\n\n" + application_context_text({**application, "notes": "", "references": []})
+                profile_response = await db.board_profile_responses.find_one(
+                    {"user_id": user_id, "data.email": application.get("applicant_email", "")}, {"_id": 0, "data": 1})
+                if profile_response:
+                    import json as _json
+                    context += "\n\nBOARD MEMBER PROFILE FORM RESPONSE:\n" + _json.dumps(profile_response["data"], indent=1)
+                if application.get("board_role"):
+                    context += f"\n\nBOARD ROLE THEY WERE RECRUITED FOR: {application['board_role']}"
+                context += "\n\nPRIVACY: never include referee responses, internal interview notes or internal evaluation material."
+            else:
+                context += "\n\n" + application_context_text(application)
+        if payload.type == "conditional_offer":
+            missing = []
+            for doc_type in ONBOARDING_DOC_TYPES:
+                doc = await db.generated_materials.find_one({"user_id": user_id, "type": doc_type, "application_id": ""}, {"_id": 0, "status": 1})
+                if not doc or doc.get("status") != "Approved":
+                    missing.append(GENERATION_TYPES[doc_type]["title"])
+            profile_form = await db.board_profile_forms.find_one({"user_id": user_id}, {"_id": 0, "share_token": 1})
+            if not profile_form:
+                missing.append("Board Member Profile Form")
+            if missing:
+                raise HTTPException(status_code=409, detail="Complete the following onboarding materials before preparing this candidate's Conditional Appointment: " + ", ".join(missing))
+            links = []
+            overview_token = await ensure_share_token(user_id, "organization_overview")
+            manual_token = await ensure_share_token(user_id, "board_manual")
+            if overview_token:
+                links.append(f"Organization Overview (View): {origin}/shared/{overview_token}")
+            if manual_token:
+                links.append(f"Board Manual (View): {origin}/shared/{manual_token}")
+            # candidate-specific signature links (idempotent per agreement + candidate)
+            for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
+                existing_request = await db.signature_requests.find_one(
+                    {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}},
+                    {"_id": 0, "token": 1, "status": 1})
+                if existing_request and existing_request.get("status") == "Signed":
+                    continue
+                if not existing_request:
+                    agreement_material = await get_current_material(db, user_id, agreement_type, "")
+                    token = secrets.token_urlsafe(24)
+                    await db.signature_requests.insert_one({
+                        "request_id": new_id(), "token": token, "owner_user_id": user_id,
+                        "application_id": application_id, "agreement_type": agreement_type,
+                        "agreement_title": GENERATION_TYPES[agreement_type]["title"],
+                        "material_id": agreement_material["material"]["material_id"],
+                        "agreement_version": agreement_material["current"]["version"],
+                        "document_snapshot": agreement_material["current"]["display_text"],
+                        "organization_name": (await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", ""),
+                        "board_member_name": application.get("profile_snapshot", {}).get("full_name", ""),
+                        "board_member_email": application.get("applicant_email", ""),
+                        "status": "Ready for Signature", "created_at": now_iso(), "updated_at": now_iso(),
+                    })
+                    existing_request = {"token": token}
+                links.append(f"{GENERATION_TYPES[agreement_type]['title']} (Review and Sign): {origin}/sign/{existing_request['token']}")
+            # candidate-specific profile form link (idempotent)
+            profile_link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
+            if not profile_link:
+                profile_link = {"token": secrets.token_urlsafe(24)}
+                snapshot = application.get("profile_snapshot", {})
+                await db.board_profile_links.insert_one({
+                    "token": profile_link["token"], "user_id": user_id, "application_id": application_id,
+                    "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
+                                "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
+                                "linkedin": snapshot.get("linkedin", ""), "location": f"{snapshot.get('city', '')} {snapshot.get('state_region', '')}".strip()},
+                    "status": "Created", "created_at": now_iso(),
+                })
+            links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
+            process = await db.reference_processes.find_one({"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "candidate_token": 1, "status": 1})
+            if process and process.get("status") not in {"Completed", "References Submitted", "In Progress"}:
+                links.append(f"Reference Information Form (Provide Your References): {origin}/reference-form/{process['candidate_token']}")
+            background = (application.get("background_check") or {}).get("status", "")
+            context += f"\n\nBACKGROUND CHECK STATUS FOR THIS CANDIDATE: {background or 'Not recorded'} — never state a background check is required if it is marked Not Required."
+            if process:
+                context += f"\nREFERENCE CHECK STATUS: {process.get('status')} — never ask for references again if they are already submitted or completed."
+            session = profile.get("onboarding_session") or {}
+            if session:
+                context += "\n\nBOARD ONBOARDING SESSION (invite the candidate to this session using these exact details):\n" + "\n".join(f"{k}: {v}" for k, v in session.items() if v)
+            if links:
+                context += ("\n\nLINKS TO INCLUDE IN THE EMAIL under a clear 'Before the Onboarding Session' section (use these exact URLs on their own lines; already-signed agreements are intentionally omitted — do not ask for them again):\n" + "\n".join(links))
         try:
             structured = await generate_structured(payload.type, context, payload.instructions or "")
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Generation failed: {str(exc)[:300]}. Your information is preserved — you can try again.") from exc
+        structured = replace_link(structured, apply_url)
         material = await save_generation(db, user_id, payload.type, structured, context[:1500], application_id)
-        if payload.type == "application_questions":
-            await ensure_opportunity(user_id, member)
-            questions = [{"id": q.get("id") or new_id(), "label": q["label"], "type": q.get("type", "textarea") if q.get("type") in {"text", "textarea", "yes_no"} else "textarea"} for q in structured.get("custom_questions", [])]
-            await db.opportunities.update_one({"user_id": user_id}, {"$set": {"custom_questions": questions, "updated_at": now_iso()}})
         return material
+
+    @router.post("/materials/{material_id}/approve")
+    async def approve_material(material_id: str, request: Request):
+        member = await current_member(request)
+        result = await db.generated_materials.update_one(
+            {"material_id": material_id, "user_id": member["user_id"]},
+            {"$set": {"status": "Approved", "approved_at": now_iso(), "updated_at": now_iso()}})
+        if not result.matched_count:
+            raise HTTPException(status_code=404, detail="Material not found")
+        return {"status": "Approved"}
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
@@ -292,14 +412,19 @@ def create_workspace_router(db) -> APIRouter:
     def opportunity_readiness(strategy, board_opportunity, opportunity):
         return {
             "strategy_approved": bool(strategy and strategy["current"]),
-            "opportunity_saved": bool(board_opportunity and board_opportunity["current"]),
-            "application_saved": bool(opportunity.get("custom_questions") is not None and opportunity.get("application_saved")),
+            "opportunity_saved": bool(board_opportunity and board_opportunity["current"] and board_opportunity["material"].get("status") == "Approved"),
+            "application_saved": bool(opportunity.get("application_saved")),
         }
 
     @router.get("/opportunity")
     async def read_opportunity(request: Request):
         member = await current_member(request)
         opportunity = await ensure_opportunity(member["user_id"], member)
+        if not opportunity.get("application_saved"):
+            await db.opportunities.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {"custom_questions": [], "application_saved": True, "updated_at": now_iso()}})
+            opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0})
         strategy = await get_current_material(db, member["user_id"], "recruitment_strategy")
         board_opportunity = await get_current_material(db, member["user_id"], "board_opportunity")
         readiness = opportunity_readiness(strategy, board_opportunity, opportunity)
@@ -344,10 +469,10 @@ def create_workspace_router(db) -> APIRouter:
         profile = await get_profile(db, user_id)
         data = profile.get("data", {})
         email_content = {
-            "mission": data.get("mission", structured.get("mission", "")),
-            "candidate_needs": ", ".join(structured.get("candidate_profiles", [])[:5]) or ", ".join(data.get("strengthen_areas", [])),
-            "commitment": f"{structured.get('meeting_structure', '')} — {structured.get('time_commitment', '')}".strip(" —"),
-            "location": structured.get("geographic_requirements", ""),
+            "mission": data.get("mission", structured.get("about_the_organization", "")),
+            "candidate_needs": structured.get("who_we_are_looking_for", "") or ", ".join(data.get("strengthen_areas", [])),
+            "commitment": structured.get("meeting_time_and_location", ""),
+            "location": structured.get("meeting_time_and_location", ""),
             "deadline": structured.get("application_deadline", ""),
         }
         ts = now_iso()
@@ -362,7 +487,8 @@ def create_workspace_router(db) -> APIRouter:
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         broadcast_status = "Failed"
         try:
-            outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin)
+            outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
+                                                       force_test=bool(member.get("review_mode")))
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {
                 "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
                 "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated", "updated_at": now_iso()}})
@@ -413,6 +539,15 @@ def create_workspace_router(db) -> APIRouter:
             updates["status"] = payload.status
         if payload.notes is not None:
             updates["notes"] = payload.notes
+        if payload.interview_completed is not None:
+            updates["interview_completed"] = payload.interview_completed
+            if payload.interview_completed:
+                updates["interview_completed_at"] = now_iso()
+        if payload.candidate_email is not None:
+            updates["applicant_email"] = payload.candidate_email.strip().lower()
+            updates["profile_snapshot.email"] = payload.candidate_email.strip().lower()
+        if payload.board_role is not None:
+            updates["board_role"] = payload.board_role
         if payload.background_check is not None:
             check = payload.background_check
             if check.get("status") and check["status"] not in BACKGROUND_STATUSES:

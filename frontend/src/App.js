@@ -21,6 +21,8 @@ import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
+import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferencePages";
+import { ReviewProgressTracker } from "@/reviewMode";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const HomeExperience = () => {
@@ -40,6 +42,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <MemberAuthProvider>
+        <ReviewProgressTracker />
         <Routes>
           <Route path="/" element={<HomeExperience />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
@@ -72,6 +75,8 @@ export default function App() {
           <Route path="/sign/:token" element={<SignAgreementPage />} />
           <Route path="/shared/:token" element={<SharedResourcePage />} />
           <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
+          <Route path="/reference-form/:token" element={<CandidateReferenceFormPage />} />
+          <Route path="/referee-form/:token" element={<RefereeFormPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>

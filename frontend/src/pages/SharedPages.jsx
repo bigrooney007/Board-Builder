@@ -53,7 +53,11 @@ export function BoardProfileFormPage() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
-    axios.get(`${API}/board-profile/${token}`).then((response) => setOrg(response.data.organization_name)).catch(() => setError("This form is not available."));
+    axios.get(`${API}/board-profile/${token}`).then((response) => {
+      setOrg(response.data.organization_name);
+      const prefill = response.data.prefill || {};
+      setData((current) => ({ ...Object.fromEntries(Object.entries(prefill).filter(([, value]) => value)), ...current }));
+    }).catch(() => setError("This form is not available."));
   }, [token]);
   const submit = async () => {
     setError("");

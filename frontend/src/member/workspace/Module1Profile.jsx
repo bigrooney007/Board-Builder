@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 import { memberApi } from "../api";
-import { MaterialCard } from "./MaterialCard";
+import { MaterialCard, printText } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 
 export const SKILL_OPTIONS = ["Fundraising", "Corporate Partnerships", "Major Donors", "Grant Development", "Finance", "Accounting", "Governance", "Legal", "Marketing", "Communications", "Public Relations", "Community Relationships", "Strategic Planning", "Human Resources", "Technology", "Program Development", "Operations", "Government/Public Policy", "Healthcare", "Education", "Professional/Business Connections", "Lived Experience", "Other"];
@@ -22,6 +23,21 @@ const SkillPicker = ({ label, values, other, onToggle, onOther, testId, error })
     {error && <p className="field-error">{error}</p>}
   </fieldset>
 );
+
+const detailedBlueprintText = (material) => {
+  const structured = material?.versions?.slice().reverse().find((v) => v.structured)?.structured || {};
+  const roles = structured.detailed_roles?.length ? structured.detailed_roles : (structured.priority_roles || []);
+  const lines = ["BOARD RECRUITMENT PROFILE — DETAILED REPORT", ""];
+  roles.forEach((role, index) => {
+    lines.push(`${index + 1}. ${role.role_name || ""}`);
+    ["summary", "why_this_role_matters", "professional_background_to_look_for", "useful_networks", "how_this_role_contributes", "how_this_complements_the_present_board"].forEach((key) => {
+      if (role[key]) lines.push(`${key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}: ${role[key]}`);
+    });
+    if (role.relevant_skills?.length) lines.push("Relevant skills: " + role.relevant_skills.join(", "));
+    lines.push("");
+  });
+  return lines.join("\n").trim();
+};
 
 export const Module1Profile = ({ onConfirmed }) => {
   const { byType, refresh } = useMaterials();
@@ -87,6 +103,11 @@ export const Module1Profile = ({ onConfirmed }) => {
           material={byType.powerhouse_board_blueprint}
           refresh={refresh}
           beforeGenerate={saveAndConfirm}
+          extraActions={
+            <button className="button button-back" onClick={() => printText("Board Recruitment Profile — Detailed Report", detailedBlueprintText(byType.powerhouse_board_blueprint))} data-testid="download-detailed-blueprint">
+              <Download size={14} /> Download Detailed Board Recruitment Profile
+            </button>
+          }
         />
       </section>
     </div>

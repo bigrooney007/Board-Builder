@@ -28,7 +28,7 @@ CORE_QUESTIONS = [
     {"id": "causes", "label": "What causes or communities are you especially passionate about?", "type": "textarea", "required": True},
 ]
 
-APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview", "Selected", "Not Selected", "Withdrawn"]
+APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
 OPPORTUNITY_STATUSES = ["Draft", "Ready to Publish", "Published", "Closed"]
 REFERENCE_OUTCOMES = ["Positive", "Mixed", "Concern", "Unable to verify", "Not completed"]
 BACKGROUND_STATUSES = ["Not required", "Not started", "In progress", "Completed", "Follow-up required"]
@@ -50,6 +50,9 @@ def slugify(text: str) -> str:
 def profile_context_text(profile_data: dict, lead: dict = None) -> str:
     parts = []
     if lead:
+        board_type = (lead.get("answers") or {}).get("board_type", "") or (profile_data or {}).get("board_kind", "")
+        if board_type:
+            parts.append(f"SELECTED BOARD TYPE (use matching terminology in everything you write): {board_type}")
         parts.append("PUBLIC RECRUITMENT FORM:\n" + json.dumps({k: lead.get(k) for k in ["organization", "website", "city", "state_region", "country"]} | (lead.get("answers") or {}), indent=1, default=str))
     if profile_data:
         parts.append("CONFIRMED MODULE 1 RECRUITMENT PROFILE:\n" + json.dumps(profile_data, indent=1, default=str))
@@ -118,6 +121,12 @@ GENERATION_KEYWORDS = {
     "conflict_of_interest_agreement": ["conflict of interest policy", "conflict of interest"],
     "ninety_day_plan": ["90 day", "ninety day", "90-day", "first 90"],
     "first_board_meeting_invitation": ["first board meeting", "board meeting invitation", "meeting invitation"],
+    "referral_request_email": ["referral", "share the opportunity", "spread the word"],
+    "referral_request_message": ["referral", "share the opportunity"],
+    "after_interview_thank_you": ["thank you for interviewing", "after the interview", "thank you for your time"],
+    "formal_appointment_email": ["appointment", "welcome to the board", "board appointment"],
+    "board_member_portfolio": ["board member profile", "portfolio", "board member bio"],
+    "portfolio_email": ["portfolio"],
 }
 
 REFERENCE_BUDGET = 8000
@@ -248,7 +257,8 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
         parts.append("MODULE 2 RECRUITMENT STRATEGY INTAKE (the founder's answers about their network and channels):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
     blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
     if blueprint and blueprint["current"]:
-        parts.append("APPROVED POWERHOUSE BOARD BLUEPRINT (Module 1 — the exact board member profiles to recruit):\n" + blueprint["current"]["display_text"][:12000])
+        structured = blueprint["current"].get("structured") or {}
+        parts.append("MODULE 1 BOARD RECRUITMENT ANALYSIS (internal — the exact priority board roles to recruit and detailed profiles):\n" + json.dumps(structured, indent=1, default=str)[:14000])
     strategy = await get_current_material(db, user_id, "recruitment_strategy")
     if strategy and strategy["current"]:
         parts.append("APPROVED RECRUITMENT STRATEGY:\n" + strategy["current"]["display_text"][:12000])

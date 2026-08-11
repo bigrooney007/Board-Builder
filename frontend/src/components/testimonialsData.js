@@ -40,7 +40,7 @@ export const testimonials = [
   {
     name: "Pastor Cyrena Denniston",
     organization: "Founder, Blackfire Ministries",
-    quote: "Because of your, uh, input and your investment in my life as the founder and visionary, Blackfire Ministries, we now have a working board. We now have a fundraising fellowship of individuals that are passionate about what we do. It has been an incredible journey, and I'm very thankful for you.",
+    quote: "Because of your input and your investment in my life as the founder and visionary, Blackfire Ministries, we now have a working board. We now have a fundraising fellowship of individuals that are passionate about what we do. It has been an incredible journey, and I'm very thankful for you.",
   },
 ];
 

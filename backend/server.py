@@ -205,6 +205,8 @@ app.include_router(create_stripe_webhook_router(db))
 app.include_router(create_member_router(db))
 app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
+from refinement_routes import create_refinement_router
+app.include_router(create_refinement_router(db))
 app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
 app.include_router(create_review_router(db))

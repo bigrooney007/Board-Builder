@@ -26,17 +26,18 @@ class SignPayload(BaseModel):
     date: str = Field(min_length=4)
 
 
-def public_opportunity_view(opportunity: dict, board_opportunity_display: str, structured: dict) -> dict:
+def public_opportunity_view(opportunity: dict, board_opportunity_display: str, structured: dict, mission: str = "", board_type: str = "") -> dict:
+    org = opportunity["organization_name"]
+    board_label = "Advisory Board" if "advisory" in (board_type or "").lower() else "Board of Directors"
+    objective = structured.get("what_board_members_will_contribute") or structured.get("introduction") or "advance its mission"
     return {
         "slug": opportunity["slug"], "status": opportunity["status"],
-        "organization_name": opportunity["organization_name"],
-        "mission": structured.get("mission", ""),
+        "organization_name": org,
+        "mission": mission or structured.get("about_the_organization", ""),
+        "board_label": board_label,
+        "intro": structured.get("introduction", ""),
+        "logo_data": opportunity.get("logo_data", ""),
         "opportunity_display": board_opportunity_display,
-        "candidate_profiles": structured.get("candidate_profiles", []),
-        "time_commitment": structured.get("time_commitment", ""),
-        "meeting_structure": structured.get("meeting_structure", ""),
-        "geographic_requirements": structured.get("geographic_requirements", ""),
-        "application_deadline": structured.get("application_deadline", ""),
         "core_questions": CORE_QUESTIONS,
         "custom_questions": opportunity.get("custom_questions", []),
     }
@@ -105,7 +106,15 @@ def create_public_opportunity_router(db) -> APIRouter:
     async def view_opportunity(slug: str):
         opportunity = await published_opportunity(slug)
         display, structured = await opportunity_content(opportunity)
-        return public_opportunity_view(opportunity, display, structured)
+        profile = await db.recruitment_profiles.find_one({"user_id": opportunity["user_id"]}, {"_id": 0, "data": 1, "branding": 1})
+        data = (profile or {}).get("data", {})
+        lead = await db.funnel_leads.find_one({"member_user_id": opportunity["user_id"]}, {"_id": 0, "answers": 1})
+        form = (lead or {}).get("answers", {})
+        mission = data.get("mission") or form.get("mission") or ""
+        board_type = data.get("board_kind") or form.get("board_type") or form.get("board_kind") or ""
+        view = public_opportunity_view(opportunity, display, structured, mission, board_type)
+        view["logo_data"] = ((profile or {}).get("branding") or {}).get("logo_data", "")
+        return view
 
     @router.post("/board-opportunities/{slug}/apply", status_code=201)
     async def public_apply(slug: str, background: BackgroundTasks, payload: str = Form(...), cv: UploadFile = File(...)):

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, Globe } from "lucide-react";
+import { Download, ExternalLink, Globe } from "lucide-react";
 import { memberApi } from "../api";
-import { MaterialCard } from "./MaterialCard";
+import { MaterialCard, currentVersion, printText } from "./MaterialCard";
 
 export const useMaterials = (applicationId = "") => {
   const [byType, setByType] = useState({});
@@ -33,6 +33,26 @@ export const useStrategyIntake = () => {
   return { intake, setIntake, loaded };
 };
 
+const StrategyReadySummary = ({ material }) => {
+  const version = currentVersion(material);
+  const structured = material?.versions?.slice().reverse().find((v) => v.structured)?.structured || {};
+  const channels = (structured.channels || []).map((entry) => entry.channel).filter(Boolean);
+  return (
+    <div className="strategy-ready" data-testid="strategy-ready">
+      <h4>Your Recruitment Strategy Is Ready</h4>
+      {channels.length > 0 && (
+        <>
+          <p>Recruitment Channels:</p>
+          <ul>{channels.map((channel) => <li key={channel}>{channel}</li>)}</ul>
+        </>
+      )}
+      <button className="button" onClick={() => printText("Board Recruitment Strategy", version?.display_text || "")} data-testid="download-strategy-pdf">
+        <Download size={15} /> Download My Recruitment Strategy
+      </button>
+    </div>
+  );
+};
+
 export const Module2Strategy = ({ profileConfirmed }) => {
   const { byType, refresh } = useMaterials();
   const { intake, setIntake } = useStrategyIntake();
@@ -46,6 +66,7 @@ export const Module2Strategy = ({ profileConfirmed }) => {
     const found = {};
     if (!intake.know_people) found.know_people = "Please choose an answer.";
     if (knowsPeople && !intake.reach_channels.length) found.reach_channels = "Select at least one way you can reach them.";
+    if (!intake.referral_network) found.referral_network = "Please choose an answer.";
     if (!intake.recruit_outside) found.recruit_outside = "Please choose an answer.";
     if (intake.recruit_outside === "Yes" && !intake.public_channels.length) found.public_channels = "Select at least one place you are willing to recruit publicly.";
     setErrors(found);
@@ -77,6 +98,12 @@ export const Module2Strategy = ({ profileConfirmed }) => {
             </fieldset>
           </>
         )}
+        <label className="field"><span>Would you be willing to ask people you trust to refer or introduce potential board members? <b>*</b></span>
+          <select value={intake.referral_network} onChange={(event) => setIntake({ ...intake, referral_network: event.target.value })} data-testid="intake-referral-network">
+            <option value="">Select one</option>{["Yes", "No", "Not Sure"].map((option) => <option key={option}>{option}</option>)}
+          </select>
+          {errors.referral_network && <p className="field-error">{errors.referral_network}</p>}
+        </label>
         <label className="field"><span>Do you also want to recruit people outside your existing network? <b>*</b></span>
           <select value={intake.recruit_outside} onChange={(event) => setIntake({ ...intake, recruit_outside: event.target.value })} data-testid="intake-recruit-outside">
             <option value="">Select one</option>{["Yes", "No", "Not Sure"].map((option) => <option key={option}>{option}</option>)}
@@ -93,23 +120,23 @@ export const Module2Strategy = ({ profileConfirmed }) => {
           type="recruitment_strategy"
           title="Board Recruitment Strategy"
           buttonLabel="Generate My Recruitment Strategy"
-          description="A practical strategy built around the exact board member profiles from Module 1 and the recruitment channels you can actually use: personal network recruitment, personal email outreach, LinkedIn/professional platforms, social media, professional and community networks, the Board Applicant Network and a recommended recruitment sequence. Module 3 creates the actual launch materials."
+          description="A practical strategy built around the exact board member profiles from Module 1 and the recruitment channels you can actually use. Module 3 creates the actual launch materials."
           material={byType.recruitment_strategy}
           refresh={refresh}
           beforeGenerate={saveIntake}
+          hideDisplay
+          summary={<StrategyReadySummary material={byType.recruitment_strategy} />}
         />
       </section>
     </div>
   );
 };
 
-const CAMPAIGN_TOOLS = [
-  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Post", "Use this to introduce the board opportunity to your social networks and invite qualified people to learn more or apply."],
+const PUBLIC_OUTREACH_TOOLS = [
   ["board_recruitment_job_post", "Board Recruitment Job Post", "Generate My Board Recruitment Job Post", "Use this version when publishing your opportunity through LinkedIn Jobs or another professional/volunteer opportunity platform."],
+  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Post", "Use this to introduce the board opportunity to your social networks and invite qualified people to learn more or apply."],
   ["linkedin_post", "LinkedIn Recruitment Post", "Generate My LinkedIn Recruitment Post", "A feed-post version for your LinkedIn profile and pages."],
   ["linkedin_launch_instructions", "LinkedIn Jobs Launch Guide", "Show Me How to Launch Through LinkedIn Jobs", "Follow this practical guide to put the board opportunity in front of professionals through LinkedIn's Jobs area, starting with a small controlled test budget where available."],
-  ["board_opportunity", "Board Opportunity", "Generate My Board Opportunity", "The complete description of the board opportunity used across your recruitment materials and hosted application. Required before you can publish."],
-  ["recruitment_emails", "Recruitment Emails", "Generate My Recruitment Emails", "Announcement, invitation and follow-up emails for your supporters and contacts."],
 ];
 
 const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, reload }) => {
@@ -205,23 +232,44 @@ export const Module3Launch = () => {
   };
 
   const knowsPeople = intake.know_people === "Yes" || intake.know_people === "I have some people in mind";
+  const publicApplies = intake.recruit_outside !== "No";
+  const referralApplies = intake.referral_network !== "No";
   const publicUrl = opportunity ? `/board-opportunities/${opportunity.slug}/apply` : "";
 
   return (
     <div data-testid="module3-workspace">
-      {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
-        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} />
-      ))}
-      {knowsPeople && (
-        <MaterialCard type="personal_invitation_email" title="Personal Invitation Email" buttonLabel="Generate My Personal Invitation Email"
-          description="Use this to personally invite someone you already know to consider the board opportunity."
-          material={byType.personal_invitation_email} refresh={refreshAll} />
-      )}
-      <MaterialCard type="personal_invitation_message" title="Personal Invitation Message" buttonLabel="Generate My Personal Invitation Message"
-        description="A shorter version for LinkedIn, Facebook, text or another direct-message channel."
-        material={byType.personal_invitation_message} refresh={refreshAll} />
-
       <ApplicationPanel opportunity={opportunity} coreQuestions={coreQuestions} applicationSaved={!!readiness.application_saved} reload={loadOpportunity} />
+
+      <MaterialCard type="board_opportunity" title="Board Opportunity" buttonLabel="Generate My Board Opportunity"
+        description="The complete description of the board opportunity used across your recruitment materials and hosted application. Your application link is inserted automatically. Approve it before you can publish."
+        material={byType.board_opportunity} refresh={refreshAll} approvable />
+
+      {publicApplies && PUBLIC_OUTREACH_TOOLS.map(([type, title, buttonLabel, description]) => (
+        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
+      ))}
+      <MaterialCard type="recruitment_emails" title="Recruitment Emails" buttonLabel="Generate My Recruitment Emails"
+        description="Announcement, invitation and follow-up emails for your supporters and contacts."
+        material={byType.recruitment_emails} refresh={refreshAll} approvable />
+      {knowsPeople && (
+        <>
+          <MaterialCard type="personal_invitation_email" title="Personal Invitation Email" buttonLabel="Generate My Personal Invitation Email"
+            description="Use this to personally invite someone you already know to consider the board opportunity."
+            material={byType.personal_invitation_email} refresh={refreshAll} approvable />
+          <MaterialCard type="personal_invitation_message" title="Personal Invitation Message" buttonLabel="Generate My Personal Invitation Message"
+            description="A shorter version for LinkedIn, Facebook, text or another direct-message channel."
+            material={byType.personal_invitation_message} refresh={refreshAll} approvable />
+        </>
+      )}
+      {referralApplies && (
+        <>
+          <MaterialCard type="referral_request_email" title="Referral Request Email" buttonLabel="Generate My Referral Request Email"
+            description="Ask people you trust to refer or introduce potential board members. Your application link is inserted automatically."
+            material={byType.referral_request_email} refresh={refreshAll} approvable />
+          <MaterialCard type="referral_request_message" title="Referral Request Message" buttonLabel="Generate My Referral Request Message"
+            description="A concise direct-message version of the referral request for LinkedIn, text or other channels."
+            material={byType.referral_request_message} refresh={refreshAll} approvable />
+        </>
+      )}
 
       <section className="workspace-panel publish-panel" data-testid="publish-panel">
         <h2>Publish Recruitment Campaign</h2>
@@ -229,12 +277,12 @@ export const Module3Launch = () => {
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{opportunity?.status || "Draft"}</strong></p>
         <ul className="readiness-list">
           <li className={readiness.strategy_approved ? "done" : ""} data-testid="readiness-strategy">Recruitment Strategy generated (Module 2)</li>
-          <li className={readiness.opportunity_saved ? "done" : ""} data-testid="readiness-opportunity">Board Opportunity generated</li>
-          <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application generated</li>
+          <li className={readiness.opportunity_saved ? "done" : ""} data-testid="readiness-opportunity">Board Opportunity approved</li>
+          <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
         </ul>
         {opportunity?.status === "Published" && (
           <p className="member-success" data-testid="published-info">
-            Published {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "TEST MODE — sent only to the owner test address" : "live"}).
+            Published {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "delivered as an internal preview to the program owner" : "delivered to eligible Applicant Network members"}).
             <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a>
           </p>
         )}

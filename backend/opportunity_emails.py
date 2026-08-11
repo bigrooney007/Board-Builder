@@ -46,9 +46,9 @@ async def create_apply_token(db, applicant_id: str, opportunity_id: str) -> str:
     return token
 
 
-async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origin: str) -> dict:
-    """Idempotent network announcement. Live=false -> owner test email only. Never emails the live Segment in test mode."""
-    live = os.environ.get("BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE", "false").lower() == "true"
+async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origin: str, force_test: bool = False) -> dict:
+    """Idempotent network announcement. Live=false or force_test (Owner Review Mode) -> owner test email only. Never emails the live Segment in test mode."""
+    live = os.environ.get("BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE", "false").lower() == "true" and not force_test
     slug = opportunity["slug"]
     view_url = f"{origin}/board-opportunities/{slug}/apply"
     subject = f"New Nonprofit Board Opportunity — {org_name}"
