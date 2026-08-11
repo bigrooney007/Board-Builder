@@ -23,17 +23,55 @@ export const useMaterials = (applicationId = "") => {
 
 export const Module2Strategy = ({ profileConfirmed }) => {
   const { byType, refresh } = useMaterials();
+  const [intake, setIntake] = useState({ know_people: "", know_people_details: "", reach_channels: [], recruit_outside: "", public_channels: [] });
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    memberApi.get("/workspace/profile").then((response) => {
+      const data = response.data.strategy_intake || {};
+      if (Object.keys(data).length) { setIntake({ know_people: data.know_people || "", know_people_details: data.know_people_details || "", reach_channels: data.reach_channels || [], recruit_outside: data.recruit_outside || "", public_channels: data.public_channels || [] }); setSaved(true); }
+    }).catch(() => {});
+  }, []);
+  const toggle = (key, option) => setIntake((current) => ({ ...current, [key]: current[key].includes(option) ? current[key].filter((item) => item !== option) : [...current[key], option] }));
+  const saveIntake = async () => {
+    try { await memberApi.put("/workspace/strategy-intake", { data: intake }); setSaved(true); } catch { /* ignore */ }
+  };
+  const REACH = ["Email", "LinkedIn", "Facebook", "Instagram", "Text message", "Phone", "In person", "Other"];
+  const PUBLIC = ["LinkedIn", "Other professional/job platforms", "Social media", "Professional associations", "Community networks", "Other"];
   return (
     <div data-testid="module2-workspace">
       <section className="workspace-panel">
-        <h2>Your Recruitment Strategy</h2>
+        <h2>Generate Your Board Recruitment Strategy</h2>
+        <p className="material-description">Your strategy is built around the exact board member profiles identified in Module 1. Answer these short questions first so the strategy fits how you can actually recruit.</p>
         {!profileConfirmed && <p className="workspace-note" data-testid="strategy-locked-note"><Lock size={14} /> Complete and confirm your Recruitment Profile in Module 1 to generate your strategy.</p>}
+        <label className="field"><span>Do you already know people you would like to invite to consider joining your board?</span>
+          <select value={intake.know_people} onChange={(event) => setIntake({ ...intake, know_people: event.target.value })} data-testid="intake-know-people">
+            <option value="">Select one</option>{["Yes", "No", "I have some people in mind"].map((option) => <option key={option}>{option}</option>)}
+          </select>
+        </label>
+        {(intake.know_people === "Yes" || intake.know_people === "I have some people in mind") && (
+          <label className="field"><span>Who are they or what type of relationship do you have with them?</span>
+            <textarea rows="3" value={intake.know_people_details} onChange={(event) => setIntake({ ...intake, know_people_details: event.target.value })} data-testid="intake-know-people-details" />
+          </label>
+        )}
+        <fieldset className="field choice-field"><legend>How can you reach the people you already know?</legend>
+          <div className="choice-grid">{REACH.map((option) => <label className={`choice ${intake.reach_channels.includes(option) ? "selected" : ""}`} key={option}><input type="checkbox" checked={intake.reach_channels.includes(option)} onChange={() => toggle("reach_channels", option)} /><span>{option}</span></label>)}</div>
+        </fieldset>
+        <label className="field"><span>Do you also want to recruit professionals outside your existing network?</span>
+          <select value={intake.recruit_outside} onChange={(event) => setIntake({ ...intake, recruit_outside: event.target.value })} data-testid="intake-recruit-outside">
+            <option value="">Select one</option>{["Yes", "No", "Not sure"].map((option) => <option key={option}>{option}</option>)}
+          </select>
+        </label>
+        <fieldset className="field choice-field"><legend>Where are you comfortable recruiting publicly?</legend>
+          <div className="choice-grid">{PUBLIC.map((option) => <label className={`choice ${intake.public_channels.includes(option) ? "selected" : ""}`} key={option}><input type="checkbox" checked={intake.public_channels.includes(option)} onChange={() => toggle("public_channels", option)} /><span>{option}</span></label>)}</div>
+        </fieldset>
+        <button className="button button-back" onClick={saveIntake} data-testid="save-strategy-intake">{saved ? "Update My Answers" : "Save My Answers"}</button>
+        {saved && <p className="member-success">Answers saved. They are used when your strategy is generated.</p>}
       </section>
       <MaterialCard
         type="recruitment_strategy"
         title="Board Recruitment Strategy"
-        buttonLabel="Generate My Board Recruitment Strategy"
-        description="Your strategy is generated from your public Recruitment form and your confirmed Module 1 profile. The saved version becomes the Approved Recruitment Strategy used by later modules."
+        buttonLabel="Generate My Recruitment Strategy"
+        description="A practical strategy covering LinkedIn/professional platforms, your personal network, email outreach, social/direct messages and the Board Applicant Network as applicable, with a clear recruitment sequence. Module 3 creates the actual materials. The saved version becomes the Approved Recruitment Strategy used by later modules."
         material={byType.recruitment_strategy}
         refresh={refresh}
       />
@@ -42,12 +80,15 @@ export const Module2Strategy = ({ profileConfirmed }) => {
 };
 
 const LAUNCH_TOOLS = [
-  ["board_opportunity", "Board Opportunity", "Generate My Board Opportunity"],
-  ["application_questions", "Board Application Form", "Generate My Board Application Form"],
-  ["linkedin_post", "LinkedIn Recruitment Post", "Generate My LinkedIn Recruitment Post"],
-  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Posts"],
-  ["recruitment_emails", "Recruitment Emails", "Generate My Recruitment Emails"],
-  ["linkedin_launch_instructions", "LinkedIn Launch Instructions", "Generate My LinkedIn Launch Instructions"],
+  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Post", "Use this to introduce the board opportunity to your social networks and invite qualified people to learn more or apply."],
+  ["board_recruitment_job_post", "Board Recruitment Job Post", "Generate My Board Recruitment Job Post", "Use this version when publishing your opportunity through LinkedIn Jobs or another professional/volunteer opportunity platform."],
+  ["linkedin_post", "LinkedIn Recruitment Post", "Generate My LinkedIn Recruitment Post", "A feed-post version for your LinkedIn profile and pages."],
+  ["linkedin_launch_instructions", "LinkedIn Jobs Launch Guide", "Show Me How to Launch This Through LinkedIn Jobs", "Follow this practical guide to put the board opportunity in front of professionals through LinkedIn's Jobs area, starting with a small controlled test budget where available."],
+  ["board_opportunity", "Board Opportunity", "Generate My Board Opportunity", "The complete description of the board opportunity used across your recruitment materials and hosted application."],
+  ["application_questions", "Board Application Form", "Generate My Board Application", "Create the application prospective board members will complete so you can collect the information needed to decide who should move forward."],
+  ["personal_invitation_email", "Personal Invitation Email", "Generate My Personal Invitation Email", "Use this to personally invite someone you already know to consider the board opportunity."],
+  ["personal_invitation_message", "Personal Invitation Message", "Generate My Personal Invitation Message", "Use this shorter version for LinkedIn, Facebook, text or another direct-message channel."],
+  ["recruitment_emails", "Recruitment Emails", "Generate My Recruitment Emails", "Announcement, invitation and follow-up emails for your supporters and contacts."],
 ];
 
 export const Module3Launch = () => {
@@ -113,8 +154,8 @@ export const Module3Launch = () => {
 
   return (
     <div data-testid="module3-workspace">
-      {LAUNCH_TOOLS.map(([type, title, buttonLabel]) => (
-        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} material={byType[type]} refresh={refreshAll} />
+      {LAUNCH_TOOLS.map(([type, title, buttonLabel, description]) => (
+        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} />
       ))}
 
       <section className="workspace-panel" data-testid="application-editor">
@@ -136,6 +177,14 @@ export const Module3Launch = () => {
           <input placeholder="Add your own question" value={newQuestion} onChange={(event) => setNewQuestion(event.target.value)} data-testid="add-question-input" />
           <button className="button button-back" onClick={() => { if (newQuestion.trim()) { setCustomQuestions([...customQuestions, { id: "", label: newQuestion.trim(), type: "textarea" }]); setNewQuestion(""); } }} data-testid="add-question-button"><Plus size={15} /> Add</button>
         </div>
+        <h3>Your Board Application Link</h3>
+        <p className="material-description">Use this link in LinkedIn, social posts, job posts, emails and direct messages. It becomes publicly accessible when you publish your recruitment campaign below.</p>
+        {publicUrl && (
+          <div className="material-actions">
+            <code className="app-link-code" data-testid="application-link">{`${window.location.origin}${publicUrl}`}</code>
+            <button className="button button-back" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}${publicUrl}`); setMessage("Application link copied."); }} data-testid="copy-application-link">Copy Link</button>
+          </div>
+        )}
         <div className="material-actions">
           <button className="button" disabled={busy} onClick={saveApplication} data-testid="save-application-button">Save Board Application</button>
           <button className="button button-back" onClick={() => setPreview(!preview)} data-testid="preview-application-button">{preview ? "Hide Preview" : "Preview Application"}</button>

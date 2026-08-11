@@ -1,0 +1,48 @@
+{
+  "summary": "Iteration 12 verified the founder-only Recruitment Execution Reference Library (admin-only CRUD + retrieval gating), executed the Module 1 Powerhouse Board Blueprint generation that was deferred in iteration 11, and re-confirmed the TestimonialCarousel/TestimonialsSection duplicate React key fix. 17/17 backend pytest passed in /app/backend/tests/test_reference_library.py (single Claude call, ~41s). Admin Playwright walkthrough confirmed the Reference Library tab, founder doc row with 'Not approved' badge, upload controls, Approve/Delete actions, and Blog Posts tab. /recruit shows both Donna Kargel testimonials with 0 duplicate React-key warnings. Founder doc 860f14a8d196abf2 ended UNAPPROVED (mandatory end state); all TEST materials cleaned up.",
+  "verdicts": {
+    "admin_access_gating_no_cookie_401": "PASS (GET/POST/PATCH/DELETE all 401)",
+    "admin_access_gating_member_cookie_forbidden": "PASS (401/403 with ephemeral member token)",
+    "admin_list_with_cookie_ok": "PASS (200 with references + module_labels; founder doc present, module=0, approved=false)",
+    "upload_test_txt_module_3": "PASS (201, listed as unapproved)",
+    "patch_module_9_returns_422": "PASS",
+    "approve_then_delete_roundtrip": "PASS (PATCH approved=true -> 200; DELETE -> 200; GET after delete -> 404)",
+    "reference_context_unapproved_empty": "PASS (returns '' for board_opportunity when all refs unapproved)",
+    "reference_context_approved_contains_rules": "PASS (contains 'FOUNDER RECRUITMENT EXECUTION REFERENCE LIBRARY' and 'NEVER copy')",
+    "founder_doc_end_state_unapproved": "PASS (final DB check: approved=false, 0 approved refs total)",
+    "module1_blueprint_generation": "PASS (single Claude call ~40s; structured has present_board_brings, what_is_missing, powerhouse_board_description, candidate_profiles[] with skills_and_experience/valuable_relationships_networks/fundraising_contribution/board_gap_this_person_fills)",
+    "privacy_spot_check": "PASS (generated blueprint does NOT contain 'For All The Children')",
+    "admin_ui_reference_library_tab": "PASS (admin-reference-tab clickable; admin-reference-library section renders; reference-file-input + reference-module-select + reference-upload-button + reference-title-input + reference-tags-input present)",
+    "admin_ui_founder_doc_row": "PASS (reference-row-860f14a8d196abf2 shows 'Not approved' badge with Approve + Delete action buttons)",
+    "admin_ui_blog_tab_loads": "PASS (200 on /api/admin/blog/posts; blog tab renders)",
+    "recruit_testimonials_no_dup_key_warning": "PASS (both Donna Kargel testimonials visible; 0 'Encountered two children with the same key' console warnings; 0 console errors)",
+    "blog_api_endpoint_200": "PASS (GET /api/blog/posts returns 200 from browser fetch)"
+  },
+  "tests_executed": {
+    "backend_pytest": "17/17 passed — /app/backend/tests/test_reference_library.py (junit /app/test_reports/pytest/iteration_12.xml). Includes ONE Claude generation call for powerhouse_board_blueprint.",
+    "frontend_playwright": "Admin login -> Reference Library tab verification (founder doc, badges, upload controls) + Blog Posts tab load + /recruit testimonial carousel duplicate-key regression check."
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_reference_library.py",
+    "/app/test_reports/pytest/iteration_12.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "reference_routes.upload_reference silently swallows docx/pdf parse errors with a broad 'except Exception: pass' before falling back to extract_cv_text. This is fine for UX but means truly corrupt files may still be accepted if extract_cv_text returns any text. Consider surfacing the parse error in logs.",
+    "reference_context selects up to 6 docs but only ever concatenates the first 2 slices (docs[:2]). If the founder later approves more references, some approved material would be silently unused — either raise the slice cap or document this behavior in the admin UI."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reference_library.py",
+    "/app/test_reports/iteration_12.json",
+    "/app/test_reports/pytest/iteration_12.xml"
+  ],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "100% of executed UI checks"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com per /app/memory/test_credentials.md. One ephemeral TEST_refmember_*@example.com registered and deleted for member-forbidden checks. Only ONE Claude call issued (powerhouse_board_blueprint).",
+  "seed_data_creation": "During the run: 1 TEST .txt reference material (uploaded then deleted end-to-end), 1 TEST recruitment_profile for user 'owner-review-admin' (deleted at cleanup), 1 TEST blueprint generated_material (deleted at cleanup), 1 ephemeral member (deleted). Final DB state: reference_materials count=1 (founder doc only, approved=false); generated_materials for owner-review-admin count=0.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend regression suite for the reference library + Module 1 blueprint is at /app/backend/tests/test_reference_library.py. Requires REACT_APP_BACKEND_URL to be set in env when running pytest (or via -o addopts=''). The suite issues ONE Claude call — do not run it in tight loops (mind the EMERGENT_LLM_KEY budget). Founder doc reference_id is 860f14a8d196abf2 and MUST be left approved=false. If OWNER_RECRUITMENT_REVIEW_MODE flips off, the blueprint test will regress because it relies on the admin cookie flowing to /api/members/me via review-mode fallback.",
+  "rca_of_the_issue": "N/A — no product bugs found. Duplicate React key regression from iteration 11 confirmed fixed on both TestimonialsSection.jsx (line 37,39) and TestimonialCarousel.jsx (line 40,61) via `${testimonial.name}-${index}` keys."
+}

@@ -37,7 +37,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
       >
         <div className="offer-carousel-track" style={{ transform: `translateX(-${active * 100}%)` }}>
           {testimonials.map((testimonial, index) => (
-            <div className="offer-carousel-slide" key={testimonial.name} aria-hidden={active !== index}>
+            <div className="offer-carousel-slide" key={`${testimonial.name}-${index}`} aria-hidden={active !== index}>
               <article className="offer-testimonial-card" data-testid={`${idPrefix}-testimonial-card-${index + 1}`}>
                 <div className="testimonial-card-top">
                   <div className="client-avatar"><span>{initialsFor(testimonial.name)}</span></div>
@@ -48,7 +48,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
                   <Quote className="quote-mark" size={25} aria-hidden="true" />
                 </div>
                 <blockquote>“{testimonial.quote}”</blockquote>
-                <p className="testimonial-result"><span>Result</span>{testimonial.result}</p>
+                {testimonial.result && <p className="testimonial-result"><span>Result</span>{testimonial.result}</p>}
               </article>
             </div>
           ))}
@@ -58,7 +58,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
         <button type="button" onClick={() => go(active - 1)} aria-label="Previous testimonial" data-testid={`${idPrefix}-testimonial-previous`}><ChevronLeft /></button>
         <div className="testimonial-dots">
           {testimonials.map((testimonial, index) => (
-            <button type="button" className={active === index ? "active" : ""} onClick={() => go(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={testimonial.name} data-testid={`${idPrefix}-testimonial-dot-${index + 1}`} />
+            <button type="button" className={active === index ? "active" : ""} onClick={() => go(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={`${testimonial.name}-${index}`} data-testid={`${idPrefix}-testimonial-dot-${index + 1}`} />
           ))}
         </div>
         <span data-testid={`${idPrefix}-testimonial-count`}>{active + 1} / {count}</span>

@@ -12,12 +12,22 @@ export const printText = (title, text) => {
 
 export const currentVersion = (material) => material?.versions?.find((v) => v.version === material.current_version);
 
-export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId }) => {
+export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
   const version = currentVersion(material);
+
+  const copyShareLink = async () => {
+    try {
+      const response = await memberApi.post(`/workspace/materials/${material.material_id}/share`);
+      const url = `${window.location.origin}/shared/${response.data.share_token}`;
+      await navigator.clipboard?.writeText(url);
+      setShareMessage("Share link copied. Anyone with this unlisted link can view the current version.");
+    } catch { setShareMessage("Could not create the share link."); }
+  };
 
   const generate = async (isRegenerate) => {
     if (isRegenerate && !window.confirm("This will create another version of this material. Continue?")) return;
@@ -72,7 +82,9 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
             <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>
             <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`print-${type}`}><Printer size={14} /> Print</button>
             <button className="button button-back" onClick={() => printText(title, version.display_text)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>
+            {shareable && <button className="button button-back" onClick={copyShareLink} data-testid={`share-${type}`}><Copy size={14} /> Copy Share Link</button>}
           </div>
+          {shareMessage && <p className="member-success">{shareMessage}</p>}
           <p className="material-meta">Created {new Date(version.created_at).toLocaleString()} · Status: {material.status}</p>
         </>
       )}

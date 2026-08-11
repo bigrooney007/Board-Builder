@@ -3,22 +3,23 @@ All endpoints require member auth + recruitment_self_guided entitlement. Tenant 
 """
 import io
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 from pydantic import BaseModel, Field
 
-from ai_service import GENERATION_TYPES, generate_structured
+from ai_service import GENERATION_TYPES, extract_cv_text, generate_structured
 from member_auth import authenticate_member, require_entitlement
 from opportunity_emails import send_opportunity_broadcast, send_signature_request
 from workspace_service import (
     APPLICATION_STATUSES, BACKGROUND_STATUSES, CORE_QUESTIONS, REFERENCE_OUTCOMES,
     application_context_text, build_org_context, get_current_material, get_lead, get_profile,
-    new_id, now_iso, run_interview_guide, save_generation, slugify,
+    new_id, now_iso, reference_context, run_interview_guide, save_generation, slugify,
 )
 
 
@@ -105,7 +106,8 @@ def create_workspace_router(db) -> APIRouter:
                 "priorities": answers.get("accomplish", ""),
             }
         return {"profile": profile.get("data", {}), "confirmed": profile.get("confirmed", False),
-                "confirmed_at": profile.get("confirmed_at", ""), "prefill": prefill}
+                "confirmed_at": profile.get("confirmed_at", ""), "prefill": prefill,
+                "strategy_intake": profile.get("strategy_intake", {})}
 
     @router.put("/profile")
     async def save_profile(payload: ProfileUpdate, request: Request):
@@ -118,6 +120,14 @@ def create_workspace_router(db) -> APIRouter:
             {"$set": {"data": data, "updated_at": ts, "confirmed": False},
              "$setOnInsert": {"created_at": ts}}, upsert=True)
         return {"status": "saved", "confirmed": False}
+
+    @router.put("/strategy-intake")
+    async def save_strategy_intake(payload: ProfileUpdate, request: Request):
+        member = await current_member(request)
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"strategy_intake": payload.data, "updated_at": now_iso()}}, upsert=True)
+        return {"status": "saved"}
 
     @router.post("/profile/confirm")
     async def confirm_profile(request: Request):
@@ -143,6 +153,9 @@ def create_workspace_router(db) -> APIRouter:
         if not profile.get("confirmed"):
             raise HTTPException(status_code=409, detail="Confirm your Recruitment Profile in Module 1 before generating materials")
         context = await build_org_context(db, user_id, member)
+        reference = await reference_context(db, payload.type)
+        if reference:
+            context = f"{context}\n\n{reference}"
         application_id = ""
         if meta.get("per_application"):
             if not payload.application_id:
@@ -162,6 +175,57 @@ def create_workspace_router(db) -> APIRouter:
             questions = [{"id": q.get("id") or new_id(), "label": q["label"], "type": q.get("type", "textarea") if q.get("type") in {"text", "textarea", "yes_no"} else "textarea"} for q in structured.get("custom_questions", [])]
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {"custom_questions": questions, "updated_at": now_iso()}})
         return material
+
+    # ---------- External applicants, share links, board member profile form ----------
+    @router.post("/applications/external", status_code=201)
+    async def add_external_applicant(request: Request, name: str = Form(...), email: str = Form(...), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form(""), cv: UploadFile = File(None)):
+        member = await current_member(request)
+        ts = now_iso()
+        cv_file_id, cv_filename, cv_text = "", "", ""
+        if cv is not None and cv.filename:
+            content = await cv.read()
+            if len(content) > 10 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="CV file is too large (10MB maximum)")
+            file_id = await cv_bucket.upload_from_stream(cv.filename, content)
+            cv_file_id, cv_filename = str(file_id), cv.filename
+            cv_text = extract_cv_text(content, cv.filename)
+        application = {
+            "application_id": new_id(), "owner_user_id": member["user_id"], "opportunity_id": "",
+            "applicant_email": email.strip().lower(), "source": "External / LinkedIn", "status": "New",
+            "profile_snapshot": {"full_name": name.strip(), "email": email.strip().lower(), "phone": phone.strip(), "linkedin": linkedin.strip(), "profession": "", "city": "", "state_region": ""},
+            "answers": {}, "notes": notes.strip(), "cv_file_id": cv_file_id, "cv_filename": cv_filename, "cv_text": cv_text,
+            "interview_guide": {"status": "Pending"}, "references": [], "background_check": {"status": "Not started"},
+            "created_at": ts, "updated_at": ts,
+        }
+        await db.opportunity_applications.insert_one(application.copy())
+        return {"application_id": application["application_id"], "status": "New"}
+
+    @router.post("/materials/{material_id}/share", status_code=201)
+    async def share_material(material_id: str, request: Request):
+        member = await current_member(request)
+        material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0, "material_id": 1, "type": 1})
+        if not material:
+            raise HTTPException(status_code=404, detail="Material not found")
+        if GENERATION_TYPES.get(material["type"], {}).get("agreement"):
+            raise HTTPException(status_code=422, detail="Agreements are shared through the secure signature workflow, not a public share link")
+        existing = await db.share_links.find_one({"material_id": material_id}, {"_id": 0})
+        if existing:
+            return {"share_token": existing["share_token"]}
+        token = secrets.token_urlsafe(24)
+        await db.share_links.insert_one({"share_token": token, "material_id": material_id, "user_id": member["user_id"], "created_at": now_iso()})
+        return {"share_token": token}
+
+    @router.get("/board-profile-form")
+    async def board_profile_form(request: Request):
+        member = await current_member(request)
+        record = await db.board_profile_forms.find_one({"user_id": member["user_id"]}, {"_id": 0})
+        if not record:
+            profile = await get_profile(db, member["user_id"])
+            org = (profile.get("data", {}) or {}).get("organization_name", "") or "Your organization"
+            record = {"share_token": secrets.token_urlsafe(24), "user_id": member["user_id"], "organization_name": org, "created_at": now_iso()}
+            await db.board_profile_forms.insert_one(record.copy())
+        responses = await db.board_profile_responses.find({"user_id": member["user_id"]}, {"_id": 0}).sort("submitted_at", -1).to_list(100)
+        return {"share_token": record["share_token"], "organization_name": record["organization_name"], "responses": responses}
 
     # ---------- Materials library ----------
     @router.get("/materials")

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Pencil } from "lucide-react";
 import { memberApi } from "../api";
+import { MaterialCard } from "./MaterialCard";
+import { useMaterials } from "./WorkspaceModules";
 
 const STRENGTH_AREAS = ["Fundraising", "Major donors", "Corporate partnerships", "Grants", "Finance", "Accounting", "Governance", "Law", "Marketing", "Communications", "Public relations", "Community engagement", "Strategic planning", "Human resources", "Technology", "Program development", "Operations", "Government", "Healthcare", "Education", "Professional connections", "Lived experience", "Other"];
 const RESPONSIBILITIES = ["Attend meetings consistently", "Participate in strategic planning", "Serve on a committee", "Make introductions", "Support fundraising", "Build business relationships", "Engage donors", "Help recruit volunteers", "Support community outreach", "Provide professional expertise", "Make a personal financial contribution", "Other"];
@@ -64,6 +66,24 @@ const emptyData = () => {
   return data;
 };
 
+const BlueprintPanel = () => {
+  const { byType, refresh } = useMaterials();
+  return (
+    <section className="workspace-panel" data-testid="module1-blueprint">
+      <h2>Identify the Board Your Organization Needs</h2>
+      <p className="material-description">Compare the board you have with the powerhouse board your organization needs, and identify the exact profiles of the new board members you should recruit.</p>
+      <MaterialCard
+        type="powerhouse_board_blueprint"
+        title="Your Powerhouse Board Blueprint"
+        buttonLabel="Identify the Board Members I Need"
+        description="Generated from your public Recruitment form and confirmed profile: what your present board already brings, what is missing, what a powerhouse board looks like for your organization, and one exact profile for each new board member you want to recruit. The saved version drives Modules 2 and 3."
+        material={byType.powerhouse_board_blueprint}
+        refresh={refresh}
+      />
+    </section>
+  );
+};
+
 export const Module1Profile = ({ onConfirmed }) => {
   const [data, setData] = useState(emptyData());
   const [step, setStep] = useState(0);
@@ -125,6 +145,7 @@ export const Module1Profile = ({ onConfirmed }) => {
 
   if (mode === "summary") {
     return (
+      <>
       <section className="workspace-panel" data-testid="module1-summary">
         <h2>Your Board Recruitment Profile</h2>
         {confirmed ? <p className="member-success" data-testid="profile-confirmed-badge"><CheckCircle2 size={15} /> Recruitment Profile Confirmed — Module 2 generation is available.</p> : <p className="workspace-note">Review your profile and confirm it to unlock Module 2 generation.</p>}
@@ -141,6 +162,8 @@ export const Module1Profile = ({ onConfirmed }) => {
           {!confirmed && <button className="button" disabled={saving} onClick={confirm} data-testid="confirm-profile-button">Confirm My Recruitment Profile</button>}
         </div>
       </section>
+      {confirmed && <BlueprintPanel />}
+      </>
     );
   }
 

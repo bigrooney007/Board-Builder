@@ -20,6 +20,7 @@ import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
+import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const HomeExperience = () => {
@@ -69,6 +70,8 @@ export default function App() {
           <Route path="/board-opportunities/:slug/apply" element={<OpportunityApplyPage />} />
           <Route path="/apply/:token" element={<SavedProfileApplyPage />} />
           <Route path="/sign/:token" element={<SignAgreementPage />} />
+          <Route path="/shared/:token" element={<SharedResourcePage />} />
+          <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>

@@ -67,6 +67,51 @@ async def get_lead(db, member: dict):
     return await db.funnel_leads.find_one({"lead_id": {"$in": lead_ids}, "offer_source": "recruitment"}, {"_id": 0}, sort=[("created_at", -1)])
 
 
+REFERENCE_RULES = (
+    "FOUNDER RECRUITMENT EXECUTION REFERENCE LIBRARY — private examples of how Rooney actually executes this stage in practice.\n"
+    "STRICT RULES: use ONLY the structure, methodology, patterns, questions, sections and writing approach from these examples. "
+    "They may contain a past client's information — NEVER copy or expose any client name, organization name, people's names, emails, phones, addresses, "
+    "board member or applicant names, CV details, confidential notes or client-specific facts into this customer's output. "
+    "Never duplicate an old document with names swapped; every output must be built from the current nonprofit's own information. "
+    "SOURCE PRIORITY: (1) the current customer's actual information, (2) the locked six-stage Recruitment Framework, (3) these reference patterns, (4) general writing ability. "
+    "If a reference conflicts with the locked framework, the framework wins."
+)
+
+
+MODULE_KEYWORDS = {
+    1: ["board members your organization needs", "board matrix", "board gap", "skills assessment", "identify the board"],
+    2: ["recruitment strategy", "strategy"],
+    3: ["board opportunity", "application", "linkedin", "social", "recruitment email", "launch"],
+    4: ["interview"],
+    5: ["reference", "background check"],
+    6: ["onboard", "board manual", "agreement", "orientation", "conflict of interest", "confidentiality"],
+}
+
+
+def slice_reference(text: str, module: int) -> str:
+    lowered = text.lower()
+    for keyword in MODULE_KEYWORDS.get(module, []):
+        index = lowered.find(keyword)
+        if index != -1:
+            start = max(0, index - 1500)
+            return text[start:start + 8000]
+    return text[:8000]
+
+
+async def reference_context(db, gen_key: str) -> str:
+    from ai_service import GENERATION_TYPES
+    module = GENERATION_TYPES.get(gen_key, {}).get("module", 0)
+    docs = await db.reference_materials.find(
+        {"approved": True, "$or": [{"module": {"$in": [0, module]}}, {"resource_types": gen_key}]},
+        {"_id": 0, "title": 1, "content_text": 1, "resource_types": 1, "module": 1},
+    ).to_list(6)
+    if not docs:
+        return ""
+    docs.sort(key=lambda d: 0 if gen_key in (d.get("resource_types") or []) else (1 if d.get("module") == module else 2))
+    parts = [f"REFERENCE EXAMPLE — {d['title']}:\n{slice_reference(d['content_text'], module)}" for d in docs[:2]]
+    return REFERENCE_RULES + "\n\n" + "\n\n".join(parts)
+
+
 async def get_current_material(db, user_id: str, generation_type: str, application_id: str = ""):
     query = {"user_id": user_id, "type": generation_type, "application_id": application_id or ""}
     material = await db.generated_materials.find_one(query, {"_id": 0})
@@ -111,6 +156,11 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     profile = await get_profile(db, user_id)
     lead = await get_lead(db, member)
     parts = [profile_context_text(profile.get("data", {}), lead)]
+    if profile.get("strategy_intake"):
+        parts.append("MODULE 2 RECRUITMENT STRATEGY INTAKE (the founder's answers about their network and channels):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
+    blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
+    if blueprint and blueprint["current"]:
+        parts.append("APPROVED POWERHOUSE BOARD BLUEPRINT (Module 1 — the exact board member profiles to recruit):\n" + blueprint["current"]["display_text"][:12000])
     strategy = await get_current_material(db, user_id, "recruitment_strategy")
     if strategy and strategy["current"]:
         parts.append("APPROVED RECRUITMENT STRATEGY:\n" + strategy["current"]["display_text"][:12000])

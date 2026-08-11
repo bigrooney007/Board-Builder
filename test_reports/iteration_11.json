@@ -1,0 +1,57 @@
+{
+  "summary": "Iteration 11 verification of Recruitment Platform Refinement (Owner Review auth fix, centered sales pages, canonical testimonials, Modules 1-6 tools, share/board-profile flows). Backend: 11/11 pytest passed in /app/backend/tests/test_recruitment_refinement.py (owner-review /members/me, workspace/profile, PUT strategy-intake, POST /workspace/applications/external with CV, GET /workspace/board-profile-form + public GET/POST /api/board-profile/{token}, share links non-agreement vs agreement 422, /api/shared/{token} 200 + BADTOKEN 404, member without recruitment_self_guided 403 on /courses/recruitment/self-guided). Frontend: Owner Review journey verified end-to-end — admin login → 'Review Recruitment Experience' → /recruit with owner-review-banner → clicked through blank 3-step form (0 POST /api/funnel-leads) → /recruit/process (6 locked stage names in exact order with 01-06 progression, process-step-1-cta 'Identify the Board My Nonprofit Needs' → /recruit/checkout, process-final-cta 'Start Building My Board' → /recruit/checkout) → owner-review-continue-button navigates to /app/recruitment/self-guided/module/1 with 0 Stripe/checkout and 0 lead POSTs. Guarantee modal opens with fallback text. Testimonials verified verbatim (Martina 'Working with Rooney has inspired myself and my board members', Donna 'I waisted 6 months' and 'staffed with & volunteers' typos preserved, Cyrena 'Because of your, uh, input') on /, /recruit, /reactivate, /activate, /recruit/checkout; no 'Result:' rows anywhere. Modules 1-6 all render with exact canonical titles under review admin: M2 has intake-know-people/intake-recruit-outside/save-strategy-intake/material-recruitment_strategy/generate-recruitment_strategy testids; M3 has all 9 tool cards + copy-application-link + 'Publish Recruitment Campaign' text; M4 has module4-general-tools + external-applicant-form; M5 has background-check-search-button + 'no provider is endorsed' explanation; M6 has board-profile-panel. Real Module 1 blueprint generation via UI was NOT executed (multi-step profile form has required checkbox groups per step that my automated flow could not enumerate reliably) — main agent already curl-verified /workspace/profile 200 and the blueprint generation type exists in GENERATION_TYPES; recommend main-agent self-test if UI blueprint gen must be visually confirmed.",
+  "verdicts": {
+    "owner_review_members_me_with_admin_cookie": "PASS (user_id=owner-review-admin, entitlements include recruitment_self_guided)",
+    "owner_review_blank_form_no_lead_created": "PASS (0 POST /api/funnel-leads)",
+    "owner_review_continue_no_stripe_no_lead": "PASS (0 stripe calls, 0 lead POSTs, navigates to module/1)",
+    "modules_1_to_6_canonical_titles_and_order": "PASS",
+    "process_page_six_stages_and_ctas": "PASS (process-step-1-cta + process-final-cta both route to /recruit/checkout)",
+    "checkout_owner_review_button_and_guarantee_modal": "PASS",
+    "testimonials_canonical_all_pages": "PASS (home, /recruit, /reactivate, /activate, /recruit/checkout — all verbatim, no Result rows, Donna typos preserved)",
+    "module_2_intake_persistence_backend": "PASS (PUT /workspace/strategy-intake saved; GET returned it back)",
+    "module_3_nine_tools_and_copy_application_link": "PASS",
+    "module_4_general_tools_and_external_form_backend": "PASS (POST /workspace/applications/external with CV → source 'External / LinkedIn' appears in list)",
+    "module_5_background_check_search_button": "PASS",
+    "module_6_board_profile_panel_and_public_form": "PASS (share_token issued; GET /api/board-profile/{token} 200; POST 201; response visible in owner panel)",
+    "share_links_agreement_vs_non_agreement": "PASS (non-agreement 201 with token, agreement 422)",
+    "public_shared_and_board_profile_bad_token_404": "PASS",
+    "security_regressions_401_and_entitlement": "PASS (workspace/profile 401 without cookie; members/me 401 without cookie; ephemeral member without recruitment_self_guided gets 403 on self-guided course)",
+    "module1_blueprint_ui_generation": "NOT_EXECUTED via UI (multi-step profile form checkbox groups blocked automation); backend endpoint + testid module1-blueprint exist per code — recommend main-agent self-test"
+  },
+  "tests_executed": {
+    "backend_pytest": "11/11 passed — /app/backend/tests/test_recruitment_refinement.py (junit /app/test_reports/pytest/iteration_11.xml)",
+    "frontend_playwright": "Owner Review journey, /recruit /process /checkout, modules 1-6 URL walkthrough, testimonials on 5 pages — all product checks PASS except Module 1 blueprint generation which was not executed via UI"
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TestimonialCarousel/TestimonialsSection", "issue": "React warning 'Encountered two children with the same key' logged on every page that renders the 8-item testimonials (two Donna Kargel entries share the same name-derived key). Non-blocking but noisy; use index or a synthetic id as key instead of name.", "selector": "recruit-landing-testimonial-card-6/7", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_recruitment_refinement.py",
+    "/app/test_reports/pytest/iteration_11.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: fix duplicate React key warning on TestimonialCarousel/TestimonialsSection (two Donna Kargel entries collide). Use array index or a stable synthetic id instead of `name`.",
+    "OPTIONAL: main agent may self-test Module 1 blueprint generation through UI once (fill required checkbox groups on Step 2 'What are your board's biggest weaknesses/strengths', then Confirm Profile → 'Identify the Board Members I Need' → wait ~90s for module1-blueprint output). Backend workspace/generate for type=powerhouse_board_blueprint is unchanged from the earlier verified path."
+  ],
+  "critical_code_review_comments": [
+    "TestimonialsSection/TestimonialCarousel key collision for the two Donna Kargel testimonials generates repeated React warnings on every mount (home, /recruit, /reactivate, /activate, /recruit/checkout). Recommend keying by array index or by (name + organization) instead of name only.",
+    "Module 6 non-agreement tools ('Board Member Onboarding Script', 'Onboarding Agenda', 'Organization Overview', 'Board Manual', '90-Day Plan') and agreements are all per-applicant and gated behind 'Only applicants whose status is Selected appear here'. In Owner Review Mode with no applicants marked Selected, the tools are not visible on the page — this appears to be intended design, but if the review-mode walkthrough is expected to show these tools without an applicant, main agent may want to expose a demo/preview state.",
+    "review_routes.board_profile_submit stores every field as str() including list-like inputs (skills/committees). Fine for MVP; consider list handling if the public form later posts arrays."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_recruitment_refinement.py",
+    "/app/test_reports/iteration_11.json"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% of executed product checks; 1 UI check (Module 1 blueprint generation) not executed due to multi-step form automation limits"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com per /app/memory/test_credentials.md — used only for owner-review flow; no Stripe payments completed, no live emails sent, no publish/broadcast triggered.",
+  "seed_data_creation": "1 TEST external applicant (POST /workspace/applications/external), 1 TEST board_profile response (TEST_prospect@example.com), 2 TEST generated_materials seeded directly in Mongo (board_opportunity + board_member_agreement) plus their share_links, 1 TEST ephemeral member without recruitment_self_guided. All TEST_-prefixed data cleaned up in module-scoped teardown; ephemeral member deleted at end of entitlement test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite at /app/backend/tests/test_recruitment_refinement.py is self-contained (admin cookie via /api/auth/login, MongoClient cleanup). Requires OWNER_RECRUITMENT_REVIEW_MODE=true to keep working (all workspace calls flow through review_mode_member fallback). If OWNER_RECRUITMENT_REVIEW_MODE flips to false, this suite will regress — switch to a real paid member for those cases. Env used: REACT_APP_BACKEND_URL, MONGO_URL, DB_NAME.",
+  "rca_of_the_issue": "N/A — no product bugs. One low-severity console warning traced to name-only React keys for the two Donna Kargel testimonial entries in testimonialsData.js."
+}

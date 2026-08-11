@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -41,6 +42,39 @@ def create_review_router(db) -> APIRouter:
     async def recruitment_guarantee():
         terms = os.environ.get("RECRUITMENT_GUARANTEE_TERMS", "").strip()
         return {"terms": terms or GUARANTEE_FALLBACK, "configured": bool(terms)}
+
+    @router.get("/shared/{token}")
+    async def shared_resource(token: str):
+        link = await db.share_links.find_one({"share_token": token}, {"_id": 0})
+        if not link:
+            raise HTTPException(status_code=404, detail="This shared resource is not available")
+        material = await db.generated_materials.find_one({"material_id": link["material_id"]}, {"_id": 0})
+        if not material:
+            raise HTTPException(status_code=404, detail="This shared resource is not available")
+        current = next((v for v in material["versions"] if v["version"] == material["current_version"]), None)
+        return {"title": material["title"], "display_text": current["display_text"] if current else ""}
+
+    @router.get("/board-profile/{token}")
+    async def board_profile_meta(token: str):
+        record = await db.board_profile_forms.find_one({"share_token": token}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This form is not available")
+        return {"organization_name": record["organization_name"]}
+
+    @router.post("/board-profile/{token}", status_code=201)
+    async def board_profile_submit(token: str, payload: dict):
+        record = await db.board_profile_forms.find_one({"share_token": token}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This form is not available")
+        allowed = ["full_name", "preferred_name", "email", "phone", "location", "professional_title", "employer", "bio", "linkedin", "skills", "professional_experience", "board_experience", "fundraising_strengths", "relationships", "committees_of_interest", "availability"]
+        data = {key: str(payload.get(key, ""))[:4000] for key in allowed}
+        if not data["full_name"].strip() or not data["email"].strip():
+            raise HTTPException(status_code=422, detail="Full name and email are required")
+        await db.board_profile_responses.insert_one({
+            "response_id": secrets.token_hex(8), "user_id": record["user_id"], "share_token": token,
+            "data": data, "submitted_at": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"status": "submitted"}
 
     @router.post("/terms-agreements", status_code=201)
     async def record_terms_agreement(payload: TermsAgreement):

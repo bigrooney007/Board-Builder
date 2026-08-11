@@ -13,7 +13,7 @@ const TestimonialCard = ({ testimonial, index }) => {
         <Quote className="quote-mark" size={27} aria-hidden="true" />
       </div>
       <blockquote data-testid={`testimonial-quote-${index + 1}`}>“{testimonial.quote}”</blockquote>
-      <p className="testimonial-result" data-testid={`testimonial-result-${index + 1}`}><span>Result</span>{testimonial.result}</p>
+      {testimonial.result && <p className="testimonial-result" data-testid={`testimonial-result-${index + 1}`}><span>Result</span>{testimonial.result}</p>}
     </article>
   );
 };
@@ -34,9 +34,9 @@ export const TestimonialsSection = () => {
         <p data-testid="testimonials-supporting-text">Founders and executive directors have worked with the Nonprofit Board Builder to recruit board members, activate their boards, build fundraising systems, recruit volunteers and create a clear structure for moving their missions forward.</p>
       </div>
       <div className="testimonial-slideshow" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} data-testid="testimonial-slideshow">
-        <div className="testimonial-track" style={{ transform: `translateX(-${active * 100}%)` }}>{testimonials.map((testimonial, index) => <div className="testimonial-slide" key={testimonial.name} aria-hidden={active !== index}><TestimonialCard testimonial={testimonial} index={index} /></div>)}</div>
+        <div className="testimonial-track" style={{ transform: `translateX(-${active * 100}%)` }}>{testimonials.map((testimonial, index) => <div className="testimonial-slide" key={`${testimonial.name}-${index}`} aria-hidden={active !== index}><TestimonialCard testimonial={testimonial} index={index} /></div>)}</div>
       </div>
-      <div className="testimonial-controls"><button onClick={() => setActive((active - 1 + testimonials.length) % testimonials.length)} aria-label="Previous testimonial" data-testid="testimonial-previous-button"><ChevronLeft /></button><div className="testimonial-dots">{testimonials.map((testimonial, index) => <button className={active === index ? "active" : ""} onClick={() => setActive(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={testimonial.name} data-testid={`testimonial-dot-${index + 1}`} />)}</div><span data-testid="testimonial-slide-count">{active + 1} / {testimonials.length}</span><button onClick={() => setActive((active + 1) % testimonials.length)} aria-label="Next testimonial" data-testid="testimonial-next-button"><ChevronRight /></button></div>
+      <div className="testimonial-controls"><button onClick={() => setActive((active - 1 + testimonials.length) % testimonials.length)} aria-label="Previous testimonial" data-testid="testimonial-previous-button"><ChevronLeft /></button><div className="testimonial-dots">{testimonials.map((testimonial, index) => <button className={active === index ? "active" : ""} onClick={() => setActive(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={`${testimonial.name}-${index}`} data-testid={`testimonial-dot-${index + 1}`} />)}</div><span data-testid="testimonial-slide-count">{active + 1} / {testimonials.length}</span><button onClick={() => setActive((active + 1) % testimonials.length)} aria-label="Next testimonial" data-testid="testimonial-next-button"><ChevronRight /></button></div>
     </section>
   );
 };

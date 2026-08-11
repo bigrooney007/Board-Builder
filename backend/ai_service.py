@@ -14,6 +14,12 @@ REVIEW_WARNING = "This document is generated as a working template. Review it ag
 
 # generation type registry: module, title, schema description (JSON the model must return)
 GENERATION_TYPES = {
+    "powerhouse_board_blueprint": {"module": 1, "title": "Your Powerhouse Board Blueprint", "per_application": False, "schema": {
+        "present_board_brings": "string — concise summary of what the present board already brings, from the founder's information only",
+        "what_is_missing": "string — the important gaps between the current board and the board needed to achieve the founder's stated goals",
+        "powerhouse_board_description": "string — what a powerhouse board looks like for THIS organization: the combination of skills, experience, relationships, credibility and fundraising capacity appropriate to this nonprofit and its stated objectives. Never generic.",
+        "candidate_profiles": [{"profile_name": "string — e.g. 'Corporate Partnership & Business Development Leader'", "why_your_board_needs_this_person": "string", "professional_background_to_look_for": "string", "skills_and_experience": ["string"], "valuable_relationships_networks": "string", "how_this_person_can_help": "string", "fundraising_contribution": "string", "board_gap_this_person_fills": "string"}],
+    }},
     "recruitment_strategy": {"module": 2, "title": "Board Recruitment Strategy", "per_application": False, "schema": {
         "objective": "string — what the organization is trying to accomplish through recruitment",
         "board_members_to_recruit": {"number": "string — the founder's stated number, do not override", "note": "string — empty unless their information creates a clear conflict; then: 'You indicated that you want to recruit [X] people. Based on the requirements you described, you may want to review whether this number gives you enough capacity to cover every priority.'"},
@@ -46,8 +52,24 @@ GENERATION_TYPES = {
         "personal_invitation": {"subject": "string", "body": "string"},
         "follow_up": {"subject": "string", "body": "string"},
     }},
-    "linkedin_launch_instructions": {"module": 3, "title": "LinkedIn Launch Instructions", "per_application": False, "schema": {
-        "steps": [{"title": "string", "instructions": "string — practical instructions covering where to post, how to structure the post, how to use the application link, how to ask others to share, how to contact potential prospects, how to follow up, how to maintain campaign activity"}],
+    "linkedin_launch_instructions": {"module": 3, "title": "LinkedIn Jobs Launch Guide", "per_application": False, "schema": {
+        "steps": [{"title": "string", "instructions": "string — practical instructions covering where to post, how to structure the post, how to use the application link, how to ask others to share, how to contact potential prospects, how to follow up, how to maintain campaign activity. When discussing budget say: 'You can begin with a small controlled test budget, such as $20 where the option is available, and increase it only if you choose. LinkedIn's available posting and promotion options may vary.' NEVER state that LinkedIn charges $20 as a universal platform fact. Do not fabricate LinkedIn screenshots or exact current UI labels."}],
+    }},
+    "board_recruitment_job_post": {"module": 3, "title": "Board Recruitment Job Post", "per_application": False, "schema": {
+        "title": "string — professional posting title", "post_body": "string — complete professional board-opportunity posting for LinkedIn Jobs or another professional/volunteer platform, includes the application link placeholder [APPLICATION LINK]. Clearly represent the actual nature of the board opportunity; NEVER describe an unpaid nonprofit board role as salaried employment.",
+    }},
+    "personal_invitation_email": {"module": 3, "title": "Personal Invitation Email", "per_application": False, "schema": {
+        "subject": "string", "body": "string — a warm personal email inviting someone the founder already knows to consider the board opportunity, includes the application link placeholder [APPLICATION LINK]",
+    }},
+    "personal_invitation_message": {"module": 3, "title": "Personal Invitation Message", "per_application": False, "schema": {
+        "message": "string — a concise direct message version for LinkedIn, Facebook, text or another direct-message channel, includes the application link placeholder [APPLICATION LINK]",
+    }},
+    "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {"subject": "string", "body": "string — general invitation to a board introductory/interview conversation, with [APPLICANT NAME] and scheduling placeholders"}},
+    "general_rejection_email": {"module": 4, "title": "General Applicant Rejection Email", "per_application": False, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who will not be invited to the interview stage, with [APPLICANT NAME] placeholder"}},
+    "conditional_offer": {"module": 4, "title": "Conditional Board Position Offer", "per_application": True, "schema": {"subject": "string", "body": "string — clearly states that the board position remains conditional/pending completion of the relevant reference or background checks and the organization's final appointment requirements. Use the words 'conditional board position offer'; NEVER 'confidential board position'."}},
+    "after_interview_rejection": {"module": 4, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
+    "onboarding_script": {"module": 6, "title": "Board Member Onboarding Script", "per_application": True, "schema": {
+        "sections": [{"title": "string — welcome; mission and story as supplied; what the organization needs; the board member's role and responsibility; expectations; how they can begin contributing; questions; next steps", "talking_points": ["string — practical founder-facing talking points for the onboarding conversation or meeting"]}],
     }},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
         "applicant_overview": "string — concise factual summary",

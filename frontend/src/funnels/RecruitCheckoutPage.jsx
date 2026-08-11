@@ -5,6 +5,7 @@ import { Award, Handshake, LifeBuoy, LockKeyhole, ShieldCheck, Users, X } from "
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { useReviewMode } from "@/reviewMode";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -45,6 +46,11 @@ export default function RecruitCheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reviewMode = useReviewMode();
+  const { refresh: refreshMember } = useMemberAuth();
+  const enterReview = async () => {
+    await refreshMember();
+    navigate("/app/recruitment/self-guided/module/1");
+  };
   const internalTest = new URLSearchParams(location.search).get("internal") === "true";
   const [flags, setFlags] = useState({ recruitment_497_live: false });
   const [agreed, setAgreed] = useState(false);
@@ -119,7 +125,7 @@ export default function RecruitCheckoutPage() {
             {enabled ? (busy ? "Opening secure checkout…" : "Start Building My Board — $497") : <><LockKeyhole size={16} /> Program Access Opening Soon</>}
           </button>
           {reviewMode && (
-            <button className="button review-bypass-button" onClick={() => navigate("/app/recruitment/self-guided/module/1")} data-testid="owner-review-continue-button">
+            <button className="button review-bypass-button" onClick={enterReview} data-testid="owner-review-continue-button">
               Continue in Owner Review Mode
             </button>
           )}
