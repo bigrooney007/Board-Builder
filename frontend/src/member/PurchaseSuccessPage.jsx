@@ -45,10 +45,13 @@ export const PurchaseSuccessPage = () => {
         const response = await memberApi.post("/members/claim-purchase", { session_id: sessionId });
         setClaimed(response.data.claimed);
         await refresh();
+        if (response.data.claimed_source === "recruit_with_rooney_997") {
+          navigate("/app/recruitment/self-guided/module/1");
+        }
       } catch (err) { setError(err.response?.data?.detail || "We could not link this purchase to your account."); }
     };
     claim();
-  }, [paymentState, loading, member, claimed, sessionId, refresh]);
+  }, [paymentState, loading, member, claimed, sessionId, refresh, navigate]);
 
   const updateField = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
 

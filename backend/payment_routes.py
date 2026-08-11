@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 import stripe
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
 from funnel_models import CheckoutRequest
@@ -19,6 +20,11 @@ PRICE_ENV = {
 }
 
 
+class RooneyCheckoutRequest(BaseModel):
+    origin_url: str = Field(min_length=1)
+    internal_test: bool = False
+
+
 def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -29,6 +35,7 @@ def create_payment_router(db) -> APIRouter:
             "paid_programs_live": os.environ["PAID_PROGRAMS_LIVE"].lower() == "true",
             "recruitment_97_live": os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true",
             "recruitment_497_live": os.environ.get("RECRUITMENT_497_LIVE", "false").lower() == "true",
+            "recruit_with_rooney_997_live": os.environ.get("RECRUIT_WITH_ROONEY_997_LIVE", "false").lower() == "true",
             "stripe_mode": os.environ["STRIPE_MODE"],
         }
 
@@ -91,6 +98,46 @@ def create_payment_router(db) -> APIRouter:
             {"lead_id": lead["lead_id"]},
             {"$set": {"selected_tier": payload.tier, "stripe_session_id": session.id, "updated_at": now}},
         )
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/rooney-checkout")
+    async def create_rooney_checkout(payload: RooneyCheckoutRequest, request: Request):
+        live = os.environ.get("RECRUIT_WITH_ROONEY_997_LIVE", "false").lower() == "true"
+        if not live:
+            if not payload.internal_test:
+                raise HTTPException(status_code=403, detail="Enrollment is not open yet")
+            await authenticate_admin(request, db)
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": os.environ["STRIPE_RECRUIT_WITH_ROONEY_997_PRICE_ID"], "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{payload.origin_url}/recruit-with-rooney?checkout=cancelled",
+            "metadata": {
+                "offer_source": "recruit_with_rooney", "selected_tier": "997",
+                "purchase_source": "recruit_with_rooney_997", "offer": "Recruit With Rooney",
+                "support_program": "recruit_with_rooney",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "lead_id": "", "offer_source": "recruit_with_rooney",
+            "selected_tier": "997", "purchase_source": "recruit_with_rooney_997",
+            "amount": 99700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.get("/status/{session_id}")

@@ -32,14 +32,14 @@ const useCourse = (productSlug) => {
   const [forbidden, setForbidden] = useState(false);
   const load = React.useCallback(() => {
     memberApi.get(meta.endpoint).then((response) => setCourse(response.data)).catch((err) => {
-      if (err.response?.status === 401) navigate("/login");
+      if (err.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
       else if (err.response?.status === 403) setForbidden(true);
       else setError("We could not load this course.");
     });
   }, [meta.endpoint, navigate]);
   useEffect(() => {
     if (loading) return;
-    if (!member) { navigate("/login"); return; }
+    if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
     load();
   }, [loading, member, navigate, load]);
   return { meta, course, error, forbidden, reload: load };

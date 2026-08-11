@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
@@ -11,13 +11,16 @@ const Field = ({ label, type = "text", value, onChange, testId, autoComplete }) 
 export const LoginPage = () => {
   const { login } = useMemberAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next") || "";
+  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError("");
-    try { await login(email, password); navigate("/app"); }
+    try { await login(email, password); navigate(nextPath || "/app"); }
     catch (err) { setError(err.response?.data?.detail || "Login failed. Please try again."); setBusy(false); }
   };
   return (

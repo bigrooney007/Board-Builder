@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="13" time="3.696" timestamp="2026-08-11T23:29:49.607213+00:00" hostname="agent-env-b6348b9b-a511-4b65-89f4-69bc1b647f25"><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch1Config" name="test_direct_recruitment_config_empty" time="0.276" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch3Accountability" name="test_welcome_enrollment_idempotent" time="0.592" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch1Config" name="test_recruitment_guarantee_not_configured" time="0.183" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch1Config" name="test_payments_config_flags" time="0.113" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch2Checkout" name="test_rooney_checkout_no_auth_returns_403" time="0.102" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch3Accountability" name="test_schedule_days_2_through_21_and_stage_progression" time="0.330"><failure message="AssertionError: assert 'not_started' == 'module1'&#10;  &#10;  - module1&#10;  + not_started">backend/tests/test_recruit_with_rooney_e2e.py:248: in test_schedule_days_2_through_21_and_stage_progression
+    asyncio.run(run())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend/tests/test_recruit_with_rooney_e2e.py:236: in run
+    assert day_to_stage[2] == "module1"  # module 1 not yet completed at day 2
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'not_started' == 'module1'
+E     
+E     - module1
+E     + not_started</failure></testcase><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch2Checkout" name="test_rooney_checkout_internal_test_without_admin_403" time="0.142" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch3Accountability" name="test_completion_email_stops_sequence" time="0.426" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch2Checkout" name="test_rooney_checkout_admin_creates_test_session" time="1.657" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch3Accountability" name="test_refund_stops_sequence" time="0.306" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestBatch3Accountability" name="test_no_engagement_for_497_purchase" time="0.237" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestRegression" name="test_homepage_ok" time="0.108" /><testcase classname="tests.test_recruit_with_rooney_e2e.TestRegression" name="test_public_config_intact" time="0.093" /></testsuite></testsuites>

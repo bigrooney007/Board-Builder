@@ -2,11 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { initialsFor, testimonials } from "./testimonialsData";
 
-export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
+export const TestimonialCarousel = ({ heading, idPrefix = "carousel", priorityNames }) => {
+  const items = priorityNames
+    ? [...testimonials].sort((a, b) => {
+        const rank = (t) => { const i = priorityNames.indexOf(t.name); return i === -1 ? priorityNames.length : i; };
+        return rank(a) - rank(b);
+      })
+    : testimonials;
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStart = useRef(null);
-  const count = testimonials.length;
+  const count = items.length;
 
   useEffect(() => {
     if (paused) return undefined;
@@ -36,7 +42,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
         data-testid={`${idPrefix}-testimonial-carousel`}
       >
         <div className="offer-carousel-track" style={{ transform: `translateX(-${active * 100}%)` }}>
-          {testimonials.map((testimonial, index) => (
+          {items.map((testimonial, index) => (
             <div className="offer-carousel-slide" key={`${testimonial.name}-${index}`} aria-hidden={active !== index}>
               <article className="offer-testimonial-card" data-testid={`${idPrefix}-testimonial-card-${index + 1}`}>
                 <div className="testimonial-card-top">
@@ -57,7 +63,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel" }) => {
       <div className="testimonial-controls">
         <button type="button" onClick={() => go(active - 1)} aria-label="Previous testimonial" data-testid={`${idPrefix}-testimonial-previous`}><ChevronLeft /></button>
         <div className="testimonial-dots">
-          {testimonials.map((testimonial, index) => (
+          {items.map((testimonial, index) => (
             <button type="button" className={active === index ? "active" : ""} onClick={() => go(index)} aria-label={`Show testimonial from ${testimonial.name}`} key={`${testimonial.name}-${index}`} data-testid={`${idPrefix}-testimonial-dot-${index + 1}`} />
           ))}
         </div>

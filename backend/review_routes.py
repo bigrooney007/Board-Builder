@@ -43,6 +43,11 @@ def create_review_router(db) -> APIRouter:
         terms = os.environ.get("RECRUITMENT_GUARANTEE_TERMS", "").strip()
         return {"terms": terms or GUARANTEE_FALLBACK, "configured": bool(terms)}
 
+    @router.get("/direct-recruitment/config")
+    async def direct_recruitment_config():
+        url = os.environ.get("DIRECT_RECRUITMENT_VIDEO_URL", "").strip().strip('"')
+        return {"video_url": url}
+
     @router.get("/shared/{token}")
     async def shared_resource(token: str):
         link = await db.share_links.find_one({"share_token": token}, {"_id": 0})

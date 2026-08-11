@@ -67,9 +67,14 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     metadata = session.metadata or {}
     offer_source = metadata.get("offer_source", "")
     tier = metadata.get("selected_tier", "")
-    if offer_source != "recruitment" or tier not in TIER_ENTITLEMENTS:
+    if offer_source == "recruit_with_rooney" and tier == "997":
+        entitlement = "recruitment_self_guided"
+        product_name = "Recruit With Rooney"
+    elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
+        entitlement = TIER_ENTITLEMENTS[tier]
+        product_name = TIER_PRODUCTS[tier]
+    else:
         raise HTTPException(status_code=400, detail="This purchase is not a Recruitment program purchase")
-    entitlement = TIER_ENTITLEMENTS[tier]
     lead_id = metadata.get("lead_id", "")
     now = datetime.now(timezone.utc).isoformat()
     purchase = {
@@ -80,7 +85,7 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         "session_id": session_id,
         "payment_intent_id": session.payment_intent or "",
         "tier": tier,
-        "product": TIER_PRODUCTS[tier],
+        "product": product_name,
         "entitlement": entitlement,
         "amount": session.amount_total,
         "currency": session.currency,
@@ -88,6 +93,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         "purchased_at": existing["purchased_at"] if existing else now,
         "updated_at": now,
     }
+    if offer_source == "recruit_with_rooney":
+        purchase.update({
+            "purchase_source": "recruit_with_rooney_997", "offer": "Recruit With Rooney",
+            "support_program": "recruit_with_rooney", "price_paid": 997,
+        })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     update = {"$addToSet": {"entitlements": entitlement}, "$set": {"updated_at": now}}
     if lead_id:
@@ -113,6 +123,12 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             await stop_recruitment_nurture(db, lead["email"])
     except Exception:
         pass
+    if purchase.get("purchase_source") == "recruit_with_rooney_997":
+        try:
+            from accountability_service import enroll_rooney_engagement
+            await enroll_rooney_engagement(db, member, purchase)
+        except Exception:
+            pass
     return purchase
 
 
@@ -150,7 +166,8 @@ def create_member_router(db) -> APIRouter:
         token = create_member_token(member["user_id"], email)
         set_member_cookie(response, token)
         return {"member": public_member(fresh), "token": token,
-                "claimed": purchase["entitlement"] if purchase else ""}
+                "claimed": purchase["entitlement"] if purchase else "",
+                "claimed_source": purchase.get("purchase_source", "") if purchase else ""}
 
     @router.post("/login")
     async def login(payload: LoginRequest, response: Response):
@@ -165,7 +182,8 @@ def create_member_router(db) -> APIRouter:
         token = create_member_token(member["user_id"], email)
         set_member_cookie(response, token)
         return {"member": public_member(fresh), "token": token,
-                "claimed": purchase["entitlement"] if purchase else ""}
+                "claimed": purchase["entitlement"] if purchase else "",
+                "claimed_source": purchase.get("purchase_source", "") if purchase else ""}
 
     @router.post("/logout")
     async def logout(response: Response):
@@ -182,7 +200,8 @@ def create_member_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         purchase = await claim_recruitment_purchase(db, member, payload.session_id)
         fresh = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0, "password_hash": 0})
-        return {"member": public_member(fresh), "claimed": purchase["entitlement"]}
+        return {"member": public_member(fresh), "claimed": purchase["entitlement"],
+                "claimed_source": purchase.get("purchase_source", "")}
 
     @router.get("/dashboard")
     async def dashboard(request: Request):

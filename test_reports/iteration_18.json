@@ -1,0 +1,41 @@
+{
+  "summary": "Full verification of Recruit With Rooney $997 (Batches 1+2+3). 13/13 backend pytest tests PASSED. UI verified on /recruit-with-rooney at localhost:3000 (public preview stale-snapshot workaround per agent-to-agent note): all Batch-1 copy, testimonials priority order, mobile viewport, and ?checkout=cancelled banner correct. No blocking defects found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "tests_executed": {
+    "BATCH1-CONFIG (GET /api/direct-recruitment/config)": "PASS — {video_url: ''}",
+    "BATCH1-CONFIG (GET /api/recruitment-guarantee)": "PASS — configured=false",
+    "BATCH1-CONFIG (GET /api/payments/config)": "PASS — recruit_with_rooney_997_live=false, stripe_mode=test, plus original flags",
+    "BATCH1-UI /recruit-with-rooney": "PASS — headline 'Recruit the Board Members Your Nonprofit Needs in 2 Weeks', subheadline 'Build your board with me.', rwr-video-placeholder shows 'Board Recruitment Video Coming Soon' (no iframe), guarantee heading '100% Refund Guarantee' + exact copy, NO 'View Guarantee Terms' link (configured=false), struck $2,497, 'Take Action Today: $997', CTA 'GET STARTED NOW — $997', testimonials heading 'See What Other Nonprofit Leaders Have Said' with Pastor Cyrena Denniston FIRST followed by Tony Barnes, Martina Jones, Devona Boone, Donna Kargel; canonical testimonial text intact",
+    "BATCH1-UI mobile 390px": "PASS — scrollWidth==clientWidth (390), no horizontal scroll, CTA usable",
+    "BATCH1-UI cancelled banner": "PASS — /recruit-with-rooney?checkout=cancelled shows exact 'Your payment was not completed. You can get started whenever you\\'re ready.'",
+    "BATCH2-GATING no auth": "PASS — POST /api/payments/rooney-checkout returns 403 'Enrollment is not open yet'",
+    "BATCH2-GATING internal_test w/o admin cookie": "PASS — returns 401/403 (authenticate_admin enforced)",
+    "BATCH2-CHECKOUT admin internal_test": "PASS — Stripe test-mode session created; amount_total=99700, currency=usd, mode=payment; metadata offer_source=recruit_with_rooney, selected_tier=997, purchase_source=recruit_with_rooney_997; cancel_url=/recruit-with-rooney?checkout=cancelled; payment_transactions row with amount=99700 and purchase_source recorded",
+    "BATCH3-WELCOME enrollment + idempotency": "PASS — single active engagement created; welcome_sent_at set; second enroll call returns existing engagement (no duplicate row, no second welcome)",
+    "BATCH3-SCHEDULE days 2-21": "PASS — all 10 check-in days (2,4,6,8,10,12,14,16,18,20) plus final day 21 recorded exactly once with status='sent'. Re-running process_accountability with the same clock does NOT resend. Day 21 sets engagement.status='ended'. No day > 21 in CHECKIN_DAYS.",
+    "BATCH3-STAGE + VARIANT ROTATION": "PASS — day 2 stage=not_started (no course_progress); after marking module 1 completed at day 4, days 4 & 6 send stage=module2 with different variant values (rotation confirmed); progresses through module3..module6 as further modules completed",
+    "BATCH3-COMPLETION": "PASS — with all 6 modules completed before send, processor emits single 'You Built Your Board' completion email, sets status='completed', and later simulated days add no further sends",
+    "BATCH3-REFUND": "PASS — purchase.payment_status='refunded' causes processor to set status='ended_refunded' and send nothing",
+    "BATCH3-ELIGIBILITY ($497 no engagement)": "PASS — $497 purchase (no purchase_source) yields zero rooney_engagements for the member",
+    "REGRESSION homepage + /recruit": "PASS — / and /recruit still load"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_recruit_with_rooney_e2e.py",
+    "/app/test_reports/pytest/rwr_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "member_routes.claim_recruitment_purchase builds `update` with `$addToSet` and then overwrites it with `$addToSet: {entitlements, lead_ids}` — final code path is correct but the sequential rebuild is subtly fragile; consider merging into one dict up front to avoid confusion.",
+    "PurchaseSuccessPage: after login/register submit, if a paid-but-different offer_source purchase is claimed via the `submit` handler, the switch on `claimedNow` does not include `recruit_with_rooney_997` — it works because register/login return claimed='recruitment_self_guided', but the post-purchase auto-claim effect (which navigates to /module/1 on claimed_source==='recruit_with_rooney_997') is only fired if the buyer is ALREADY logged in when landing on /purchase/success. For the primary new-customer flow (register on the success page), routing to /app/recruitment/self-guided/module/1 works via the claimed==='recruitment_self_guided' branch — verified fine, but worth aligning the two branches for future-proofing.",
+    "accountability_service.process_engagement uses `datetime.fromisoformat(engagement['purchased_at'])` — assumes ISO-with-tz which the enroller writes. Any hand-inserted engagement without tz will be normalized (fallback in code). OK."
+  ],
+  "updated_files": ["/app/backend/tests/test_recruit_with_rooney_e2e.py"],
+  "success_rate": {"backend": "100% (13/13 pytest)", "frontend": "100% (all Batch-1 UI checks pass on localhost)"},
+  "test_credentials": "Used admin rooney@nonprofitboardbuilder.com from /app/memory/test_credentials.md",
+  "seed_data_creation": "Created transient TEST_rwr_*@example.com members + purchases + rooney_engagements + course_progress rows inside test cases; all cleaned up via _cleanup() at test end. One live Stripe TEST-mode checkout session was created (no real charge) and its payment_transactions row remains (session_id retrievable from XML report) — safe to ignore or delete; no member is linked to it.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite for RWR $997 lives at /app/backend/tests/test_recruit_with_rooney_e2e.py — reruns cleanly. It monkeypatches accountability_service.send_rooney_email to avoid real Resend sends, then drives process_accountability with backdated purchased_at + ignore_window=True to simulate the 21-day schedule in seconds. RECRUIT_WITH_ROONEY_997_LIVE stays 'false' in env; DIRECT_RECRUITMENT_VIDEO_URL and RECRUITMENT_GUARANTEE_TERMS stay empty. Public preview URL still occasionally serves stale snapshot — use http://localhost:3000 for frontend UI runs, but backend APIs work fine on the public URL.",
+  "rca of the issue": "N/A — no blocking defects found."
+}

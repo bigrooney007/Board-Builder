@@ -18,6 +18,7 @@ from auth_service import seed_admin
 from resend_service import sync_nonprofit_leader
 from resend_service import send_automation_error
 from automation_service import automation_loop
+from accountability_service import accountability_loop
 from funnel_routes import create_funnel_router
 from payment_routes import create_payment_router, create_stripe_webhook_router
 from member_routes import create_member_router
@@ -266,9 +267,13 @@ async def startup_tasks():
     await db.blog_posts.create_index("slug")
     await db.nurture_sends.create_index([("segment", 1), ("scheduled_week", 1)], unique=True)
     await db.nurture_contacts.create_index("email", unique=True)
+    await db.rooney_engagements.create_index("purchase_id", unique=True)
+    await db.rooney_engagements.create_index("engagement_id", unique=True)
+    await db.rooney_engagements.create_index("user_id")
     await seed_admin(db)
     automation_task = asyncio.create_task(automation_loop(db))
     app.state.marketing_task = asyncio.create_task(marketing_loop(db))
+    app.state.accountability_task = asyncio.create_task(accountability_loop(db))
 
 
 @app.on_event("shutdown")
