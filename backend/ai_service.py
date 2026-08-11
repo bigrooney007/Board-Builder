@@ -20,9 +20,11 @@ GENERATION_TYPES = {
         "internal_analysis": {"present_board_brings": "string — internal use only", "important_gaps": "string — internal use only", "board_needed": "string — internal use only"},
     }, "note": "priority_roles: NO MORE THAN FIVE roles. If the customer said they want to recruit fewer than five people, produce exactly that number. detailed_roles must contain the SAME roles only."},
     "recruitment_strategy": {"module": 2, "title": "Board Recruitment Strategy", "per_application": False, "schema": {
-        "executive_summary": "string — exactly TWO sentences summarizing how this organization will recruit the board members identified in Module 1",
-        "channels": [{"channel": "string — ONLY one of: 'Public Outreach', 'Personal Network', 'Referral Network'. Include ONLY channels the customer's intake answers make available. Never include a channel they said they cannot or do not want to use.", "instructions": "string — concise practical instructions for using this channel to reach the priority board roles"}],
-    }},
+        "executive_summary": "string — NO MORE than TWO short sentences stating the roles being recruited, the channels being used, and that recruitment begins immediately",
+        "roles": [{"role_name": "string — a priority board role from Module 1, same order", "person_sought": "string — ONE short sentence describing the type of person being sought"}],
+        "channels": [{"channel": "string — ONLY one of: 'Personal Network', 'Referral Network', 'Public Outreach'. Include ONLY channels the customer's intake answers make available. Never include a channel they said they cannot or do not want to use.", "approach": "string — a VERY BRIEF one-to-two sentence practical approach for this channel, mentioning the customer's actual selected outlets where relevant. Never multiple paragraphs."}],
+        "selection_criteria": ["string — one concise quality applicants should demonstrate, adapted to the organization's selected board type (mission alignment, relevant skills for a priority role, willingness and capacity to serve, understanding of the board role, ability to contribute to the kind of board being built, participation in meetings and agreed responsibilities, professional conduct and credibility). Never numeric scores. Never statutory/legal requirements."],
+    }, "note": "Keep every section concise and practical. No long consulting essays, no repetition of the full Module 1 analysis, no long channel instructions. The timeline and execution roadmap are added by the platform — do not write them."},
     "board_opportunity": {"module": 3, "title": "Board Opportunity", "per_application": False, "schema": {
         "title": "string — professional board opportunity title",
         "introduction": "string — 2 to 4 sentence organization/opportunity introduction",
@@ -66,6 +68,7 @@ GENERATION_TYPES = {
         "message": "string — a concise direct-message version of the referral request for LinkedIn, text or other channels, includes the application link placeholder [APPLICATION LINK]",
     }},
     "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {"subject": "string", "body": "string — general invitation to a board introductory/interview conversation, with [APPLICANT NAME] and scheduling placeholders"}},
+    "general_interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": False, "schema": {"message": "string — a concise direct-message version of the interview invitation for LinkedIn, text message, Facebook Messenger or another messaging channel. Includes [APPLICANT NAME], the organization name, thanks for their interest, the invitation to interview and a scheduling placeholder. NO email subject line. Keep it short — a few sentences, not another email."}},
     "general_rejection_email": {"module": 4, "title": "Application Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant the organization has decided not to invite to interview"}},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {"subject": "string", "body": "string — tells the applicant the organization would like them to join the board; clearly states the appointment remains conditional/pending completion of the relevant reference or background checks and the organization's final appointment requirements where relevant; explains what happens next and any profile forms or agreements they need to complete. Use the words 'conditional board appointment'; NEVER 'confidential board position'. Never make false statements about legal requirements."}},
     "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
@@ -84,6 +87,7 @@ GENERATION_TYPES = {
         "scorecard": [{"category": "string — from the founder's approved selection criteria", "description": "string"}],
     }},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {"subject": "string", "body": "string — concise invitation"}},
+    "interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": True, "schema": {"message": "string — a concise personalized direct-message invitation for LinkedIn, text message or another messaging channel: the candidate's name, the organization name, thanks for their interest, the invitation to interview and scheduling information where supplied. NO email subject line. A few sentences only."}},
     "after_interview_thank_you": {"module": 4, "title": "After-Interview Thank-You Email", "per_application": True, "schema": {"subject": "string", "body": "string — thanks the applicant for their time and their interest in the mission, tells them the organization is completing its review and that they will receive a decision/follow-up shortly. NEVER states or implies whether they were accepted or rejected."}},
     "formal_appointment_email": {"module": 6, "title": "Formal Board Appointment Email", "per_application": True, "schema": {"subject": "string", "body": "string — formally welcomes the person as a Board Member or Advisory Board Member (match the organization's selected board type), confirms their appointment, and covers next steps such as the first board meeting where information was supplied"}},
     "board_member_portfolio": {"module": 6, "title": "Board Member Portfolio", "per_application": True, "schema": {
@@ -161,8 +165,57 @@ def _format_value(value, indent=0):
     return lines
 
 
+STRATEGY_TIMELINE_TEXT = """4. RECRUITMENT TIMELINE
+
+DAY 1
+Launch the recruitment campaign. Begin Personal Network outreach where applicable, begin Referral Network outreach where applicable, and publish through your selected Public Outreach channels where applicable.
+
+WITHIN 48 HOURS
+Review the first applications and responses. Begin inviting qualified applicants to interview — do not wait until the campaign closes.
+
+WEEKS 1-2
+Continue recruitment outreach. Review applicants as they arrive, interview qualified applicants, follow up with strong prospects and continue accepting additional applications while interviews are taking place.
+
+WEEK 3
+Complete final interviews and verification for candidates moving forward. Finalize board-member selections, complete required onboarding information, agreements and preparation, and begin onboarding the new board members."""
+
+STRATEGY_ROADMAP_TEXT = """5. YOUR RECRUITMENT EXECUTION ROADMAP
+
+STEP 2 — BUILD YOUR RECRUITMENT STRATEGY
+You have now identified the channels you will use to reach the professionals your organization needs.
+
+STEP 3 — LAUNCH YOUR RECRUITMENT CAMPAIGN
+Create your recruitment materials, publish your board opportunity and begin personally reaching the professionals and networks identified in your strategy.
+
+STEP 4 — INTERVIEW YOUR APPLICANTS
+Review applicants as they arrive and invite qualified candidates to interview. Begin interviewing within the first 48 hours where qualified applicants are available and continue interviews over the next two weeks.
+
+STEP 5 — COMPLETE REFERENCES AND BACKGROUND CHECKS
+For the candidates you want to move forward with, complete the reference and verification steps your organization has chosen to use.
+
+STEP 6 — ONBOARD YOUR NEW BOARD MEMBERS
+Complete the appointment and onboarding process so your new board members understand the organization, their responsibilities and how they will begin contributing."""
+
+STRATEGY_NEXT_STEP_TEXT = """YOUR NEXT STEP
+Your recruitment strategy is ready. The next step is to create the materials you will use to reach applicants and launch your recruitment campaign.
+
+CONTINUE TO STEP 3 — CREATE MY RECRUITMENT MATERIALS"""
+
+
 def structured_to_display(generation_type: str, structured: dict) -> str:
     meta = GENERATION_TYPES[generation_type]
+    if generation_type == "recruitment_strategy":
+        lines = ["BOARD RECRUITMENT STRATEGY", "", "EXECUTIVE SUMMARY", structured.get("executive_summary", ""), "", "1. BOARD MEMBERS WE ARE RECRUITING"]
+        for role in structured.get("roles", [])[:5]:
+            lines.append(f"- {role.get('role_name', '')}: {role.get('person_sought', '')}")
+        lines.extend(["", "2. RECRUITMENT CHANNELS"])
+        for entry in structured.get("channels", []):
+            lines.extend([str(entry.get("channel", "")).upper(), entry.get("approach", ""), ""])
+        lines.append("3. SELECTION CRITERIA")
+        for criterion in structured.get("selection_criteria", []):
+            lines.append(f"- {criterion}")
+        lines.extend(["", STRATEGY_TIMELINE_TEXT, "", STRATEGY_ROADMAP_TEXT, "", STRATEGY_NEXT_STEP_TEXT])
+        return "\n".join(line.rstrip() for line in lines).strip()
     if generation_type == "powerhouse_board_blueprint":
         lines = ["THE BOARD MEMBERS YOUR ORGANIZATION NEEDS", ""]
         for index, role in enumerate(structured.get("priority_roles", [])[:5], 1):

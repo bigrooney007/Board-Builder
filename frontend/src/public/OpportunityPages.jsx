@@ -115,30 +115,19 @@ export const OpportunityApplyPage = () => {
         {error && <div className="member-card"><h2 data-testid="opportunity-error">{error}</h2></div>}
         {data && !submitted && (
           <>
-            <header className="member-page-heading">
+            <header className="member-page-heading apply-header">
+              {data.logo_data && <img className="apply-logo" src={data.logo_data} alt={`${data.organization_name} logo`} />}
               <p className="eyebrow">Nonprofit board opportunity</p>
-              <h1 data-testid="public-org-name">{data.organization_name} Is Recruiting New Board Members</h1>
-              {data.mission && <p><strong>Mission:</strong> {data.mission}</p>}
+              <h1 data-testid="public-org-name">{data.organization_name}</h1>
+              <p className="apply-intro" data-testid="public-apply-intro">{(data.intro_sentences || []).join(" ")}</p>
             </header>
             {data.status === "Closed" ? (
               <div className="member-card" data-testid="applications-closed"><h2>Applications Closed</h2><p>This recruitment campaign is no longer accepting applications.</p></div>
             ) : (
-              <>
-                <section className="workspace-panel">
-                  <h2>The Board Opportunity</h2>
-                  <pre className="material-display" data-testid="public-opportunity-display">{data.opportunity_display}</pre>
-                  <dl className="opportunity-facts">
-                    {data.candidate_profiles?.length > 0 && <div><dt>Especially looking for</dt><dd>{data.candidate_profiles.join("; ")}</dd></div>}
-                    <div><dt>Time commitment</dt><dd>{data.time_commitment || "—"} {data.meeting_structure ? `· ${data.meeting_structure}` : ""}</dd></div>
-                    <div><dt>Location</dt><dd>{data.geographic_requirements || "—"}</dd></div>
-                    <div><dt>Application deadline</dt><dd data-testid="public-deadline">{data.application_deadline || "Open until positions are filled"}</dd></div>
-                  </dl>
-                </section>
-                <section className="workspace-panel">
-                  <h2>Apply to Join the Board</h2>
-                  <ApplicationForm questions={[...data.core_questions, ...data.custom_questions.map((question) => ({ ...question, required: false }))]} submitLabel="Submit My Board Application" onSubmit={submit} />
-                </section>
-              </>
+              <section className="workspace-panel">
+                <h2>Apply to Join the Board</h2>
+                <ApplicationForm questions={[...data.core_questions, ...data.custom_questions.map((question) => ({ ...question, required: false }))]} submitLabel="Submit My Board Application" onSubmit={submit} />
+              </section>
             )}
           </>
         )}
@@ -220,54 +209,113 @@ export const SavedProfileApplyPage = () => {
   );
 };
 
+const SignatureCanvas = ({ onChange }) => {
+  const canvasRef = useRef(null);
+  const drawing = useRef(false);
+  const point = (event) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const source = event.touches ? event.touches[0] : event;
+    return { x: source.clientX - rect.left, y: source.clientY - rect.top };
+  };
+  const start = (event) => { drawing.current = true; const ctx = canvasRef.current.getContext("2d"); const p = point(event); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  const move = (event) => {
+    if (!drawing.current) return;
+    event.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#1b1b1b";
+    const p = point(event); ctx.lineTo(p.x, p.y); ctx.stroke();
+  };
+  const end = () => { if (drawing.current) { drawing.current = false; onChange(canvasRef.current.toDataURL("image/png")); } };
+  const clear = () => { const canvas = canvasRef.current; canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height); onChange(""); };
+  return (
+    <div className="signature-canvas-wrap" data-testid="signature-canvas-wrap">
+      <canvas ref={canvasRef} width={420} height={140} className="signature-canvas" data-testid="signature-canvas"
+        onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
+        onTouchStart={start} onTouchMove={move} onTouchEnd={end} />
+      <button type="button" className="link-button" onClick={clear} data-testid="signature-clear">Clear signature</button>
+    </div>
+  );
+};
+
 export const SignAgreementPage = () => {
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ agreed: false, typed_signature: "", email: "", date: new Date().toISOString().slice(0, 10) });
+  const [method, setMethod] = useState("typed");
+  const [drawnImage, setDrawnImage] = useState("");
   const [done, setDone] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { axios.get(`${API}/public/sign/${token}`).then((response) => setData(response.data)).catch(() => setError("This signature link is not valid.")); }, [token]);
+  useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "robots"; meta.content = "noindex, nofollow";
+    document.head.appendChild(meta);
+    return () => document.head.removeChild(meta);
+  }, []);
+  const load = () => axios.get(`${API}/public/sign/${token}`).then((response) => setData(response.data)).catch(() => setError("This signature link is not valid."));
+  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   const sign = async () => {
     setBusy(true); setError("");
     try {
-      const response = await axios.post(`${API}/public/sign/${token}`, form);
+      const response = await axios.post(`${API}/public/sign/${token}`, { ...form, signature_method: method, signature_image: method === "drawn" ? drawnImage : "" });
       setDone(response.data.message);
+      await load();
     } catch (err) { setError(err.response?.data?.detail || "Your signature could not be recorded."); }
     setBusy(false);
   };
+  const primary = data?.primary_color || "#1d3a2f";
+  const signed = Boolean(done || data?.signed);
   return (
-    <FunnelLayout>
-      <main className="member-page public-opportunity-page" data-testid="sign-agreement-page">
-        {error && !data && <div className="member-card"><h2>{error}</h2></div>}
-        {data && (
-          <>
-            <header className="member-page-heading">
-              <p className="eyebrow">{data.organization_name}</p>
-              <h1 data-testid="sign-heading">{data.agreement_title}</h1>
-              <p>Prepared for {data.board_member_name}</p>
-            </header>
-            <section className="workspace-panel">
-              <pre className="material-display sign-document" data-testid="sign-document">{data.document}</pre>
-              {done || data.signed ? (
-                <p className="member-success" data-testid="sign-success">{done || "This agreement has already been signed."}</p>
-              ) : (
-                <div className="sign-form">
-                  <label className="choice"><input type="checkbox" checked={form.agreed} onChange={(event) => setForm({ ...form, agreed: event.target.checked })} data-testid="sign-agree-checkbox" /><span>I have read and agree to the document above.</span></label>
-                  <div className="two-col-fields">
-                    <label className="field"><span>Type your full name <b>*</b></span><input value={form.typed_signature} onChange={(event) => setForm({ ...form, typed_signature: event.target.value })} data-testid="sign-name-input" /></label>
-                    <label className="field"><span>Confirm your email <b>*</b></span><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} data-testid="sign-email-input" /></label>
-                    <label className="field"><span>Date <b>*</b></span><input value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} data-testid="sign-date-input" /></label>
-                  </div>
-                  {error && <p className="submit-error" data-testid="sign-error">{error}</p>}
-                  <button className="button" disabled={busy || !form.agreed || !form.typed_signature || !form.email} onClick={sign} data-testid="sign-agreement-button">Sign Agreement</button>
-                  <p className="material-meta">This electronic signature process does not constitute legal advice. The organization remains responsible for determining whether its document and signature process meets its legal requirements.</p>
+    <main className="hosted-agreement-page" data-testid="sign-agreement-page">
+      {error && !data && <div className="member-card" style={{ margin: "60px auto", maxWidth: 480 }}><h2>{error}</h2></div>}
+      {data && (
+        <article className="hosted-agreement" style={{ "--agreement-primary": primary }}>
+          <header className="hosted-agreement-head">
+            {data.logo_data && <img src={data.logo_data} alt={`${data.organization_name} logo`} className="hosted-agreement-logo" />}
+            <p className="hosted-agreement-org" data-testid="sign-org-name">{data.organization_name}</p>
+            <h1 data-testid="sign-heading">{data.agreement_title}</h1>
+            <p className="hosted-agreement-meta">Prepared for {data.board_member_name}{data.agreement_version ? ` · Version ${data.agreement_version}` : ""}</p>
+          </header>
+          <div className="hosted-agreement-body" data-testid="sign-document">{data.document}</div>
+          {signed ? (
+            <section className="hosted-agreement-signed" data-testid="sign-success">
+              <h2>Agreement Signed</h2>
+              <p>Thank you. Your signed agreement has been submitted to {data.organization_name}.</p>
+              {data.signed_record && (
+                <div className="signed-record" data-testid="signed-record">
+                  <p><strong>Signed by:</strong> {data.signed_record.name}</p>
+                  {data.signed_record.signature_image && <img src={data.signed_record.signature_image} alt="Signature" className="signed-signature-image" />}
+                  {!data.signed_record.signature_image && <p className="typed-signature-display">{data.signed_record.name}</p>}
+                  <p><strong>Date signed:</strong> {data.signed_record.date}{data.signed_record.signed_at ? ` (${new Date(data.signed_record.signed_at).toLocaleString()})` : ""} · Method: {data.signed_record.method === "drawn" ? "Drawn signature" : "Typed signature"}</p>
                 </div>
               )}
+              <button className="button" onClick={() => window.print()} data-testid="download-signed-copy">Download Copy</button>
             </section>
-          </>
-        )}
-      </main>
-    </FunnelLayout>
+          ) : (
+            <section className="hosted-agreement-sign" data-testid="sign-form">
+              <h2>Sign Agreement</h2>
+              <label className="choice"><input type="checkbox" checked={form.agreed} onChange={(event) => setForm({ ...form, agreed: event.target.checked })} data-testid="sign-agree-checkbox" /><span>I have read and agree to the terms of this agreement.</span></label>
+              <div className="two-col-fields">
+                <label className="field"><span>Full legal name <b>*</b></span><input value={form.typed_signature} onChange={(event) => setForm({ ...form, typed_signature: event.target.value })} data-testid="sign-name-input" /></label>
+                <label className="field"><span>Confirm your email <b>*</b></span><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} data-testid="sign-email-input" /></label>
+                <label className="field"><span>Date <b>*</b></span><input value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} data-testid="sign-date-input" /></label>
+              </div>
+              <div className="signature-method-toggle" data-testid="signature-method-toggle">
+                <button type="button" className={`button button-small ${method === "typed" ? "" : "button-back"}`} onClick={() => setMethod("typed")} data-testid="method-typed">Type My Signature</button>
+                <button type="button" className={`button button-small ${method === "drawn" ? "" : "button-back"}`} onClick={() => setMethod("drawn")} data-testid="method-drawn">Draw My Signature</button>
+              </div>
+              {method === "typed" ? (
+                form.typed_signature && <p className="typed-signature-display" data-testid="typed-signature-preview">{form.typed_signature}</p>
+              ) : (
+                <SignatureCanvas onChange={setDrawnImage} />
+              )}
+              {error && <p className="submit-error" data-testid="sign-error">{error}</p>}
+              <button className="button" disabled={busy || !form.agreed || !form.typed_signature || !form.email || (method === "drawn" && !drawnImage)} onClick={sign} data-testid="sign-agreement-button">{busy ? "Recording…" : "Sign Agreement"}</button>
+              <p className="material-meta">This electronic signature process does not constitute legal advice. The organization remains responsible for determining whether its document and signature process meets its legal requirements.</p>
+            </section>
+          )}
+        </article>
+      )}
+    </main>
   );
 };

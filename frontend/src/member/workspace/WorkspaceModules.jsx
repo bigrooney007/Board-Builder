@@ -21,12 +21,12 @@ export const useMaterials = (applicationId = "") => {
 };
 
 export const useStrategyIntake = () => {
-  const [intake, setIntake] = useState({ know_people: "", know_people_details: "", reach_channels: [], recruit_outside: "", public_channels: [] });
+  const [intake, setIntake] = useState({ know_people: "", know_people_details: "", reach_channels: [], referral_network: "", recruit_outside: "", public_channels: [], meeting_frequency: "", meeting_frequency_other: "", board_term: "", board_term_other: "", max_board_size: "", max_board_size_unknown: false, meeting_format: "", meeting_location: "", time_expectation: "", application_deadline: "", deadline_date: "" });
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     memberApi.get("/workspace/profile").then((response) => {
       const data = response.data.strategy_intake || {};
-      setIntake({ know_people: data.know_people || "", know_people_details: data.know_people_details || "", reach_channels: data.reach_channels || [], recruit_outside: data.recruit_outside || "", public_channels: data.public_channels || [] });
+      setIntake((current) => ({ ...current, ...data, reach_channels: data.reach_channels || [], public_channels: data.public_channels || [] }));
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, []);
@@ -34,9 +34,17 @@ export const useStrategyIntake = () => {
 };
 
 const StrategyReadySummary = ({ material }) => {
-  const version = currentVersion(material);
   const structured = material?.versions?.slice().reverse().find((v) => v.structured)?.structured || {};
   const channels = (structured.channels || []).map((entry) => entry.channel).filter(Boolean);
+  const download = async () => {
+    try {
+      const response = await memberApi.get("/workspace/strategy-pdf", { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url; link.download = "Board Recruitment Strategy.pdf"; link.click();
+      URL.revokeObjectURL(url);
+    } catch { window.alert("The Recruitment Strategy PDF could not be downloaded."); }
+  };
   return (
     <div className="strategy-ready" data-testid="strategy-ready">
       <h4>Your Recruitment Strategy Is Ready</h4>
@@ -46,9 +54,14 @@ const StrategyReadySummary = ({ material }) => {
           <ul>{channels.map((channel) => <li key={channel}>{channel}</li>)}</ul>
         </>
       )}
-      <button className="button" onClick={() => printText("Board Recruitment Strategy", version?.display_text || "")} data-testid="download-strategy-pdf">
-        <Download size={15} /> Download My Recruitment Strategy
-      </button>
+      <div className="material-actions">
+        <button className="button" onClick={download} data-testid="download-strategy-pdf">
+          <Download size={15} /> Download My Recruitment Strategy
+        </button>
+      </div>
+      <Link className="button strategy-next-cta" to="/app/recruitment/self-guided/module/3" data-testid="continue-to-step-3">
+        Continue to Step 3 — Create My Recruitment Materials
+      </Link>
     </div>
   );
 };
@@ -69,6 +82,12 @@ export const Module2Strategy = ({ profileConfirmed }) => {
     if (!intake.referral_network) found.referral_network = "Please choose an answer.";
     if (!intake.recruit_outside) found.recruit_outside = "Please choose an answer.";
     if (intake.recruit_outside === "Yes" && !intake.public_channels.length) found.public_channels = "Select at least one place you are willing to recruit publicly.";
+    if (!intake.meeting_frequency) found.meeting_frequency = "Please choose an answer.";
+    if (!intake.board_term) found.board_term = "Please choose an answer.";
+    if (!intake.max_board_size && !intake.max_board_size_unknown) found.max_board_size = "Enter a number or choose Not Specified / I Don't Know.";
+    if (!intake.meeting_format) found.meeting_format = "Please choose an answer.";
+    if (!intake.application_deadline) found.application_deadline = "Please choose an answer.";
+    if (intake.application_deadline === "Specific Date" && !intake.deadline_date) found.deadline_date = "Choose the deadline date.";
     setErrors(found);
     if (Object.keys(found).length) return false;
     await memberApi.put("/workspace/strategy-intake", { data: intake });
@@ -116,6 +135,48 @@ export const Module2Strategy = ({ profileConfirmed }) => {
             {errors.public_channels && <p className="field-error">{errors.public_channels}</p>}
           </fieldset>
         )}
+        <h3 className="details-heading">Board Recruitment Details</h3>
+        <p className="material-description">Tell us a few details applicants should know about serving on your board. These are saved once and used automatically across your recruitment materials.</p>
+        <div className="two-col-fields">
+          <label className="field"><span>How often does your board normally meet? <b>*</b></span>
+            <select value={intake.meeting_frequency} onChange={(event) => setIntake({ ...intake, meeting_frequency: event.target.value })} data-testid="intake-meeting-frequency">
+              <option value="">Select one</option>{["Monthly", "Every Other Month", "Quarterly", "Other"].map((option) => <option key={option}>{option}</option>)}
+            </select>
+            {errors.meeting_frequency && <p className="field-error">{errors.meeting_frequency}</p>}
+          </label>
+          {intake.meeting_frequency === "Other" && <label className="field"><span>Tell us your meeting schedule</span><input value={intake.meeting_frequency_other} onChange={(event) => setIntake({ ...intake, meeting_frequency_other: event.target.value })} data-testid="intake-frequency-other" /></label>}
+          <label className="field"><span>How long does a board member normally serve? <b>*</b></span>
+            <select value={intake.board_term} onChange={(event) => setIntake({ ...intake, board_term: event.target.value })} data-testid="intake-board-term">
+              <option value="">Select one</option>{["1 Year", "2 Years", "3 Years", "No Fixed Term", "Other"].map((option) => <option key={option}>{option}</option>)}
+            </select>
+            {errors.board_term && <p className="field-error">{errors.board_term}</p>}
+          </label>
+          {intake.board_term === "Other" && <label className="field"><span>Tell us the term length</span><input value={intake.board_term_other} onChange={(event) => setIntake({ ...intake, board_term_other: event.target.value })} data-testid="intake-term-other" /></label>}
+          <label className="field"><span>Maximum board size per your bylaws or governing documents <b>*</b></span>
+            <input type="number" min="1" disabled={intake.max_board_size_unknown} value={intake.max_board_size} onChange={(event) => setIntake({ ...intake, max_board_size: event.target.value })} data-testid="intake-max-board-size" />
+            <label className="choice" style={{ marginTop: 6 }}><input type="checkbox" checked={intake.max_board_size_unknown} onChange={(event) => setIntake({ ...intake, max_board_size_unknown: event.target.checked, max_board_size: event.target.checked ? "" : intake.max_board_size })} data-testid="intake-max-size-unknown" /><span>Not Specified / I Don't Know</span></label>
+            {errors.max_board_size && <p className="field-error">{errors.max_board_size}</p>}
+          </label>
+          <label className="field"><span>How does your board normally meet? <b>*</b></span>
+            <select value={intake.meeting_format} onChange={(event) => setIntake({ ...intake, meeting_format: event.target.value })} data-testid="intake-meeting-format">
+              <option value="">Select one</option>{["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}
+            </select>
+            {errors.meeting_format && <p className="field-error">{errors.meeting_format}</p>}
+          </label>
+          {(intake.meeting_format === "In Person" || intake.meeting_format === "Hybrid") && (
+            <label className="field"><span>Where does your board meet? (city or venue)</span><input value={intake.meeting_location} onChange={(event) => setIntake({ ...intake, meeting_location: event.target.value })} data-testid="intake-meeting-location" /></label>
+          )}
+          <label className="field"><span>Approximate monthly time commitment (optional)</span><input value={intake.time_expectation} onChange={(event) => setIntake({ ...intake, time_expectation: event.target.value })} placeholder="Example: 4-6 hours per month" data-testid="intake-time-expectation" /></label>
+          <label className="field"><span>Application deadline <b>*</b></span>
+            <select value={intake.application_deadline} onChange={(event) => setIntake({ ...intake, application_deadline: event.target.value })} data-testid="intake-application-deadline">
+              <option value="">Select one</option>{["Open Until Positions Are Filled", "Specific Date"].map((option) => <option key={option}>{option}</option>)}
+            </select>
+            {errors.application_deadline && <p className="field-error">{errors.application_deadline}</p>}
+          </label>
+          {intake.application_deadline === "Specific Date" && (
+            <label className="field"><span>Deadline date</span><input type="date" value={intake.deadline_date} onChange={(event) => setIntake({ ...intake, deadline_date: event.target.value })} data-testid="intake-deadline-date" />{errors.deadline_date && <p className="field-error">{errors.deadline_date}</p>}</label>
+          )}
+        </div>
         <MaterialCard
           type="recruitment_strategy"
           title="Board Recruitment Strategy"

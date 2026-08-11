@@ -80,6 +80,10 @@ const InterviewComms = ({ application }) => {
         description="A personalized invitation to a board interview conversation. Nothing is sent automatically — you review it and send it yourself."
         applicationId={application.application_id} material={byType.interview_invitation} refresh={refresh}
         instructions={`Interview details — date: ${invite.date || "to be scheduled"}; time: ${invite.time || "to be scheduled"}; format: ${invite.format}; meeting link/location: ${invite.link || "to be provided"}. Nothing is sent automatically.`} />
+      <MaterialCard type="interview_invitation_message" title="Interview Invitation — Short Message" buttonLabel="Generate Short Message Version"
+        description="A concise personalized version for LinkedIn, text or another direct-message channel. Use Copy to paste it wherever you message this applicant."
+        applicationId={application.application_id} material={byType.interview_invitation_message} refresh={refresh}
+        instructions={`Interview details — date: ${invite.date || "to be scheduled"}; time: ${invite.time || "to be scheduled"}; format: ${invite.format}; meeting link/location: ${invite.link || "to be provided"}.`} />
     </div>
   );
 };
@@ -142,6 +146,9 @@ const GeneralModule4Tools = () => {
       <MaterialCard type="general_interview_invitation" title="General Interview Invitation" buttonLabel="Generate General Interview Invitation"
         description="A reusable invitation template when you do not need applicant-specific personalization."
         material={byType.general_interview_invitation} refresh={refresh} />
+      <MaterialCard type="general_interview_invitation_message" title="Interview Invitation — Short Message" buttonLabel="Generate Short Message Version"
+        description="A concise version of the invitation you can send through LinkedIn, text message, Facebook Messenger or another direct-message channel. Use Copy to paste it wherever you message applicants."
+        material={byType.general_interview_invitation_message} refresh={refresh} />
     </section>
   );
 };
@@ -561,6 +568,54 @@ const ConditionalPanel = ({ application, orgMaterials, session, onChanged }) => 
   );
 };
 
+const CandidateStatusList = ({ application }) => {
+  const [signatures, setSignatures] = useState([]);
+  const [profileLink, setProfileLink] = useState(null);
+  useEffect(() => {
+    memberApi.get("/workspace/signatures", { params: { application_id: application.application_id } }).then((r) => setSignatures(r.data.signatures)).catch(() => {});
+    memberApi.get(`/workspace/board-profile-link/${application.application_id}`).then((r) => setProfileLink(r.data)).catch(() => {});
+  }, [application.application_id]);
+  const signatureStatus = (type) => {
+    const record = signatures.find((s) => s.agreement_type === type);
+    if (!record) return "Not Sent";
+    if (record.status === "Signed") return "Signed";
+    return record.status === "Sent" ? "Sent" : "Ready to Send";
+  };
+  return (
+    <ul className="readiness-list" data-testid="candidate-status-list">
+      <li className={application.reference_check_status === "Completed" ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
+      <li className={["Completed", "Not Required"].includes(application.background_check?.status) ? "done" : ""}>Background Check: {application.background_check?.status || "Not recorded"}</li>
+      {AGREEMENTS.map(([type, title]) => <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>{title}: {signatureStatus(type)}</li>)}
+      <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Ready" : "Not Sent"}</li>
+      <li className={application.emails_sent?.conditional_offer ? "done" : ""}>Conditional Appointment: {application.emails_sent?.conditional_offer ? "Sent" : "Not Prepared"}</li>
+    </ul>
+  );
+};
+
+const CandidateDecisionCard = ({ application, selected, onSelect, onDecision, busyId }) => {
+  const snapshot = application.profile_snapshot || {};
+  const interviewed = Boolean(application.interview_completed);
+  return (
+    <div className={`candidate-card ${selected ? "selected" : ""}`} data-testid={`candidate-card-${application.application_id}`}>
+      <div className="candidate-card-info">
+        <strong>{snapshot.full_name || application.applicant_email}</strong>
+        <span>{[snapshot.profession, snapshot.employer].filter(Boolean).join(" · ") || "—"}</span>
+        {application.board_role && <span>Role: {application.board_role}</span>}
+        <span>Status: <b>{application.status}</b> · Interview: <b data-testid={`interview-status-${application.application_id}`}>{interviewed ? "Completed" : "Not Completed"}</b></span>
+      </div>
+      <div className="candidate-card-actions">
+        <button className="button button-back button-small" onClick={() => onSelect(application.application_id)} data-testid={`review-candidate-${application.application_id}`}>{selected ? "Reviewing" : "Review"}</button>
+        {application.status !== "Moving Forward" && !["Selected", "Conditional Appointment"].includes(application.status) && (
+          <button className="button button-small" disabled={busyId === application.application_id} onClick={() => onDecision(application.application_id, "move_forward")} data-testid={`move-forward-${application.application_id}`}>Move Forward</button>
+        )}
+        {!["Not Moving Forward", "Not Selected", "Selected"].includes(application.status) && (
+          <button className="button button-back button-small" disabled={busyId === application.application_id} onClick={() => onDecision(application.application_id, "do_not_move_forward")} data-testid={`do-not-move-forward-${application.application_id}`}>Do Not Move Forward</button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const Module5References = () => {
   const { applications, refresh: refreshApps } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
@@ -582,23 +637,48 @@ export const Module5References = () => {
   }, [selectedId]);
   useEffect(() => { loadDetail(); }, [loadDetail]);
   const onChanged = () => { loadDetail(); refreshApps(); };
+  const [busyId, setBusyId] = useState("");
+  const decide = async (applicationId, decision) => {
+    setBusyId(applicationId);
+    try {
+      await memberApi.post(`/workspace/applications/${applicationId}/decision`, { decision });
+      setSelectedId(applicationId);
+      await refreshApps();
+      if (selectedId === applicationId) loadDetail();
+    } catch { window.alert("The decision could not be saved."); }
+    setBusyId("");
+  };
+  const sorted = [...applications].sort((a, b) => Number(Boolean(b.interview_completed)) - Number(Boolean(a.interview_completed)));
+  const movingForward = detail && detail.status === "Moving Forward";
+  const notMovingForward = detail && ["Not Moving Forward", "Not Selected"].includes(detail.status);
 
   return (
     <div data-testid="module5-workspace">
-      <section className="workspace-panel" data-testid="module5-verify-section">
-        <h2>Verify the Applicants You Want to Move Forward With</h2>
-        <p className="material-description">Reference checks are available for every applicant — whether they applied through your Board Application or were added from LinkedIn or another platform.</p>
+      <section className="workspace-panel" data-testid="module5-decide-forward-section">
+        <h2>Decide Who Moves Forward</h2>
+        <p className="material-description">Review the applicants you interviewed and select the people you would like to move forward in your board recruitment process. Your organization decides — never the AI. Marking a decision sends nothing automatically; it only prepares the right next steps for your review.</p>
         <div className="material-actions">
           <button className="button button-back" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
         </div>
-        <label className="field"><span>Choose an applicant</span>
-          <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)} data-testid="module5-applicant-select">
-            <option value="">Select an applicant</option>
-            {applications.map((application) => <option key={application.application_id} value={application.application_id}>{application.profile_snapshot?.full_name || application.applicant_email} — {application.status} ({application.source})</option>)}
-          </select>
-        </label>
-        {detail && <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} />}
-        {detail && <BackgroundCheckPanel application={detail} key={`bg-${detail.application_id}`} />}
+        {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Module 4 appear here automatically once applications arrive.</p>}
+        {sorted.map((application) => (
+          <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
+        ))}
+        {detail && (
+          <div className="candidate-progress" data-testid="candidate-progress">
+            <h3>{detail.profile_snapshot?.full_name || detail.applicant_email} — <span data-testid="candidate-progress-status">{detail.status}</span></h3>
+            {movingForward && <CandidateStatusList application={detail} key={`status-${detail.application_id}-${detail.updated_at}`} />}
+            {movingForward && (
+              <p className="workspace-note" data-testid="next-step-hint">
+                Prepare Next-Step Email: {detail.reference_check_status === "Completed"
+                  ? "references are complete — prepare the Conditional Appointment below when your onboarding materials are ready."
+                  : "this candidate's next step is the Reference Check below. That email includes only the secure Reference Information Form — onboarding materials are sent later with the Conditional Appointment."}
+              </p>
+            )}
+            {(movingForward || !notMovingForward) && <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} />}
+            {(movingForward || !notMovingForward) && <BackgroundCheckPanel application={detail} key={`bg-${detail.application_id}`} />}
+          </div>
+        )}
       </section>
 
       <section className="workspace-panel" data-testid="module5-prepare-section">
@@ -620,10 +700,10 @@ export const Module5References = () => {
       </section>
 
       <section className="workspace-panel" data-testid="module5-decide-section">
-        <h2>Decide Who Moves Forward</h2>
-        <p className="material-description">After references and any background checks, communicate your decision. Your organization decides — never the AI. The Conditional Appointment email is also the candidate's onboarding invitation.</p>
+        <h2>Communicate Your Decision</h2>
+        <p className="material-description">After references and any background checks, communicate your decision. The Conditional Appointment email is also the candidate's onboarding invitation — it automatically includes the candidate's secure links. Nothing is ever pasted manually.</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
-        {!detail && <p className="workspace-note">Choose an applicant above to prepare their decision communication.</p>}
+        {!detail && <p className="workspace-note">Choose a candidate above to prepare their decision communication.</p>}
         {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} key={`dec-${detail.application_id}`} />}
       </section>
     </div>

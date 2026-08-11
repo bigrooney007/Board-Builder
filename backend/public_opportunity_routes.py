@@ -24,20 +24,26 @@ class SignPayload(BaseModel):
     typed_signature: str = Field(min_length=2)
     email: str = Field(min_length=3)
     date: str = Field(min_length=4)
+    signature_method: str = "typed"
+    signature_image: str = ""
 
 
 def public_opportunity_view(opportunity: dict, board_opportunity_display: str, structured: dict, mission: str = "", board_type: str = "") -> dict:
     org = opportunity["organization_name"]
     board_label = "Advisory Board" if "advisory" in (board_type or "").lower() else "Board of Directors"
     objective = structured.get("what_board_members_will_contribute") or structured.get("introduction") or "advance its mission"
+    mission_clean = (mission or "").strip().rstrip(".")
+    intro_sentences = [f"{org} is recruiting committed professionals to serve on its {board_label}."]
+    if mission_clean:
+        intro_sentences.append(f"Our mission is {mission_clean}.")
+    intro_sentences.append("Complete the application below if you would like to be considered for this opportunity.")
     return {
         "slug": opportunity["slug"], "status": opportunity["status"],
         "organization_name": org,
-        "mission": mission or structured.get("about_the_organization", ""),
+        "mission": mission,
         "board_label": board_label,
-        "intro": structured.get("introduction", ""),
+        "intro_sentences": intro_sentences,
         "logo_data": opportunity.get("logo_data", ""),
-        "opportunity_display": board_opportunity_display,
         "core_questions": CORE_QUESTIONS,
         "custom_questions": opportunity.get("custom_questions", []),
     }
@@ -255,9 +261,16 @@ def create_public_opportunity_router(db) -> APIRouter:
         record = await db.signature_requests.find_one({"token": token}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="This signature link is not valid")
+        branding = (await db.recruitment_profiles.find_one({"user_id": record["owner_user_id"]}, {"_id": 0, "branding": 1}) or {}).get("branding", {})
+        signed = record.get("signed") or {}
         return {"agreement_title": record["agreement_title"], "organization_name": record["organization_name"],
                 "board_member_name": record["board_member_name"], "document": record["document_snapshot"],
-                "status": record["status"], "signed": bool(record.get("signed"))}
+                "status": record["status"], "signed": bool(record.get("signed")),
+                "agreement_version": record.get("agreement_version"),
+                "logo_data": branding.get("logo_data", ""), "primary_color": branding.get("primary_color", ""),
+                "signed_record": {"name": signed.get("typed_signature", ""), "date": signed.get("date", ""),
+                                  "signed_at": signed.get("signed_at", ""), "method": signed.get("method", "typed"),
+                                  "signature_image": signed.get("signature_image", "")} if signed else None}
 
     @router.post("/sign/{token}")
     async def sign_agreement(token: str, payload: SignPayload):
@@ -268,9 +281,15 @@ def create_public_opportunity_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This agreement has already been signed")
         if not payload.agreed:
             raise HTTPException(status_code=422, detail="You must confirm that you have read and agree to the document")
+        method = payload.signature_method if payload.signature_method in {"typed", "drawn"} else "typed"
+        if method == "drawn" and not payload.signature_image.startswith("data:image"):
+            raise HTTPException(status_code=422, detail="Draw your signature before submitting, or switch to the typed signature option")
+        if len(payload.signature_image) > 300000:
+            raise HTTPException(status_code=413, detail="The drawn signature image is too large")
         ts = now_iso()
         signed = {"typed_signature": payload.typed_signature, "email": payload.email.lower(),
-                  "date": payload.date, "signed_at": ts}
+                  "date": payload.date, "signed_at": ts, "method": method,
+                  "signature_image": payload.signature_image if method == "drawn" else ""}
         result = await db.signature_requests.update_one(
             {"token": token, "status": {"$ne": "Signed"}},
             {"$set": {"status": "Signed", "signed": signed, "updated_at": ts}})

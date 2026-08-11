@@ -498,6 +498,153 @@ def create_refinement_router(db) -> APIRouter:
                 summary["failed"] += 1
         return {"summary": summary, "preview": not commit_flag, "sample": sample}
 
+    # ---------- Strategy PDF + Module 5 decision ----------
+    @router.get("/workspace/strategy-pdf")
+    async def strategy_pdf(request: Request):
+        from io import BytesIO
+        import base64 as b64
+        from fastapi.responses import Response
+        from reportlab.lib.pagesizes import LETTER
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.lib.colors import HexColor
+        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, KeepTogether, Image
+        from ai_service import STRATEGY_TIMELINE_TEXT, STRATEGY_ROADMAP_TEXT, STRATEGY_NEXT_STEP_TEXT
+        member = await current_member(request)
+        material = await db.generated_materials.find_one({"user_id": member["user_id"], "type": "recruitment_strategy", "application_id": ""}, {"_id": 0})
+        if not material:
+            raise HTTPException(status_code=404, detail="Generate your Recruitment Strategy first")
+        structured = next((v.get("structured") for v in reversed(material["versions"]) if v.get("structured")), {}) or {}
+        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1, "data": 1})
+        branding = (profile or {}).get("branding", {})
+        opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1})
+        org = (opportunity or {}).get("organization_name") or (profile or {}).get("data", {}).get("organization_name", "")
+        primary = branding.get("primary_color") or "#1d3a2f"
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        buffer = BytesIO()
+        doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=20 * mm, bottomMargin=20 * mm, title="Board Recruitment Strategy")
+        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
+
+        def footer(canvas, _doc):
+            canvas.saveState()
+            canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(HexColor("#6b7a72"))
+            canvas.drawString(doc.leftMargin, 12 * mm, f"{org} — Board Recruitment Strategy")
+            canvas.drawRightString(doc.leftMargin + doc.width, 12 * mm, f"Page {canvas.getPageNumber()}")
+            canvas.restoreState()
+
+        doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=footer)])
+        h1 = ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=20, leading=25, textColor=HexColor(primary), spaceAfter=4)
+        h2 = ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=13, leading=17, textColor=HexColor(primary), spaceBefore=14, spaceAfter=6, keepWithNext=1)
+        h3 = ParagraphStyle("h3", fontName="Helvetica-Bold", fontSize=10.5, leading=14, spaceBefore=8, spaceAfter=2, keepWithNext=1)
+        body = ParagraphStyle("body", fontName="Helvetica", fontSize=10.5, leading=16, spaceAfter=6)
+        bullet = ParagraphStyle("bullet", parent=body, leftIndent=12, bulletIndent=2, spaceAfter=4)
+        meta = ParagraphStyle("meta", parent=body, textColor=HexColor("#5a6a61"))
+        story = []
+        logo = branding.get("logo_data", "")
+        if logo.startswith("data:image"):
+            try:
+                image_bytes = b64.b64decode(logo.split(",", 1)[1])
+                img = Image(BytesIO(image_bytes))
+                ratio = img.imageWidth / max(img.imageHeight, 1)
+                img.drawHeight = 16 * mm
+                img.drawWidth = min(16 * mm * ratio, 60 * mm)
+                img.hAlign = "LEFT"
+                story.extend([img, Spacer(1, 6)])
+            except Exception:
+                pass
+        story.extend([Paragraph("Board Recruitment Strategy", h1), Paragraph(org, ParagraphStyle("org", parent=body, fontSize=12, leading=16)), Paragraph(today, meta), Spacer(1, 10)])
+        esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;")
+        if structured.get("executive_summary"):
+            story.extend([Paragraph("Executive Summary", h2), Paragraph(esc(structured["executive_summary"]), body)])
+        story.append(Paragraph("1. Board Members We Are Recruiting", h2))
+        for role in structured.get("roles", [])[:5]:
+            story.append(KeepTogether([Paragraph(f"<b>{esc(role.get('role_name', ''))}</b> — {esc(role.get('person_sought', ''))}", bullet)]))
+        story.append(Paragraph("2. Recruitment Channels", h2))
+        for entry in structured.get("channels", []):
+            story.append(KeepTogether([Paragraph(esc(entry.get("channel", "")).upper(), h3), Paragraph(esc(entry.get("approach", "")), body)]))
+        story.append(Paragraph("3. Selection Criteria", h2))
+        for criterion in structured.get("selection_criteria", []):
+            story.append(Paragraph(f"• {esc(criterion)}", bullet))
+        for block, title in [(STRATEGY_TIMELINE_TEXT, "4. Recruitment Timeline"), (STRATEGY_ROADMAP_TEXT, "5. Your Recruitment Execution Roadmap"), (STRATEGY_NEXT_STEP_TEXT, "Your Next Step")]:
+            story.append(Paragraph(title, h2))
+            paragraphs = [p for p in block.split("\n\n")[1:] if p.strip()] or [block]
+            for paragraph in paragraphs:
+                parts = paragraph.split("\n", 1)
+                if len(parts) == 2 and parts[0].isupper() and len(parts[0]) < 70:
+                    story.append(KeepTogether([Paragraph(esc(parts[0]), h3), Paragraph(esc(parts[1]), body)]))
+                else:
+                    story.append(Paragraph(esc(paragraph.replace("\n", " ")), body))
+        doc.build(story)
+        return Response(content=buffer.getvalue(), media_type="application/pdf",
+                        headers={"Content-Disposition": 'attachment; filename="Board Recruitment Strategy.pdf"'})
+
+    @router.post("/workspace/applications/{application_id}/decision")
+    async def candidate_decision(application_id: str, payload: dict, request: Request):
+        """Move Forward / Do Not Move Forward. Never sends emails; prepares candidate-specific links idempotently."""
+        member = await current_member(request)
+        user_id = member["user_id"]
+        application = await owned_application(user_id, application_id)
+        decision = payload.get("decision")
+        if decision not in {"move_forward", "do_not_move_forward"}:
+            raise HTTPException(status_code=422, detail="Decision must be move_forward or do_not_move_forward")
+        if decision == "do_not_move_forward":
+            await db.opportunity_applications.update_one({"application_id": application_id},
+                {"$set": {"status": "Not Moving Forward", "updated_at": now_iso()}})
+            return {"status": "Not Moving Forward"}
+        await db.opportunity_applications.update_one({"application_id": application_id},
+            {"$set": {"status": "Moving Forward", "updated_at": now_iso()}})
+        prepared = {}
+        existing_process = await db.reference_processes.find_one({"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
+        if not existing_process:
+            email = (application.get("applicant_email") or "").strip().lower()
+            extracted = ""
+            if not email and application.get("cv_text"):
+                match = EMAIL_RE.search(application["cv_text"])
+                extracted = match.group(0).lower() if match else ""
+            await db.reference_processes.insert_one({
+                "process_id": new_id(), "owner_user_id": user_id, "application_id": application_id,
+                "candidate_name": application.get("profile_snapshot", {}).get("full_name", ""),
+                "candidate_email": email, "extracted_email": extracted,
+                "candidate_token": secrets.token_urlsafe(24), "status": "Not Started",
+                "references": [], "created_at": now_iso(), "updated_at": now_iso()})
+        prepared["reference_form"] = "Ready"
+        org = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1})
+        for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
+            existing = await db.signature_requests.find_one(
+                {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}}, {"_id": 0, "status": 1})
+            if existing:
+                prepared[agreement_type] = existing["status"]
+                continue
+            agreement = await get_current_material(db, user_id, agreement_type, "")
+            if not agreement or not agreement["current"] or agreement["material"].get("status") != "Approved":
+                prepared[agreement_type] = "Agreement not approved yet"
+                continue
+            await db.signature_requests.insert_one({
+                "request_id": new_id(), "token": secrets.token_urlsafe(24), "owner_user_id": user_id,
+                "application_id": application_id, "agreement_type": agreement_type,
+                "agreement_title": GENERATION_TYPES[agreement_type]["title"],
+                "material_id": agreement["material"]["material_id"],
+                "agreement_version": agreement["current"]["version"],
+                "document_snapshot": agreement["current"]["display_text"],
+                "organization_name": (org or {}).get("organization_name", ""),
+                "board_member_name": application.get("profile_snapshot", {}).get("full_name", ""),
+                "board_member_email": application.get("applicant_email", ""),
+                "status": "Ready for Signature", "created_at": now_iso(), "updated_at": now_iso()})
+            prepared[agreement_type] = "Ready for Signature"
+        profile_link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
+        if not profile_link:
+            snapshot = application.get("profile_snapshot", {})
+            await db.board_profile_links.insert_one({
+                "token": secrets.token_urlsafe(24), "user_id": user_id, "application_id": application_id,
+                "status": "Ready", "created_at": now_iso(),
+                "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
+                            "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
+                            "linkedin": snapshot.get("linkedin", ""), "location": snapshot.get("location", "")}})
+        prepared["board_member_profile"] = "Ready"
+        return {"status": "Moving Forward", "prepared": prepared}
+
     # ---------- Owner review progress ----------
     @router.get("/workspace/board-profile-link/{application_id}")
     async def get_profile_link_status(application_id: str, request: Request):

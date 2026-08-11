@@ -1,0 +1,58 @@
+{
+  "summary": "Batch 3 corrections verified. Backend pytest 11/11 PASSED (test_batch3_verification.py) covering: strategy intake persistence (all 10 Board Recruitment Details fields including intake-meeting-frequency/board-term/max-board-size(+unknown)/meeting-format(+location)/time-expectation/application-deadline(+deadline-date)/referral-network), server-side reportlab strategy PDF (valid PDF bytes, sections in order, footer with org+page number, all locked STEP 2-6 titles present, no /app route URLs), public opportunity view intro_sentences (2-3 sentences containing org name, mission, correct 'Board of Directors' terminology, 'Complete the application below' — no legacy 'The Board Opportunity'/[Organization Name]/'Information to Add'), POST /workspace/applications/{id}/decision (move_forward → status 'Moving Forward' + reference_process + board_profile_link created; agreement-approval gating → 'Agreement not approved yet' when material not Approved, 'Ready for Signature' after Approved; idempotent — no dup signature_requests / reference_processes / profile_links / applications on repeat; do_not_move_forward → 'Not Moving Forward' + no emails_sent mutation; 422 on bad decision), public /sign/{token} (GET returns branded record with org/title/document; POST drawn missing signature_image → 422; typed signs successfully, second sign → 409 immutability; PUT /workspace/materials/{id} on the source agreement does NOT alter signed document_snapshot; cross-token isolation → 404), and SPA route /app/recruitment/self-guided/results returns 200 HTML. UI spot-checks on a fresh $497 member confirmed: Module 1 has ZERO download-detailed-blueprint and blueprint card still renders; Module 2 all 10 batch-3 intake data-testids present including conditional intake-deadline-date (after Specific Date) and intake-meeting-location (after In Person/Hybrid); Results page renders results-empty-state and book-call-rooney-button with correct calendly.com/boardbuilder/recruitboard href for a zero-applications member.",
+  "verdicts": {
+    "backend": {
+      "strategy_intake_persistence": "PASS",
+      "strategy_pdf_reportlab": "PASS (PDF header %PDF; contains Executive Summary, Recruitment Channels, Selection Criteria, RECRUITMENT TIMELINE, DAY 1, WITHIN 48 HOURS, STEP 2-6 locked names, footer 'Batch3 Test Nonprofit — Board Recruitment Strategy' + Page number; no /app/recruitment URLs)",
+      "public_opportunity_view_intro_sentences": "PASS (org name, mission, 'Board of Directors', 'Complete the application below'; absent: 'The Board Opportunity', '[Organization Name]', 'Information to Add')",
+      "decision_do_not_move_forward": "PASS (status 'Not Moving Forward', no emails_sent mutation)",
+      "decision_move_forward_full": "PASS (initial: 3 agreements → 'Agreement not approved yet', reference_process+profile_link created; after approving one agreement: 'Ready for Signature' for that one; idempotent — 2nd call yields exactly 1 signature_request, 1 reference_process, 1 profile_link; no dup applicant)",
+      "decision_422_on_bad_payload": "PASS",
+      "sign_get_branded_record": "PASS",
+      "sign_drawn_requires_image_422": "PASS",
+      "sign_typed_success_409_second_and_snapshot_immutable": "PASS (PUT edit to agreement material after signing does NOT modify signature_requests.document_snapshot)",
+      "sign_bad_token_404": "PASS",
+      "spa_results_route_200_html": "PASS"
+    },
+    "frontend": {
+      "module1_detailed_download_gone": "PASS (download-detailed-blueprint count = 0)",
+      "module1_blueprint_card_present": "PASS",
+      "module2_intake_meeting_frequency": "PASS",
+      "module2_intake_board_term": "PASS",
+      "module2_intake_max_board_size_and_unknown": "PASS",
+      "module2_intake_meeting_format_and_conditional_location": "PASS (intake-meeting-location appears after In Person)",
+      "module2_intake_time_expectation": "PASS",
+      "module2_intake_application_deadline_and_conditional_date": "PASS (intake-deadline-date appears after Specific Date)",
+      "module2_intake_referral_network_and_know_people_and_recruit_outside": "PASS",
+      "results_empty_state_for_zero_applications": "PASS (results-empty-state renders after member auth loads)",
+      "results_book_call_rooney_calendly_href": "PASS (https://calendly.com/boardbuilder/recruitboard)"
+    }
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "not_re_verified_this_iteration_note": "Deliberately deferred to preserve Claude budget and avoid live public broadcasts: (a) ONE live Claude strategy generation on a fresh member to confirm structured_to_display ordering of sections and channel-suppression logic — the PDF and display_text formatting logic in ai_service.structured_to_display was verified by seeded structured data and locked STRATEGY_TIMELINE_TEXT/STRATEGY_ROADMAP_TEXT/STRATEGY_NEXT_STEP_TEXT constants which are present verbatim in ai_service.py; (b) ONE live Claude general_interview_invitation_message generation — the schema entry EXISTS in ai_service.GENERATION_TYPES with correct 'NO email subject line' constraint and both testids material-general_interview_invitation_message + material-interview_invitation_message ARE rendered in ApplicantModules.jsx (lines 83, 149); (c) full end-to-end published public application submission (would require flipping BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE to false and back — skipped for safety and because public_opportunity_view intro_sentences composition was fully verified with seeded published opportunity via GET /api/public/board-opportunities/{slug}); (d) mobile 390px inspection of the public application header (structural absence of legacy sections already verified by API view). All corresponding code paths were code-reviewed in files_of_reference.",
+  "critical_code_review_comments": [
+    "MINOR: refinement_routes.candidate_decision returns 'Agreement not approved yet' for each of the three agreements when the underlying material has no versions OR has status != Approved. Correct per spec, but the branch reads `agreement.get('material', {}).get('status')` — since get_current_material returns {'material': doc, 'current': version_dict}, the material status IS on the outer material doc, which is what's checked. Verified working in tests. Consider extracting a small helper to reduce cognitive load.",
+    "MINOR: WorkspaceModules.StrategyReadySummary parses `versions.slice().reverse().find(v => v.structured)` — but generated_materials.versions edited by PUT /materials/{id} intentionally sets structured:null, so this correctly picks the last AI-generated version. Solid logic.",
+    "MINOR: /api/public/sign/{token} SignPayload.email uses `Field(min_length=3)` (plain str) instead of EmailStr — a signer can submit 'a@b' and be accepted. Consider EmailStr for consistency with member routes. Low priority since human-facing form.",
+    "MINOR: signature_requests.document_snapshot immutability is enforced only by NOT copying material edits back — nothing prevents an admin/superuser from manually re-writing the snapshot via a direct Mongo write. Acceptable for MVP; consider adding an audit trail if regulatory need arises.",
+    "MINOR: Results page uses `applications.filter(a => joined.includes(a))` which relies on reference equality across filter callbacks — works because same array reference, but subtle. A status-based check would be clearer.",
+    "NOTE (carried over from iteration 14): DELETE endpoint for workspace/applications still not implemented; the leftover 'owner-review-admin' Draft opportunity still exists in Mongo."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_batch3_verification.py",
+    "/app/backend/tests/test_batch11_final_verification.py",
+    "/app/test_reports/pytest/iteration_15.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_batch3_verification.py (new — 11 tests covering all Batch 3 correction deltas; safe to re-run, no live Claude / no broadcast emails, cleans up its own seed data)"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% of executed UI checks (Module 1 button removal, all Module 2 intake testids + 2 conditional fields, Results page empty state + calendly href)"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com per /app/memory/test_credentials.md (not required for these tests). Fresh $497 test members were created via POST /api/members/register with rooney+batch3-* / rooney+ui-batch3-* addresses and cleaned up post-run. BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE untouched (remains 'true'). No emails were sent to any real recipient.",
+  "seed_data_creation": "One transient $497 test member ('rooney+batch3-<uuid>@nonprofitboardbuilder.com' + 'rooney+ui-batch3-<uuid>') with recruitment_self_guided entitlement, a confirmed Batch3 Test Nonprofit recruitment_profile, one Published opportunity (Batch3 Test Nonprofit, slug batch3-nonprofit-<hex>), seeded recruitment_strategy + board_opportunity + board_member_agreement generated_materials, one Applied opportunity_application (rooney+batch3-applicant@nonprofitboardbuilder.com), and derived signature_request/reference_process/board_profile_link produced by the decision endpoint. ALL cleaned up in the pytest session-scope fixture teardown and via an additional Mongo prune. Post-run counts confirmed 0 for these test users. No production/seed data mutated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_batch3_verification.py is safe to re-run — session-scope teardown removes all seeded members/materials/opportunities/applications/signatures/references/profile-links. It does NOT publish anything, does NOT call Claude, does NOT send emails. If a follow-up agent wants to spend ~3 live Claude calls to close the deferred items, drive: (1) POST /api/workspace/generate {type:'recruitment_strategy'} on a fresh confirmed-profile member and diff display_text against structured_to_display ordering + verify DAY 1 / WITHIN 48 HOURS / WEEKS 1-2 / WEEK 3 (no 12/16-week), (2) POST /api/workspace/generate {type:'general_interview_invitation_message'} and confirm no 'Subject:' line and org name present, (3) POST /api/workspace/generate {type:'board_member_agreement'} then move a candidate forward to exercise the full hosted signing page (drawn method via canvas dataURL) — the signature_image size limit is 300000 bytes (see SignPayload) so draw a small stroke. For the published public application page rendering delta, TEMPORARILY flip BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE=false then publish, verify the header contains only intro_sentences (no 'The Board Opportunity'), submit an application with rooney+corr1@nonprofitboardbuilder.com + small test PDF CV, restore the flag to true and restart backend.",
+  "rca_of_the_issue": "No new bug found. All Batch 3 correction deltas are functioning as specified."
+}

@@ -28,7 +28,7 @@ CORE_QUESTIONS = [
     {"id": "causes", "label": "What causes or communities are you especially passionate about?", "type": "textarea", "required": True},
 ]
 
-APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
+APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview", "Moving Forward", "Not Moving Forward", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
 OPPORTUNITY_STATUSES = ["Draft", "Ready to Publish", "Published", "Closed"]
 REFERENCE_OUTCOMES = ["Positive", "Mixed", "Concern", "Unable to verify", "Not completed"]
 BACKGROUND_STATUSES = ["Not required", "Not started", "In progress", "Completed", "Follow-up required"]

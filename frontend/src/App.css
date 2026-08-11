@@ -963,3 +963,38 @@ p { line-height: 1.72; }
 .strategy-ready h4 { margin: 0 0 8px; font-size: 1.05rem; color: #1d3a2f; }
 .strategy-ready ul { margin: 6px 0 14px; padding-left: 20px; }
 .strategy-ready li { font-size: 0.92rem; margin-bottom: 3px; }
+
+/* Correction batches 1-2 */
+.strategy-next-cta { margin-top: 10px; display: inline-flex; text-decoration: none; }
+.details-heading { margin: 22px 0 4px; font-size: 1.05rem; color: #1d3a2f; }
+.apply-header { text-align: left; }
+.apply-logo { max-height: 64px; max-width: 220px; object-fit: contain; margin-bottom: 12px; display: block; }
+.apply-intro { font-size: 1rem; line-height: 1.65; max-width: 720px; }
+.candidate-card { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border: 1px solid #d8e2dc; border-radius: 10px; padding: 14px 16px; margin: 10px 0; background: #fff; }
+.candidate-card.selected { border-color: #087e5b; box-shadow: 0 0 0 2px rgba(8, 126, 91, 0.12); }
+.candidate-card-info { display: flex; flex-direction: column; gap: 3px; font-size: 0.9rem; }
+.candidate-card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.candidate-progress { border-top: 2px solid #e3ece7; margin-top: 18px; padding-top: 14px; }
+.hosted-agreement-page { background: #f2f4f2; min-height: 100vh; padding: 34px 16px; font-family: Georgia, 'Times New Roman', serif; }
+.hosted-agreement { max-width: 780px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(20, 40, 30, 0.12); padding: 48px 54px; }
+.hosted-agreement-head { border-bottom: 4px solid var(--agreement-primary, #1d3a2f); padding-bottom: 18px; margin-bottom: 26px; }
+.hosted-agreement-logo { max-height: 60px; max-width: 200px; object-fit: contain; margin-bottom: 10px; display: block; }
+.hosted-agreement-org { text-transform: uppercase; letter-spacing: 1.4px; font-size: 0.78rem; color: var(--agreement-primary, #1d3a2f); margin: 0 0 6px; }
+.hosted-agreement h1 { font-size: 1.6rem; color: var(--agreement-primary, #1d3a2f); margin: 0 0 6px; }
+.hosted-agreement-meta { font-size: 0.85rem; color: #5a6a61; margin: 0; }
+.hosted-agreement-body { white-space: pre-wrap; line-height: 1.75; font-size: 0.98rem; color: #1f2723; margin-bottom: 30px; }
+.hosted-agreement-sign, .hosted-agreement-signed { border-top: 2px solid #e3ece7; padding-top: 22px; }
+.hosted-agreement-sign h2, .hosted-agreement-signed h2 { color: var(--agreement-primary, #1d3a2f); font-size: 1.2rem; }
+.signature-method-toggle { display: flex; gap: 8px; margin: 12px 0; }
+.signature-canvas-wrap { margin: 8px 0 12px; }
+.signature-canvas { border: 1px dashed #9db5a8; border-radius: 8px; background: #fbfdfc; touch-action: none; max-width: 100%; }
+.typed-signature-display { font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 1.7rem; color: #16302a; border-bottom: 1px solid #cdd9d2; display: inline-block; padding: 4px 18px 2px 4px; margin: 8px 0 12px; }
+.signed-signature-image { max-height: 90px; display: block; margin: 6px 0; }
+.results-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.results-stat { background: #f2f7f4; border: 1px solid #cfe3d8; border-radius: 10px; padding: 14px; text-align: center; }
+.results-stat strong { display: block; font-size: 1.7rem; color: #0b5c40; }
+.results-stat span { font-size: 0.82rem; color: #43554b; }
+.board-member-result { border: 1px solid #d8e2dc; border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+.results-support-panel { text-align: left; }
+@media (max-width: 640px) { .hosted-agreement { padding: 28px 20px; } .candidate-card-actions { width: 100%; } }
+@media print { .hosted-agreement-page { background: #fff; padding: 0; } .hosted-agreement { box-shadow: none; } .hosted-agreement-sign button, .hosted-agreement-signed .button { display: none; } }
