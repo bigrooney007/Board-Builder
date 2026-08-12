@@ -208,6 +208,8 @@ app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
 from refinement_routes import create_refinement_router
 app.include_router(create_refinement_router(db))
+from board_intake_routes import create_board_intake_router
+app.include_router(create_board_intake_router(db))
 app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
 app.include_router(create_review_router(db))

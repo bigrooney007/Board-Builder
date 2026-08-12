@@ -12,7 +12,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 sys.path.insert(0, "/app/backend")
 load_dotenv("/app/backend/.env")
 
-BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if os.environ.get("REACT_APP_BACKEND_URL") else "https://guided-flow-4.preview.emergentagent.com"
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if os.environ.get("REACT_APP_BACKEND_URL") else "https://rooney-recruitment.preview.emergentagent.com"
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"

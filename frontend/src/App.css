@@ -1066,3 +1066,56 @@ p { line-height: 1.72; }
   .brp-step-card { grid-template-columns: 1fr; gap: 8px; }
   .brp-cta-button { width: 100%; padding: 17px 14px; }
 }
+
+/* ---------- About Rooney lead page ---------- */
+.ar-hero { display: grid; grid-template-columns: minmax(0, 330px) 1fr; gap: clamp(30px, 5vw, 66px); align-items: center; }
+.ar-hero-photo img { width: 100%; display: block; border-radius: 14px; border: 4px solid rgba(255,255,255,.24); box-shadow: 0 24px 54px rgba(0,0,0,.3); }
+.ar-hero-copy h1 { margin: 0 0 6px; }
+.ar-hero-title { color: #72dfc1; text-transform: uppercase; letter-spacing: .18em; font-weight: 800; font-size: 14px; margin: 0 0 20px; }
+.ar-hero-mission { color: #dcefe6; font-size: 18px; line-height: 1.7; font-weight: 600; max-width: 640px; margin: 0; }
+.ar-offers { max-width: 1080px; margin: 0 auto; padding: 66px 24px 30px; text-align: center; }
+.ar-offers h2 { color: var(--forest); font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 10px; }
+.ar-offers-supporting { color: #56645c; font-size: 16px; margin: 0 0 36px; }
+.ar-offer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: left; }
+.ar-offer-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: clamp(26px, 3.4vw, 38px); display: flex; flex-direction: column; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
+.ar-offer-card h3 { color: var(--forest); font-size: 23px; margin: 0 0 6px; }
+.ar-offer-price { color: var(--forest); font-weight: 800; font-size: clamp(30px, 3.6vw, 40px); margin: 0 0 14px; line-height: 1.1; }
+.ar-offer-copy { color: #45544b; font-size: 16px; line-height: 1.7; margin: 0 0 14px; flex: 1; }
+.ar-offer-payment-line { color: var(--forest); font-weight: 700; margin: 0 0 20px; }
+.ar-offer-card .button { width: 100%; text-align: center; font-size: 14px; }
+
+/* ---------- Refined icon lists (direct funnel pages) ---------- */
+.icon-list { list-style: none; padding: 0; margin: 0 0 16px; }
+.icon-list li { display: flex; align-items: flex-start; gap: 10px; color: #45544b; font-size: 16px; line-height: 1.65; padding: 4px 0; }
+.icon-list li svg { color: var(--green); flex: 0 0 auto; margin-top: 5px; }
+.icon-list-centered { max-width: 560px; margin: 0 auto 16px; text-align: left; }
+
+/* ---------- Proposal & DIY additions ---------- */
+.brp-section p.brp-summary-objective { color: var(--forest); font-weight: 800; font-size: 19px; line-height: 1.6; padding: 18px 22px; background: #edf8f3; border: 1px solid #cfe8dc; border-radius: 8px; }
+.button.button-outline { background: #fff; color: var(--green); box-shadow: none; }
+.button.button-outline:hover { background: #edf8f3; }
+.offer-cross-link { margin-top: 16px; }
+.dyi-payment-line { max-width: 560px; margin-left: auto; margin-right: auto; }
+.brp-section p.dyi-payment-line { margin-bottom: 6px; }
+
+/* ---------- Board Recruitment Intake ---------- */
+.intake-shell { max-width: 760px; margin: 0 auto; padding: 50px 24px 90px; }
+.intake-step-title { color: var(--forest); font-size: clamp(21px, 2.6vw, 26px); margin: 0 0 24px; }
+.intake-nav { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 8px; }
+.intake-yesno-row { display: grid; grid-template-columns: repeat(2, minmax(0, 140px)); gap: 10px; }
+.intake-not-sure { min-height: auto; margin-top: 8px; display: inline-flex; align-items: center; padding: 8px 12px; font-size: 13px; }
+.intake-card { max-width: 540px; margin: 60px auto 90px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 40px 32px; box-shadow: 0 18px 44px rgba(8, 61, 42, 0.08); }
+.intake-card h2 { color: var(--forest); font-size: 25px; margin: 8px 0 12px; }
+.intake-card p { color: #45544b; line-height: 1.65; margin: 0 0 18px; }
+.intake-blocked-links { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+
+@media (max-width: 860px) {
+  .ar-hero { grid-template-columns: 1fr; text-align: center; }
+  .ar-hero-photo { max-width: 250px; margin: 0 auto; }
+  .ar-hero-mission { margin: 0 auto; }
+  .ar-offer-grid { grid-template-columns: 1fr; }
+  .intake-shell { padding: 40px 16px 70px; }
+  .intake-nav .button { flex: 1; }
+  .offer-cross-link { width: 100%; }
+}
+

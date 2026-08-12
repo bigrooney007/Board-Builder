@@ -70,6 +70,9 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     if offer_source == "recruit_with_rooney" and tier == "997":
         entitlement = "recruitment_self_guided"
         product_name = "Recruit With Rooney"
+    elif offer_source == "direct_diy_board_recruitment" and tier == "497":
+        entitlement = "recruitment_self_guided"
+        product_name = "Do It Yourself Board Recruitment"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -97,6 +100,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "recruit_with_rooney_997", "offer": "Recruit With Rooney",
             "support_program": "recruit_with_rooney", "price_paid": 997,
+        })
+    elif offer_source == "direct_diy_board_recruitment":
+        purchase.update({
+            "purchase_source": "direct_diy_board_recruitment_497",
+            "offer": "Do It Yourself Board Recruitment", "price_paid": 497,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     update = {"$addToSet": {"entitlements": entitlement}, "$set": {"updated_at": now}}

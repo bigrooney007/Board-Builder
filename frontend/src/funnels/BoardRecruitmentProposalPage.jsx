@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { CalendarClock, CheckCircle2, ShieldCheck, X } from "lucide-react";
+import { CalendarClock, CheckCircle2, Check, ShieldCheck, X } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard";
 
 const GuaranteeTermsModal = ({ close }) => {
   const [terms, setTerms] = useState("");
@@ -70,10 +69,14 @@ export default function BoardRecruitmentProposalPage() {
           <p className="eyebrow" data-testid="brp-hero-eyebrow">Board Recruitment Project Proposal</p>
           <h1 data-testid="brp-headline">Build the Board Your Nonprofit Needs</h1>
           <p className="funnel-hero-banner-supporting" data-testid="brp-hero-intro">Your nonprofit should not have to keep struggling because you do not have the right people around the table.</p>
-          <p className="funnel-hero-banner-secondary" data-testid="brp-hero-whether">Whether you need one new board member or need to build an entirely new board, the objective of this engagement is simple:</p>
-          <p className="brp-hero-objective" data-testid="brp-hero-objective">Help you recruit the board members your nonprofit needs to grow, raise money, build relationships and move your mission forward.</p>
-          <p className="funnel-hero-banner-secondary" data-testid="brp-hero-timeline-line">Over the next two weeks, we will work together to identify, recruit, select and properly bring in skilled professionals with the experience, credibility, relationships and willingness to help your organization succeed.</p>
           <i aria-hidden="true" />
+        </section>
+
+        <section className="brp-section brp-summary" data-testid="brp-summary-section">
+          <h2 className="brp-section-title" data-testid="brp-summary-heading">Project Summary</h2>
+          <p data-testid="brp-summary-whether">Whether you need one new board member or need to build an entirely new board, the objective of this engagement is simple:</p>
+          <p className="brp-summary-objective" data-testid="brp-summary-objective">Help you recruit the board members your nonprofit needs to grow, raise money, build relationships and move your mission forward.</p>
+          <p data-testid="brp-summary-timeline-line">Over the next two weeks, we will work together to identify, recruit, select and properly bring in skilled professionals with the experience, credibility, relationships and willingness to help your organization succeed.</p>
         </section>
 
         <section className="brp-section" data-testid="brp-how-section">
@@ -95,8 +98,8 @@ export default function BoardRecruitmentProposalPage() {
               <h3>Decide Who You Want</h3>
               <p>As applications begin coming in, your job is to review every applicant and decide who you want to meet.</p>
               <p>We will invite them in to meet with you so you can better understand their:</p>
-              <ul className="brp-list">
-                {STEP_TWO_POINTS.map((point) => <li key={point}>{point}</li>)}
+              <ul className="brp-list icon-list">
+                {STEP_TWO_POINTS.map((point) => <li key={point}><Check size={16} aria-hidden="true" /><span>{point}</span></li>)}
               </ul>
               <p>If you need help with the selection process, we can also provide the guidance and training you need to confidently choose who belongs on your board.</p>
             </div>
@@ -110,8 +113,8 @@ export default function BoardRecruitmentProposalPage() {
               <p>Recruiting somebody is not enough.</p>
               <p>Your new board members need to understand what is expected of them and how they are supposed to support you and the organization.</p>
               <p>We will help make sure your new board members understand:</p>
-              <ul className="brp-list">
-                {STEP_THREE_POINTS.map((point) => <li key={point}>{point}</li>)}
+              <ul className="brp-list icon-list">
+                {STEP_THREE_POINTS.map((point) => <li key={point}><Check size={16} aria-hidden="true" /><span>{point}</span></li>)}
               </ul>
               <p>We will also take them through the necessary onboarding documentation, including:</p>
               <ul className="brp-list brp-list-strong">
@@ -158,8 +161,11 @@ export default function BoardRecruitmentProposalPage() {
           <p>You do not have to spend the next several months trying to figure out where to find board members or how to recruit them.</p>
           <p><strong>Let’s get the right people around your table and get your organization moving forward.</strong></p>
           {cancelled && <p className="rwr-cta-notice" data-testid="brp-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="brp-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT AND LET’S GET YOU STARTED"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="brp-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT — LET'S START RECRUITING YOUR BOARD TOGETHER"}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="brp-cta-notice">{ctaNotice}</p>}
+          <div>
+            <Link className="button button-outline offer-cross-link" to="/recruit-your-board-yourself" data-testid="brp-diy-cross-link">Prefer to Do It By Yourself?</Link>
+          </div>
         </section>
 
         <TestimonialCarousel heading="See What Other Nonprofit Founders and Leaders Have Said" idPrefix="brp" />
@@ -184,7 +190,7 @@ export const BoardRecruitmentProposalConfirmedPage = () => {
         const response = await axios.get(`${API}/payments/status/${sessionId}`);
         if (response.data.payment_status === "paid") {
           setState("paid");
-          timer = setTimeout(() => window.location.replace(CALENDLY_URL), 1800);
+          timer = setTimeout(() => window.location.replace(`/board-recruitment-intake?session_id=${sessionId}`), 1800);
           return;
         }
         if (["failed", "expired"].includes(response.data.payment_status)) { setState("failed"); return; }
@@ -222,9 +228,9 @@ export const BoardRecruitmentProposalConfirmedPage = () => {
         {state === "paid" && (
           <div className="brp-confirm-card" data-testid="brp-confirm-paid">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Payment confirmed</p>
-            <h1>Let’s Schedule Your First Session</h1>
-            <p>Taking you to the calendar to book your first 30-minute session with Rooney…</p>
-            <a className="button" href={CALENDLY_URL} data-testid="brp-calendly-link">Book My First Session</a>
+            <h1>Tell Me About Your Organization and Board</h1>
+            <p>Taking you to a short form so we can start your board recruitment…</p>
+            <a className="button" href={`/board-recruitment-intake?session_id=${sessionId}`} data-testid="brp-intake-link">Continue</a>
           </div>
         )}
       </main>
