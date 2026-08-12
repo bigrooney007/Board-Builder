@@ -13,6 +13,7 @@ import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
 import RecruitProcessPage from "@/funnels/RecruitProcessPage";
 import RecruitCheckoutPage from "@/funnels/RecruitCheckoutPage";
 import RecruitWithRooneyPage from "@/funnels/RecruitWithRooneyPage";
+import BoardRecruitmentProposalPage, { BoardRecruitmentProposalConfirmedPage } from "@/funnels/BoardRecruitmentProposalPage";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
@@ -52,6 +53,8 @@ export default function App() {
           <Route path="/recruit/process" element={<RecruitProcessPage />} />
           <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />
           <Route path="/recruit-with-rooney" element={<RecruitWithRooneyPage />} />
+          <Route path="/board-recruitment-proposal" element={<BoardRecruitmentProposalPage />} />
+          <Route path="/board-recruitment-proposal/confirmed" element={<BoardRecruitmentProposalConfirmedPage />} />
           <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
           <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />

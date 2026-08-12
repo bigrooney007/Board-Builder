@@ -15,6 +15,7 @@ CATALOG = [
     ("fundraising_activation_97", "Board Fundraising Activation — Execute It Yourself", 9700),
     ("fundraising_activation_497", "Board Fundraising Activation — Self-Guided System", 49700),
     ("recruit_with_rooney_997", "Recruit With Rooney", 99700),
+    ("direct_board_recruitment_project", "Board Recruitment Project", 199850),
 ]
 
 

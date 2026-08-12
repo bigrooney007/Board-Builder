@@ -1032,3 +1032,37 @@ p { line-height: 1.72; }
   .rwr-cta-button { width: 100%; padding: 17px 20px; }
   .rwr-action-price { font-size: 30px; }
 }
+
+/* Board Recruitment Project Proposal page */
+.brp-hero { text-align: center; padding-bottom: 84px; }
+.brp-hero h1 { margin-left: auto; margin-right: auto; }
+.brp-hero .funnel-hero-banner-supporting, .brp-hero .funnel-hero-banner-secondary { margin-left: auto; margin-right: auto; }
+.brp-hero-objective { color: #ffffff; font-weight: 800; font-size: 19px; line-height: 1.6; max-width: 760px; margin: 18px auto; padding: 18px 22px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 8px; }
+.brp-section { max-width: 880px; margin: 0 auto; padding: 58px 24px 0; }
+.brp-section p { color: #45544b; font-size: 16px; line-height: 1.7; margin: 0 0 14px; }
+.brp-section-title { color: var(--forest); font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 22px; }
+.brp-step-card { display: grid; grid-template-columns: auto 1fr; gap: 20px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: clamp(22px, 4vw, 34px); margin-bottom: 22px; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
+.brp-step-number { width: 46px; height: 46px; border-radius: 50%; background: var(--forest); color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.brp-step-body h3 { color: var(--forest); font-size: 20px; margin: 8px 0 14px; line-height: 1.3; }
+.brp-list { margin: 0 0 14px; padding-left: 22px; color: #45544b; line-height: 1.8; font-size: 16px; }
+.brp-result, .brp-timeline, .brp-investment, .brp-guarantee, .brp-final-cta { text-align: center; }
+.brp-section p.brp-result-headline { color: var(--green); font-weight: 800; font-size: clamp(19px, 2.6vw, 24px); line-height: 1.4; margin: 0 0 16px; }
+.brp-result p, .brp-final-cta p, .brp-timeline-note { max-width: 680px; margin-left: auto; margin-right: auto; }
+.brp-section p.brp-timeline-value { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--forest); font-size: clamp(36px, 5vw, 52px); font-weight: 800; margin: 0 0 14px; }
+.brp-section p.brp-standard-price { color: var(--soft); margin: 0 0 8px; }
+.brp-standard-price s { font-size: clamp(26px, 3.4vw, 34px); font-weight: 700; }
+.brp-section p.brp-discount-line { max-width: 560px; margin: 0 auto 10px; }
+.brp-section p.brp-today-price { color: var(--forest); font-size: clamp(32px, 4.6vw, 48px); font-weight: 800; margin: 0; line-height: 1.15; }
+.brp-guarantee .rwr-guarantee-icon { color: var(--green); }
+.brp-final-cta { padding-bottom: 22px; }
+.brp-cta-button { margin-top: 12px; }
+.brp-confirm-page { min-height: 55vh; display: flex; align-items: center; justify-content: center; padding: 70px 20px; }
+.brp-confirm-card { max-width: 520px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 40px 32px; box-shadow: 0 18px 44px rgba(8, 61, 42, 0.08); }
+.brp-confirm-card h1 { color: var(--forest); font-size: 27px; margin: 8px 0 12px; }
+.brp-confirm-card p { color: #45544b; line-height: 1.65; margin: 0 0 18px; }
+@media (max-width: 640px) {
+  .brp-hero { padding-bottom: 62px; }
+  .brp-section { padding: 44px 16px 0; }
+  .brp-step-card { grid-template-columns: 1fr; gap: 8px; }
+  .brp-cta-button { width: 100%; padding: 17px 14px; }
+}
