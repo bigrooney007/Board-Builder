@@ -37,7 +37,7 @@ export const DashboardPage = () => {
             <p className="eyebrow">Board Recruitment</p>
             <h2>{product.name}</h2>
             <div className="dashboard-product-stats">
-              <div><span>Purchased tier</span><strong data-testid={`dashboard-tier-${product.entitlement}`}>{product.entitlement === "recruitment_self_guided" ? "$497 Self-Guided" : "$97 Basic"}</strong></div>
+              <div><span>Purchased tier</span><strong data-testid={`dashboard-tier-${product.entitlement}`}>{product.entitlement === "recruitment_self_guided" ? "Self-Guided System" : "$97 Basic"}</strong></div>
               <div><span>Course progress</span><strong data-testid={`dashboard-progress-${product.entitlement}`}>{product.percent_complete}% · {product.modules_completed} of {product.modules_total} modules</strong></div>
               <div><span>Last module visited</span><strong data-testid={`dashboard-last-module-${product.entitlement}`}>{product.last_module ? `Module ${product.last_module.number}: ${product.last_module.title}` : "Not started yet"}</strong></div>
             </div>

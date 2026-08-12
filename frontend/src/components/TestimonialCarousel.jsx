@@ -32,7 +32,7 @@ export const TestimonialCarousel = ({ heading, idPrefix = "carousel", priorityNa
 
   return (
     <section className="section offer-testimonials" data-testid={`${idPrefix}-testimonial-section`}>
-      <h2 data-testid={`${idPrefix}-testimonial-heading`}>{heading}</h2>
+      {heading && <h2 data-testid={`${idPrefix}-testimonial-heading`}>{heading}</h2>}
       <div
         className="offer-carousel"
         onMouseEnter={() => setPaused(true)}

@@ -154,3 +154,13 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - Deployment itself requires the OWNER to click Deploy/Update in the Emergent UI (agent cannot deploy). Production env settings should carry DIRECT_RECRUITMENT_VIDEO_URL.
 
 
+
+
+## Funnel + App Presentation Cleanup (June 2026) — Complete, iteration_21 pass (1 defect fixed + re-verified)
+- Shared Recruitment app: removed all visible "$497" (CoursePages PRODUCT_META label + ResultsPage back link → "Board Recruitment — Self-Guided System"; DashboardPage tier → "Self-Guided System"). Canonical six module titles untouched. Module pages now set document.title "Step N | <canonical title> | Nonprofit Board Builder"; overview title "Board Recruitment | Nonprofit Board Builder".
+- /about-rooney: fully centered (stacked centered hero); subtitle now EXACTLY "Helping nonprofits build strong fundraising board." (replaced founder-story mission line); testimonial heading removed (TestimonialCarousel now renders h2 only when heading prop passed); carousel + offer cards intact.
+- /recruit-your-board-yourself: centered; hero title+subtitle only; "You will receive the instructions..." paragraph moved as first paragraph of "You Don't Have to Figure Out the Process Yourself"; body text darkened (.brp-section p → var(--ink)); added "100% Money-Back Guarantee" + "What Happens After You Make Payment" (exact copy) before CTA; canonical TestimonialCarousel (heading "See What Other Nonprofit Founders and Leaders Have Said", idPrefix dyi) below buttons.
+- /board-recruitment-proposal: centered (.brp-section text-align center; .brp-step-card single-column centered); added "What Happens After You Make Payment" (exact first-session copy) before final CTA; prices/CTAs/testimonials/icon-lists preserved (icon lists inline-block left-aligned within centered sections).
+- seo.js: usePageMeta gained optional 3rd param noindex (adds/removes meta robots noindex — used ONLY by intake page); PAGE_META updated per user's exact copy for aboutRooney, recruitYourBoardYourself, boardRecruitmentProposal, boardRecruitmentIntake, recruitWithRooney ("Recruit With Rooney | Nonprofit Board Builder").
+- Test member for module checks: module-tester@example.com / ModuleTest123! (entitlement recruitment_self_guided; in test_credentials.md).
+- LEARNING: during a credits-exhausted interruption two "successful" search_replace edits silently reverted (CoursePages label, .brp-section CSS) — re-grep edited files after interruptions.

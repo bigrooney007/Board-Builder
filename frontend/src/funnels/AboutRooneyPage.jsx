@@ -5,8 +5,8 @@ import { PAGE_META, usePageMeta } from "@/seo";
 
 const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
-// Canonical mission/positioning statement — reused word-for-word from the existing approved founder story content.
-const ABOUT_ROONEY_MISSION_STATEMENT = "Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time.";
+// Exact approved subtitle for the About Rooney banner.
+const ABOUT_ROONEY_SUBTITLE = "Helping nonprofits build strong fundraising board.";
 
 export default function AboutRooneyPage() {
   usePageMeta(...PAGE_META.aboutRooney);
@@ -20,14 +20,14 @@ export default function AboutRooneyPage() {
           <div className="ar-hero-copy">
             <h1 data-testid="about-rooney-name">Rooney Akpesiri</h1>
             <p className="ar-hero-title" data-testid="about-rooney-title">The Nonprofit Board Builder</p>
-            {ABOUT_ROONEY_MISSION_STATEMENT && (
-              <p className="ar-hero-mission" data-testid="about-rooney-mission">{ABOUT_ROONEY_MISSION_STATEMENT}</p>
+            {ABOUT_ROONEY_SUBTITLE && (
+              <p className="ar-hero-subtitle" data-testid="about-rooney-subtitle">{ABOUT_ROONEY_SUBTITLE}</p>
             )}
           </div>
           <i aria-hidden="true" />
         </section>
 
-        <TestimonialCarousel heading="What Nonprofit Founders and Leaders Have Said" idPrefix="about-rooney" />
+        <TestimonialCarousel idPrefix="about-rooney" />
 
         <section className="ar-offers" data-testid="about-rooney-offers-section">
           <h2 data-testid="about-rooney-offers-heading">Two Ways I Can Help You Recruit Your Board</h2>

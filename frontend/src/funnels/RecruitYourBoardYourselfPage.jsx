@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
-import { Check } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
+import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -38,12 +39,12 @@ export default function RecruitYourBoardYourselfPage() {
         <section className="funnel-hero-banner brp-hero" data-testid="dyi-hero">
           <h1 data-testid="dyi-headline">Recruit Your Board Yourself</h1>
           <p className="funnel-hero-banner-supporting" data-testid="dyi-hero-supporting">Watch me run the recruitment process, then do what I do for your own nonprofit.</p>
-          <p className="funnel-hero-banner-secondary" data-testid="dyi-hero-secondary">You will receive the instructions, the execution materials you need, and the ability to reach out for support as you move through the process.</p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section" data-testid="dyi-offer-section">
           <h2 className="brp-section-title" data-testid="dyi-offer-heading">You Don't Have to Figure Out the Process Yourself</h2>
+          <p data-testid="dyi-instructions-paragraph">You will receive the instructions, the execution materials you need, and the ability to reach out for support as you move through the process.</p>
           <p>I will show you exactly how I run the board recruitment process.</p>
           <p>You watch me do it.</p>
           <p>Then you follow what I do for your own organization.</p>
@@ -66,6 +67,17 @@ export default function RecruitYourBoardYourselfPage() {
           <p className="dyi-payment-line" data-testid="dyi-no-membership-line">No monthly membership.</p>
         </section>
 
+        <section className="brp-section brp-guarantee" data-testid="dyi-guarantee-section">
+          <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
+          <h2 className="brp-section-title" data-testid="dyi-guarantee-heading">100% Money-Back Guarantee</h2>
+          <p data-testid="dyi-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+        </section>
+
+        <section className="brp-section" data-testid="dyi-after-payment-section">
+          <h2 className="brp-section-title" data-testid="dyi-after-payment-heading">What Happens After You Make Payment</h2>
+          <p data-testid="dyi-after-payment-copy">After making payment, you will tell us about your organization and board and then choose a convenient time to meet with me one-on-one so we can start the process together.</p>
+        </section>
+
         <section className="brp-section brp-final-cta" data-testid="dyi-cta-section">
           {cancelled && <p className="rwr-cta-notice" data-testid="dyi-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="dyi-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT AND START RECRUITING MY BOARD"}</button>
@@ -74,6 +86,8 @@ export default function RecruitYourBoardYourselfPage() {
             <Link className="button button-outline offer-cross-link" to="/board-recruitment-proposal" data-testid="dyi-dwm-cross-link">Want Me To Do It With You?</Link>
           </div>
         </section>
+
+        <TestimonialCarousel heading="See What Other Nonprofit Founders and Leaders Have Said" idPrefix="dyi" />
       </main>
     </FunnelLayout>
   );

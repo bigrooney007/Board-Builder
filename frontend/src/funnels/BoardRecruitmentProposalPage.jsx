@@ -156,6 +156,11 @@ export default function BoardRecruitmentProposalPage() {
           )}
         </section>
 
+        <section className="brp-section" data-testid="brp-after-payment-section">
+          <h2 className="brp-section-title" data-testid="brp-after-payment-heading">What Happens After You Make Payment</h2>
+          <p data-testid="brp-after-payment-copy">After making payment, you will tell us about your organization and board and then choose a convenient time to meet with me for our first session so we can start recruiting your board together.</p>
+        </section>
+
         <section className="brp-section brp-final-cta" data-testid="brp-final-cta-section">
           <h2 className="brp-section-title" data-testid="brp-ready-heading">Ready to Build Your Board?</h2>
           <p>You do not have to spend the next several months trying to figure out where to find board members or how to recruit them.</p>

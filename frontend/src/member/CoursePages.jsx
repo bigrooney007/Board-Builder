@@ -10,7 +10,7 @@ import { Module4Applicants, Module5References, Module6Onboarding } from "./works
 
 const PRODUCT_META = {
   basic: { key: "recruitment_basic", endpoint: "/courses/recruitment/basic", base: "/app/recruitment/basic", label: "Board Recruitment — $97 Program" },
-  "self-guided": { key: "recruitment_self_guided", endpoint: "/courses/recruitment/self-guided", base: "/app/recruitment/self-guided", label: "Board Recruitment — $497 Self-Guided System" },
+  "self-guided": { key: "recruitment_self_guided", endpoint: "/courses/recruitment/self-guided", base: "/app/recruitment/self-guided", label: "Board Recruitment — Self-Guided System" },
 };
 
 const embedUrl = (url) => {
@@ -111,6 +111,7 @@ const SupportBox = ({ productKey, moduleNumber, supportTypes }) => {
 
 export const CourseOverviewPage = ({ productSlug }) => {
   const { meta, course, error, forbidden } = useCourse(productSlug);
+  useEffect(() => { document.title = "Board Recruitment | Nonprofit Board Builder"; }, []);
   return (
     <MemberShell>
       <main className="member-page" data-testid={`course-overview-${productSlug}`}>
@@ -180,6 +181,10 @@ export const CourseModulePage = ({ productSlug }) => {
   const number = Number(moduleNumber);
   const [marking, setMarking] = useState(false);
   const module = course?.modules.find((item) => item.number === number);
+
+  useEffect(() => {
+    if (module) document.title = `Step ${module.number} | ${module.title} | Nonprofit Board Builder`;
+  }, [module]);
 
   useEffect(() => {
     if (!course || !module) return;

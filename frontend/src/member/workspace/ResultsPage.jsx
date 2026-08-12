@@ -62,7 +62,7 @@ export default function RecruitmentResultsPage() {
   return (
     <MemberShell>
       <main className="member-page recruitment-results-page" data-testid="recruitment-results-page">
-        <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Board Recruitment — $497 Self-Guided System</Link>
+        <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Board Recruitment — Self-Guided System</Link>
         <header className="member-page-heading">
           <p className="eyebrow">Recruitment complete</p>
           <h1>Your Recruitment Results</h1>

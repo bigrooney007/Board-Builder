@@ -1038,10 +1038,10 @@ p { line-height: 1.72; }
 .brp-hero h1 { margin-left: auto; margin-right: auto; }
 .brp-hero .funnel-hero-banner-supporting, .brp-hero .funnel-hero-banner-secondary { margin-left: auto; margin-right: auto; }
 .brp-hero-objective { color: #ffffff; font-weight: 800; font-size: 19px; line-height: 1.6; max-width: 760px; margin: 18px auto; padding: 18px 22px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.24); border-radius: 8px; }
-.brp-section { max-width: 880px; margin: 0 auto; padding: 58px 24px 0; }
-.brp-section p { color: #45544b; font-size: 16px; line-height: 1.7; margin: 0 0 14px; }
+.brp-section { max-width: 880px; margin: 0 auto; padding: 58px 24px 0; text-align: center; }
+.brp-section p { color: var(--ink); font-size: 16px; line-height: 1.7; margin: 0 0 14px; }
 .brp-section-title { color: var(--forest); font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 22px; }
-.brp-step-card { display: grid; grid-template-columns: auto 1fr; gap: 20px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: clamp(22px, 4vw, 34px); margin-bottom: 22px; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
+.brp-step-card { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: clamp(22px, 4vw, 34px); margin-bottom: 22px; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
 .brp-step-number { width: 46px; height: 46px; border-radius: 50%; background: var(--forest); color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .brp-step-body h3 { color: var(--forest); font-size: 20px; margin: 8px 0 14px; line-height: 1.3; }
 .brp-list { margin: 0 0 14px; padding-left: 22px; color: #45544b; line-height: 1.8; font-size: 16px; }
@@ -1068,15 +1068,16 @@ p { line-height: 1.72; }
 }
 
 /* ---------- About Rooney lead page ---------- */
-.ar-hero { display: grid; grid-template-columns: minmax(0, 330px) 1fr; gap: clamp(30px, 5vw, 66px); align-items: center; }
+.ar-hero { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 26px; }
+.ar-hero-photo { width: 100%; max-width: 280px; }
 .ar-hero-photo img { width: 100%; display: block; border-radius: 14px; border: 4px solid rgba(255,255,255,.24); box-shadow: 0 24px 54px rgba(0,0,0,.3); }
 .ar-hero-copy h1 { margin: 0 0 6px; }
 .ar-hero-title { color: #72dfc1; text-transform: uppercase; letter-spacing: .18em; font-weight: 800; font-size: 14px; margin: 0 0 20px; }
-.ar-hero-mission { color: #dcefe6; font-size: 18px; line-height: 1.7; font-weight: 600; max-width: 640px; margin: 0; }
+.ar-hero-subtitle { color: #dcefe6; font-size: 18px; line-height: 1.7; font-weight: 600; max-width: 640px; margin: 0 auto; }
 .ar-offers { max-width: 1080px; margin: 0 auto; padding: 66px 24px 30px; text-align: center; }
 .ar-offers h2 { color: var(--forest); font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 10px; }
 .ar-offers-supporting { color: #56645c; font-size: 16px; margin: 0 0 36px; }
-.ar-offer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: left; }
+.ar-offer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: center; }
 .ar-offer-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: clamp(26px, 3.4vw, 38px); display: flex; flex-direction: column; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
 .ar-offer-card h3 { color: var(--forest); font-size: 23px; margin: 0 0 6px; }
 .ar-offer-price { color: var(--forest); font-weight: 800; font-size: clamp(30px, 3.6vw, 40px); margin: 0 0 14px; line-height: 1.1; }
@@ -1086,9 +1087,10 @@ p { line-height: 1.72; }
 
 /* ---------- Refined icon lists (direct funnel pages) ---------- */
 .icon-list { list-style: none; padding: 0; margin: 0 0 16px; }
-.icon-list li { display: flex; align-items: flex-start; gap: 10px; color: #45544b; font-size: 16px; line-height: 1.65; padding: 4px 0; }
+.icon-list li { display: flex; align-items: flex-start; gap: 10px; color: var(--ink); font-size: 16px; line-height: 1.65; padding: 4px 0; text-align: left; }
 .icon-list li svg { color: var(--green); flex: 0 0 auto; margin-top: 5px; }
 .icon-list-centered { max-width: 560px; margin: 0 auto 16px; text-align: left; }
+.brp-section .icon-list, .brp-step-body .icon-list { display: inline-block; text-align: left; margin: 0 auto 16px; }
 
 /* ---------- Proposal & DIY additions ---------- */
 .brp-section p.brp-summary-objective { color: var(--forest); font-weight: 800; font-size: 19px; line-height: 1.6; padding: 18px 22px; background: #edf8f3; border: 1px solid #cfe8dc; border-radius: 8px; }
@@ -1110,9 +1112,7 @@ p { line-height: 1.72; }
 .intake-blocked-links { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 
 @media (max-width: 860px) {
-  .ar-hero { grid-template-columns: 1fr; text-align: center; }
-  .ar-hero-photo { max-width: 250px; margin: 0 auto; }
-  .ar-hero-mission { margin: 0 auto; }
+  .ar-hero-photo { max-width: 250px; }
   .ar-offer-grid { grid-template-columns: 1fr; }
   .intake-shell { padding: 40px 16px 70px; }
   .intake-nav .button { flex: 1; }

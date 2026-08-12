@@ -48,7 +48,7 @@ const YesNo = ({ legend, value, onChange, testId, error }) => (
 );
 
 export default function BoardRecruitmentIntakePage() {
-  usePageMeta(...PAGE_META.boardRecruitmentIntake);
+  usePageMeta(...PAGE_META.boardRecruitmentIntake, true);
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
   const [gate, setGate] = useState(sessionId ? "checking" : "blocked");
