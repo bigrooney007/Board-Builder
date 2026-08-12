@@ -1,14 +1,23 @@
+import html
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
+import resend
 import stripe
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+logger = logging.getLogger(__name__)
+
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
+OFFER_LABELS = {
+    "direct_diy_board_recruitment_497": "Do It Yourself — $497",
+    "direct_board_recruitment_project": "Do It With Me — $1,998.50",
+}
 
 
 class IntakeSubmission(BaseModel):
@@ -136,6 +145,40 @@ def create_board_intake_router(db) -> APIRouter:
             upsert=True,
         )
 
+    async def notify_owner(payload: IntakeSubmission, purchase_source: str, now: str):
+        resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+        offer_label = OFFER_LABELS.get(purchase_source, purchase_source)
+        rows = [
+            ("Offer Purchased", offer_label),
+            ("Name", payload.your_name), ("Email", str(payload.email)),
+            ("Organization", payload.organization_name), ("Website", payload.website or "Not provided"),
+            ("Mission", payload.mission), ("Location", f"{payload.city}, {payload.state}".strip(", ")),
+            ("Board Type", payload.board_type),
+            ("Organization LinkedIn", f"{payload.org_linkedin}{' — ' + payload.org_linkedin_url if payload.org_linkedin_url else ''}"),
+            ("Personal LinkedIn", f"{payload.personal_linkedin}{' — ' + payload.personal_linkedin_url if payload.personal_linkedin_url else ''}"),
+            ("Current Board Members", payload.present_board), ("Actively Participating", payload.active_board),
+            ("New Members Wanted", payload.new_members_count),
+            ("Current Board Strengths", payload.current_board_strengths),
+            ("Biggest Board Challenges", payload.board_challenges),
+            ("Skills to Add", ", ".join(payload.desired_skills) + (f". Other: {payload.desired_skills_other}" if payload.desired_skills_other else "")),
+            ("What New Members Should Help Accomplish", payload.accomplish),
+            ("Specific Wants", payload.specific_wants or "Not provided"),
+            ("Meeting Frequency", payload.meeting_frequency_other or payload.meeting_frequency),
+            ("Meeting Format", payload.meeting_format), ("Meeting Location", payload.meeting_location or "Not provided"),
+            ("Board Member Term", payload.board_term_other or payload.board_term),
+            ("Monthly Time Commitment", payload.time_commitment or "Not provided"),
+            ("Maximum Board Size", payload.max_board_size or "Not Specified / I Don't Know"),
+            ("Application Deadline", payload.deadline_date or payload.application_deadline),
+            ("Anything Else", payload.anything_else or "Not provided"),
+            ("Submitted", now),
+        ]
+        table = "".join(f"<tr><td style='padding:9px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(str(label))}</td><td style='padding:9px;border-bottom:1px solid #dddddd;'>{html.escape(str(value))}</td></tr>" for label, value in rows)
+        await resend.Emails.send_async({
+            "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
+            "subject": f"Board Recruitment Intake Submitted — {payload.organization_name} ({offer_label})",
+            "html": f"<div style='max-width:760px;margin:auto;font-family:Arial,sans-serif;color:#000;'><h1>Board Recruitment Intake Submitted</h1><p>A paying customer just completed the Tell Me About Your Organization and Board form and is being sent to your Calendly.</p><table style='width:100%;border-collapse:collapse;'>{table}</table></div>",
+        })
+
     @router.post("/submit", status_code=201)
     async def submit_intake(payload: IntakeSubmission):
         transaction = await verified_transaction(payload.session_id)
@@ -146,13 +189,19 @@ def create_board_intake_router(db) -> APIRouter:
             "email": str(payload.email).lower(), "purchase_source": transaction["purchase_source"],
             "user_id": user_id, "updated_at": now,
         })
-        await db.board_recruitment_intakes.update_one(
+        result = await db.board_recruitment_intakes.update_one(
             {"session_id": payload.session_id},
             {"$set": record, "$setOnInsert": {"intake_id": str(uuid.uuid4()), "submitted_at": now}},
             upsert=True,
         )
         if user_id:
             await merge_into_recruitment_profile(user_id, payload, now)
+        if result.upserted_id is not None:
+            try:
+                await notify_owner(payload, transaction["purchase_source"], now)
+                logger.info("Owner intake notification sent for session %s", payload.session_id)
+            except Exception:
+                logger.exception("Owner intake notification failed for session %s", payload.session_id)
         return {"status": "submitted", "redirect_url": CALENDLY_URL}
 
     return router

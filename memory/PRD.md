@@ -146,3 +146,11 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - Verified: iteration_20.json 100% (17/17 backend pytest incl. real DIY $497 test-mode payment E2E, intake gating/idempotency, mobile 390px; test file /app/backend/tests/test_batch_intake_e2e.py).
 - Production deploy needs: STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID created with LIVE key (product must have tax_code) + code deploy.
 
+## Launch Prep for iteration_20 + Intake Owner Notification (June 2026) — Complete, deployment_agent PASS
+- Intake notification: board_intake_routes.py submit now emails OWNER_NOTIFICATION_EMAIL (via Resend, NONPROFIT_SENDER) a full field table when a paying customer FIRST submits the intake (only on upsert insert — resubmits don't re-send; failures logged, never block submit/Calendly redirect). Tested live (sent to delivered@resend.dev, env restored).
+- DIRECT_RECRUITMENT_VIDEO_URL set to https://youtu.be/j1_NAkwq3mo (video verified rendering on /recruit-with-rooney).
+- Live $497 DIY price: setup_stripe.py CATALOG got ("diy_board_recruitment_497", "Recruit Your Board Yourself", 49700). payment_routes.resolve_diy_price_id() self-provisions/validates: uses STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID if it is a valid active one-time $497 USD price, otherwise finds-or-creates by lookup_key diy_board_recruitment_497 (product tax_code txcd_10000000) and caches — so production with its LIVE key auto-creates the live price on first DIY checkout even if the env var holds a test id or is empty. Verified in preview: valid env id used; bad/absent id self-heals to lookup price.
+- .gitignore: removed .env/.env.*/*.env lines (deployment blocker per deployment_agent); re-check PASSED.
+- Deployment itself requires the OWNER to click Deploy/Update in the Emergent UI (agent cannot deploy). Production env settings should carry DIRECT_RECRUITMENT_VIDEO_URL.
+
+

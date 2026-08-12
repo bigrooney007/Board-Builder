@@ -33,6 +33,38 @@ class DIYCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
 
 
+DIY_LOOKUP_KEY = "diy_board_recruitment_497"
+_diy_price_cache = {"id": ""}
+
+
+def resolve_diy_price_id() -> str:
+    if _diy_price_cache["id"]:
+        return _diy_price_cache["id"]
+    configured = os.environ.get("STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID", "").strip().strip('"')
+    if configured:
+        try:
+            price = stripe.Price.retrieve(configured)
+            if price.active and price.unit_amount == 49700 and price.currency == "usd" and not price.recurring:
+                _diy_price_cache["id"] = configured
+                return configured
+        except stripe.StripeError:
+            pass
+    existing = stripe.Price.list(lookup_keys=[DIY_LOOKUP_KEY], active=True, limit=1).data
+    if existing:
+        _diy_price_cache["id"] = existing[0].id
+        return _diy_price_cache["id"]
+    product = stripe.Product.create(
+        name="Recruit Your Board Yourself", tax_code="txcd_10000000",
+        metadata={"managed_by": "emergent", "emergent_product_id": DIY_LOOKUP_KEY},
+    )
+    price = stripe.Price.create(
+        product=product.id, unit_amount=49700, currency="usd",
+        lookup_key=DIY_LOOKUP_KEY, transfer_lookup_key=True,
+    )
+    _diy_price_cache["id"] = price.id
+    return _diy_price_cache["id"]
+
+
 def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -190,7 +222,7 @@ def create_payment_router(db) -> APIRouter:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
         kwargs = {
-            "line_items": [{"price": os.environ["STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID"], "quantity": 1}],
+            "line_items": [{"price": resolve_diy_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}/recruit-your-board-yourself?checkout=cancelled",
