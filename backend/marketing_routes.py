@@ -136,6 +136,7 @@ def create_marketing_router(db) -> APIRouter:
         contacts = await db.nurture_contacts.find({}, {"_id": 0}).sort("updated_at", -1).to_list(50)
         return {"rotation": rotation, "sends": sends, "contacts": contacts,
                 "blog_automation_enabled": os.environ.get("BLOG_AUTOMATION_ENABLED", "false"),
-                "lead_nurture_enabled": os.environ.get("LEAD_NURTURE_ENABLED", "false")}
+                "lead_nurture_enabled": os.environ.get("LEAD_NURTURE_ENABLED", "false"),
+                "recruitment_lead_nurture_enabled": os.environ.get("RECRUITMENT_LEAD_NURTURE_ENABLED", "false")}
 
     return router

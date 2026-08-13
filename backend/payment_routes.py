@@ -274,6 +274,12 @@ def create_payment_router(db) -> APIRouter:
                         {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}},
                     )
                     transaction.update({"status": "completed", "payment_status": "paid"})
+                    try:
+                        from marketing_service import stop_recruitment_nurture_for_purchase
+                        buyer_email = (session.customer_details.email if session.customer_details else "") or ""
+                        await stop_recruitment_nurture_for_purchase(db, transaction, buyer_email)
+                    except Exception:
+                        pass
             except stripe.StripeError:
                 pass
         return {"session_id": session_id, "status": transaction["status"], "payment_status": transaction["payment_status"]}
@@ -284,6 +290,15 @@ def create_payment_router(db) -> APIRouter:
 def create_stripe_webhook_router(db) -> APIRouter:
     router = APIRouter()
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
+
+    async def _stop_nurture_after_paid(item: dict) -> None:
+        try:
+            from marketing_service import stop_recruitment_nurture_for_purchase
+            transaction = await db.payment_transactions.find_one({"session_id": item["id"]}, {"_id": 0})
+            buyer_email = ((item.get("customer_details") or {}).get("email") or "")
+            await stop_recruitment_nurture_for_purchase(db, transaction, buyer_email)
+        except Exception:
+            pass
 
     @router.post("/api/stripe/webhook")
     async def stripe_webhook(request: Request):
@@ -302,10 +317,13 @@ def create_stripe_webhook_router(db) -> APIRouter:
                 {"$set": {"status": "completed", "payment_status": item.get("payment_status", "paid"),
                           "stripe_payment_intent_id": item.get("payment_intent", ""), "updated_at": now}},
             )
+            if item.get("payment_status", "paid") == "paid":
+                await _stop_nurture_after_paid(item)
         elif event_type == "checkout.session.async_payment_succeeded":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"]}, {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}}
             )
+            await _stop_nurture_after_paid(item)
         elif event_type == "checkout.session.async_payment_failed":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"]}, {"$set": {"status": "failed", "payment_status": "failed", "updated_at": now}}

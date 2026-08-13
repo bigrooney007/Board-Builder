@@ -32,10 +32,50 @@ SEGMENT_NAMES = {
 
 NURTURE_TEMPLATES = {
     "recruitment": [
-        {"subject": "Your Board Recruitment Should Start With What Your Organization Needs", "headline": "Stop Recruiting Whoever Happens to Be Available", "paragraphs": ["The goal is not simply to add more names to your board.", "You need people who strengthen the areas your organization is currently missing, whether that is fundraising, finance, corporate relationships, governance, marketing or professional connections.", "The right recruitment process starts with what the organization needs, then builds the campaign around finding people who can provide it.", "You already told us about the board you want to build."], "cta": "See How We Can Help You Recruit", "url": "/recruit/options"},
-        {"subject": "The Right Professionals Need a Reason to Join Your Board", "headline": "A Board Vacancy Is Not a Compelling Opportunity", "paragraphs": ["Strong professionals are not looking for another meeting to attend.", "They want to understand the mission, what the organization is trying to accomplish and the meaningful role they will play in helping make it happen.", "Your recruitment campaign should make that clear before you ever ask someone to apply.", "We can help you build and launch the complete process."], "cta": "See Your Board Recruitment Options", "url": "/recruit/options"},
-        {"subject": "Finding Applicants Is Only the Beginning", "headline": "You Still Have to Know Who Belongs on the Board", "paragraphs": ["A strong résumé does not automatically make someone the right board member.", "You still need to understand their commitment, professional strengths, fundraising willingness, relationships and ability to take responsibility.", "That is why recruitment must include a real application, structured interviews, references and thoughtful selection.", "We can help you execute the process from recruitment through onboarding."], "cta": "Choose How You Want to Recruit", "url": "/recruit/options"},
-        {"subject": "Do Not Lose Good Board Members After You Recruit Them", "headline": "Recruitment Does Not End When Someone Says Yes", "paragraphs": ["New board members need to understand the organization, what the board expects from them and what responsibility they are agreeing to take.", "Without a proper onboarding process, even strong recruits can quickly become inactive board members.", "Your recruitment process should finish by preparing each person to contribute."], "cta": "Start Your Board Recruitment Process", "url": "/recruit/options"},
+        {"subject": "Before You Decide How to Build Your Board", "greeting": True,
+         "paragraphs": [
+             "You came to me because your nonprofit needs Board Members.",
+             "Before you decide whether you want to recruit them yourself or have me work with you, I want you to know a little about the person behind the process.",
+             "I started as a nonprofit founder many years ago, where I built my first Board.",
+             "I made mistakes, damaged relationships, learned from the experience, rebuilt my Board, and eventually developed a process that worked.",
+             "Since then, I have served on nonprofit Boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their Boards, and contributed to raising more than $5 million.",
+             "Today, I work with founders and executive directors so they do not have to make the mistakes I made, damage relationships, or waste months trying to figure out how to build the Board their organization needs.",
+             "If you are still trying to decide how to move forward with your Board, start here.",
+         ],
+         "cta": "MEET ROONEY & SEE HOW I CAN HELP", "url": "/about-rooney",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "You Can Build Your Board Yourself", "greeting": True,
+         "paragraphs": [
+             "If you want to recruit your Board yourself, you do not have to spend months figuring out what to do next.",
+             "I have created a way for you to follow the same Board Recruitment process I use and actually build the Board your nonprofit needs.",
+             "You will identify the types of Board Members your organization should be recruiting, launch your actual Recruitment campaign, put your opportunity in front of professionals, work through the applicants who respond, interview the people you want to consider, complete your references and due diligence, and properly bring the people you choose into your organization.",
+             "You will have the Recruitment materials you need.",
+             "Your organization will have its own Board Application.",
+             "Your opportunity can also be shared with our existing Board Applicant Network of professionals interested in nonprofit Board service.",
+             "And when you are finished, you will not only have worked toward building your Board — you will understand the Recruitment process well enough to use it again whenever your nonprofit needs another Board Member.",
+             "You are doing it yourself, but you are not doing it alone.",
+             "If you get stuck, need clarification, want something reviewed, or need help moving through a step, you can reach out to me for support.",
+             "The investment is $497, one time.",
+             "Your investment is protected by our 100% money-back guarantee.",
+             "If you are ready to stop waiting for the right people to somehow find you and start building the Board your nonprofit needs, you can begin now.",
+         ],
+         "cta": "BUILD MY BOARD MYSELF — $497", "url": "/recruit-your-board-yourself",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "Want Me to Help You Build Your Board?", "greeting": True,
+         "paragraphs": [
+             "You do not have to build your Board alone.",
+             "If your nonprofit needs stronger people around the table and you want someone who has done this before to work through the Recruitment with you, this is the option I created for you.",
+             "We will work together to build the Board your organization needs.",
+             "The goal is not to give you another plan and leave you to figure it out.",
+             "The goal is to get your Recruitment moving, attract quality professionals, help you work through the people who respond, and properly bring the people you choose into your organization so you can begin building with them.",
+             "You remain in control of who joins your Board.",
+             "I bring the Recruitment process, experience, structure and support needed to help you get there.",
+             "Your nonprofit should not have to keep struggling because you do not have the right people around the table.",
+             "If you want me directly involved in helping you change that, come build your Board with me.",
+             "The investment is $1,997.",
+         ],
+         "cta": "BUILD MY BOARD WITH ROONEY — $1,997", "url": "/board-recruitment-proposal",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
     ],
     "reactivation": [
         {"subject": "Your Inactive Board Members May Need a Decision, Not Another Reminder", "headline": "Give Them a Clear Opportunity to Recommit", "paragraphs": ["Repeated reminders rarely reactivate an inactive board.", "Each person needs a clear opportunity to decide whether they are still willing and able to serve, understand what the organization now requires and commit to meaningful responsibility.", "Those who cannot continue should have a respectful way to step down.", "That is the beginning of board reactivation."], "cta": "See How We Can Help You Reactivate", "url": "/reactivate/options"},
@@ -264,22 +304,68 @@ async def stop_recruitment_nurture(db, email: str) -> None:
         logger.warning("Recruitment nurture removal failed for %s: %s", email, exc)
 
 
+RECRUITMENT_PURCHASE_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
+
+
+async def stop_recruitment_nurture_for_purchase(db, transaction: dict, buyer_email: str = "") -> None:
+    """Stop Recruitment nurture the moment a Recruitment purchase is verified paid. Idempotent; never raises."""
+    try:
+        if not transaction or transaction.get("purchase_source") not in RECRUITMENT_PURCHASE_SOURCES:
+            return
+        emails = {value.lower() for value in [buyer_email, transaction.get("customer_email", "")] if value}
+        for email in emails:
+            await stop_recruitment_nurture(db, email)
+    except Exception as exc:
+        logger.warning("Nurture stop after purchase failed (payment unaffected): %s", exc)
+
+
+def enabled_nurture_sources() -> set:
+    enabled = set()
+    if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true":
+        enabled.update(NURTURE_TEMPLATES.keys())
+    if os.environ.get("RECRUITMENT_LEAD_NURTURE_ENABLED", "false").lower() == "true":
+        enabled.add("recruitment")
+    return enabled
+
+
+def nurture_sender(source: str) -> str:
+    base = os.environ["NONPROFIT_SENDER"]
+    if source == "recruitment":
+        address = base.split("<", 1)[1].rstrip(">").strip() if "<" in base else base
+        return f"Rooney Akpesiri | The Nonprofit Board Builder <{address}>"
+    return base
+
+
 def nurture_email_html(template: dict, origin: str) -> str:
-    paragraphs = "".join(f"<p style='font-size:18px;line-height:1.6;color:#000;margin:0 0 16px;'>{html.escape(p)}</p>" for p in template["paragraphs"])
-    return (
-        f"<div style='background:#ffffff;padding:26px;font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;'>"
-        f"<h1 style='font-size:24px;color:#000;'>{html.escape(template['headline'])}</h1>{paragraphs}"
-        f"<p><a href='{origin}{template['url']}' style='display:inline-block;background:#087e5b;color:#ffffff;padding:14px 24px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:17px;'>{html.escape(template['cta'])}</a></p>"
+    parts = ["<div style='background:#ffffff;padding:26px;font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;'>"]
+    if template.get("headline"):
+        parts.append(f"<h1 style='font-size:24px;color:#000;'>{html.escape(template['headline'])}</h1>")
+    if template.get("greeting"):
+        parts.append("<p style='font-size:18px;line-height:1.6;color:#000;margin:0 0 16px;'>Hi {{{FIRST_NAME|there}}},</p>")
+    parts.append("".join(f"<p style='font-size:18px;line-height:1.6;color:#000;margin:0 0 16px;'>{html.escape(p)}</p>" for p in template["paragraphs"]))
+    parts.append(f"<p><a href='{origin}{template['url']}' style='display:inline-block;background:#087e5b;color:#ffffff;padding:14px 24px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:17px;'>{html.escape(template['cta'])}</a></p>")
+    if template.get("closing"):
+        closing = "<br/>".join(html.escape(line) for line in template["closing"])
+        parts.append(f"<p style='font-size:18px;line-height:1.6;color:#000;margin:24px 0 0;'>{closing}</p>")
+    parts.append(
         f"<p style='font-size:12px;color:#667;margin-top:30px;'>Nonprofit Board Builder — {html.escape(os.environ.get('POSTAL_ADDRESS', ''))}<br/>"
         f"<a href='{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}'>Unsubscribe</a></p></div>"
     )
+    return "".join(parts)
 
 
 async def run_weekly_nurture(db, origin: str, test_only: bool, test_email: str = "") -> dict:
     """One Tuesday campaign per segment per ISO week. Failed sends never advance the rotation."""
     week = now_tz("LEAD_NURTURE_TIMEZONE").strftime("%G-W%V")
     results = {}
+    enabled = enabled_nurture_sources()
     for source, templates in NURTURE_TEMPLATES.items():
+        if not test_only and source not in enabled:
+            results[source] = {"skipped": True, "reason": "Nurture disabled for this audience"}
+            continue
+        if not test_only and os.environ.get("DB_NAME") == "test_database":
+            results[source] = {"skipped": True, "reason": "Real nurture broadcasts are disabled in the preview environment"}
+            continue
         key = {"segment": source, "scheduled_week": week}
         ts = now_tz().isoformat()
         try:
@@ -295,11 +381,12 @@ async def run_weekly_nurture(db, origin: str, test_only: bool, test_email: str =
             if test_only:
                 resend.api_key = os.environ["RESEND_API_KEY"]
                 recipient = test_email or os.environ.get("OWNER_TEST_EMAIL") or os.environ["OWNER_NOTIFICATION_EMAIL"]
-                response = await resend.Emails.send_async({"from": os.environ["NONPROFIT_SENDER"], "to": [recipient], "subject": f"[TEST] {template['subject']}", "html": html_body.replace("{{{RESEND_UNSUBSCRIBE_URL}}}", f"{origin}/privacy-policy")})
+                preview_html = html_body.replace("{{{RESEND_UNSUBSCRIBE_URL}}}", f"{origin}/privacy-policy").replace("{{{FIRST_NAME|there}}}", "there")
+                response = await resend.Emails.send_async({"from": nurture_sender(source), "to": [recipient], "subject": f"[TEST] {template['subject']}", "html": preview_html})
                 broadcast_id = response.get("id") if isinstance(response, dict) else getattr(response, "id", "")
             else:
                 segments = await get_nurture_segments(db)
-                broadcast_id = await create_segment_broadcast(segment_id=segments[source], sender=os.environ["NONPROFIT_SENDER"], subject=template["subject"], html_content=html_body, name=f"Nurture {source} {week}", send=True)
+                broadcast_id = await create_segment_broadcast(segment_id=segments[source], sender=nurture_sender(source), subject=template["subject"], html_content=html_body, name=f"Nurture {source} {week}", send=True)
             await db.nurture_sends.update_one(key, {"$set": {"status": "Sent", "template": index + 1, "broadcast_id": broadcast_id or "", "sent_at": now_tz().isoformat()}})
             await db.nurture_rotation.update_one({"segment": source}, {"$set": {"last_sent": index + 1, "updated_at": now_tz().isoformat()}}, upsert=True)
             results[source] = {"sent": True, "template": index + 1, "subject": template["subject"], "cta_url": template["url"]}
@@ -321,7 +408,7 @@ async def marketing_loop(db) -> None:
                 for key, config in CATEGORIES.items():
                     if now.weekday() == config["day"] and now.strftime("%H:%M") >= publish_time:
                         await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=True)
-            if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true":
+            if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true" or enabled_nurture_sources():
                 now = now_tz("LEAD_NURTURE_TIMEZONE")
                 day_name = os.environ.get("LEAD_NURTURE_DAY", "Tuesday")
                 send_time = os.environ.get("LEAD_NURTURE_TIME", "07:00")

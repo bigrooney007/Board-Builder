@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 30 backend-only regression for new 3-email Recruitment nurture sequence. Created /app/backend/tests/test_recruitment_nurture_v2.py with 42 tests across 9 groups (templates, HTML render, enable gating, rotation, sender, purchase stop, lead enrollment, admin status, checkout regression). 39/42 pass. 3 failures are ONE real BUG: HTML greeting merge tag renders with THREE braces instead of the two-brace Resend syntax the spec requires (also affects RESEND_UNSUBSCRIBE_URL). All existing suites (test_board_recruitment_proposal, test_batch_intake_e2e, test_iter28_account_verify) still pass 37/37. NO real Resend broadcast or segment-mutation call was made during testing (all mocked). Preview-safety guard (DB_NAME==test_database) verified to skip real broadcasts. Purchase-stop logic verified for both $497 diy and $1,997 direct-project sources, idempotent, safe with None/empty, never propagates exceptions. Rotation math advances 1→2→3→1→2 and legacy last_sent=4 maps to template 2 as expected. Failed sends do not advance rotation and trigger send_owner_alert. Duplicate same-week send correctly skipped. Admin /api/nurture/status returns recruitment_lead_nurture_enabled=true and lead_nurture_enabled=false. DIY checkout ($49700, /purchase/success) and direct-project checkout ($199700, /board-recruitment-intake) endpoints unchanged. Cleaned up 35 test nurture_contacts rows and reset rotation/sends collections.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "marketing_service.nurture_email_html",
+        "issue": "Greeting merge tag renders as 'Hi {{{FIRST_NAME|there}}},' (THREE braces) instead of the spec-required 'Hi {{FIRST_NAME|there}},' (TWO braces). Root cause: line 344 uses a plain (non f-string) Python literal '{{{FIRST_NAME|there}}}' which is emitted verbatim with three braces. Since Resend merge tags use exactly 2 braces (e.g. {{FIRST_NAME}}), Resend will substitute the inner {{FIRST_NAME|there}} and leave literal '{' and '}' surrounding it — recipients see '{Rooney},' or '{there},'. Same bug on line 352 for {{{RESEND_UNSUBSCRIBE_URL}}} which will produce an href='{https://...unsubscribe}' (leading/trailing literal braces likely breaking the URL). NOTE: the test-only path at line 384 does .replace('{{{FIRST_NAME|there}}}','there') / .replace('{{{RESEND_UNSUBSCRIBE_URL}}}', origin+/privacy-policy) so preview sends look fine — the bug ONLY manifests in the REAL segment broadcast path (production).",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_recruitment_nurture_v2.py",
+    "/app/test_reports/pytest/iter30_recruit_nurture.xml"
+  ],
+  "action_items": [
+    "Fix marketing_service.nurture_email_html braces: line 344 change '{{{FIRST_NAME|there}}}' → '{{FIRST_NAME|there}}' (2 braces); line 352 change f-string '{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}' → '{{{{RESEND_UNSUBSCRIBE_URL}}}}' (renders 2 braces). Also update the corresponding .replace() calls at line 384 to match the 2-brace tokens so test-only preview sends still work."
+  ],
+  "critical_code_review_comments": [
+    "nurture_email_html: 3-vs-2 brace bug documented above — will corrupt greeting personalisation and unsubscribe URL when the live segment broadcast is sent.",
+    "payment_routes.payment_status GET: swallows all exceptions when calling stop_recruitment_nurture_for_purchase — good defensive posture, but consider logging at WARN level so silent nurture-stop failures are visible in ops.",
+    "marketing_service.stop_recruitment_nurture: uses upsert=True on nurture_contacts. Passing an empty email is guarded by stop_recruitment_nurture_for_purchase but if stop_recruitment_nurture is called directly with '' it would insert a document with email='' — consider an early return if not email.",
+    "run_weekly_nurture: preview-safety guard skips the sends INSIDE the per-source loop but the guard message is per-source; consider moving the check above the loop to avoid duplicate strings in results — cosmetic.",
+    "member_routes.claim_recruitment_purchase still calls stop_recruitment_nurture unconditionally on claim — that means the nurture is also stopped on the free 'recruit_with_rooney_997' claim path even though it isn't in RECRUITMENT_PURCHASE_SOURCES. This is fine as fallback but ensure that's intentional (current behavior matches spec: claim-time stop preserved).",
+    "PRICE_ENV in payment_routes.py still lists ('recruitment','97') / ('recruitment','497') paths — legacy /api/payments/checkout for offer_source='recruitment' is still reachable; not in scope for this iteration but worth confirming it's intentionally kept alongside the new diy/direct-project endpoints."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_recruitment_nurture_v2.py (new)"
+  ],
+  "success_rate": {"backend": "92.9% (39/42 new tests); 100% (37/37) legacy regression", "frontend": "not tested"},
+  "test_credentials": "Admin login used: rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem (from /app/memory/test_credentials.md is missing this pair; credentials taken from review_request).",
+  "seed_data_creation": "Only ephemeral test_* nurture_contacts rows and 2099-Wxx nurture_sends rows created; all cleaned up post-run (35 nurture_contacts deleted, plus rotation/sends collections reset).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "After main agent fixes the 3-brace → 2-brace bug in nurture_email_html and updates the .replace() calls in run_weekly_nurture accordingly, re-run: `cd /app/backend && REACT_APP_BACKEND_URL=<url> pytest tests/test_recruitment_nurture_v2.py -o addopts= -o asyncio_mode=auto`. All 42 should pass. To exercise the failure-path assertion on the currently-broken greeting merge, only the 3 tests in TestHtmlRender::test_recruitment_render_has_greeting_merge_two_braces need to flip green. Do NOT re-enable LEAD_NURTURE_ENABLED=true in .env; keep preview-safety guard intact (test_database check is intentional).",
+  "rca of the issue": "RCA: In marketing_service.nurture_email_html the greeting HTML is emitted as a plain (non-f-string) Python literal containing the sequence '{{{FIRST_NAME|there}}}'. In a plain string those braces are LITERAL, so the outgoing HTML contains three '{' and three '}'. Resend recognises the 2-brace merge '{{FIRST_NAME|there}}' inside and substitutes it, but the extra outermost '{' and '}' remain — the recipient's email will render 'Hi {Rooney},' or 'Hi {there},'. The same pattern exists for the unsubscribe link href, where the extra braces will corrupt the resolved URL. Reproduction: `python -c \"from marketing_service import nurture_email_html, NURTURE_TEMPLATES; print(nurture_email_html(NURTURE_TEMPLATES['recruitment'][0], 'https://x'))\"` — search for 'Hi {' in output; observe three braces. Mitigation: change literal at line 344 to '{{FIRST_NAME|there}}' (two braces) and change f-string at line 352 from '{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}' (renders 3) to '{{{{RESEND_UNSUBSCRIBE_URL}}}}' (renders 2). Also update the two .replace() calls at line 384 so test_only preview sends continue to strip these tokens."
+}
