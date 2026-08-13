@@ -73,7 +73,7 @@ export default function BoardRecruitmentProposalPage() {
         </section>
 
         <section className="brp-section brp-summary" data-testid="brp-summary-section">
-          <h2 className="brp-section-title" data-testid="brp-summary-heading">Project Summary</h2>
+          <h2 className="brp-section-title" data-testid="brp-summary-heading">Executive Summary</h2>
           <p data-testid="brp-summary-whether">Whether you need one new board member or need to build an entirely new board, the objective of this engagement is simple:</p>
           <p className="brp-summary-objective" data-testid="brp-summary-objective">Help you recruit the board members your nonprofit needs to grow, raise money, build relationships and move your mission forward.</p>
           <p data-testid="brp-summary-timeline-line">Over the next two weeks, we will work together to identify, recruit, select and properly bring in skilled professionals with the experience, credibility, relationships and willingness to help your organization succeed.</p>
