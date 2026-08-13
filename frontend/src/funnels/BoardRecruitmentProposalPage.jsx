@@ -143,8 +143,8 @@ export default function BoardRecruitmentProposalPage() {
         <section className="brp-section brp-investment" data-testid="brp-investment-section">
           <h2 className="brp-section-title">Your Investment</h2>
           <p className="brp-standard-price" data-testid="brp-reference-price"><s>$3,997</s></p>
-          <p className="brp-discount-line" data-testid="brp-discount-line">But if you are ready to make payment and get started today, we are offering you a 50% discount</p>
-          <p className="brp-today-price" data-testid="brp-today-price">TODAY: $1,998.50</p>
+          <p className="brp-discount-line" data-testid="brp-discount-line">But if you are ready to make payment and get started today, we are offering you a discount</p>
+          <p className="brp-today-price" data-testid="brp-today-price">TODAY: $1,997</p>
         </section>
 
         <section className="brp-section brp-guarantee" data-testid="brp-guarantee-section">

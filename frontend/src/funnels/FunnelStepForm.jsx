@@ -66,7 +66,7 @@ export const FunnelStepForm = ({ offerSource }) => {
       return;
     }
     if (reviewBypass) {
-      navigate("/recruit/process");
+      navigate("/recruit-with-rooney");
       return;
     }
     setSubmitting(true); setSubmitError("");
@@ -74,6 +74,7 @@ export const FunnelStepForm = ({ offerSource }) => {
       const response = await axios.post(`${API}/funnel-leads/${offerSource}`, { ...contact, answers });
       sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization, support_preference: answers.support_preference || "" }));
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
+      else if (config.redirectAfterSubmit === "rooney") navigate("/recruit-with-rooney");
       else if (config.redirectAfterSubmit === "process") navigate(`/${config.slug}/process`);
       else navigate(`/${config.slug}/result/${response.data.result_token}`);
     } catch (error) {

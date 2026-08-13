@@ -13,10 +13,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 logger = logging.getLogger(__name__)
 
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
+DIY_START_ROUTE = "/recruitment-start-here"
 QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
 OFFER_LABELS = {
     "direct_diy_board_recruitment_497": "Do It Yourself — $497",
-    "direct_board_recruitment_project": "Do It With Me — $1,998.50",
+    "direct_board_recruitment_project": "Do It With Me — $1,997",
 }
 
 
@@ -173,10 +174,11 @@ def create_board_intake_router(db) -> APIRouter:
             ("Submitted", now),
         ]
         table = "".join(f"<tr><td style='padding:9px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(str(label))}</td><td style='padding:9px;border-bottom:1px solid #dddddd;'>{html.escape(str(value))}</td></tr>" for label, value in rows)
+        next_step = "is starting immediately with the self-guided Recruitment system." if purchase_source == "direct_diy_board_recruitment_497" else "is being sent to your Calendly."
         await resend.Emails.send_async({
             "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
             "subject": f"Board Recruitment Intake Submitted — {payload.organization_name} ({offer_label})",
-            "html": f"<div style='max-width:760px;margin:auto;font-family:Arial,sans-serif;color:#000;'><h1>Board Recruitment Intake Submitted</h1><p>A paying customer just completed the Tell Me About Your Organization and Board form and is being sent to your Calendly.</p><table style='width:100%;border-collapse:collapse;'>{table}</table></div>",
+            "html": f"<div style='max-width:760px;margin:auto;font-family:Arial,sans-serif;color:#000;'><h1>Board Recruitment Intake Submitted</h1><p>A paying customer just completed the Tell Me About Your Organization and Board form and {next_step}</p><table style='width:100%;border-collapse:collapse;'>{table}</table></div>",
         })
 
     @router.post("/submit", status_code=201)
@@ -202,6 +204,7 @@ def create_board_intake_router(db) -> APIRouter:
                 logger.info("Owner intake notification sent for session %s", payload.session_id)
             except Exception:
                 logger.exception("Owner intake notification failed for session %s", payload.session_id)
-        return {"status": "submitted", "redirect_url": CALENDLY_URL}
+        redirect_url = DIY_START_ROUTE if transaction["purchase_source"] == "direct_diy_board_recruitment_497" else CALENDLY_URL
+        return {"status": "submitted", "redirect_url": redirect_url}
 
     return router

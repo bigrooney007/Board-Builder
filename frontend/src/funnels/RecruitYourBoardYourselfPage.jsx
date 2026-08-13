@@ -75,7 +75,7 @@ export default function RecruitYourBoardYourselfPage() {
 
         <section className="brp-section" data-testid="dyi-after-payment-section">
           <h2 className="brp-section-title" data-testid="dyi-after-payment-heading">What Happens After You Make Payment</h2>
-          <p data-testid="dyi-after-payment-copy">After making payment, you will tell us about your organization and board and then choose a convenient time to meet with me one-on-one so we can start the process together.</p>
+          <p data-testid="dyi-after-payment-copy">After making payment, you will tell us about your organization and board. Once you submit the form, you can start immediately and follow our instructions to launch your board recruitment campaign in the next 30 minutes.</p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="dyi-cta-section">

@@ -10,10 +10,7 @@ import resend
 SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "guided": "Guided Support", "self_guided": "Self-Guided Recruitment", "done_with_you": "Done With You", "undecided": "I'm Not Sure Yet"}
 
 REQUIRED_ANSWERS = {
-    "recruitment": {
-        "new_members_needed", "present_board", "active_board", "board_type",
-        "accomplish_areas", "timeline", "support_preference",
-    },
+    "recruitment": {"new_members_needed"},
     "reactivation": {
         "present_board", "active_board", "inactive_situations", "recommitment_conversations",
         "strategic_planning", "priorities", "desired_changes",
@@ -33,8 +30,10 @@ def validate_answers(source: str, answers: Dict[str, Any]) -> None:
             missing.append(key)
     if missing:
         raise ValueError(f"Missing required answers: {', '.join(sorted(missing))}")
-    if source == "recruitment" and answers.get("support_preference") not in SUPPORT_PREFERENCES:
+    if source == "recruitment" and answers.get("support_preference") and answers.get("support_preference") not in SUPPORT_PREFERENCES:
         raise ValueError("Support preference must be one of: diy, guided, done_with_you, undecided")
+    if answers.get("present_board", "") == "" or answers.get("active_board", "") == "":
+        return
     present = int(answers["present_board"])
     active = int(answers["active_board"])
     if present < 0 or active < 0 or active > present:

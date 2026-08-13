@@ -85,7 +85,7 @@ class TestDirectProjectCheckout:
         assert "/board-recruitment-intake" in session.success_url
         assert "session_id={CHECKOUT_SESSION_ID}" in session.success_url
         assert "/board-recruitment-proposal?checkout=cancelled" in session.cancel_url
-        assert session.amount_total == 199850
+        assert session.amount_total == 199700
         mongo, loop = db
         loop.run_until_complete(mongo.payment_transactions.delete_one({"session_id": data["session_id"]}))
 
@@ -124,7 +124,7 @@ class TestIntakeSubmitHappyPath:
         loop.run_until_complete(mongo.payment_transactions.insert_one({
             "session_id": sid, "purchase_source": purchase_source,
             "offer_source": purchase_source.replace("_497", "").replace("_project", "_project"),
-            "amount": 49700 if "diy" in purchase_source else 199850,
+            "amount": 49700 if "diy" in purchase_source else 199700,
             "currency": "usd", "status": "completed", "payment_status": "paid",
             "test_mode": True,
         }))

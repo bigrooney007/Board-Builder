@@ -17,6 +17,7 @@ import BoardRecruitmentProposalPage, { BoardRecruitmentProposalConfirmedPage } f
 import AboutRooneyPage from "@/funnels/AboutRooneyPage";
 import RecruitYourBoardYourselfPage from "@/funnels/RecruitYourBoardYourselfPage";
 import BoardRecruitmentIntakePage from "@/funnels/BoardRecruitmentIntakePage";
+import RecruitmentStartHerePage from "@/funnels/RecruitmentStartHerePage";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/about-rooney" element={<AboutRooneyPage />} />
           <Route path="/recruit-your-board-yourself" element={<RecruitYourBoardYourselfPage />} />
           <Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />
+          <Route path="/recruitment-start-here" element={<RecruitmentStartHerePage />} />
           <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
           <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />

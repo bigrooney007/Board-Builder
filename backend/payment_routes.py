@@ -33,36 +33,43 @@ class DIYCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
 
 
-DIY_LOOKUP_KEY = "diy_board_recruitment_497"
-_diy_price_cache = {"id": ""}
+_price_cache = {}
 
 
-def resolve_diy_price_id() -> str:
-    if _diy_price_cache["id"]:
-        return _diy_price_cache["id"]
-    configured = os.environ.get("STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID", "").strip().strip('"')
+def resolve_offer_price_id(env_key: str, lookup_key: str, product_name: str, unit_amount: int) -> str:
+    if _price_cache.get(lookup_key):
+        return _price_cache[lookup_key]
+    configured = os.environ.get(env_key, "").strip().strip('"')
     if configured:
         try:
             price = stripe.Price.retrieve(configured)
-            if price.active and price.unit_amount == 49700 and price.currency == "usd" and not price.recurring:
-                _diy_price_cache["id"] = configured
+            if price.active and price.unit_amount == unit_amount and price.currency == "usd" and not price.recurring:
+                _price_cache[lookup_key] = configured
                 return configured
         except stripe.StripeError:
             pass
-    existing = stripe.Price.list(lookup_keys=[DIY_LOOKUP_KEY], active=True, limit=1).data
+    existing = stripe.Price.list(lookup_keys=[lookup_key], active=True, limit=1).data
     if existing:
-        _diy_price_cache["id"] = existing[0].id
-        return _diy_price_cache["id"]
+        _price_cache[lookup_key] = existing[0].id
+        return _price_cache[lookup_key]
     product = stripe.Product.create(
-        name="Recruit Your Board Yourself", tax_code="txcd_10000000",
-        metadata={"managed_by": "emergent", "emergent_product_id": DIY_LOOKUP_KEY},
+        name=product_name, tax_code="txcd_10000000",
+        metadata={"managed_by": "emergent", "emergent_product_id": lookup_key},
     )
     price = stripe.Price.create(
-        product=product.id, unit_amount=49700, currency="usd",
-        lookup_key=DIY_LOOKUP_KEY, transfer_lookup_key=True,
+        product=product.id, unit_amount=unit_amount, currency="usd",
+        lookup_key=lookup_key, transfer_lookup_key=True,
     )
-    _diy_price_cache["id"] = price.id
-    return _diy_price_cache["id"]
+    _price_cache[lookup_key] = price.id
+    return _price_cache[lookup_key]
+
+
+def resolve_diy_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID", "diy_board_recruitment_497", "Recruit Your Board Yourself", 49700)
+
+
+def resolve_direct_project_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_PRICE_ID", "direct_board_recruitment_project_1997", "Board Recruitment Project", 199700)
 
 
 def create_payment_router(db) -> APIRouter:
@@ -186,7 +193,7 @@ def create_payment_router(db) -> APIRouter:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
         kwargs = {
-            "line_items": [{"price": os.environ["STRIPE_DIRECT_BOARD_RECRUITMENT_PRICE_ID"], "quantity": 1}],
+            "line_items": [{"price": resolve_direct_project_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}/board-recruitment-proposal?checkout=cancelled",
@@ -210,7 +217,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, "lead_id": "", "offer_source": "direct_board_recruitment_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_recruitment_project",
             "offer": "Board Recruitment Project",
-            "amount": 199850, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

@@ -11,7 +11,7 @@ const contactFields = [
   { type: "select", name: "country", label: "Country", options: ["United States", "United Kingdom", "Other"], scope: "contact" },
 ];
 
-const accomplishAreas = ["Raise money", "Build corporate partnerships", "Connect with major donors", "Strengthen grant development", "Strengthen finance and financial oversight", "Strengthen governance", "Improve strategic planning", "Strengthen marketing and communications", "Build community relationships", "Provide legal expertise", "Strengthen technology", "Strengthen programs", "Strengthen operations", "Make professional introductions and connections", "Bring important lived experience or community perspective", "Help the organization grow", "Expand programs or services", "Increase visibility", "Other"];
+const accomplishAreas = ["Raise money", "Build corporate partnerships", "Connect with major donors", "Strengthen grant development", "Strengthen finance and financial oversight", "Strengthen governance", "Improve strategic planning", "Strengthen marketing and communications", "Build community relationships", "Provide legal expertise", "Strengthen technology", "Strengthen programs", "Strengthen operations", "Make professional introductions and connections", "Bring important lived experience or community perspective", "Help the organization grow", "Expand programs or services", "Increase visibility", "Other"]; // eslint-disable-line no-unused-vars
 const strategicOptions = ["Yes", "We have a strategic plan, but the board was not meaningfully involved", "We started but did not complete it", "No", "We do not currently have a strategic plan", "I am not sure"];
 
 export const funnelConfigs = {
@@ -21,30 +21,16 @@ export const funnelConfigs = {
     supporting: "Enter your organization details below and we will show you the 6-step process to build a board that commits, helps raise money and works with you to build the organization your mission deserves.",
     formHeading: "Tell Us About the Board You Want to Recruit",
     submit: "Show Me How You Can Help",
-    redirectAfterSubmit: "process",
+    redirectAfterSubmit: "rooney",
     steps: [
-      { heading: "Tell Us About You and Your Organization", fields: contactFields },
       {
-        heading: "Tell Us About the Board You Want to Recruit",
+        heading: "Tell Us About You and Your Organization",
         fields: [
-          { type: "select", name: "new_members_needed", label: "How many new board members would you like to recruit?", options: ["1", "2", "3", "4", "5", "6+", "I am not sure yet"], scope: "answers" },
-          { type: "text", name: "present_board", label: "How many people are presently on your board?", inputType: "number", scope: "answers" },
-          { type: "text", name: "active_board", label: "How many of them are consistently active?", inputType: "number", scope: "answers" },
-          { type: "select", name: "board_type", label: "What kind of board are you trying to build?", options: ["A governing board focused mainly on oversight and accountability", "A working board that actively helps execute", "A fundraising board that actively helps raise money", "An advisory board that provides expertise, strategic advice and connections", "A board combining governance, fundraising and practical support", "I am not sure yet"], scope: "answers" },
-        ],
-      },
-      {
-        heading: "Tell Us What You Need From the New Board Members",
-        fields: [
-          { type: "choices", name: "accomplish_areas", label: "What Do You Need the New Board Members to Help Your Organization Accomplish?", helper: "Select everything you want your new board members to help strengthen or achieve.", options: accomplishAreas, scope: "answers" },
-          { type: "textarea", name: "accomplish_other", label: "What else do you need your new board members to help accomplish?", scope: "answers", required: false, showIf: (answers) => (answers.accomplish_areas || []).includes("Other") },
-          { type: "select", name: "timeline", label: "How soon would you like to begin recruiting?", options: ["Immediately", "Within 30 days", "Within 60 days", "Within 90 days", "I am exploring my options"], scope: "answers" },
-          { type: "radio_cards", name: "support_preference", label: "What Kind of Support Would Be Most Helpful to You?", scope: "answers", options: [
-            { value: "diy", title: "I want to learn the process and execute it myself" },
-            { value: "guided", title: "I want guidance and support while I recruit my board" },
-            { value: "done_with_you", title: "I would prefer someone to work directly with me" },
-            { value: "undecided", title: "I’m not sure yet" },
-          ] },
+          { type: "text", name: "name", label: "Your name", scope: "contact" },
+          { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
+          { type: "text", name: "organization", label: "Organization name", scope: "contact" },
+          { type: "text", name: "phone", label: "Phone number", inputType: "tel", scope: "contact" },
+          { type: "select", name: "new_members_needed", label: "How Many Board Members Do You Want to Recruit?", options: ["1", "2", "3", "4", "5", "6+", "Not Sure"], scope: "answers" },
         ],
       },
     ],

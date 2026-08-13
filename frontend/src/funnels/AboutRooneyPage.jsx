@@ -42,7 +42,7 @@ export default function AboutRooneyPage() {
             </article>
             <article className="ar-offer-card" data-testid="about-rooney-dwm-card">
               <h3 data-testid="about-rooney-dwm-heading">Do It With Me</h3>
-              <p className="ar-offer-price" data-testid="about-rooney-dwm-price">$1,998.50</p>
+              <p className="ar-offer-price" data-testid="about-rooney-dwm-price">$1,997</p>
               <p className="ar-offer-copy" data-testid="about-rooney-dwm-copy">We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.</p>
               <p className="ar-offer-payment-line" data-testid="about-rooney-dwm-payment-line">One project. One payment.</p>
               <Link className="button" to="/board-recruitment-proposal" data-testid="about-rooney-dwm-button">I WANT TO RECRUIT MY BOARD WITH ROONEY</Link>

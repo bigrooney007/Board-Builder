@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { PlayCircle, ShieldCheck, X } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { useReviewMode } from "@/reviewMode";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -34,35 +33,14 @@ const GuaranteeTermsModal = ({ close }) => {
 
 export default function RecruitWithRooneyPage() {
   usePageMeta(...PAGE_META.recruitWithRooney);
-  const location = useLocation();
-  const reviewMode = useReviewMode();
-  const cancelled = new URLSearchParams(location.search).get("checkout") === "cancelled";
   const [videoUrl, setVideoUrl] = useState("");
   const [guaranteeConfigured, setGuaranteeConfigured] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [ctaNotice, setCtaNotice] = useState("");
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/direct-recruitment/config`).then((response) => setVideoUrl((response.data.video_url || "").trim())).catch(() => {});
     axios.get(`${API}/recruitment-guarantee`).then((response) => setGuaranteeConfigured(Boolean(response.data.configured))).catch(() => {});
   }, []);
-
-  const handleGetStarted = async () => {
-    setBusy(true);
-    setCtaNotice("");
-    try {
-      const response = await axios.post(
-        `${API}/payments/rooney-checkout`,
-        { origin_url: window.location.origin, internal_test: reviewMode },
-        { withCredentials: true },
-      );
-      window.location.href = response.data.checkout_url;
-    } catch (err) {
-      setCtaNotice(err.response?.status === 403 ? "Enrollment opening shortly." : "We could not start checkout. Please try again in a moment.");
-      setBusy(false);
-    }
-  };
 
   return (
     <FunnelLayout restrained>
@@ -101,12 +79,23 @@ export default function RecruitWithRooneyPage() {
           )}
         </section>
 
-        <section className="rwr-section rwr-offer" data-testid="rwr-offer-section">
-          <p className="rwr-reference-price" data-testid="rwr-reference-price"><span className="rwr-reference-label">Standard Price</span><s>$2,497</s></p>
-          <h2 className="rwr-action-price" data-testid="rwr-action-price">Take Action Today: $997</h2>
-          {cancelled && <p className="rwr-cta-notice" data-testid="rwr-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button" onClick={handleGetStarted} disabled={busy} data-testid="rwr-cta-button">{busy ? "Preparing Checkout…" : "GET STARTED NOW — $997"}</button>
-          {ctaNotice && <p className="rwr-cta-notice" data-testid="rwr-cta-notice">{ctaNotice}</p>}
+        <section className="ar-offers rwr-offers" data-testid="rwr-offer-section">
+          <h2 data-testid="rwr-offers-heading">Two Ways I Can Help You Recruit Your Board</h2>
+          <p className="ar-offers-supporting" data-testid="rwr-offers-supporting">Choose the level of support that works best for you.</p>
+          <div className="ar-offer-grid">
+            <article className="ar-offer-card" data-testid="rwr-diy-card">
+              <h3 data-testid="rwr-diy-heading">Recruit Your Board Yourself</h3>
+              <p className="ar-offer-price" data-testid="rwr-diy-price">$497</p>
+              <p className="ar-offer-copy" data-testid="rwr-diy-copy">Watch me run the process, follow what I do, use the execution materials we provide and reach out whenever you need help along the way.</p>
+              <Link className="button" to="/recruit-your-board-yourself" data-testid="rwr-diy-button">DO IT YOURSELF — $497</Link>
+            </article>
+            <article className="ar-offer-card" data-testid="rwr-dwm-card">
+              <h3 data-testid="rwr-dwm-heading">Recruit Your Board With Me</h3>
+              <p className="ar-offer-price" data-testid="rwr-dwm-price"><s className="rwr-dwm-reference" data-testid="rwr-dwm-reference-price">$3,997</s> $1,997</p>
+              <p className="ar-offer-copy" data-testid="rwr-dwm-copy">We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.</p>
+              <Link className="button" to="/board-recruitment-proposal" data-testid="rwr-dwm-button">DO IT WITH ME — $1,997</Link>
+            </article>
+          </div>
         </section>
 
         <TestimonialCarousel heading="See What Other Nonprofit Leaders Have Said" idPrefix="rwr" priorityNames={TESTIMONIAL_PRIORITY} />

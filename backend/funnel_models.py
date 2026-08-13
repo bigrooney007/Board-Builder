@@ -14,9 +14,9 @@ class FunnelLeadCreate(BaseModel):
     phone: str = Field(min_length=1)
     organization: str = Field(min_length=1)
     website: Optional[str] = ""
-    city: str = Field(min_length=1)
-    state_region: str = Field(min_length=1)
-    country: str = Field(min_length=1)
+    city: str = ""
+    state_region: str = ""
+    country: str = ""
     answers: Dict[str, Any]
 
 

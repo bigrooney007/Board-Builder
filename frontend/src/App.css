@@ -1111,6 +1111,20 @@ p { line-height: 1.72; }
 .intake-card p { color: #45544b; line-height: 1.65; margin: 0 0 18px; }
 .intake-blocked-links { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 
+/* ---------- Recruit With Rooney two-offer section ---------- */
+.rwr-offers { padding-top: 26px; }
+.rwr-dwm-reference { color: #9fb4a9; font-weight: 600; font-size: 0.62em; margin-right: 10px; }
+
+/* ---------- DIY Start Here ---------- */
+.sh-blocks { max-width: 820px; margin: 0 auto; padding: 50px 24px 6px; display: grid; gap: 18px; }
+.sh-block { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 28px; text-align: center; box-shadow: 0 16px 38px rgba(8, 61, 42, 0.06); }
+.sh-block-icon { display: inline-flex; width: 46px; height: 46px; border-radius: 50%; background: #edf8f3; color: var(--green); align-items: center; justify-content: center; margin-bottom: 10px; }
+.sh-block h2 { color: var(--forest); font-size: 21px; margin: 0 0 10px; }
+.sh-block p { color: var(--ink); font-size: 16px; line-height: 1.7; margin: 0 0 8px; }
+.sh-help-label { font-weight: 800; color: var(--forest); }
+.sh-cta { text-align: center; padding: 28px 24px 84px; }
+.sh-loading { text-align: center; padding: 90px 0; color: #56645c; }
+
 @media (max-width: 860px) {
   .ar-hero-photo { max-width: 250px; }
   .ar-offer-grid { grid-template-columns: 1fr; }

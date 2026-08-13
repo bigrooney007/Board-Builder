@@ -53,6 +53,8 @@ export default function BoardRecruitmentIntakePage() {
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
   const [gate, setGate] = useState(sessionId ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
+  const [purchaseSource, setPurchaseSource] = useState("");
+  const [nextUrl, setNextUrl] = useState("");
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(INITIAL);
   const [errors, setErrors] = useState({});
@@ -68,6 +70,7 @@ export default function BoardRecruitmentIntakePage() {
       try {
         const response = await axios.get(`${API}/board-recruitment-intake/context`, { params: { session_id: sessionId } });
         setCalendlyUrl(response.data.calendly_url);
+        setPurchaseSource(response.data.purchase_source);
         setForm((current) => ({
           ...current,
           your_name: current.your_name || response.data.prefill.name || "",
@@ -149,6 +152,7 @@ export default function BoardRecruitmentIntakePage() {
       });
       if (form.max_board_size_unknown) payload.max_board_size = "Not Specified / I Don't Know";
       const response = await axios.post(`${API}/board-recruitment-intake/submit`, payload);
+      setNextUrl(response.data.redirect_url);
       setGate("done");
       setTimeout(() => window.location.replace(response.data.redirect_url), 1500);
     } catch (error) {
@@ -176,7 +180,7 @@ export default function BoardRecruitmentIntakePage() {
             <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:</p>
             <div className="intake-blocked-links">
               <Link className="button" to="/recruit-your-board-yourself" data-testid="intake-blocked-diy-link">Do It Yourself — $497</Link>
-              <Link className="button button-outline" to="/board-recruitment-proposal" data-testid="intake-blocked-dwm-link">Do It With Me — $1,998.50</Link>
+              <Link className="button button-outline" to="/board-recruitment-proposal" data-testid="intake-blocked-dwm-link">Do It With Me — $1,997</Link>
             </div>
           </div>
         )}
@@ -184,9 +188,19 @@ export default function BoardRecruitmentIntakePage() {
         {gate === "done" && (
           <div className="intake-card" data-testid="intake-done">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
-            <h2>Let's Schedule Your Call With Rooney</h2>
-            <p>Taking you to the calendar…</p>
-            <a className="button" href={calendlyUrl} data-testid="intake-calendly-link">Open the Calendar</a>
+            {purchaseSource === "direct_diy_board_recruitment_497" ? (
+              <>
+                <h2>You're Ready to Start</h2>
+                <p>Taking you to your start page…</p>
+                <a className="button" href={nextUrl || "/recruitment-start-here"} data-testid="intake-start-here-link">Open My Start Page</a>
+              </>
+            ) : (
+              <>
+                <h2>Let's Schedule Your Call With Rooney</h2>
+                <p>Taking you to the calendar…</p>
+                <a className="button" href={nextUrl || calendlyUrl} data-testid="intake-calendly-link">Open the Calendar</a>
+              </>
+            )}
           </div>
         )}
 
