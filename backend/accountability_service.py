@@ -128,9 +128,9 @@ async def current_stage(db, user_id: str) -> dict:
     if not records:
         return {"stage": "not_started", "module": 1}
     completed = {record["module_number"] for record in records if record.get("completed")}
-    if all(number in completed for number in range(1, 7)):
-        return {"stage": "completed", "module": 6}
-    module = next(number for number in range(1, 7) if number not in completed)
+    if all(number in completed for number in range(1, 6)):
+        return {"stage": "completed", "module": 5}
+    module = next(number for number in range(1, 6) if number not in completed)
     return {"stage": f"module{module}", "module": module}
 
 

@@ -1,5 +1,7 @@
-"""Static Phase 2 course structure for the Recruitment programs.
+"""Static course structure for the Recruitment programs — five-step journey.
 Video URLs are configurable in the database (course_videos collection) — no code change needed.
+The former separate "Build Your Recruitment Strategy" module is retired from the active journey;
+its historical data (progress, generated strategies) is preserved in the database untouched.
 """
 
 LINKEDIN_LAUNCH_INSTRUCTIONS = [
@@ -27,15 +29,6 @@ BASIC_MODULES = [
     },
     {
         "number": 2,
-        "title": "Build Your Recruitment Strategy",
-        "resources": [
-            {"title": "Recruitment Strategy Template", "content": "Define who you are recruiting, why they would serve, where you will find them, the message you will use, who executes each step and how you will measure progress."},
-            {"title": "Recruitment Timeline Template", "content": "Plan your campaign week by week: preparation, launch, active recruitment, interviews, references, selection and onboarding — with owners and dates for each stage."},
-            {"title": "Recruitment Channel Guide", "content": "A guide to the recruitment channels that work for nonprofit boards: LinkedIn, professional associations, corporate volunteer programs, community networks, existing supporters and personal introductions — and how to use each one."},
-        ],
-    },
-    {
-        "number": 3,
         "title": "Launch Your Recruitment Campaign",
         "resources": [
             {"title": "Board Opportunity Template", "content": "A one-page board opportunity describing your mission, the impact of the organization, the role, the expectations, the time commitment and how to apply."},
@@ -47,8 +40,8 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 4,
-        "title": "Interview Your Applicants",
+        "number": 3,
+        "title": "Select and Interview Your Applicants",
         "resources": [
             {"title": "Interview Invitation Template", "content": "An email inviting qualified applicants to a board interview, including scheduling details and what to expect."},
             {"title": "General Board Interview Guide", "content": "Structured interview questions covering motivation, relevant experience, fundraising willingness, availability, governance understanding and alignment with your mission."},
@@ -57,7 +50,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 5,
+        "number": 4,
         "title": "Complete References and Background Checks",
         "resources": [
             {"title": "Reference Request Email", "content": "An email asking an applicant’s reference for a short call or written response about the applicant’s reliability, follow-through and professional strengths."},
@@ -67,7 +60,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 6,
+        "number": 5,
         "title": "Onboard Your New Board Members",
         "resources": [
             {"title": "Onboarding Agenda", "content": "A structured agenda for the first onboarding session: welcome, mission and history, programs, finances, board expectations, key documents and first responsibilities."},
@@ -88,40 +81,25 @@ SELF_GUIDED_MODULES = [
         "workspace": {
             "heading": "Your Board Recruitment Workspace",
             "text": "This is where you will complete the deeper organizational and board profile used throughout your recruitment process.",
-            "note": "Phase 3 will activate the execution workspace.",
         },
         "disabled_tools": [],
     },
     {
         "number": 2,
-        "title": "Build Your Recruitment Strategy",
-        "disabled_tools": ["Generate My Board Recruitment Strategy"],
-        "tools_helper": "This tool will become available when the Recruitment Execution Tools are activated.",
-    },
-    {
-        "number": 3,
         "title": "Launch Your Recruitment Campaign",
-        "disabled_tools": [
-            "Generate My Board Opportunity",
-            "Generate My Board Application Form",
-            "Generate My LinkedIn Recruitment Post",
-            "Generate My Social Media Recruitment Posts",
-            "Generate My Recruitment Emails",
-            "Generate My LinkedIn Launch Instructions",
-        ],
-        "tools_helper": "These tools will become available when the Recruitment Execution Tools are activated.",
+        "disabled_tools": [],
         "linkedin_section": {
             "heading": "Launching Your Recruitment Campaign on LinkedIn",
             "paragraphs": [
-                "When the Recruitment Execution Tools are activated, the LinkedIn Launch Instructions generator will provide practical instructions for taking your completed board opportunity and actually launching it through LinkedIn.",
-                "The instructions will explain where to post, how to structure the post, how to use your application link, how to ask others to share the opportunity, how to contact potential prospects, how to follow up, and how to maintain campaign activity until you have enough qualified applicants.",
+                "The LinkedIn Launch Instructions generator provides practical instructions for taking your completed board opportunity and actually launching it through LinkedIn.",
+                "The instructions explain where to post, how to structure the post, how to use your application link, how to ask others to share the opportunity, how to contact potential prospects, how to follow up, and how to maintain campaign activity until you have enough qualified applicants.",
                 "LinkedIn activity is always executed by you — nothing is automated on LinkedIn.",
             ],
         },
     },
     {
-        "number": 4,
-        "title": "Interview Your Applicants",
+        "number": 3,
+        "title": "Select and Interview Your Applicants",
         "future_areas": [
             "Applicant List",
             "Application Answers",
@@ -131,33 +109,18 @@ SELF_GUIDED_MODULES = [
             "Interview Status",
             "After-Interview Email",
         ],
-        "tools_helper": "Applicant management will become available when the Recruitment Execution Tools are activated.",
         "disabled_tools": [],
     },
     {
-        "number": 5,
+        "number": 4,
         "title": "Complete References and Background Checks",
-        "disabled_tools": [
-            "Generate Reference Request Email",
-            "Generate Reference Call Script",
-            "Generate Reference Evaluation Form",
-        ],
-        "tools_helper": "These tools will become available when the Recruitment Execution Tools are activated.",
-        "background_note": "External background-check resources will be available here.",
+        "disabled_tools": [],
+        "background_note": "External background-check resources are available here.",
     },
     {
-        "number": 6,
+        "number": 5,
         "title": "Onboard Your New Board Members",
-        "disabled_tools": [
-            "Generate My Onboarding Agenda",
-            "Generate My Organization Overview",
-            "Generate My Board Manual",
-            "Generate My Board Member Agreement",
-            "Generate My Confidentiality Agreement",
-            "Generate My Conflict of Interest Agreement",
-            "Generate My New Board Member 90-Day Plan",
-        ],
-        "tools_helper": "These generators will be implemented in Phase 3.",
+        "disabled_tools": [],
     },
 ]
 

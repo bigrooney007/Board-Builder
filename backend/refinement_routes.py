@@ -2,6 +2,7 @@
 owner review progress, branding settings."""
 import csv
 import io
+import logging
 import os
 import re
 import secrets
@@ -17,21 +18,21 @@ from member_auth import authenticate_member, require_entitlement
 from opportunity_emails import _send, _wrap
 from workspace_service import get_current_material, new_id, now_iso
 
+logger = logging.getLogger(__name__)
+
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
 REFEREE_QUESTIONS = [
-    ("reliability", "How would you describe the candidate's reliability and follow-through?"),
-    ("professionalism", "How would you describe the candidate's professionalism?"),
-    ("collaboration", "How would you describe the candidate's ability to work collaboratively with others?"),
-    ("leadership", "How would you describe the candidate's leadership abilities?"),
-    ("strongest_qualities", "What would you describe as the candidate's strongest professional qualities?"),
-    ("board_service_qualities", "Based on your experience with this person, what qualities do you believe they could bring to nonprofit board service?"),
-    ("concerns", "Are there any concerns or considerations you believe the organization should be aware of when considering this individual for a leadership or board position?"),
+    ("capacity", "In what capacity do you know {candidate}, and approximately how long have you known or worked with them?"),
+    ("reliability", "Based on your experience with {candidate}, how would you describe their reliability, professionalism and ability to follow through on responsibilities?"),
+    ("strengths", "What strengths, skills or qualities have you observed that you believe could help {candidate} contribute effectively as a nonprofit board member?"),
+    ("teamwork", "How have you seen {candidate} work with other people, handle responsibility or contribute to a team or organization?"),
 ]
+RECOMMEND_QUESTION = "Based on your experience, would you feel comfortable recommending {candidate} for board service with {org}? Please explain your response."
 REFEREE_IDENTITY_FIELDS = ["name", "position", "organization", "relationship", "duration"]
-RECOMMEND_OPTIONS = ["Yes", "No", "With Reservations"]
+RECOMMEND_OPTIONS = ["Yes", "No", "I would need more information to say"]
 
-SENDABLE_TYPES = {"after_interview_thank_you", "conditional_offer", "formal_appointment_email", "portfolio_email", "after_interview_rejection", "general_rejection_email", "interview_invitation"}
+SENDABLE_TYPES = {"after_interview_thank_you", "before_interview_rejection", "conditional_offer", "formal_appointment_email", "portfolio_email", "after_interview_rejection", "general_rejection_email", "interview_invitation"}
 
 
 class SendCandidateForm(BaseModel):
@@ -61,6 +62,19 @@ class OnboardingSession(BaseModel):
     location: str = ""
     prepare: str = ""
     status: str = "Scheduled"
+
+
+class FirstMeetingDetails(BaseModel):
+    date: str = ""
+    time: str = ""
+    timezone: str = ""
+    format: str = ""
+    link: str = ""
+    location: str = ""
+    meeting_id: str = ""
+    passcode: str = ""
+    chat_link: str = ""
+    instructions: str = ""
 
 
 class FirstMeetingSend(BaseModel):
@@ -96,6 +110,18 @@ def create_refinement_router(db) -> APIRouter:
 
     def origin_of(request: Request) -> str:
         return os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+
+    async def org_name_of(user_id: str) -> str:
+        opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1})
+        return (opportunity or {}).get("organization_name", "the organization")
+
+    async def notify_owner(user_id: str, subject: str, body_html: str, title: str):
+        owner = await db.members.find_one({"user_id": user_id}, {"_id": 0, "email": 1})
+        if owner and owner.get("email"):
+            try:
+                await _send("NONPROFIT_SENDER", owner["email"], subject, _wrap(title, body_html))
+            except Exception:
+                logger.exception("Owner notification failed")
 
     # ---------- Reference process ----------
     @router.post("/workspace/reference-process", status_code=201)
@@ -141,15 +167,16 @@ def create_refinement_router(db) -> APIRouter:
         opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1})
         org = (opportunity or {}).get("organization_name", "the organization")
         url = f"{origin_of(request)}/reference-form/{process['candidate_token']}"
-        subject = payload.subject.strip() or f"Reference Information Requested — {org}"
+        subject = payload.subject.strip() or f"Reference Information Needed | {org} Board Application"
         if payload.body.strip():
             import html as _html
             paragraphs = "".join(f"<p>{_html.escape(line)}</p>" if line.strip() else "<br/>" for line in payload.body.split("\n"))
             body = paragraphs + f"<p><a href='{url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Provide My References</a></p>"
         else:
-            body = (f"<p>Hello {process.get('candidate_name') or 'there'},</p>"
-                    f"<p>We are continuing with your board recruitment process at {org}. As part of our appointment process, please provide two professional references using the secure form below.</p>"
+            body = (f"<p>Dear {process.get('candidate_name') or 'there'},</p>"
+                    f"<p>Thank you for continuing through the board recruitment process with {org}. As part of completing our reference process, please provide two professional references using the secure form below.</p>"
                     f"<p><a href='{url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Provide My References</a></p>"
+                    f"<p>Once your references are submitted, {org} will contact each reference directly.</p>"
                     f"<p>Thank you for your continued interest in serving with us.</p>")
         try:
             await _send("BOARD_APPLICANT_SENDER", email, subject, _wrap("Reference Information Requested", body))
@@ -178,15 +205,17 @@ def create_refinement_router(db) -> APIRouter:
         return {"status": "Sent"}
 
     async def email_referee(request: Request, process: dict, reference: dict):
-        opportunity = await db.opportunities.find_one({"user_id": process["owner_user_id"]}, {"_id": 0, "organization_name": 1})
-        org = (opportunity or {}).get("organization_name", "the organization")
+        org = await org_name_of(process["owner_user_id"])
+        candidate = process.get("candidate_name") or "A candidate"
         url = f"{origin_of(request)}/referee-form/{reference['referee_token']}"
-        body = (f"<p>Hello {reference['name']},</p>"
-                f"<p>{process.get('candidate_name') or 'A candidate'} has identified you as a professional reference. {org} is considering them for board service and would value your perspective.</p>"
-                f"<p>Please complete the short confidential reference form below. Your responses are shared only with {org}.</p>"
-                f"<p><a href='{url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Complete the Reference Form</a></p>"
+        first_name = (reference.get("name") or "").split(" ")[0] or "there"
+        body = (f"<p>Dear {first_name},</p>"
+                f"<p>{candidate} has listed you as a professional reference as part of their application to serve on the Board of {org}.</p>"
+                f"<p>{org} is completing its board recruitment process and would appreciate your perspective based on your experience with {candidate}. The questionnaire contains five short questions.</p>"
+                f"<p><a href='{url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Provide Reference</a></p>"
+                f"<p>Your response will be shared with the organization reviewing the candidate.</p>"
                 f"<p>Thank you for your time.</p>")
-        await _send("BOARD_APPLICANT_SENDER", reference["email"], f"Reference Requested for {process.get('candidate_name', '')} — {org}", _wrap("Reference Requested", body))
+        await _send("BOARD_APPLICANT_SENDER", reference["email"], f"Reference Request | {candidate} — {org} Board Application", _wrap("Reference Request", body))
         await db.reference_processes.update_one(
             {"process_id": process["process_id"], "references.reference_id": reference["reference_id"]},
             {"$set": {"references.$.status": "Sent", "references.$.sent_at": now_iso(), "updated_at": now_iso()}})
@@ -223,7 +252,7 @@ def create_refinement_router(db) -> APIRouter:
                 "name": str(entry.get("name", ""))[:200], "position": str(entry.get("position", ""))[:200],
                 "organization": str(entry.get("organization", ""))[:200], "relationship": str(entry.get("relationship", ""))[:300],
                 "email": email, "phone": str(entry.get("phone", ""))[:50], "duration": str(entry.get("duration", ""))[:200],
-                "status": "Not Sent", "response": None,
+                "status": "Ready to Contact", "response": None,
             })
         if len(references) != 2:
             raise HTTPException(status_code=422, detail="Please provide two references")
@@ -231,28 +260,32 @@ def create_refinement_router(db) -> APIRouter:
             {"$set": {"references": references, "status": "References Submitted", "references_submitted_at": now_iso(), "updated_at": now_iso()}})
         await db.opportunity_applications.update_one({"application_id": process["application_id"]},
             {"$set": {"reference_check_status": "References Submitted"}})
-        process["references"] = references
-        for reference in references:
-            try:
-                await email_referee(request, process, reference)
-            except Exception:
-                pass
-        return {"status": "submitted", "message": "Thank you. Your references have been recorded and each referee will receive a secure reference form."}
+        candidate = process.get("candidate_name") or "Your candidate"
+        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/4"
+        await notify_owner(process["owner_user_id"], f"References Submitted | {candidate}",
+                           f"<p><strong>{candidate}</strong> has submitted their reference information.</p>"
+                           f"<p>Review who they listed, then email each reference for confirmation when you are ready — nothing is sent to the references until you choose to contact them.</p>"
+                           f"<p><a href='{review_url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Review References</a></p>",
+                           "References Submitted")
+        return {"status": "submitted", "message": "Thank you. Your references have been recorded and shared with the organization."}
 
     @router.get("/public/referee-form/{token}")
     async def view_referee_form(token: str):
-        process = await db.reference_processes.find_one({"references.referee_token": token}, {"_id": 0, "candidate_name": 1, "references": 1})
+        process = await db.reference_processes.find_one({"references.referee_token": token}, {"_id": 0, "candidate_name": 1, "references": 1, "owner_user_id": 1})
         if not process:
             raise HTTPException(status_code=404, detail="This form is not available")
         reference = next(r for r in process["references"] if r["referee_token"] == token)
-        return {"candidate_name": process["candidate_name"], "referee_name": reference["name"],
+        org = await org_name_of(process["owner_user_id"])
+        candidate = process["candidate_name"]
+        return {"candidate_name": candidate, "referee_name": reference["name"], "organization_name": org,
                 "completed": reference["status"] == "Completed",
                 "identity": {field: reference.get(field, "") for field in REFEREE_IDENTITY_FIELDS},
-                "questions": [{"id": qid, "label": label} for qid, label in REFEREE_QUESTIONS],
+                "questions": [{"id": qid, "label": label.format(candidate=candidate, org=org)} for qid, label in REFEREE_QUESTIONS],
+                "recommend_question": RECOMMEND_QUESTION.format(candidate=candidate, org=org),
                 "recommend_options": RECOMMEND_OPTIONS}
 
     @router.post("/public/referee-form/{token}", status_code=201)
-    async def submit_referee_form(token: str, payload: dict):
+    async def submit_referee_form(token: str, payload: dict, request: Request):
         process = await db.reference_processes.find_one({"references.referee_token": token}, {"_id": 0})
         if not process:
             raise HTTPException(status_code=404, detail="This form is not available")
@@ -261,12 +294,17 @@ def create_refinement_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This reference has already been completed")
         missing = [label for qid, label in REFEREE_QUESTIONS if not str(payload.get(qid, "")).strip()]
         if missing:
-            raise HTTPException(status_code=422, detail="Please answer every question. Only the additional comments are optional.")
+            raise HTTPException(status_code=422, detail="Please answer every question.")
         if payload.get("recommend") not in RECOMMEND_OPTIONS:
-            raise HTTPException(status_code=422, detail="Please choose whether you would recommend this individual (Yes, No, or With Reservations)")
+            raise HTTPException(status_code=422, detail="Please choose Yes, No, or I would need more information to say")
+        explanation = str(payload.get("explanation", "") or payload.get("comments", "")).strip()
+        if not explanation:
+            raise HTTPException(status_code=422, detail="Please explain your response to the final question")
+        if not payload.get("declaration_confirmed"):
+            raise HTTPException(status_code=422, detail="Please confirm that the information you provided reflects your own experience and knowledge of the candidate")
         response = {qid: str(payload.get(qid, ""))[:4000] for qid, _ in REFEREE_QUESTIONS}
         response["recommend"] = payload["recommend"]
-        response["comments"] = str(payload.get("comments", ""))[:4000]
+        response["explanation"] = explanation[:4000]
         identity = {field: str(payload.get(f"identity_{field}", reference.get(field, "")))[:300] for field in REFEREE_IDENTITY_FIELDS}
         await db.reference_processes.update_one(
             {"process_id": process["process_id"], "references.referee_token": token},
@@ -278,7 +316,13 @@ def create_refinement_router(db) -> APIRouter:
             await db.reference_processes.update_one({"process_id": process["process_id"]}, {"$set": {"status": "Completed"}})
             await db.opportunity_applications.update_one({"application_id": process["application_id"]},
                 {"$set": {"reference_check_status": "Completed"}})
-        return {"status": "submitted", "message": "Thank you. Your reference has been recorded confidentially."}
+        candidate = process.get("candidate_name") or "your candidate"
+        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/4"
+        await notify_owner(process["owner_user_id"], f"Reference Received | {candidate}",
+                           f"<p>A reference response has been received for <strong>{candidate}</strong> from <strong>{identity.get('name') or reference['name']}</strong>.</p>"
+                           f"<p><a href='{review_url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Review Reference</a></p>",
+                           "Reference Received")
+        return {"status": "submitted", "message": "Thank you. Your reference has been submitted."}
 
     # ---------- Send generated applicant emails ----------
     @router.post("/workspace/send-material")
@@ -310,6 +354,10 @@ def create_refinement_router(db) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"The email could not be sent: {str(exc)[:200]}") from exc
         updates = {f"emails_sent.{payload.type}": now_iso(), "updated_at": now_iso()}
+        if payload.type == "interview_invitation" and application.get("status") in {"Applied", "Reviewing", "New"}:
+            updates["status"] = "Interview Invited"
+        if payload.type == "before_interview_rejection":
+            updates["status"] = "Not Moving to Interview"
         if payload.type == "conditional_offer" and application.get("status") not in {"Selected"}:
             updates["status"] = "Conditional Appointment"
         if payload.type == "formal_appointment_email":
@@ -339,6 +387,21 @@ def create_refinement_router(db) -> APIRouter:
         return {"status": "saved", "session": session}
 
     # ---------- First board meeting invitation send ----------
+    @router.put("/workspace/first-meeting")
+    async def save_first_meeting(payload: FirstMeetingDetails, request: Request):
+        member = await current_member(request)
+        if not payload.date.strip() or not payload.time.strip() or not payload.timezone.strip():
+            raise HTTPException(status_code=422, detail="Meeting date, time and timezone are required")
+        await db.recruitment_profiles.update_one({"user_id": member["user_id"]},
+            {"$set": {"first_meeting": payload.model_dump(), "updated_at": now_iso()}}, upsert=True)
+        return {"status": "saved"}
+
+    @router.get("/workspace/first-meeting")
+    async def get_first_meeting(request: Request):
+        member = await current_member(request)
+        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "first_meeting": 1})
+        return {"first_meeting": (profile or {}).get("first_meeting", {})}
+
     @router.post("/workspace/send-first-meeting")
     async def send_first_meeting(payload: FirstMeetingSend, request: Request):
         member = await current_member(request)

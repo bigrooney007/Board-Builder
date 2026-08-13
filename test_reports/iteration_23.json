@@ -1,0 +1,49 @@
+{
+  "summary": "Batch 1 (Five-Step Recruitment restructure) verification complete. 16/16 pytest backend cases pass. Playwright covers course overview, module routing 1..5, page titles, eyebrow 'Step N of 5', Module 2 readiness (no strategy), KnownInfo persistence across sessions, fallback inputs for empty profile, and public /recruit/process shows 5 stages. All acceptance criteria met.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Module 5 (Onboarding) — 'Save Onboarding Session' panel", "issues": ["Uses browser default date/time picker (mm/dd/yyyy, --:--:--) instead of a styled/shadcn calendar. Pre-existing, not introduced by Batch 1."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_batch1_five_step_restructure.py",
+    "/app/test_reports/pytest/batch1_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "course_routes.merged_course computes percent using len(modules) rather than filtering module_number<=5. If any doc with module_number 99 ever leaks into progress list, it currently cannot because merged_course only reads modules 1..5 (via loop over static list). Verified retired 99 rows do not affect /courses/recruitment/self-guided nor /courses/progress percent computation.",
+    "board_intake_routes.merge_into_recruitment_profile correctly preserves existing non-empty values (verified). No duplicate recruitment_profile docs produced.",
+    "workspace_routes.opportunity_readiness returns exactly {opportunity_saved, application_saved} — 'strategy_approved' fully removed. Publish blocks unless both true.",
+    "five_step_migration is idempotent (guarded by migrations collection with key 'five_step_recruitment_v1'); progress docs get legacy_module_number + five_step_migrated; retired module 2 rows -> 99 with retired_strategy=true; generated_materials type recruitment_strategy has module 0 (preserved).",
+    "Frontend uses uppercase CSS for '.eyebrow' — 'Step N of 5' text is present in DOM as sent-case ('Step 1 of 5') and displayed uppercase, correct."
+  ],
+  "updated_files": ["/app/backend/tests/test_batch1_five_step_restructure.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem ; member module-tester@example.com / ModuleTest123!",
+  "seed_data_creation": "Test members TEST_full_*/TEST_empty_*/TEST_basic_* created inside pytest fixtures (session scope) and deleted in teardown. Temporarily set module-tester recruitment_profiles.data to KnownInfo values during Playwright persistence check, then reset to {} at the end of testing.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Older suites in /app/backend/tests assume 6-module structure and will fail; use test_batch1_five_step_restructure.py as the fresh baseline. Run pytest with env vars REACT_APP_BACKEND_URL, MONGO_URL, DB_NAME set (env is not auto-propagated). Use `-o addopts=` to bypass repo pytest.ini xdist flag which conflicts on this container.",
+  "verified_features": [
+    "GET /api/courses/recruitment/self-guided returns 5 modules with exact titles + correct videos in order",
+    "GET /api/courses/recruitment/basic returns 5 modules with same titles+videos (member entitlement recruitment_basic)",
+    "POST /api/courses/progress accepts module_number 1-5, rejects 6 with 422, computes percent over 5, ignores retired module_number 99",
+    "Migration recorded with key five_step_recruitment_v1; migrated progress carries legacy_module_number + five_step_migrated; retired records preserved (module 99); generated_materials.type=recruitment_strategy preserved with module 0",
+    "POST /api/board-recruitment-intake/submit merges into recruitment_profiles WITHOUT overwriting existing non-empty values and WITHOUT duplicating docs; new fields contact_name, personal_linkedin_url, current_board_strengths, board_challenges land in data; meeting_frequency, board_term, time_expectation land in strategy_intake",
+    "GET /api/board-recruitment-intake/context returns organization_prefill of known fields",
+    "GET /api/workspace/opportunity readiness object has only opportunity_saved and application_saved (no strategy_approved)",
+    "PATCH /api/admin/course-videos rejects module_number 6 (422) and accepts 1",
+    "/api/members/dashboard shows modules_total 5",
+    "Tenant isolation: member A cannot see member B's workspace profile",
+    "UI course overview shows 'STEP 1..5' + '0 of 5 steps finished', module pages 1..5 render Module1Profile / Module3Launch / Module4Applicants / Module5References / Module6Onboarding respectively with testids module1-workspace / module3-workspace / module4-workspace / module5-workspace / module6-workspace",
+    "document.title on each module = 'Step N | <title> | Nonprofit Board Builder'",
+    "Module 2 readiness list contains only Board Opportunity + Board Application items (no Recruitment Strategy)",
+    "Module 1 shows module1-known-info summary when profile has data and hides org/mission/desired-skills inputs; shows fallback inputs + module1-missing-info-note when profile is empty",
+    "Persistence: KnownInfo survives logout/login round-trip",
+    "Public /recruit/process shows 5 stages without any 'Build Your Recruitment Strategy'",
+    "/recruitment-start-here redirects to /login when logged out"
+  ]
+}

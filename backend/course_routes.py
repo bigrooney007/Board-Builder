@@ -14,7 +14,7 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 
 class ProgressRequest(BaseModel):
     product: str
-    module_number: int = Field(ge=1, le=6)
+    module_number: int = Field(ge=1, le=5)
     action: str
 
     @field_validator("product")
@@ -35,7 +35,7 @@ class ProgressRequest(BaseModel):
 class SupportRequestCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     product: str
-    module_number: int = Field(ge=1, le=6)
+    module_number: int = Field(ge=1, le=5)
     support_type: str
     message: str = Field(min_length=1)
 
@@ -57,7 +57,7 @@ class SupportRequestCreate(BaseModel):
 class VideoConfig(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     product: str
-    module_number: int = Field(ge=1, le=6)
+    module_number: int = Field(ge=1, le=5)
     youtube_url: Optional[str] = ""
 
     @field_validator("product")
@@ -124,9 +124,9 @@ def create_course_router(db) -> APIRouter:
             {"user_id": member["user_id"], "product": payload.product, "module_number": payload.module_number},
             update, upsert=True,
         )
-        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product}, {"_id": 0}).to_list(20)
+        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": {"$lte": 5}}, {"_id": 0}).to_list(20)
         completed = sum(1 for record in records if record.get("completed"))
-        return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / 6 * 100)}
+        return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / 5 * 100)}
 
     @router.post("/support-requests", status_code=201)
     async def create_support_request(payload: SupportRequestCreate, request: Request):

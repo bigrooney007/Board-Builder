@@ -32,7 +32,7 @@ export const usePageMeta = (title, description, noindex = false) => {
 export const PAGE_META = {
   home: ["Nonprofit Board Builder | Build the Board Your Mission Deserves", "Build a stronger nonprofit board with committed people who can help raise money, strengthen your organization and move your mission forward. Recruit, reactivate and activate your board with Nonprofit Board Builder."],
   recruitment: ["Recruit Nonprofit Board Members | Nonprofit Board Builder", "Start recruiting committed, capable board members with the skills, experience, relationships and fundraising capacity your nonprofit needs to move forward."],
-  process: ["Build the Board Your Nonprofit Needs | Nonprofit Board Builder", "See the six stages for building a committed nonprofit board that strengthens your organization, supports fundraising and helps move your mission forward."],
+  process: ["Build the Board Your Nonprofit Needs | Nonprofit Board Builder", "See the five steps for building a committed nonprofit board that strengthens your organization, supports fundraising and helps move your mission forward."],
   checkout: ["Guided Board Recruitment | Nonprofit Board Builder", "Get the guidance, resources and support you need to recruit committed, capable board members and build the stronger board your nonprofit needs."],
   recruitWithRooney: ["Recruit With Rooney | Nonprofit Board Builder", "Recruit the board members your nonprofit needs with direct guidance and support from Rooney Akpesiri."],
   boardRecruitmentProposal: ["Board Recruitment Project Proposal | Nonprofit Board Builder", "Work directly with Rooney to recruit and onboard the skilled board members your nonprofit needs."],

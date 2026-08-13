@@ -1,36 +1,41 @@
 <analysis>**original_problem_statement**: 
-The user requested a new finite build containing a 3-batch Recruit With Rooney (97) flow, and subsequently a separate Board Recruitment Project Proposal (,998.50) flow that redirects to Calendly. 
-PRODUCT REQUIREMENTS: Strict adherence to existing branding, preserving the existing 97 Recruitment flow without modifications, using the canonical testimonial source, no AI placeholders, proper Stripe test/prod setup, tracking purchase sources, and implementing precise post-purchase routing (Module 1 for the 97 offer, Calendly for the 998.50 offer).
+The user requested a massive simplification of the Board Recruitment Funnel across multiple batches. The goal was to build a new Linktree-style  lead page, simplify the direct offer pages (Do It Yourself - 97, Do It With Me - 997), implement a shared post-payment  form, and completely automate the DIY customer journey so that 97 customers go straight from payment to intake to a new  page to Module 1, bypassing any Calendly requirement. DWM (997) customers still route to Calendly. 
+
+PRODUCT REQUIREMENTS: Strict adherence to existing branding, absolute preservation of historical 97 customer records/access/automation, removal of explicit 97 pricing from shared modules, and integration of six specific YouTube training videos into the recruitment modules. 
 
 **User's preferred language**: English (INSTRUCT next agent to respond in English only)
 
 **what currently exists?**: 
-A fully functional React + FastAPI + MongoDB SaaS (Nonprofit Board Builder) offering a 97 guided board recruitment system, a new 97 Recruit With Rooney direct recruitment tier (with 21-day automated accountability), and a new 998.50 Board Recruitment Project Proposal that funnels to Calendly. The system handles AI PDF generation, Resend emails, and Stripe checkouts.
+A fully functional React + FastAPI + MongoDB Nonprofit Board Builder SaaS. It contains a robust multi-tier recruitment funnel, secure Stripe integrations, dynamic UI routing based on purchase source, an automated AI document generation engine, and a 6-step gated module framework with embedded video training.
 
 **Last working item**: 
-    - Last item agent was working: Building and verifying the direct Board Recruitment Project Proposal page (), connecting it to a new 998.50 Stripe product, and implementing a post-purchase redirect to Calendly.
-    - Status: NONE (Task completed and verified)
+    - Last item agent was working: Completing Batches 1, 2, and 3 of the final Recruitment Funnel Update. This included simplifying the public  form, updating the DWM Stripe live price from 998.50 to 997, updating the video on , and building the automated DIY post-payment journey ().
+    - Status: USER VERIFICATION PENDING (Agent completed all builds and testing agent verified successfully in . Awaiting user's next command, likely to deploy to production).
     - Agent Testing Done: Y
-    - Which testing method agent to use? both (testing agent + screenshot tool via E2E test card simulation)
+    - Which testing method agent to use? NA (already tested via testing agent)
     - User Testing Done: N
 
 **All Pending/In progress Issue list**: 
-None. All requested pages, flows, and Stripe checkouts have been successfully executed and verified.
+None. All requested updates have been successfully implemented and tested.
 
 **In progress Task List**: 
 None.
 
 **Upcoming and Future Tasks**:
-  - Deploy all newly built pages (, ), background accountability services, and Stripe configurations to production. (Priority: P0)
-  - Obtain and insert the YouTube URL for the  video placeholder from the user. (Priority: P1)
-  - Enable the public live mode flag for the 97 Recruit With Rooney offer () when the user is ready. (Priority: P1)
+  - Deploy Iteration 22 funnel updates (simplified , 997 pricing,  page) to production. (Priority: P0)
+  - Replace AI Resource Generation Prompts: The user explicitly stated that restructuring the materials/prompts inside the Recruitment application will be a SEPARATE task. Do not jump ahead until requested. (Priority: P1)
+  - Build an Intake Dashboard: Expose submitted intake forms in the admin area so the owner can review organizations before Calendly calls. (Priority: P2)
 
 **Completed work in this session**:
-  - Batch 1: Direct 97 Recruit With Rooney sales page () (DONE)
-  - Batch 2: 97 Stripe integration and direct routing to Module 1 (DONE)
-  - Batch 3: 21-day accountability email system via Resend for 97 customers (DONE)
-  - Board Recruitment Project Proposal page () (DONE)
-  - Project Proposal 998.50 Stripe integration and Calendly redirect (DONE)
+  - Created  personal lead page. (DONE)
+  - Created  DIY sales page (97). (DONE)
+  - Updated  DWM sales page and changed actual live Stripe price to ,997. (DONE)
+  - Built  shared multi-step form. (DONE)
+  - Built  instruction page for automated DIY onboarding. (DONE)
+  - Removed visible 97 pricing tags and updated metadata on shared Modules 1–6. (DONE)
+  - Connected 6 specific YouTube training videos to Recruitment Modules 1–6. (DONE)
+  - Simplified public  form. (DONE)
+  - Deployed Iteration 20 and Iteration 21 to production. (DONE)
 
 **Earlier issues found/mentioned but not fixed**:
    - None.
@@ -39,58 +44,62 @@ None.
   - None.
 
 **Code Architecture**:
-  - Frontend: React Context, Tailwind CSS, Shadcn UI ()
+  - Frontend: React Context, Tailwind CSS, Shadcn UI, React Router ()
   - Backend: FastAPI, Asyncio, Motor (MongoDB) ()
-  - Automation: Background tasks (, , ) tracking progress and sending Resend emails.
+  - Stripe Routing: Centralized webhook/payment processing dynamically granting access based on .
 
 **Key Technical Concepts**:
-  - Document Generation: Produces both PDFs and secure hosted HTML links for materials and agreements.
-  - Accountability Email Scheduling: Background asyncio tasks that dynamically query real-time MongoDB user module progress to send relevant Check-ins every 48 hours.
-  - Idempotent Webhooks: Stripe webhook handling strictly prevents duplicate payments or email sequences from being created.
-  - Strict Post-Purchase Routing: Based on  metadata to differentiate flows.
+  - **Dynamic Funnel Routing**: Users are routed to different post-payment flows (Calendly vs. Start Here page) purely based on their Stripe  metadata.
+  - **Data Merging**: Intake form submissions automatically hydrate the canonical recruitment profile to power the downstream AI generation engine.
+  - **Dual Environments**: Application runs in Preview (dev) and Production (Live). Deployments are explicitly triggered by the user via the .
 
 **key DB schema**:
-  -  (org setup, branding)
-  -  (draft and approved AI outputs)
-  -  (secure agreement signing instances)
-  -  (tracks owner review navigation state)
+  -  (org setup, branding, and merged intake data)
+  -  (stores the YouTube URLs mapped to product modules)
   -  / 
-  -  (logs of accountability check-ins sent)
+  -  (tracks public form submissions)
 
 **changes in tech stack**:
   - None.
 
 **All files of reference**:
-  -  (New: 97 sales page)
-  -  (New: 998.50 proposal page)
-  -  (New: Handles 21-day email check-ins based on purchase source)
-  -  (Updated Stripe routing for new offers & Calendly redirect)
-  -  (Updated with new routes)
+  -  (New)
+  -  (New)
+  -  (New)
+  -  (New)
+  -  (New: Handles shared intake submission logic)
+  -  (Updated to handle 997 checkout and new purchase sources)
+  -  (Updated with live product configurations)
+  -  (Updated form validation config)
 
 **Areas that need refactoring**:
-  - None immediately necessary, but frontend funnel routing components remain large. (Do not refactor unless asked).
+  - None strictly necessary. The funnel components are quite numerous but modularized.
 
 **key api endpoints**:
-  -  (Handles , , and  price tiers)
-  - 
+  -  (Handles the 97 and 997 secure Stripe checkouts)
+  -  (Handles multi-step organization intake logic)
+  -  (Handles shortened  form entries)
 
 **Critical Info for New Agent**:
-  - **DUAL ENVIRONMENTS**: The app is LIVE in production. You have TWO environments: Preview (dev) and Production. You can only write code and debug in Preview. To push changes to Production, you MUST use the . If the user reports issues, always clarify which environment they are referring to.
-  - **USER STRICTNESS**: The user is highly meticulous. Follow instructions literally. **Do NOT** add unrequested features, suggest enhancements, alter marketing copy, or refactor code without explicit permission.
-  - **STRIPE METADATA**: The backend heavily relies on  metadata in Stripe checkout sessions (, ) to dictate downstream logic (module routing vs calendly routing, 21-day email enrollments). Keep these intact. 
-  - **TEST PRICES**: Stripe test price IDs created in this session:  is ,  is .
+  - **DUAL ENVIRONMENTS**: The app is LIVE in production (). You can only write code and debug in Preview. To push changes to Production, you MUST use the . If the user reports issues, always clarify which environment they are referring to.
+  - **HISTORICAL DATA PRESERVATION**: It is an absolute, critical mandate from the user: *Never* modify historical 97 purchase records, alter legacy entitlements, or change existing email automation sequences. The new public flows have changed, but old accounts must remain untouched.
+  - **AI PROMPTS**: The user specifically noted that they are NOT satisfied with some of the materials currently being generated but explicitly commanded the agent *NOT* to rewrite prompts yet. This will be a separate task. Do not touch  prompts or  logic unless asked.
 
 **documents and test reports created in this job**:
-  - 
-  - 
+  -  (Funnel batches 1-3 pass)
+  -  (Presentation cleanup pass)
+  -  (Automated DIY journey & pricing update pass)
+  -  (Updated continually)
 
 **Last 10 User Messages and any pending HUMAN messages**: 
-  - The last interactions consisted of sequential instructions for the three batches of Recruit With Rooney, which were completed and verified together. Then, the user provided instructions for the Board Recruitment Project Proposal page and its standalone Calendly redirect flow, which was built, E2E tested with Stripe test cards, and verified.
-  - **Pending Human Messages**: Await the user's next command.
+  - User requested a massive layout presentation cleanup (removing explicit 97 pricing from shared modules, center-aligning funnel pages). Agent completed & deployed.
+  - User requested appending 6 YouTube URLs to Modules 1-6. Agent completed.
+  - User requested a final 3-batch funnel update: simplify  form, update video on , update actual Stripe checkout for DWM to ,997 (from 998.50), and automate the DIY 97 post-payment journey to a new  page. Agent completed and tested fully in .
+  - **Pending Human Message**: Awaiting the user's confirmation to deploy Iteration 22 to production.
 
 **Project Health Check**:
-  - Broken: None.
-  - Mocked: Stripe test mode (Preview environment only).
+  - Broken: None
+  - Mocked: None. The preview environment uses test Stripe keys, but production is configured with live Stripe API keys.
 
 **3rd Party Integrations**:
   - Anthropic Claude via Litellm — uses Emergent LLM Key
@@ -98,13 +107,13 @@ None.
   - Stripe (Payments) — requires User API Key
 
 **Testing status**:
-  - Testing agent used after significant changes: YES (, )
+  - Testing agent used after significant changes: YES (, , )
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None explicitly created outside of  usage.
+  - Test files created: Handled via backend pytest suites.
   - Known regressions: None.
 
 **Credentials to test flow**:
   - Reference 
 
 **What agent forgot to execute**:
-  - Nothing. All tasks, verification checks, and tests were comprehensively executed.</analysis>
+  - Nothing. All items requested in Batches 1, 2, and 3 were thoroughly executed and vetted via the testing agent.</analysis>

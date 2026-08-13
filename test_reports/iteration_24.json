@@ -1,0 +1,63 @@
+{
+  "summary": "Batch 2 (Module 1 blueprint count restructure + Module 2 auto-application + 5 campaign generators + launch flow) verified. 22/22 backend pytest cases pass (8 Claude calls: 1 blueprint@3 + count=7 + Not Sure + 5 campaign types). Playwright confirms Module 1 shows KnownInfo summary with no org questionnaire inputs, Module 2 auto-creates hosted Board Application and renders exactly the 5 campaign cards with Not-Generated badges, no legacy Board Opportunity or Recruitment Strategy cards, publish button + readiness list present, modules 3/4/5 workspaces still render, overview shows 5 steps. Found and FIXED one critical frontend syntax error (see below).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Module1Profile.jsx", "issue": "FIXED — 7 orphan lines (186-192) after the exported component caused Babel SyntaxError 'Unexpected token' at line 186. Frontend refused to compile; entire /app was showing the CRA red error overlay. Removed the leftover fragment; app now compiles and Module 1 renders correctly.", "selector": "n/a", "priority": "CRITICAL (fixed by testing agent)"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_batch2_recruitment_restructure.py",
+    "/app/test_reports/pytest/batch2_results.xml"
+  ],
+  "action_items": [
+    "None blocking. Confirm the Module1Profile.jsx cleanup is acceptable (testing agent removed leftover code fragment)."
+  ],
+  "critical_code_review_comments": [
+    "Module1Profile.jsx had leftover post-export code (`refresh}` etc.) that broke the whole frontend build. Suggests the file was edited without saving cleanly during Batch 2 rewrite — recommend adding a CI compile check.",
+    "workspace_routes.opportunity_readiness correctly returns only application_saved + materials_generated (materials_count/materials_total). Publish blocks with 409 until both true. Verified by test_publish_blocked_without_materials.",
+    "ai_service.GENERATION_TYPES['powerhouse_board_blueprint'] count rule works — verified with new_members_count in {'3','7','Not Sure'}: exactly matching priority_roles length + non-empty recommended_count_statement for 'Not Sure' (extracted number equals produced role count).",
+    "Generate endpoint auto-inserts real apply URL via replace_link + MODULE3_LINK_TYPES context injection. All 5 campaign outputs contain the real /board-opportunities/<slug>/apply URL, none carry [APPLICATION LINK], [Organization Name], or [Mission] placeholders, and each mentions the org name (Harbor Youth Alliance). Verified.",
+    "Publish endpoint email_content derivation correctly falls back to profile + blueprint role names + strategy_intake when board_opportunity material is absent (per spec).",
+    "Duplicate-publish guard via {'broadcast_initiated': {'$ne': True}} update filter returns 409 on second call. Verified.",
+    "Tenant isolation confirmed: another paid member sees empty /workspace/materials and gets 404 on the primary member's material_id."
+  ],
+  "updated_files": [
+    "/app/frontend/src/member/workspace/Module1Profile.jsx (removed orphan lines 186-192 causing SyntaxError)",
+    "/app/backend/tests/test_batch2_recruitment_restructure.py (new file)"
+  ],
+  "success_rate": {"backend": "100% (22/22)", "frontend": "100% after syntax fix"},
+  "test_credentials": "Primary member (leave in DB per instructions): TEST_batch2_main_<hex>@example.com / TestPass123! (recruitment_self_guided, Harbor Youth Alliance profile). UI-only member (also left, contains no material now): TEST_ui_fbd840dd@example.com / TestPass123!. Admin unchanged.",
+  "seed_data_creation": "Pytest session fixtures created TEST_batch2_main_* and TEST_batch2_other_* members with Harbor Youth Alliance profile + strategy intake and cleaned them up at end of session. Additionally created TEST_ui_fbd840dd@example.com manually for Playwright UI verification (left in DB — cleanable via db.members.delete_many({email:/^TEST_/})).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 2 baseline is /app/backend/tests/test_batch2_recruitment_restructure.py. Run with `-o addopts=` and env REACT_APP_BACKEND_URL / MONGO_URL / DB_NAME. Budget 8 Claude calls per full run (~2m40s). Historical materials in DB (board_opportunity, personal_invitation_email, linkedin_launch_instructions, referral_request_message, etc.) are preserved and listed by GET /api/workspace/materials without error — legacy cards no longer render in active Module 2 UI. Old suites assuming Board Opportunity / Recruitment Strategy UI are stale — ignore. Note: continue-to-step-2 link only renders once a blueprint has been generated (guarded by byType.powerhouse_board_blueprint); this is per-spec.",
+  "verified_features": [
+    "POST /api/workspace/generate powerhouse_board_blueprint with new_members_count='3' returns exactly 3 priority_roles with required subfields",
+    "Same endpoint with new_members_count='7' returns exactly 7 priority_roles",
+    "Same endpoint with new_members_count='Not Sure' returns non-empty recommended_count_statement containing 'Recommended Number of New Board Members: N' and priority_roles length == N",
+    "Blueprint material Edit (PUT /materials/{id}) persists (verified via subsequent GET) and Approve (POST /materials/{id}/approve) sets status='Approved'",
+    "GET /api/workspace/opportunity auto-creates opportunity AND auto-sets application_saved=True (no separate generate click needed); returns core_questions list",
+    "Slug derived from organization_name ('harbor-youth-alliance')",
+    "Generate for each of 5 campaign types (board_recruitment_job_post, linkedin_post, recruitment_emails, social_posts, referral_request_email) succeeds",
+    "Each generated campaign display_text contains real https://.../board-opportunities/<slug>/apply URL, mentions organization name, and has NO [APPLICATION LINK] / [Organization Name] / [Mission] placeholders",
+    "The 5 campaign outputs are meaningfully distinct (pairwise inequality)",
+    "recruitment_emails structured contains subject + body, no [First Name] placeholder",
+    "Manual PUT edit on linkedin_post persists after GET",
+    "Readiness object after generation: application_saved=True, materials_generated=True, materials_count=5, materials_total=5",
+    "POST /api/workspace/opportunity/publish returns 200 status=Published; second call returns 409",
+    "Publish blocked with 409 when campaign materials missing (message mentions 'five' or 'material')",
+    "Tenant isolation: other member's /workspace/materials empty of primary user's docs; GET /materials/{primary_id} returns 404 for other member",
+    "Regression: GET /courses/recruitment/self-guided returns 5 modules; /api/workspace/materials returns all types (historical + new) without error",
+    "UI /app/recruitment/self-guided/module/1 renders module1-known-info summary, correct heading 'The Board Members Your Organization Needs', 'Generate the Board Members I Need' button, and NO org/mission/desired-skills inputs or missing-info-note when profile is complete",
+    "UI /app/recruitment/self-guided/module/2 renders module3-workspace, application-link testid showing full https://.../board-opportunities/harbor-youth-alliance-.../apply URL, copy-application-link + preview-application-button, and exactly 5 status-<type> badges (all 'Not Generated' for fresh UI user)",
+    "Application preview shows all CORE_QUESTIONS incl. CV upload",
+    "No 'Board Opportunity' or 'Recruitment Strategy' headings visible in Module 2 UI",
+    "publish-button rendered; readiness list shows 'Board Application created' + 'Campaign materials generated (0 of 5)'",
+    "Modules 3/4/5 (/module/3, /module/4, /module/5) render module4-workspace / module5-workspace / module6-workspace respectively",
+    "Course overview shows 5 steps (STEP 1..STEP 5 all present)"
+  ],
+  "rca of the issue": "Critical build-blocking SyntaxError in /app/frontend/src/member/workspace/Module1Profile.jsx: after the correct component export (ending line 185 with '};'), orphan lines 186-192 contained partial JSX ('refresh}', 'beforeGenerate={saveAndConfirm}', '/>', '</section>', '</div>', ');', '};') left over from a previous edit. Babel parser failed at line 186 col 7 ('Unexpected token'). Effect: CRA compiler failed => the ENTIRE app served the red 'Compiled with problems:' overlay for every route, blocking any UI use. Fix (applied): remove the 7 orphan lines. Verified compile + Module 1 + Module 2 UI render correctly. Reproduction: any GET on / , /login, /app/recruitment/self-guided/module/1 rendered the error overlay before fix."
+}

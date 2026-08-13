@@ -223,7 +223,7 @@ def create_member_router(db) -> APIRouter:
             if entitlement not in entitlements:
                 continue
             records = await db.course_progress.find(
-                {"user_id": member["user_id"], "product": entitlement}, {"_id": 0}
+                {"user_id": member["user_id"], "product": entitlement, "module_number": {"$lte": 5}}, {"_id": 0}
             ).to_list(50)
             completed = sum(1 for record in records if record.get("completed"))
             last_visit = max(records, key=lambda record: record.get("last_visited_at", ""), default=None)
@@ -234,8 +234,8 @@ def create_member_router(db) -> APIRouter:
                 last_module = {"number": number, "title": title}
             products.append({
                 "entitlement": entitlement, "name": name, "route": route,
-                "modules_total": 6, "modules_completed": completed,
-                "percent_complete": round(completed / 6 * 100),
+                "modules_total": 5, "modules_completed": completed,
+                "percent_complete": round(completed / 5 * 100),
                 "last_module": last_module,
             })
         return {"member": public_member(member), "products": products}

@@ -204,7 +204,7 @@ def create_workspace_router(db) -> APIRouter:
                 raise HTTPException(status_code=422, detail="This material is generated for a specific applicant")
             application = await owned_application(user_id, payload.application_id)
             application_id = application["application_id"]
-            if payload.type == "board_member_portfolio":
+            if payload.type in {"board_member_portfolio", "board_member_engagement_guide"}:
                 context += "\n\n" + application_context_text({**application, "notes": "", "references": []})
                 profile_response = await db.board_profile_responses.find_one(
                     {"user_id": user_id, "data.email": application.get("applicant_email", "")}, {"_id": 0, "data": 1})
@@ -216,6 +216,9 @@ def create_workspace_router(db) -> APIRouter:
                 context += "\n\nPRIVACY: never include referee responses, internal interview notes or internal evaluation material."
             else:
                 context += "\n\n" + application_context_text(application)
+                cv_doc = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 1})
+                if cv_doc and cv_doc.get("cv_text"):
+                    context += "\n\nCANDIDATE CV / RESUME (extracted text — use only what is actually present):\n" + cv_doc["cv_text"][:12000]
         if payload.type == "conditional_offer":
             missing = []
             for doc_type in ONBOARDING_DOC_TYPES:
@@ -283,6 +286,28 @@ def create_workspace_router(db) -> APIRouter:
                 context += "\n\nBOARD ONBOARDING SESSION (invite the candidate to this session using these exact details):\n" + "\n".join(f"{k}: {v}" for k, v in session.items() if v)
             if links:
                 context += ("\n\nLINKS TO INCLUDE IN THE EMAIL under a clear 'Before the Onboarding Session' section (use these exact URLs on their own lines; already-signed agreements are intentionally omitted — do not ask for them again):\n" + "\n".join(links))
+        if payload.type == "first_board_meeting_invitation":
+            meeting = profile.get("first_meeting") or {}
+            if meeting:
+                context += "\n\nFIRST BOARD MEETING DETAILS (use these exact details; omit anything blank):\n" + "\n".join(f"{k}: {v}" for k, v in meeting.items() if v)
+            joined = await db.opportunity_applications.find(
+                {"owner_user_id": user_id, "$or": [{"final_outcome": "Joined Board"}, {"status": "Selected"}]},
+                {"_id": 0, "application_id": 1, "profile_snapshot": 1, "applicant_email": 1}).to_list(30)
+            incomplete = []
+            for member_app in joined:
+                response_doc = await db.board_profile_responses.find_one({"user_id": user_id, "application_id": member_app["application_id"]}, {"_id": 0, "submitted_at": 1})
+                if not response_doc:
+                    link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": member_app["application_id"]}, {"_id": 0, "token": 1})
+                    incomplete.append((member_app.get("profile_snapshot", {}).get("full_name", ""), link))
+            names = ", ".join(m.get("profile_snapshot", {}).get("full_name", "") for m in joined)
+            context += f"\n\nNEW BOARD MEMBERS RECEIVING THIS INVITATION: {names or 'the new board members'}"
+            if incomplete:
+                token = next((link["token"] for _, link in incomplete if link), "")
+                context += ("\n\nBOARD MEMBER PROFILE STATUS: the following recipients have NOT completed their Board Member Profile: "
+                            + ", ".join(name for name, _ in incomplete)
+                            + (f". Board Member Profile URL to include: {origin}/board-profile/{token}" if token else ""))
+            else:
+                context += "\n\nBOARD MEMBER PROFILE STATUS: every recipient has completed their Board Member Profile — OMIT the profile section."
         try:
             structured = await generate_structured(payload.type, context, payload.instructions or "")
         except Exception as exc:
@@ -303,7 +328,7 @@ def create_workspace_router(db) -> APIRouter:
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
-    async def add_external_applicant(request: Request, name: str = Form(...), cv: UploadFile = File(None), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
+    async def add_external_applicant(request: Request, name: str = Form(...), cv: UploadFile = File(...), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
         member = await current_member(request)
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
@@ -414,11 +439,16 @@ def create_workspace_router(db) -> APIRouter:
         await db.opportunities.insert_one(opportunity.copy())
         return opportunity
 
-    def opportunity_readiness(strategy, board_opportunity, opportunity):
+    CAMPAIGN_TYPES = ["board_recruitment_job_post", "linkedin_post", "recruitment_emails", "social_posts", "referral_request_email"]
+
+    async def opportunity_readiness(user_id, opportunity):
+        generated = await db.generated_materials.count_documents(
+            {"user_id": user_id, "type": {"$in": CAMPAIGN_TYPES}, "application_id": ""})
         return {
-            "strategy_approved": bool(strategy and strategy["current"]),
-            "opportunity_saved": bool(board_opportunity and board_opportunity["current"] and board_opportunity["material"].get("status") == "Approved"),
             "application_saved": bool(opportunity.get("application_saved")),
+            "materials_generated": generated >= len(CAMPAIGN_TYPES),
+            "materials_count": min(generated, len(CAMPAIGN_TYPES)),
+            "materials_total": len(CAMPAIGN_TYPES),
         }
 
     @router.get("/opportunity")
@@ -430,9 +460,7 @@ def create_workspace_router(db) -> APIRouter:
                 {"user_id": member["user_id"]},
                 {"$set": {"custom_questions": [], "application_saved": True, "updated_at": now_iso()}})
             opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0})
-        strategy = await get_current_material(db, member["user_id"], "recruitment_strategy")
-        board_opportunity = await get_current_material(db, member["user_id"], "board_opportunity")
-        readiness = opportunity_readiness(strategy, board_opportunity, opportunity)
+        readiness = await opportunity_readiness(member["user_id"], opportunity)
         applications = await db.opportunity_applications.count_documents({"owner_user_id": member["user_id"]})
         return {"opportunity": opportunity, "core_questions": CORE_QUESTIONS, "readiness": readiness,
                 "applications_count": applications}
@@ -465,20 +493,27 @@ def create_workspace_router(db) -> APIRouter:
         opportunity = await ensure_opportunity(user_id, member)
         if opportunity["status"] == "Published":
             raise HTTPException(status_code=409, detail="This recruitment campaign is already published")
-        strategy = await get_current_material(db, user_id, "recruitment_strategy")
+        readiness = await opportunity_readiness(user_id, opportunity)
+        if not (readiness["application_saved"] and readiness["materials_generated"]):
+            raise HTTPException(status_code=409, detail="Generate all five recruitment campaign materials before launching your campaign")
         board_opportunity = await get_current_material(db, user_id, "board_opportunity")
-        readiness = opportunity_readiness(strategy, board_opportunity, opportunity)
-        if not all(readiness.values()):
-            raise HTTPException(status_code=409, detail="Approve your Recruitment Strategy, save your Board Opportunity and save your Board Application before publishing")
-        structured = board_opportunity["current"].get("structured") or {}
+        structured = (board_opportunity["current"].get("structured") or {}) if (board_opportunity and board_opportunity["current"]) else {}
         profile = await get_profile(db, user_id)
         data = profile.get("data", {})
+        strategy_intake = profile.get("strategy_intake", {}) or {}
+        blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
+        role_names = ""
+        if blueprint and blueprint["current"]:
+            roles = (blueprint["current"].get("structured") or {}).get("priority_roles", [])
+            role_names = ", ".join(role.get("role_name", "") for role in roles if role.get("role_name"))
+        commitment = ", ".join(v for v in [strategy_intake.get("meeting_frequency", ""), strategy_intake.get("time_expectation", "")] if v)
+        location = strategy_intake.get("meeting_location", "") or ", ".join(v for v in [data.get("city", ""), data.get("state_region", "")] if v)
         email_content = {
-            "mission": data.get("mission", structured.get("about_the_organization", "")),
-            "candidate_needs": structured.get("who_we_are_looking_for", "") or ", ".join(data.get("strengthen_areas", [])),
-            "commitment": structured.get("meeting_time_and_location", ""),
-            "location": structured.get("meeting_time_and_location", ""),
-            "deadline": structured.get("application_deadline", ""),
+            "mission": data.get("mission", "") or structured.get("about_the_organization", ""),
+            "candidate_needs": structured.get("who_we_are_looking_for", "") or role_names or ", ".join(data.get("desired_board_skills", [])),
+            "commitment": structured.get("meeting_time_and_location", "") or commitment,
+            "location": location or structured.get("meeting_time_and_location", ""),
+            "deadline": strategy_intake.get("deadline_date", "") or structured.get("application_deadline", ""),
         }
         ts = now_iso()
         # atomic guard against duplicate broadcasts

@@ -1,0 +1,36 @@
+{
+  "summary": "Batch 4 (Module 4 reference workflow + platform email quality) verified. Backend: created /app/backend/tests/test_batch4_references_emails.py — 19 tests, all pass (no Claude calls consumed; verifications done via HTTP + DB state + code-level unit tests on opportunity_email_html and static subject strings). UI: /referee-form/{token} renders correctly with 4 substituted questions + 5th 'recommend' + explanation textarea (5 textareas total) + declaration checkbox with exact copy 'I confirm that the information I have provided reflects my own experience and knowledge of the candidate.', 'I would need more information to say' option present, and both candidate name (Maria Alvarez) + org (Harbor Youth Alliance) substituted into labels. /app/recruitment/self-guided/module/4 renders with data-testid='module5-workspace' and heading 'Complete References and Background Checks'; Reference + Background panels visible. Emails audit: NO occurrences of [TEST MODE]/[Sandbox]/[Staging] anywhere in backend user-facing code paths (marketing_service/marketing_routes intentionally exempt — admin test-send tool). No code changes required.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_batch4_references_emails.py",
+    "/app/test_reports/pytest/batch4_results.xml",
+    "/app/test_reports/playwright/batch4_referee_form.png",
+    "/app/test_reports/playwright/batch4_module4.png"
+  ],
+  "action_items": [
+    "None blocking. Optional: main agent may run the ai_service-dependent flows (conditional_offer + organization_overview + board_manual + one agreement) using their own Claude budget to confirm generation output matches the spec — the prompts themselves were code-reviewed and match the spec (see critical_code_review_comments)."
+  ],
+  "critical_code_review_comments": [
+    "refinement_routes.REFEREE_QUESTIONS has exactly 4 items {capacity, reliability, strengths, teamwork} — spec-aligned. RECOMMEND_QUESTION includes both {candidate} and {org} placeholders substituted at GET time. Confirmed via TestRefereeFormShape.",
+    "refinement_routes.submit_referee_form correctly enforces (in order): every question answered, recommend in {'Yes','No','I would need more information to say'}, explanation required, declaration_confirmed required — all four returning 422 with descriptive detail messages.",
+    "refinement_routes.submit_candidate_form saves references with status='Ready to Contact' and does NOT auto-email referees. Founder notification 'References Submitted | <candidate>' sent via notify_owner() with 'Review References' button linking to /app/recruitment/self-guided/module/4. Verified DB state + no referee sent_at.",
+    "refinement_routes.resend_referee (POST /workspace/reference-process/{id}/resend-referee/{ref_id}) sends the referee email with subject 'Reference Request | <candidate> — <org> Board Application' and sets references.$.status='Sent' + sent_at + process.status='In Progress'.",
+    "refinement_routes.send_candidate_form subject built as f'Reference Information Needed | {org} Board Application' — matches spec exactly.",
+    "opportunity_emails.opportunity_email_html: subject 'Board Leadership Opportunity | <org>', body opens with FIRST_NAME merge + 'I'm currently supporting <org>' Rooney voice intro, mission block, expertise <ul><li> list from candidate_needs (up to 10), Apply Here CTA with real URL, view-opportunity link, signs 'Rooney Akpesiri / The Nonprofit Board Builder'. No [TEST MODE], no [Application Link], no [APPLICATION LINK].",
+    "opportunity_emails.send_opportunity_broadcast test-mode subject prefixed with '[Owner Preview] ' (not '[TEST MODE]') and sent only to OWNER_TEST_EMAIL when BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE=false. Live mode uses Resend merge tokens {{{current_opportunity_apply_url}}} and {{{FIRST_NAME|there}}} for one broadcast body per campaign.",
+    "workspace_routes.candidate_decision idempotently creates reference_process (status 'Not Started') and Ready-for-Signature signature_requests per approved agreement + board_profile_link. Verified 200 + prepared payload.",
+    "workspace_routes.conditional_offer generation (lines 219-288) injects onboarding session details, real /sign/<token> + /board-profile/<token> links, and background/reference status into context — with prompt-side instruction to only include ACTUALLY outstanding conditions. Not executed live to preserve Claude budget; code path reviewed.",
+    "ai_service GENERATION_TYPES: conditional_offer subject 'Congratulations! Your Conditional Appointment as ...' with strict body instructions (candidate-specific WHY paragraphs, ONLY outstanding conditions, real onboarding details, distinction between REVIEW vs SIGN links). organization_overview + board_manual (titled 'Board Member Manual') + 3 agreements all carry explicit 'NEVER invent ...' clauses and 'omit unsupported sections' guidance — spec-aligned.",
+    "EMAIL AUDIT: grep across /app/backend/*.py (excluding marketing_service.py and marketing_routes.py) finds ZERO occurrences of '[TEST MODE]', '[Sandbox]', '[Staging]' in user-facing subjects/bodies."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_batch4_references_emails.py (new: 19 tests for Batch 4)"
+  ],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% on tested flows"},
+  "test_credentials": "Pytest session fixtures create+delete their own TEST_batch4_* member per run. No leave-in-place member this iteration (Batch 3's iteration_25 UI-seed member was deleted before this run; recreate with the fixture pattern in test_batch4_references_emails.py if needed).",
+  "seed_data_creation": "Session-scoped pytest fixture created 1 TEST_batch4_* member with Harbor Youth Alliance profile + one Interviewed application (Maria Alvarez). Fixture cleaned up members, profiles, opportunities, applications, reference_processes, signature_requests, board_profile_links at teardown. A separate UI-only seed member was also created and cleaned up after the Playwright verification.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Batch 4 baseline: /app/backend/tests/test_batch4_references_emails.py. Run with `-o addopts=` and env REACT_APP_BACKEND_URL, MONGO_URL=mongodb://localhost:27017, DB_NAME=test_database. Zero Claude calls consumed by this suite — HTTP endpoints + DB assertions + static source-string checks. Reference workflow uses safe address 'delivered@resend.dev' for the candidate + referees; owner notifications go to OWNER_NOTIFICATION_EMAIL=rooney@... which is intentional. AI-generation flows (conditional_offer / organization_overview / board_manual / agreements) were NOT invoked to preserve budget — code + prompts were reviewed instead. If regenerating live: use exactly 4 Claude calls (overview + manual + board_member_agreement + conditional_offer AFTER approving all 3 agreements + saving onboarding_session)."
+}

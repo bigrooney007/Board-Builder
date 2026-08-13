@@ -20,21 +20,29 @@ async def _send(sender_env: str, to: str, subject: str, html_body: str) -> str:
     return response.get("id") if isinstance(response, dict) else getattr(response, "id", "")
 
 
-def opportunity_email_html(opportunity: dict, org_name: str, apply_url: str, view_url: str) -> str:
+def opportunity_email_html(opportunity: dict, org_name: str, apply_url: str, view_url: str, first_name_merge: str = "there") -> str:
     content = opportunity.get("email_content", {})
+    needs = [n.strip() for n in (content.get("candidate_needs") or "").split(",") if n.strip()]
+    needs_html = "".join(f"<li>{html.escape(n)}</li>" for n in needs[:10])
+    practical_bits = [b for b in [content.get("commitment", ""), content.get("location", "")] if b]
+    practical = f"<p>{html.escape(' · '.join(practical_bits))}</p>" if practical_bits else ""
+    deadline = f"<p><strong>Application deadline:</strong> {html.escape(content['deadline'])}</p>" if content.get("deadline") else ""
     body = (
-        f"<h3>{html.escape(org_name)} Is Recruiting New Board Members</h3>"
-        f"<p>{html.escape(org_name)} is looking for professionals who want to use their skills, experience and relationships to help advance its mission.</p>"
-        f"<p><strong>Mission</strong><br/>{html.escape(content.get('mission', ''))}</p>"
-        f"<p><strong>They are especially looking for people with experience in:</strong><br/>{html.escape(content.get('candidate_needs', ''))}</p>"
-        f"<p><strong>Board commitment:</strong> {html.escape(content.get('commitment', ''))}</p>"
-        f"<p><strong>Location:</strong> {html.escape(content.get('location', ''))}</p>"
-        f"<p><strong>Application deadline:</strong> {html.escape(content.get('deadline') or 'Open until positions are filled')}</p>"
-        f"<p>If you are interested, you can apply using the professional information already saved in your Board Applicant profile.</p>"
-        f"<p><a href='{apply_url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Apply With My Saved Profile</a></p>"
+        f"<p>Dear {first_name_merge},</p>"
+        f"<p>I'm currently supporting <strong>{html.escape(org_name)}</strong> as they intentionally build their board, and I wanted to bring this opportunity to you because you have expressed interest in serving on a nonprofit board.</p>"
+        f"<p><strong>{html.escape(org_name)}</strong> — {html.escape(content.get('mission', ''))}</p>"
+        + (f"<h3>We're seeking professionals with experience in areas such as:</h3><ul>{needs_html}</ul>" if needs_html
+           else f"<p>They are seeking professionals whose experience and relationships can help move the mission forward.</p>")
+        + "<p>This is an active board leadership opportunity for professionals who want to contribute strategically, strengthen the organization through their expertise and relationships, support fundraising and partnerships, and help guide the organization's growth — meaningful contribution, not simply attending meetings.</p>"
+        + practical + deadline
+        + "<p>The recruitment process includes an application, interview and onboarding process designed to help both you and the organization determine whether the opportunity is a good fit.</p>"
+        + "<p>If serving on a mission-driven board aligns with your interests and experience, I encourage you to apply.</p>"
+        f"<p><a href='{apply_url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Apply Here</a></p>"
         f"<p><a href='{view_url}'>View the Board Opportunity</a></p>"
+        "<p>If you have questions about the opportunity or the recruitment process, you are welcome to reach out.</p>"
+        "<p>Rooney Akpesiri<br/>The Nonprofit Board Builder</p>"
     )
-    return _wrap(f"New Nonprofit Board Opportunity — {org_name}", body)
+    return _wrap(f"Board Leadership Opportunity | {org_name}", body)
 
 
 async def create_apply_token(db, applicant_id: str, opportunity_id: str) -> str:
@@ -51,15 +59,15 @@ async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origi
     live = os.environ.get("BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE", "false").lower() == "true" and not force_test
     slug = opportunity["slug"]
     view_url = f"{origin}/board-opportunities/{slug}/apply"
-    subject = f"New Nonprofit Board Opportunity — {org_name}"
+    subject = f"Board Leadership Opportunity | {org_name}"
 
     if not live:
         test_email = os.environ.get("OWNER_TEST_EMAIL") or os.environ["OWNER_NOTIFICATION_EMAIL"]
         sample_applicant = await db.board_applicants.find_one({"email": test_email.lower()}, {"_id": 0}) or {}
-        token = await create_apply_token(db, sample_applicant.get("applicant_id", "test-preview"), opportunity["opportunity_id"])
+        token = await create_apply_token(db, sample_applicant.get("applicant_id", "owner-preview"), opportunity["opportunity_id"])
         apply_url = f"{origin}/apply/{token}"
-        email_id = await _send("BOARD_APPLICANT_SENDER", test_email, f"[TEST MODE] {subject}",
-                               opportunity_email_html(opportunity, org_name, apply_url, view_url))
+        email_id = await _send("BOARD_APPLICANT_SENDER", test_email, f"[Owner Preview] {subject}",
+                               opportunity_email_html(opportunity, org_name, apply_url, view_url, sample_applicant.get("first_name") or "there"))
         return {"mode": "test", "broadcast_id": email_id or f"test-{secrets.token_hex(4)}", "recipients": 1}
 
     # LIVE mode: personalized tokens + one Resend Broadcast to the existing Board Applicants Segment/Topic
@@ -82,7 +90,7 @@ async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origi
         "topic_id": os.environ["RESEND_BOARD_OPPORTUNITIES_TOPIC_ID"],
         "from": os.environ["BOARD_APPLICANT_SENDER"],
         "subject": subject,
-        "html": opportunity_email_html(opportunity, org_name, "{{{current_opportunity_apply_url}}}", view_url),
+        "html": opportunity_email_html(opportunity, org_name, "{{{current_opportunity_apply_url}}}", view_url, "{{{FIRST_NAME|there}}}"),
     })
     broadcast_id = broadcast.get("id") if isinstance(broadcast, dict) else getattr(broadcast, "id", "")
     try:

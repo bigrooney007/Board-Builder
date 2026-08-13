@@ -45,17 +45,34 @@ export const downloadMaterialPdf = async (material) => {
 
 export const currentVersion = (material) => material?.versions?.find((v) => v.version === material.current_version);
 
-export const SendMaterialButton = ({ type, applicationId, label = "Send", sentAt = "", onSent }) => {
+export const SendMaterialButton = ({ type, applicationId, label = "Send", sentAt = "", onSent, recipientEmail = "" }) => {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const send = async () => {
-    if (!window.confirm(`This will email the current saved version directly to the applicant${sentAt ? " AGAIN (it was already sent)" : ""}. Send now?`)) return;
+    const target = recipientEmail ? ` to ${recipientEmail}` : "";
+    if (!window.confirm(`This will email the current saved version directly to the applicant${target}${sentAt ? " AGAIN (it was already sent)" : ""}. Send now?`)) return;
     setBusy(true); setMessage("");
     try {
       const response = await memberApi.post("/workspace/send-material", { type, application_id: applicationId, resend: Boolean(sentAt) });
       setMessage(`Sent to ${response.data.to}.`);
       if (onSent) onSent();
-    } catch (err) { setMessage(err.response?.data?.detail || "The email could not be sent."); }
+    } catch (err) {
+      const detail = err.response?.data?.detail || "The email could not be sent.";
+      if (detail.includes("email address")) {
+        const entered = window.prompt("We do not have an email address for this applicant. Enter it once and it is saved to their record:");
+        if (entered && entered.trim()) {
+          try {
+            await memberApi.patch(`/workspace/applications/${applicationId}`, { candidate_email: entered.trim() });
+            const retry = await memberApi.post("/workspace/send-material", { type, application_id: applicationId, resend: Boolean(sentAt) });
+            setMessage(`Sent to ${retry.data.to}.`);
+            if (onSent) onSent();
+            setBusy(false);
+            return;
+          } catch (err2) { setMessage(err2.response?.data?.detail || "The email could not be sent."); setBusy(false); return; }
+        }
+      }
+      setMessage(detail);
+    }
     setBusy(false);
   };
   return (
@@ -124,7 +141,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
   return (
     <section className="material-card" data-testid={testId || `material-${type}`}>
       <div className="material-card-head">
-        <h3>{title}{approvable && material && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{approved ? "Approved" : "Draft"}</span>}</h3>
+        <h3>{title}{approvable && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{material ? (approved ? "Approved" : "Generated") : "Not Generated"}</span>}</h3>
         {material && !hideDisplay && (
           <label className="version-select">Version
             <select value={material.current_version} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>

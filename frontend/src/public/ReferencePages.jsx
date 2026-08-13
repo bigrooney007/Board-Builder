@@ -107,8 +107,10 @@ export function RefereeFormPage() {
 
   const submit = async () => {
     setError("");
-    if ((meta?.questions || []).some((q) => !String(answers[q.id] || "").trim())) { setError("Please answer every question. Only the additional comments are optional."); return; }
-    if (!answers.recommend) { setError("Please choose whether you would recommend this individual."); return; }
+    if ((meta?.questions || []).some((q) => !String(answers[q.id] || "").trim())) { setError("Please answer every question."); return; }
+    if (!answers.recommend) { setError("Please choose Yes, No, or I would need more information to say."); return; }
+    if (!String(answers.explanation || "").trim()) { setError("Please explain your response to the final question."); return; }
+    if (!answers.declaration_confirmed) { setError("Please confirm the declaration before submitting."); return; }
     setBusy(true);
     try {
       const payload = { ...answers };
@@ -128,7 +130,7 @@ export function RefereeFormPage() {
             <header className="member-page-heading">
               <p className="eyebrow">Confidential Reference</p>
               <h1 data-testid="referee-form-heading">Reference for {meta.candidate_name}</h1>
-              <p>Hello {meta.referee_name}. {meta.candidate_name} has identified you as a professional reference as part of a nonprofit board appointment process. Your answers are confidential and shared only with the recruiting organization, which makes its own appointment decision.</p>
+              <p>Thank you for taking the time to provide a reference for {meta.candidate_name} as part of their application to serve on the Board of {meta.organization_name || "the recruiting organization"}. Your response will be shared with the organization reviewing the candidate, which makes its own appointment decision.</p>
             </header>
             {(done || meta.completed) ? (
               <div className="member-card" data-testid="referee-form-done">
@@ -151,14 +153,18 @@ export function RefereeFormPage() {
                     <textarea rows="2" value={answers[question.id] || ""} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} data-testid={`referee-${question.id}`} />
                   </label>
                 ))}
-                <label className="field"><span>Would you recommend this individual for a nonprofit board or leadership role? *</span>
+                <label className="field"><span>{meta.recommend_question || `Based on your experience, would you feel comfortable recommending ${meta.candidate_name} for board service? Please explain your response.`} *</span>
                   <select value={answers.recommend || ""} onChange={(event) => setAnswers({ ...answers, recommend: event.target.value })} data-testid="referee-recommend">
                     <option value="">Select one</option>
-                    {(meta.recommend_options || ["Yes", "No", "With Reservations"]).map((option) => <option key={option}>{option}</option>)}
+                    {(meta.recommend_options || ["Yes", "No", "I would need more information to say"]).map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
-                <label className="field"><span>Additional Comments (optional)</span>
-                  <textarea rows="3" value={answers.comments || ""} onChange={(event) => setAnswers({ ...answers, comments: event.target.value })} data-testid="referee-comments" />
+                <label className="field"><span>Explanation *</span>
+                  <textarea rows="3" value={answers.explanation || ""} onChange={(event) => setAnswers({ ...answers, explanation: event.target.value })} data-testid="referee-explanation" />
+                </label>
+                <label className="choice" style={{ alignItems: "flex-start" }}>
+                  <input type="checkbox" checked={Boolean(answers.declaration_confirmed)} onChange={(event) => setAnswers({ ...answers, declaration_confirmed: event.target.checked })} data-testid="referee-declaration" />
+                  <span>I confirm that the information I have provided reflects my own experience and knowledge of the candidate. *</span>
                 </label>
                 {error && <p className="submit-error" data-testid="referee-form-error">{error}</p>}
                 <button className="button" disabled={busy} onClick={submit} data-testid="submit-referee-button">{busy ? "Submitting…" : "Submit Reference"}</button>

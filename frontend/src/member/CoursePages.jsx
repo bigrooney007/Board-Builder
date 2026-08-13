@@ -5,7 +5,7 @@ import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { Module1Profile } from "./workspace/Module1Profile";
-import { Module2Strategy, Module3Launch } from "./workspace/WorkspaceModules";
+import { Module3Launch } from "./workspace/WorkspaceModules";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 
 const PRODUCT_META = {
@@ -118,7 +118,7 @@ export const CourseOverviewPage = ({ productSlug }) => {
         <header className="member-page-heading">
           <p className="eyebrow">Board Recruitment</p>
           <h1>{meta.label}</h1>
-          {course && <p data-testid="course-progress-summary">{course.percent_complete}% complete · {course.modules_completed} of {course.modules.length} modules finished</p>}
+          {course && <p data-testid="course-progress-summary">{course.percent_complete}% complete · {course.modules_completed} of {course.modules.length} steps finished</p>}
           {course && <div className="dashboard-progress-bar"><i style={{ width: `${course.percent_complete}%` }} /></div>}
         </header>
         {forbidden && <ForbiddenCard />}
@@ -135,7 +135,7 @@ export const CourseOverviewPage = ({ productSlug }) => {
             {course.modules.map((module) => (
               <Link className="module-list-item" to={`${meta.base}/module/${module.number}`} key={module.number} data-testid={`module-link-${module.number}`}>
                 {module.completed ? <CheckCircle2 className="module-done" size={21} /> : <Circle className="module-todo" size={21} />}
-                <div><span>Module {module.number}</span><h2>{module.title}</h2></div>
+                <div><span>Step {module.number}</span><h2>{module.title}</h2></div>
                 <ArrowRight size={17} />
               </Link>
             ))}
@@ -160,17 +160,10 @@ const BasicResources = ({ module }) => (
 );
 
 const SelfGuidedWorkspace = ({ moduleNumber }) => {
-  const [profileConfirmed, setProfileConfirmed] = useState(false);
-  const [checked, setChecked] = useState(false);
-  useEffect(() => {
-    memberApi.get("/workspace/profile").then((response) => { setProfileConfirmed(response.data.confirmed); setChecked(true); }).catch(() => setChecked(true));
-  }, [moduleNumber]);
-  if (!checked) return <section className="workspace-panel">Loading your workspace…</section>;
-  if (moduleNumber === 1) return <Module1Profile onConfirmed={() => setProfileConfirmed(true)} />;
-  if (moduleNumber === 2) return <Module2Strategy profileConfirmed={profileConfirmed} />;
-  if (moduleNumber === 3) return <Module3Launch />;
-  if (moduleNumber === 4) return <Module4Applicants />;
-  if (moduleNumber === 5) return <Module5References />;
+  if (moduleNumber === 1) return <Module1Profile />;
+  if (moduleNumber === 2) return <Module3Launch />;
+  if (moduleNumber === 3) return <Module4Applicants />;
+  if (moduleNumber === 4) return <Module5References />;
   return <Module6Onboarding />;
 };
 
@@ -211,17 +204,17 @@ export const CourseModulePage = ({ productSlug }) => {
           <>
             <header className="member-page-heading">
               <Link className="module-breadcrumb" to={meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {meta.label}</Link>
-              <p className="eyebrow">Module {module.number} of {course.modules.length}</p>
+              <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             <div className="module-nav" data-testid="module-navigation">
-              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Module</button>
+              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="mark-complete-button">
-                {module.completed ? <><CheckCircle2 size={16} /> Module Completed</> : "Mark This Module Complete"}
+                {module.completed ? <><CheckCircle2 size={16} /> Step Completed</> : "Mark This Step Complete"}
               </button>
-              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Module <ArrowRight size={16} /></button>
+              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Step <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />
           </>

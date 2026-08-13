@@ -14,10 +14,17 @@ const BoardMemberResultCard = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const snapshot = application.profile_snapshot || {};
   const portfolio = byType.board_member_portfolio;
+  const engagement = byType.board_member_engagement_guide;
   return (
     <div className="board-member-result" data-testid={`board-member-${application.application_id}`}>
       <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">Board Member</span></h3>
-      <p className="material-meta">{[snapshot.profession, snapshot.employer].filter(Boolean).join(" · ")}{application.board_role ? ` · Role: ${application.board_role}` : ""}{application.formal_appointment_date ? ` · Appointed ${new Date(application.formal_appointment_date).toLocaleDateString()}` : ""}</p>
+      <p className="material-meta">{[snapshot.profession, snapshot.employer, snapshot.location].filter(Boolean).join(" · ")}{application.board_role ? ` · Role: ${application.board_role}` : ""}{application.formal_appointment_date ? ` · Joined ${new Date(application.formal_appointment_date).toLocaleDateString()}` : ""}</p>
+      <MaterialCard type="board_member_engagement_guide" title="Board Member Engagement Guide" buttonLabel="Generate Engagement Guide"
+        description="A one-page internal guide for you: where this member's expertise creates the most value, how to engage them, strong early responsibilities, relationships and fundraising, leadership alignment and their first 90 days. Built only from their application, CV and Board Member Profile — never from confidential references or background checks. This stays internal and is never sent to the member."
+        applicationId={application.application_id} material={engagement} refresh={refresh} approvable
+        extraActions={engagement ? (
+          <button className="button button-back" onClick={() => downloadMaterialPdf(engagement)} data-testid={`engagement-pdf-${application.application_id}`}><Download size={14} /> Download Branded PDF</button>
+        ) : null} />
       <MaterialCard type="board_member_portfolio" title="Board Member Portfolio" buttonLabel="Generate Board Member Portfolio"
         description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included."
         applicationId={application.application_id} material={portfolio} refresh={refresh} approvable
@@ -64,8 +71,8 @@ export default function RecruitmentResultsPage() {
       <main className="member-page recruitment-results-page" data-testid="recruitment-results-page">
         <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Board Recruitment — Self-Guided System</Link>
         <header className="member-page-heading">
-          <p className="eyebrow">Recruitment complete</p>
-          <h1>Your Recruitment Results</h1>
+          <p className="eyebrow">Your board</p>
+          <h1>My Board</h1>
         </header>
         {error && (
           <section className="workspace-panel" data-testid="results-error-state">
@@ -79,7 +86,7 @@ export default function RecruitmentResultsPage() {
           <section className="workspace-panel" data-testid="results-empty-state">
             <h2>Your Recruitment Results</h2>
             <p>Your recruitment results will appear here as applicants move through the recruitment process.</p>
-            <Link className="button" to="/app/recruitment/self-guided/module/3">Go to Your Recruitment Campaign</Link>
+            <Link className="button" to="/app/recruitment/self-guided/module/2">Go to Your Recruitment Campaign</Link>
           </section>
         )}
         {!error && applications !== null && list.length > 0 && (
@@ -93,8 +100,8 @@ export default function RecruitmentResultsPage() {
               </div>
             </section>
             <section className="workspace-panel" data-testid="results-joined-section">
-              <h2>Joined the Board</h2>
-              {joined.length === 0 && <p className="workspace-note">Formally appointed board members will appear here.</p>}
+              <h2>My Board</h2>
+              {joined.length === 0 && <p className="workspace-note">Board members appear here as soon as they are formally confirmed in Step 5.</p>}
               {joined.map((application) => <BoardMemberResultCard application={application} branding={branding} onChanged={load} key={application.application_id} />)}
             </section>
             {inProgress.length > 0 && (

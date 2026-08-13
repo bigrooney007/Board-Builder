@@ -95,11 +95,29 @@ def create_board_intake_router(db) -> APIRouter:
         transaction = await verified_transaction(session_id)
         existing = await db.board_recruitment_intakes.find_one({"session_id": session_id}, {"_id": 0, "submitted_at": 1})
         prefill = {"name": "", "email": ""}
+        organization_prefill = {}
         user_id = await linked_user_id(session_id, transaction)
         if user_id:
             member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1, "email": 1})
             if member:
                 prefill = {"name": f"{member['first_name']} {member['last_name']}".strip(), "email": member["email"]}
+            profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1, "strategy_intake": 1}) or {}
+            data = profile.get("data", {}) or {}
+            strategy = profile.get("strategy_intake", {}) or {}
+            known = {
+                "organization_name": data.get("organization_name", ""), "website": data.get("website", ""),
+                "mission": data.get("mission", ""), "city": data.get("city", ""), "state": data.get("state_region", ""),
+                "board_type": data.get("board_kind", ""), "present_board": data.get("present_board", ""),
+                "active_board": data.get("active_board", ""), "new_members_count": data.get("new_members_count", ""),
+                "desired_skills": data.get("desired_board_skills", []) or [],
+                "accomplish": data.get("priorities", ""),
+                "current_board_strengths": data.get("current_board_strengths", ""),
+                "board_challenges": data.get("board_challenges", ""),
+                "meeting_frequency": strategy.get("meeting_frequency", ""), "meeting_format": strategy.get("meeting_format", ""),
+                "meeting_location": strategy.get("meeting_location", ""), "board_term": strategy.get("board_term", ""),
+                "time_commitment": strategy.get("time_expectation", ""), "max_board_size": strategy.get("max_board_size", ""),
+            }
+            organization_prefill = {key: value for key, value in known.items() if value not in ("", [], None)}
         if not prefill["email"]:
             try:
                 session = stripe.checkout.Session.retrieve(session_id)
@@ -109,7 +127,8 @@ def create_board_intake_router(db) -> APIRouter:
             except stripe.StripeError:
                 pass
         return {"eligible": True, "purchase_source": transaction["purchase_source"],
-                "submitted": bool(existing), "prefill": prefill, "calendly_url": CALENDLY_URL}
+                "submitted": bool(existing), "prefill": prefill,
+                "organization_prefill": organization_prefill, "calendly_url": CALENDLY_URL}
 
     async def merge_into_recruitment_profile(user_id: str, payload: IntakeSubmission, now: str):
         existing = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1, "strategy_intake": 1}) or {}
@@ -121,6 +140,13 @@ def create_board_intake_router(db) -> APIRouter:
             "new_members_count": payload.new_members_count,
             "desired_board_skills": payload.desired_skills, "desired_board_skills_other": payload.desired_skills_other,
             "priorities": payload.accomplish,
+            "contact_name": payload.your_name, "contact_email": str(payload.email).lower(),
+            "org_linkedin": payload.org_linkedin, "org_linkedin_url": payload.org_linkedin_url,
+            "personal_linkedin": payload.personal_linkedin, "personal_linkedin_url": payload.personal_linkedin_url,
+            "current_board_strengths": payload.current_board_strengths,
+            "board_challenges": payload.board_challenges,
+            "specific_wants": payload.specific_wants,
+            "anything_else": payload.anything_else,
         }
         merged = {**data}
         for key, value in intake_data.items():
@@ -130,6 +156,7 @@ def create_board_intake_router(db) -> APIRouter:
         intake_strategy = {
             "meeting_frequency": payload.meeting_frequency, "meeting_frequency_other": payload.meeting_frequency_other,
             "meeting_format": payload.meeting_format, "meeting_location": payload.meeting_location,
+            "virtual_meeting_info": payload.virtual_meeting_info,
             "board_term": payload.board_term, "board_term_other": payload.board_term_other,
             "time_expectation": payload.time_commitment, "max_board_size": payload.max_board_size,
             "max_board_size_unknown": payload.max_board_size_unknown,

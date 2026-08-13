@@ -28,7 +28,7 @@ CORE_QUESTIONS = [
     {"id": "causes", "label": "What causes or communities are you especially passionate about?", "type": "textarea", "required": True},
 ]
 
-APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview", "Moving Forward", "Not Moving Forward", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
+APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview Invited", "Not Moving to Interview", "Interview", "Moving Forward", "Not Moving Forward", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
 OPPORTUNITY_STATUSES = ["Draft", "Ready to Publish", "Published", "Closed"]
 REFERENCE_OUTCOMES = ["Positive", "Mixed", "Concern", "Unable to verify", "Not completed"]
 BACKGROUND_STATUSES = ["Not required", "Not started", "In progress", "Completed", "Follow-up required"]
@@ -80,18 +80,18 @@ REFERENCE_RULES = (
     "They may contain a past client's information — NEVER copy or expose any client name, organization name, people's names, emails, phones, addresses, "
     "board member or applicant names, CV details, confidential notes or client-specific facts into this customer's output. "
     "Never duplicate an old document with names swapped; every output must be built from the current nonprofit's own information. "
-    "SOURCE PRIORITY: (1) the current customer's actual information, (2) the locked six-stage Recruitment Framework, (3) these reference patterns, (4) general writing ability. "
+    "SOURCE PRIORITY: (1) the current customer's actual information, (2) the locked five-step Recruitment Framework, (3) these reference patterns, (4) general writing ability. "
     "If a reference conflicts with the locked framework, the framework wins."
 )
 
 
 MODULE_KEYWORDS = {
+    0: ["recruitment strategy", "outreach strategy", "recruitment channels"],
     1: ["board members your organization needs", "board matrix", "board gap", "skills assessment", "identify the board", "board audit"],
-    2: ["recruitment strategy", "outreach strategy", "recruitment channels"],
-    3: ["board opportunity", "board application", "linkedin", "social media", "recruitment email", "job post"],
-    4: ["interview"],
-    5: ["reference", "background check"],
-    6: ["onboard", "board manual", "agreement", "orientation", "conflict of interest", "confidentiality"],
+    2: ["board opportunity", "board application", "linkedin", "social media", "recruitment email", "job post"],
+    3: ["interview"],
+    4: ["reference", "background check"],
+    5: ["onboard", "board manual", "agreement", "orientation", "conflict of interest", "confidentiality"],
 }
 
 GENERATION_KEYWORDS = {
@@ -258,7 +258,7 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     lead = await get_lead(db, member)
     parts = [profile_context_text(profile.get("data", {}), lead)]
     if profile.get("strategy_intake"):
-        parts.append("MODULE 2 RECRUITMENT STRATEGY INTAKE (the founder's answers about their network and channels):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
+        parts.append("BOARD RECRUITMENT LOGISTICS AND NETWORK (the founder's saved answers about board logistics, their network and recruitment channels — collected once through the Board Recruitment Intake):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
     blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
     if blueprint and blueprint["current"]:
         structured = blueprint["current"].get("structured") or {}

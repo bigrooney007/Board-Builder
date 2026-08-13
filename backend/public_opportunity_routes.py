@@ -104,7 +104,6 @@ def create_public_opportunity_router(db) -> APIRouter:
             await db.opportunity_applications.update_one({"application_id": application["application_id"]}, {"$set": {"receipt_email_status": "Sent"}})
         except Exception as exc:
             await db.opportunity_applications.update_one({"application_id": application["application_id"]}, {"$set": {"receipt_email_status": "Failed", "receipt_email_error": str(exc)[:300]}})
-        background.add_task(run_interview_guide, db, application["application_id"])
         application.pop("cv_text", None)
         return application
 

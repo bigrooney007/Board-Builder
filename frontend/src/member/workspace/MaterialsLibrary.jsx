@@ -5,7 +5,7 @@ import { memberApi } from "../api";
 import { MemberShell } from "../MemberShell";
 import { printText } from "./MaterialCard";
 
-const MODULE_NAMES = { 2: "Module 2 — Recruitment Strategy", 3: "Module 3 — Launch Your Recruitment Campaign", 4: "Module 4 — Interview Your Applicants", 5: "Module 5 — References and Background Checks", 6: "Module 6 — Onboard Your New Board Members" };
+const MODULE_NAMES = { 0: "Recruitment Strategy (Previous Process)", 1: "Step 1 — Identify the Board Members Your Organization Needs", 2: "Step 2 — Launch Your Recruitment Campaign", 3: "Step 3 — Select and Interview Your Applicants", 4: "Step 4 — Complete References and Background Checks", 5: "Step 5 — Onboard Your New Board Members" };
 
 export const MaterialsLibraryPage = () => {
   const [materials, setMaterials] = useState([]);
@@ -19,7 +19,7 @@ export const MaterialsLibraryPage = () => {
         <header className="member-page-heading">
           <Link className="module-breadcrumb" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Self-Guided Recruitment System</Link>
           <h1>My Recruitment Materials</h1>
-          <p>Every generated resource stays available here, organized by module, with full version history.</p>
+          <p>Every generated resource stays available here, organized by step, with full version history.</p>
         </header>
         {materials.length === 0 && <div className="member-card"><p>No materials yet. Generate materials inside the course modules.</p></div>}
         {Object.keys(grouped).sort().map((module) => (

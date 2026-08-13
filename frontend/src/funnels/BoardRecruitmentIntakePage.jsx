@@ -71,11 +71,18 @@ export default function BoardRecruitmentIntakePage() {
         const response = await axios.get(`${API}/board-recruitment-intake/context`, { params: { session_id: sessionId } });
         setCalendlyUrl(response.data.calendly_url);
         setPurchaseSource(response.data.purchase_source);
-        setForm((current) => ({
-          ...current,
-          your_name: current.your_name || response.data.prefill.name || "",
-          email: current.email || response.data.prefill.email || "",
-        }));
+        setForm((current) => {
+          const merged = { ...current };
+          const orgPrefill = response.data.organization_prefill || {};
+          Object.entries(orgPrefill).forEach(([key, value]) => {
+            if (!(key in merged)) return;
+            const empty = Array.isArray(merged[key]) ? merged[key].length === 0 : !merged[key];
+            if (empty) merged[key] = value;
+          });
+          merged.your_name = merged.your_name || response.data.prefill.name || "";
+          merged.email = merged.email || response.data.prefill.email || "";
+          return merged;
+        });
         setGate("ready");
         return;
       } catch (error) {
