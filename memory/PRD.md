@@ -164,3 +164,10 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 - seo.js: usePageMeta gained optional 3rd param noindex (adds/removes meta robots noindex — used ONLY by intake page); PAGE_META updated per user's exact copy for aboutRooney, recruitYourBoardYourself, boardRecruitmentProposal, boardRecruitmentIntake, recruitWithRooney ("Recruit With Rooney | Nonprofit Board Builder").
 - Test member for module checks: module-tester@example.com / ModuleTest123! (entitlement recruitment_self_guided; in test_credentials.md).
 - LEARNING: during a credits-exhausted interruption two "successful" search_replace edits silently reverted (CoursePages label, .brp-section CSS) — re-grep edited files after interruptions.
+
+
+## Module Training Videos Connected (June 2026) — Complete, verified
+- Six YouTube videos configured via EXISTING mechanism (db.course_videos via PATCH /api/admin/course-videos, admin JWT): M1 Crzh5tPpQYo, M2 671KaVEJFbg, M3 E4S16dkgKSY, M4 WxGpi3hHEO8, M5 -gbn1_sl9h8, M6 fdjjsiEnfWc — set for BOTH products (recruitment_self_guided + recruitment_basic; same canonical six modules).
+- IMPORTANT: videos are DATA, not code — configured in BOTH environments: preview DB and PRODUCTION (via https://nonprofitboardbuilder.com/api admin login, all 12 PATCHes 200). No deploy needed for this change.
+- Verified in preview logged-in (module-tester@example.com): all 6 embeds correct, placeholders gone, canonical titles intact, 16:9 responsive, no mobile overflow. No code changed.
+- NOTE from user: materials generated inside the Recruitment app will be RESTRUCTURED in a SEPARATE upcoming task (user not satisfied with some generated materials — do not touch until instructed).
