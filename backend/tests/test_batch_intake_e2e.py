@@ -73,7 +73,7 @@ class TestDIYCheckout:
         assert r.status_code == 400
 
 
-# ---- Batch 2/3: Direct-project checkout success_url now points to intake ----
+# ---- Direct-project checkout success_url points straight to the intake form (no account) ----
 class TestDirectProjectCheckout:
     def test_direct_project_success_url_is_intake(self, client, db):
         r = client.post(f"{BASE_URL}/api/payments/direct-project-checkout", json={"origin_url": ORIGIN})

@@ -8,6 +8,9 @@ const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_
 // Exact approved subtitle for the About Rooney banner.
 const ABOUT_ROONEY_SUBTITLE = "Helping nonprofits build strong fundraising board.";
 
+// Existing approved public call-booking link (same as the homepage "Book a Call With Rooney" button).
+const BOOK_A_CALL_URL = "https://calendly.com/boardbuilder/recruitboard";
+
 export default function AboutRooneyPage() {
   usePageMeta(...PAGE_META.aboutRooney);
   return (
@@ -48,6 +51,24 @@ export default function AboutRooneyPage() {
               <Link className="button" to="/board-recruitment-proposal" data-testid="about-rooney-dwm-button">I WANT TO RECRUIT MY BOARD WITH ROONEY</Link>
             </article>
           </div>
+        </section>
+
+        <section className="ar-about" data-testid="about-rooney-story-section">
+          <h2 data-testid="about-rooney-story-heading">Meet Rooney Akpesiri</h2>
+          <p className="ar-about-subheading" data-testid="about-rooney-story-subheading">The Nonprofit Board Builder</p>
+          <div className="ar-about-body" data-testid="about-rooney-story-body">
+            <p>I'm Rooney. Known to many as the Nonprofit Board Builder.</p>
+            <p>I started as a nonprofit founder many years ago, where I built my first board.</p>
+            <p>I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.</p>
+            <p>Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.</p>
+            <p>Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time.</p>
+          </div>
+        </section>
+
+        <section className="ar-book-call" data-testid="about-rooney-book-call-section">
+          <h2 data-testid="about-rooney-book-call-heading">Want to Discuss Your Board With Me?</h2>
+          <p className="ar-book-call-copy" data-testid="about-rooney-book-call-copy">If you want to talk through where your Board is today, what you are trying to build, and whether I can help, book a call with me and let's discuss it.</p>
+          <a className="button" href={BOOK_A_CALL_URL} target="_blank" rel="noreferrer" data-testid="about-rooney-book-call-button">BOOK A CALL WITH ROONEY</a>
         </section>
       </main>
     </FunnelLayout>

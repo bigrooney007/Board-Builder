@@ -18,13 +18,6 @@ const OUTCOMES = [
   { icon: LifeBuoy, title: "Access to Rooney While You Recruit", copy: "You are not left alone with information. When you need clarification, get stuck or need help moving forward, you can reach out for support." },
 ];
 
-const BEFORE_START = [
-  ["This Is an Execution Program", "The strongest results come from taking action with the tools provided as you move through the system."],
-  ["Complete the Steps in Order", "Each stage builds on the decisions and information from the stage before it."],
-  ["Use the Support Available to You", "If you need clarification or get stuck, use the support available inside the program."],
-  ["You Make the Final Board Decisions", "The platform can help you launch your recruitment campaign, assess applicants and prepare candidates, but you and your organization decide who is appointed to your board."],
-];
-
 const GuaranteeModal = ({ close }) => {
   const [terms, setTerms] = useState("");
   useEffect(() => {
@@ -119,15 +112,6 @@ export default function RecruitCheckoutPage() {
           <h2>Build the Board Your Organization Needs</h2>
           <div className="before-start-list">
             <article><p>Use the guided process to recruit committed professionals for your governing, working or advisory board based on the skills, relationships and experience your organization needs.</p></article>
-          </div>
-        </section>
-        <section className="before-start-section" data-testid="before-start-section">
-          <p className="eyebrow">Before you start</p>
-          <h2>Before You Start</h2>
-          <div className="before-start-list">
-            {BEFORE_START.map(([title, copy]) => (
-              <article key={title}><h3>{title}</h3><p>{copy}</p></article>
-            ))}
           </div>
         </section>
         <section className="checkout-commit" data-testid="checkout-commit-section">

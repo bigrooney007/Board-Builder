@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 28: Verified customer account/login for $497 DIY and $1,997 DWM post-payment journeys, and public Log In links. Backend pytest 37/37 passing (test_iter28_account_verify.py 12/12, test_board_recruitment_proposal.py 8/8 after updating stale $1998.50 assertion, test_batch_intake_e2e.py 17/17 after updating stale success_url assertion). Frontend E2E through real Stripe TEST checkout for $1,997 DWM completed successfully: proposal CTA → Stripe hosted payment ($1,997 USD) → /purchase/success → register new account → auto-routed to /board-recruitment-intake. DB state verified: purchases row shows entitlement=recruitment_self_guided, purchase_source=direct_board_recruitment_project, price_paid=1997, amount=199700, payment_status=paid, claimed_by_user_id linked. Logout → login persists entitlement; all 5 module titles present at /app/recruitment/self-guided/module/1..5. Public Log In links visible on / (nav-login-link), /recruit and /about-rooney (funnel-login-link + footer-login-link), all routing to /login which renders working member login form.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter28_account_verify.py",
+    "/app/backend/tests/test_board_recruitment_proposal.py",
+    "/app/backend/tests/test_batch_intake_e2e.py",
+    "/app/test_reports/pytest/iter28_new.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "member_routes.claim_recruitment_purchase branches only on offer_source+tier. The direct_board_recruitment_project branch has no tier check, which is fine, but consider validating session.amount_total==199700 defensively to prevent future price-lookup drift from silently granting entitlement.",
+    "payment_routes.create_direct_project_checkout is a fully public unauthenticated endpoint with no rate limit; combined with resolve_direct_project_price_id() dynamic Stripe.Product.create fallback (env var missing path), this could be abused to spam Stripe products in test/dev. In production the env price ID is set so it is safe, but adding basic rate limiting or reCAPTCHA on public checkout endpoints (diy-checkout, direct-project-checkout) is recommended.",
+    "PurchaseSuccessPage.jsx submit() sets busy=false only inside the catch block; on the happy path busy stays true until navigation, which is intentional but if navigation ever fails silently the button becomes permanently disabled. Consider a finally clause resetting busy on navigation timeout."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_board_recruitment_proposal.py (updated stale 199850 → 199700 and success_url expectation)",
+    "/app/backend/tests/test_batch_intake_e2e.py (updated stale success_url expectation from /board-recruitment-intake → /purchase/success)",
+    "/app/backend/tests/test_iter28_account_verify.py (new: 12 tests for register 409, claim security 400/402/409, login shape, intake redirect DIY/DWM, direct-project checkout metadata, public login pages)"
+  ],
+  "success_rate": {"backend": "100% (37/37)", "frontend": "100% on tested flows"},
+  "test_credentials": "New: test_acct_dwm_74149ffd@example.com / TestPass123! — cleaned up after run. module-tester@example.com preserved.",
+  "seed_data_creation": "None persisted. All test_acct_* members, purchases, payment_transactions, and one $1,997 Stripe TEST session cleaned up post-run. module-tester intact. Owner notification email was NOT triggered because DWM intake form was not fully submitted (multi-step form; backend redirect for DWM already exhaustively validated by pytest test_dwm_intake_redirects_to_calendly).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Full-stack review passed. Verified checklist items: (1) $497 DIY behavior unchanged — DIY checkout success_url still lands on /purchase/success and DIY intake redirect_url is /recruitment-start-here (backend test); (2) $1,997 DWM E2E through real Stripe TEST proven end-to-end via Playwright — payment 199700 USD, /purchase/success renders, register creates member+claim in one call, PurchaseSuccessPage routes claimed_source=direct_board_recruitment_project to /board-recruitment-intake, DB shows correct purchase_source/entitlement/price_paid; (3) DWM intake submit returns redirect_url=https://calendly.com/boardbuilder/recruitboard (pytest); (4) claim security: fake session→400, unpaid session→402 (with no entitlement/purchases created), pre-linked session→409; (5) register duplicate email→409 with 'already exists' + 'log in' in message; (6) login accepts optional session_id and returns claimed/claimed_source; (7) public login links present with correct data-testid on /, /recruit, /about-rooney and all resolve to /login; (8) logout → login preserves entitlement, dashboard, and module access. Did not run full 5-step intake form submission on DWM to keep owner notification emails minimal (backend logic proven by pytest).",
+  "rca of the issue": "N/A — no bugs found."
+}

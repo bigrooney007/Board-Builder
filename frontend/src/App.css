@@ -1084,6 +1084,15 @@ p { line-height: 1.72; }
 .ar-offer-copy { color: #45544b; font-size: 16px; line-height: 1.7; margin: 0 0 14px; flex: 1; }
 .ar-offer-payment-line { color: var(--forest); font-weight: 700; margin: 0 0 20px; }
 .ar-offer-card .button { width: 100%; text-align: center; font-size: 14px; }
+.nav-login-restrained { margin-left: auto; color: var(--forest); font-weight: 700; font-size: 14px; text-decoration: none; }
+.nav-login-restrained:hover { text-decoration: underline; }
+.ar-about { max-width: 760px; margin: 0 auto; padding: 60px 24px 20px; text-align: center; }
+.ar-about h2 { color: var(--forest); font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 6px; }
+.ar-about-subheading { color: #2f8f6d; text-transform: uppercase; letter-spacing: .16em; font-weight: 800; font-size: 13px; margin: 0 0 26px; }
+.ar-about-body p { color: #45544b; font-size: 17px; line-height: 1.8; margin: 0 0 18px; }
+.ar-book-call { max-width: 760px; margin: 0 auto; padding: 34px 24px 80px; text-align: center; }
+.ar-book-call h2 { color: var(--forest); font-size: clamp(24px, 3.2vw, 32px); margin: 0 0 12px; }
+.ar-book-call-copy { color: #45544b; font-size: 17px; line-height: 1.8; margin: 0 0 26px; }
 
 /* ---------- Refined icon lists (direct funnel pages) ---------- */
 .icon-list { list-style: none; padding: 0; margin: 0 0 16px; }

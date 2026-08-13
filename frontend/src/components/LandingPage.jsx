@@ -35,7 +35,7 @@ export const LandingPage = ({ onJoin }) => (
         <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">Join a Board</button>
         <a href="#how-it-works" data-testid="board-solutions-link">Board Solutions</a>
       </div>
-      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">Reactivate</a><a href="/recruit">Recruit</a><a href="/activate">Activate</a></div>
+      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">Reactivate</a><a href="/recruit">Recruit</a><a href="/activate">Activate</a><a href="/login" data-testid="nav-login-link">Log In</a></div>
     </nav>
 
     <section id="top" className="hero" data-testid="hero-section">

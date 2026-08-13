@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 29 verifies the DWM ($1,997) account-revert, DIY ($497) regression, and Before-You-Start UI removal. All 37 previously-updated backend tests (test_board_recruitment_proposal.py + test_batch_intake_e2e.py + test_iter28_account_verify.py) pass. Added test_iter29_dwm_revert.py (6 new tests) — all pass. Playwright verified /recruit/checkout no longer contains Before-You-Start heading, 4 cards, or the before-start-section data-testid, and that /recruit-your-board-yourself is unchanged (12 outcome headings, $497 price, MAKE PAYMENT CTA creates a 200 diy-checkout session).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/members/claim-purchase", "issue": "For a *seeded-only* paid direct_board_recruitment_project session_id, the API returns 400 with detail 'We could not verify this purchase with Stripe' (Stripe verify happens BEFORE the offer_source check). Behavior is still correct security-wise (rejected, no entitlement granted, no purchases row), but reaching the specific 'not a Recruitment program purchase' string requires a real paid Stripe session with that offer_source metadata — not exercisable via seed alone. Existing test in test_board_recruitment_proposal.py already asserts status in (400, 402) which passes."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter29_dwm_revert.py",
+    "/app/backend/tests/test_board_recruitment_proposal.py",
+    "/app/backend/tests/test_batch_intake_e2e.py",
+    "/app/backend/tests/test_iter28_account_verify.py",
+    "/app/test_reports/pytest/iter29_results.xml"
+  ],
+  "verifications": {
+    "1_dwm_revert_backend": "PASS — success_url contains /board-recruitment-intake?session_id=..., cancel_url /board-recruitment-proposal?checkout=cancelled, amount 199700, metadata.offer_source=direct_board_recruitment_project (test_dwm_checkout_success_url_reverted_to_intake).",
+    "2_dwm_claim_security": "PASS — paid seeded direct_project session rejected with 400; no entitlement, no purchases row (test_claim_paid_direct_project_is_rejected). Unpaid path returns 402 (test_iter28::test_claim_unpaid_session_returns_402).",
+    "3_dwm_intake_no_account": "PASS — /api/board-recruitment-intake/context?session_id=... returns eligible:true; POST /api/board-recruitment-intake/submit (no auth) returns 201 with redirect_url=https://calendly.com/boardbuilder/recruitboard; row stored in db.board_recruitment_intakes with organization_name=TEST_DwmRevert Org.",
+    "4_diy_regression": "PASS — diy-checkout success_url=/purchase/success?session_id=..., amount 49700; DIY intake redirect_url=/recruitment-start-here; module-tester@example.com login returns token + recruitment_self_guided entitlement (test_module_tester_login).",
+    "5_before_you_start_removed": "PASS — /recruit/checkout HTML contains none of 'Before You Start' / 'This Is an Execution Program' / 'Complete the Steps in Order' / 'Use the Support Available to You' / 'You Make the Final Board Decisions'; no data-testid=before-start-section; page flows board-types-section -> checkout-commit-section; $497 pay button, terms checkbox, guarantee card, and testimonials preserved.",
+    "6_recruit_yourself_unchanged": "PASS — /recruit-your-board-yourself loads, no Before-You-Start, $497 price, MAKE PAYMENT CTA triggers POST /api/payments/diy-checkout -> 200 with checkout_url + session_id, 12 outcome headings in walk-away section, money-back guarantee text present, testimonials present.",
+    "7_pytest_all_pass": "PASS — 37 tests across the three requested files + 6 new iter29 tests = 43 passing."
+  },
+  "action_items": [],
+  "critical_code_review_comments": [
+    "member_routes.claim_recruitment_purchase orders Stripe verification BEFORE the offer_source check. If Stripe is ever unreachable or the session was created purely locally (seed/replay), buyers see a generic 'could not verify with Stripe' error even when the underlying purchase is not a Recruitment program purchase at all. Consider inspecting the local payment_transactions row first when metadata is already known, then fall through to Stripe for authoritative verification — improves clarity and testability."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter29_dwm_revert.py (new)"
+  ],
+  "success_rate": {"backend": "100% (43/43)", "frontend": "100%"},
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com (not needed this round); module-tester@example.com / ModuleTest123! login verified.",
+  "seed_data_creation": "All seed rows (TEST_DwmRevert Org intake, seeded paid payment_transactions, transient test members test_iter29_/test_acct_/test_brp_) were cleaned up. module-tester account preserved. Exactly ONE DWM intake submit executed (owner-notification path) with TEST_DwmRevert Org / test_dwm_revert@example.com per instructions.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend Stripe key must be sourced from /app/backend/.env with 'set -a && source .env && set +a' — using cut -d= truncates the key because it contains '=' padding-like chars. All three original suites + new iter29 suite are now the regression baseline for the reverted DWM (no-account) flow."
+}

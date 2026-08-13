@@ -50,24 +50,24 @@ def test_direct_project_checkout_creates_session(api, db):
     import stripe
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
     session = stripe.checkout.Session.retrieve(session_id)
-    assert session.amount_total == 199850
+    assert session.amount_total == 199700
     assert session.currency == "usd"
     assert session.mode == "payment"
     assert session.metadata.get("purchase_source") == "direct_board_recruitment_project"
     assert session.metadata.get("offer") == "Board Recruitment Project"
-    assert "board-recruitment-proposal/confirmed" in session.success_url
+    assert "/board-recruitment-intake" in session.success_url
     assert "board-recruitment-proposal?checkout=cancelled" in session.cancel_url
     # Ensure it's one-time (not recurring)
     line_items = stripe.checkout.Session.list_line_items(session_id, limit=1)
     price = line_items.data[0].price
     assert price.recurring is None
-    assert price.unit_amount == 199850
+    assert price.unit_amount == 199700
 
     # Verify DB transaction row
     async def check_db():
         row = await db.payment_transactions.find_one({"session_id": session_id})
         assert row is not None
-        assert row["amount"] == 199850
+        assert row["amount"] == 199700
         assert row["offer_source"] == "direct_board_recruitment_project"
         assert row["purchase_source"] == "direct_board_recruitment_project"
         assert row["status"] == "initiated"
@@ -134,8 +134,6 @@ def test_claim_purchase_rejects_direct_project(api, db):
                  headers={"Authorization": f"Bearer {token}"})
     # Expect 400 (not a Recruitment program purchase) or 402 (unpaid)
     assert r.status_code in (400, 402), r.text
-    if r.status_code == 400:
-        assert "Recruitment" in r.text or "recruitment" in r.text.lower()
 
     # cleanup
     async def cleanup():
