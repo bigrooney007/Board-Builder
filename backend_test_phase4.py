@@ -10,7 +10,7 @@ import httpx
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Base URL from frontend/.env
-BASE_URL = "https://board-funnel-v2.preview.emergentagent.com/api"
+BASE_URL = "https://nurture-v3-deploy.preview.emergentagent.com/api"
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = "test_database"
 

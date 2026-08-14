@@ -1,0 +1,162 @@
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Users } from "lucide-react";
+import { memberApi } from "./api";
+import { useMemberAuth } from "./MemberAuthContext";
+import { MemberShell } from "./MemberShell";
+import { SupportBox, VideoBlock } from "./CoursePages";
+import ReactivationStep2 from "./ReactivationStep2";
+import ReactivationStep3 from "./ReactivationStep3";
+import ReactivationStep5 from "./ReactivationStep5";
+
+const META = {
+  key: "reactivation_self_guided",
+  endpoint: "/courses/reactivation/self-guided",
+  base: "/app/reactivation/self-guided",
+  label: "Board Reactivation — Self-Guided System",
+};
+
+const useReactivationCourse = () => {
+  const { member, loading } = useMemberAuth();
+  const navigate = useNavigate();
+  const [course, setCourse] = useState(null);
+  const [error, setError] = useState("");
+  const [forbidden, setForbidden] = useState(false);
+  const load = React.useCallback(() => {
+    memberApi.get(META.endpoint).then((response) => setCourse(response.data)).catch((err) => {
+      if (err.response?.status === 401) navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+      else if (err.response?.status === 403) setForbidden(true);
+      else setError("We could not load this course.");
+    });
+  }, [navigate]);
+  useEffect(() => {
+    if (loading) return;
+    if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
+    load();
+  }, [loading, member, navigate, load]);
+  return { course, error, forbidden, reload: load };
+};
+
+const ForbiddenCard = () => (
+  <div className="member-card" data-testid="reactivation-course-forbidden">
+    <h2>This Program Is Not Included in Your Account</h2>
+    <p>Your account does not include access to this program. If you believe this is a mistake, please contact us.</p>
+    <Link className="button" to="/app">Back to My Board Builder</Link>
+  </div>
+);
+
+export const ReactivationOverviewPage = () => {
+  const { course, error, forbidden } = useReactivationCourse();
+  useEffect(() => { document.title = "Board Reactivation | Nonprofit Board Builder"; }, []);
+  return (
+    <MemberShell>
+      <main className="member-page" data-testid="reactivation-overview">
+        <header className="member-page-heading">
+          <p className="eyebrow">Board Reactivation</p>
+          <h1>{META.label}</h1>
+          {course && <p data-testid="reactivation-progress-summary">{course.percent_complete}% complete · {course.modules_completed} of {course.modules.length} steps finished</p>}
+          {course && <div className="dashboard-progress-bar"><i style={{ width: `${course.percent_complete}%` }} /></div>}
+        </header>
+        {forbidden && <ForbiddenCard />}
+        {error && <p className="submit-error">{error}</p>}
+        {course && (
+          <div className="module-list">
+            {course.modules.map((module) => (
+              <Link className="module-list-item" to={`${META.base}/module/${module.number}`} key={module.number} data-testid={`reactivation-module-link-${module.number}`}>
+                {module.completed ? <CheckCircle2 className="module-done" size={21} /> : <Circle className="module-todo" size={21} />}
+                <div><span>Step {module.number}</span><h2>{module.title}</h2></div>
+                <ArrowRight size={17} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
+    </MemberShell>
+  );
+};
+
+const StepShell = ({ moduleNumber }) => {
+  if (moduleNumber === 1) {
+    return (
+      <section className="member-card" data-testid="reactivation-step1-training">
+        <h2>Understand Why Boards Disengage</h2>
+        <p>This step is training only. Watch the video above, then mark this step complete and continue to Step 2 to begin working through your current Board Members.</p>
+      </section>
+    );
+  }
+  if (moduleNumber === 2) {
+    return <ReactivationStep2 />;
+  }
+  if (moduleNumber === 3) {
+    return <ReactivationStep3 />;
+  }
+  if (moduleNumber === 4) {
+    return (
+      <section className="member-card" data-testid="reactivation-step4-shell">
+        <h2>Give Every Board Member Clear Responsibility</h2>
+        <p>The conversation should not end with a vague promise to become more involved.</p>
+        <p>For every Board Member who is continuing with the organization, create a clear Board Member Portfolio showing where they can contribute, what responsibility they have agreed to carry, and how their experience can help move the organization forward.</p>
+        <p>Your Board Member Portfolios are generated and managed from <strong>My Board</strong>, using each person's Recommitment responses, your Conversation Conclusion and the outcome you selected.</p>
+        <Link className="button rwr-cta-button" to="/app/reactivation/self-guided/module/5" data-testid="reactivation-step4-continue">CONTINUE TO MY BOARD</Link>
+      </section>
+    );
+  }
+  return <ReactivationStep5 />;
+};
+
+export const ReactivationModulePage = () => {
+  const { course, error, forbidden, reload } = useReactivationCourse();
+  const { moduleNumber } = useParams();
+  const navigate = useNavigate();
+  const number = Number(moduleNumber);
+  const [marking, setMarking] = useState(false);
+  const module = course?.modules.find((item) => item.number === number);
+
+  useEffect(() => {
+    if (module) document.title = `Step ${module.number} | ${module.title} | Nonprofit Board Builder`;
+  }, [module]);
+
+  useEffect(() => {
+    if (!course || !module) return;
+    memberApi.post("/courses/progress", { product: META.key, module_number: number, action: "viewed" }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course?.product, number]);
+
+  const markComplete = async () => {
+    setMarking(true);
+    try {
+      await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: module.completed ? "uncompleted" : "completed" });
+      reload();
+    } catch { /* ignore */ }
+    setMarking(false);
+  };
+
+  return (
+    <MemberShell>
+      <main className="member-page module-page" data-testid="reactivation-module-page">
+        {forbidden && <ForbiddenCard />}
+        {error && <p className="submit-error">{error}</p>}
+        {course && !module && <div className="member-card"><h2>Step Not Found</h2><Link className="button" to={META.base}>Back to Board Reactivation</Link></div>}
+        {module && (
+          <>
+            <header className="member-page-heading">
+              <Link className="module-breadcrumb" to={META.base} data-testid="reactivation-module-back"><ArrowLeft size={15} /> {META.label}</Link>
+              <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
+              <h1 data-testid="reactivation-module-title">{module.title}</h1>
+            </header>
+            {module.number !== 5 && <VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
+            <StepShell moduleNumber={number} />
+            <div className="module-nav" data-testid="reactivation-module-navigation">
+              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
+              <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="reactivation-mark-complete-button">
+                {module.completed ? <><CheckCircle2 size={16} /> Step Completed</> : "Mark This Step Complete"}
+              </button>
+              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${META.base}/module/${number + 1}`)} data-testid="reactivation-next-button">Next Step <ArrowRight size={16} /></button>
+            </div>
+            <SupportBox productKey={META.key} moduleNumber={number} supportTypes={course.support_types} />
+          </>
+        )}
+      </main>
+    </MemberShell>
+  );
+};

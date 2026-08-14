@@ -78,10 +78,40 @@ NURTURE_TEMPLATES = {
          "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
     ],
     "reactivation": [
-        {"subject": "Your Inactive Board Members May Need a Decision, Not Another Reminder", "headline": "Give Them a Clear Opportunity to Recommit", "paragraphs": ["Repeated reminders rarely reactivate an inactive board.", "Each person needs a clear opportunity to decide whether they are still willing and able to serve, understand what the organization now requires and commit to meaningful responsibility.", "Those who cannot continue should have a respectful way to step down.", "That is the beginning of board reactivation."], "cta": "See How We Can Help You Reactivate", "url": "/reactivate/options"},
-        {"subject": "Attendance Is Not the Same as Engagement", "headline": "Board Members Need Something to Own", "paragraphs": ["A person can attend every board meeting and still contribute very little.", "Real engagement begins when board members understand the organization's priorities and accept clear responsibilities connected to their strengths.", "Your board does not simply need more meetings.", "It needs clarity, ownership and accountability."], "cta": "See Your Board Reactivation Options", "url": "/reactivate/options"},
-        {"subject": "Some Board Members Should Be Allowed to Step Down", "headline": "Reactivation Is Not About Pressuring Everyone to Stay", "paragraphs": ["Not every inactive board member needs to be persuaded to continue.", "People's circumstances change. Some no longer have the time, interest or ability to give the organization what board service requires.", "A good reactivation process lets committed people step up while giving others a respectful way to step down without unnecessarily damaging relationships."], "cta": "Start Your Board Reactivation Process", "url": "/reactivate/options"},
-        {"subject": "Your Board Needs to Know Where the Organization Is Going", "headline": "People Execute What They Help Plan", "paragraphs": ["It is difficult to hold board members responsible for priorities they never helped understand or shape.", "One of the strongest ways to reactivate a board is to involve members in the direction of the organization, then turn that direction into individual responsibilities.", "That moves the board from observation into ownership."], "cta": "See How We Can Help", "url": "/reactivate/options"},
+        {"subject": "Before You Decide What to Do With Your Board", "greeting": True,
+         "paragraphs": [
+             "You came to me because your Board is not functioning the way your organization needs it to.",
+             "Maybe people have stopped participating. Maybe they attend meetings but do not take responsibility. Maybe you are carrying most of the organization while also carrying Board Members who were supposed to help carry it with you.",
+             "Before you decide how you want to deal with that, I want you to know a little about the person behind this process.",
+             "I started as a nonprofit founder many years ago, where I built my first Board. I made mistakes, damaged relationships, learned from the experience, rebuilt my Board, and eventually developed a process that worked.",
+             "Since then, I have served on nonprofit Boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their Boards, and contributed to raising more than $5 million.",
+             "Today, I work with founders and executive directors so they can build Boards that actually help carry the mission.",
+             "If you want to know more about me and how I work, start here.",
+         ], "cta": "MEET ROONEY & SEE HOW I CAN HELP", "url": "/about-rooney", "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "You Can Reactivate Your Board Yourself", "greeting": True,
+         "paragraphs": [
+             "You do not have to keep carrying dead weight on your Board.",
+             "If your Board Members are disengaged, the answer is not simply to keep reminding them to attend meetings or asking them to become more active.",
+             "You need clarity. Who is actually willing and able to continue serving? Who needs clearer responsibility? Who is prepared to stand up and take ownership? And who no longer has the capacity or willingness to carry Board responsibility?",
+             "I have created a way for you to work through that process yourself.",
+             "You will understand what caused the disengagement, give every current Board Member an opportunity to recommit, have the conversations that need to happen, and give the people who remain clear responsibility for helping move your organization forward.",
+             "You will not have to walk blindly into those conversations. Each Board Member's own responses will help you understand where they are before you speak with them.",
+             "And once you have agreed on how a continuing Board Member will contribute, you can create their individual Board Member Portfolio so they leave knowing what they own.",
+             "You are doing the process yourself, but you are not doing it alone. If you get stuck, need clarification, want something reviewed or need help moving through a difficult step, you can reach out to me for support.",
+             "The investment is $497, one time. Your investment is protected by our 100% money-back guarantee.",
+             "If you are ready to stop carrying a Board that is not carrying the mission with you, start now.",
+         ], "cta": "REACTIVATE MY BOARD MYSELF — $497", "url": "/reactivate-your-board-yourself", "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "Want Me to Help You Reactivate Your Board?", "greeting": True,
+         "paragraphs": [
+             "You do not have to have the difficult conversations with your Board without a process or support.",
+             "If you want me directly involved, we can work through the Reactivation process together.",
+             "The goal is not to pressure disengaged Board Members into staying. The goal is to find out who is genuinely ready to stand up, what responsibility those people are prepared to carry, and how to deal respectfully with the people who are no longer willing or able to serve actively.",
+             "We will work through your current Board and turn vague membership into clarity.",
+             "Those who are ready to serve should know where they fit and what they own. Those who are no longer prepared to carry Board responsibility should not remain dead weight for the founder to carry indefinitely.",
+             "Your Board should help carry the organization forward.",
+             "If you want me to work through that process with you, come reactivate your Board with me.",
+             "The investment is $1,997. Your investment is protected by our 100% money-back guarantee.",
+         ], "cta": "REACTIVATE MY BOARD WITH ROONEY — $1,997", "url": "/board-reactivation-proposal", "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
     ],
     "fundraising_activation": [
         {"subject": "“Help Us Fundraise” Is Not a Board Responsibility", "headline": "Give Every Board Member Something Specific to Do", "paragraphs": ["Board members struggle with fundraising when the expectation is simply to “help raise money.”", "One person may be good at corporate introductions. Another may know donors. Someone else may help with grants, events, sponsorship or community relationships.", "The goal is to give each person a fundraising responsibility they can actually execute."], "cta": "See How We Can Help You Activate Your Board", "url": "/activate/options"},
@@ -305,16 +335,32 @@ async def stop_recruitment_nurture(db, email: str) -> None:
 
 
 RECRUITMENT_PURCHASE_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
+REACTIVATION_PURCHASE_SOURCES = {"direct_diy_board_reactivation_497", "direct_board_reactivation_project"}
+
+
+async def stop_reactivation_nurture(db, email: str) -> None:
+    email = email.lower()
+    await db.nurture_contacts.update_one({"email": email}, {"$set": {"nurture_status": "customer", "active_offer_source": "", "updated_at": now_tz().isoformat()}}, upsert=True)
+    try:
+        segments = await get_nurture_segments(db)
+        resend.api_key = os.environ["RESEND_API_KEY"]
+        await resend.ContactSegments.remove_async({"segment_id": segments["reactivation"], "email": email})
+    except Exception as exc:
+        logger.warning("Reactivation nurture removal failed for %s: %s", email, exc)
 
 
 async def stop_recruitment_nurture_for_purchase(db, transaction: dict, buyer_email: str = "") -> None:
-    """Stop Recruitment nurture the moment a Recruitment purchase is verified paid. Idempotent; never raises."""
+    """Stop the matching prospect nurture the moment a purchase is verified paid. Idempotent; never raises."""
     try:
-        if not transaction or transaction.get("purchase_source") not in RECRUITMENT_PURCHASE_SOURCES:
+        source = (transaction or {}).get("purchase_source", "")
+        if source not in RECRUITMENT_PURCHASE_SOURCES | REACTIVATION_PURCHASE_SOURCES:
             return
-        emails = {value.lower() for value in [buyer_email, transaction.get("customer_email", "")] if value}
+        emails = {value.lower() for value in [buyer_email, (transaction or {}).get("customer_email", "")] if value}
         for email in emails:
-            await stop_recruitment_nurture(db, email)
+            if source in RECRUITMENT_PURCHASE_SOURCES:
+                await stop_recruitment_nurture(db, email)
+            else:
+                await stop_reactivation_nurture(db, email)
     except Exception as exc:
         logger.warning("Nurture stop after purchase failed (payment unaffected): %s", exc)
 
@@ -325,12 +371,14 @@ def enabled_nurture_sources() -> set:
         enabled.update(NURTURE_TEMPLATES.keys())
     if os.environ.get("RECRUITMENT_LEAD_NURTURE_ENABLED", "false").lower() == "true":
         enabled.add("recruitment")
+    if os.environ.get("REACTIVATION_LEAD_NURTURE_ENABLED", "false").lower() == "true":
+        enabled.add("reactivation")
     return enabled
 
 
 def nurture_sender(source: str) -> str:
     base = os.environ["NONPROFIT_SENDER"]
-    if source == "recruitment":
+    if source in {"recruitment", "reactivation"}:
         address = base.split("<", 1)[1].rstrip(">").strip() if "<" in base else base
         return f"Rooney Akpesiri | The Nonprofit Board Builder <{address}>"
     return base

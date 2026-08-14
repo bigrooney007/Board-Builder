@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from auth_service import authenticate_admin
-from course_content import BASIC_MODULES, PRODUCT_KEYS, SELF_GUIDED_MODULES, SUPPORT_TYPES
+from course_content import ALL_PRODUCT_KEYS, BASIC_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES, SUPPORT_TYPES
 from member_auth import authenticate_member, new_uuid, require_entitlement
 
 
@@ -20,7 +20,7 @@ class ProgressRequest(BaseModel):
     @field_validator("product")
     @classmethod
     def valid_product(cls, value: str) -> str:
-        if value not in PRODUCT_KEYS:
+        if value not in ALL_PRODUCT_KEYS:
             raise ValueError("Unknown product")
         return value
 
@@ -42,7 +42,7 @@ class SupportRequestCreate(BaseModel):
     @field_validator("product")
     @classmethod
     def valid_product(cls, value: str) -> str:
-        if value not in PRODUCT_KEYS:
+        if value not in ALL_PRODUCT_KEYS:
             raise ValueError("Unknown product")
         return value
 
@@ -63,7 +63,7 @@ class VideoConfig(BaseModel):
     @field_validator("product")
     @classmethod
     def valid_product(cls, value: str) -> str:
-        if value not in PRODUCT_KEYS:
+        if value not in ALL_PRODUCT_KEYS:
             raise ValueError("Unknown product")
         return value
 
@@ -104,10 +104,21 @@ def create_course_router(db) -> APIRouter:
         require_entitlement(member, {"recruitment_self_guided"})
         return await merged_course(db, member, "recruitment_self_guided", SELF_GUIDED_MODULES)
 
+    @router.get("/courses/reactivation/self-guided")
+    async def reactivation_course(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"reactivation_self_guided"})
+        return await merged_course(db, member, "reactivation_self_guided", REACTIVATION_MODULES)
+
     @router.post("/courses/progress")
     async def track_progress(payload: ProgressRequest, request: Request):
         member = await authenticate_member(request, db)
-        allowed = {"recruitment_basic", "recruitment_self_guided"} if payload.product == "recruitment_basic" else {"recruitment_self_guided"}
+        if payload.product == "recruitment_basic":
+            allowed = {"recruitment_basic", "recruitment_self_guided"}
+        elif payload.product == "reactivation_self_guided":
+            allowed = {"reactivation_self_guided"}
+        else:
+            allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
         if member.get("review_mode"):
             return {"status": "ok", "modules_completed": 0, "percent_complete": 0, "review_mode": True}
@@ -131,15 +142,24 @@ def create_course_router(db) -> APIRouter:
     @router.post("/support-requests", status_code=201)
     async def create_support_request(payload: SupportRequestCreate, request: Request):
         member = await authenticate_member(request, db)
-        allowed = {"recruitment_basic", "recruitment_self_guided"} if payload.product == "recruitment_basic" else {"recruitment_self_guided"}
+        if payload.product == "recruitment_basic":
+            allowed = {"recruitment_basic", "recruitment_self_guided"}
+        elif payload.product == "reactivation_self_guided":
+            allowed = {"reactivation_self_guided"}
+        else:
+            allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
         organization = ""
         lead_ids = member.get("lead_ids", [])
         if lead_ids:
             lead = await db.funnel_leads.find_one({"lead_id": {"$in": lead_ids}}, {"_id": 0, "organization": 1})
             organization = (lead or {}).get("organization", "")
-        tier = "$497" if payload.product == "recruitment_self_guided" else "$97"
-        product_name = "Recruitment Self-Guided" if payload.product == "recruitment_self_guided" else "Recruitment Basic"
+        tier = "$97" if payload.product == "recruitment_basic" else "$497"
+        product_name = {
+            "recruitment_self_guided": "Recruitment Self-Guided",
+            "recruitment_basic": "Recruitment Basic",
+            "reactivation_self_guided": "Reactivation Self-Guided",
+        }[payload.product]
         now = datetime.now(timezone.utc).isoformat()
         record = {
             "support_request_id": new_uuid(),

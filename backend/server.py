@@ -210,6 +210,10 @@ from refinement_routes import create_refinement_router
 app.include_router(create_refinement_router(db))
 from board_intake_routes import create_board_intake_router
 app.include_router(create_board_intake_router(db))
+from reactivation_intake_routes import create_reactivation_intake_router
+app.include_router(create_reactivation_intake_router(db))
+from reactivation_routes import create_reactivation_router
+app.include_router(create_reactivation_router(db))
 app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
 app.include_router(create_review_router(db))
@@ -274,10 +278,16 @@ async def startup_tasks():
     await db.rooney_engagements.create_index("purchase_id", unique=True)
     await db.rooney_engagements.create_index("engagement_id", unique=True)
     await db.rooney_engagements.create_index("user_id")
+    await db.board_reactivation_intakes.create_index("session_id", unique=True)
+    await db.reactivation_board_members.create_index("form_token", unique=True)
+    await db.reactivation_board_members.create_index([("user_id", 1), ("email", 1)])
+    await db.reactivation_engagements.create_index("purchase_id", unique=True)
     await seed_admin(db)
     automation_task = asyncio.create_task(automation_loop(db))
     app.state.marketing_task = asyncio.create_task(marketing_loop(db))
     app.state.accountability_task = asyncio.create_task(accountability_loop(db))
+    from reactivation_accountability import reactivation_accountability_loop
+    app.state.reactivation_accountability_task = asyncio.create_task(reactivation_accountability_loop(db))
 
 
 @app.on_event("shutdown")

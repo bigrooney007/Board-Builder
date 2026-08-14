@@ -11,10 +11,7 @@ SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "guided": "Guided Support", "sel
 
 REQUIRED_ANSWERS = {
     "recruitment": {"new_members_needed"},
-    "reactivation": {
-        "present_board", "active_board", "inactive_situations", "recommitment_conversations",
-        "strategic_planning", "priorities", "desired_changes",
-    },
+    "reactivation": {"disengaged_count"},
     "fundraising_activation": {
         "present_board", "active_board", "fundraising_involvement", "strategic_planning",
         "fundraising_strategy", "individual_responsibilities", "fundraising_need", "fundraising_areas",

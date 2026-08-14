@@ -14,7 +14,7 @@ from member_auth import (
     authenticate_member, clear_member_cookie, create_member_token,
     hash_member_password, new_uuid, set_member_cookie, verify_member_password,
 )
-from course_content import BASIC_MODULES
+from course_content import BASIC_MODULES, REACTIVATION_MODULES
 
 TIER_ENTITLEMENTS = {"97": "recruitment_basic", "497": "recruitment_self_guided"}
 TIER_PRODUCTS = {"97": "Recruitment Basic", "497": "Recruitment Self-Guided"}
@@ -73,6 +73,9 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "direct_diy_board_recruitment" and tier == "497":
         entitlement = "recruitment_self_guided"
         product_name = "Do It Yourself Board Recruitment"
+    elif offer_source == "direct_diy_board_reactivation" and tier == "497":
+        entitlement = "reactivation_self_guided"
+        product_name = "Do It Yourself Board Reactivation"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -106,6 +109,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "purchase_source": "direct_diy_board_recruitment_497",
             "offer": "Do It Yourself Board Recruitment", "price_paid": 497,
         })
+    elif offer_source == "direct_diy_board_reactivation":
+        purchase.update({
+            "purchase_source": "direct_diy_board_reactivation_497",
+            "offer": "Do It Yourself Board Reactivation", "price_paid": 497,
+        })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     update = {"$addToSet": {"entitlements": entitlement}, "$set": {"updated_at": now}}
     if lead_id:
@@ -135,6 +143,12 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         try:
             from accountability_service import enroll_rooney_engagement
             await enroll_rooney_engagement(db, member, purchase)
+        except Exception:
+            pass
+    if purchase.get("purchase_source") == "direct_diy_board_reactivation_497":
+        try:
+            from reactivation_accountability import enroll_reactivation_engagement
+            await enroll_reactivation_engagement(db, member, purchase)
         except Exception:
             pass
     return purchase
@@ -219,9 +233,11 @@ def create_member_router(db) -> APIRouter:
         for entitlement, name, route in [
             ("recruitment_basic", "Board Recruitment — Basic", "/app/recruitment/basic"),
             ("recruitment_self_guided", "Board Recruitment — Self-Guided System", "/app/recruitment/self-guided"),
+            ("reactivation_self_guided", "Board Reactivation — Self-Guided System", "/app/reactivation/self-guided"),
         ]:
             if entitlement not in entitlements:
                 continue
+            module_titles = REACTIVATION_MODULES if entitlement == "reactivation_self_guided" else BASIC_MODULES
             records = await db.course_progress.find(
                 {"user_id": member["user_id"], "product": entitlement, "module_number": {"$lte": 5}}, {"_id": 0}
             ).to_list(50)
@@ -230,7 +246,7 @@ def create_member_router(db) -> APIRouter:
             last_module = None
             if last_visit:
                 number = last_visit["module_number"]
-                title = next((module["title"] for module in BASIC_MODULES if module["number"] == number), "")
+                title = next((module["title"] for module in module_titles if module["number"] == number), "")
                 last_module = {"number": number, "title": title}
             products.append({
                 "entitlement": entitlement, "name": name, "route": route,

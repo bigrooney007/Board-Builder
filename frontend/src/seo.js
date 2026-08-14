@@ -40,6 +40,10 @@ export const PAGE_META = {
   recruitYourBoardYourself: ["Recruit Your Board Yourself | Nonprofit Board Builder", "Follow Rooney's board recruitment process, use the execution materials provided and recruit the board members your nonprofit needs."],
   boardRecruitmentIntake: ["Tell Me About Your Organization and Board | Nonprofit Board Builder", "Provide the information needed to begin your board recruitment engagement."],
   reactivation: ["Reactivate Your Nonprofit Board | Nonprofit Board Builder", "Help committed board members step up, give inactive members a respectful path to step down and rebuild an engaged board ready to move your nonprofit forward."],
+  reactivateWithRooney: ["Reactivate Your Board With Rooney | Nonprofit Board Builder", "Reactivate your board without destroying relationships. Find out who is ready to stand up and give them clear responsibility."],
+  reactivateYourBoardYourself: ["Reactivate Your Board Yourself | Nonprofit Board Builder", "Follow the Board Reactivation process, have the conversations that need to happen and give the people who stay clear responsibility."],
+  boardReactivationProposal: ["Board Reactivation Project Proposal | Nonprofit Board Builder", "Work directly with Rooney to reactivate the people who are ready to serve and deal with the people who aren't."],
+  boardReactivationIntake: ["Tell Me About Your Board | Nonprofit Board Builder", "Provide the information needed to begin your board reactivation engagement."],
   fundraising_activation: ["Activate Your Board to Raise Money | Nonprofit Board Builder", "Activate your nonprofit board around fundraising so members use their strengths, relationships and experience to help raise money and strengthen your organization."],
   blog: ["Nonprofit Board Recruitment, Reactivation & Fundraising | Nonprofit Board Builder", "Practical insights for nonprofit founders and executive directors who want to recruit stronger board members, reactivate their present board and get their board involved in fundraising."],
 };

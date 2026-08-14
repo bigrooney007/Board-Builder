@@ -126,6 +126,16 @@ SELF_GUIDED_MODULES = [
 
 PRODUCT_KEYS = {"recruitment_basic", "recruitment_self_guided"}
 
+REACTIVATION_MODULES = [
+    {"number": 1, "title": "Why Boards Disengage", "kind": "training"},
+    {"number": 2, "title": "Reactivating Your Board", "kind": "shell"},
+    {"number": 3, "title": "Having the Difficult Conversation", "kind": "shell"},
+    {"number": 4, "title": "Equipping Each Board Member", "kind": "shell"},
+    {"number": 5, "title": "My Board", "kind": "dashboard"},
+]
+
+ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided"}
+
 SUPPORT_TYPES = [
     "I have a question about this module",
     "I need help using the platform",

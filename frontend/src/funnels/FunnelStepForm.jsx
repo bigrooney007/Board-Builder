@@ -75,6 +75,7 @@ export const FunnelStepForm = ({ offerSource }) => {
       sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization, support_preference: answers.support_preference || "" }));
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
       else if (config.redirectAfterSubmit === "rooney") navigate("/recruit-with-rooney");
+      else if (config.redirectAfterSubmit === "reactivate-rooney") navigate("/reactivate-with-rooney");
       else if (config.redirectAfterSubmit === "process") navigate(`/${config.slug}/process`);
       else navigate(`/${config.slug}/result/${response.data.result_token}`);
     } catch (error) {

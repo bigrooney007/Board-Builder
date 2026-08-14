@@ -53,7 +53,7 @@ const ForbiddenCard = () => (
   </div>
 );
 
-const VideoBlock = ({ module, testPrefix }) => {
+export const VideoBlock = ({ module, testPrefix }) => {
   const src = embedUrl(module.youtube_url);
   return src ? (
     <div className="module-video" data-testid={`${testPrefix}-video-embed`}>
@@ -68,7 +68,7 @@ const VideoBlock = ({ module, testPrefix }) => {
   );
 };
 
-const SupportBox = ({ productKey, moduleNumber, supportTypes }) => {
+export const SupportBox = ({ productKey, moduleNumber, supportTypes }) => {
   const [supportType, setSupportType] = useState("");
   const [message, setMessage] = useState("");
   const [confirmation, setConfirmation] = useState("");

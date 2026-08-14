@@ -18,6 +18,14 @@ import AboutRooneyPage from "@/funnels/AboutRooneyPage";
 import RecruitYourBoardYourselfPage from "@/funnels/RecruitYourBoardYourselfPage";
 import BoardRecruitmentIntakePage from "@/funnels/BoardRecruitmentIntakePage";
 import RecruitmentStartHerePage from "@/funnels/RecruitmentStartHerePage";
+import ReactivateWithRooneyPage from "@/funnels/ReactivateWithRooneyPage";
+import ReactivateYourBoardYourselfPage from "@/funnels/ReactivateYourBoardYourselfPage";
+import BoardReactivationProposalPage from "@/funnels/BoardReactivationProposalPage";
+import BoardReactivationIntakePage from "@/funnels/BoardReactivationIntakePage";
+import ReactivationStartHerePage from "@/funnels/ReactivationStartHerePage";
+import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
+import PortfolioPage from "@/pages/PortfolioPage";
+import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
@@ -64,6 +72,15 @@ export default function App() {
           <Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />
           <Route path="/recruitment-start-here" element={<RecruitmentStartHerePage />} />
           <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
+          <Route path="/reactivate-with-rooney" element={<ReactivateWithRooneyPage />} />
+          <Route path="/reactivate-your-board-yourself" element={<ReactivateYourBoardYourselfPage />} />
+          <Route path="/board-reactivation-proposal" element={<BoardReactivationProposalPage />} />
+          <Route path="/board-reactivation-intake" element={<BoardReactivationIntakePage />} />
+          <Route path="/reactivation-start-here" element={<ReactivationStartHerePage />} />
+          <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
+          <Route path="/portfolio/:token" element={<PortfolioPage />} />
+          <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
+          <Route path="/app/reactivation/self-guided/module/:moduleNumber" element={<ReactivationModulePage />} />
           <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />
           <Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} />

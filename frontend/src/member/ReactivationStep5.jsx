@@ -1,0 +1,270 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Download, FileText, Mail, RefreshCw, Users, X } from "lucide-react";
+import { memberApi } from "./api";
+
+const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
+const Modal = ({ children, onClose, testId, wide }) => (
+  <div style={overlayStyle} data-testid={testId}>
+    <div style={{ background: "#fff", maxWidth: wide ? 860 : 700, width: "100%", padding: 28, borderRadius: 8, position: "relative" }}>
+      <button type="button" onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid={`${testId}-close`}><X size={20} /></button>
+      {children}
+    </div>
+  </div>
+);
+
+const PortfolioWorkflow = ({ row, reload }) => {
+  const id = row.member_record_id;
+  const [busy, setBusy] = useState("");
+  const [material, setMaterial] = useState(null);
+  const [mode, setMode] = useState("");
+  const [draftText, setDraftText] = useState("");
+  const [emailDraft, setEmailDraft] = useState(null);
+  const status = material ? (material.sent_at ? "SENT" : material.status === "Approved" ? "APPROVED" : "DRAFT") : row.portfolio ? row.portfolio.status.toUpperCase() : "NOT GENERATED";
+  const materialId = material?.material_id || row.portfolio?.material_id;
+
+  const loadMaterial = useCallback(async () => {
+    if (!materialId) return null;
+    const res = await memberApi.get(`/reactivation/materials/${materialId}`);
+    const merged = { ...res.data, share_token: row.portfolio?.share_token, sent_at: row.portfolio?.sent_at };
+    setMaterial(merged);
+    return merged;
+  }, [materialId, row.portfolio]);
+
+  const generate = async () => {
+    setBusy("generate");
+    try {
+      const res = await memberApi.post(`/reactivation/board-members/${id}/portfolio`);
+      setMaterial(res.data);
+      reload();
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Generation failed. Please try again.");
+    }
+    setBusy("");
+  };
+
+  const openEdit = async () => { const m = material?.display_text ? material : await loadMaterial(); if (m) { setDraftText(m.display_text); setMode("edit"); } };
+  const openView = async () => { const m = material?.display_text ? material : await loadMaterial(); if (m) setMode("view"); };
+
+  const saveEdit = async () => {
+    setBusy("save");
+    await memberApi.put(`/reactivation/materials/${materialId}`, { display_text: draftText });
+    setMaterial((m) => ({ ...m, display_text: draftText, status: "Draft", sent_at: "" }));
+    setMode("");
+    setBusy("");
+    reload();
+  };
+
+  const approve = async () => {
+    setBusy("approve");
+    await memberApi.post(`/reactivation/materials/${materialId}/approve-portfolio`);
+    setBusy("");
+    reload();
+  };
+
+  const download = async () => {
+    const token = row.portfolio?.share_token || material?.share_token;
+    if (token) { window.open(`${API_BASE}/portfolio/${token}/pdf`, "_blank"); return; }
+    const res = await memberApi.get(`/reactivation/materials/${materialId}/pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `Board-Member-Portfolio-${row.name.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const prepareEmail = async () => {
+    try {
+      const res = await memberApi.get(`/reactivation/board-members/${id}/portfolio-email`);
+      setEmailDraft(res.data);
+      setMode("email");
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Approve this Portfolio before preparing the email.");
+    }
+  };
+
+  const sendEmail = async () => {
+    setBusy("send");
+    try {
+      await memberApi.post(`/reactivation/board-members/${id}/portfolio-email`, { subject: emailDraft.subject, body: emailDraft.body });
+      setMode("");
+      reload();
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "The email could not be sent.");
+    }
+    setBusy("");
+  };
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p className="eyebrow" data-testid={`myboard-portfolio-status-${id}`}>Portfolio: {status}{row.portfolio?.sent_at ? ` · sent ${new Date(row.portfolio.sent_at).toLocaleString()}` : ""}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-generate-portfolio-${id}`}>
+          {busy === "generate" ? "Generating…" : status === "NOT GENERATED" ? <><FileText size={15} /> GENERATE BOARD MEMBER PORTFOLIO</> : <><RefreshCw size={15} /> REGENERATE</>}
+        </button>
+        {status !== "NOT GENERATED" && (
+          <>
+            <button type="button" className="button button-outline" onClick={openEdit} data-testid={`myboard-edit-${id}`}>EDIT</button>
+            <button type="button" className="button button-outline" onClick={approve} disabled={busy === "approve" || status !== "DRAFT"} data-testid={`myboard-approve-${id}`}>{status === "DRAFT" ? "APPROVE PORTFOLIO" : "APPROVED"}</button>
+            {row.portfolio?.share_token ? (
+              <a className="button button-outline" href={`/portfolio/${row.portfolio.share_token}`} target="_blank" rel="noreferrer" data-testid={`myboard-view-online-${id}`}>VIEW ONLINE</a>
+            ) : (
+              <button type="button" className="button button-outline" onClick={openView} data-testid={`myboard-view-draft-${id}`}>VIEW DRAFT</button>
+            )}
+            <button type="button" className="button button-outline" onClick={download} data-testid={`myboard-download-${id}`}><Download size={15} /> DOWNLOAD PDF</button>
+            {status !== "DRAFT" && (
+              <button type="button" className="button" onClick={prepareEmail} data-testid={`myboard-prepare-email-${id}`}><Mail size={15} /> PREPARE PORTFOLIO EMAIL</button>
+            )}
+          </>
+        )}
+      </div>
+      {mode === "view" && material && (
+        <Modal onClose={() => setMode("")} testId={`myboard-view-modal-${id}`} wide>
+          <h2>{material.title} — {row.name}</h2>
+          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, maxHeight: 520, overflowY: "auto" }}>{material.display_text}</div>
+        </Modal>
+      )}
+      {mode === "edit" && (
+        <Modal onClose={() => setMode("")} testId={`myboard-edit-modal-${id}`} wide>
+          <h2>Edit Portfolio</h2>
+          <textarea rows={22} value={draftText} onChange={(e) => setDraftText(e.target.value)} style={{ width: "100%" }} data-testid={`myboard-edit-text-${id}`} />
+          <button type="button" className="button" onClick={saveEdit} disabled={busy === "save"} data-testid={`myboard-save-edit-${id}`}>{busy === "save" ? "Saving…" : "SAVE"}</button>
+        </Modal>
+      )}
+      {mode === "email" && emailDraft && (
+        <Modal onClose={() => setMode("")} testId={`myboard-email-modal-${id}`} wide>
+          <h2>Review Portfolio Email</h2>
+          <p><strong>To:</strong> {emailDraft.to_name} &lt;{emailDraft.to_email}&gt;</p>
+          <label className="field"><span>Subject</span><input value={emailDraft.subject} onChange={(e) => setEmailDraft({ ...emailDraft, subject: e.target.value })} data-testid={`myboard-email-subject-${id}`} /></label>
+          <label className="field"><span>Email Body</span><textarea rows={12} value={emailDraft.body} onChange={(e) => setEmailDraft({ ...emailDraft, body: e.target.value })} data-testid={`myboard-email-body-${id}`} /></label>
+          <p><strong>Portfolio Link (inserted automatically):</strong> <span style={{ wordBreak: "break-all" }} data-testid={`myboard-email-link-${id}`}>{emailDraft.portfolio_link}</span></p>
+          <button type="button" className="button" onClick={sendEmail} disabled={busy === "send"} data-testid={`myboard-send-email-${id}`}>{busy === "send" ? "Sending…" : "SEND PORTFOLIO"}</button>
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const MemberCard = ({ row, withPortfolio, reload, badge }) => (
+  <article className="member-card" data-testid={`myboard-member-${row.member_record_id}`}>
+    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+      <div>
+        <h3 style={{ margin: 0 }}>{row.name}</h3>
+        <p style={{ margin: "4px 0 0" }}>
+          {row.role || "Board Member"}
+          {row.professional_role && <> · {row.professional_role}{row.employer ? `, ${row.employer}` : ""}</>}
+        </p>
+      </div>
+      <span className="eyebrow" style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }}>{badge}</span>
+    </div>
+    {row.contribution_interests?.length > 0 && <p style={{ margin: "10px 0 0" }}><strong>Primary Contribution:</strong> {row.contribution_interests.slice(0, 3).join(", ")}</p>}
+    {row.expertise?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>Expertise:</strong> {row.expertise.slice(0, 6).join(", ")}</p>}
+    {withPortfolio && <PortfolioWorkflow row={row} reload={reload} />}
+  </article>
+);
+
+export default function ReactivationStep5() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const load = useCallback(() => {
+    memberApi.get("/reactivation/my-board").then((res) => setData(res.data)).catch(() => setError("We could not load My Board."));
+  }, []);
+  useEffect(load, [load]);
+
+  if (error) return <p className="submit-error">{error}</p>;
+  if (!data) return <p className="sh-loading">Loading your Board…</p>;
+  const { groups, summary } = data;
+  const processed = summary.active + summary.advisory + summary.support + summary.stepping_down;
+
+  return (
+    <div data-testid="reactivation-myboard">
+      <section className="member-card" data-testid="myboard-intro">
+        <h2><Users size={20} aria-hidden="true" /> Your Reactivated Board</h2>
+        <p>You now have a clearer picture of who is ready to carry Board responsibility, where each continuing member can contribute, and who is transitioning or stepping down.</p>
+        <p>This is the Board you can begin building with.</p>
+      </section>
+
+      <section className="member-card" data-testid="myboard-summary">
+        <p data-testid="myboard-summary-counts">
+          <strong>{summary.reviewed}</strong> Board Member{summary.reviewed === 1 ? "" : "s"} Reviewed
+          {summary.active > 0 && <> · <strong>{summary.active}</strong> Continuing Active</>}
+          {summary.advisory > 0 && <> · <strong>{summary.advisory}</strong> Advisory</>}
+          {summary.support > 0 && <> · <strong>{summary.support}</strong> Support Role</>}
+          {summary.stepping_down > 0 && <> · <strong>{summary.stepping_down}</strong> Stepping Down</>}
+          {summary.follow_up > 0 && <> · <strong>{summary.follow_up}</strong> Follow-Up Needed</>}
+          {summary.waiting > 0 && <> · <strong>{summary.waiting}</strong> Waiting for Recommitment Form</>}
+          {summary.portfolios_approved > 0 && <> · <strong>{summary.portfolios_approved}</strong> Portfolio{summary.portfolios_approved === 1 ? "" : "s"} Approved</>}
+        </p>
+      </section>
+
+      {processed > 0 && (
+        <section className="member-card" data-testid="myboard-completion">
+          <h2>You Have Reactivated Your Board</h2>
+          <p>You now know who is ready to stand up, where your continuing Board Members can contribute, what responsibilities they have agreed to carry, and where transitions need to happen.</p>
+          <p>Your next job is to keep those responsibilities active and build with the people who have recommitted.</p>
+        </section>
+      )}
+
+      {groups.active.length > 0 && (
+        <section data-testid="myboard-active-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Active Board Members</h2>
+          {groups.active.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ACTIVE — RECOMMITTED" />)}
+        </section>
+      )}
+      {groups.advisory.length > 0 && (
+        <section data-testid="myboard-advisory-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Advisory Board / Advisory Members</h2>
+          {groups.advisory.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ADVISORY" />)}
+        </section>
+      )}
+      {groups.support.length > 0 && (
+        <section data-testid="myboard-support-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Support Roles</h2>
+          {groups.support.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="SUPPORT ROLE" />)}
+        </section>
+      )}
+      {groups.stepping_down.length > 0 && (
+        <section data-testid="myboard-transitions-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Board Transitions</h2>
+          {groups.stepping_down.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="STEPPING DOWN" />)}
+        </section>
+      )}
+      {groups.follow_up.length > 0 && (
+        <section data-testid="myboard-followup-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Follow-Up Still Needed</h2>
+          {groups.follow_up.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="FOLLOW-UP NEEDED" />)}
+          <Link className="button button-outline" to="/app/reactivation/self-guided/module/3" data-testid="myboard-return-step3">RETURN TO STEP 3 — HAVE THE CONVERSATIONS</Link>
+        </section>
+      )}
+      {groups.waiting.length > 0 && (
+        <section data-testid="myboard-waiting-section">
+          <h2 style={{ margin: "24px 0 10px" }}>Waiting for Recommitment Form</h2>
+          {groups.waiting.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="WAITING" />)}
+        </section>
+      )}
+      {summary.reviewed === 0 && (
+        <section className="member-card" data-testid="myboard-empty">
+          <p>No reactivated Board Members to show yet. Work through Steps 1–4 first.</p>
+          <Link className="button" to="/app/reactivation/self-guided/module/2">GO TO STEP 2</Link>
+        </section>
+      )}
+
+      <section style={{ marginTop: 34 }} data-testid="myboard-crosssell">
+        <div className="ar-offer-grid">
+          <article className="ar-offer-card" data-testid="myboard-recruit-cta">
+            <h3>Still Missing the Right People Around the Table?</h3>
+            <p className="ar-offer-copy">Reactivating your current Board shows you who is ready to serve. If you still have important skills, experience or relationships missing, recruit the Board Members your organization still needs.</p>
+            <Link className="button" to="/recruit" data-testid="myboard-recruit-button">RECRUIT NEW BOARD MEMBERS</Link>
+          </article>
+          <article className="ar-offer-card" data-testid="myboard-activate-cta">
+            <h3>Your Board Is Back at the Table. Now Put Them to Work.</h3>
+            <p className="ar-offer-copy">The next step is to activate your Board to take ownership, help raise money and build your organization's fundraising system.</p>
+            <Link className="button" to="/activate" data-testid="myboard-activate-button">ACTIVATE MY BOARD</Link>
+          </article>
+        </div>
+      </section>
+    </div>
+  );
+}

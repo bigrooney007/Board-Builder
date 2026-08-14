@@ -1,119 +1,115 @@
 <analysis>**original_problem_statement**: 
-The user requested a massive simplification of the Board Recruitment Funnel across multiple batches. The goal was to build a new Linktree-style  lead page, simplify the direct offer pages (Do It Yourself - 97, Do It With Me - 997), implement a shared post-payment  form, and completely automate the DIY customer journey so that 97 customers go straight from payment to intake to a new  page to Module 1, bypassing any Calendly requirement. DWM (997) customers still route to Calendly. 
-
-PRODUCT REQUIREMENTS: Strict adherence to existing branding, absolute preservation of historical 97 customer records/access/automation, removal of explicit 97 pricing from shared modules, and integration of six specific YouTube training videos into the recruitment modules. 
+PRODUCT REQUIREMENTS:
+1. Implement a new 3-email continuous weekly sales nurture sequence for Board Recruitment leads (replacing the old 4-email sequence).
+2. Enable this sequence independently using a new flag () without activating the Reactivate or Activate nurtures.
+3. Update the purchase stop logic so that the sequence immediately stops upon a verified Stripe payment webhook for either the 97 DIY or ,997 Do-It-With-Me offer (bypassing the need for account claim).
+4. Update the  page with Rooney's origin story and a Calendly Book a Call CTA.
+5. Remove the Before You Start section from the  DIY sales page.
 
 **User's preferred language**: English (INSTRUCT next agent to respond in English only)
 
 **what currently exists?**: 
-A fully functional React + FastAPI + MongoDB Nonprofit Board Builder SaaS. It contains a robust multi-tier recruitment funnel, secure Stripe integrations, dynamic UI routing based on purchase source, an automated AI document generation engine, and a 6-step gated module framework with embedded video training.
+A fully functional React + FastAPI + MongoDB SaaS with a 5-step Board Recruitment framework. The application successfully integrates Stripe for payments and Resend for email automations. The newly requested 3-email recruitment nurture sequence is fully implemented, tested, and tied directly to Stripe webhooks for instant cancellation upon purchase.
 
 **Last working item**: 
-    - Last item agent was working: Completing Batches 1, 2, and 3 of the final Recruitment Funnel Update. This included simplifying the public  form, updating the DWM Stripe live price from 998.50 to 997, updating the video on , and building the automated DIY post-payment journey ().
-    - Status: USER VERIFICATION PENDING (Agent completed all builds and testing agent verified successfully in . Awaiting user's next command, likely to deploy to production).
+    - Last item agent was working: Implementing the new 3-email Recruitment Lead Nurture sequence, ensuring it runs on a weekly rotation (1→2→3→1), stopping automatically via Stripe webhook upon purchase, and verifying through automated testing. 
+    - Status: USER VERIFICATION PENDING
     - Agent Testing Done: Y
-    - Which testing method agent to use? NA (already tested via testing agent)
+    - Which testing method agent to use? NA (already finished and passed 42/42 dedicated tests)
     - User Testing Done: N
 
-**All Pending/In progress Issue list**: 
-None. All requested updates have been successfully implemented and tested.
+**All Pending/In progress Issue list**:  
+  None. The previous tasks were successfully completed and await user verification/next steps.
 
 **In progress Task List**: 
-None.
+  None.
 
 **Upcoming and Future Tasks**:
-  - Deploy Iteration 22 funnel updates (simplified , 997 pricing,  page) to production. (Priority: P0)
-  - Replace AI Resource Generation Prompts: The user explicitly stated that restructuring the materials/prompts inside the Recruitment application will be a SEPARATE task. Do not jump ahead until requested. (Priority: P1)
-  - Build an Intake Dashboard: Expose submitted intake forms in the admin area so the owner can review organizations before Calendly calls. (Priority: P2)
+  - Deploy Iteration 30 to production (Priority: P0 - Note: User must do this via the Deployment UI Panel).
+  - Verify production secrets (, , ) are properly configured in the UI Secrets tab for the live environment.
 
 **Completed work in this session**:
-  - Created  personal lead page. (DONE)
-  - Created  DIY sales page (97). (DONE)
-  - Updated  DWM sales page and changed actual live Stripe price to ,997. (DONE)
-  - Built  shared multi-step form. (DONE)
-  - Built  instruction page for automated DIY onboarding. (DONE)
-  - Removed visible 97 pricing tags and updated metadata on shared Modules 1–6. (DONE)
-  - Connected 6 specific YouTube training videos to Recruitment Modules 1–6. (DONE)
-  - Simplified public  form. (DONE)
-  - Deployed Iteration 20 and Iteration 21 to production. (DONE)
+  - Final verification of Batch 5 restructuring (DONE)
+  - Updated  Project Summary to Executive Summary (DONE)
+  - Diagnosed production deployment mismatch and instructed user on UI deployment (DONE)
+  - Added Meet Rooney story and Calendly CTA to  (DONE)
+  - Removed Before You Start section from  (DONE)
+  - Reverted accidental 997 account creation flow per user correction (DONE)
+  - Generated a complete inventory of all existing application routes and pages (DONE)
+  - Replaced 4-email recruitment nurture with a new 3-email continuous sequence (DONE)
+  - Added  to separate recruitment nurture from other email campaigns (DONE)
+  - Wired Stripe webhooks () to instantly stop nurture upon 97 or 997 verified payment (DONE)
 
 **Earlier issues found/mentioned but not fixed**:
-   - None.
+   - None
 
 **Known issue recurrence from previous fork**:
-  - None.
+  - None
 
 **Code Architecture**:
-  - Frontend: React Context, Tailwind CSS, Shadcn UI, React Router ()
-  - Backend: FastAPI, Asyncio, Motor (MongoDB) ()
-  - Stripe Routing: Centralized webhook/payment processing dynamically granting access based on .
+  - Frontend: React, Tailwind CSS, Shadcn UI, React Router ()
+  - Backend: FastAPI, Asyncio, Motor for MongoDB ()
 
 **Key Technical Concepts**:
-  - **Dynamic Funnel Routing**: Users are routed to different post-payment flows (Calendly vs. Start Here page) purely based on their Stripe  metadata.
-  - **Data Merging**: Intake form submissions automatically hydrate the canonical recruitment profile to power the downstream AI generation engine.
-  - **Dual Environments**: Application runs in Preview (dev) and Production (Live). Deployments are explicitly triggered by the user via the .
+  - **Nurture Sequence**: Managed via , utilizes Resend. Operates on a scheduled cron check with duplicate-week protection. 
+  - **Payment Webhooks**: Stripe webhooks in  are authoritative. Verified payments trigger downstream effects (like stopping nurtures) instantly, without waiting for the frontend account claim flow.
+  - **Tenant Isolation**: Strict cross-tenant boundaries applied to generated resources and applicant data.
 
 **key DB schema**:
-  -  (org setup, branding, and merged intake data)
-  -  (stores the YouTube URLs mapped to product modules)
-  -  / 
-  -  (tracks public form submissions)
+  - : Captures initial leads from .
+  - : Manages email sequence state and rotation index.
+  - : Logs Stripe checkout sessions and payment statuses.
 
 **changes in tech stack**:
-  - None.
+  - None
 
-**All files of reference**:
-  -  (New)
-  -  (New)
-  -  (New)
-  -  (New)
-  -  (New: Handles shared intake submission logic)
-  -  (Updated to handle 997 checkout and new purchase sources)
-  -  (Updated with live product configurations)
-  -  (Updated form validation config)
+**All files of reference**: 
+  -  (Nurture email templates, scheduling, and state logic)
+  -  (Stripe webhook handlers)
+  -  (Added Rooney story)
+  -  (Removed Before You Start section)
+  -  (Comprehensive test suite for the new nurture sequence)
 
-**Areas that need refactoring**:
-  - None strictly necessary. The funnel components are quite numerous but modularized.
+**Areas that need refactoring**: 
+  - None at this time.
 
 **key api endpoints**:
-  -  (Handles the 97 and 997 secure Stripe checkouts)
-  -  (Handles multi-step organization intake logic)
-  -  (Handles shortened  form entries)
+  -  (Lead capture)
+  -  (Stripe listener, triggers nurture stop logic)
 
 **Critical Info for New Agent**:
-  - **DUAL ENVIRONMENTS**: The app is LIVE in production (). You can only write code and debug in Preview. To push changes to Production, you MUST use the . If the user reports issues, always clarify which environment they are referring to.
-  - **HISTORICAL DATA PRESERVATION**: It is an absolute, critical mandate from the user: *Never* modify historical 97 purchase records, alter legacy entitlements, or change existing email automation sequences. The new public flows have changed, but old accounts must remain untouched.
-  - **AI PROMPTS**: The user specifically noted that they are NOT satisfied with some of the materials currently being generated but explicitly commanded the agent *NOT* to rewrite prompts yet. This will be a separate task. Do not touch  prompts or  logic unless asked.
+  - **Stripe / ,997 Flow**: The ,997 Do-It-With-Me flow is intentionally designed NOT to create a user account. Do not attempt to force account creation for these buyers.
+  - **Email Nurtures**: Do NOT enable the Reactivate or Activate nurtures. Only  should be active. 
+  - **Production Environment**: Production secrets (like Stripe live keys) are managed in the Emergent UI Deployment panel, NOT in the repo's . Do not attempt to overwrite  with production keys.
 
 **documents and test reports created in this job**:
-  -  (Funnel batches 1-3 pass)
-  -  (Presentation cleanup pass)
-  -  (Automated DIY journey & pricing update pass)
-  -  (Updated continually)
+  - 
+  - 
+  - 
 
 **Last 10 User Messages and any pending HUMAN messages**: 
-  - User requested a massive layout presentation cleanup (removing explicit 97 pricing from shared modules, center-aligning funnel pages). Agent completed & deployed.
-  - User requested appending 6 YouTube URLs to Modules 1-6. Agent completed.
-  - User requested a final 3-batch funnel update: simplify  form, update video on , update actual Stripe checkout for DWM to ,997 (from 998.50), and automate the DIY 97 post-payment journey to a new  page. Agent completed and tested fully in .
-  - **Pending Human Message**: Awaiting the user's confirmation to deploy Iteration 22 to production.
+  - User asked for an inventory of all existing routes/pages to locate the standalone lead magnet page. (Completed)
+  - User requested a verification report of the existing board recruitment lead follow-up behavior without modifying code. (Completed)
+  - User provided a detailed specification to replace the 4-email nurture with a 3-email continuous sales sequence, including decoupling the enable flag and adding immediate purchase stop logic via webhooks. (Completed)
+  - **PENDING**: Wait for the user's next instruction or verification of the Nurture sequence rollout.
 
 **Project Health Check**:
   - Broken: None
-  - Mocked: None. The preview environment uses test Stripe keys, but production is configured with live Stripe API keys.
+  - Mocked: Stripe checkouts use  mode keys in the preview environment.
 
 **3rd Party Integrations**:
-  - Anthropic Claude via Litellm — uses Emergent LLM Key
-  - Resend (Email) — requires User API Key
   - Stripe (Payments) — requires User API Key
+  - Resend (Email) — requires User API Key
+  - Anthropic Claude via Litellm (AI Generators) — uses Emergent LLM Key
 
 **Testing status**:
-  - Testing agent used after significant changes: YES (, , )
+  - Testing agent used after significant changes: YES
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: Handled via backend pytest suites.
-  - Known regressions: None.
+  - Test files created: 
+  - Known regressions: None
 
 **Credentials to test flow**:
-  - Reference 
+  - See 
 
 **What agent forgot to execute**:
-  - Nothing. All items requested in Batches 1, 2, and 3 were thoroughly executed and vetted via the testing agent.</analysis>
+  - Nothing. The agent successfully implemented all criteria of the complex prompt and passed 42/42 dedicated tests.</analysis>

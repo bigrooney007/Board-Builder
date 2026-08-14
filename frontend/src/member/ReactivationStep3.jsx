@@ -1,0 +1,231 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Download, FileText, RefreshCw, X } from "lucide-react";
+import { memberApi } from "./api";
+import { ResponseView } from "./ReactivationStep2";
+
+const OUTCOME_LABELS = {
+  "Continuing as an Active Board Member": "ACTIVE — RECOMMITTED",
+  "Follow-Up Conversation Needed": "FOLLOW-UP NEEDED",
+  "Transitioning to an Advisory Role": "TRANSITIONING TO ADVISORY",
+  "Transitioning to Another Support Role": "TRANSITIONING TO SUPPORT ROLE",
+  "Stepping Down From the Board": "STEPPING DOWN",
+};
+
+const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
+
+const Modal = ({ children, onClose, testId, wide }) => (
+  <div style={overlayStyle} data-testid={testId}>
+    <div style={{ background: "#fff", maxWidth: wide ? 860 : 720, width: "100%", padding: 28, borderRadius: 8, position: "relative" }}>
+      <button type="button" onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid={`${testId}-close`}><X size={20} /></button>
+      {children}
+    </div>
+  </div>
+);
+
+const MemberConversation = ({ row, outcomeOptions, reload }) => {
+  const [busy, setBusy] = useState("");
+  const [material, setMaterial] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [draftText, setDraftText] = useState("");
+  const [viewing, setViewing] = useState(false);
+  const [response, setResponse] = useState(null);
+  const [conclusion, setConclusion] = useState(row.conversation_conclusion || "");
+  const [conclusionSaved, setConclusionSaved] = useState(false);
+  const [outcome, setOutcome] = useState(row.conversation_outcome || "");
+  const id = row.member_record_id;
+
+  const loadMaterial = useCallback(async () => {
+    if (!row.script) return null;
+    const res = await memberApi.get(`/reactivation/materials/${row.script.material_id}`);
+    setMaterial(res.data);
+    return res.data;
+  }, [row.script]);
+
+  const generate = async () => {
+    setBusy("generate");
+    try {
+      const res = await memberApi.post(`/reactivation/board-members/${id}/conversation-script`);
+      setMaterial({ material_id: res.data.material_id, status: res.data.status, display_text: res.data.display_text, title: "Difficult Conversation Script" });
+      reload();
+    } catch { /* surfaced via status */ }
+    setBusy("");
+  };
+
+  const openView = async () => { const m = material || (await loadMaterial()); if (m) setViewing(true); };
+  const openEdit = async () => { const m = material || (await loadMaterial()); if (m) { setDraftText(m.display_text); setEditing(true); } };
+
+  const saveEdit = async () => {
+    setBusy("save");
+    await memberApi.put(`/reactivation/materials/${material.material_id}`, { display_text: draftText });
+    setMaterial({ ...material, display_text: draftText, status: "Draft" });
+    setEditing(false);
+    setBusy("");
+    reload();
+  };
+
+  const approve = async () => {
+    setBusy("approve");
+    await memberApi.post(`/reactivation/materials/${material?.material_id || row.script.material_id}/approve`);
+    if (material) setMaterial({ ...material, status: "Approved" });
+    setBusy("");
+    reload();
+  };
+
+  const download = async () => {
+    const materialId = material?.material_id || row.script.material_id;
+    const res = await memberApi.get(`/reactivation/materials/${materialId}/pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `Difficult-Conversation-Script-${row.name.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const openResponse = async () => {
+    const res = await memberApi.get(`/reactivation/board-members/${id}/response`);
+    setResponse(res.data);
+  };
+
+  const saveConclusion = async () => {
+    await memberApi.put(`/reactivation/board-members/${id}/conclusion`, { conclusion });
+    setConclusionSaved(true);
+    reload();
+  };
+
+  const saveOutcome = async (value) => {
+    setOutcome(value);
+    if (value) { await memberApi.put(`/reactivation/board-members/${id}/outcome`, { outcome: value }); reload(); }
+  };
+
+  const scriptStatus = material?.status || row.script?.status;
+
+  if (row.status !== "COMPLETED") {
+    return (
+      <article className="member-card" data-testid={`step3-waiting-${id}`}>
+        <h3 style={{ marginBottom: 4 }}>{row.name}</h3>
+        <p style={{ margin: "0 0 8px" }}>{row.role || "Board Member"}</p>
+        <p className="eyebrow" data-testid={`step3-waiting-badge-${id}`}>Waiting for Recommitment Form</p>
+        <p>This Board Member has not yet completed their Recommitment &amp; Profile Form. Their response is needed before a person-specific conversation script can be generated.</p>
+        <Link className="button button-outline" to="/app/reactivation/self-guided/module/2" data-testid={`step3-return-step2-${id}`}>RETURN TO STEP 2</Link>
+      </article>
+    );
+  }
+
+  return (
+    <article className="member-card" data-testid={`step3-member-${id}`}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div>
+          <h3 style={{ margin: 0 }}>{row.name}</h3>
+          <p style={{ margin: "4px 0 0" }}>{row.role || "Board Member"}</p>
+        </div>
+        {row.conversation_outcome && (
+          <span className="eyebrow" style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid={`step3-status-${id}`}>{OUTCOME_LABELS[row.conversation_outcome]}</span>
+        )}
+      </div>
+      <div style={{ borderLeft: "4px solid #000", padding: "10px 14px", margin: "14px 0", background: "#fafafa" }} data-testid={`step3-recommitment-${id}`}>
+        <p className="eyebrow" style={{ margin: 0 }}>Recommitment Response</p>
+        <p style={{ margin: "4px 0 0", fontWeight: 700 }}>{row.recommitment}</p>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" className="button button-outline" onClick={openResponse} data-testid={`step3-view-response-${id}`}>VIEW RECOMMITMENT RESPONSE</button>
+        <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`step3-generate-${id}`}>
+          {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> REGENERATE SCRIPT</> : <><FileText size={15} /> GENERATE DIFFICULT CONVERSATION SCRIPT</>}
+        </button>
+        {(row.script || material) && (
+          <>
+            <button type="button" className="button button-outline" onClick={openView} data-testid={`step3-view-online-${id}`}>VIEW ONLINE</button>
+            <button type="button" className="button button-outline" onClick={openEdit} data-testid={`step3-edit-${id}`}>EDIT</button>
+            <button type="button" className="button button-outline" onClick={approve} disabled={busy === "approve" || scriptStatus === "Approved"} data-testid={`step3-approve-${id}`}>{scriptStatus === "Approved" ? "APPROVED" : "APPROVE"}</button>
+            <button type="button" className="button button-outline" onClick={download} data-testid={`step3-download-${id}`}><Download size={15} /> DOWNLOAD</button>
+          </>
+        )}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <h3 style={{ marginBottom: 4 }}>Conversation Conclusion</h3>
+        <p style={{ marginTop: 0 }}>After speaking with this Board Member, record what you actually agreed. This will become the basis for the next step.</p>
+        <textarea rows={4} value={conclusion} onChange={(e) => { setConclusion(e.target.value); setConclusionSaved(false); }}
+          placeholder="Include what they agreed to do, what responsibility they are prepared to carry, any limits on their availability, what support they need, and any transition that was agreed."
+          style={{ width: "100%" }} data-testid={`step3-conclusion-${id}`} />
+        <button type="button" className="button" onClick={saveConclusion} style={{ marginTop: 8 }} data-testid={`step3-save-conclusion-${id}`}>{conclusionSaved ? "Conclusion Saved" : "SAVE CONVERSATION CONCLUSION"}</button>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <h3 style={{ marginBottom: 4 }}>Conversation Outcome</h3>
+        <select value={outcome} onChange={(e) => saveOutcome(e.target.value)} data-testid={`step3-outcome-${id}`} style={{ maxWidth: 420 }}>
+          <option value="">Choose the actual outcome…</option>
+          {outcomeOptions.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </div>
+
+      {viewing && material && (
+        <Modal onClose={() => setViewing(false)} testId={`step3-view-modal-${id}`} wide>
+          <h2>Difficult Conversation Script — {row.name}</h2>
+          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }} data-testid={`step3-script-text-${id}`}>{material.display_text}</div>
+        </Modal>
+      )}
+      {editing && (
+        <Modal onClose={() => setEditing(false)} testId={`step3-edit-modal-${id}`} wide>
+          <h2>Edit Conversation Script</h2>
+          <textarea rows={22} value={draftText} onChange={(e) => setDraftText(e.target.value)} style={{ width: "100%", fontFamily: "inherit" }} data-testid={`step3-edit-text-${id}`} />
+          <button type="button" className="button" onClick={saveEdit} disabled={busy === "save"} data-testid={`step3-save-edit-${id}`}>{busy === "save" ? "Saving…" : "SAVE"}</button>
+        </Modal>
+      )}
+      {response && (
+        <Modal onClose={() => setResponse(null)} testId={`step3-response-modal-${id}`} wide>
+          <h2>{row.name} — Recommitment Response</h2>
+          <ResponseView data={response} testPrefix="step3" />
+        </Modal>
+      )}
+    </article>
+  );
+};
+
+export default function ReactivationStep3() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const load = useCallback(() => {
+    memberApi.get("/reactivation/step3").then((res) => setData(res.data)).catch(() => setError("We could not load this step."));
+  }, []);
+  useEffect(load, [load]);
+
+  if (error) return <p className="submit-error">{error}</p>;
+  if (!data) return <p className="sh-loading">Loading your Board…</p>;
+
+  return (
+    <div data-testid="reactivation-step3">
+      <section className="member-card" data-testid="step3-intro">
+        <h2>Have the Conversations That Need to Happen</h2>
+        <p>You now have information directly from your Board Members about their experience, capacity, interests and willingness to continue serving.</p>
+        <p>The next step is to talk with each person.</p>
+        <p>The goal is not to pressure anyone into staying. It is to get clarity about who is ready to stand up, what responsibility they are prepared to carry, and whether anyone needs to step down or transition into another role.</p>
+      </section>
+
+      <section className="member-card" data-testid="step3-progress">
+        <h2>Difficult Conversation Progress</h2>
+        <p data-testid="step3-progress-counts">
+          <strong>{data.progress.total}</strong> Current Board Member{data.progress.total === 1 ? "" : "s"} · <strong>{data.progress.conversations_completed}</strong> Conversation{data.progress.conversations_completed === 1 ? "" : "s"} Completed
+          {data.progress.follow_up_needed > 0 && <> · <strong>{data.progress.follow_up_needed}</strong> Follow-Up Needed</>}
+          {data.progress.waiting_for_form > 0 && <> · <strong>{data.progress.waiting_for_form}</strong> Waiting for Recommitment Form</>}
+        </p>
+      </section>
+
+      {!data.members.length && (
+        <section className="member-card" data-testid="step3-empty">
+          <p>No current Board Members yet. Add your Board Members and send their Recommitment Forms in Step 2 first.</p>
+          <Link className="button" to="/app/reactivation/self-guided/module/2">GO TO STEP 2</Link>
+        </section>
+      )}
+
+      {data.members.map((row) => (
+        <MemberConversation key={row.member_record_id} row={row} outcomeOptions={data.outcome_options} reload={load} />
+      ))}
+
+      <section style={{ textAlign: "center", margin: "26px 0" }}>
+        <Link className="button rwr-cta-button" to="/app/reactivation/self-guided/module/4" data-testid="step3-continue-step4">CONTINUE TO STEP 4 — EQUIP EACH BOARD MEMBER</Link>
+      </section>
+    </div>
+  );
+}
