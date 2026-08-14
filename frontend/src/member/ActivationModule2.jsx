@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Copy, Mail, Phone, Plus, UserPlus, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Copy, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { activationM2Text } from "../content/appContent";
 
@@ -97,16 +97,9 @@ export default function ActivationModule2() {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", email: "", phone: "", role: "" });
-  const [addError, setAddError] = useState("");
-  const [preview, setPreview] = useState(null);
-  const [sending, setSending] = useState(false);
-  const [sendingAll, setSendingAll] = useState(false);
-  const [script, setScript] = useState(null);
-  const [notes, setNotes] = useState("");
-  const [notesSaved, setNotesSaved] = useState(false);
   const [response, setResponse] = useState(null);
+  const [email, setEmail] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
   const [copied, setCopied] = useState("");
   const pollRef = useRef(null);
 
@@ -191,71 +184,20 @@ export default function ActivationModule2() {
     try { await memberApi.post("/activation/planning-form/approve"); load(); } catch { /* ignore */ }
   };
 
-  const addMember = async () => {
-    setAddError("");
-    if (!addForm.name.trim() || !addForm.email.trim()) { setAddError("Full Name and Email are required."); return; }
+  const generateEmail = async () => {
+    setEmailBusy(true);
     try {
-      await memberApi.post("/activation/participants", addForm);
-      setShowAdd(false);
-      setAddForm({ name: "", email: "", phone: "", role: "" });
-      load();
+      const res = await memberApi.get("/activation/planning-email");
+      setEmail(res.data);
     } catch (err) {
-      setAddError(err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || "Could not add this Board Member.");
+      window.alert(err.response?.data?.detail || "The email could not be generated.");
     }
+    setEmailBusy(false);
   };
 
-  const importPerson = async (suggestion) => {
-    try { await memberApi.post("/activation/participants/import", { source: suggestion.source, ref_id: suggestion.ref_id }); load(); } catch { /* ignore */ }
-  };
-
-  const removeParticipant = async (participant) => {
-    try { await memberApi.delete(`/activation/participants/${participant.participant_id}`); load(); } catch { /* ignore */ }
-  };
-
-  const openPreview = (participant, type) => {
-    memberApi.get(`/activation/participants/${participant.participant_id}/email-preview`, { params: { type } })
-      .then((res) => setPreview({ ...res.data, participant, type }))
-      .catch(() => {});
-  };
-
-  const sendEmail = async () => {
-    setSending(true);
-    try {
-      await memberApi.post(`/activation/participants/${preview.participant.participant_id}/send`, { type: preview.type });
-      setPreview(null);
-      load();
-    } catch (err) {
-      window.alert(err.response?.data?.detail || "The email could not be sent.");
-    }
-    setSending(false);
-  };
-
-  const sendAll = async () => {
-    setSendingAll(true);
-    try { await memberApi.post("/activation/participants/send-all-unsent"); load(); } catch (err) {
-      window.alert(err.response?.data?.detail || "The emails could not be sent.");
-    }
-    setSendingAll(false);
-  };
-
-  const openScript = (participant) => {
-    memberApi.get(`/activation/participants/${participant.participant_id}/call-script`).then((res) => {
-      setScript({ ...res.data, participant });
-      setNotes(res.data.call_notes || "");
-      setNotesSaved(false);
-    }).catch(() => {});
-  };
-
-  const saveNotes = async () => {
-    await memberApi.put(`/activation/participants/${script.participant.participant_id}/call-notes`, { notes });
-    setNotesSaved(true);
-    load();
-  };
-
-  const copyLink = async (participant) => {
-    const res = await memberApi.get(`/activation/participants/${participant.participant_id}/email-preview`, { params: { type: "initial" } });
-    try { await navigator.clipboard.writeText(res.data.form_link); } catch { window.prompt("Copy this form link:", res.data.form_link); }
-    setCopied(participant.participant_id);
+  const copyText = async (text, key) => {
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy this text:", text); }
+    setCopied(key);
     setTimeout(() => setCopied(""), 2500);
   };
 
@@ -264,7 +206,7 @@ export default function ActivationModule2() {
 
   const form = data.form;
   const formApproved = form.status === "Approved";
-  const unsentCount = data.participants.filter((p) => p.status === "NOT SENT").length;
+  const respondents = data.participants.filter((p) => p.status === "COMPLETED");
 
   return (
     <div data-testid="activation-module2">
@@ -283,7 +225,7 @@ export default function ActivationModule2() {
             {form.status === "NONE" ? "NOT GENERATED" : form.status.toUpperCase()}{formApproved ? ` · v${form.approved_version}` : ""}
           </span>
         </div>
-        <p style={{ marginTop: 10 }}>Generate one organization-specific planning form built from your Activation intake. Review and edit it, approve it, then send every participating Board Member their own secure link to the same approved form.</p>
+        <p style={{ marginTop: 10 }}>Generate one organization-specific planning form built from your Activation intake. Review and edit it, then approve it so it can be shared with your Board.</p>
         {!data.has_intake && <p className="submit-error" data-testid="am2-no-intake">Your Activation intake was not found. Complete the Activation intake before generating your planning form.</p>}
         {form.status === "Failed" && <p className="submit-error" data-testid="am2-generation-error">Generation failed. Please try again.</p>}
         {form.status === "Generating" || generating ? (
@@ -302,101 +244,38 @@ export default function ActivationModule2() {
           </div>
         )}
         {form.content && form.status !== "Generating" && <FormPreview content={form.content} />}
-        {form.content && !formApproved && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am2-approval-required">The form must be approved before it can be sent to Board Members.</p>}
+        {form.content && !formApproved && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am2-approval-required">The form must be approved before the Board email can be generated.</p>}
       </section>
 
-      <section className="member-card" data-testid="am2-progress-summary">
-        <h2>{activationM2Text.h_boardFundraisingPlanningProgress}</h2>
-        <p data-testid="am2-progress-counts">
-          <strong>{data.progress.invited}</strong> Invited · <strong>{data.progress.received}</strong> Response{data.progress.received === 1 ? "" : "s"} Received · <strong>{data.progress.waiting}</strong> Waiting
-        </p>
-        {data.progress.invited > 0 && data.progress.received < data.progress.invited && (
-          <p data-testid="am2-incomplete-warning">You have responses from {data.progress.received} of {data.progress.invited} Board Members. Any responses not received before you build the Fundraising Strategy Plan will not be included unless you regenerate the plan later.</p>
+      <section className="member-card" data-testid="am2-email-card">
+        <h2>{activationM2Text.h_sendThePlanningFormToYourBoard}</h2>
+        <p>{activationM2Text.d_sendThePlanningFormToYourBoard}</p>
+        {!formApproved && <p className="eyebrow" data-testid="am2-email-locked">{activationM2Text.n_approveFormToUnlockEmail}</p>}
+        <button type="button" className="button" onClick={generateEmail} disabled={!formApproved || emailBusy} data-testid="am2-generate-email-button"><Mail size={15} /> {emailBusy ? "Generating…" : email ? "REGENERATE EMAIL" : "GENERATE EMAIL"}</button>
+        {email && (
+          <div style={{ marginTop: 14 }} data-testid="am2-email-preview">
+            <p><strong>Subject:</strong> <span data-testid="am2-email-subject">{email.subject}</span></p>
+            <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am2-email-body">{email.body}</div>
+            <p style={{ marginTop: 10 }}><strong>Secure Form Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am2-email-link">{email.form_link}</span></p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <button type="button" className="button" onClick={() => copyText(email.body, "body")} data-testid="am2-copy-email-button"><Copy size={15} /> {copied === "body" ? "Email Copied" : "COPY EMAIL"}</button>
+              <button type="button" className="button button-outline" onClick={() => copyText(email.subject, "subject")} data-testid="am2-copy-subject-button"><Copy size={15} /> {copied === "subject" ? "Subject Copied" : "COPY SUBJECT"}</button>
+            </div>
+          </div>
         )}
       </section>
 
-      {data.suggestions.length > 0 && (
-        <section className="member-card" data-testid="am2-suggestions">
-          <h2>{activationM2Text.h_boardMembersAlreadyInYour}</h2>
-          <p>These current Board Members already exist in your account. Add anyone who should participate in the fundraising planning process.</p>
-          {data.suggestions.map((person) => (
-            <div key={`${person.source}-${person.ref_id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee", flexWrap: "wrap", gap: 8 }}>
-              <span><strong>{person.name}</strong> · {person.email} <span className="eyebrow">({person.label})</span></span>
-              <button type="button" className="button button-outline" onClick={() => importPerson(person)} data-testid={`am2-import-${person.ref_id}`}><UserPlus size={15} /> Add as Participant</button>
-            </div>
-          ))}
-        </section>
-      )}
-
-      <section className="member-card" data-testid="am2-roster">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Participating Board Members</h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="button" onClick={() => setShowAdd(true)} data-testid="am2-add-member-button"><Plus size={16} /> ADD BOARD MEMBER</button>
-            {formApproved && unsentCount > 1 && (
-              <button type="button" className="button button-outline" onClick={sendAll} disabled={sendingAll} data-testid="am2-send-all-button">{sendingAll ? "Sending…" : "SEND TO ALL UNSENT BOARD MEMBERS"}</button>
-            )}
+      <section className="member-card" data-testid="am2-progress-summary">
+        <h2>{activationM2Text.h_responsesReceived}</h2>
+        <p data-testid="am2-progress-counts"><strong>{data.progress.received}</strong> Response{data.progress.received === 1 ? "" : "s"} Received</p>
+        <p>{activationM2Text.d_responsesReceived}</p>
+        {respondents.map((participant) => (
+          <div key={participant.participant_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee", flexWrap: "wrap", gap: 8 }} data-testid={`am2-respondent-${participant.participant_id}`}>
+            <span><strong>{participant.name}</strong> · {participant.role || "Board Member"} · {participant.email}{participant.submitted_at && <span className="eyebrow"> — completed {new Date(participant.submitted_at).toLocaleDateString()}</span>}</span>
+            <button type="button" className="button button-outline" onClick={() => openResponse(participant.participant_id)} data-testid={`am2-view-response-${participant.participant_id}`}>VIEW RESPONSE</button>
           </div>
-        </div>
-        <p style={{ marginTop: 10 }}>Choose which current Board Members should receive the planning form. Each person receives their own secure link to the same approved form.</p>
-        {!data.participants.length && <p data-testid="am2-empty-roster">No participants selected yet. Add the current Board Members who should help build the fundraising plan.</p>}
-        {data.participants.map((participant) => (
-          <article key={participant.participant_id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 16 }} data-testid={`am2-participant-card-${participant.participant_id}`}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{participant.name}</h3>
-                <p style={{ margin: "4px 0 0" }}>{participant.role || "Board Member"} · {participant.email}</p>
-              </div>
-              <span className="eyebrow" data-testid={`am2-status-${participant.participant_id}`} style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }}>{participant.status}</span>
-            </div>
-            <p className="eyebrow" style={{ marginTop: 10 }}>
-              {participant.last_sent_at && <>Form sent {new Date(participant.last_sent_at).toLocaleDateString()} · </>}
-              {participant.submitted_at && <>Completed {new Date(participant.submitted_at).toLocaleDateString()} · </>}
-              {participant.last_reminder_at && <>Last reminder {new Date(participant.last_reminder_at).toLocaleDateString()}</>}
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {participant.status === "NOT SENT" && (
-                <>
-                  <button type="button" className="button" onClick={() => openPreview(participant, "initial")} disabled={!formApproved} data-testid={`am2-send-form-${participant.participant_id}`} title={formApproved ? "" : "Approve the form first"}><Mail size={15} /> SEND FUNDRAISING PLANNING FORM</button>
-                  <button type="button" className="button button-outline" onClick={() => removeParticipant(participant)} data-testid={`am2-remove-${participant.participant_id}`}>Remove</button>
-                </>
-              )}
-              {participant.status === "SENT" && (
-                <>
-                  <button type="button" className="button button-outline" onClick={() => copyLink(participant)} data-testid={`am2-copy-link-${participant.participant_id}`}><Copy size={15} /> {copied === participant.participant_id ? "Link Copied" : "COPY FORM LINK"}</button>
-                  <button type="button" className="button button-outline" onClick={() => openPreview(participant, "reminder")} data-testid={`am2-send-reminder-${participant.participant_id}`}><Mail size={15} /> SEND REMINDER EMAIL</button>
-                  <button type="button" className="button button-outline" onClick={() => openScript(participant)} data-testid={`am2-call-script-${participant.participant_id}`}><Phone size={15} /> VIEW REMINDER CALL SCRIPT</button>
-                </>
-              )}
-              {participant.status === "COMPLETED" && (
-                <button type="button" className="button" onClick={() => openResponse(participant.participant_id)} data-testid={`am2-view-response-${participant.participant_id}`}>VIEW RESPONSE</button>
-              )}
-            </div>
-          </article>
         ))}
       </section>
-
-      <section style={{ textAlign: "center", margin: "26px 0" }}>
-        <Link className="button rwr-cta-button" to="/app/activation/self-guided/module/3" data-testid="am2-continue-module3">CONTINUE TO MODULE 3 — BUILD THE FUNDRAISING STRATEGY PLAN</Link>
-      </section>
-
-      {showAdd && (
-        <Modal onClose={() => setShowAdd(false)} testId="am2-add-modal">
-          <h2>{activationM2Text.h_addCurrentBoardMember}</h2>
-          <p>The Board Member will complete the planning form through their own secure link. You only need their contact details.</p>
-          <label className="field"><span>Full Name <b>*</b></span><input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} data-testid="am2-add-name" /></label>
-          <label className="field"><span>Email <b>*</b></span><input type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} data-testid="am2-add-email" /></label>
-          <label className="field"><span>Phone Number</span><input value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} data-testid="am2-add-phone" /></label>
-          <label className="field"><span>Current Board Role</span>
-            <select value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })} data-testid="am2-add-role">
-              <option value="">Choose one…</option>
-              {["Board Member", "Chair", "Vice Chair", "Treasurer", "Secretary", "Advisory Board Member", "Other"].map((role) => <option key={role}>{role}</option>)}
-            </select>
-          </label>
-          {addError && <p className="submit-error" data-testid="am2-add-error">{addError}</p>}
-          <button type="button" className="button" onClick={addMember} data-testid="am2-add-submit">Add Board Member</button>
-        </Modal>
-      )}
 
       {showEdit && editForm && (
         <Modal onClose={() => setShowEdit(false)} testId="am2-edit-modal">
@@ -410,28 +289,6 @@ export default function ActivationModule2() {
             </label>
           ))}
           <button type="button" className="button" onClick={saveEdit} disabled={saving} data-testid="am2-save-button">{saving ? "Saving…" : "SAVE"}</button>
-        </Modal>
-      )}
-
-      {preview && (
-        <Modal onClose={() => setPreview(null)} testId="am2-send-modal">
-          <h2>{preview.type === "reminder" ? "Review Reminder Email" : "Review Planning Form Email"}</h2>
-          <p><strong>To:</strong> {preview.to_name} &lt;{preview.to_email}&gt;</p>
-          <p><strong>Subject:</strong> <span data-testid="am2-email-subject">{preview.subject}</span></p>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am2-email-body">{preview.body}</div>
-          <p style={{ marginTop: 10 }}><strong>Secure Form Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am2-email-link">{preview.form_link}</span></p>
-          <button type="button" className="button" onClick={sendEmail} disabled={sending} data-testid="am2-send-confirm">{sending ? "Sending…" : "SEND"}</button>
-        </Modal>
-      )}
-
-      {script && (
-        <Modal onClose={() => setScript(null)} testId="am2-script-modal">
-          <h2>{activationM2Text.h_reminderCallScript}</h2>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6 }} data-testid="am2-script-body">{script.script}</div>
-          <label className="field" style={{ marginTop: 14 }}><span>Call Notes (optional)</span>
-            <textarea rows={4} value={notes} onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }} data-testid="am2-call-notes" />
-          </label>
-          <button type="button" className="button" onClick={saveNotes} data-testid="am2-save-notes">{notesSaved ? "Notes Saved" : "Save Call Notes"}</button>
         </Modal>
       )}
 

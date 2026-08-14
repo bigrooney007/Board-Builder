@@ -292,12 +292,38 @@ class StrategyEditPayload(BaseModel):
     display_text: str = Field(min_length=1)
 
 
+class IdeaReview(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    key: str
+    title: str = ""
+    decision: str
+    reason: str = ""
+
+
 class ReviewSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
     position: str
     discussion_points: str = ""
     contribution: str = Field(min_length=1)
     support_needs: str = ""
+    full_name: str = ""
+    email: str = ""
+    role: str = ""
+    idea_reviews: List[IdeaReview] = []
+
+
+class MeetingPayload(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    meeting_date: str = ""
+    meeting_time: str = ""
+    meeting_link: str = ""
+    meeting_notes: str = ""
+
+
+class FollowupEditPayload(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    subject: str = Field(min_length=1)
+    body: str = Field(min_length=1)
 
 
 def create_activation_planning_router(db) -> APIRouter:
@@ -563,6 +589,33 @@ def create_activation_planning_router(db) -> APIRouter:
             "$push": {"approved_versions": {"version": version, "content": form["content"], "approved_at": now}}})
         return {"status": "Approved", "approved_version": version}
 
+    @router.get("/activation/planning-email")
+    async def planning_email(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        form = await current_form(user_id)
+        if form.get("status") != "Approved" or not form.get("approved_version"):
+            raise HTTPException(status_code=409, detail="Approve your Board Fundraising Planning Form before generating the email")
+        token = form.get("shared_form_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            await db.activation_planning_forms.update_one({"user_id": user_id}, {"$set": {"shared_form_token": token}})
+        context = await founder_context(user_id)
+        form_link = f"{origin_of(request)}/planning-form/{token}"
+        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
+        subject = f"Help Us Build Our Fundraising Plan | {context['organization']}"
+        body = (
+            "Dear Board Members,\n\n"
+            f"We are beginning the process of building the fundraising plan for {context['organization']}, and I want the Board involved in shaping it.\n\n"
+            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
+            "Your ideas, experience, relationships and perspective can help us determine who we should be building relationships with, which fundraising opportunities we should prioritize, and how each of us can contribute.\n\n"
+            "Please complete the short Board Fundraising Planning Form here:\n\n"
+            f"{form_link}\n\n"
+            "Your responses will be combined with the ideas of the other Board Members and our organizational priorities as we build the Fundraising Strategy Plan.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        )
+        return {"subject": subject, "body": body, "form_link": form_link}
+
     # ---------------- FOUNDER: SEND / REMIND ----------------
 
     async def send_context(user_id: str, record: dict, request: Request, kind: str) -> dict:
@@ -694,7 +747,22 @@ def create_activation_planning_router(db) -> APIRouter:
 
     @router.post("/planning-form/{token}", status_code=201)
     async def submit_planning_form(token: str, payload: PlanningSubmission):
-        record = await participant_by_token(token)
+        record = await db.activation_participants.find_one({"form_token": token}, {"_id": 0})
+        if not record:
+            form = await db.activation_planning_forms.find_one({"shared_form_token": token}, {"_id": 0})
+            if not form:
+                raise HTTPException(status_code=404, detail="This form link is not valid")
+            email = str(payload.email).lower()
+            record = await db.activation_participants.find_one({"user_id": form["user_id"], "email": email}, {"_id": 0})
+            if not record:
+                record = {
+                    "participant_id": str(uuid.uuid4()), "user_id": form["user_id"],
+                    "name": payload.full_name, "email": email, "phone": "", "role": payload.role,
+                    "source": "self_identified", "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
+                    "form_version": form.get("approved_version", 0), "call_notes": "",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+                await db.activation_participants.insert_one({**record})
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         if not payload.confirmation:
@@ -936,6 +1004,33 @@ def create_activation_planning_router(db) -> APIRouter:
         return {"participant": reviewer_row(record), "review": record["review"],
                 "review_submitted_at": record.get("review_submitted_at", ""), "review_version": record.get("review_version", 0)}
 
+    @router.get("/activation/strategy-review-email")
+    async def strategy_review_email(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        strategy = await current_strategy(user_id)
+        if strategy.get("status") != "Ready for Board Review" or not strategy.get("review_version"):
+            raise HTTPException(status_code=409, detail="Approve your Fundraising Strategy Plan for Board review before generating the email")
+        token = strategy.get("shared_review_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            await db.activation_strategies.update_one({"user_id": user_id}, {"$set": {"shared_review_token": token}})
+        context = await founder_context(user_id)
+        review_link = f"{origin_of(request)}/strategy-review/{token}"
+        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
+        subject = f"Please Review Our Fundraising Strategy Plan | {context['organization']}"
+        body = (
+            "Dear Board Members,\n\n"
+            f"Thank you for contributing your ideas to the fundraising planning process for {context['organization']}.\n\n"
+            "We have now brought the Board's input together with the organization's fundraising goals and priorities and developed the Fundraising Strategy Plan for Board review.\n\n"
+            "Before we move into adopting the plan, please review the strategy. You can approve each idea, disapprove it with your reason, and share any suggestions, concerns or issues you believe the Board should discuss.\n\n"
+            "Please review the plan here:\n\n"
+            f"{review_link}\n\n"
+            "Your review will help us prepare for the Board discussion where we will work through the strategy and agree on the way forward.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        )
+        return {"subject": subject, "body": body, "review_link": review_link}
+
     # ---------------- PUBLIC: STRATEGY REVIEW ----------------
 
     async def reviewer_by_token(token: str) -> dict:
@@ -956,28 +1051,67 @@ def create_activation_planning_router(db) -> APIRouter:
 
     @router.get("/strategy-review/{token}")
     async def public_review(token: str):
-        record = await reviewer_by_token(token)
-        context = await founder_context(record["user_id"])
-        return {"organization_name": context["organization"],
-                "submitted": record.get("review_status") == "REVIEWED",
-                "reviewer": {"name": record.get("name", ""), "role": record.get("role", "")},
-                "strategy_text": await review_version_text(record["user_id"], record.get("review_version") or 0),
-                "options": REVIEW_OPTIONS}
+        record = await db.activation_participants.find_one({"review_token": token}, {"_id": 0})
+        if record:
+            context = await founder_context(record["user_id"])
+            text = await review_version_text(record["user_id"], record.get("review_version") or 0)
+            return {"organization_name": context["organization"],
+                    "submitted": record.get("review_status") == "REVIEWED",
+                    "reviewer": {"name": record.get("name", ""), "role": record.get("role", "")},
+                    "requires_identity": False,
+                    "strategy_text": text, "ideas": parse_plan_ideas(text),
+                    "options": REVIEW_OPTIONS}
+        strategy = await db.activation_strategies.find_one({"shared_review_token": token}, {"_id": 0})
+        if not strategy or not strategy.get("review_versions"):
+            raise HTTPException(status_code=404, detail="This review link is not valid")
+        context = await founder_context(strategy["user_id"])
+        text = strategy["review_versions"][-1]["display_text"]
+        return {"organization_name": context["organization"], "submitted": False,
+                "reviewer": {"name": "", "role": ""}, "requires_identity": True,
+                "strategy_text": text, "ideas": parse_plan_ideas(text), "options": REVIEW_OPTIONS}
 
     @router.post("/strategy-review/{token}", status_code=201)
     async def submit_review(token: str, payload: ReviewSubmission):
-        record = await reviewer_by_token(token)
+        record = await db.activation_participants.find_one({"review_token": token}, {"_id": 0})
+        shared_strategy = None
+        if not record:
+            shared_strategy = await db.activation_strategies.find_one({"shared_review_token": token}, {"_id": 0})
+            if not shared_strategy:
+                raise HTTPException(status_code=404, detail="This review link is not valid")
+            if not payload.full_name.strip() or "@" not in payload.email:
+                raise HTTPException(status_code=422, detail="Please provide your name and email so your review can be recorded")
+            email = payload.email.lower()
+            record = await db.activation_participants.find_one({"user_id": shared_strategy["user_id"], "email": email}, {"_id": 0})
+            if not record:
+                record = {
+                    "participant_id": str(uuid.uuid4()), "user_id": shared_strategy["user_id"],
+                    "name": payload.full_name, "email": email, "phone": "", "role": payload.role,
+                    "source": "self_identified", "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
+                    "form_version": 0, "call_notes": "", "review_status": "NOT SENT",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+                await db.activation_participants.insert_one({**record})
         if record.get("review_status") == "REVIEWED":
             raise HTTPException(status_code=409, detail="This review has already been submitted")
         if payload.position not in REVIEW_OPTIONS:
             raise HTTPException(status_code=422, detail="Invalid review selection")
         if payload.position != REVIEW_OPTIONS[0] and not payload.discussion_points.strip():
             raise HTTPException(status_code=422, detail="Please share what you would like the Board to discuss before the plan is adopted")
+        for idea in payload.idea_reviews:
+            if idea.decision not in {"Approve", "Disapprove"}:
+                raise HTTPException(status_code=422, detail="Each idea must be approved or disapproved")
+            if idea.decision == "Disapprove" and not idea.reason.strip():
+                raise HTTPException(status_code=422, detail="Please give the reason for each idea you disapprove")
         now = datetime.now(timezone.utc).isoformat()
-        review = payload.model_dump()
+        review = {"position": payload.position, "discussion_points": payload.discussion_points,
+                  "contribution": payload.contribution, "support_needs": payload.support_needs,
+                  "idea_reviews": [idea.model_dump() for idea in payload.idea_reviews]}
+        review_updates = {"review_status": "REVIEWED", "review": review, "review_submitted_at": now}
+        if shared_strategy and not record.get("review_version"):
+            review_updates["review_version"] = shared_strategy.get("review_version", 0)
         result = await db.activation_participants.update_one(
             {"participant_id": record["participant_id"], "review_status": {"$ne": "REVIEWED"}},
-            {"$set": {"review_status": "REVIEWED", "review": review, "review_submitted_at": now}})
+            {"$set": review_updates})
         context = await founder_context(record["user_id"])
         if result.modified_count:
             try:
@@ -985,7 +1119,7 @@ def create_activation_planning_router(db) -> APIRouter:
                     first = (record.get("name") or "").split(" ")[0]
                     founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
                     origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
-                    view_url = f"{origin}/app/activation/self-guided/module/3?reviewer={record['participant_id']}"
+                    view_url = f"{origin}/app/activation/self-guided/module/4"
                     body = (
                         f"Hi {founder_first},\n\n"
                         f"{record.get('name', '')} has reviewed the Fundraising Strategy Plan for {context['organization']}.\n\n"
@@ -1030,8 +1164,17 @@ def create_activation_planning_router(db) -> APIRouter:
                     "position": (p.get("review") or {}).get("position", ""),
                     "discussion_points": (p.get("review") or {}).get("discussion_points", ""),
                     "contribution": (p.get("review") or {}).get("contribution", ""),
-                    "support_needs": (p.get("review") or {}).get("support_needs", "")}
+                    "support_needs": (p.get("review") or {}).get("support_needs", ""),
+                    "idea_reviews": (p.get("review") or {}).get("idea_reviews", [])}
                    for p in participants if p.get("review_status") == "REVIEWED"]
+        reviewed_participants = [{"participant_id": p["participant_id"], "name": p["name"],
+                                  "role": p.get("role", "Board Member"), "email": p.get("email", ""),
+                                  "planning_submitted_at": p.get("submitted_at", ""),
+                                  "review_submitted_at": p.get("review_submitted_at", ""),
+                                  "position": (p.get("review") or {}).get("position", ""),
+                                  "ideas_approved": sum(1 for i in (p.get("review") or {}).get("idea_reviews", []) if i.get("decision") == "Approve"),
+                                  "ideas_disapproved": sum(1 for i in (p.get("review") or {}).get("idea_reviews", []) if i.get("decision") == "Disapprove")}
+                                 for p in participants if p.get("review_status") == "REVIEWED"]
         members = []
         for p in participants:
             response = p.get("response") or {}
@@ -1045,8 +1188,100 @@ def create_activation_planning_router(db) -> APIRouter:
                             "responsibility_status": p.get("responsibility_status", "No Fundraising Responsibility Agreed Yet")})
         return {"strategy": strategy_summary(strategy),
                 "reviewed_text": (strategy.get("review_versions") or [{}])[-1].get("display_text", "") if strategy else "",
-                "reviews": reviews, "adoption": adoption, "members": members,
+                "reviews": reviews, "reviewed_participants": reviewed_participants,
+                "adoption": adoption, "members": members,
                 "module5_ready": module5_ready(adoption)}
+
+    @router.post("/activation/adoption/strategy/generate")
+    async def generate_revised_strategy(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        reviewed_text = await ready_review_text(user_id)
+        adoption = await current_adoption(user_id)
+        if adoption.get("revised_status") == "Generating":
+            return {"status": "Generating"}
+        intake = await activation_intake(user_id)
+        context_info = await founder_context(user_id)
+        now = datetime.now(timezone.utc).isoformat()
+        await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": {
+            "user_id": user_id, "revised_status": "Generating", "revised_error": "", "updated_at": now},
+            "$setOnInsert": {"created_at": now}}, upsert=True)
+        participants = await db.activation_participants.find({"user_id": user_id}, {"_id": 0}).to_list(300)
+        import json as jsonlib
+        responses_block = [{"board_member_name": p["name"], "board_role": p.get("role", "Board Member"),
+                            "their_planning_response": p.get("response", {})} for p in participants if p.get("response")]
+        reviews_block = [{"board_member_name": p["name"], "board_role": p.get("role", "Board Member"),
+                          "their_review": p.get("review", {})} for p in participants if p.get("review_status") == "REVIEWED"]
+        context = ("ORGANIZATION CONTEXT:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
+                   + "\n\nTHE FUNDRAISING STRATEGY PLAN THE BOARD REVIEWED:\n" + reviewed_text
+                   + "\n\nEVERY BOARD MEMBER REVIEW — overall position, suggestions, and idea-by-idea approvals/disapprovals with reasons (preserve who said what):\n" + jsonlib.dumps(reviews_block, indent=1, default=str)
+                   + "\n\nORIGINAL BOARD MEMBER PLANNING RESPONSES:\n" + jsonlib.dumps(responses_block, indent=1, default=str)
+                   + "\n\nACTIVATION INTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
+                       "fundraising_goal", "amount_needed", "money_accomplish", "organization_priorities",
+                       "desired_change", "success_definition"]}, indent=1, default=str))
+
+        async def run_generation():
+            try:
+                structured = await generate_structured("activation_revised_strategy", context)
+                await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": {
+                    "revised_status": "Draft", "revised_structured": structured,
+                    "revised_text": strategy_display(structured, context_info["organization"]),
+                    "revised_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+            except Exception as exc:
+                logger.error("Revised strategy generation failed for %s: %s", user_id, exc)
+                await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": {
+                    "revised_status": "Failed", "revised_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_generation())
+        return {"status": "Generating"}
+
+    @router.put("/activation/adoption/meeting")
+    async def save_meeting_details(payload: MeetingPayload, request: Request):
+        member = await activation_member(request)
+        now = datetime.now(timezone.utc).isoformat()
+        await db.activation_adoptions.update_one({"user_id": member["user_id"]}, {"$set": {
+            "user_id": member["user_id"], "meeting_date": payload.meeting_date, "meeting_time": payload.meeting_time,
+            "meeting_link": payload.meeting_link, "meeting_notes": payload.meeting_notes, "updated_at": now},
+            "$setOnInsert": {"created_at": now}}, upsert=True)
+        return {"status": "saved"}
+
+    @router.get("/activation/adoption/meeting-email")
+    async def adoption_meeting_email(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        adoption = await current_adoption(user_id)
+        if not adoption.get("meeting_date") or not adoption.get("meeting_time"):
+            raise HTTPException(status_code=409, detail="Save your adoption meeting date and time before generating the invitation email")
+        strategy = await current_strategy(user_id)
+        plan_text = adoption.get("revised_text") or ((strategy.get("review_versions") or [{}])[-1].get("display_text", ""))
+        if not plan_text:
+            raise HTTPException(status_code=409, detail="Generate the Fundraising Strategy Plan before generating the invitation email")
+        token = adoption.get("plan_share_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": {"plan_share_token": token}})
+        context = await founder_context(user_id)
+        plan_link = f"{origin_of(request)}/strategy-plan/{token}"
+        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
+        meeting_lines = f"Date: {adoption['meeting_date']}\nTime: {adoption['meeting_time']}"
+        if adoption.get("meeting_link"):
+            meeting_lines += f"\nMeeting link: {adoption['meeting_link']}"
+        if adoption.get("meeting_notes"):
+            meeting_lines += f"\n{adoption['meeting_notes']}"
+        subject = f"Board Meeting: Adopting Our Fundraising Strategy Plan | {context['organization']}"
+        body = (
+            "Dear Board Members,\n\n"
+            f"Thank you for helping build and review the Fundraising Strategy Plan for {context['organization']}.\n\n"
+            "The next step is to come together, work through the Board's feedback, agree on the direction and adopt the plan we will carry together.\n\n"
+            f"{meeting_lines}\n\n"
+            "Please review the current Fundraising Strategy Plan before the meeting:\n\n"
+            f"{plan_link}\n\n"
+            "During the meeting we will work through the feedback from the Board's review, confirm our priorities and agree on what each of us will help carry.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        )
+        return {"subject": subject, "body": body, "plan_link": plan_link}
 
     @router.post("/activation/adoption/guide/generate")
     async def generate_guide(request: Request):
@@ -1070,7 +1305,7 @@ def create_activation_planning_router(db) -> APIRouter:
                         "planning_response": p.get("response", {})} for p in participants if p.get("response")]
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
                                                        "founder_name": context_info["founder_name"]}, indent=1)
-                   + "\n\nFUNDRAISING STRATEGY PLAN APPROVED FOR BOARD REVIEW:\n" + reviewed_text
+                   + "\n\nCURRENT FUNDRAISING STRATEGY PLAN (revised with the Board's review where applicable):\n" + (adoption.get("revised_text") or reviewed_text)
                    + "\n\nACTUAL BOARD REVIEWS OF THIS PLAN:\n" + jsonlib.dumps(reviews, indent=1, default=str)
                    + "\n\nBOARD MEMBER PLANNING RESPONSES (willingness/ownership context):\n" + jsonlib.dumps(willingness, indent=1, default=str)
                    + "\n\nACTIVATION INTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
@@ -1096,7 +1331,9 @@ def create_activation_planning_router(db) -> APIRouter:
     async def adoption_status(request: Request):
         member = await activation_member(request)
         adoption = await current_adoption(member["user_id"])
-        return {"guide_status": adoption.get("guide_status", "NONE"), "toolkit_gate": module5_ready(adoption)}
+        return {"guide_status": adoption.get("guide_status", "NONE"),
+                "revised_status": adoption.get("revised_status", "NONE"),
+                "toolkit_gate": module5_ready(adoption)}
 
     @router.put("/activation/adoption/guide")
     async def edit_guide(payload: TextPayload, request: Request):
@@ -1145,14 +1382,15 @@ def create_activation_planning_router(db) -> APIRouter:
             raise HTTPException(status_code=422, detail="Invalid plan status")
         user_id = member["user_id"]
         now = datetime.now(timezone.utc).isoformat()
+        adoption = await current_adoption(user_id)
+        current_plan = adoption.get("revised_text", "")
         updates = {"user_id": user_id, "plan_status": payload.status, "updated_at": now}
         if payload.status == "Adopted as Presented":
-            updates.update({"adopted_text": await ready_review_text(user_id), "finalized": True, "adopted_at": now})
+            updates.update({"adopted_text": current_plan or await ready_review_text(user_id), "finalized": True, "adopted_at": now})
         elif payload.status == "Adopted With Changes":
-            adoption = await current_adoption(user_id)
             updates["finalized"] = False
             if not adoption.get("draft_adopted_text"):
-                updates["draft_adopted_text"] = await ready_review_text(user_id)
+                updates["draft_adopted_text"] = current_plan or await ready_review_text(user_id)
         else:
             updates["finalized"] = False
         await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": updates, "$setOnInsert": {"created_at": now}}, upsert=True)
@@ -1179,6 +1417,18 @@ def create_activation_planning_router(db) -> APIRouter:
             "adopted_text": adoption["draft_adopted_text"], "finalized": True, "adopted_at": now, "updated_at": now}})
         return {"status": "finalized"}
 
+    @router.get("/strategy-plan/{token}")
+    async def public_strategy_plan(token: str):
+        adoption = await db.activation_adoptions.find_one({"plan_share_token": token}, {"_id": 0})
+        if not adoption:
+            raise HTTPException(status_code=404, detail="This plan link is not valid")
+        strategy = await current_strategy(adoption["user_id"])
+        text = adoption.get("adopted_text") or adoption.get("revised_text") or ((strategy.get("review_versions") or [{}])[-1].get("display_text", ""))
+        if not text:
+            raise HTTPException(status_code=404, detail="This plan link is not valid")
+        context = await founder_context(adoption["user_id"])
+        return {"organization_name": context["organization"], "text": text}
+
     @router.put("/activation/participants/{participant_id}/responsibility")
     async def save_responsibility(participant_id: str, payload: ResponsibilityPayload, request: Request):
         member = await activation_member(request)
@@ -1199,7 +1449,17 @@ def create_activation_planning_router(db) -> APIRouter:
         member = await activation_member(request)
         adoption = await current_adoption(member["user_id"])
         toolkit = await current_toolkit(member["user_id"])
+        participants = await db.activation_participants.find({"user_id": member["user_id"]}, {"_id": 0}).sort("created_at", 1).to_list(300)
+        members = [{"participant_id": p["participant_id"], "name": p["name"], "role": p.get("role", "Board Member"),
+                    "email": p.get("email", ""),
+                    "agreed_responsibility": p.get("agreed_responsibility", ""),
+                    "responsibility_status": p.get("responsibility_status", "No Fundraising Responsibility Agreed Yet"),
+                    "followup_status": p.get("followup_status", "NONE"),
+                    "followup_subject": p.get("followup_subject", ""),
+                    "followup_body": p.get("followup_body", ""),
+                    "followup_error": p.get("followup_error", "")} for p in participants]
         return {"gate_open": module5_ready(adoption), "plan_status": adoption.get("plan_status", ""),
+                "members": members, "responsibility_statuses": RESPONSIBILITY_STATUSES,
                 "toolkit": {"status": toolkit.get("status", "NONE"), "display_text": toolkit.get("display_text", ""),
                             "generation_error": toolkit.get("generation_error", "")}}
 
@@ -1277,6 +1537,53 @@ def create_activation_planning_router(db) -> APIRouter:
         issuer = {"issued_by": context["founder_name"], "issuer_title": context["founder_title"],
                   "organization": context["organization"], "issue_date": datetime.now(timezone.utc).strftime("%B %d, %Y")}
         return build_portfolio_pdf("Board Fundraising Execution Toolkit", "", issuer, toolkit["display_text"])
+
+    @router.post("/activation/members/{participant_id}/followup-email/generate")
+    async def generate_followup_email(participant_id: str, request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        record = await owned_participant(user_id, participant_id)
+        adoption = await current_adoption(user_id)
+        if not module5_ready(adoption):
+            raise HTTPException(status_code=409, detail="The Fundraising Strategy Plan must be adopted and your Plan Adoption Conclusion recorded before follow-up emails are generated")
+        if record.get("followup_status") == "Generating":
+            return {"status": "Generating"}
+        context_info = await founder_context(user_id)
+        await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {"followup_status": "Generating", "followup_error": ""}})
+        import json as jsonlib
+        context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
+                                                       "founder_name": context_info["founder_name"], "founder_title": context_info["founder_title"]}, indent=1)
+                   + f"\n\nBOARD MEMBER: {record['name']} — Board Role: {record.get('role', 'Board Member')}"
+                   + f"\n\nAGREED FUNDRAISING RESPONSIBILITY / AREA THEY AGREED TO SUPPORT (recorded by the founder; may be empty if still being clarified):\n{record.get('agreed_responsibility', '')}"
+                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
+                   + "\n\nADOPTION MEETING CONCLUSIONS (founder's own record of what happened and was agreed):\n" + adoption.get("conclusion", "")
+                   + "\n\nTHIS MEMBER'S OWN PLANNING RESPONSE:\n" + jsonlib.dumps(record.get("response", {}), indent=1, default=str)
+                   + "\n\nTHIS MEMBER'S OWN STRATEGY REVIEW:\n" + jsonlib.dumps(record.get("review", {}), indent=1, default=str))
+
+        async def run_generation():
+            try:
+                structured = await generate_structured("activation_followup_email", context)
+                await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
+                    "followup_status": "Draft", "followup_subject": str(structured.get("subject", "")).strip(),
+                    "followup_body": str(structured.get("body", "")).strip(),
+                    "followup_updated_at": datetime.now(timezone.utc).isoformat()}})
+            except Exception as exc:
+                logger.error("Follow-up email generation failed for %s: %s", participant_id, exc)
+                await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
+                    "followup_status": "Failed", "followup_error": str(exc)[:300]}})
+
+        asyncio.create_task(run_generation())
+        return {"status": "Generating"}
+
+    @router.put("/activation/members/{participant_id}/followup-email")
+    async def edit_followup_email(participant_id: str, payload: FollowupEditPayload, request: Request):
+        member = await activation_member(request)
+        record = await owned_participant(member["user_id"], participant_id)
+        if not record.get("followup_body"):
+            raise HTTPException(status_code=409, detail="Generate this follow-up email first")
+        await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
+            "followup_subject": payload.subject, "followup_body": payload.body, "followup_status": "Draft"}})
+        return {"status": "Draft"}
 
     # ---------------- MY FUNDRAISING BOARD + FUNDRAISING PORTFOLIO ----------------
 

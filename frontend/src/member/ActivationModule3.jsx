@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Mail, X } from "lucide-react";
+import { Copy, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { activationM3Text } from "../content/appContent";
 
@@ -17,16 +16,15 @@ const Modal = ({ children, onClose, testId }) => (
 );
 
 export default function ActivationModule3() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [sending, setSending] = useState(false);
-  const [review, setReview] = useState(null);
+  const [email, setEmail] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [copied, setCopied] = useState("");
   const pollRef = useRef(null);
 
   const load = useCallback(() => {
@@ -51,18 +49,6 @@ export default function ActivationModule3() {
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
   }, [data?.strategy?.status, load]);
 
-  const openReview = useCallback((participantId) => {
-    memberApi.get(`/activation/reviewers/${participantId}/review`).then((res) => setReview(res.data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const reviewerId = searchParams.get("reviewer");
-    if (reviewerId && data) {
-      openReview(reviewerId);
-      setSearchParams({}, { replace: true });
-    }
-  }, [data, searchParams, setSearchParams, openReview]);
-
   const generate = async () => {
     const strategy = data?.strategy;
     if (strategy?.display_text) {
@@ -86,20 +72,21 @@ export default function ActivationModule3() {
     try { await memberApi.post("/activation/strategy/approve-review"); load(); } catch { /* ignore */ }
   };
 
-  const openPreview = (participant, type) => {
-    memberApi.get(`/activation/reviewers/${participant.participant_id}/email-preview`, { params: { type } })
-      .then((res) => setPreview({ ...res.data, participant, type }))
-      .catch(() => {});
+  const generateEmail = async () => {
+    setEmailBusy(true);
+    try {
+      const res = await memberApi.get("/activation/strategy-review-email");
+      setEmail(res.data);
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "The email could not be generated.");
+    }
+    setEmailBusy(false);
   };
 
-  const sendEmail = async () => {
-    setSending(true);
-    try {
-      await memberApi.post(`/activation/reviewers/${preview.participant.participant_id}/send`, { type: preview.type });
-      setPreview(null);
-      load();
-    } catch (err) { window.alert(err.response?.data?.detail || "The email could not be sent."); }
-    setSending(false);
+  const copyText = async (text, key) => {
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy this text:", text); }
+    setCopied(key);
+    setTimeout(() => setCopied(""), 2500);
   };
 
   if (error) return <p className="submit-error">{error}</p>;
@@ -119,11 +106,9 @@ export default function ActivationModule3() {
       <section className="member-card" data-testid="am3-planning-counts">
         <h2>{activationM3Text.h_boardPlanningResponses}</h2>
         <p data-testid="am3-planning-count-line">
-          <strong>{data.planning.invited}</strong> Board Members Invited · <strong>{data.planning.received}</strong> Responses Received · <strong>{data.planning.waiting}</strong> Waiting · <strong>{data.planning.included}</strong> Responses That Will Be Included
+          <strong>{data.planning.received}</strong> Response{data.planning.received === 1 ? "" : "s"} Received · <strong>{data.planning.included}</strong> Response{data.planning.included === 1 ? "" : "s"} That Will Be Included
         </p>
-        {data.planning.waiting > 0 && (
-          <p data-testid="am3-incomplete-note">The strategy will use the responses currently received. Responses that arrive later remain saved and can be included only by intentionally regenerating the plan.</p>
-        )}
+        <p data-testid="am3-incomplete-note">The strategy uses the responses currently received. Responses that arrive later remain saved and can be included only by intentionally regenerating the plan.</p>
       </section>
 
       <section className="member-card" data-testid="am3-strategy-card">
@@ -139,7 +124,7 @@ export default function ActivationModule3() {
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
             <button type="button" className="button" onClick={generate} data-testid="am3-generate-button">
-              {strategy.display_text ? "REGENERATE WITH LATEST RESPONSES" : "BUILD MY FUNDRAISING STRATEGY PLAN"}
+              {strategy.display_text ? "REGENERATE WITH LATEST RESPONSES" : "GENERATE FUNDRAISING STRATEGY PLAN"}
             </button>
             {strategy.display_text && (
               <>
@@ -152,50 +137,26 @@ export default function ActivationModule3() {
         {strategy.display_text && strategy.status !== "Generating" && (
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 14, maxHeight: 420, overflowY: "auto" }} data-testid="am3-strategy-text">{strategy.display_text}</div>
         )}
-        {strategy.display_text && !ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am3-approval-required">Approve the plan for Board review before sending review links.</p>}
+        {strategy.display_text && !ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am3-approval-required">Approve the plan for Board review before generating the review email.</p>}
       </section>
 
-      <section className="member-card" data-testid="am3-review-summary">
-        <h2>{activationM3Text.h_boardFundraisingStrategyReview}</h2>
-        <p data-testid="am3-review-counts">
-          <strong>{data.review_progress.invited}</strong> Invited · <strong>{data.review_progress.received}</strong> Review{data.review_progress.received === 1 ? "" : "s"} Received · <strong>{data.review_progress.waiting}</strong> Waiting
-        </p>
-        {data.review_progress.invited > 0 && data.review_progress.received < data.review_progress.invited && (
-          <p data-testid="am3-review-warning">You have received {data.review_progress.received} of {data.review_progress.invited} Board reviews. You can continue to the plan-adoption stage now, or wait for additional reviews. Any review received later will remain saved.</p>
+      <section className="member-card" data-testid="am3-email-card">
+        <h2>{activationM3Text.h_sendThePlanForBoardReview}</h2>
+        <p>{activationM3Text.d_sendThePlanForBoardReview}</p>
+        {!ready && <p className="eyebrow" data-testid="am3-email-locked">{activationM3Text.n_approvePlanToUnlockEmail}</p>}
+        <button type="button" className="button" onClick={generateEmail} disabled={!ready || emailBusy} data-testid="am3-generate-email-button"><Mail size={15} /> {emailBusy ? "Generating…" : email ? "REGENERATE EMAIL" : "GENERATE EMAIL"}</button>
+        {email && (
+          <div style={{ marginTop: 14 }} data-testid="am3-email-preview">
+            <p><strong>Subject:</strong> <span data-testid="am3-email-subject">{email.subject}</span></p>
+            <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am3-email-body">{email.body}</div>
+            <p style={{ marginTop: 10 }}><strong>Secure Review Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am3-email-link">{email.review_link}</span></p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <button type="button" className="button" onClick={() => copyText(email.body, "body")} data-testid="am3-copy-email-button"><Copy size={15} /> {copied === "body" ? "Email Copied" : "COPY EMAIL"}</button>
+              <button type="button" className="button button-outline" onClick={() => copyText(email.subject, "subject")} data-testid="am3-copy-subject-button"><Copy size={15} /> {copied === "subject" ? "Subject Copied" : "COPY SUBJECT"}</button>
+            </div>
+          </div>
         )}
-        {!data.reviewers.length && <p data-testid="am3-no-reviewers">Your Module 2 participants will appear here so you can send them the plan for review.</p>}
-        {data.reviewers.map((reviewer) => (
-          <article key={reviewer.participant_id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 16 }} data-testid={`am3-reviewer-card-${reviewer.participant_id}`}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{reviewer.name}</h3>
-                <p style={{ margin: "4px 0 0" }}>{reviewer.role || "Board Member"} · {reviewer.email}</p>
-              </div>
-              <span className="eyebrow" style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid={`am3-review-status-${reviewer.participant_id}`}>{reviewer.review_status}</span>
-            </div>
-            <p className="eyebrow" style={{ marginTop: 10 }}>
-              {reviewer.review_position && <>Position: {reviewer.review_position} · </>}
-              {reviewer.last_review_sent_at && <>Plan sent {new Date(reviewer.last_review_sent_at).toLocaleDateString()} · </>}
-              {reviewer.review_submitted_at && <>Reviewed {new Date(reviewer.review_submitted_at).toLocaleDateString()} · </>}
-              {reviewer.last_review_reminder_at && <>Last reminder {new Date(reviewer.last_review_reminder_at).toLocaleDateString()}</>}
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {reviewer.review_status === "NOT SENT" && (
-                <button type="button" className="button" onClick={() => openPreview(reviewer, "initial")} disabled={!ready} data-testid={`am3-send-review-${reviewer.participant_id}`}><Mail size={15} /> SEND FOR REVIEW</button>
-              )}
-              {reviewer.review_status === "SENT" && (
-                <button type="button" className="button button-outline" onClick={() => openPreview(reviewer, "reminder")} data-testid={`am3-send-reminder-${reviewer.participant_id}`}><Mail size={15} /> SEND REVIEW REMINDER</button>
-              )}
-              {reviewer.review_status === "REVIEWED" && (
-                <button type="button" className="button" onClick={() => openReview(reviewer.participant_id)} data-testid={`am3-view-review-${reviewer.participant_id}`}>VIEW REVIEW</button>
-              )}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section style={{ textAlign: "center", margin: "26px 0" }}>
-        <Link className="button rwr-cta-button" to="/app/activation/self-guided/module/4" data-testid="am3-continue-module4">CONTINUE TO MODULE 4 — FACILITATE PLAN ADOPTION</Link>
+        <p className="eyebrow" style={{ marginTop: 12 }} data-testid="am3-reviews-note">{activationM3Text.n_reviewsAppearInModule4}</p>
       </section>
 
       {showEdit && (
@@ -203,31 +164,6 @@ export default function ActivationModule3() {
           <h2>{activationM3Text.h_editFundraisingStrategyPlan}</h2>
           <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am3-edit-text" />
           <button type="button" className="button" onClick={saveEdit} disabled={saving} data-testid="am3-save-button">{saving ? "Saving…" : "SAVE"}</button>
-        </Modal>
-      )}
-
-      {preview && (
-        <Modal onClose={() => setPreview(null)} testId="am3-send-modal">
-          <h2>{preview.type === "reminder" ? "Review Reminder Email" : "Review Strategy Review Email"}</h2>
-          <p><strong>To:</strong> {preview.to_name} &lt;{preview.to_email}&gt;</p>
-          <p><strong>Subject:</strong> <span data-testid="am3-email-subject">{preview.subject}</span></p>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am3-email-body">{preview.body}</div>
-          <p style={{ marginTop: 10 }}><strong>Secure Review Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am3-email-link">{preview.form_link}</span></p>
-          <button type="button" className="button" onClick={sendEmail} disabled={sending} data-testid="am3-send-confirm">{sending ? "Sending…" : "SEND"}</button>
-        </Modal>
-      )}
-
-      {review && (
-        <Modal onClose={() => setReview(null)} testId="am3-review-modal">
-          <h2>{review.participant.name} — Plan Review</h2>
-          <div className="member-card" style={{ borderLeft: "4px solid #000", marginBottom: 14 }}>
-            <p className="eyebrow">Review Position</p>
-            <p style={{ fontWeight: 700, margin: 0 }} data-testid="am3-review-position">{review.review.position}</p>
-          </div>
-          {review.review.discussion_points && <p data-testid="am3-review-discussion"><strong>Suggestions / concerns to discuss:</strong> {review.review.discussion_points}</p>}
-          <p data-testid="am3-review-contribution"><strong>Where they see themselves contributing:</strong> {review.review.contribution}</p>
-          {review.review.support_needs && <p data-testid="am3-review-support"><strong>Support or resources that would help:</strong> {review.review.support_needs}</p>}
-          <p className="eyebrow">Submitted {review.review_submitted_at ? new Date(review.review_submitted_at).toLocaleString() : ""} · Plan version {review.review_version}</p>
         </Modal>
       )}
     </div>

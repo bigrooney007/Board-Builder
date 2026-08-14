@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, X } from "lucide-react";
+import { Copy, Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
-import { activationM5Text } from "../content/appContent";
+import { activationM5Text, activationContent } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
 const dialogStyle = { background: "#fff", maxWidth: 780, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
+
+const Modal = ({ children, onClose, testId }) => (
+  <div style={overlayStyle} data-testid={testId}>
+    <div style={dialogStyle}>
+      <button type="button" onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid={`${testId}-close`}><X size={20} /></button>
+      {children}
+    </div>
+  </div>
+);
 
 export default function ActivationModule5() {
   const [data, setData] = useState(null);
@@ -14,6 +23,10 @@ export default function ActivationModule5() {
   const [generating, setGenerating] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editText, setEditText] = useState("");
+  const [respEdits, setRespEdits] = useState({});
+  const [savedResp, setSavedResp] = useState("");
+  const [editFollowup, setEditFollowup] = useState(null);
+  const [copied, setCopied] = useState("");
   const pollRef = useRef(null);
 
   const load = useCallback(() => {
@@ -21,20 +34,23 @@ export default function ActivationModule5() {
   }, []);
   useEffect(load, [load]);
 
+  const anyGenerating = data?.toolkit?.status === "Generating" || (data?.members || []).some((m) => m.followup_status === "Generating");
   useEffect(() => {
-    if (data?.toolkit?.status === "Generating" && !pollRef.current) {
+    if (anyGenerating && !pollRef.current) {
       pollRef.current = setInterval(async () => {
         try {
           const res = await memberApi.get("/activation/toolkit");
-          if (res.data.toolkit.status !== "Generating") {
+          const stillGenerating = res.data.toolkit.status === "Generating" || (res.data.members || []).some((m) => m.followup_status === "Generating");
+          if (!stillGenerating) {
             clearInterval(pollRef.current); pollRef.current = null;
-            setGenerating(false); setData(res.data);
+            setGenerating(false);
           }
+          setData(res.data);
         } catch { /* keep polling */ }
       }, 3000);
     }
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [data?.toolkit?.status]);
+  }, [anyGenerating]);
 
   const generate = async () => {
     if (data?.toolkit?.display_text && !window.confirm("This will replace the current Execution Toolkit with a newly generated version. Continue?")) return;
@@ -49,6 +65,44 @@ export default function ActivationModule5() {
     try { await memberApi.put("/activation/toolkit", { text: editText }); setShowEdit(false); load(); } catch { /* keep open */ }
   };
   const approve = async () => { try { await memberApi.post("/activation/toolkit/approve"); load(); } catch { /* ignore */ } };
+
+  const saveResponsibility = async (member) => {
+    const edit = respEdits[member.participant_id] || {};
+    try {
+      await memberApi.put(`/activation/participants/${member.participant_id}/responsibility`, {
+        agreed_responsibility: edit.agreed_responsibility ?? member.agreed_responsibility,
+        responsibility_status: edit.responsibility_status ?? member.responsibility_status,
+      });
+      setSavedResp(member.participant_id);
+      setTimeout(() => setSavedResp(""), 2500);
+      load();
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Could not save the responsibility.");
+    }
+  };
+
+  const generateFollowup = async (member) => {
+    if (member.followup_body && !window.confirm("This will replace this member's follow-up email with a newly generated version. Continue?")) return;
+    try { await memberApi.post(`/activation/members/${member.participant_id}/followup-email/generate`); load(); } catch (err) {
+      window.alert(err.response?.data?.detail || "Generation could not start.");
+    }
+  };
+
+  const saveFollowup = async () => {
+    try {
+      await memberApi.put(`/activation/members/${editFollowup.participant_id}/followup-email`, { subject: editFollowup.subject, body: editFollowup.body });
+      setEditFollowup(null);
+      load();
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Could not save the email.");
+    }
+  };
+
+  const copyText = async (text, key) => {
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy this text:", text); }
+    setCopied(key);
+    setTimeout(() => setCopied(""), 2500);
+  };
 
   if (error) return <p className="submit-error">{error}</p>;
   if (!data) return <p className="sh-loading">Loading your execution toolkit workspace…</p>;
@@ -72,6 +126,52 @@ export default function ActivationModule5() {
         </section>
       ) : (
         <>
+          <section className="member-card" data-testid="am5-members-card">
+            <h2>{activationM5Text.h_equipEachBoardMember}</h2>
+            <p>{activationM5Text.d_equipEachBoardMember}</p>
+            {data.members.map((member) => {
+              const edit = respEdits[member.participant_id] || {};
+              return (
+                <article key={member.participant_id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 16 }} data-testid={`am5-member-${member.participant_id}`}>
+                  <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{member.name}</h3>
+                      <p style={{ margin: "4px 0 0" }}>{member.role || "Board Member"} · {member.email}</p>
+                    </div>
+                    <span className="eyebrow" style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid={`am5-resp-status-${member.participant_id}`}>{member.responsibility_status}</span>
+                  </div>
+                  <label className="field" style={{ marginTop: 12 }}><span>Agreed Fundraising Responsibility / Area They Agreed to Support</span>
+                    <textarea rows={3} value={edit.agreed_responsibility ?? member.agreed_responsibility} onChange={(e) => setRespEdits({ ...respEdits, [member.participant_id]: { ...edit, agreed_responsibility: e.target.value } })} data-testid={`am5-responsibility-${member.participant_id}`} />
+                  </label>
+                  <label className="field"><span>Responsibility Status</span>
+                    <select value={edit.responsibility_status ?? member.responsibility_status} onChange={(e) => setRespEdits({ ...respEdits, [member.participant_id]: { ...edit, responsibility_status: e.target.value } })} data-testid={`am5-resp-status-select-${member.participant_id}`}>
+                      {data.responsibility_statuses.map((status) => <option key={status}>{status}</option>)}
+                    </select>
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <button type="button" className="button" onClick={() => saveResponsibility(member)} data-testid={`am5-save-resp-${member.participant_id}`}>{savedResp === member.participant_id ? "Saved" : "SAVE RESPONSIBILITY"}</button>
+                    {member.followup_status === "Generating" ? (
+                      <p style={{ margin: 0, alignSelf: "center" }} data-testid={`am5-followup-generating-${member.participant_id}`}>Generating follow-up email…</p>
+                    ) : (
+                      <button type="button" className="button button-outline" onClick={() => generateFollowup(member)} data-testid={`am5-generate-followup-${member.participant_id}`}><Mail size={15} /> {member.followup_body ? "REGENERATE FOLLOW-UP EMAIL" : "GENERATE FOLLOW-UP EMAIL"}</button>
+                    )}
+                  </div>
+                  {member.followup_status === "Failed" && <p className="submit-error" data-testid={`am5-followup-error-${member.participant_id}`}>Generation failed. Please try again.</p>}
+                  {member.followup_body && member.followup_status !== "Generating" && (
+                    <div style={{ marginTop: 12 }} data-testid={`am5-followup-preview-${member.participant_id}`}>
+                      <p><strong>Subject:</strong> <span data-testid={`am5-followup-subject-${member.participant_id}`}>{member.followup_subject}</span></p>
+                      <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 280, overflowY: "auto" }} data-testid={`am5-followup-body-${member.participant_id}`}>{member.followup_body}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                        <button type="button" className="button" onClick={() => copyText(member.followup_body, member.participant_id)} data-testid={`am5-copy-followup-${member.participant_id}`}><Copy size={15} /> {copied === member.participant_id ? "Email Copied" : "COPY EMAIL"}</button>
+                        <button type="button" className="button button-outline" onClick={() => setEditFollowup({ participant_id: member.participant_id, subject: member.followup_subject, body: member.followup_body })} data-testid={`am5-edit-followup-${member.participant_id}`}>EDIT</button>
+                      </div>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+
           <section className="member-card" data-testid="am5-toolkit-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <h2 style={{ margin: 0 }}>Board Fundraising Execution Toolkit</h2>
@@ -103,21 +203,30 @@ export default function ActivationModule5() {
               <h2>{activationM5Text.h_yourBoardIsReadyTo}</h2>
               <p>Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.</p>
               <p>The next step is to go to your Fundraising Board Dashboard, where you can see each Board Member's responsibility and create their individual Fundraising Portfolio.</p>
-              <Link className="button rwr-cta-button" to="/app/activation/self-guided/my-fundraising-board" data-testid="am5-go-to-board">GO TO MY FUNDRAISING BOARD</Link>
             </section>
           )}
         </>
       )}
 
+      <section style={{ textAlign: "center", margin: "26px 0" }} data-testid="am5-dashboard-nav">
+        <Link className="button rwr-cta-button" to="/app/activation/self-guided/my-fundraising-board" data-testid="am5-dashboard-button">{activationContent.overview.previewButton}</Link>
+      </section>
+
       {showEdit && (
-        <div style={overlayStyle} data-testid="am5-edit-modal">
-          <div style={dialogStyle}>
-            <button type="button" onClick={() => setShowEdit(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid="am5-edit-modal-close"><X size={20} /></button>
-            <h2>{activationM5Text.h_editExecutionToolkit}</h2>
-            <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am5-edit-text" />
-            <button type="button" className="button" onClick={saveEdit} data-testid="am5-save-button">SAVE</button>
-          </div>
-        </div>
+        <Modal onClose={() => setShowEdit(false)} testId="am5-edit-modal">
+          <h2>{activationM5Text.h_editExecutionToolkit}</h2>
+          <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am5-edit-text" />
+          <button type="button" className="button" onClick={saveEdit} data-testid="am5-save-button">SAVE</button>
+        </Modal>
+      )}
+
+      {editFollowup && (
+        <Modal onClose={() => setEditFollowup(null)} testId="am5-followup-modal">
+          <h2>{activationM5Text.h_editFollowUpEmail}</h2>
+          <label className="field"><span>Subject</span><input value={editFollowup.subject} onChange={(e) => setEditFollowup({ ...editFollowup, subject: e.target.value })} data-testid="am5-followup-edit-subject" /></label>
+          <label className="field"><span>Email</span><textarea rows={16} value={editFollowup.body} onChange={(e) => setEditFollowup({ ...editFollowup, body: e.target.value })} data-testid="am5-followup-edit-body" /></label>
+          <button type="button" className="button" onClick={saveFollowup} data-testid="am5-followup-save-button">SAVE</button>
+        </Modal>
       )}
     </div>
   );

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { Download, X } from "lucide-react";
+import { Copy, Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { activationM4Text } from "../content/appContent";
 
@@ -18,19 +17,22 @@ const Modal = ({ children, onClose, testId }) => (
 );
 
 const PLAN_STATUSES = ["Adopted as Presented", "Adopted With Changes", "Further Review Needed"];
-const RESP_STATUSES = ["Responsibility Agreed", "Follow-Up Needed", "No Fundraising Responsibility Agreed Yet"];
 
 export default function ActivationModule4() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [generating, setGenerating] = useState(false);
+  const [generatingGuide, setGeneratingGuide] = useState(false);
+  const [generatingRevised, setGeneratingRevised] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editText, setEditText] = useState("");
   const [conclusion, setConclusion] = useState("");
   const [conclusionSaved, setConclusionSaved] = useState(false);
   const [adoptedDraft, setAdoptedDraft] = useState("");
-  const [respEdits, setRespEdits] = useState({});
-  const [savedResp, setSavedResp] = useState("");
+  const [meeting, setMeeting] = useState({ meeting_date: "", meeting_time: "", meeting_link: "", meeting_notes: "" });
+  const [meetingSaved, setMeetingSaved] = useState(false);
+  const [meetingEmail, setMeetingEmail] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [copied, setCopied] = useState("");
   const pollRef = useRef(null);
 
   const load = useCallback(() => {
@@ -38,30 +40,46 @@ export default function ActivationModule4() {
       setData(res.data);
       setConclusion(res.data.adoption.conclusion || "");
       setAdoptedDraft(res.data.adoption.draft_adopted_text || "");
+      setMeeting({
+        meeting_date: res.data.adoption.meeting_date || "",
+        meeting_time: res.data.adoption.meeting_time || "",
+        meeting_link: res.data.adoption.meeting_link || "",
+        meeting_notes: res.data.adoption.meeting_notes || "",
+      });
     }).catch(() => setError("We could not load your plan adoption workspace."));
   }, []);
   useEffect(load, [load]);
 
+  const anyGenerating = data?.adoption?.guide_status === "Generating" || data?.adoption?.revised_status === "Generating";
   useEffect(() => {
-    if (data?.adoption?.guide_status === "Generating" && !pollRef.current) {
+    if (anyGenerating && !pollRef.current) {
       pollRef.current = setInterval(async () => {
         try {
           const res = await memberApi.get("/activation/adoption/status");
-          if (res.data.guide_status !== "Generating") {
+          if (res.data.guide_status !== "Generating" && res.data.revised_status !== "Generating") {
             clearInterval(pollRef.current); pollRef.current = null;
-            setGenerating(false); load();
+            setGeneratingGuide(false); setGeneratingRevised(false); load();
           }
         } catch { /* keep polling */ }
       }, 3000);
     }
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [data?.adoption?.guide_status, load]);
+  }, [anyGenerating, load]);
 
-  const generate = async () => {
+  const generateRevised = async () => {
+    if (data?.adoption?.revised_text && !window.confirm("This will replace the current revised Fundraising Strategy Plan with a newly generated version built from the latest Board reviews. Continue?")) return;
+    setGeneratingRevised(true);
+    try { await memberApi.post("/activation/adoption/strategy/generate"); load(); } catch (err) {
+      setGeneratingRevised(false);
+      window.alert(err.response?.data?.detail || "Generation could not start.");
+    }
+  };
+
+  const generateGuide = async () => {
     if (data?.adoption?.guide_text && !window.confirm("This will replace the current Facilitation Guide with a newly generated version. Continue?")) return;
-    setGenerating(true);
+    setGeneratingGuide(true);
     try { await memberApi.post("/activation/adoption/guide/generate"); load(); } catch (err) {
-      setGenerating(false);
+      setGeneratingGuide(false);
       window.alert(err.response?.data?.detail || "Generation could not start.");
     }
   };
@@ -70,6 +88,34 @@ export default function ActivationModule4() {
     try { await memberApi.put("/activation/adoption/guide", { text: editText }); setShowEdit(false); load(); } catch { /* keep open */ }
   };
   const approveGuide = async () => { try { await memberApi.post("/activation/adoption/guide/approve"); load(); } catch { /* ignore */ } };
+
+  const saveMeeting = async () => {
+    try {
+      await memberApi.put("/activation/adoption/meeting", meeting);
+      setMeetingSaved(true);
+      setTimeout(() => setMeetingSaved(false), 2500);
+      load();
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Could not save the meeting details.");
+    }
+  };
+
+  const generateMeetingEmail = async () => {
+    setEmailBusy(true);
+    try {
+      const res = await memberApi.get("/activation/adoption/meeting-email");
+      setMeetingEmail(res.data);
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "The email could not be generated.");
+    }
+    setEmailBusy(false);
+  };
+
+  const copyText = async (text, key) => {
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy this text:", text); }
+    setCopied(key);
+    setTimeout(() => setCopied(""), 2500);
+  };
 
   const saveConclusion = async () => {
     if (!conclusion.trim()) return;
@@ -91,23 +137,13 @@ export default function ActivationModule4() {
     }
   };
 
-  const saveResponsibility = async (member) => {
-    const edit = respEdits[member.participant_id] || {};
-    const body = {
-      agreed_responsibility: edit.agreed_responsibility ?? member.agreed_responsibility,
-      responsibility_status: edit.responsibility_status ?? member.responsibility_status,
-    };
-    await memberApi.put(`/activation/participants/${member.participant_id}/responsibility`, body);
-    setSavedResp(member.participant_id);
-    setTimeout(() => setSavedResp(""), 2500);
-    load();
-  };
-
   if (error) return <p className="submit-error">{error}</p>;
   if (!data) return <p className="sh-loading">Loading your plan adoption workspace…</p>;
 
   const adoption = data.adoption;
   const guideStatus = adoption.guide_status || "NONE";
+  const revisedStatus = adoption.revised_status || "NONE";
+  const meetingReady = Boolean(adoption.meeting_date && adoption.meeting_time);
 
   return (
     <div data-testid="activation-module4">
@@ -118,17 +154,76 @@ export default function ActivationModule4() {
         <p><strong>This is where participation becomes ownership.</strong></p>
       </section>
 
-      <section className="member-card" data-testid="am4-context">
-        <h2>{activationM4Text.h_whereThingsStand}</h2>
+      <section className="member-card" data-testid="am4-participants-card">
+        <h2>{activationM4Text.h_boardReviewParticipants}</h2>
+        <p>{activationM4Text.d_boardReviewParticipants}</p>
         <p data-testid="am4-context-line">Strategy: <strong>{data.strategy.status === "Ready for Board Review" ? `Ready for Board Review · v${data.strategy.review_version}` : data.strategy.status}</strong> · Board reviews received: <strong>{data.reviews.length}</strong></p>
-        {data.reviews.map((review) => (
-          <div key={review.name} style={{ borderLeft: "3px solid #000", paddingLeft: 12, margin: "12px 0" }} data-testid={`am4-review-${review.name.split(" ")[0].toLowerCase()}`}>
-            <p style={{ margin: 0 }}><strong>{review.name}</strong> ({review.role}) — {review.position}</p>
-            {review.discussion_points && <p style={{ margin: "4px 0 0" }}>To discuss: {review.discussion_points}</p>}
-            {review.contribution && <p style={{ margin: "4px 0 0" }}>Contribution interest: {review.contribution}</p>}
-            {review.support_needs && <p style={{ margin: "4px 0 0" }}>Support needs: {review.support_needs}</p>}
+        {!data.reviews.length && <p data-testid="am4-no-reviews">{activationM4Text.n_noReviewsYet}</p>}
+        {data.reviews.map((review) => {
+          const disapproved = (review.idea_reviews || []).filter((idea) => idea.decision === "Disapprove");
+          const approvedCount = (review.idea_reviews || []).filter((idea) => idea.decision === "Approve").length;
+          return (
+            <div key={review.name} style={{ borderLeft: "3px solid #000", paddingLeft: 12, margin: "14px 0" }} data-testid={`am4-review-${review.name.split(" ")[0].toLowerCase()}`}>
+              <p style={{ margin: 0 }}><strong>{review.name}</strong> ({review.role}) — {review.position}</p>
+              {(review.idea_reviews || []).length > 0 && (
+                <p style={{ margin: "4px 0 0" }} data-testid={`am4-idea-counts-${review.name.split(" ")[0].toLowerCase()}`}><strong>{approvedCount}</strong> idea{approvedCount === 1 ? "" : "s"} approved · <strong>{disapproved.length}</strong> disapproved</p>
+              )}
+              {disapproved.map((idea) => (
+                <p key={idea.key} style={{ margin: "4px 0 0" }}>Disapproved — {idea.title}: {idea.reason}</p>
+              ))}
+              {review.discussion_points && <p style={{ margin: "4px 0 0" }}>To discuss: {review.discussion_points}</p>}
+              {review.contribution && <p style={{ margin: "4px 0 0" }}>Contribution interest: {review.contribution}</p>}
+              {review.support_needs && <p style={{ margin: "4px 0 0" }}>Support needs: {review.support_needs}</p>}
+            </div>
+          );
+        })}
+      </section>
+
+      <section className="member-card" data-testid="am4-revised-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <h2 style={{ margin: 0 }}>{activationM4Text.h_revisedFundraisingStrategyPlan}</h2>
+          <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am4-revised-status">{revisedStatus === "NONE" ? "NOT GENERATED" : revisedStatus.toUpperCase()}</span>
+        </div>
+        <p style={{ marginTop: 10 }}>{activationM4Text.d_revisedFundraisingStrategyPlan}</p>
+        {revisedStatus === "Failed" && <p className="submit-error" data-testid="am4-revised-error">Generation failed. Please try again.</p>}
+        {revisedStatus === "Generating" || generatingRevised ? (
+          <p data-testid="am4-revised-generating">Generating the revised Fundraising Strategy Plan from the Board's responses and reviews… It will appear here automatically.</p>
+        ) : (
+          <button type="button" className="button" onClick={generateRevised} data-testid="am4-generate-revised-button">{adoption.revised_text ? "REGENERATE FUNDRAISING STRATEGY" : "GENERATE FUNDRAISING STRATEGY"}</button>
+        )}
+        {adoption.revised_text && revisedStatus !== "Generating" && (
+          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 14, maxHeight: 420, overflowY: "auto" }} data-testid="am4-revised-text">{adoption.revised_text}</div>
+        )}
+      </section>
+
+      <section className="member-card" data-testid="am4-meeting-card">
+        <h2>{activationM4Text.h_adoptionMeetingDetails}</h2>
+        <p>{activationM4Text.d_adoptionMeetingDetails}</p>
+        <div className="two-col-fields">
+          <label className="field"><span>Adoption meeting date</span><input type="date" value={meeting.meeting_date} onChange={(e) => setMeeting({ ...meeting, meeting_date: e.target.value })} data-testid="am4-meeting-date" /></label>
+          <label className="field"><span>Adoption meeting time</span><input type="time" value={meeting.meeting_time} onChange={(e) => setMeeting({ ...meeting, meeting_time: e.target.value })} data-testid="am4-meeting-time" /></label>
+        </div>
+        <label className="field"><span>Meeting link (if there is one)</span><input value={meeting.meeting_link} onChange={(e) => setMeeting({ ...meeting, meeting_link: e.target.value })} data-testid="am4-meeting-link" /></label>
+        <label className="field"><span>Any other meeting details (optional)</span><textarea rows={3} value={meeting.meeting_notes} onChange={(e) => setMeeting({ ...meeting, meeting_notes: e.target.value })} data-testid="am4-meeting-notes" /></label>
+        <button type="button" className="button" onClick={saveMeeting} data-testid="am4-save-meeting">{meetingSaved ? "Details Saved" : "SAVE MEETING DETAILS"}</button>
+      </section>
+
+      <section className="member-card" data-testid="am4-invite-card">
+        <h2>{activationM4Text.h_adoptionMeetingInvitation}</h2>
+        <p>{activationM4Text.d_adoptionMeetingInvitation}</p>
+        {!meetingReady && <p className="eyebrow" data-testid="am4-invite-locked">{activationM4Text.n_saveMeetingToUnlockEmail}</p>}
+        <button type="button" className="button" onClick={generateMeetingEmail} disabled={!meetingReady || emailBusy} data-testid="am4-generate-invite-button"><Mail size={15} /> {emailBusy ? "Generating…" : meetingEmail ? "REGENERATE ADOPTION MEETING EMAIL" : "GENERATE ADOPTION MEETING EMAIL"}</button>
+        {meetingEmail && (
+          <div style={{ marginTop: 14 }} data-testid="am4-invite-preview">
+            <p><strong>Subject:</strong> <span data-testid="am4-invite-subject">{meetingEmail.subject}</span></p>
+            <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am4-invite-body">{meetingEmail.body}</div>
+            <p style={{ marginTop: 10 }}><strong>Secure Plan Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am4-invite-link">{meetingEmail.plan_link}</span></p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <button type="button" className="button" onClick={() => copyText(meetingEmail.body, "invite-body")} data-testid="am4-copy-invite-button"><Copy size={15} /> {copied === "invite-body" ? "Email Copied" : "COPY EMAIL"}</button>
+              <button type="button" className="button button-outline" onClick={() => copyText(meetingEmail.subject, "invite-subject")} data-testid="am4-copy-invite-subject-button"><Copy size={15} /> {copied === "invite-subject" ? "Subject Copied" : "COPY SUBJECT"}</button>
+            </div>
           </div>
-        ))}
+        )}
       </section>
 
       <section className="member-card" data-testid="am4-guide-card">
@@ -137,11 +232,11 @@ export default function ActivationModule4() {
           <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am4-guide-status">{guideStatus === "NONE" ? "NOT GENERATED" : guideStatus.toUpperCase()}</span>
         </div>
         {adoption.guide_error && guideStatus === "Failed" && <p className="submit-error">Generation failed. Please try again.</p>}
-        {guideStatus === "Generating" || generating ? (
+        {guideStatus === "Generating" || generatingGuide ? (
           <p data-testid="am4-generating">Generating your Facilitation Guide from the strategy and your Board's actual feedback… It will appear here automatically.</p>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-            <button type="button" className="button" onClick={generate} data-testid="am4-generate-button">{adoption.guide_text ? "REGENERATE" : "GENERATE MY PLAN ADOPTION FACILITATION GUIDE"}</button>
+            <button type="button" className="button" onClick={generateGuide} data-testid="am4-generate-button">{adoption.guide_text ? "REGENERATE" : "GENERATE FACILITATION GUIDE"}</button>
             {adoption.guide_text && (
               <>
                 <button type="button" className="button button-outline" onClick={() => { setEditText(adoption.guide_text); setShowEdit(true); }} data-testid="am4-edit-button">EDIT</button>
@@ -159,7 +254,7 @@ export default function ActivationModule4() {
 
       <section className="member-card" data-testid="am4-conclusion-card">
         <h2>{activationM4Text.h_planAdoptionConclusion}</h2>
-        <p>After the Board discussion, record in your own words what happened, what was agreed, what changed and what still needs attention.</p>
+        <p>{activationM4Text.d_planAdoptionConclusion}</p>
         <textarea rows={6} style={{ width: "100%" }} value={conclusion} onChange={(e) => { setConclusion(e.target.value); setConclusionSaved(false); }} data-testid="am4-conclusion-text" />
         <button type="button" className="button" onClick={saveConclusion} data-testid="am4-save-conclusion" style={{ marginTop: 10 }}>{conclusionSaved ? "Conclusion Saved" : "SAVE CONCLUSION"}</button>
       </section>
@@ -194,35 +289,9 @@ export default function ActivationModule4() {
         )}
       </section>
 
-      <section className="member-card" data-testid="am4-responsibilities">
-        <h2>{activationM4Text.h_boardMemberResponsibilities}</h2>
-        <p>Record what each Board Member actually agreed to carry during the adoption discussion. Nothing is assigned automatically.</p>
-        {data.members.map((member) => {
-          const edit = respEdits[member.participant_id] || {};
-          return (
-            <article key={member.participant_id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 16 }} data-testid={`am4-member-${member.participant_id}`}>
-              <h3 style={{ margin: 0 }}>{member.name} <span className="eyebrow">({member.role})</span></h3>
-              {member.participation_activities.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>Willing to help with:</strong> {member.participation_activities.join(", ")}</p>}
-              {member.ownership_interest && <p style={{ margin: "4px 0 0" }}><strong>Ownership interest:</strong> {member.ownership_interest}</p>}
-              {member.review_contribution && <p style={{ margin: "4px 0 0" }}><strong>Review contribution interest:</strong> {member.review_contribution}</p>}
-              {member.support_needed.length > 0 && <p style={{ margin: "4px 0 0" }}><strong>Support requested:</strong> {member.support_needed.join(", ")}</p>}
-              <label className="field" style={{ marginTop: 12 }}><span>Agreed Fundraising Responsibility</span>
-                <textarea rows={3} value={edit.agreed_responsibility ?? member.agreed_responsibility} onChange={(e) => setRespEdits({ ...respEdits, [member.participant_id]: { ...edit, agreed_responsibility: e.target.value } })} data-testid={`am4-responsibility-${member.participant_id}`} />
-              </label>
-              <label className="field"><span>Responsibility Status</span>
-                <select value={edit.responsibility_status ?? member.responsibility_status} onChange={(e) => setRespEdits({ ...respEdits, [member.participant_id]: { ...edit, responsibility_status: e.target.value } })} data-testid={`am4-resp-status-${member.participant_id}`}>
-                  {RESP_STATUSES.map((status) => <option key={status}>{status}</option>)}
-                </select>
-              </label>
-              <button type="button" className="button" onClick={() => saveResponsibility(member)} data-testid={`am4-save-resp-${member.participant_id}`}>{savedResp === member.participant_id ? "Saved" : "SAVE RESPONSIBILITY"}</button>
-            </article>
-          );
-        })}
-      </section>
-
       <section style={{ textAlign: "center", margin: "26px 0" }}>
         {data.module5_ready ? (
-          <Link className="button rwr-cta-button" to="/app/activation/self-guided/module/5" data-testid="am4-continue-module5">CONTINUE TO MODULE 5 — EQUIP THE BOARD TO EXECUTE</Link>
+          <p className="eyebrow" data-testid="am4-module5-unlocked">Module 5 is unlocked. Use the Next Module navigation below to continue.</p>
         ) : (
           <p className="eyebrow" data-testid="am4-module5-locked">Module 5 opens once your Plan Adoption Conclusion is saved and the plan is adopted and finalized.</p>
         )}

@@ -108,7 +108,7 @@ export default function MyFundraisingBoardPage() {
                 {member.agreed_responsibility ? (
                   <p style={{ marginTop: 10 }} data-testid={`mfb-responsibility-${member.participant_id}`}><strong>Agreed Fundraising Responsibility:</strong> {member.agreed_responsibility}</p>
                 ) : (
-                  <p style={{ marginTop: 10 }} data-testid={`mfb-no-responsibility-${member.participant_id}`}>No fundraising responsibility has been recorded for this member yet.{member.responsibility_status === "Follow-Up Needed" && " Follow up and record what is agreed."} <Link to="/app/activation/self-guided/module/4">Go to Module 4 responsibilities</Link>.</p>
+                  <p style={{ marginTop: 10 }} data-testid={`mfb-no-responsibility-${member.participant_id}`}>No fundraising responsibility has been recorded for this member yet.{member.responsibility_status === "Follow-Up Needed" && " Follow up and record what is agreed."} <Link to="/app/activation/self-guided/module/5">Go to Module 5 to record responsibilities</Link>.</p>
                 )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                   {member.fp_status === "Generating" ? (

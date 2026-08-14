@@ -250,6 +250,11 @@ export const activationM2Text = {
   h_editBoardFundraisingPlanningForm: "Edit Board Fundraising Planning Form",
   h_reminderCallScript: "Reminder Call Script",
   h_questions: "Questions",
+  h_sendThePlanningFormToYourBoard: "Send the Planning Form to Your Board",
+  d_sendThePlanningFormToYourBoard: "Generate the email you will send to your Board Members. It automatically contains the secure link to your approved planning form. Copy the email and send it from your own email \u2014 Board Members identify themselves when they complete the form.",
+  n_approveFormToUnlockEmail: "Approve your planning form above to unlock the email.",
+  h_responsesReceived: "Responses Received",
+  d_responsesReceived: "Board Members who complete the planning form appear here automatically.",
 };
 
 export const activationM3Text = {
@@ -257,15 +262,30 @@ export const activationM3Text = {
   h_boardPlanningResponses: "Board Planning Responses",
   h_boardFundraisingStrategyReview: "Board Fundraising Strategy Review",
   h_editFundraisingStrategyPlan: "Edit Fundraising Strategy Plan",
+  h_sendThePlanForBoardReview: "Send the Plan to Your Board for Review",
+  d_sendThePlanForBoardReview: "Generate the email you will send to your Board Members. It automatically contains the secure link to the Fundraising Strategy Plan review. Copy the email and send it from your own email. Board Members review each idea, approve or disapprove it with their reason, and submit their review \u2014 without logging in.",
+  n_approvePlanToUnlockEmail: "Approve the plan for Board review above to unlock the email.",
+  n_reviewsAppearInModule4: "Submitted Board reviews become visible in Module 4, where you facilitate plan adoption.",
 };
 
 export const activationM4Text = {
   h_turnTheFundraisingStrategyInto: "Turn the Fundraising Strategy Into a Board-Owned Plan",
   h_whereThingsStand: "Where Things Stand",
   h_planAdoptionConclusion: "Plan Adoption Conclusion",
+  d_planAdoptionConclusion: "After the adoption meeting, record what happened \u2014 paste the meeting transcript or your notes, describe what was agreed, what changed and what still needs attention. This record becomes the basis for the Board's execution responsibilities and Module 5 follow-up.",
   h_planStatus: "Plan Status",
   h_boardMemberResponsibilities: "Board Member Responsibilities",
   h_editFacilitationGuide: "Edit Facilitation Guide",
+  h_boardReviewParticipants: "Board Review Participants",
+  d_boardReviewParticipants: "The Board Members who completed the planning form and submitted their strategy review appear here with their positions and idea decisions.",
+  n_noReviewsYet: "No Board reviews have been submitted yet. Reviews appear here automatically as Board Members complete the secure review sent in Module 3.",
+  h_revisedFundraisingStrategyPlan: "Revised Fundraising Strategy Plan",
+  d_revisedFundraisingStrategyPlan: "Generate the revised Fundraising Strategy Plan. It synthesizes the original plan and the Board's planning responses with each member's review \u2014 approvals, disapprovals and their reasons \u2014 into the plan that is ready for adoption.",
+  h_adoptionMeetingDetails: "Adoption Meeting Details",
+  d_adoptionMeetingDetails: "Enter the details of the meeting where the Board will work through the feedback and adopt the plan. These saved details are used in the invitation email.",
+  h_adoptionMeetingInvitation: "Adoption Meeting Invitation Email",
+  d_adoptionMeetingInvitation: "Generate the invitation email for your Board. It automatically contains the secure link to the current Fundraising Strategy Plan and your saved meeting details. Copy it and send it from your own email.",
+  n_saveMeetingToUnlockEmail: "Save your adoption meeting details above to unlock the invitation email.",
 };
 
 export const activationM5Text = {
@@ -273,6 +293,9 @@ export const activationM5Text = {
   h_thePlanMustBeAdopted: "The Plan Must Be Adopted First",
   h_yourBoardIsReadyTo: "Your Board Is Ready to Start Executing",
   h_editExecutionToolkit: "Edit Execution Toolkit",
+  h_equipEachBoardMember: "Equip Each Board Member",
+  d_equipEachBoardMember: "Record what each Board Member agreed to carry during the adoption discussion, then generate their individual follow-up email based on the adopted strategy and the meeting conclusions. Copy each email and send it from your own email.",
+  h_editFollowUpEmail: "Edit Follow-Up Email",
 };
 
 export const myFundraisingBoardText = {
@@ -428,6 +451,15 @@ export const strategyReviewText = {
   h_thisReviewLinkIsNot: "This Review Link Is Not Valid",
   h_thankYou: "Thank You",
   h_yourReview: "Your Review",
+  h_aboutYou: "About You",
+  h_reviewEachIdea: "Review Each Part of the Plan",
+  d_reviewEachIdea: "Review each part of the plan below. Approve the ideas you support. Disapprove the ones you do not, and share your reason so the Board can work through it together.",
+};
+
+export const strategyPlanText = {
+  h_loading: "Loading\u2026",
+  h_thisPlanLinkIsNot: "This Plan Link Is Not Valid",
+  h_fundraisingStrategyPlan: "Fundraising Strategy Plan",
 };
 
 export const recruitProcessText = {
