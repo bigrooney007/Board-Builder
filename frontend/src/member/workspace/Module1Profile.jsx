@@ -174,8 +174,8 @@ export const Module1Profile = ({ onConfirmed }) => {
         />
         {byType.powerhouse_board_blueprint && (
           <div className="material-actions" style={{ marginTop: 18 }}>
-            <Link className="button" to="/app/recruitment/self-guided/module/2" data-testid="continue-to-step-2">
-              Continue to Step 2 — Launch Your Recruitment Campaign
+            <Link className="button" to="/app/recruitment/self-guided/module/3" data-testid="continue-to-step-2">
+              Continue to Step 3 — Launch Your Recruitment Campaign
             </Link>
           </div>
         )}

@@ -135,9 +135,10 @@ def create_course_router(db) -> APIRouter:
             {"user_id": member["user_id"], "product": payload.product, "module_number": payload.module_number},
             update, upsert=True,
         )
-        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": {"$lte": 5}}, {"_id": 0}).to_list(20)
+        total = 5 if payload.product == "reactivation_self_guided" else 6
+        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": {"$lte": total}}, {"_id": 0}).to_list(20)
         completed = sum(1 for record in records if record.get("completed"))
-        return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / 5 * 100)}
+        return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / total * 100)}
 
     @router.post("/support-requests", status_code=201)
     async def create_support_request(payload: SupportRequestCreate, request: Request):

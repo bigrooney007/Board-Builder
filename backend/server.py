@@ -259,6 +259,8 @@ async def startup_tasks():
     await db.course_videos.create_index([("product", 1), ("module_number", 1)], unique=True)
     from five_step_migration import run_five_step_migration
     await run_five_step_migration(db)
+    from six_module_migration import run_six_module_migration
+    await run_six_module_migration(db)
     await db.support_requests.create_index("support_request_id", unique=True)
     await db.recruitment_profiles.create_index("user_id", unique=True)
     await db.generated_materials.create_index("material_id", unique=True)

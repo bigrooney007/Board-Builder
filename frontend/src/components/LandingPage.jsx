@@ -43,7 +43,8 @@ export const LandingPage = ({ onJoin }) => (
         <p className="eyebrow" data-testid="hero-eyebrow">Your mission needs more than a board on paper</p>
         <h1 data-testid="hero-headline">Build the Powerhouse <em>Fundraising Board</em> Your Nonprofit Needs to Succeed</h1>
         <p className="hero-lead" data-testid="hero-supporting-text">Tell us about your present board.</p>
-        <p data-testid="hero-description">We will review your board, identify what needs to change, show you which board members can be reactivated, and tell you the exact type of board members you may need to recruit to complement your present board and strengthen your fundraising.</p>
+        <p data-testid="hero-description">Answer four short questions about your Board and we will show you the exact steps to take to fix it and transform your Board Members into fundraising champions for your mission.</p>
+        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">TELL ME WHAT MY BOARD NEEDS</a></p>
         <p className="hero-note" data-testid="hero-response-time"><Check size={17} /> Choose the board problem you want to solve and build your starting point.</p>
       </div>
       <div className="hero-visual" aria-hidden="true">

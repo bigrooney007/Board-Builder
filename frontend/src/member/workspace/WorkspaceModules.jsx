@@ -108,7 +108,7 @@ export const Module3Launch = () => {
 
       <section className="workspace-panel" data-testid="campaign-materials">
         <h2>Your Recruitment Campaign Materials</h2>
-        <p className="material-description">Each resource is created from the information you have already provided and the board members you identified in Step 1 — your Board Application link is inserted automatically. Generate each one, read it, edit anything you want changed, then approve it. Nothing is sent or published until you launch below.</p>
+        <p className="material-description">Each resource is created from the information you have already provided and the board members you identified in Step 2 — your Board Application link is inserted automatically. Generate each one, read it, edit anything you want changed, then approve it. Nothing is sent or published until you launch below.</p>
       </section>
       {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
         <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
@@ -128,7 +128,7 @@ export const Module3Launch = () => {
             <p>Your Board Application is ready, your recruitment materials have been created, and your opportunity has been launched through the Nonprofit Board Builder recruitment network. Use the materials above to continue sharing your opportunity through your professional, social and referral networks.</p>
             <p>Launched {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "delivered as an internal preview to the program owner" : "delivered to eligible Applicant Network members"}).
               <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a></p>
-            <Link className="button" to="/app/recruitment/self-guided/module/3" data-testid="continue-to-step-3">Continue to Step 3 — Select and Interview Your Applicants</Link>
+            <Link className="button" to="/app/recruitment/self-guided/module/4" data-testid="continue-to-step-3">Continue to Step 4 — Select and Interview Your Applicants</Link>
           </div>
         )}
         {message && <p className="member-success">{message}</p>}

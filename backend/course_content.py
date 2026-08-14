@@ -20,6 +20,13 @@ LINKEDIN_LAUNCH_INSTRUCTIONS = [
 BASIC_MODULES = [
     {
         "number": 1,
+        "title": "Recruiting Board Members the Right Way",
+        "resources": [
+            {"title": "How to Use This Training", "content": "Watch the training video above, then continue to Step 2 to identify the board members your organization needs."},
+        ],
+    },
+    {
+        "number": 2,
         "title": "Identify the Board Members Your Organization Needs",
         "resources": [
             {"title": "Board Needs Worksheet", "content": "Use this worksheet to list the most important results your organization must accomplish in the next 12 months, the skills and relationships your present board already provides, and the specific gaps your new board members must fill."},
@@ -28,7 +35,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 2,
+        "number": 3,
         "title": "Launch Your Recruitment Campaign",
         "resources": [
             {"title": "Board Opportunity Template", "content": "A one-page board opportunity describing your mission, the impact of the organization, the role, the expectations, the time commitment and how to apply."},
@@ -40,7 +47,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 3,
+        "number": 4,
         "title": "Select and Interview Your Applicants",
         "resources": [
             {"title": "Interview Invitation Template", "content": "An email inviting qualified applicants to a board interview, including scheduling details and what to expect."},
@@ -50,7 +57,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 4,
+        "number": 5,
         "title": "Complete References and Background Checks",
         "resources": [
             {"title": "Reference Request Email", "content": "An email asking an applicant’s reference for a short call or written response about the applicant’s reliability, follow-through and professional strengths."},
@@ -60,7 +67,7 @@ BASIC_MODULES = [
         ],
     },
     {
-        "number": 5,
+        "number": 6,
         "title": "Onboard Your New Board Members",
         "resources": [
             {"title": "Onboarding Agenda", "content": "A structured agenda for the first onboarding session: welcome, mission and history, programs, finances, board expectations, key documents and first responsibilities."},
@@ -77,6 +84,11 @@ BASIC_MODULES = [
 SELF_GUIDED_MODULES = [
     {
         "number": 1,
+        "title": "Recruiting Board Members the Right Way",
+        "kind": "training",
+    },
+    {
+        "number": 2,
         "title": "Identify the Board Members Your Organization Needs",
         "workspace": {
             "heading": "Your Board Recruitment Workspace",
@@ -85,7 +97,7 @@ SELF_GUIDED_MODULES = [
         "disabled_tools": [],
     },
     {
-        "number": 2,
+        "number": 3,
         "title": "Launch Your Recruitment Campaign",
         "disabled_tools": [],
         "linkedin_section": {
@@ -98,7 +110,7 @@ SELF_GUIDED_MODULES = [
         },
     },
     {
-        "number": 3,
+        "number": 4,
         "title": "Select and Interview Your Applicants",
         "future_areas": [
             "Applicant List",
@@ -112,13 +124,13 @@ SELF_GUIDED_MODULES = [
         "disabled_tools": [],
     },
     {
-        "number": 4,
+        "number": 5,
         "title": "Complete References and Background Checks",
         "disabled_tools": [],
         "background_note": "External background-check resources are available here.",
     },
     {
-        "number": 5,
+        "number": 6,
         "title": "Onboard Your New Board Members",
         "disabled_tools": [],
     },

@@ -25,6 +25,9 @@ import BoardReactivationIntakePage from "@/funnels/BoardReactivationIntakePage";
 import ReactivationStartHerePage from "@/funnels/ReactivationStartHerePage";
 import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
 import PortfolioPage from "@/pages/PortfolioPage";
+import BoardTransformationPage from "@/funnels/BoardTransformationPage";
+import BoardTransformationResultPage from "@/funnels/BoardTransformationResultPage";
+import ActivateWithRooneyPage from "@/funnels/ActivateWithRooneyPage";
 import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
@@ -61,6 +64,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomeExperience />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
+          <Route path="/board-transformation" element={<BoardTransformationPage />} />
+          <Route path="/board-transformation/result/:token" element={<BoardTransformationResultPage />} />
+          <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
           <Route path="/recruit/process" element={<RecruitProcessPage />} />
           <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />

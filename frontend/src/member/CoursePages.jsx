@@ -160,10 +160,19 @@ const BasicResources = ({ module }) => (
 );
 
 const SelfGuidedWorkspace = ({ moduleNumber }) => {
-  if (moduleNumber === 1) return <Module1Profile />;
-  if (moduleNumber === 2) return <Module3Launch />;
-  if (moduleNumber === 3) return <Module4Applicants />;
-  if (moduleNumber === 4) return <Module5References />;
+  if (moduleNumber === 1) {
+    return (
+      <section className="member-card" data-testid="module1-training-card">
+        <h2>Start Here: Recruiting Board Members the Right Way</h2>
+        <p>This training shows you how the whole recruitment process works before you begin executing it. Watch the training above, then continue to Step 2 to identify the board members your organization needs.</p>
+        <Link className="button" to="/app/recruitment/self-guided/module/2" data-testid="module1-continue-to-step-2">Continue to Step 2 — Identify the Board Members Your Organization Needs</Link>
+      </section>
+    );
+  }
+  if (moduleNumber === 2) return <Module1Profile />;
+  if (moduleNumber === 3) return <Module3Launch />;
+  if (moduleNumber === 4) return <Module4Applicants />;
+  if (moduleNumber === 5) return <Module5References />;
   return <Module6Onboarding />;
 };
 

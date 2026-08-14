@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
-OFFER_SOURCES = {"recruitment", "reactivation", "fundraising_activation"}
+OFFER_SOURCES = {"recruitment", "reactivation", "fundraising_activation", "board_transformation"}
 
 
 class FunnelLeadCreate(BaseModel):

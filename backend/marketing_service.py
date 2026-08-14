@@ -303,6 +303,8 @@ async def sync_lead_nurture(db, lead: dict) -> None:
     """Latest submission wins: one active nurture category per contact."""
     email = lead["email"].lower()
     source = lead["offer_source"]
+    if source not in NURTURE_TEMPLATES:
+        return
     ts = now_tz().isoformat()
     await db.nurture_contacts.update_one(
         {"email": email},

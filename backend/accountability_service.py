@@ -22,16 +22,16 @@ STAGES = {
         "module": 1,
     },
     "module1": {
-        "focus": "identifying the board members your organization needs",
-        "opening": "I'm checking in to see how you're getting on identifying the board members your organization needs.",
-        "support": "If you're stuck on what skills, experience or relationships your board is missing, or you want me to look at anything with you, reply to this email and let me know. I'm right here with you as we build your board.",
+        "focus": "the Recruiting Board Members the Right Way training",
+        "opening": "I'm checking in to see if you've been able to go through the Recruiting Board Members the Right Way training.",
+        "support": "The training sets up everything that follows, so start there. If anything is unclear or you want to talk anything through before you move into the process, reply to this email and let me know.",
         "cta": "CONTINUE BUILDING MY BOARD",
         "module": 1,
     },
     "module2": {
-        "focus": "your board recruitment strategy",
-        "opening": "How are you getting on with your board recruitment strategy?",
-        "support": "This is where we decide exactly how you're going to reach the professionals your board needs. If you're unsure about any of the channels or want my input, reply and let me know.",
+        "focus": "identifying the board members your organization needs",
+        "opening": "I'm checking in to see how you're getting on identifying the board members your organization needs.",
+        "support": "If you're stuck on what skills, experience or relationships your board is missing, or you want me to look at anything with you, reply to this email and let me know. I'm right here with you as we build your board.",
         "cta": "CONTINUE BUILDING MY BOARD",
         "module": 2,
     },
@@ -128,9 +128,9 @@ async def current_stage(db, user_id: str) -> dict:
     if not records:
         return {"stage": "not_started", "module": 1}
     completed = {record["module_number"] for record in records if record.get("completed")}
-    if all(number in completed for number in range(1, 6)):
-        return {"stage": "completed", "module": 5}
-    module = next(number for number in range(1, 6) if number not in completed)
+    if all(number in completed for number in range(1, 7)):
+        return {"stage": "completed", "module": 6}
+    module = next(number for number in range(1, 7) if number not in completed)
     return {"stage": f"module{module}", "module": module}
 
 

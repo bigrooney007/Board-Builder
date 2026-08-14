@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field, field_validator
 
 from funnel_models import FunnelLeadCreate, FunnelLeadResponse, LeadResultResponse, OFFER_SOURCES
 from funnel_service import build_result, create_lead_id, send_owner_lead_email, validate_answers
@@ -44,6 +45,26 @@ def create_funnel_router(db) -> APIRouter:
         except Exception:
             pass
         return FunnelLeadResponse(**lead)
+
+    class ProductSelection(BaseModel):
+        result_token: str = Field(min_length=1)
+        product: str
+
+        @field_validator("product")
+        @classmethod
+        def valid_product(cls, value: str) -> str:
+            if value not in {"recruit", "reactivate", "activate"}:
+                raise ValueError("Unknown product")
+            return value
+
+    @router.post("/board-transformation/select")
+    async def select_transformation_product(payload: ProductSelection):
+        result = await db.funnel_leads.update_one(
+            {"result_token": payload.result_token, "offer_source": "board_transformation"},
+            {"$set": {"selected_product": payload.product, "updated_at": datetime.now(timezone.utc).isoformat()}})
+        if not result.matched_count:
+            raise HTTPException(status_code=404, detail="Result not found")
+        return {"status": "ok"}
 
     @router.get("/result/{result_token}", response_model=LeadResultResponse)
     async def get_result(result_token: str):

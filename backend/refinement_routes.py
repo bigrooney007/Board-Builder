@@ -261,7 +261,7 @@ def create_refinement_router(db) -> APIRouter:
         await db.opportunity_applications.update_one({"application_id": process["application_id"]},
             {"$set": {"reference_check_status": "References Submitted"}})
         candidate = process.get("candidate_name") or "Your candidate"
-        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/4"
+        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/5"
         await notify_owner(process["owner_user_id"], f"References Submitted | {candidate}",
                            f"<p><strong>{candidate}</strong> has submitted their reference information.</p>"
                            f"<p>Review who they listed, then email each reference for confirmation when you are ready — nothing is sent to the references until you choose to contact them.</p>"
@@ -317,7 +317,7 @@ def create_refinement_router(db) -> APIRouter:
             await db.opportunity_applications.update_one({"application_id": process["application_id"]},
                 {"$set": {"reference_check_status": "Completed"}})
         candidate = process.get("candidate_name") or "your candidate"
-        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/4"
+        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/5"
         await notify_owner(process["owner_user_id"], f"Reference Received | {candidate}",
                            f"<p>A reference response has been received for <strong>{candidate}</strong> from <strong>{identity.get('name') or reference['name']}</strong>.</p>"
                            f"<p><a href='{review_url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Review Reference</a></p>",

@@ -5,7 +5,7 @@ import { memberApi } from "../api";
 import { MemberShell } from "../MemberShell";
 import { printText } from "./MaterialCard";
 
-const MODULE_NAMES = { 0: "Recruitment Strategy (Previous Process)", 1: "Step 1 — Identify the Board Members Your Organization Needs", 2: "Step 2 — Launch Your Recruitment Campaign", 3: "Step 3 — Select and Interview Your Applicants", 4: "Step 4 — Complete References and Background Checks", 5: "Step 5 — Onboard Your New Board Members" };
+const MODULE_NAMES = { 0: "Recruitment Strategy (Previous Process)", 1: "Step 1 — Recruiting Board Members the Right Way", 2: "Step 2 — Identify the Board Members Your Organization Needs", 3: "Step 3 — Launch Your Recruitment Campaign", 4: "Step 4 — Select and Interview Your Applicants", 5: "Step 5 — Complete References and Background Checks", 6: "Step 6 — Onboard Your New Board Members" };
 
 export const MaterialsLibraryPage = () => {
   const [materials, setMaterials] = useState([]);

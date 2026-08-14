@@ -889,20 +889,27 @@ def create_reactivation_router(db) -> APIRouter:
                 "organization": context["organization"],
                 "issue_date": (material.get("approved_at") or material.get("updated_at", ""))[:10]}
 
+    async def portfolio_member_name(material: dict) -> str:
+        if material["type"].startswith("reactivation_"):
+            record = await db.reactivation_board_members.find_one({"member_record_id": material["application_id"]}, {"_id": 0, "name": 1})
+            return (record or {}).get("name", "")
+        application = await db.opportunity_applications.find_one(
+            {"application_id": material["application_id"]}, {"_id": 0, "profile_snapshot.full_name": 1, "applicant_email": 1})
+        snapshot = (application or {}).get("profile_snapshot") or {}
+        return snapshot.get("full_name") or (application or {}).get("applicant_email", "")
+
     @router.get("/portfolio/{token}")
     async def public_portfolio(token: str):
         material = await shared_portfolio(token)
-        record = await db.reactivation_board_members.find_one({"member_record_id": material["application_id"]}, {"_id": 0, "name": 1})
         issuer = await portfolio_issuer(material)
-        return {"title": material["title"], "member_name": (record or {}).get("name", ""),
+        return {"title": material["title"], "member_name": await portfolio_member_name(material),
                 "display_text": current_display(material), **issuer}
 
     @router.get("/portfolio/{token}/pdf")
     async def public_portfolio_pdf(token: str):
         material = await shared_portfolio(token)
-        record = await db.reactivation_board_members.find_one({"member_record_id": material["application_id"]}, {"_id": 0, "name": 1})
         issuer = await portfolio_issuer(material)
-        member_name = (record or {}).get("name", "")
+        member_name = await portfolio_member_name(material)
         return build_portfolio_pdf(material["title"], member_name, issuer, current_display(material))
 
     # ---------------- PUBLIC SECURE FORM ----------------

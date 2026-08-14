@@ -26,6 +26,8 @@ export default function AboutRooneyPage() {
             {ABOUT_ROONEY_SUBTITLE && (
               <p className="ar-hero-subtitle" data-testid="about-rooney-subtitle">{ABOUT_ROONEY_SUBTITLE}</p>
             )}
+            <p className="ar-hero-subtitle" data-testid="about-rooney-diagnostic-copy">Answer four short questions about your Board and I will show you the steps to take to fix it and build a Board that helps carry your mission.</p>
+            <Link className="button" to="/board-transformation" data-testid="about-rooney-diagnostic-button">TELL ME WHAT MY BOARD NEEDS</Link>
           </div>
           <i aria-hidden="true" />
         </section>
@@ -33,22 +35,23 @@ export default function AboutRooneyPage() {
         <TestimonialCarousel idPrefix="about-rooney" />
 
         <section className="ar-offers" data-testid="about-rooney-offers-section">
-          <h2 data-testid="about-rooney-offers-heading">Two Ways I Can Help You Recruit Your Board</h2>
-          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">Choose the level of support that works best for you.</p>
+          <h2 data-testid="about-rooney-offers-heading">Three Ways I Can Help You Transform Your Board</h2>
+          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">Choose the part of the Board Transformation journey your organization needs first.</p>
           <div className="ar-offer-grid">
-            <article className="ar-offer-card" data-testid="about-rooney-diy-card">
-              <h3 data-testid="about-rooney-diy-heading">Do It Yourself</h3>
-              <p className="ar-offer-price" data-testid="about-rooney-diy-price">$497</p>
-              <p className="ar-offer-copy" data-testid="about-rooney-diy-copy">Watch me run the board recruitment process, follow what I do for your own organization, use the execution materials provided, and reach out for support whenever you need help along the way.</p>
-              <p className="ar-offer-payment-line" data-testid="about-rooney-diy-payment-line">One payment.</p>
-              <Link className="button" to="/recruit-your-board-yourself" data-testid="about-rooney-diy-button">I WANT TO RECRUIT MY BOARD MYSELF</Link>
+            <article className="ar-offer-card" data-testid="about-rooney-recruit-card">
+              <h3 data-testid="about-rooney-recruit-heading">Recruit Your Board</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-recruit-copy">Bring the right people around the table.</p>
+              <Link className="button" to="/recruit-with-rooney" data-testid="about-rooney-recruit-button">RECRUIT MY BOARD</Link>
             </article>
-            <article className="ar-offer-card" data-testid="about-rooney-dwm-card">
-              <h3 data-testid="about-rooney-dwm-heading">Do It With Me</h3>
-              <p className="ar-offer-price" data-testid="about-rooney-dwm-price">$1,997</p>
-              <p className="ar-offer-copy" data-testid="about-rooney-dwm-copy">We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.</p>
-              <p className="ar-offer-payment-line" data-testid="about-rooney-dwm-payment-line">One project. One payment.</p>
-              <Link className="button" to="/board-recruitment-proposal" data-testid="about-rooney-dwm-button">I WANT TO RECRUIT MY BOARD WITH ROONEY</Link>
+            <article className="ar-offer-card" data-testid="about-rooney-reactivate-card">
+              <h3 data-testid="about-rooney-reactivate-heading">Reactivate Your Board</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-reactivate-copy">Get existing Board Members to stand up, take responsibility, or step down appropriately.</p>
+              <Link className="button" to="/reactivate-with-rooney" data-testid="about-rooney-reactivate-button">REACTIVATE MY BOARD</Link>
+            </article>
+            <article className="ar-offer-card" data-testid="about-rooney-activate-card">
+              <h3 data-testid="about-rooney-activate-heading">Activate Your Board</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-activate-copy">Turn your Board into fundraising champions who help carry the fundraising responsibility.</p>
+              <Link className="button" to="/activate-with-rooney" data-testid="about-rooney-activate-button">ACTIVATE MY BOARD</Link>
             </article>
           </div>
         </section>

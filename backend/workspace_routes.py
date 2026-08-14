@@ -7,6 +7,7 @@ import secrets
 from datetime import datetime, timezone
 from typing import List, Optional
 
+import resend
 from bson import ObjectId
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field
 from ai_service import GENERATION_TYPES, extract_cv_text, generate_structured
 from member_auth import authenticate_member, require_entitlement
 from opportunity_emails import send_opportunity_broadcast, send_signature_request
+from reactivation_routes import email_html as portfolio_email_html, origin_of
 from workspace_service import (
     APPLICATION_STATUSES, BACKGROUND_STATUSES, CORE_QUESTIONS, REFERENCE_OUTCOMES,
     application_context_text, build_org_context, get_current_material, get_lead, get_profile,
@@ -319,12 +321,89 @@ def create_workspace_router(db) -> APIRouter:
     @router.post("/materials/{material_id}/approve")
     async def approve_material(material_id: str, request: Request):
         member = await current_member(request)
-        result = await db.generated_materials.update_one(
-            {"material_id": material_id, "user_id": member["user_id"]},
-            {"$set": {"status": "Approved", "approved_at": now_iso(), "updated_at": now_iso()}})
-        if not result.matched_count:
+        material = await db.generated_materials.find_one(
+            {"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0, "type": 1, "share_token": 1})
+        if not material:
             raise HTTPException(status_code=404, detail="Material not found")
-        return {"status": "Approved"}
+        updates = {"status": "Approved", "approved_at": now_iso(), "updated_at": now_iso()}
+        if material["type"] == "board_member_portfolio" and not material.get("share_token"):
+            updates["share_token"] = secrets.token_urlsafe(24)
+        await db.generated_materials.update_one(
+            {"material_id": material_id, "user_id": member["user_id"]}, {"$set": updates})
+        refreshed = await db.generated_materials.find_one({"material_id": material_id}, {"_id": 0, "share_token": 1})
+        return {"status": "Approved", "share_token": (refreshed or {}).get("share_token", "")}
+
+    # ---------- Board Member Portfolio email (My Board) ----------
+    async def approved_portfolio_for(user_id: str, application_id: str) -> dict:
+        material = await db.generated_materials.find_one(
+            {"user_id": user_id, "type": "board_member_portfolio", "application_id": application_id}, {"_id": 0})
+        if not material or material["status"] != "Approved" or not material.get("share_token"):
+            raise HTTPException(status_code=409, detail="Approve this Portfolio before preparing the email.")
+        return material
+
+    async def recruitment_portfolio_email_content(member: dict, application: dict, material: dict, origin: str) -> dict:
+        profile = await get_profile(db, member["user_id"])
+        organization = (profile.get("data") or {}).get("organization_name", "") or "our organization"
+        snapshot = application.get("profile_snapshot") or {}
+        name = snapshot.get("full_name") or application.get("applicant_email", "")
+        first = name.split(" ")[0] if name else "there"
+        recipient = application.get("applicant_email") or application.get("candidate_email") or ""
+        link = f"{origin}/portfolio/{material['share_token']}"
+        founder_name = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+        body = (
+            f"Dear {first},\n\n"
+            f"Welcome to the board of {organization}, and thank you for the time you have invested in the recruitment process.\n\n"
+            "To help you begin with clarity, I have put together your Board Member Portfolio.\n\n"
+            f"It outlines your role, where your experience can create value, the areas of responsibility we discussed, and how you can help move {organization} forward.\n\n"
+            "Please review your Portfolio using the link below:\n\n"
+            "[VIEW MY BOARD MEMBER PORTFOLIO]\n\n"
+            "I am glad to have you with us, and I look forward to working together as we move forward.\n\n"
+            f"{founder_name}\n{organization}")
+        return {"to_name": name, "to_email": recipient, "subject": f"Your Board Member Portfolio | {organization}",
+                "body": body, "button_label": "VIEW MY BOARD MEMBER PORTFOLIO",
+                "portfolio_link": link, "share_token": material["share_token"]}
+
+    @router.get("/applications/{application_id}/portfolio-email")
+    async def preview_recruitment_portfolio_email(application_id: str, request: Request):
+        member = await current_member(request)
+        application = await db.opportunity_applications.find_one(
+            {"application_id": application_id, "owner_user_id": member["user_id"]}, {"_id": 0, "cv_text": 0})
+        if not application:
+            raise HTTPException(status_code=404, detail="Board member not found")
+        material = await approved_portfolio_for(member["user_id"], application_id)
+        return await recruitment_portfolio_email_content(member, application, material, origin_of(request))
+
+    class RecruitmentPortfolioEmailSend(BaseModel):
+        subject: str = Field(min_length=1)
+        body: str = Field(min_length=1)
+
+    @router.post("/applications/{application_id}/portfolio-email")
+    async def send_recruitment_portfolio_email(application_id: str, payload: RecruitmentPortfolioEmailSend, request: Request):
+        member = await current_member(request)
+        application = await db.opportunity_applications.find_one(
+            {"application_id": application_id, "owner_user_id": member["user_id"]}, {"_id": 0, "cv_text": 0})
+        if not application:
+            raise HTTPException(status_code=404, detail="Board member not found")
+        material = await approved_portfolio_for(member["user_id"], application_id)
+        defaults = await recruitment_portfolio_email_content(member, application, material, origin_of(request))
+        if not defaults["to_email"]:
+            raise HTTPException(status_code=409, detail="We do not have an email address for this board member yet.")
+        body = payload.body if "[" in payload.body else payload.body + f"\n\n[{defaults['button_label']}]"
+        resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+        message = {"from": os.environ["NONPROFIT_SENDER"], "to": [defaults["to_email"]],
+                   "subject": payload.subject,
+                   "html": portfolio_email_html(body, defaults["button_label"], defaults["portfolio_link"])}
+        if member.get("email"):
+            message["reply_to"] = [member["email"]]
+        try:
+            await resend.Emails.send_async(message)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="The email could not be sent. Please try again.") from exc
+        now = now_iso()
+        await db.generated_materials.update_one(
+            {"material_id": material["material_id"]},
+            {"$set": {"sent_at": now, "sent_to": defaults["to_email"], "sent_version": material["current_version"], "updated_at": now}})
+        return {"status": "sent", "sent_at": now}
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)

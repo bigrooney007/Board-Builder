@@ -1,14 +1,88 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, ExternalLink, UserCheck } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Mail, UserCheck, X } from "lucide-react";
+import axios from "axios";
 import { memberApi } from "../api";
 import { useMemberAuth } from "../MemberAuthContext";
 import { MemberShell } from "../MemberShell";
-import { MaterialCard, SendMaterialButton, downloadMaterialPdf } from "./MaterialCard";
+import { MaterialCard, downloadMaterialPdf } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { useBranding } from "./ApplicantModules";
 
 const CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard";
+const PUBLIC_API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const PortfolioActions = ({ application, portfolio, refresh }) => {
+  const [email, setEmail] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const token = portfolio?.share_token;
+  const applicationId = application.application_id;
+  if (portfolio?.status !== "Approved" || !token) return null;
+  const sent = portfolio.sent_at && portfolio.sent_version === portfolio.current_version;
+
+  const downloadPdf = async () => {
+    try {
+      const response = await axios.get(`${PUBLIC_API}/portfolio/${token}/pdf`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url; link.download = `Board-Member-Portfolio-${(application.profile_snapshot?.full_name || "Member").replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`; link.click();
+      URL.revokeObjectURL(url);
+    } catch { setMessage("The PDF could not be downloaded."); }
+  };
+
+  const prepare = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const response = await memberApi.get(`/workspace/applications/${applicationId}/portfolio-email`);
+      setEmail(response.data); setSubject(response.data.subject); setBody(response.data.body);
+    } catch (err) { setMessage(err.response?.data?.detail || "The email could not be prepared."); }
+    setBusy(false);
+  };
+
+  const send = async () => {
+    setBusy(true); setMessage("");
+    try {
+      await memberApi.post(`/workspace/applications/${applicationId}/portfolio-email`, { subject, body });
+      setEmail(null); setMessage("");
+      await refresh();
+    } catch (err) { setMessage(err.response?.data?.detail || "The email could not be sent."); }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }} data-testid={`portfolio-actions-${applicationId}`}>
+      <div className="material-actions">
+        <a className="button button-back" href={`/portfolio/${token}`} target="_blank" rel="noreferrer" data-testid={`portfolio-view-online-${applicationId}`}><ExternalLink size={14} /> View Online</a>
+        <button className="button button-back" onClick={downloadPdf} data-testid={`portfolio-pdf-${applicationId}`}><Download size={14} /> Download PDF</button>
+        <button className="button button-back" disabled={busy} onClick={prepare} data-testid={`portfolio-prepare-email-${applicationId}`}><Mail size={14} /> Prepare Portfolio Email</button>
+        {sent && <span className="blog-status-badge published" data-testid={`portfolio-sent-${applicationId}`}>Sent {new Date(portfolio.sent_at).toLocaleString()}</span>}
+      </div>
+      {message && <p className="submit-error" data-testid={`portfolio-actions-error-${applicationId}`}>{message}</p>}
+      {email && (
+        <div className="member-card" style={{ marginTop: 12 }} data-testid={`portfolio-email-modal-${applicationId}`}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ margin: 0 }}>Portfolio Email</h4>
+            <button className="link-button" onClick={() => setEmail(null)} data-testid={`portfolio-email-close-${applicationId}`}><X size={16} /></button>
+          </div>
+          <p className="material-meta">To: {email.to_name} &lt;{email.to_email || "no email on record"}&gt;</p>
+          <label className="field" style={{ display: "block", marginBottom: 10 }}>
+            <span>Subject</span>
+            <input value={subject} onChange={(event) => setSubject(event.target.value)} style={{ width: "100%" }} data-testid={`portfolio-email-subject-${applicationId}`} />
+          </label>
+          <label className="field" style={{ display: "block", marginBottom: 10 }}>
+            <span>Message</span>
+            <textarea rows="12" value={body} onChange={(event) => setBody(event.target.value)} style={{ width: "100%" }} data-testid={`portfolio-email-body-${applicationId}`} />
+          </label>
+          <p className="material-meta" data-testid={`portfolio-email-link-${applicationId}`}>Secure Portfolio link (inserted automatically): {email.portfolio_link}</p>
+          <button className="button" disabled={busy} onClick={send} data-testid={`portfolio-email-send-${applicationId}`}>{busy ? "Sending…" : "SEND PORTFOLIO"}</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BoardMemberResultCard = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
@@ -26,21 +100,9 @@ const BoardMemberResultCard = ({ application, branding, onChanged }) => {
           <button className="button button-back" onClick={() => downloadMaterialPdf(engagement)} data-testid={`engagement-pdf-${application.application_id}`}><Download size={14} /> Download Branded PDF</button>
         ) : null} />
       <MaterialCard type="board_member_portfolio" title="Board Member Portfolio" buttonLabel="Generate Board Member Portfolio"
-        description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included."
-        applicationId={application.application_id} material={portfolio} refresh={refresh} approvable
-        extraActions={portfolio?.status === "Approved" ? (
-          <button className="button button-back" onClick={() => downloadMaterialPdf(portfolio)} data-testid={`portfolio-pdf-${application.application_id}`}><Download size={14} /> Create Portfolio PDF</button>
-        ) : null} />
-      {portfolio?.status === "Approved" && (
-        <MaterialCard type="portfolio_email" title="Email to Board Member" buttonLabel="Generate Portfolio Email"
-          description="A short professional email sharing the completed portfolio with this board member."
-          applicationId={application.application_id} material={byType.portfolio_email} refresh={refresh} approvable
-          extraActions={byType.portfolio_email?.status === "Approved" ? (
-            <SendMaterialButton type="portfolio_email" applicationId={application.application_id}
-              label={application.emails_sent?.portfolio_email ? "Send Updated" : `Send to ${application.applicant_email || "member"}`}
-              sentAt={application.emails_sent?.portfolio_email} onSent={onChanged} />
-          ) : null} />
-      )}
+        description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included. Generate it, edit anything you want changed, approve it, then share it with the member using the secure link, PDF or portfolio email."
+        applicationId={application.application_id} material={portfolio} refresh={refresh} approvable />
+      <PortfolioActions application={application} portfolio={portfolio} refresh={refresh} />
     </div>
   );
 };

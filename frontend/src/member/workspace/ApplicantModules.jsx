@@ -68,7 +68,7 @@ const CandidateActions = ({ application, refresh, branding }) => {
 
       <div className="detail-section" data-testid="interview-guide-section">
         <MaterialCard type="interview_guide" title={`Interview Guide — ${name}`} buttonLabel="Generate Interview Guide"
-          description="A candidate-specific interview guide built from this person's actual application and CV, your organization's mission and needs, and the approved board-member profiles from Step 1. It prepares you to run the conversation — it never scores or selects candidates. You make every decision."
+          description="A candidate-specific interview guide built from this person's actual application and CV, your organization's mission and needs, and the approved board-member profiles from Step 2. It prepares you to run the conversation — it never scores or selects candidates. You make every decision."
           applicationId={application.application_id} material={byType.interview_guide} refresh={refreshAll} approvable
           extraActions={byType.interview_guide ? (
             <button className="button button-back" onClick={() => printBranded(`Board Candidate Interview Guide — ${name}`, currentVersion(byType.interview_guide).display_text + "\n\nPOST-INTERVIEW NOTES\n\nMost Relevant Strengths:\n\n\nConcerns / Areas to Clarify:\n\n\nPotential Areas of Contribution:\n\n\nCommitment / Availability:\n\n\nFollow-Up Questions:\n\n\nOverall Notes:\n\n", branding || {})} data-testid="download-branded-interview-guide"><Download size={14} /> Download Branded Copy</button>
@@ -675,7 +675,7 @@ export const Module5References = () => {
         <div className="material-actions">
           <button className="button button-back" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
         </div>
-        {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Step 3 appear here automatically once applications arrive.</p>}
+        {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Step 4 appear here automatically once applications arrive.</p>}
         {sorted.map((application) => (
           <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
         ))}
@@ -833,7 +833,7 @@ const PreparedResource = ({ type, title, material, branding }) => {
   return (
     <div className="prepared-resource" data-testid={`prepared-${type}`}>
       <div className="material-actions">
-        <span className="signature-status"><strong>{title}</strong> — {version ? (material.status === "Approved" ? "Approved" : "Draft") : "Not yet generated — prepare it in Step 4"}</span>
+        <span className="signature-status"><strong>{title}</strong> — {version ? (material.status === "Approved" ? "Approved" : "Draft") : "Not yet generated — prepare it in Step 5"}</span>
         {version && <button className="button button-back" onClick={() => printBranded(title, version.display_text, branding)} data-testid={`view-prepared-${type}`}><Download size={14} /> Open PDF</button>}
       </div>
     </div>
@@ -864,12 +864,12 @@ export const Module6Onboarding = () => {
             {session.status !== "Completed" && <button className="button button-back" onClick={() => markSession("Completed")} data-testid="mark-session-completed">Mark Session Completed</button>}
           </div>
         )}
-        {candidates.length === 0 && <p className="workspace-note" data-testid="no-conditional">Candidates appear here once you send their Conditional Appointment in Step 4.</p>}
+        {candidates.length === 0 && <p className="workspace-note" data-testid="no-conditional">Candidates appear here once you send their Conditional Appointment in Step 5.</p>}
         {candidates.map((application) => <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />)}
       </section>
 
       <section className="workspace-panel" data-testid="module6-resources-section">
-        <h2>Onboarding Resources Prepared in Step 4</h2>
+        <h2>Onboarding Resources Prepared in Step 5</h2>
         {[["organization_overview", "Organization Overview"], ["board_manual", "Board Manual"], ...AGREEMENTS].map(([type, title]) => (
           <PreparedResource key={type} type={type} title={title} material={orgMaterials[type]} branding={branding} />
         ))}

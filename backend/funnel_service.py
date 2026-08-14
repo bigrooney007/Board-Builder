@@ -16,6 +16,10 @@ REQUIRED_ANSWERS = {
         "present_board", "active_board", "fundraising_involvement", "strategic_planning",
         "fundraising_strategy", "individual_responsibilities", "fundraising_need", "fundraising_areas",
     },
+    "board_transformation": {
+        "present_board", "active_board", "need_recruit", "reactivate_inactive",
+        "board_fundraising_now", "want_fundraising",
+    },
 }
 
 
@@ -99,11 +103,32 @@ def activation_result(answers: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def board_transformation_result(answers: Dict[str, Any]) -> Dict[str, Any]:
+    present, active = int(answers["present_board"]), int(answers["active_board"])
+    recruit = answers["need_recruit"] in {"Yes", "Not Sure"}
+    reactivate = present > active and answers["reactivate_inactive"] in {
+        "Yes — all of them if possible", "Yes — some of them", "Not Sure"}
+    activate = answers["board_fundraising_now"] in {"Some do", "Very little", "No", "Not Sure"} and answers["want_fundraising"] == "Yes"
+    recommendations = []
+    if reactivate:
+        recommendations.append("reactivate")
+    if recruit:
+        recommendations.append("recruit")
+    if activate:
+        recommendations.append("activate")
+    return {
+        "present_board": present, "active_board": active,
+        "inactive_members": max(0, present - active),
+        "recommendations": recommendations,
+    }
+
+
 def build_result(source: str, answers: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "recruitment": recruitment_result,
         "reactivation": reactivation_result,
         "fundraising_activation": activation_result,
+        "board_transformation": board_transformation_result,
     }[source](answers)
 
 
@@ -113,6 +138,7 @@ async def send_owner_lead_email(lead: Dict[str, Any]) -> str:
         "recruitment": "New Recruitment Lead",
         "reactivation": "New Reactivation Lead",
         "fundraising_activation": "New Fundraising Activation Lead",
+        "board_transformation": "New Board Transformation Lead",
     }
     rows = [
         ("Name", lead["name"]), ("Email", lead["email"]), ("Phone", lead["phone"]),
