@@ -31,6 +31,44 @@ SEGMENT_NAMES = {
 }
 
 NURTURE_TEMPLATES = {
+    "fundraising_activation": [
+        {"subject": "Before You Decide What to Do With Your Board", "greeting": True,
+         "paragraphs": [
+             "You came to me because your Board is not carrying its share of the fundraising, and you are deciding what to do about it.",
+             "Before you decide whether you want to activate your Board yourself or have me work through the process with you, I want you to know a little about the person behind the process.",
+             "I started as a nonprofit founder many years ago, where I built my first Board.",
+             "I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.",
+             "Since then, I have served on nonprofit Boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their Boards, and contributed to raising more than $5 million.",
+             "Today, I work with founders and executive directors so they do not have to carry fundraising alone while their Board sits on the sidelines.",
+             "If you are still trying to decide how to move forward with your Board, start here.",
+         ],
+         "cta": "LEARN ABOUT ROONEY", "url": "/about-rooney",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "You Can Activate Your Board Yourself", "greeting": True,
+         "paragraphs": [
+             "You should not be the only person carrying the fundraising responsibility for your organization.",
+             "I have created a way for you to lead your Board through the complete fundraising activation process yourself — and stop carrying fundraising alone.",
+             "You will get your Board involved in building the fundraising plan, turn everyone's ideas into one fundraising strategy, bring the plan back to the Board for review, facilitate its adoption, establish clear responsibility and give participating members practical tools to begin taking action.",
+             "People who plan together execute together. When your Board helps build the plan, they understand it, take ownership of it and help execute it.",
+             "You are doing it yourself, but you are not doing it alone — you are following my process with the tools and support you need to execute it.",
+             "The investment is $497, one time.",
+             "Your investment is protected by our 100% money-back guarantee.",
+             "If you are ready to stop carrying fundraising alone and start activating your Board, you can begin now.",
+         ],
+         "cta": "ACTIVATE MY BOARD MYSELF — $497", "url": "/activate-your-board-yourself",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+        {"subject": "Want Me to Help You Activate Your Board?", "greeting": True,
+         "paragraphs": [
+             "You do not have to figure out how to turn your Board Members into fundraising participants alone.",
+             "If you want someone who has done this before to work through the Board Fundraising Activation process with you, this is the option I created for you.",
+             "We will get your Board involved in the fundraising planning, align everyone around one fundraising strategy, take the plan through Board review and adoption, establish clear responsibility, and equip your members to begin executing.",
+             "The outcome is not a fundraising document. The outcome is a Board that understands the fundraising direction, helped shape it, knows what it is responsible for and is better equipped to help your organization raise money.",
+             "The investment is $2,497.",
+             "Your investment is protected by our 100% money-back guarantee.",
+         ],
+         "cta": "ACTIVATE MY BOARD WITH ROONEY — $2,497", "url": "/board-activation-proposal",
+         "closing": ["Rooney Akpesiri", "The Nonprofit Board Builder"]},
+    ],
     "recruitment": [
         {"subject": "Before You Decide How to Build Your Board", "greeting": True,
          "paragraphs": [
@@ -338,6 +376,18 @@ async def stop_recruitment_nurture(db, email: str) -> None:
 
 RECRUITMENT_PURCHASE_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
 REACTIVATION_PURCHASE_SOURCES = {"direct_diy_board_reactivation_497", "direct_board_reactivation_project"}
+ACTIVATION_PURCHASE_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497"}
+
+
+async def stop_activation_nurture(db, email: str) -> None:
+    email = email.lower()
+    await db.nurture_contacts.update_one({"email": email}, {"$set": {"nurture_status": "customer", "active_offer_source": "", "updated_at": now_tz().isoformat()}}, upsert=True)
+    try:
+        segments = await get_nurture_segments(db)
+        resend.api_key = os.environ["RESEND_API_KEY"]
+        await resend.ContactSegments.remove_async({"segment_id": segments["fundraising_activation"], "email": email})
+    except Exception as exc:
+        logger.warning("Activation nurture removal failed for %s: %s", email, exc)
 
 
 async def stop_reactivation_nurture(db, email: str) -> None:
@@ -355,12 +405,14 @@ async def stop_recruitment_nurture_for_purchase(db, transaction: dict, buyer_ema
     """Stop the matching prospect nurture the moment a purchase is verified paid. Idempotent; never raises."""
     try:
         source = (transaction or {}).get("purchase_source", "")
-        if source not in RECRUITMENT_PURCHASE_SOURCES | REACTIVATION_PURCHASE_SOURCES:
+        if source not in RECRUITMENT_PURCHASE_SOURCES | REACTIVATION_PURCHASE_SOURCES | ACTIVATION_PURCHASE_SOURCES:
             return
         emails = {value.lower() for value in [buyer_email, (transaction or {}).get("customer_email", "")] if value}
         for email in emails:
             if source in RECRUITMENT_PURCHASE_SOURCES:
                 await stop_recruitment_nurture(db, email)
+            elif source in ACTIVATION_PURCHASE_SOURCES:
+                await stop_activation_nurture(db, email)
             else:
                 await stop_reactivation_nurture(db, email)
     except Exception as exc:
@@ -375,12 +427,14 @@ def enabled_nurture_sources() -> set:
         enabled.add("recruitment")
     if os.environ.get("REACTIVATION_LEAD_NURTURE_ENABLED", "false").lower() == "true":
         enabled.add("reactivation")
+    if os.environ.get("ACTIVATION_LEAD_NURTURE_ENABLED", "false").lower() == "true":
+        enabled.add("fundraising_activation")
     return enabled
 
 
 def nurture_sender(source: str) -> str:
     base = os.environ["NONPROFIT_SENDER"]
-    if source in {"recruitment", "reactivation"}:
+    if source in {"recruitment", "reactivation", "fundraising_activation"}:
         address = base.split("<", 1)[1].rstrip(">").strip() if "<" in base else base
         return f"Rooney Akpesiri | The Nonprofit Board Builder <{address}>"
     return base

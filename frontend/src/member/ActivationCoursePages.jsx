@@ -5,6 +5,10 @@ import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { SupportBox, VideoBlock } from "./CoursePages";
+import ActivationModule2 from "./ActivationModule2";
+import ActivationModule3 from "./ActivationModule3";
+import ActivationModule4 from "./ActivationModule4";
+import ActivationModule5 from "./ActivationModule5";
 
 const META = {
   key: "activation_self_guided",
@@ -70,7 +74,8 @@ export const ActivationOverviewPage = () => {
             <section className="member-card" style={{ marginTop: 18 }} data-testid="activation-my-fundraising-board-preview">
               <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}><LayoutDashboard size={15} aria-hidden="true" /> After Module 5</p>
               <h2 style={{ margin: "6px 0" }}>My Fundraising Board</h2>
-              <p style={{ margin: 0 }}>After you complete Module 5, My Fundraising Board becomes your permanent fundraising dashboard — your adopted fundraising strategy, each Board Member's fundraising responsibilities and their individual Fundraising Portfolios will live here.</p>
+              <p style={{ margin: 0 }}>Your permanent fundraising dashboard — your adopted fundraising strategy, each Board Member's fundraising responsibilities and their individual Fundraising Portfolios live here once your plan is adopted.</p>
+              <Link className="button" style={{ marginTop: 12 }} to="/app/activation/self-guided/my-fundraising-board" data-testid="activation-open-my-fundraising-board">OPEN MY FUNDRAISING BOARD</Link>
             </section>
           </>
         )}
@@ -89,39 +94,15 @@ const ModuleShell = ({ moduleNumber }) => {
     );
   }
   if (moduleNumber === 2) {
-    return (
-      <section className="member-card" data-testid="activation-module2-shell">
-        <h2>Initiate the Fundraising Planning Process</h2>
-        <p>In this module you will get your Board involved in building the fundraising plan. People who plan together execute together.</p>
-        <p>The planning tools for this module will appear here.</p>
-      </section>
-    );
+    return <ActivationModule2 />;
   }
   if (moduleNumber === 3) {
-    return (
-      <section className="member-card" data-testid="activation-module3-shell">
-        <h2>Build the Fundraising Strategy Plan and Initiate Plan Review</h2>
-        <p>In this module you will turn your Board's contributions into one organization-specific Fundraising Strategy Plan and initiate the Board's review of it.</p>
-        <p>The strategy tools for this module will appear here.</p>
-      </section>
-    );
+    return <ActivationModule3 />;
   }
   if (moduleNumber === 4) {
-    return (
-      <section className="member-card" data-testid="activation-module4-shell">
-        <h2>Facilitate Plan Adoption</h2>
-        <p>In this module you will facilitate your Board's adoption of the fundraising plan so members leave with clear ownership of the direction they helped build.</p>
-        <p>The facilitation tools for this module will appear here.</p>
-      </section>
-    );
+    return <ActivationModule4 />;
   }
-  return (
-    <section className="member-card" data-testid="activation-module5-shell">
-      <h2>Equip Board Members to Execute</h2>
-      <p>In this module you will equip participating Board Members with the practical tools they need to begin executing their fundraising responsibilities.</p>
-      <p>The execution tools for this module will appear here.</p>
-    </section>
-  );
+  return <ActivationModule5 />;
 };
 
 export const ActivationModulePage = () => {

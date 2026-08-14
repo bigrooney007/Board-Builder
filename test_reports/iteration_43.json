@@ -1,0 +1,48 @@
+{
+  "summary": "Batch 2 (Activation Module 2 — Initiating the Fundraising Planning Process) verification complete. Backend end-to-end pytest 61/61 PASS (60 regression + 1 new comprehensive Batch 2 e2e). Focused frontend UI smoke via Playwright on activation-tester-1786708997@example.com confirmed /app/activation/self-guided/module/2 renders the full workspace with correct copy, testids, roster with Alice (COMPLETED) and Carol (SENT), progress '2 Invited · 1 Response Received · 1 Waiting', warning text with real numbers, VIEW RESPONSE modal with all 10 required section headings and original member words preserved (no AI summary/score/label), and CONTINUE TO MODULE 3 CTA. Public /planning-form/{token} loads WITHOUT login, prefills identity, renders all 11 exact sections with 18 question prompts, has the exact confirmation text, the SUBMIT MY FUNDRAISING PLANNING RESPONSE button, and required-field validation blocks empty submit (14 field errors reported). Invalid token returns pf-invalid page. Real Claude generation via emergentintegrations produces org-specific content — verified in DB: introduction opens with real org name 'Activation Test Nonprofit' (no 'AI' mention, no [PLACEHOLDER]), goal_context reads 'Activation Test Nonprofit is working toward a fundraising goal of $500,000. Reaching that goal would allow the organization to serve 5,000 people annually…', no invented donors/foundations/statistics detected. Form has exactly 11 sections in the required order and 18 question prompts. Version safety verified: sending stamps form_version onto the participant, and re-editing + re-approving the master form does NOT mutate previously-sent participants' frozen content (Carol's snapshot introduction unchanged after new approval). One org-per-founder uniqueness enforced (server.py creates unique index on activation_planning_forms.user_id). form_token unique index on activation_participants. Tenant isolation verified: module-tester@example.com (no activation entitlement) → 403 on GET /api/activation/planning; unauthenticated → 401; public token payload exposes only that participant's own prefill (no other participants, no founder intake). Duplicate participant add returns status=exists with no duplicate row; NOT SENT participants can be DELETEd (200); SENT/COMPLETED participants return 409 on DELETE; sending BEFORE approval returns 409; reminder on NOT SENT returns 409; reminder preview reuses the same secure token as the initial send; call script is deterministic ('Hi {First}, it's {FounderFirst} from {Org}.') with no AI; call notes persist; resubmission via public token returns 409. Founder notification email (to founder's @example.com) is TRIED but Resend test-mode rejects @example.com in to: field (ValidationError 'Invalid to field. Please use our testing email address instead of domains like example.com') — spec explicitly permits this ('founder email is the test account's @example.com — acceptable'); the code correctly wraps this in try/except so the participant submission still succeeds (201). No blocker.",
+  "backend_regression": {
+    "test_batch1_activation.py + test_batch_intake_e2e.py + test_batch1_reactivation.py + test_batch2_activation_planning.py": "61/61 PASS",
+    "junit_xml": "/app/test_reports/pytest/iter43_all.xml"
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "public POST /api/planning-form/{token} (founder notification path)", "issue": "Founder submission notification email fails silently when the founder's email is an @example.com address because Resend test-mode blocks non-whitelisted domains. Wrapped in try/except so the submit itself still returns 201. Per Batch 2 spec this is explicitly acceptable in preview; harmless in production because real founders use real domains. No code change needed."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_batch2_activation_planning.py",
+    "/app/test_reports/pytest/iter43_all.xml",
+    "/app/test_reports/pytest/iter43_batch2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "activation_planning_routes.py get /api/activation/planning-form/{token} correctly serves the frozen approved_version content bound to participant.form_version. Falls back to latest approved_versions[-1] only when the stored version is not found in approved_versions — which is safe in practice because approved_versions only grows.",
+    "deliver_planning_email only sets form_version on the participant the FIRST time (`if not record.get('form_version')`), so subsequent sends of a reminder do NOT change which version the participant sees. Correct.",
+    "public POST /planning-form/{token} uses an atomic update_one with `status: {$ne: COMPLETED}` guard and returns 409 on race — good for preventing duplicate submissions.",
+    "generate_form fires asyncio.create_task(run_generation()) and returns immediately with {status: Generating}; polling via GET /api/activation/planning-form works. Concurrent generate calls are guarded by `if form.get('status') == 'Generating': return`. Good.",
+    "The founder notification email origin uses PUBLIC_ORIGIN env var (fallback https://nonprofitboardbuilder.com) — NEVER localhost — as required. The ?participant={id} deep link is correctly assembled.",
+    "public_form response payload only exposes {organization_name, submitted, prefill, form}; no participants list, no founder intake, no cross-participant data. Verified in test.",
+    "delete DELETE /api/activation/participants/{id} returns 409 for status != 'NOT SENT' — good. Verified.",
+    "MongoDB indexes: activation_participants.form_token UNIQUE, activation_planning_forms.user_id UNIQUE. Both present in server.py startup and enforce one-form-per-org and token-uniqueness.",
+    "One test-hygiene finding (not a product bug): repeated Batch 2 test runs concatenated '[TEST-EDIT] founder edit marker.' and '[TEST-V2-EDIT]' markers into the stored introduction because the test appends to the current content and the founder's real workspace persists across runs. I cleaned the tester's introduction and re-approved to v12 so Batch 3 gets a clean state."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_batch2_activation_planning.py (NEW)"
+  ],
+  "success_rate": {"backend": "61/61 pytest = 100% (60 regression + 1 comprehensive Batch 2 e2e covering ~40 assertions)", "frontend": "All Module 2 workspace testids + public form testids present and working; 401/403/404 paths behave correctly."},
+  "test_credentials": {
+    "founder": "activation-tester-1786708997@example.com / ActTest123! — has intake, master planning form Approved (v12), 2 participants left in place (Alice COMPLETED, Carol SENT)",
+    "no_entitlement": "module-tester@example.com / ModuleTest123! — verified 403 on /api/activation/planning"
+  },
+  "seed_data_creation": "Left on activation-tester-1786708997@example.com per Batch 3 handoff instructions: master planning form Approved v12 (clean org-specific introduction, no test markers, canonical question_prompts), 1 COMPLETED participant (Alice, delivered@resend.dev, submitted a full realistic response under form_version 4), 1 SENT participant (Carol, bounced@resend.dev, sent under form_version 7). All accumulated test-edit markers were cleaned from the current form introduction and question_prompts before re-approval, so the founder workspace looks clean. Bob and throwaway participants were removed after the test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Batch 2 backend + frontend fully verified. The comprehensive e2e test lives at /app/backend/tests/test_batch2_activation_planning.py and runs in ~6s when the master planning form is already generated (skips real AI call) or ~30-60s on a fresh generation. To force a fresh AI regeneration, delete the tester's planning form doc first (`db.activation_planning_forms.delete_one({'user_id': <uid>})`). The activation-tester's approved form is currently at v12 with 12 approved_versions stamped in the array — participants stay pinned to the frozen version they were sent under. Module 3 is intentionally a shell — do not flag. Founder-notification email to @example.com fails Resend validation but is wrapped in try/except; it is safe and explicitly permitted by the Batch 2 spec.",
+  "rca of the issue": "N/A — no blocking bugs found in Batch 2. The one non-issue (founder notification failing for @example.com in Resend test-mode) is a Resend restriction on non-whitelisted recipient domains and is explicitly permitted by the Batch 2 review request. All spec requirements (146-point checklist) exercised via the pytest e2e and the frontend UI smoke passed."
+}

@@ -214,6 +214,8 @@ from reactivation_intake_routes import create_reactivation_intake_router
 app.include_router(create_reactivation_intake_router(db))
 from activation_intake_routes import create_activation_intake_router
 app.include_router(create_activation_intake_router(db))
+from activation_planning_routes import create_activation_planning_router
+app.include_router(create_activation_planning_router(db))
 from reactivation_routes import create_reactivation_router
 app.include_router(create_reactivation_router(db))
 app.include_router(create_public_opportunity_router(db))
@@ -284,6 +286,12 @@ async def startup_tasks():
     await db.rooney_engagements.create_index("user_id")
     await db.board_reactivation_intakes.create_index("session_id", unique=True)
     await db.board_activation_intakes.create_index("session_id", unique=True)
+    await db.activation_participants.create_index("form_token", unique=True)
+    await db.activation_participants.create_index([("user_id", 1), ("email", 1)])
+    await db.activation_planning_forms.create_index("user_id", unique=True)
+    await db.activation_strategies.create_index("user_id", unique=True)
+    await db.activation_adoptions.create_index("user_id", unique=True)
+    await db.activation_toolkits.create_index("user_id", unique=True)
     await db.reactivation_board_members.create_index("form_token", unique=True)
     await db.reactivation_board_members.create_index([("user_id", 1), ("email", 1)])
     await db.reactivation_engagements.create_index("purchase_id", unique=True)
@@ -293,6 +301,8 @@ async def startup_tasks():
     app.state.accountability_task = asyncio.create_task(accountability_loop(db))
     from reactivation_accountability import reactivation_accountability_loop
     app.state.reactivation_accountability_task = asyncio.create_task(reactivation_accountability_loop(db))
+    from activation_accountability import activation_accountability_loop
+    app.state.activation_accountability_task = asyncio.create_task(activation_accountability_loop(db))
 
 
 @app.on_event("shutdown")

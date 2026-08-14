@@ -32,6 +32,10 @@ import ActivateYourBoardYourselfPage from "@/funnels/ActivateYourBoardYourselfPa
 import BoardActivationProposalPage from "@/funnels/BoardActivationProposalPage";
 import BoardActivationIntakePage from "@/funnels/BoardActivationIntakePage";
 import ActivationStartHerePage from "@/funnels/ActivationStartHerePage";
+import PlanningFormPage from "@/funnels/PlanningFormPage";
+import StrategyReviewPage from "@/funnels/StrategyReviewPage";
+import FundraisingPortfolioPage from "@/funnels/FundraisingPortfolioPage";
+import MyFundraisingBoardPage from "@/member/MyFundraisingBoardPage";
 import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
 import { ActivationOverviewPage, ActivationModulePage } from "@/member/ActivationCoursePages";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
@@ -97,6 +101,10 @@ export default function App() {
           <Route path="/board-activation-proposal" element={<BoardActivationProposalPage />} />
           <Route path="/board-activation-intake" element={<BoardActivationIntakePage />} />
           <Route path="/activation-start-here" element={<ActivationStartHerePage />} />
+          <Route path="/planning-form/:token" element={<PlanningFormPage />} />
+          <Route path="/strategy-review/:token" element={<StrategyReviewPage />} />
+          <Route path="/fundraising-portfolio/:token" element={<FundraisingPortfolioPage />} />
+          <Route path="/app/activation/self-guided/my-fundraising-board" element={<MyFundraisingBoardPage />} />
           <Route path="/app/activation/self-guided" element={<ActivationOverviewPage />} />
           <Route path="/app/activation/self-guided/module/:moduleNumber" element={<ActivationModulePage />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />
