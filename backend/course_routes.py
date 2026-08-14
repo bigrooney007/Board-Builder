@@ -14,7 +14,7 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 
 class ProgressRequest(BaseModel):
     product: str
-    module_number: int = Field(ge=1, le=5)
+    module_number: int = Field(ge=1, le=6)
     action: str
 
     @field_validator("product")
@@ -35,7 +35,7 @@ class ProgressRequest(BaseModel):
 class SupportRequestCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     product: str
-    module_number: int = Field(ge=1, le=5)
+    module_number: int = Field(ge=1, le=6)
     support_type: str
     message: str = Field(min_length=1)
 
@@ -57,7 +57,7 @@ class SupportRequestCreate(BaseModel):
 class VideoConfig(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     product: str
-    module_number: int = Field(ge=1, le=5)
+    module_number: int = Field(ge=1, le=6)
     youtube_url: Optional[str] = ""
 
     @field_validator("product")

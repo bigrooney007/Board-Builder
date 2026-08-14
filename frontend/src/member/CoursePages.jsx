@@ -53,7 +53,7 @@ const ForbiddenCard = () => (
   </div>
 );
 
-export const VideoBlock = ({ module, testPrefix }) => {
+export const VideoBlock = ({ module, testPrefix, placeholderTitle }) => {
   const src = embedUrl(module.youtube_url);
   return src ? (
     <div className="module-video" data-testid={`${testPrefix}-video-embed`}>
@@ -62,7 +62,7 @@ export const VideoBlock = ({ module, testPrefix }) => {
   ) : (
     <div className="module-video placeholder" data-testid={`${testPrefix}-video-placeholder`}>
       <PlayCircle size={38} />
-      <h3>Training Video Coming Soon</h3>
+      <h3>{placeholderTitle || "Training Video Coming Soon"}</h3>
       <p>The training video for this module will appear here as soon as it is published.</p>
     </div>
   );
@@ -216,7 +216,7 @@ export const CourseModulePage = ({ productSlug }) => {
               <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
-            <VideoBlock module={module} testPrefix={`module-${module.number}`} />
+            <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             <div className="module-nav" data-testid="module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
