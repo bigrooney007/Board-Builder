@@ -9,7 +9,7 @@ import ReactivationStep2 from "./ReactivationStep2";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
-import { reactivationContent } from "../content/appContent";
+import { reactivationContent, sharedCourseContent } from "../content/appContent";
 
 const META = {
   key: "reactivation_self_guided",
@@ -41,9 +41,9 @@ const useReactivationCourse = () => {
 
 const ForbiddenCard = () => (
   <div className="member-card" data-testid="reactivation-course-forbidden">
-    <h2>This Program Is Not Included in Your Account</h2>
-    <p>Your account does not include access to this program. If you believe this is a mistake, please contact us.</p>
-    <Link className="button" to="/app">Back to My Board Builder</Link>
+    <h2>{sharedCourseContent.forbidden.heading}</h2>
+    <p>{sharedCourseContent.forbidden.body}</p>
+    <Link className="button" to="/app">{sharedCourseContent.forbidden.backButton}</Link>
   </div>
 );
 

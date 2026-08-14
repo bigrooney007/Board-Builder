@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
+import { recruitmentContent } from "../../content/appContent";
 
 export const SKILL_OPTIONS = ["Fundraising", "Corporate Partnerships", "Major Donors", "Grant Development", "Finance", "Accounting", "Governance", "Legal", "Marketing", "Communications", "Public Relations", "Community Relationships", "Strategic Planning", "Human Resources", "Technology", "Program Development", "Operations", "Government/Public Policy", "Healthcare", "Education", "Professional/Business Connections", "Lived Experience", "Other"];
 
@@ -158,7 +159,7 @@ export const Module1Profile = ({ onConfirmed }) => {
         <MaterialCard
           type="powerhouse_board_blueprint"
           title="The Board Members Your Organization Needs"
-          buttonLabel="Generate the Board We Need"
+          buttonLabel={recruitmentContent.module2.generateBoardButton}
           description="One exact profile for each new board member you want to recruit — who they are, why they matter to your organization and what to look for. Read it, edit anything you want changed, then approve it. The approved result is used automatically throughout your recruitment campaign."
           material={byType.powerhouse_board_blueprint}
           refresh={refresh}

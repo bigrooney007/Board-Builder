@@ -9,6 +9,7 @@ import ActivationModule2 from "./ActivationModule2";
 import ActivationModule3 from "./ActivationModule3";
 import ActivationModule4 from "./ActivationModule4";
 import ActivationModule5 from "./ActivationModule5";
+import { activationContent, sharedCourseContent } from "../content/appContent";
 
 const META = {
   key: "activation_self_guided",
@@ -40,9 +41,9 @@ const useActivationCourse = () => {
 
 const ForbiddenCard = () => (
   <div className="member-card" data-testid="activation-course-forbidden">
-    <h2>This Program Is Not Included in Your Account</h2>
-    <p>Your account does not include access to this program. If you believe this is a mistake, please contact us.</p>
-    <Link className="button" to="/app">Back to My Board Builder</Link>
+    <h2>{sharedCourseContent.forbidden.heading}</h2>
+    <p>{sharedCourseContent.forbidden.body}</p>
+    <Link className="button" to="/app">{sharedCourseContent.forbidden.backButton}</Link>
   </div>
 );
 
@@ -72,10 +73,10 @@ export const ActivationOverviewPage = () => {
               ))}
             </div>
             <section className="member-card" style={{ marginTop: 18 }} data-testid="activation-my-fundraising-board-preview">
-              <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}><LayoutDashboard size={15} aria-hidden="true" /> After Module 5</p>
-              <h2 style={{ margin: "6px 0" }}>My Fundraising Board</h2>
-              <p style={{ margin: 0 }}>Your permanent fundraising dashboard — your adopted fundraising strategy, each Board Member's fundraising responsibilities and their individual Fundraising Portfolios live here once your plan is adopted.</p>
-              <Link className="button" style={{ marginTop: 12 }} to="/app/activation/self-guided/my-fundraising-board" data-testid="activation-open-my-fundraising-board">OPEN MY FUNDRAISING BOARD</Link>
+              <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}><LayoutDashboard size={15} aria-hidden="true" /> {activationContent.overview.previewEyebrow}</p>
+              <h2 style={{ margin: "6px 0" }}>{activationContent.overview.previewHeading}</h2>
+              <p style={{ margin: 0 }}>{activationContent.overview.previewBody}</p>
+              <Link className="button" style={{ marginTop: 12 }} to="/app/activation/self-guided/my-fundraising-board" data-testid="activation-open-my-fundraising-board">{activationContent.overview.previewButton}</Link>
             </section>
           </>
         )}
@@ -88,8 +89,8 @@ const ModuleShell = ({ moduleNumber }) => {
   if (moduleNumber === 1) {
     return (
       <section className="member-card" data-testid="activation-module1-training">
-        <h2>Prepare to Build a Fundraising Board</h2>
-        <p>This module is training only. Watch the video above to understand how fundraising Board ownership is created, then mark this module complete and continue to Module 2 to begin initiating the fundraising planning process with your Board.</p>
+        <h2>{activationContent.module1.heading}</h2>
+        <p>{activationContent.module1.body}</p>
       </section>
     );
   }
@@ -145,7 +146,7 @@ export const ActivationModulePage = () => {
               <p className="eyebrow">Module {module.number} of {course.modules.length}</p>
               <h1 data-testid="activation-module-title">{module.title}</h1>
             </header>
-            <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle="Board Fundraising Activation Training Video Coming Soon" />
+            <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
             <ModuleShell moduleNumber={number} />
             <div className="module-nav" data-testid="activation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>

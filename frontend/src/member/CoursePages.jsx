@@ -6,6 +6,7 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { Module3Launch } from "./workspace/WorkspaceModules";
+import { recruitmentContent, sharedCourseContent } from "../content/appContent";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 
 const PRODUCT_META = {
@@ -47,9 +48,9 @@ const useCourse = (productSlug) => {
 
 const ForbiddenCard = () => (
   <div className="member-card" data-testid="course-forbidden">
-    <h2>This Program Is Not Included in Your Account</h2>
-    <p>Your account does not include access to this program. If you believe this is a mistake, please contact us.</p>
-    <Link className="button" to="/app">Back to My Board Builder</Link>
+    <h2>{sharedCourseContent.forbidden.heading}</h2>
+    <p>{sharedCourseContent.forbidden.body}</p>
+    <Link className="button" to="/app">{sharedCourseContent.forbidden.backButton}</Link>
   </div>
 );
 
@@ -163,9 +164,9 @@ const SelfGuidedWorkspace = ({ moduleNumber }) => {
   if (moduleNumber === 1) {
     return (
       <section className="member-card" data-testid="module1-training-card">
-        <h2>Start Here: Recruiting Board Members the Right Way</h2>
-        <p>This training shows you how the whole recruitment process works before you begin executing it. Watch the training above, then continue to Step 2 to identify the board members your organization needs.</p>
-        <Link className="button" to="/app/recruitment/self-guided/module/2" data-testid="module1-continue-to-step-2">Continue to Step 2 — Identify the Board Members Your Organization Needs</Link>
+        <h2>{recruitmentContent.module1.heading}</h2>
+        <p>{recruitmentContent.module1.body}</p>
+        <Link className="button" to="/app/recruitment/self-guided/module/2" data-testid="module1-continue-to-step-2">{recruitmentContent.module1.continueButton}</Link>
       </section>
     );
   }

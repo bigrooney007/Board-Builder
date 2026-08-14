@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { strategicPlanningAdminContent as SP } from "../content/appContent";
 
 const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
 const err = (e) => (typeof e.response?.data?.detail === "string" ? e.response.data.detail : "Action failed.");
@@ -145,7 +146,7 @@ export const StrategicPlanningSection = () => {
           <textarea placeholder="mission (optional)" rows="2" value={create.mission} onChange={(e) => setCreate({ ...create, mission: e.target.value })} style={{ width: "100%", marginTop: "8px" }} />
           <label style={{ display: "block", fontWeight: 600, marginTop: "10px" }}>Strategic Planning Form Content</label>
           <textarea placeholder="Paste the full content / instructions of the Strategic Planning Form here — it is the source authority for the generated form." rows="10" value={create.form_content} onChange={(e) => setCreate({ ...create, form_content: e.target.value })} style={{ width: "100%" }} data-testid="sp-create-form-content" />
-          <button className="button" style={{ marginTop: "10px" }} onClick={generateProject} data-testid="sp-generate-project-button">Generate</button>
+          <button className="button" style={{ marginTop: "10px" }} onClick={generateProject} data-testid="sp-generate-project-button">{SP.buttons.generateProject}</button>
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -177,7 +178,7 @@ export const StrategicPlanningSection = () => {
       <p className="admin-message">Founder: {project.founder_name} ({project.founder_email})</p>
       {message && <p className="admin-message" data-testid="sp-message">{message}</p>}
 
-      <h3>1. Strategic Planning Form — status: {form.status}{form.source_filename ? ` (source: ${form.source_filename})` : ""}</h3>
+      <h3>{SP.sections.form} — status: {form.status}{form.source_filename ? ` (source: ${form.source_filename})` : ""}</h3>
       {form.status === "Generating" && <p className="admin-message" data-testid="sp-form-generating">Creating the hosted multi-step form from your supplied content…</p>}
       {form.generation_error && <p className="submit-error">{form.generation_error}</p>}
       {form.status === "Approved" && <FormDistributionPanel pid={pid} project={project} onError={setMessage} />}
@@ -195,7 +196,7 @@ export const StrategicPlanningSection = () => {
         <FormEditor pid={pid} form={form} onSaved={() => { setEditing(""); loadDetail(pid); }} onError={setMessage} />
       )}
 
-      <h3 style={{ marginTop: "24px" }}>2. Board Member Responses ({respondents.length})</h3>
+      <h3 style={{ marginTop: "24px" }}>{SP.sections.responses} ({respondents.length})</h3>
       <p className="admin-message">Everyone who completes the form appears here automatically with their submitted name and email — you never re-enter them.</p>
       <div className="admin-table-wrap">
         <table className="admin-table">
@@ -223,17 +224,17 @@ export const StrategicPlanningSection = () => {
         </div>
       </details>
 
-      <h3 style={{ marginTop: "24px" }}>3. Draft Plan &amp; Board Review — status: {plan.status}</h3>
+      <h3 style={{ marginTop: "24px" }}>{SP.sections.draft} — status: {plan.status}</h3>
       {plan.status === "Synchronizing" && <p className="admin-message" data-testid="sp-synchronizing">Synchronizing the Board's review into the Foundational Plan…</p>}
       {plan.generation_error && <p className="submit-error">{plan.generation_error}</p>}
       <div className="admin-filters">
-        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/plan/generate`), "Generating the Draft Plan from every Board response…")} data-testid="sp-plan-generate">Generate Draft Plan</button>
+        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/plan/generate`), "Generating the Draft Plan from every Board response…")} data-testid="sp-plan-generate">{SP.buttons.generateDraft}</button>
         {plan.status === "Draft" && <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/plan/approve`), "Draft approved — you can now email it to the Board for review.")} data-testid="sp-plan-approve">Approve Draft</button>}
-        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => openPreview(`/admin/sp/projects/${pid}/review-email-preview`, `/admin/sp/projects/${pid}/send-review-all`, "Send to Every Respondent")} data-testid="sp-email-draft-to-board">Email Draft Plan to Board</button>}
+        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => openPreview(`/admin/sp/projects/${pid}/review-email-preview`, `/admin/sp/projects/${pid}/send-review-all`, "Send to Every Respondent")} data-testid="sp-email-draft-to-board">{SP.buttons.emailDraftToBoard}</button>}
         {["Draft", "Approved", "Synchronized"].includes(plan.status) && <button className="button button-back button-small" onClick={() => setEditing(editing === "plan" ? "" : "plan")} data-testid="sp-plan-edit-toggle">{editing === "plan" ? "Close Editor" : "Edit Draft"}</button>}
         {["Approved", "Synchronized", "Finalized"].includes(plan.status) && <button className="button button-back button-small" onClick={() => act(async () => { const r = await client.get(`/admin/sp/projects/${pid}/reviews`); setReviews(r.data.reviews); })} data-testid="sp-view-reviews">View Board Refinement</button>}
-        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/plan/synchronize`), "Synchronizing the Board's responses, draft and review comments…")} data-testid="sp-synchronize">Synchronize Foundational Plan</button>}
-        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => setEditing("finalize")} data-testid="sp-finalize-toggle">Finalize Foundational Plan</button>}
+        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/plan/synchronize`), "Synchronizing the Board's responses, draft and review comments…")} data-testid="sp-synchronize">{SP.buttons.synchronize}</button>}
+        {["Approved", "Synchronized"].includes(plan.status) && <button className="button button-small" onClick={() => setEditing("finalize")} data-testid="sp-finalize-toggle">{SP.buttons.finalize}</button>}
       </div>
       {plan.display_text && editing !== "plan" && editing !== "finalize" && <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "14px", borderRadius: "8px", maxHeight: "340px", overflow: "auto" }} data-testid="sp-plan-text">{plan.display_text}</pre>}
       {editing === "plan" && <TextEditor label="Draft Plan" initial={plan.display_text} testid="sp-plan-editor" onSave={(text) => act(async () => { await client.put(`/admin/sp/projects/${pid}/plan`, { text }); setEditing(""); }, "Draft saved.")} />}
@@ -252,11 +253,11 @@ export const StrategicPlanningSection = () => {
         </div>
       )}
 
-      <h3 style={{ marginTop: "24px" }}>4. Strategic Areas, Owners &amp; Development Packs</h3>
+      <h3 style={{ marginTop: "24px" }}>{SP.sections.areas}</h3>
       {plan.status !== "Finalized" && <p className="admin-message">Finalize the Foundational Plan to unlock area assignment.</p>}
       {plan.status === "Finalized" && (
         <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/areas/suggest-owners`), "Reviewing each Board Member's skills, experience and responses to recommend area owners…")} data-testid="sp-suggest-owners">
-          {plan.suggestion_status === "Generating" ? "Recommending Area Owners…" : "AI: Recommend Area Owners (you make every final assignment)"}
+          {plan.suggestion_status === "Generating" ? "Recommending Area Owners…" : SP.buttons.suggestOwners}
         </button>
       )}
       {areas.map((a) => {
@@ -272,7 +273,7 @@ export const StrategicPlanningSection = () => {
                 <button className="button button-small" onClick={() => act(() => client.put(`/admin/sp/projects/${pid}/areas/${a.area_key}/owner`, { participant_id: suggestion.suggested_participant_id }), "Recommendation approved and Area Owner recorded.")} data-testid={`sp-approve-suggestion-${a.area_key}`}>Approve Recommendation</button>
               )}
               <select value={a.owner_participant_id || ""} disabled={plan.status !== "Finalized"} onChange={(e) => act(() => client.put(`/admin/sp/projects/${pid}/areas/${a.area_key}/owner`, { participant_id: e.target.value }), e.target.value ? "Area Owner recorded." : "Area left unassigned.")} data-testid={`sp-owner-${a.area_key}`}>
-                <option value="">— Leave Unassigned —</option>
+                <option value="">{SP.leaveUnassigned}</option>
                 {participants.map((p) => <option key={p.participant_id} value={p.participant_id}>{p.name}</option>)}
               </select>
               <select value={a.status} onChange={(e) => act(() => client.put(`/admin/sp/projects/${pid}/areas/${a.area_key}/status`, { status: e.target.value }))} data-testid={`sp-status-${a.area_key}`}>
@@ -297,10 +298,10 @@ export const StrategicPlanningSection = () => {
         );
       })}
 
-      <h3 style={{ marginTop: "24px" }}>5. One-Page Action Plan — status: {actionPlan?.status || "NONE"}</h3>
+      <h3 style={{ marginTop: "24px" }}>{SP.sections.actionPlan} — status: {actionPlan?.status || "NONE"}</h3>
       {actionPlan?.generation_error && <p className="submit-error">{actionPlan.generation_error}</p>}
       <div className="admin-filters">
-        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/action-plan/generate`), "Generating the one-page Action Planning document…")} data-testid="sp-action-generate">Generate Action Plan</button>
+        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/action-plan/generate`), "Generating the one-page Action Planning document…")} data-testid="sp-action-generate">{SP.buttons.generateActionPlan}</button>
         {actionPlan?.status === "Draft" && <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/action-plan/approve`), "Action Plan approved.")} data-testid="sp-action-approve">Approve Action Plan</button>}
         {["Draft", "Approved"].includes(actionPlan?.status) && <button className="button button-back button-small" onClick={() => setEditing(editing === "action" ? "" : "action")} data-testid="sp-action-edit-toggle">{editing === "action" ? "Close Editor" : "Edit Action Plan"}</button>}
         {actionPlan?.text && <a className="button button-back button-small" href={`${process.env.REACT_APP_BACKEND_URL}/api/admin/sp/projects/${pid}/action-plan/pdf`} data-testid="sp-action-pdf">Download PDF</a>}
@@ -310,17 +311,17 @@ export const StrategicPlanningSection = () => {
       {actionPlan?.text && editing !== "action" && <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "14px", borderRadius: "8px", maxHeight: "300px", overflow: "auto" }} data-testid="sp-action-text">{actionPlan.text}</pre>}
       {editing === "action" && <TextEditor label="One-Page Action Plan" initial={actionPlan?.text} testid="sp-action-editor" onSave={(text) => act(async () => { await client.put(`/admin/sp/projects/${pid}/action-plan`, { text }); setEditing(""); }, "Action Plan saved.")} />}
 
-      <h3 style={{ marginTop: "24px" }}>6. Final Strategic Plan — status: {finalPlan.status}</h3>
+      <h3 style={{ marginTop: "24px" }}>{SP.sections.finalPlan} — status: {finalPlan.status}</h3>
       {finalPlan.generation_error && <p className="submit-error">{finalPlan.generation_error}</p>}
       <div className="admin-filters">
-        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/final-plan/generate`), "Combining the adopted area plans into one Strategic Plan…")} data-testid="sp-final-generate">Build Final Strategic Plan</button>
+        <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/final-plan/generate`), "Combining the adopted area plans into one Strategic Plan…")} data-testid="sp-final-generate">{SP.buttons.buildFinalPlan}</button>
         {finalPlan.status === "Draft" && <button className="button button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/final-plan/approve`), "Final Strategic Plan approved.")} data-testid="sp-final-approve">Approve Final Plan</button>}
         {["Draft", "Approved"].includes(finalPlan.status) && <button className="button button-back button-small" onClick={() => setEditing(editing === "final" ? "" : "final")}>Edit Final Plan</button>}
         {finalPlan.display_text && <a className="button button-back button-small" href={`${process.env.REACT_APP_BACKEND_URL}/api/admin/sp/projects/${pid}/final-plan/pdf`} data-testid="sp-final-pdf">Download PDF</a>}
         {finalPlan.status === "Approved" && <button className="button button-small" onClick={() => openPreview(`/admin/sp/projects/${pid}/final-plan/email-preview`, `/admin/sp/projects/${pid}/final-plan/send`)} data-testid="sp-final-email">Prepare / Send Delivery Email</button>}
         {finalPlan.status === "Approved" && finalPlan.share_token && <a className="button button-back button-small" href={`/strategic-plan/${finalPlan.share_token}`} target="_blank" rel="noreferrer" data-testid="sp-final-view-online">View Online</a>}
         {plan.status === "Finalized" && (
-          <button className="button button-back button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/meeting-guide/generate`), "Generating the Adoption Meeting Facilitation Guide…")} data-testid="sp-meeting-guide-generate">Generate Adoption Meeting Guide</button>
+          <button className="button button-back button-small" onClick={() => act(() => client.post(`/admin/sp/projects/${pid}/meeting-guide/generate`), "Generating the Adoption Meeting Facilitation Guide…")} data-testid="sp-meeting-guide-generate">{SP.buttons.generateMeetingGuide}</button>
         )}
       </div>
       {finalPlan.meeting_status && finalPlan.meeting_status !== "NONE" && (
