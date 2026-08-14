@@ -67,7 +67,7 @@ STAGE_EMAILS = {
         "Do not finish the conversation with: \"I'll try to help more.\" Get clarity about what they are prepared to own.",
         "And if active Board service is no longer realistic, have that conversation too.",
     ]},
-    "portfolios": {"subject": "Do Not Stop at \"I'll Help More\"", "module": 5, "cta": "CREATE MY BOARD MEMBER PORTFOLIOS", "paragraphs": [
+    "portfolios": {"subject": "Do Not Stop at \"I'll Help More\"", "module": 5, "cta": "GO TO MY BOARD", "paragraphs": [
         "A Board Member saying they will become more active is not the end of the process.",
         "What are they actually going to own?",
         "Once you have completed the conversation, turn what was agreed into their Board Member Portfolio.",

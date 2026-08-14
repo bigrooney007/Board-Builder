@@ -42,15 +42,34 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
     return res.data;
   }, [row.script]);
 
+  const pollForScript = useCallback(async (materialId) => {
+    setBusy("generate");
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      try {
+        const poll = await memberApi.get(`/reactivation/materials/${materialId}`);
+        if (poll.data.status !== "Generating") {
+          if (poll.data.status !== "Failed") setMaterial(poll.data);
+          break;
+        }
+      } catch { break; }
+    }
+    setBusy("");
+    reload();
+  }, [reload]);
+
   const generate = async () => {
     setBusy("generate");
     try {
       const res = await memberApi.post(`/reactivation/board-members/${id}/conversation-script`);
-      setMaterial({ material_id: res.data.material_id, status: res.data.status, display_text: res.data.display_text, title: "Difficult Conversation Script" });
-      reload();
-    } catch { /* surfaced via status */ }
-    setBusy("");
+      await pollForScript(res.data.material_id);
+    } catch { setBusy(""); }
   };
+
+  useEffect(() => {
+    if (row.script?.status === "Generating" && busy !== "generate") pollForScript(row.script.material_id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row.script?.status]);
 
   const openView = async () => { const m = material || (await loadMaterial()); if (m) setViewing(true); };
   const openEdit = async () => { const m = material || (await loadMaterial()); if (m) { setDraftText(m.display_text); setEditing(true); } };
@@ -133,7 +152,7 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
         <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`step3-generate-${id}`}>
           {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> REGENERATE SCRIPT</> : <><FileText size={15} /> GENERATE DIFFICULT CONVERSATION SCRIPT</>}
         </button>
-        {(row.script || material) && (
+        {(row.script || material) && !["Generating", "Failed"].includes(scriptStatus) && busy !== "generate" && (
           <>
             <button type="button" className="button button-outline" onClick={openView} data-testid={`step3-view-online-${id}`}>VIEW ONLINE</button>
             <button type="button" className="button button-outline" onClick={openEdit} data-testid={`step3-edit-${id}`}>EDIT</button>
@@ -142,6 +161,9 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
           </>
         )}
       </div>
+      {scriptStatus === "Failed" && busy !== "generate" && (
+        <p style={{ marginTop: 8 }} data-testid={`step3-generation-failed-${id}`}>Script generation did not complete. Your information is preserved — click Regenerate to try again.</p>
+      )}
 
       <div style={{ marginTop: 20 }}>
         <h3 style={{ marginBottom: 4 }}>Conversation Conclusion</h3>

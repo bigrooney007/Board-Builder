@@ -1,3 +1,4 @@
+import asyncio
 import html
 import json
 import logging
@@ -519,14 +520,37 @@ def create_reactivation_router(db) -> APIRouter:
         context += ", ".join(permitted) if permitted else "The organization has not decided on transition options yet — do not present specific transition structures; the founder will decide the appropriate path in the conversation."
         context += ("\n\nTHIS BOARD MEMBER (their actual Board Member Profile & Recommitment Form response):\n"
                     + json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str))
-        try:
-            structured = await generate_structured("reactivation_conversation_script", context)
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"Generation failed: {str(exc)[:300]}. Your information is preserved — you can try again.") from exc
-        structured["member"] = record["name"]
-        structured["recommitment_response"] = record["response"].get("recommitment", "")
-        material = await save_reactivation_material(member["user_id"], "reactivation_conversation_script", "Difficult Conversation Script", member_record_id, structured, script_display(structured))
-        return {**material, "display_text": current_display(await db.generated_materials.find_one({"material_id": material["material_id"]}, {"_id": 0}))}
+        query = {"user_id": member["user_id"], "type": "reactivation_conversation_script", "application_id": member_record_id}
+        existing = await db.generated_materials.find_one(query, {"_id": 0, "material_id": 1, "status": 1})
+        if existing and existing.get("status") == "Generating":
+            return {"material_id": existing["material_id"], "status": "Generating"}
+        now = datetime.now(timezone.utc).isoformat()
+        if existing:
+            material_id = existing["material_id"]
+            await db.generated_materials.update_one(query, {"$set": {"status": "Generating", "updated_at": now}})
+        else:
+            material_id = str(uuid.uuid4())
+            await db.generated_materials.insert_one({
+                "material_id": material_id, "user_id": member["user_id"], "type": "reactivation_conversation_script",
+                "application_id": member_record_id, "module": 3, "title": "Difficult Conversation Script",
+                "versions": [], "current_version": 0, "status": "Generating",
+                "created_at": now, "updated_at": now,
+            })
+
+        async def run_generation():
+            try:
+                structured = await generate_structured("reactivation_conversation_script", context)
+                structured["member"] = record["name"]
+                structured["recommitment_response"] = record["response"].get("recommitment", "")
+                await save_reactivation_material(member["user_id"], "reactivation_conversation_script", "Difficult Conversation Script", member_record_id, structured, script_display(structured))
+            except Exception as exc:
+                logging.getLogger(__name__).error("Conversation script generation failed for %s: %s", member_record_id, exc)
+                await db.generated_materials.update_one(query, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_generation())
+        return {"material_id": material_id, "status": "Generating"}
 
     async def owned_reactivation_material(user_id: str, material_id: str) -> dict:
         material = await db.generated_materials.find_one(
@@ -679,7 +703,10 @@ def create_reactivation_router(db) -> APIRouter:
     def portfolio_summary(material: Optional[dict]) -> Optional[dict]:
         if not material:
             return None
-        return {"material_id": material["material_id"], "status": "SENT" if material.get("sent_at") else material["status"],
+        status = material["status"]
+        if status == "Approved" and material.get("sent_at") and material.get("sent_version") == material.get("current_version"):
+            status = "SENT"
+        return {"material_id": material["material_id"], "status": status,
                 "share_token": material.get("share_token", ""), "sent_at": material.get("sent_at", ""), "updated_at": material.get("updated_at", "")}
 
     @router.get("/reactivation/my-board")
@@ -690,7 +717,7 @@ def create_reactivation_router(db) -> APIRouter:
         records = await db.reactivation_board_members.find({"user_id": user_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
         materials = await db.generated_materials.find(
             {"user_id": user_id, "type": PORTFOLIO_TYPE},
-            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "share_token": 1, "sent_at": 1, "updated_at": 1}).to_list(300)
+            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "share_token": 1, "sent_at": 1, "updated_at": 1, "sent_version": 1, "current_version": 1}).to_list(300)
         by_member = {m["application_id"]: m for m in materials}
         groups = {"active": [], "advisory": [], "support": [], "stepping_down": [], "follow_up": [], "waiting": []}
         for record in records:

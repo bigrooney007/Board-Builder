@@ -21,13 +21,15 @@ const PortfolioWorkflow = ({ row, reload }) => {
   const [mode, setMode] = useState("");
   const [draftText, setDraftText] = useState("");
   const [emailDraft, setEmailDraft] = useState(null);
-  const status = material ? (material.sent_at ? "SENT" : material.status === "Approved" ? "APPROVED" : "DRAFT") : row.portfolio ? row.portfolio.status.toUpperCase() : "NOT GENERATED";
+  const status = material
+    ? (material.status === "Approved" ? (material.sent_at ? "SENT" : "APPROVED") : "DRAFT")
+    : row.portfolio ? row.portfolio.status.toUpperCase() : "NOT GENERATED";
   const materialId = material?.material_id || row.portfolio?.material_id;
 
   const loadMaterial = useCallback(async () => {
     if (!materialId) return null;
     const res = await memberApi.get(`/reactivation/materials/${materialId}`);
-    const merged = { ...res.data, share_token: row.portfolio?.share_token, sent_at: row.portfolio?.sent_at };
+    const merged = { ...res.data, share_token: row.portfolio?.share_token, sent_at: row.portfolio?.status === "SENT" ? row.portfolio.sent_at : "" };
     setMaterial(merged);
     return merged;
   }, [materialId, row.portfolio]);

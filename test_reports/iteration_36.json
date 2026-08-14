@@ -1,0 +1,59 @@
+{
+  "summary": "Iteration 36 — Reactivation blocking-defect (conversation-script 502) FIX VERIFIED. The endpoint is now async: POST returns {material_id, status:'Generating'} in 0.10s over the public URL (was ~66s and 502). Duplicate-guard confirmed. Background task fills structured content and flips status to 'Draft' in ~65s. Frontend polls every 4s, hides action buttons during Generating, and re-renders them once Draft. Backend: 24/24 iter35 pytest suite PASS (was 23/24 — the org-name softness test A4 now passes because the regenerated script uses 'UITest Nonprofit' by name in the What-They-Told-You section). 28/28 batch5 pytest suite PASS. Frontend browser: Sarah's card renders with generate + view + edit + approve + download buttons; VIEW ONLINE modal shows the 13,490-char person-specific script with the exact recommitment quote 'Yes — but I need greater clarity about my role and responsibilities.' and organization name. Live Claude usage: exactly ONE generation consumed via the pre-flight smoke POST that produced material 61a5ccbe-ffea-48fb-a314-36a4d55407a4 (kickoff 0.10s, status flipped Generating→Draft after ~65s of polling with 13,501 chars). No 502 on any call. Batch5 live Claude portfolio + live Resend to delivered@resend.dev also succeeded inside batch5 suite (pre-existing coverage).",
+  "blocking_defect_502_fix": {
+    "fixed": true,
+    "evidence": {
+      "public_url": "https://nurture-v3-deploy.preview.emergentagent.com",
+      "post_response_time_seconds": 0.10,
+      "post_response_body": {"material_id": "61a5ccbe-ffea-48fb-a314-36a4d55407a4", "status": "Generating"},
+      "duplicate_post_returns_same_material_id": true,
+      "duplicate_post_status": "Generating (no second Claude call triggered)",
+      "polling_transition": "Generating → Draft after ~65s (13 polls of 5s while Generating, then Draft with 13,490 chars display_text)",
+      "no_502_observed": true,
+      "material_id_persisted": true
+    }
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/reactivation/board-members/{id}/conversation-script", "issue": "asyncio.create_task(run_generation()) is fire-and-forget; if the FastAPI worker restarts mid-generation the material stays stuck in 'Generating' forever (no orphan sweeper). Consider a startup sweep that flips >10min-old Generating rows to Failed."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter35_conversation_ai_and_step4.py",
+    "/app/backend/tests/test_batch5_reactivation_myboard.py",
+    "/app/test_reports/pytest/iter36_iter35_rerun.xml",
+    "/app/test_reports/pytest/iter36_batch5.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/MINOR: Add a startup or scheduled sweeper that promotes any generated_materials row stuck in status='Generating' for >10 minutes to status='Failed' with a generation_error='timeout — worker restarted before completion' so the UI shows the retry note instead of an indefinite spinner.",
+    "OPTIONAL (carried from iter35): reactivation prompt tuning to always reference organization by name — resolved on this run (regenerated script does mention 'UITest Nonprofit' by name), so this is no longer blocking; consider persisting the wording change in the prompt as regression protection."
+  ],
+  "critical_code_review_comments": [
+    "reactivation_routes.py:501-553 — new async generate_conversation_script correctly: (a) rejects non-COMPLETED members with 409, (b) creates a placeholder generated_materials row with status='Generating' BEFORE starting the background task so a concurrent POST hits the duplicate-guard, (c) uses asyncio.create_task rather than blocking the request, (d) on exception writes status='Failed' + generation_error. Contract verified from external URL: POST 0.10s → poll → Draft in ~65s.",
+    "reactivation_routes.py:540-552 — run_generation() has no timeout wrapper around generate_structured(); if Claude hangs indefinitely the material stays 'Generating' with no failure signal. Consider wrapping in asyncio.wait_for(..., timeout=300).",
+    "reactivation_routes.py:552 — asyncio.create_task is fire-and-forget; the task reference is not stored, so if the event loop is under GC pressure it could theoretically be cancelled. Low risk in practice but tracking the task in a set (background_tasks.add(t); t.add_done_callback(background_tasks.discard)) is safer.",
+    "ReactivationStep3.jsx:45-59 pollForScript — 60 attempts × 4s = 240s max wait matches or exceeds observed generation time (~65s). Silently breaks on request failure without surfacing an error toast; a rare mid-poll 500 would look like a completed generation to the user. Minor.",
+    "ReactivationStep3.jsx:69-72 mount-resume useEffect — correctly resumes polling if the row is loaded already in Generating state (e.g., user navigated away and back). Good.",
+    "ReactivationStep3.jsx:155 — action buttons correctly gated on !['Generating','Failed'].includes(scriptStatus) && busy !== 'generate'. Verified in browser: buttons hidden during generation, visible again on Draft.",
+    "generated_materials duplicate-guard uses (user_id, type, application_id) which is correct — each board member has at most one script material and re-POST returns same material_id."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter35_conversation_ai_and_step4.py (updated conversation-script fixture to new async contract: fast kickoff assertion, duplicate-guard assertion, polling loop until Draft, no cleanup so subsequent runs can reuse the Draft)"
+  ],
+  "success_rate": {
+    "backend": "iter35 24/24 (100%) + batch5 28/28 (100%) = 52/52 (100%)",
+    "frontend": "Step 3 UI: 100% (card visible, all 5 action buttons visible for Draft, view-online modal renders 13,490-char script with exact recommitment quote, no failed-generation testid present)"
+  },
+  "test_credentials": "Founder test_ui_batch2_6ca82f@example.com / UITest123! (user_id b0f96ec0-f045-4c47-a81b-3badbdd1bda6, org 'UITest Nonprofit', Sarah member_record_id 3a8be71b-b8c7-41f4-a87e-b82b28376a68). Recruitment-only module-tester@example.com / ModuleTest123!. Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem.",
+  "seed_data_creation": "iter35 fixture-seeded rows cleaned up in test teardowns (stepping-down TEST_iter35_stepdown_*, secondary founder iter35_other_*). One funnel-lead iter35_regress_* per run (N1). No additional data seeded in iter36. Live Claude conversation-script call: exactly 1 (kickoff POST → background gen → Draft on material 61a5ccbe-...). Live Resend: 1 (delivered@resend.dev inside batch5 suite, pre-existing coverage).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Async conversation-script generation is release-ready. Endpoint contract: POST returns {material_id, status:'Generating'} in <1s; poll GET /reactivation/materials/{id} until status != 'Generating'. Duplicate POST while Generating returns same material_id without a second Claude call. Failed path writes status='Failed' + generation_error<=300 chars; UI shows data-testid step3-generation-failed-{id}. No orphan-sweeper exists — a worker crash mid-generation leaves the row stuck. Consider a scheduled sweep only if flakiness is observed in production. Do NOT re-run the full 11-rule content-quality analysis; the regenerated script now hits all 11 (including the previously soft org-name rule). Use member 3a8be71b-... for future conversation-script checks; existing Draft material 61a5ccbe-... can be reused.",
+  "rca of the issue": "Root cause of the iter35 502: reactivation_routes.py generate_conversation_script() was awaiting generate_structured() synchronously (~65-70s Claude call for a 13-section nested schema), exceeding the Kubernetes/nginx ingress 60s upstream_response_timeout. Fix (verified): the endpoint now (1) upserts a generated_materials row with status='Generating' before returning, (2) schedules run_generation() as an asyncio background task, (3) returns {material_id, status:'Generating'} in <1s. run_generation() calls generate_structured() then save_reactivation_material() which pushes the new version and flips status to 'Draft'; on exception it writes status='Failed' + generation_error. The frontend polls every 4s and gates action buttons on status. Duplicate-guard: if an existing material is already 'Generating', POST returns the existing material_id without launching a second Claude call. Verified end-to-end over the public URL: kickoff 0.10s, Draft reached after ~65s, no 502 at any point."
+}
