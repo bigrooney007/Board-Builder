@@ -20,7 +20,7 @@ API = f"{BASE_URL}/api"
 FOUNDER_EMAIL = "test_ui_batch2_6ca82f@example.com"
 FOUNDER_PW = "UITest123!"
 RECRUIT_EMAIL = "module-tester@example.com"
-RECRUIT_PW = "ModuleTest123!"
+RECRUIT_PW = os.environ["MODULE_TESTER_PASSWORD"]
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
 ADMIN_PW = os.environ["ADMIN_PASSWORD"]
 
@@ -60,7 +60,7 @@ def other_founder(loop, db):
     email = f"test_b5_other_{uuid.uuid4().hex[:6]}@example.com"
     reg = requests.post(f"{API}/members/register", json={
         "first_name": "OtherB5", "last_name": "Founder", "email": email,
-        "password": "TestPass123!", "confirm_password": "TestPass123!"})
+        "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"]})
     assert reg.status_code in (200, 201), reg.text
     uid = reg.json()["member"]["user_id"]; tok = reg.json()["token"]
     run(loop, db.members.update_one({"user_id": uid}, {"$addToSet": {"entitlements": "reactivation_self_guided"}}))

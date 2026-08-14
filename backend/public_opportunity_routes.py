@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from ai_service import extract_cv_text
 from opportunity_emails import send_application_receipt
-from workspace_service import CORE_QUESTIONS, new_id, now_iso, run_interview_guide
+from workspace_service import CORE_QUESTIONS, new_id, now_iso
 from opportunity_emails import send_signature_confirmations
 
 ALLOWED_CV_EXTENSIONS = {".pdf", ".doc", ".docx"}
@@ -31,7 +31,6 @@ class SignPayload(BaseModel):
 def public_opportunity_view(opportunity: dict, board_opportunity_display: str, structured: dict, mission: str = "", board_type: str = "") -> dict:
     org = opportunity["organization_name"]
     board_label = "Advisory Board" if "advisory" in (board_type or "").lower() else "Board of Directors"
-    objective = structured.get("what_board_members_will_contribute") or structured.get("introduction") or "advance its mission"
     mission_clean = (mission or "").strip().rstrip(".")
     intro_sentences = [f"{org} is recruiting committed professionals to serve on its {board_label}."]
     if mission_clean:

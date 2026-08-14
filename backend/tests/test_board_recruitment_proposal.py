@@ -115,7 +115,7 @@ def test_claim_purchase_rejects_direct_project(api, db):
     import uuid
     email = f"test_brp_{uuid.uuid4().hex[:8]}@example.com"
     reg = api.post(f"{BASE_URL}/api/members/register",
-                   json={"email": email, "password": "TestPass123!", "confirm_password": "TestPass123!",
+                   json={"email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
                          "first_name": "BRP", "last_name": "Tester", "organization": "Test Org"})
     if reg.status_code not in (200, 201):
         pytest.skip(f"member register unavailable: {reg.status_code} {reg.text[:120]}")

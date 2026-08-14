@@ -52,7 +52,7 @@ def admin_session(admin_token):
 
 def _register_member(email_prefix, entitlements, profile_data=None, strategy=None):
     email = f"TEST_{email_prefix}_{uuid.uuid4().hex[:8]}@example.com"
-    password = "TestPass123!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = requests.post(f"{BASE_URL}/api/members/register", json={
         "email": email, "password": password, "confirm_password": password,
         "first_name": "Test", "last_name": "User",

@@ -14,7 +14,7 @@ import requests
 
 BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
-MODULE_TESTER = {"email": "module-tester@example.com", "password": "ModuleTest123!"}
+MODULE_TESTER = {"email": "module-tester@example.com", "password": os.environ["MODULE_TESTER_PASSWORD"]}
 
 
 @pytest.fixture(scope="module")

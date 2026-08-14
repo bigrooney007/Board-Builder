@@ -1,7 +1,7 @@
 import html
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict
 
 import resend

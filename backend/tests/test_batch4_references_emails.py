@@ -52,7 +52,7 @@ def auth(t):
 @pytest.fixture(scope="session")
 def member():
     email = f"TEST_batch4_{uuid.uuid4().hex[:8]}@example.com"
-    password = "TestPass123!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = requests.post(f"{API}/members/register", json={
         "email": email, "password": password, "confirm_password": password,
         "first_name": "Batch4", "last_name": "Tester",

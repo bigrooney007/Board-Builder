@@ -54,7 +54,7 @@ def db():
 def _register_member(email_prefix: str):
     session = requests.Session()
     email = f"rooney+{email_prefix}-{uuid.uuid4().hex[:8]}@nonprofitboardbuilder.com"
-    password = "TestPass_iter16!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     resp = session.post(f"{API}/members/register", json={
         "first_name": "Iter16", "last_name": "Tester",
         "email": email, "password": password, "confirm_password": password,

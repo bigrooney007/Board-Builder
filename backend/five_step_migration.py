@@ -13,6 +13,8 @@ Runs at startup, guarded by the migrations collection, and is idempotent at the 
 import logging
 from datetime import datetime, timezone
 
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from ai_service import GENERATION_TYPES
 
 logger = logging.getLogger(__name__)
@@ -31,7 +33,7 @@ FIVE_STEP_VIDEOS = {
 RETIRED_STRATEGY_VIDEO_ID = "671KaVEJFbg"
 
 
-async def run_five_step_migration(db):
+async def run_five_step_migration(db: AsyncIOMotorDatabase) -> None:
     if await db.migrations.find_one({"key": MIGRATION_KEY}):
         return
     now = datetime.now(timezone.utc).isoformat()

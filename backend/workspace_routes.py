@@ -4,7 +4,6 @@ All endpoints require member auth + recruitment_self_guided entitlement. Tenant 
 import io
 import os
 import secrets
-from datetime import datetime, timezone
 from typing import List, Optional
 
 import resend

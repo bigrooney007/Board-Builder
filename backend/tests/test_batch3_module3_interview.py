@@ -60,7 +60,7 @@ def _now():
 @pytest.fixture(scope="session")
 def member():
     email = f"TEST_batch3_{uuid.uuid4().hex[:8]}@example.com"
-    password = "TestPass123!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = requests.post(f"{API}/members/register", json={
         "email": email, "password": password, "confirm_password": password,
         "first_name": "Batch3", "last_name": "Tester",
@@ -90,7 +90,7 @@ def member():
 @pytest.fixture(scope="session")
 def other_member():
     email = f"TEST_batch3_other_{uuid.uuid4().hex[:8]}@example.com"
-    password = "TestPass123!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = requests.post(f"{API}/members/register", json={
         "email": email, "password": password, "confirm_password": password,
         "first_name": "Other", "last_name": "Member"})

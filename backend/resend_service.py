@@ -1,7 +1,7 @@
 import html
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 import resend
 

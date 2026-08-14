@@ -25,7 +25,7 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
 RECRUIT_EMAIL = "module-tester@example.com"
-RECRUIT_PW = "ModuleTest123!"
+RECRUIT_PW = os.environ["MODULE_TESTER_PASSWORD"]
 
 
 @pytest.fixture(scope="module")
@@ -175,7 +175,7 @@ def other_founder(loop, db):
     email = f"test_batch3_other_{uuid.uuid4().hex[:6]}@example.com"
     reg = requests.post(f"{API}/members/register", json={
         "first_name": "TESTB3", "last_name": "Other", "email": email,
-        "password": "TestPass123!", "confirm_password": "TestPass123!",
+        "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
     })
     user_id = reg.json()["member"]["user_id"]
     token = reg.json()["token"]

@@ -10,9 +10,9 @@ import requests
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
 FOUNDER_EMAIL = "activation-tester-1786708997@example.com"
-FOUNDER_PASSWORD = "ActTest123!"
+FOUNDER_PASSWORD = os.environ["ACTIVATION_TESTER_PASSWORD"]
 NO_ENT_EMAIL = "module-tester@example.com"
-NO_ENT_PASSWORD = "ModuleTest123!"
+NO_ENT_PASSWORD = os.environ["MODULE_TESTER_PASSWORD"]
 
 
 def _login(session, email, password):

@@ -76,7 +76,7 @@ class TestDIYE2E:
         email = f"test_diy_e2e_{uuid.uuid4().hex[:6]}@example.com"
         reg = http.post(f"{API}/members/register", json={
             "first_name": "TEST", "last_name": "DIYE2E", "email": email,
-            "password": "TestPass123!", "confirm_password": "TestPass123!",
+            "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
         })
         assert reg.status_code == 201, reg.text
         user_id = reg.json()["member"]["user_id"]
@@ -140,7 +140,7 @@ class TestDIYE2E:
 
         # 9. Logout + login + verify persistence
         http.post(f"{API}/members/logout")
-        login = http.post(f"{API}/members/login", json={"email": email, "password": "TestPass123!"})
+        login = http.post(f"{API}/members/login", json={"email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"]})
         assert login.status_code == 200
         token2 = login.json()["token"]
         course2 = http.get(f"{API}/courses/reactivation/self-guided",
@@ -181,7 +181,7 @@ class TestDWMPaidFlow:
         email = f"test_dwm_claim_{uuid.uuid4().hex[:6]}@example.com"
         reg = http.post(f"{API}/members/register", json={
             "first_name": "TEST", "last_name": "DWM", "email": email,
-            "password": "TestPass123!", "confirm_password": "TestPass123!",
+            "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
         })
         token = reg.json()["token"]
         r = http.post(f"{API}/members/claim-purchase", json={"session_id": sid},

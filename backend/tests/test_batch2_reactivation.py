@@ -22,7 +22,7 @@ API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
 ADMIN_PW = os.environ["ADMIN_PASSWORD"]
 RECRUIT_EMAIL = "module-tester@example.com"
-RECRUIT_PW = "ModuleTest123!"
+RECRUIT_PW = os.environ["MODULE_TESTER_PASSWORD"]
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +49,7 @@ def founder(loop, db):
     email = f"test_batch2_founder_{uuid.uuid4().hex[:6]}@example.com"
     reg = requests.post(f"{API}/members/register", json={
         "first_name": "TestBatch2", "last_name": "Founder", "email": email,
-        "password": "TestPass123!", "confirm_password": "TestPass123!",
+        "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
     })
     assert reg.status_code == 201, reg.text
     user_id = reg.json()["member"]["user_id"]
@@ -85,7 +85,7 @@ def founder_b(loop, db):
     email = f"test_batch2_founder_b_{uuid.uuid4().hex[:6]}@example.com"
     reg = requests.post(f"{API}/members/register", json={
         "first_name": "TestBatch2B", "last_name": "Other", "email": email,
-        "password": "TestPass123!", "confirm_password": "TestPass123!",
+        "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
     })
     user_id = reg.json()["member"]["user_id"]
     token = reg.json()["token"]

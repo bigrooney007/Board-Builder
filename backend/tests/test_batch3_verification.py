@@ -48,7 +48,7 @@ def seeded(db):
     """Create a fresh $497 test member with confirmed profile + published opportunity + seeded strategy material.
     Cleans up after the session."""
     email = f"rooney+batch3-{uuid.uuid4().hex[:8]}@nonprofitboardbuilder.com"
-    password = "TestPass_batch3!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     session = requests.Session()
     resp = session.post(f"{API}/members/register", json={
         "first_name": "Batch3", "last_name": "Tester",

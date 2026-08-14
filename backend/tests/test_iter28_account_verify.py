@@ -50,7 +50,7 @@ def db(loop):
 def _reg_payload(email, session_id=""):
     return {
         "first_name": "Test", "last_name": "Verify",
-        "email": email, "password": "TestPass123!", "confirm_password": "TestPass123!",
+        "email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
         "session_id": session_id,
     }
 
@@ -156,7 +156,7 @@ class TestLoginContract:
         try:
             r2 = client.post(
                 f"{BASE_URL}/api/members/login",
-                json={"email": email, "password": "TestPass123!"},
+                json={"email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"]},
             )
             assert r2.status_code == 200
             body = r2.json()

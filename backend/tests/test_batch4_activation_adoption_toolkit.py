@@ -12,7 +12,7 @@ import requests
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 
 FOUNDER_EMAIL = "activation-tester-1786708997@example.com"
-FOUNDER_PASSWORD = "ActTest123!"
+FOUNDER_PASSWORD = os.environ["ACTIVATION_TESTER_PASSWORD"]
 
 # Guide section headings we must see in the generated facilitation guide
 GUIDE_HEADINGS = [

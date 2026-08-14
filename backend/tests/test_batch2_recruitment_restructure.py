@@ -51,7 +51,7 @@ CAMPAIGN_TYPES = [
 # ---------- Helpers ----------
 def _register(email_prefix: str, entitlements, profile=None, strategy=None, confirmed=True):
     email = f"TEST_{email_prefix}_{uuid.uuid4().hex[:8]}@example.com"
-    password = "TestPass123!"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = requests.post(f"{BASE_URL}/api/members/register", json={
         "email": email, "password": password, "confirm_password": password,
         "first_name": "Batch2", "last_name": "Tester",
@@ -93,7 +93,7 @@ def cleanup_user(user_id: str):
 def member():
     m = _register("batch2_main", ["recruitment_self_guided"],
                   profile=FULL_PROFILE.copy(), strategy=STRATEGY_INTAKE.copy())
-    print(f"\n[FIXTURE] Primary member: {m['email']} / TestPass123!")
+    print(f"\n[FIXTURE] Primary member: {m['email']}")
     yield m
     cleanup_user(m["user_id"])
 

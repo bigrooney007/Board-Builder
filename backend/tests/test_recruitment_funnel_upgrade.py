@@ -320,7 +320,7 @@ class TestPaidMemberAccess:
         # Try to register a member via API
         unique = uuid.uuid4().hex[:8]
         email = f"TEST_member_{unique}@example.com"
-        password = "TestPass!2026"
+        password = os.environ["TEST_ACCOUNT_PASSWORD"]
         s = requests.Session()
         s.headers.update({"Content-Type": "application/json"})
         r = s.post(

@@ -32,7 +32,7 @@ def opportunity_email_html(opportunity: dict, org_name: str, apply_url: str, vie
         f"<p>I'm currently supporting <strong>{html.escape(org_name)}</strong> as they intentionally build their board, and I wanted to bring this opportunity to you because you have expressed interest in serving on a nonprofit board.</p>"
         f"<p><strong>{html.escape(org_name)}</strong> — {html.escape(content.get('mission', ''))}</p>"
         + (f"<h3>We're seeking professionals with experience in areas such as:</h3><ul>{needs_html}</ul>" if needs_html
-           else f"<p>They are seeking professionals whose experience and relationships can help move the mission forward.</p>")
+           else "<p>They are seeking professionals whose experience and relationships can help move the mission forward.</p>")
         + "<p>This is an active board leadership opportunity for professionals who want to contribute strategically, strengthen the organization through their expertise and relationships, support fundraising and partnerships, and help guide the organization's growth — meaningful contribution, not simply attending meetings.</p>"
         + practical + deadline
         + "<p>The recruitment process includes an application, interview and onboarding process designed to help both you and the organization determine whether the opportunity is a good fit.</p>"

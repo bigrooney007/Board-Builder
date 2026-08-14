@@ -670,7 +670,6 @@ def create_reactivation_router(db) -> APIRouter:
     OUTCOME_ADVISORY = "Transitioning to an Advisory Role"
     OUTCOME_SUPPORT = "Transitioning to Another Support Role"
     OUTCOME_STEP_DOWN = "Stepping Down From the Board"
-    OUTCOME_FOLLOW_UP = "Follow-Up Conversation Needed"
 
     def portfolio_title_for(outcome: str) -> str:
         if outcome == OUTCOME_ADVISORY:

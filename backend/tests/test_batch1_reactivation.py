@@ -157,7 +157,7 @@ class TestClaimPurchaseRejectsDWM:
         email = f"test_dwm_reject_{uuid.uuid4().hex[:6]}@example.com"
         reg = client.post(f"{API}/members/register", json={
             "first_name": "TEST", "last_name": "DWMReject",
-            "email": email, "password": "TestPass123!", "confirm_password": "TestPass123!",
+            "email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
         })
         assert reg.status_code == 201, reg.text
         token = reg.json()["token"]
@@ -179,7 +179,7 @@ class TestReactivationCourseAccess:
     def test_recruitment_only_member_gets_403(self, client):
         # Use module-tester (recruitment_self_guided only)
         login = client.post(f"{API}/members/login",
-                            json={"email": "module-tester@example.com", "password": "ModuleTest123!"})
+                            json={"email": "module-tester@example.com", "password": os.environ["MODULE_TESTER_PASSWORD"]})
         if login.status_code != 200:
             pytest.skip(f"module-tester login failed: {login.text}")
         token = login.json()["token"]

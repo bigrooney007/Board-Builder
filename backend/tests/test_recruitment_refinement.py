@@ -213,8 +213,8 @@ class TestEntitlementRegression:
         # Create ephemeral member without recruitment_self_guided
         email = f"TEST_noent_{uuid.uuid4().hex[:6]}@example.com"
         reg = requests.post(f"{BASE_URL}/api/members/register",
-                            json={"email": email, "password": "TestPass123!",
-                                  "confirm_password": "TestPass123!",
+                            json={"email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"],
+                                  "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
                                   "first_name": "TEST", "last_name": "NoEnt"}, timeout=15)
         if reg.status_code not in (200, 201):
             pytest.skip(f"register unavailable: {reg.status_code}")

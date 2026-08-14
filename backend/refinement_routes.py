@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import secrets
-from typing import Optional
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
@@ -652,7 +651,7 @@ def create_refinement_router(db) -> APIRouter:
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import mm
         from reportlab.lib.colors import HexColor
-        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, KeepTogether, Image
+        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, Image
         member = await current_member(request)
         material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0})
         if not material:

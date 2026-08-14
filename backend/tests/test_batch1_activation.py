@@ -283,7 +283,7 @@ class TestActivationCourseEndpoints:
     def test_module_tester_403_activation(self, client):
         # login as module-tester
         r = requests.post(f"{BASE_URL}/api/members/login",
-                          json={"email": "module-tester@example.com", "password": "ModuleTest123!"},
+                          json={"email": "module-tester@example.com", "password": os.environ["MODULE_TESTER_PASSWORD"]},
                           timeout=15)
         assert r.status_code == 200, r.text
         token = r.json().get("access_token") or r.json().get("token")
@@ -297,7 +297,7 @@ class TestActivationCourseEndpoints:
         # log in as module-tester (no activation entitlement) - progress endpoint requires
         # entitlement so we can only assert 422 or 403; we accept both because entitlement is checked also
         r = requests.post(f"{BASE_URL}/api/members/login",
-                          json={"email": "module-tester@example.com", "password": "ModuleTest123!"},
+                          json={"email": "module-tester@example.com", "password": os.environ["MODULE_TESTER_PASSWORD"]},
                           timeout=15)
         token = r.json().get("access_token") or r.json().get("token")
         headers = {"Authorization": f"Bearer {token}"} if token else {}
@@ -335,8 +335,8 @@ class TestActivationClaim:
         try:
             rr = requests.post(f"{BASE_URL}/api/members/register",
                                json={"first_name": "TEST", "last_name": "Claim",
-                                     "email": email, "password": "TestPass123!",
-                                     "confirm_password": "TestPass123!",
+                                     "email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"],
+                                     "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
                                      "session_id": sid},
                                timeout=15)
             # Since session is unpaid, expect 402 (payment not completed)
@@ -368,8 +368,8 @@ class TestActivationClaim:
         try:
             rr = requests.post(f"{BASE_URL}/api/members/register",
                                json={"first_name": "TEST", "last_name": "Claim2",
-                                     "email": email, "password": "TestPass123!",
-                                     "confirm_password": "TestPass123!",
+                                     "email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"],
+                                     "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
                                      "session_id": sid},
                                timeout=15)
             # Unpaid, expect 402 not 400 with 'not a Recruitment program purchase'
@@ -394,8 +394,8 @@ class TestActivationClaim:
         try:
             rr = requests.post(f"{BASE_URL}/api/members/register",
                                json={"first_name": "TEST", "last_name": "DWM",
-                                     "email": email, "password": "TestPass123!",
-                                     "confirm_password": "TestPass123!",
+                                     "email": email, "password": os.environ["TEST_ACCOUNT_PASSWORD"],
+                                     "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
                                      "session_id": sid},
                                timeout=15)
             # Unpaid -> 402 first; if session was somehow paid, DWM claim MUST return 400

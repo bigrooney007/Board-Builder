@@ -67,7 +67,7 @@ def test_claim_paid_direct_project_is_rejected(api, db, loop):
     email = f"test_iter29_claim_{uuid.uuid4().hex[:8]}@example.com"
     reg = api.post(f"{BASE_URL}/api/members/register", json={
         "first_name": "T", "last_name": "T", "email": email,
-        "password": "TestPass123!", "confirm_password": "TestPass123!",
+        "password": os.environ["TEST_ACCOUNT_PASSWORD"], "confirm_password": os.environ["TEST_ACCOUNT_PASSWORD"],
     })
     assert reg.status_code == 201
     token = reg.json()["token"]
@@ -179,7 +179,7 @@ def test_diy_intake_redirects_to_start_here(api, db, loop):
 # 5. module-tester@example.com login works
 def test_module_tester_login(api):
     r = api.post(f"{BASE_URL}/api/members/login",
-                 json={"email": "module-tester@example.com", "password": "ModuleTest123!"})
+                 json={"email": "module-tester@example.com", "password": os.environ["MODULE_TESTER_PASSWORD"]})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body.get("token")

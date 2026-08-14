@@ -53,7 +53,7 @@ def member_session():
     """Ephemeral member with no entitlements — used to prove 401/403 gating."""
     s = requests.Session()
     email = f"TEST_refmember_{secrets.token_hex(4)}@example.com"
-    password = "TestMember!12345"
+    password = os.environ["TEST_ACCOUNT_PASSWORD"]
     r = s.post(f"{BASE_URL}/api/members/register",
                json={"first_name": "TEST", "last_name": "Member", "email": email,
                      "password": password, "confirm_password": password}, timeout=15)
