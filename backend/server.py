@@ -218,6 +218,10 @@ from activation_planning_routes import create_activation_planning_router
 app.include_router(create_activation_planning_router(db))
 from reactivation_routes import create_reactivation_router
 app.include_router(create_reactivation_router(db))
+from admin_service_routes import create_admin_service_router
+app.include_router(create_admin_service_router(db))
+from strategic_planning_routes import create_strategic_planning_router
+app.include_router(create_strategic_planning_router(db))
 app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
 app.include_router(create_review_router(db))

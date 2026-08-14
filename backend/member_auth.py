@@ -56,9 +56,26 @@ async def review_mode_member(request: Request, db):
     return {
         "user_id": "owner-review-admin", "email": admin["email"],
         "first_name": "Owner", "last_name": "Review",
-        "entitlements": ["recruitment_basic", "recruitment_self_guided", "reactivation_self_guided"],
+        "entitlements": ["recruitment_basic", "recruitment_self_guided", "reactivation_self_guided", "activation_self_guided"],
         "lead_ids": [], "review_mode": True,
     }
+
+
+async def operator_member(request: Request, db):
+    """Admin operating a DWM client workspace: admin auth + X-Operate-As header targeting an operator workspace tenant only."""
+    target = request.headers.get("X-Operate-As", "").strip()
+    if not target:
+        return None
+    from auth_service import authenticate_admin
+    try:
+        await authenticate_admin(request, db)
+    except HTTPException:
+        return None
+    member = await db.members.find_one(
+        {"user_id": target, "operator_workspace": True}, {"_id": 0, "password_hash": 0})
+    if not member:
+        return None
+    return {**member, "operator_mode": True}
 
 
 async def authenticate_member(request: Request, db) -> dict:
