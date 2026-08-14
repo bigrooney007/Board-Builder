@@ -12,10 +12,7 @@ SUPPORT_PREFERENCES = {"diy": "Do It Yourself", "guided": "Guided Support", "sel
 REQUIRED_ANSWERS = {
     "recruitment": {"new_members_needed"},
     "reactivation": {"disengaged_count"},
-    "fundraising_activation": {
-        "present_board", "active_board", "fundraising_involvement", "strategic_planning",
-        "fundraising_strategy", "individual_responsibilities", "fundraising_need", "fundraising_areas",
-    },
+    "fundraising_activation": {"board_member_count"},
     "board_transformation": {
         "present_board", "active_board", "need_recruit", "reactivate_inactive",
         "board_fundraising_now", "want_fundraising",
@@ -79,25 +76,26 @@ def reactivation_result(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def activation_result(answers: Dict[str, Any]) -> Dict[str, Any]:
-    strategic = "In Place" if answers["strategic_planning"] == "Yes" else "Needs Attention"
-    strategy = "In Place" if answers["fundraising_strategy"] == "Yes" else "Needs Attention"
-    responsibilities = "In Place" if answers["individual_responsibilities"] == "Yes" else "Needs Attention"
+    strategic = "In Place" if answers.get("strategic_planning") == "Yes" else "Needs Attention"
+    strategy = "In Place" if answers.get("fundraising_strategy") == "Yes" else "Needs Attention"
+    responsibilities = "In Place" if answers.get("individual_responsibilities") == "Yes" else "Needs Attention"
     observations = []
-    if answers["fundraising_strategy"] in {"No", "I am not sure"}:
+    if answers.get("fundraising_strategy") in {"No", "I am not sure"}:
         observations.append("Before board members can execute fundraising consistently, the organization needs a clear fundraising direction they can understand and help implement.")
-    if answers["fundraising_strategy"] == "Yes, but the board is not meaningfully involved":
+    if answers.get("fundraising_strategy") == "Yes, but the board is not meaningfully involved":
         observations.append("Your organization already has a fundraising strategy. The next gap is turning that strategy into responsibilities the board can help execute.")
-    if answers["individual_responsibilities"] in {"No", "Some do", "I am not sure"}:
+    if answers.get("individual_responsibilities") in {"No", "Some do", "I am not sure"}:
         observations.append("Your board cannot become a fundraising board simply by being told to raise money. Each person needs a defined responsibility connected to their strengths and relationships.")
-    if answers["fundraising_involvement"] == "One person does most of it":
+    if answers.get("fundraising_involvement") == "One person does most of it":
         observations.append("Fundraising is currently concentrated in too few hands. The next step is to distribute meaningful fundraising responsibilities across the board.")
     if not observations:
         observations.append("Your starting point is to connect the board's present fundraising participation with the specific areas you want members to help execute.")
     return {
         "strategic_direction": strategic, "fundraising_strategy": strategy,
         "individual_responsibilities": responsibilities,
-        "fundraising_participation": answers["fundraising_involvement"],
-        "fundraising_need": answers["fundraising_need"], "fundraising_areas": answers["fundraising_areas"],
+        "fundraising_participation": answers.get("fundraising_involvement", ""),
+        "board_member_count": answers.get("board_member_count", ""),
+        "fundraising_need": answers.get("fundraising_need", ""), "fundraising_areas": answers.get("fundraising_areas", []),
         "observations": observations,
         "next_step": "The next step is to involve the board in the fundraising plan, assign individual responsibilities, create the materials people need and establish a consistent execution process.",
     }

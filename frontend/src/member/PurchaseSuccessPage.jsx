@@ -51,6 +51,8 @@ export const PurchaseSuccessPage = () => {
           navigate(`/board-recruitment-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "direct_diy_board_reactivation_497") {
           navigate(`/board-reactivation-intake?session_id=${sessionId}`);
+        } else if (response.data.claimed_source === "direct_diy_board_activation_497") {
+          navigate(`/board-activation-intake?session_id=${sessionId}`);
         }
       } catch (err) { setError(err.response?.data?.detail || "We could not link this purchase to your account."); }
     };
@@ -108,7 +110,7 @@ export const PurchaseSuccessPage = () => {
             ) : (
               <>
                 <h1 data-testid="create-account-heading">{mode === "register" ? "Create Your Board Builder Account" : "Log In to Your Board Builder Account"}</h1>
-                <p>{mode === "register" ? "Create your account to access your Recruitment program." : "Log in and we will link this purchase to your existing account."}</p>
+                <p>{mode === "register" ? "Create your account to access your program." : "Log in and we will link this purchase to your existing account."}</p>
                 <form onSubmit={submit} className="member-auth-form">
                   {mode === "register" && (
                     <div className="two-col-fields">

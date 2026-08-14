@@ -76,6 +76,7 @@ export const FunnelStepForm = ({ offerSource }) => {
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
       else if (config.redirectAfterSubmit === "rooney") navigate("/recruit-with-rooney");
       else if (config.redirectAfterSubmit === "reactivate-rooney") navigate("/reactivate-with-rooney");
+      else if (config.redirectAfterSubmit === "activate-rooney") navigate("/activate-with-rooney");
       else if (config.redirectAfterSubmit === "process") navigate(`/${config.slug}/process`);
       else navigate(`/${config.slug}/result/${response.data.result_token}`);
     } catch (error) {

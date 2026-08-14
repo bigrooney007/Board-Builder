@@ -1,29 +1,80 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PlayCircle } from "lucide-react";
+import axios from "axios";
+import { PlayCircle, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
+import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import { PAGE_META, usePageMeta } from "@/seo";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const toEmbedUrl = (url) => {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : url;
+};
 
 export default function ActivateWithRooneyPage() {
+  usePageMeta(...PAGE_META.activateWithRooney);
+  const [videoUrl, setVideoUrl] = useState("");
+
+  useEffect(() => {
+    axios.get(`${API}/direct-activation/config`).then((response) => setVideoUrl((response.data.video_url || "").trim())).catch(() => {});
+  }, []);
+
   return (
     <FunnelLayout restrained>
-      <main data-testid="activate-with-rooney-page" style={{ maxWidth: 760, margin: "0 auto", padding: "48px 20px" }}>
-        <header style={{ marginBottom: 26 }}>
-          <p className="eyebrow">Board Activation</p>
-          <h1 data-testid="awr-headline">Activate Your Board</h1>
-          <p data-testid="awr-supporting">Turn your Board into fundraising champions who help carry the fundraising responsibility for your mission.</p>
-        </header>
-        <div className="module-video placeholder" data-testid="awr-video-placeholder">
-          <PlayCircle size={38} />
-          <h3>Board Activation Video Coming Soon</h3>
-          <p>The Board Activation training video will appear here as soon as it is published.</p>
-        </div>
-        <section className="member-card" style={{ marginTop: 26 }} data-testid="awr-coming-soon">
-          <h2>The Full Board Activation Experience Is Coming Soon</h2>
-          <p>We are finishing the complete Board Activation program. In the meantime, you can start with the part of the Board Transformation journey your Board needs most.</p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link className="button" to="/board-transformation" data-testid="awr-diagnostic-button">TELL ME WHAT MY BOARD NEEDS</Link>
-            <Link className="button button-back" to="/" data-testid="awr-home-button">Back to Home</Link>
+      <main data-testid="awr-page">
+        <section className="funnel-hero-banner rwr-hero" data-testid="awr-hero">
+          <h1 data-testid="awr-headline">Turn Your Board Into Fundraising Champions for Your Mission</h1>
+          <p className="funnel-hero-banner-supporting" data-testid="awr-subheadline">Your Board should understand the fundraising direction, help build the plan, take ownership of the work and know exactly how they can help raise money for the organization. You can lead the process yourself with my guidance and tools, or I can work through the process with you.</p>
+          <i aria-hidden="true" />
+        </section>
+
+        <section className="rwr-section rwr-video-section" data-testid="awr-video-area">
+          <div className="rwr-video-frame">
+            {videoUrl ? (
+              <iframe
+                src={toEmbedUrl(videoUrl)}
+                title="Activate Your Board With Rooney"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                data-testid="awr-video-embed"
+              />
+            ) : (
+              <div className="rwr-video-placeholder" data-testid="awr-video-placeholder">
+                <PlayCircle size={58} aria-hidden="true" />
+                <p>Board Fundraising Activation Video Coming Soon</p>
+              </div>
+            )}
           </div>
         </section>
+
+        <section className="ar-offers rwr-offers" data-testid="awr-offer-section">
+          <h2 data-testid="awr-offers-heading">Two Ways I Can Help You Activate Your Board</h2>
+          <p className="ar-offers-supporting" data-testid="awr-offers-supporting">Choose the level of support that works best for you.</p>
+          <div className="ar-offer-grid">
+            <article className="ar-offer-card" data-testid="awr-diy-card">
+              <h3 data-testid="awr-diy-heading">Activate Your Board Yourself</h3>
+              <p className="ar-offer-price" data-testid="awr-diy-price">$497</p>
+              <p className="ar-offer-copy" data-testid="awr-diy-copy">Lead your Board through the complete fundraising activation process yourself, with the process, tools and support you need to move from Board disengagement in fundraising to Board ownership and execution — get the Board involved in building the fundraising plan, turn everyone's ideas into one fundraising strategy, bring the plan back to the Board for review, facilitate adoption, establish clear responsibility and equip Board Members with practical fundraising tools.</p>
+              <Link className="button" to="/activate-your-board-yourself" data-testid="awr-diy-button">I WANT TO ACTIVATE MY BOARD MYSELF</Link>
+            </article>
+            <article className="ar-offer-card" data-testid="awr-dwm-card">
+              <h3 data-testid="awr-dwm-heading">Activate Your Board With Rooney</h3>
+              <p className="ar-offer-price" data-testid="awr-dwm-price">$2,497</p>
+              <p className="ar-offer-copy" data-testid="awr-dwm-copy">Rooney works through the Board Fundraising Activation process with you so your organization does not have to figure out how to turn Board Members into fundraising participants alone — Board participation in planning, one fundraising strategy, Board review and adoption, clear ownership, practical execution, and a founder who is no longer carrying fundraising alone.</p>
+              <Link className="button" to="/board-activation-proposal" data-testid="awr-dwm-button">I WANT ROONEY TO HELP ACTIVATE MY BOARD</Link>
+            </article>
+          </div>
+        </section>
+
+        <section className="rwr-section rwr-guarantee" data-testid="awr-guarantee-section">
+          <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
+          <h2 data-testid="awr-guarantee-heading">100% Money-Back Guarantee</h2>
+          <p data-testid="awr-guarantee-copy">Your investment is protected by our 100% money-back guarantee.</p>
+        </section>
+
+        <TestimonialCarousel heading="See What Other Nonprofit Leaders Have Said" idPrefix="awr" />
       </main>
     </FunnelLayout>
   );

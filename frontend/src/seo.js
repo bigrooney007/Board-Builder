@@ -45,5 +45,9 @@ export const PAGE_META = {
   boardReactivationProposal: ["Board Reactivation Project Proposal | Nonprofit Board Builder", "Work directly with Rooney to reactivate the people who are ready to serve and deal with the people who aren't."],
   boardReactivationIntake: ["Tell Me About Your Board | Nonprofit Board Builder", "Provide the information needed to begin your board reactivation engagement."],
   fundraising_activation: ["Activate Your Board to Raise Money | Nonprofit Board Builder", "Activate your nonprofit board around fundraising so members use their strengths, relationships and experience to help raise money and strengthen your organization."],
+  activateWithRooney: ["Activate Your Board With Rooney | Nonprofit Board Builder", "Turn your board into fundraising champions for your mission. Get your board involved in building the fundraising plan and taking ownership of execution."],
+  activateYourBoardYourself: ["Activate Your Board Yourself | Nonprofit Board Builder", "Lead your board through the complete fundraising activation process yourself, with the process, tools and support you need."],
+  boardActivationProposal: ["Board Fundraising Activation Project Proposal | Nonprofit Board Builder", "Work directly with Rooney to get your board involved in building the fundraising plan, adopting the strategy and helping raise money."],
+  boardActivationIntake: ["Tell Me About Your Fundraising | Nonprofit Board Builder", "Provide the information needed to begin your board fundraising activation engagement."],
   blog: ["Nonprofit Board Recruitment, Reactivation & Fundraising | Nonprofit Board Builder", "Practical insights for nonprofit founders and executive directors who want to recruit stronger board members, reactivate their present board and get their board involved in fundraising."],
 };

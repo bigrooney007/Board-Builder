@@ -1,0 +1,83 @@
+{
+  "summary": "Iteration 41 — RERUN of Batch 1 Activation verification after the one-line fix in claim_recruitment_purchase (added `elif offer_source == 'direct_diy_board_activation' and tier == '497'` ladder). BLOCKING DEFECT IS FIXED. Ran full backend regression: test_batch1_activation.py 29/29 + test_batch_intake_e2e.py + test_batch1_reactivation.py = 60/60 PASS. Executed the previously-blocked live end-to-end journey: created new activation-tester-1786708997@example.com member via real Stripe TEST-mode 4242 checkout completed headlessly in the browser -> landed on /purchase/success -> registered via UI -> received entitlement `activation_self_guided`, purchase.purchase_source=`direct_diy_board_activation_497`, no cross-product entitlement. Duplicate claim is idempotent (returns 200 with same claimed_source). Intake context returns eligible=true with correct prefill (name+email). Full intake submit via API returned redirect_url=`/activation-start-here`; second submit is idempotent (still 1 intake row). /activation-start-here shows exact copy 'Activate Your Board to Start Raising Money', 'People who plan together execute together', and CTA 'START ACTIVATING MY BOARD' linking to /app/activation/self-guided/module/1. 5-module overview page renders exactly 5 modules with the exact required titles + the non-link `activation-my-fundraising-board-preview` card AFTER Module 5 (not a Module 6). Module 1 shows training-only card, exact video placeholder 'Board Fundraising Activation Training Video Coming Soon', Mark Complete works and PERSISTS after reload (button text -> 'Module Completed', progress API returns modules[0].completed=true, percent_complete=20). Modules 2-5 shells render with correct titles. /app/activation/self-guided/module/6 shows 'Module Not Found'. Data separation confirmed: course_progress rows for the new user are ALL product=activation_self_guided; module-tester@example.com progress rows are ALL product=recruitment_self_guided (untouched, still 0% complete); module-tester GET /api/courses/activation/self-guided returns 403. Two NEW frontend defects found (see below): PurchaseSuccessPage does NOT route direct_diy_board_activation buyers to /board-activation-intake?session_id=... — it falls through to /app; and the member dashboard + registration heading show 'Recruitment' labels for an Activation product.",
+  "e2e_diy_activation_claim_journey": {
+    "status": "PASS (with 2 frontend UX defects — see frontend_issues)",
+    "test_member": {
+      "email": "activation-tester-1786708997@example.com",
+      "password": "ActTest123!",
+      "user_id": "38db1821-8dc6-4ce5-ae78-5b362b3fce9d",
+      "entitlements": ["activation_self_guided"],
+      "keep_for_future_batches": true
+    },
+    "stripe_session_id": "cs_test_a1Lm0ytvaWsInu3u5rnTJGYKrvau7evZiUU8Tj3cyiNMzOBPdGiBRERqmy",
+    "payment_intent_id": "pi_3U4JvvDyMuVBxFnG0oh0JXft",
+    "checkout_amount": 49700,
+    "payment_status": "paid",
+    "checkout_method": "Real Stripe TEST-mode hosted checkout, 4242 4242 4242 4242 (any future expiry/CVC/ZIP, manual address), completed headlessly in browser — NOT a synthesized/API-marked session.",
+    "purchase_record": {
+      "purchase_source": "direct_diy_board_activation_497",
+      "entitlement": "activation_self_guided",
+      "product": "Do It Yourself Board Fundraising Activation",
+      "price_paid": 497,
+      "amount": 49700,
+      "tier": "497"
+    },
+    "duplicate_claim_idempotent": true,
+    "intake_context": {"eligible": true, "purchase_source": "direct_diy_board_activation_497", "prefill_name": "Activation Tester", "prefill_email": "activation-tester-1786708997@example.com"},
+    "intake_submit_redirect_url": "/activation-start-here",
+    "intake_resubmit_idempotent_count": 1,
+    "start_here_cta_href": "/app/activation/self-guided/module/1",
+    "module1_mark_complete_persists": true,
+    "progress_after_module1_complete": {"percent_complete": 20, "modules_completed": 1, "product": "activation_self_guided"}
+  },
+  "data_separation_verified": {
+    "activation_user_progress_products": ["activation_self_guided"],
+    "module_tester_progress_products": ["recruitment_self_guided"],
+    "module_tester_activation_api_status": 403,
+    "module_tester_recruitment_percent_complete": 0
+  },
+  "backend_regression": {
+    "test_batch1_activation.py": "29/29 PASS",
+    "test_batch_intake_e2e.py + test_batch1_reactivation.py": "31/31 PASS",
+    "combined": "60/60 PASS",
+    "junit_xml": "/app/test_reports/pytest/iter41_all.xml"
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PurchaseSuccessPage.jsx (submit handler + useEffect claim)", "issue": "After a successful DIY $497 activation claim, buyer is navigated to `/app` instead of `/board-activation-intake?session_id=...`. Both the claim useEffect (lines 41-58) and the register/login submit block (lines 79-85) have branches for direct_diy_board_recruitment_497 and direct_diy_board_reactivation_497 but NO branch for `direct_diy_board_activation_497`. Result: activation buyers must manually navigate to intake and are dropped into the member dashboard with no intake step, breaking the intended activation onboarding flow described in the task spec.", "selector": "PurchaseSuccessPage.jsx lines 41-58 and 79-85", "priority": "HIGH"},
+      {"component": "PurchaseSuccessPage.jsx registration heading", "issue": "The subheading reads 'Create your account to access your Recruitment program.' even after paying for the Do It Yourself Board Fundraising Activation product. Text is hardcoded / not driven by purchase_source. Should read something like 'Create your account to access your Board Fundraising Activation program.' for activation buyers.", "selector": "purchase-success-page > text 'Recruitment program.'", "priority": "MEDIUM"},
+      {"component": "Member dashboard /app product card (member/HomePage or Dashboard)", "issue": "For the newly-created activation-entitled user, the dashboard card shows eyebrow 'BOARD RECRUITMENT' and CTA 'Continue Board Recruitment' even though the product title is correctly 'Board Fundraising Activation — Self-Guided System'. The eyebrow and CTA text appear to be hardcoded for the recruitment product and are not switched based on entitlement/product. Confusing UX (see /tmp screenshots).", "selector": "member dashboard product card eyebrow + Continue button", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_batch1_activation.py",
+    "/app/backend/tests/test_batch_intake_e2e.py",
+    "/app/backend/tests/test_batch1_reactivation.py",
+    "/app/test_reports/pytest/iter41_all.xml"
+  ],
+  "action_items": [
+    "MEDIUM/HIGH — In /app/frontend/src/member/PurchaseSuccessPage.jsx add branches for `direct_diy_board_activation_497` in BOTH the useEffect claim block (~line 53) and the submit block (~line 82). Both should `navigate(`/board-activation-intake?session_id=${sessionId}`)`. Without this the paid buyer skips the intake step entirely.",
+    "MEDIUM — Make the PurchaseSuccessPage register-heading subheading dynamic per purchase_source instead of hardcoding 'Recruitment program.' — for activation buyers it should read 'Board Fundraising Activation program.' (or similar).",
+    "MEDIUM — On the member dashboard `/app`, the product card eyebrow ('BOARD RECRUITMENT') and CTA text ('Continue Board Recruitment') are hardcoded/derived from the recruitment product. Derive from entitlement/product so activation-entitled members see 'BOARD FUNDRAISING ACTIVATION' + 'Continue Board Fundraising Activation' (or similar). Also verify the same for reactivation-entitled members."
+  ],
+  "critical_code_review_comments": [
+    "The one-line fix in member_routes.py claim_recruitment_purchase (elif direct_diy_board_activation + tier=497 -> activation_self_guided) is correctly placed BEFORE the recruitment tier fallthrough and unblocks the previously-dead purchase.update block. Verified by both static inspection and live end-to-end paid claim.",
+    "PurchaseSuccessPage.jsx has a symmetric gap: both the useEffect auto-claim (when member already logged in and session is paid) and the submit register/login handler contain identical if/elif ladders for source-based next-step routing — both were extended for recruitment and reactivation but neither includes activation. Fix must be applied to BOTH ladders.",
+    "activation_intake_routes.QUALIFYING_SOURCES already contains both `direct_diy_board_activation_497` and `direct_board_activation_project_2497` and the DIY DIY_START_ROUTE constant correctly returns `/activation-start-here` — no backend change needed for the intake redirect, only the frontend routing to the intake page.",
+    "Course progress endpoint correctly separates by product (ACT user progress rows all product=activation_self_guided, MT user all product=recruitment_self_guided, no cross-pollination). Entitlement gating via require_entitlement returns 403 for the wrong-product user with a clear message."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "60/60 pytest = 100% (29 activation + 31 regression)", "frontend": "10/12 e2e checkpoints PASS (2 UX defects: PurchaseSuccessPage next-step routing + dashboard/heading labeling)"},
+  "test_credentials": {
+    "new_activation_tester": {"email": "activation-tester-1786708997@example.com", "password": "ActTest123!", "entitlements": ["activation_self_guided"], "user_id": "38db1821-8dc6-4ce5-ae78-5b362b3fce9d", "note": "Retained for future batches per rerun instructions. Has 1 activation intake submitted and Module 1 completed."},
+    "module_tester_untouched": "module-tester@example.com / ModuleTest123! — verified 403 on activation, recruitment progress still 0%"
+  },
+  "seed_data_creation": "Retained: 1 member (activation-tester-1786708997@example.com), 1 purchase, 1 payment_transaction, 1 board_activation_intake, 5 course_progress rows (1 completed + 4 viewed) — all for activation_self_guided product only. No other test data left behind. Owner notification email fires once on intake submit as expected.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Primary DIY $497 activation claim + entitlement + intake + start-here + 5-module UI now works end-to-end at the backend/API layer. The two remaining gaps are FRONTEND ONLY: (1) PurchaseSuccessPage.jsx does not send activation buyers to /board-activation-intake after registration — they land on /app; add branch for direct_diy_board_activation_497. (2) The register subheading and the member dashboard product card (eyebrow + CTA) still say 'Recruitment' for an activation-entitled user. After main agent fixes these two, retest by reusing activation-tester-1786708997@example.com — the paid session cs_test_a1Lm0ytvaWsInu3u5rnTJGYKrvau7evZiUU8Tj3cyiNMzOBPdGiBRERqmy is already claimed, so simulate the register flow with a new fresh Stripe session (create + complete + register a fresh email like activation-tester-<ts+1>@example.com) to observe the post-fix routing.",
+  "rca of the issue": "The originally-blocking backend defect (missing elif branch in member_routes.claim_recruitment_purchase for direct_diy_board_activation+tier=497) is FIXED and verified via 29/29 pytest + live 4242 paid claim. Two follow-on frontend defects were exposed only after the paid buyer could finally reach /purchase/success: PurchaseSuccessPage.jsx contains a symmetric per-source navigate ladder that was extended for recruitment (line ~50) and reactivation (line ~52 and ~82) but NOT for direct_diy_board_activation_497 — so the activation buyer's post-registration navigate falls through to line 84 which sends them to /app instead of /board-activation-intake. Additionally the member dashboard product card and the register-page subheading contain hardcoded 'Recruitment' copy rather than being derived from the resolved product/entitlement. Neither is a blocker for entitlement or data separation (both work correctly), but both break the polished activation buyer UX described in the task spec."
+}

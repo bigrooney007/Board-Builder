@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from auth_service import authenticate_admin
-from course_content import ALL_PRODUCT_KEYS, BASIC_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES, SUPPORT_TYPES
+from course_content import ACTIVATION_MODULES, ALL_PRODUCT_KEYS, BASIC_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES, SUPPORT_TYPES
 from member_auth import authenticate_member, new_uuid, require_entitlement
 
 
@@ -110,13 +110,23 @@ def create_course_router(db) -> APIRouter:
         require_entitlement(member, {"reactivation_self_guided"})
         return await merged_course(db, member, "reactivation_self_guided", REACTIVATION_MODULES)
 
+    @router.get("/courses/activation/self-guided")
+    async def activation_course(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"activation_self_guided"})
+        return await merged_course(db, member, "activation_self_guided", ACTIVATION_MODULES)
+
     @router.post("/courses/progress")
     async def track_progress(payload: ProgressRequest, request: Request):
         member = await authenticate_member(request, db)
+        if payload.product in {"reactivation_self_guided", "activation_self_guided"} and payload.module_number > 5:
+            raise HTTPException(status_code=422, detail="This program has modules 1 through 5 only")
         if payload.product == "recruitment_basic":
             allowed = {"recruitment_basic", "recruitment_self_guided"}
         elif payload.product == "reactivation_self_guided":
             allowed = {"reactivation_self_guided"}
+        elif payload.product == "activation_self_guided":
+            allowed = {"activation_self_guided"}
         else:
             allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
@@ -135,7 +145,7 @@ def create_course_router(db) -> APIRouter:
             {"user_id": member["user_id"], "product": payload.product, "module_number": payload.module_number},
             update, upsert=True,
         )
-        total = 5 if payload.product == "reactivation_self_guided" else 6
+        total = 5 if payload.product in {"reactivation_self_guided", "activation_self_guided"} else 6
         records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": {"$lte": total}}, {"_id": 0}).to_list(20)
         completed = sum(1 for record in records if record.get("completed"))
         return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / total * 100)}
@@ -147,6 +157,8 @@ def create_course_router(db) -> APIRouter:
             allowed = {"recruitment_basic", "recruitment_self_guided"}
         elif payload.product == "reactivation_self_guided":
             allowed = {"reactivation_self_guided"}
+        elif payload.product == "activation_self_guided":
+            allowed = {"activation_self_guided"}
         else:
             allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
@@ -160,6 +172,7 @@ def create_course_router(db) -> APIRouter:
             "recruitment_self_guided": "Recruitment Self-Guided",
             "recruitment_basic": "Recruitment Basic",
             "reactivation_self_guided": "Reactivation Self-Guided",
+            "activation_self_guided": "Fundraising Activation Self-Guided",
         }[payload.product]
         now = datetime.now(timezone.utc).isoformat()
         record = {

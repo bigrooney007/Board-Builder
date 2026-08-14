@@ -146,7 +146,15 @@ REACTIVATION_MODULES = [
     {"number": 5, "title": "My Board", "kind": "dashboard"},
 ]
 
-ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided"}
+ACTIVATION_MODULES = [
+    {"number": 1, "title": "Building a Fundraising Board", "kind": "training"},
+    {"number": 2, "title": "Initiating the Fundraising Planning Process", "kind": "shell"},
+    {"number": 3, "title": "Building the Fundraising Strategy Plan and Initiating Plan Review", "kind": "shell"},
+    {"number": 4, "title": "Facilitating Plan Adoption", "kind": "shell"},
+    {"number": 5, "title": "Equipping Board Members to Execute", "kind": "shell"},
+]
+
+ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided", "activation_self_guided"}
 
 SUPPORT_TYPES = [
     "I have a question about this module",

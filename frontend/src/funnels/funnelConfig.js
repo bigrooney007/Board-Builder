@@ -1,6 +1,6 @@
 export const CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard";
 
-const contactFields = [
+const contactFields = [ // eslint-disable-line no-unused-vars
   { type: "text", name: "name", label: "Your name", scope: "contact" },
   { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
   { type: "text", name: "phone", label: "Phone number", inputType: "tel", scope: "contact" },
@@ -12,7 +12,7 @@ const contactFields = [
 ];
 
 const accomplishAreas = ["Raise money", "Build corporate partnerships", "Connect with major donors", "Strengthen grant development", "Strengthen finance and financial oversight", "Strengthen governance", "Improve strategic planning", "Strengthen marketing and communications", "Build community relationships", "Provide legal expertise", "Strengthen technology", "Strengthen programs", "Strengthen operations", "Make professional introductions and connections", "Bring important lived experience or community perspective", "Help the organization grow", "Expand programs or services", "Increase visibility", "Other"]; // eslint-disable-line no-unused-vars
-const strategicOptions = ["Yes", "We have a strategic plan, but the board was not meaningfully involved", "We started but did not complete it", "No", "We do not currently have a strategic plan", "I am not sure"];
+const strategicOptions = ["Yes", "We have a strategic plan, but the board was not meaningfully involved", "We started but did not complete it", "No", "We do not currently have a strategic plan", "I am not sure"]; // eslint-disable-line no-unused-vars
 
 export const funnelConfigs = {
   recruitment: {
@@ -69,32 +69,22 @@ export const funnelConfigs = {
   },
   fundraising_activation: {
     slug: "activate", eyebrow: "Board Fundraising Activation",
-    heading: "Activate Your Board to Start Raising Money",
-    supporting: "Your board members do not all need to become professional fundraisers. They need a clear way to contribute based on their strengths, experience, relationships and willingness to execute.",
-    formHeading: "Build Your Board Fundraising Starting Point",
-    heroCta: "Build My Board Fundraising Starting Point",
-    submit: "Show Me My Fundraising Starting Point",
-    redirectAfterSubmit: "result",
+    heading: "Turn Your Board Into Fundraising Champions for Your Mission",
+    supporting: "Your Board should not sit on the sidelines while you carry fundraising alone. Get your Board involved in building the fundraising plan, taking ownership of the strategy, accepting clear responsibility and helping your organization raise the money it needs to move the mission forward.",
+    formHeading: "Tell Us About You and Your Organization",
+    submit: "SHOW ME HOW TO ACTIVATE MY BOARD",
+    redirectAfterSubmit: "activate-rooney",
     resultHeading: "Your Board Fundraising Activation Starting Point",
     resultCta: "I’m Ready to Activate My Board",
     steps: [
-      { heading: "Tell Us About You and Your Organization", fields: contactFields },
       {
-        heading: "Tell Us About Your Board Today",
+        heading: "Tell Us About You and Your Organization",
         fields: [
-          { type: "text", name: "present_board", label: "How many people are presently on your board?", inputType: "number", scope: "answers" },
-          { type: "text", name: "active_board", label: "How many are consistently active?", inputType: "number", scope: "answers" },
-          { type: "select", name: "fundraising_involvement", label: "How involved is your board in fundraising today?", options: ["Most board members are involved", "Some board members are involved", "One person does most of it", "No board members are actively involved"], scope: "answers" },
-          { type: "select", name: "strategic_planning", label: "Has your board participated in strategic planning together?", options: strategicOptions, scope: "answers" },
-        ],
-      },
-      {
-        heading: "Tell Us About Your Fundraising",
-        fields: [
-          { type: "select", name: "fundraising_strategy", label: "Does your organization have a written fundraising strategy?", options: ["Yes", "Yes, but the board is not meaningfully involved", "Yes, but it needs updating", "No", "I am not sure"], scope: "answers" },
-          { type: "select", name: "individual_responsibilities", label: "Does each board member have a defined fundraising responsibility?", options: ["Yes", "Some do", "No", "I am not sure"], scope: "answers" },
-          { type: "textarea", name: "fundraising_need", label: "What does your organization most need to raise money for during the next 12 months?", scope: "answers" },
-          { type: "choices", name: "fundraising_areas", label: "Which fundraising areas would you most like your board to help with?", options: ["Corporate partnerships", "Major donors", "Donor introductions", "Grants", "Events", "Sponsorship", "Community relationships", "Fundraising committee", "Volunteer fundraising team", "Donor stewardship", "Other"], scope: "answers" },
+          { type: "text", name: "name", label: "Your name", scope: "contact" },
+          { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
+          { type: "text", name: "organization", label: "Organization name", scope: "contact" },
+          { type: "text", name: "phone", label: "Phone number", inputType: "tel", scope: "contact" },
+          { type: "select", name: "board_member_count", label: "How Many Board Members Do You Currently Have?", options: ["0", "1", "2", "3", "4", "5", "6", "7+", "Not Sure"], scope: "answers" },
         ],
       },
     ],

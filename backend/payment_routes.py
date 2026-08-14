@@ -80,6 +80,14 @@ def resolve_reactivation_project_price_id() -> str:
     return resolve_offer_price_id("STRIPE_DIRECT_BOARD_REACTIVATION_PRICE_ID", "direct_board_reactivation_project_1997", "Board Reactivation Project", 199700)
 
 
+def resolve_activation_diy_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_DIY_BOARD_ACTIVATION_497_PRICE_ID", "diy_board_activation_497", "Activate Your Board Yourself", 49700)
+
+
+def resolve_activation_project_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_ACTIVATION_PRICE_ID", "direct_board_activation_project_2497", "Board Fundraising Activation Project", 249700)
+
+
 def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -334,6 +342,78 @@ def create_payment_router(db) -> APIRouter:
             "selected_tier": "direct_project", "purchase_source": "direct_board_reactivation_project",
             "offer": "Board Reactivation Project",
             "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/activation-diy-checkout")
+    async def create_activation_diy_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_activation_diy_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{payload.origin_url}/activate-your-board-yourself?checkout=cancelled",
+            "metadata": {
+                "offer_source": "direct_diy_board_activation", "selected_tier": "497",
+                "purchase_source": "direct_diy_board_activation_497",
+                "offer": "Do It Yourself Board Fundraising Activation",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "lead_id": "", "offer_source": "direct_diy_board_activation",
+            "selected_tier": "497", "purchase_source": "direct_diy_board_activation_497",
+            "offer": "Do It Yourself Board Fundraising Activation",
+            "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/activation-project-checkout")
+    async def create_activation_project_checkout(payload: DirectProjectCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_activation_project_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/board-activation-intake?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{payload.origin_url}/board-activation-proposal?checkout=cancelled",
+            "metadata": {
+                "offer_source": "direct_board_activation_project",
+                "purchase_source": "direct_board_activation_project_2497",
+                "offer": "Board Fundraising Activation Project",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "lead_id": "", "offer_source": "direct_board_activation_project",
+            "selected_tier": "direct_project", "purchase_source": "direct_board_activation_project_2497",
+            "offer": "Board Fundraising Activation Project",
+            "amount": 249700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

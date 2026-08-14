@@ -212,6 +212,8 @@ from board_intake_routes import create_board_intake_router
 app.include_router(create_board_intake_router(db))
 from reactivation_intake_routes import create_reactivation_intake_router
 app.include_router(create_reactivation_intake_router(db))
+from activation_intake_routes import create_activation_intake_router
+app.include_router(create_activation_intake_router(db))
 from reactivation_routes import create_reactivation_router
 app.include_router(create_reactivation_router(db))
 app.include_router(create_public_opportunity_router(db))
@@ -281,6 +283,7 @@ async def startup_tasks():
     await db.rooney_engagements.create_index("engagement_id", unique=True)
     await db.rooney_engagements.create_index("user_id")
     await db.board_reactivation_intakes.create_index("session_id", unique=True)
+    await db.board_activation_intakes.create_index("session_id", unique=True)
     await db.reactivation_board_members.create_index("form_token", unique=True)
     await db.reactivation_board_members.create_index([("user_id", 1), ("email", 1)])
     await db.reactivation_engagements.create_index("purchase_id", unique=True)

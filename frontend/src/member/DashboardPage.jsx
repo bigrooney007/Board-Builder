@@ -33,10 +33,10 @@ export const DashboardPage = () => {
           </div>
         )}
         {data && data.products.map((product) => {
-          const isReactivation = product.entitlement === "reactivation_self_guided";
+          const productLabel = product.entitlement === "reactivation_self_guided" ? "Board Reactivation" : product.entitlement === "activation_self_guided" ? "Board Fundraising Activation" : "Board Recruitment";
           return (
           <section className="member-card dashboard-product" key={product.entitlement} data-testid={`dashboard-product-${product.entitlement}`}>
-            <p className="eyebrow">{isReactivation ? "Board Reactivation" : "Board Recruitment"}</p>
+            <p className="eyebrow">{productLabel}</p>
             <h2>{product.name}</h2>
             <div className="dashboard-product-stats">
               <div><span>Purchased tier</span><strong data-testid={`dashboard-tier-${product.entitlement}`}>{product.entitlement === "recruitment_basic" ? "$97 Basic" : "Self-Guided System"}</strong></div>
@@ -44,7 +44,7 @@ export const DashboardPage = () => {
               <div><span>Last module visited</span><strong data-testid={`dashboard-last-module-${product.entitlement}`}>{product.last_module ? `Module ${product.last_module.number}: ${product.last_module.title}` : "Not started yet"}</strong></div>
             </div>
             <div className="dashboard-progress-bar"><i style={{ width: `${product.percent_complete}%` }} /></div>
-            <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-continue-${product.entitlement}`}>{isReactivation ? "Continue Board Reactivation" : "Continue Board Recruitment"} <ArrowRight size={16} /></button>
+            <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-continue-${product.entitlement}`}>Continue {productLabel} <ArrowRight size={16} /></button>
           </section>
           );
         })}

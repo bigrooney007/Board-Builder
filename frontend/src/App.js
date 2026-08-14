@@ -28,7 +28,12 @@ import PortfolioPage from "@/pages/PortfolioPage";
 import BoardTransformationPage from "@/funnels/BoardTransformationPage";
 import BoardTransformationResultPage from "@/funnels/BoardTransformationResultPage";
 import ActivateWithRooneyPage from "@/funnels/ActivateWithRooneyPage";
+import ActivateYourBoardYourselfPage from "@/funnels/ActivateYourBoardYourselfPage";
+import BoardActivationProposalPage from "@/funnels/BoardActivationProposalPage";
+import BoardActivationIntakePage from "@/funnels/BoardActivationIntakePage";
+import ActivationStartHerePage from "@/funnels/ActivationStartHerePage";
 import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
+import { ActivationOverviewPage, ActivationModulePage } from "@/member/ActivationCoursePages";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
@@ -88,6 +93,12 @@ export default function App() {
           <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
           <Route path="/app/reactivation/self-guided/module/:moduleNumber" element={<ReactivationModulePage />} />
           <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
+          <Route path="/activate-your-board-yourself" element={<ActivateYourBoardYourselfPage />} />
+          <Route path="/board-activation-proposal" element={<BoardActivationProposalPage />} />
+          <Route path="/board-activation-intake" element={<BoardActivationIntakePage />} />
+          <Route path="/activation-start-here" element={<ActivationStartHerePage />} />
+          <Route path="/app/activation/self-guided" element={<ActivationOverviewPage />} />
+          <Route path="/app/activation/self-guided/module/:moduleNumber" element={<ActivationModulePage />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />
           <Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} />
           <Route path="/recruit/options" element={<FunnelOptionsPage offerSource="recruitment" />} />
