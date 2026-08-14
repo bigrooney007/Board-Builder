@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { purchaseSuccessText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -94,15 +95,15 @@ export const PurchaseSuccessPage = () => {
   return (
     <MemberShell>
       <main className="member-auth-page purchase-success-page" data-testid="purchase-success-page">
-        {paymentState === "checking" && <div className="member-auth-card" data-testid="purchase-checking"><h1>Confirming Your Payment…</h1><p>Please wait while we verify your payment with Stripe.</p></div>}
-        {paymentState === "missing" && <div className="member-auth-card"><h1>Missing Purchase Details</h1><p>We could not find a checkout session. If you completed a purchase, please contact us.</p><Link className="button" to="/">Return Home</Link></div>}
-        {(paymentState === "failed" || paymentState === "timeout") && <div className="member-auth-card" data-testid="purchase-failed"><h1>We Could Not Confirm Your Payment Yet</h1><p>If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.</p></div>}
+        {paymentState === "checking" && <div className="member-auth-card" data-testid="purchase-checking"><h1>{purchaseSuccessText.h_confirmingYourPayment}</h1><p>Please wait while we verify your payment with Stripe.</p></div>}
+        {paymentState === "missing" && <div className="member-auth-card"><h1>{purchaseSuccessText.h_missingPurchaseDetails}</h1><p>We could not find a checkout session. If you completed a purchase, please contact us.</p><Link className="button" to="/">Return Home</Link></div>}
+        {(paymentState === "failed" || paymentState === "timeout") && <div className="member-auth-card" data-testid="purchase-failed"><h1>{purchaseSuccessText.h_weCouldNotConfirmYour}</h1><p>If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.</p></div>}
         {paymentState === "paid" && (
           <div className="member-auth-card wide" data-testid="purchase-paid">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Payment confirmed</p>
             {member ? (
               <>
-                <h1>Your Purchase Is Linked to Your Account</h1>
+                <h1>{purchaseSuccessText.h_yourPurchaseIsLinkedTo}</h1>
                 <p>You are logged in as {member.email}.{claimed ? " Your program access is ready." : ""}</p>
                 {error && <p className="submit-error">{error}</p>}
                 <button className="button" onClick={() => navigate("/app")} data-testid="purchase-go-dashboard">Go to My Board Builder</button>

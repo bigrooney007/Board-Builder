@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { MemberShell } from "./MemberShell";
+import { myFundraisingBoardText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -81,7 +82,7 @@ export default function MyFundraisingBoardPage() {
         </section>
 
         <section className="member-card" data-testid="mfb-resources">
-          <h2>Your Fundraising Direction</h2>
+          <h2>{myFundraisingBoardText.h_yourFundraisingDirection}</h2>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="button" onClick={() => setViewDoc({ title: "Final Adopted Fundraising Strategy Plan", text: data.adopted_strategy })} disabled={!data.adopted_strategy} data-testid="mfb-view-strategy">FINAL ADOPTED FUNDRAISING STRATEGY PLAN</button>
             <button type="button" className="button button-outline" onClick={() => setViewDoc({ title: "Approved Board Fundraising Execution Toolkit", text: data.toolkit_text })} disabled={!data.toolkit_text} data-testid="mfb-view-toolkit">APPROVED BOARD FUNDRAISING EXECUTION TOOLKIT</button>
@@ -136,14 +137,14 @@ export default function MyFundraisingBoardPage() {
 
         {data.ready && (
           <section className="member-card" style={{ textAlign: "center" }} data-testid="mfb-completion">
-            <h2>Your Fundraising Board Is Ready to Execute</h2>
+            <h2>{myFundraisingBoardText.h_yourFundraisingBoardIsReady}</h2>
             <p>Your Board has helped build the fundraising plan, reviewed and adopted the strategy, agreed how members will help carry the work, and now has the tools and individual direction needed to begin taking action.</p>
             <p>Your job now is to keep the plan moving, support Board Members in carrying their responsibilities and keep fundraising connected to the mission.</p>
           </section>
         )}
 
         <section className="member-card" data-testid="mfb-cross-sells">
-          <h2>Still Missing the Right People Around the Table?</h2>
+          <h2>{myFundraisingBoardText.h_stillMissingTheRightPeople}</h2>
           <p>If the Board still has skill, experience, capacity or relationship gaps, recruit the right people to complete the Board.</p>
           <Link className="button" to="/recruit" data-testid="mfb-cross-recruit">RECRUIT NEW BOARD MEMBERS</Link>
           <h2 style={{ marginTop: 22 }}>Have Board Members Who Still Are Not Carrying Their Responsibility?</h2>
@@ -159,14 +160,14 @@ export default function MyFundraisingBoardPage() {
         )}
         {editFp && (
           <Modal onClose={() => setEditFp(null)} testId="mfb-edit-modal">
-            <h2>Edit Fundraising Portfolio</h2>
+            <h2>{myFundraisingBoardText.h_editFundraisingPortfolio}</h2>
             <textarea rows={20} style={{ width: "100%" }} value={editFp.text} onChange={(e) => setEditFp({ ...editFp, text: e.target.value })} data-testid="mfb-edit-text" />
             <button type="button" className="button" onClick={saveFp} data-testid="mfb-save-fp">SAVE</button>
           </Modal>
         )}
         {emailPrev && (
           <Modal onClose={() => setEmailPrev(null)} testId="mfb-email-modal">
-            <h2>Portfolio Email</h2>
+            <h2>{myFundraisingBoardText.h_portfolioEmail}</h2>
             <p><strong>To:</strong> {emailPrev.to_name} &lt;{emailPrev.to_email}&gt;</p>
             <p><strong>Subject:</strong> <span data-testid="mfb-email-subject">{emailPrev.subject}</span></p>
             <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 300, overflowY: "auto" }} data-testid="mfb-email-body">{emailPrev.body}</div>

@@ -288,3 +288,11 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - Frontend: api.js X-Operate-As interceptor (admin cookie flows via withCredentials); operatorMode.jsx (enter/exit + WorkspaceModeBanner: operator banner + TEST MODE banner via member.review_mode, mounted App.js); admin/ClientDeliverySection.jsx (Test Product Journey 3 links + DWM directory + Open Client Workspace); admin/StrategicPlanningSection.jsx (complete SP workflow UI w/ polling, editors, email-preview modal w/ explicit Send, reviews, areas, adoption, final plan + PDF); AdminPage tabs "Client Delivery" + "Strategic Planning"; public pages StrategicPlanningFormPage/StrategicPlanReviewPage/AreaPackPage + App.js routes.
 - Content centralization: frontend/src/content/siteContent.js — verbatim-extracted headlines/CTAs/guarantees for 16 pages (3× with-rooney, 3× DIY, 3× proposal, 3× start-here, about-rooney, homepage CTA, board-transformation + result); pages import SITE_CONTENT. Funnel landing copy already centralized in funnelConfig.js; module titles in backend course_content.py; email templates in marketing_service/accountability/route builders (noted in file banner).
 - NOT TESTED (user forbade all testing); frontend compiles clean, backend boots clean. Awaiting user's testing authorization.
+
+## 2026-06 — Platform-wide content centralization COMPLETE (this session)
+- appContent.js: 42 namespaces / 320+ entries; siteContent.js: 16 public pages (verbatim)
+- 61 of 63 string-bearing frontend files consume canonical content (exclusions: BlogPages.jsx = blog data, LegalPage.jsx = legal docs)
+- backend/content_templates.py now holds Reactivation + Strategic Planning static emails; course_content.py canonical for modules
+- CONTENT_ARCHITECTURE.md documents the whole layer; no duplicate exports; all refs resolve; build + backend verified
+- Also this session: Reactivation workflow correction (Steps 1-5 incl. Understand Their Response, direction scripts, bylaws intake, outcome emails, dashboard pipeline), Recruitment + SP corrections, prod build fix (AdminPage imports)
+- NOT run per user instruction: functional/regression tests, emails, payments, deployment

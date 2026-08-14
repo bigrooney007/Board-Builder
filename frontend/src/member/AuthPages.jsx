@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { authText } from "../content/appContent";
 
 const Field = ({ label, type = "text", value, onChange, testId, autoComplete }) => (
   <label className="field"><span>{label} <b>*</b></span><input type={type} value={value} autoComplete={autoComplete} onChange={(event) => onChange(event.target.value)} data-testid={testId} required /></label>
@@ -28,7 +29,7 @@ export const LoginPage = () => {
       <main className="member-auth-page" data-testid="member-login-page">
         <form className="member-auth-card" onSubmit={submit}>
           <p className="eyebrow">Member access</p>
-          <h1>Log In to Board Builder</h1>
+          <h1>{authText.h_logInToBoardBuilder}</h1>
           <Field label="Email" type="email" value={email} onChange={setEmail} testId="member-login-email" autoComplete="email" />
           <Field label="Password" type="password" value={password} onChange={setPassword} testId="member-login-password" autoComplete="current-password" />
           {error && <p className="submit-error" data-testid="member-login-error">{error}</p>}
@@ -58,7 +59,7 @@ export const ForgotPasswordPage = () => {
       <main className="member-auth-page" data-testid="member-forgot-page">
         <form className="member-auth-card" onSubmit={submit}>
           <p className="eyebrow">Password help</p>
-          <h1>Forgot Your Password?</h1>
+          <h1>{authText.h_forgotYourPassword}</h1>
           <p>Enter your account email and we will send you a reset link.</p>
           <Field label="Email" type="email" value={email} onChange={setEmail} testId="member-forgot-email" autoComplete="email" />
           {message && <p className="member-success" data-testid="member-forgot-success">{message}</p>}
@@ -94,7 +95,7 @@ export const ResetPasswordPage = () => {
       <main className="member-auth-page" data-testid="member-reset-page">
         <form className="member-auth-card" onSubmit={submit}>
           <p className="eyebrow">Password reset</p>
-          <h1>Choose a New Password</h1>
+          <h1>{authText.h_chooseANewPassword}</h1>
           <Field label="New password" type="password" value={password} onChange={setPassword} testId="member-reset-password" autoComplete="new-password" />
           <Field label="Confirm new password" type="password" value={confirm} onChange={setConfirm} testId="member-reset-confirm" autoComplete="new-password" />
           {message && <p className="member-success" data-testid="member-reset-success">{message}</p>}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { enterOperatorMode } from "@/operatorMode";
+import { adminClientDeliveryText } from "../content/appContent";
 
 const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
 const err = (e) => (typeof e.response?.data?.detail === "string" ? e.response.data.detail : "Action failed.");
@@ -32,14 +33,14 @@ export const ClientDeliverySection = () => {
   return (
     <section data-testid="admin-client-delivery">
       <h2 className="reference-heading">Test Product Journey</h2>
-      <p className="admin-message">Walk through each real product as a customer would, inside your isolated TEST MODE workspace. No payment is required, no emails are sent automatically, and nothing touches real client data.</p>
+      <p className="admin-message">{adminClientDeliveryText.m_walkThroughEachRealProduct}</p>
       <div className="admin-filters">
         {TEST_JOURNEYS.map((j) => (
           <a key={j.key} className="button button-small" href={j.route} data-testid={`test-journey-${j.key}`}>Test {j.label} Journey</a>
         ))}
       </div>
       <h2 className="reference-heading" style={{ marginTop: "28px" }}>Do-With-You Clients</h2>
-      <p className="admin-message">Every verified Do-With-You customer across Recruitment, Reactivation and Activation. Open a client workspace to operate their actual product workflow on their behalf — everything you generate belongs to that client's project.</p>
+      <p className="admin-message">{adminClientDeliveryText.m_everyVerifiedDowithyouCustomerAcross}</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}
       <div className="admin-table-wrap">
         <table className="admin-table">

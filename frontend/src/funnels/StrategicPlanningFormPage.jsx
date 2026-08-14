@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { strategicPlanningPublicContent } from "../content/appContent";
+
+const F = strategicPlanningPublicContent.form;
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -20,7 +23,7 @@ export default function StrategicPlanningFormPage() {
       setData(r.data);
       setIdentity(r.data.prefill);
       if (r.data.submitted) setDone(true);
-    }).catch((e) => setError(e.response?.data?.detail || "This link is not valid."));
+    }).catch((e) => setError(e.response?.data?.detail || F.invalidLink));
   }, [token]);
 
   const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
@@ -29,12 +32,12 @@ export default function StrategicPlanningFormPage() {
     return { ...a, [id]: current.includes(option) ? current.filter((o) => o !== option) : [...current, option] };
   });
 
-  if (error && !data) return <main className="legal-page"><h1>Strategic Planning Form</h1><p data-testid="sp-public-error">{error}</p></main>;
-  if (!data) return <main className="legal-page"><p>Loading…</p></main>;
+  if (error && !data) return <main className="legal-page"><h1>{F.title}</h1><p data-testid="sp-public-error">{error}</p></main>;
+  if (!data) return <main className="legal-page"><p>{F.loading}</p></main>;
   if (done) return (
     <main className="legal-page" data-testid="sp-public-thanks">
-      <h1>Thank You</h1>
-      <p>Your response has been recorded and will be combined with the ideas of the other Board Members as {data.organization_name} builds its strategic plan.</p>
+      <h1>{F.thanksHeading}</h1>
+      <p>{F.thanks(data.organization_name)}</p>
     </main>
   );
 
@@ -44,13 +47,13 @@ export default function StrategicPlanningFormPage() {
 
   const validateStep = () => {
     if (step === 0) {
-      if (!identity.full_name.trim()) return "Please enter your name.";
-      if (!identity.email.trim()) return "Please enter your email.";
+      if (!identity.full_name.trim()) return F.nameRequired;
+      if (!identity.email.trim()) return F.emailRequired;
       return "";
     }
     for (const q of section.questions) {
       const value = answers[q.id];
-      if (q.required && (q.type === "multi" ? !(value || []).length : !(value || "").trim())) return `Please answer: ${q.prompt}`;
+      if (q.required && (q.type === "multi" ? !(value || []).length : !(value || "").trim())) return F.answerRequired(q.prompt);
     }
     return "";
   };
@@ -69,16 +72,16 @@ export default function StrategicPlanningFormPage() {
     try {
       await axios.post(`${API}/strategic-planning-form/${token}`, { ...identity, answers });
       setDone(true);
-    } catch (ex) { setStepError(ex.response?.data?.detail || "Submission failed. Please try again."); }
+    } catch (ex) { setStepError(ex.response?.data?.detail || F.submitFailed); }
     setBusy(false);
   };
 
   return (
     <main className="legal-page" data-testid="sp-public-form" style={{ maxWidth: "760px", margin: "0 auto", padding: "32px 16px" }}>
       <p className="eyebrow">{data.organization_name}</p>
-      <h1>Strategic Planning Form</h1>
+      <h1>{F.title}</h1>
       <div className="progress-copy" style={{ marginTop: "10px" }}>
-        <span data-testid="sp-public-progress">Step {step + 1} of {totalSteps}{section ? ` — ${section.title}` : ""}</span>
+        <span data-testid="sp-public-progress">{F.stepLabel(step + 1, totalSteps)}{section ? ` — ${section.title}` : ""}</span>
         <span>{Math.round(((step + 1) / totalSteps) * 100)}%</span>
       </div>
       <div className="progress-track"><div style={{ width: `${((step + 1) / totalSteps) * 100}%` }} /></div>
@@ -86,8 +89,8 @@ export default function StrategicPlanningFormPage() {
       {step === 0 && (
         <section style={{ marginTop: "18px" }} data-testid="sp-public-step-identity">
           <p style={{ whiteSpace: "pre-wrap" }}>{data.form.introduction}</p>
-          <label>Your Name *<input required value={identity.full_name} onChange={(e) => setIdentity({ ...identity, full_name: e.target.value })} data-testid="sp-public-name" style={{ display: "block", width: "100%" }} /></label>
-          <label>Your Email *<input type="email" required value={identity.email} onChange={(e) => setIdentity({ ...identity, email: e.target.value })} data-testid="sp-public-email" style={{ display: "block", width: "100%" }} /></label>
+          <label>{F.nameLabel} *<input required value={identity.full_name} onChange={(e) => setIdentity({ ...identity, full_name: e.target.value })} data-testid="sp-public-name" style={{ display: "block", width: "100%" }} /></label>
+          <label>{F.emailLabel} *<input type="email" required value={identity.email} onChange={(e) => setIdentity({ ...identity, email: e.target.value })} data-testid="sp-public-email" style={{ display: "block", width: "100%" }} /></label>
         </section>
       )}
 
@@ -115,9 +118,9 @@ export default function StrategicPlanningFormPage() {
 
       {stepError && <p className="submit-error" data-testid="sp-public-submit-error">{stepError}</p>}
       <div className="material-actions" style={{ marginTop: "20px" }}>
-        {step > 0 && <button className="button button-back" onClick={() => { setStep(step - 1); setStepError(""); window.scrollTo(0, 0); }} data-testid="sp-public-back">Back</button>}
-        {step < totalSteps - 1 && <button className="button" onClick={next} data-testid="sp-public-next">Next</button>}
-        {step === totalSteps - 1 && <button className="button" disabled={busy} onClick={submit} data-testid="sp-public-submit">{busy ? "Submitting…" : "SUBMIT MY STRATEGIC PLANNING RESPONSES"}</button>}
+        {step > 0 && <button className="button button-back" onClick={() => { setStep(step - 1); setStepError(""); window.scrollTo(0, 0); }} data-testid="sp-public-back">{F.back}</button>}
+        {step < totalSteps - 1 && <button className="button" onClick={next} data-testid="sp-public-next">{F.next}</button>}
+        {step === totalSteps - 1 && <button className="button" disabled={busy} onClick={submit} data-testid="sp-public-submit">{busy ? F.submitting : F.submit}</button>}
       </div>
     </main>
   );

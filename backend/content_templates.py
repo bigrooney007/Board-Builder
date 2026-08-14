@@ -63,3 +63,50 @@ def recommitment_form_intro(organization: str, mission: str) -> str:
         "Your responses will help us understand how you would like to continue contributing, the expertise and experience you bring, the areas where you would most like to help, the time you can realistically commit, and any support or clarity you need from the organization.\n\n"
         "This is not about pressuring anyone to stay. It is about having an honest understanding of where each Board Member is, so the people serving on the Board are positioned to contribute meaningfully."
     )
+
+# ---------------- Strategic Planning static emails ----------------
+
+def sp_signature(founder_name: str, founder_title: str, organization: str) -> str:
+    return founder_name + (f"\n{founder_title}" if founder_title else "") + f"\n{organization}"
+
+
+def sp_form_invitation_email(first: str, organization: str, signature: str) -> dict:
+    body = (
+        f"Dear {first},\n\n"
+        f"We are beginning the process of building the strategic plan for {organization}, and I want the Board involved in shaping it.\n\n"
+        "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
+        "Your ideas, experience and perspective will help shape our direction, priorities and how each of us can contribute.\n\n"
+        "Please complete the Strategic Planning Form below.\n\n"
+        "[COMPLETE MY STRATEGIC PLANNING FORM]\n\n"
+        "Your responses will be combined with the ideas of the other Board Members as we build the plan.\n\n"
+        f"Thank you for helping us build this together.\n\n{signature}"
+    )
+    return {"subject": f"Help Us Build Our Strategic Plan | {organization}", "body": body,
+            "button_label": "COMPLETE MY STRATEGIC PLANNING FORM"}
+
+
+def sp_generic_form_invitation_email(organization: str, link: str, signature: str) -> dict:
+    body = (
+        "Dear Board Member,\n\n"
+        f"We are beginning the process of building the strategic plan for {organization}, and I want the Board involved in shaping it.\n\n"
+        "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
+        "Your ideas, experience and perspective will help shape our direction, priorities and how each of us can contribute.\n\n"
+        "Please complete the Strategic Planning Form using the link below.\n\n"
+        f"{link}\n\n"
+        "Your responses will be combined with the ideas of the other Board Members as we build the plan.\n\n"
+        f"Thank you for helping us build this together.\n\n{signature}"
+    )
+    return {"subject": f"Help Us Build Our Strategic Plan | {organization}", "body": body, "form_link": link}
+
+
+def sp_review_invitation_email(first: str, organization: str, signature: str) -> dict:
+    body = (
+        f"Dear {first},\n\n"
+        f"The ideas the Board shared have been consolidated into the Foundational Strategic Plan for {organization}.\n\n"
+        "Before area owners develop the detailed plans, I want every Board Member to review the consolidated thinking, challenge it, improve it and add anything that is missing.\n\n"
+        "For each strategic area you can support it as written, suggest a change, add an idea, or flag it for Board discussion.\n\n"
+        "[REVIEW THE FOUNDATIONAL PLAN]\n\n"
+        f"Thank you for helping us refine this together.\n\n{signature}"
+    )
+    return {"subject": f"Review Our Foundational Strategic Plan | {organization}", "body": body,
+            "button_label": "REVIEW THE FOUNDATIONAL PLAN"}

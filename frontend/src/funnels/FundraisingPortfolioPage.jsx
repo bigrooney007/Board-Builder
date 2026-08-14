@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Download } from "lucide-react";
 import { usePageMeta } from "@/seo";
+import { fundraisingPortfolioText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -17,7 +18,7 @@ export default function FundraisingPortfolioPage() {
   }, [token]);
 
   if (invalid) {
-    return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24, fontFamily: "Arial, sans-serif" }} data-testid="fp-invalid"><h1>This Portfolio Link Is Not Valid</h1><p>Please contact the person who sent you this link.</p></main>;
+    return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24, fontFamily: "Arial, sans-serif" }} data-testid="fp-invalid"><h1>{fundraisingPortfolioText.h_thisPortfolioLinkIsNot}</h1><p>Please contact the person who sent you this link.</p></main>;
   }
   if (!data) return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24 }} data-testid="fp-loading"><p>Loading…</p></main>;
 
@@ -25,7 +26,7 @@ export default function FundraisingPortfolioPage() {
     <main style={{ background: "#fff", color: "#000", fontFamily: "Georgia, 'Times New Roman', serif", padding: "34px 16px" }} data-testid="fp-public-page">
       <div style={{ maxWidth: 760, margin: "0 auto", border: "1.5px solid #000", padding: "44px 40px" }}>
         <div style={{ textAlign: "center", padding: "60px 0 40px" }}>
-          <h1 style={{ letterSpacing: 3, fontSize: "1.9rem", margin: 0 }} data-testid="fp-title">FUNDRAISING PORTFOLIO</h1>
+          <h1 style={{ letterSpacing: 3, fontSize: "1.9rem", margin: 0 }} data-testid="fp-title">{fundraisingPortfolioText.h_fundraisingPortfolio}</h1>
           <p style={{ fontSize: "1.2rem", marginTop: 14 }} data-testid="fp-member-name">{data.member_name}</p>
         </div>
         <div style={{ marginBottom: 40 }} data-testid="fp-issuer">

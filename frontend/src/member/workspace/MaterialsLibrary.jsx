@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Printer } from "lucide-react";
 import { memberApi } from "../api";
 import { MemberShell } from "../MemberShell";
 import { printText } from "./MaterialCard";
+import { materialsLibraryText } from "../../content/appContent";
 
 const MODULE_NAMES = { 0: "Recruitment Strategy (Previous Process)", 1: "Step 1 — Recruiting Board Members the Right Way", 2: "Step 2 — Identify the Board Members Your Organization Needs", 3: "Step 3 — Launch Your Recruitment Campaign", 4: "Step 4 — Select and Interview Your Applicants", 5: "Step 5 — Complete References and Background Checks", 6: "Step 6 — Onboard Your New Board Members" };
 
@@ -18,7 +19,7 @@ export const MaterialsLibraryPage = () => {
       <main className="member-page" data-testid="materials-library-page">
         <header className="member-page-heading">
           <Link className="module-breadcrumb" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Self-Guided Recruitment System</Link>
-          <h1>My Recruitment Materials</h1>
+          <h1>{materialsLibraryText.h_myRecruitmentMaterials}</h1>
           <p>Every generated resource stays available here, organized by step, with full version history.</p>
         </header>
         {materials.length === 0 && <div className="member-card"><p>No materials yet. Generate materials inside the course modules.</p></div>}

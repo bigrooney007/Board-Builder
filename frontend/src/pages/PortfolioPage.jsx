@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Download } from "lucide-react";
 import { usePageMeta } from "@/seo";
+import { portfolioPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -20,7 +21,7 @@ export default function PortfolioPage() {
   if (gate === "invalid") {
     return (
       <main style={{ padding: 60, textAlign: "center", fontFamily: "Georgia, serif" }} data-testid="portfolio-invalid">
-        <h1>This Portfolio Is Not Available</h1>
+        <h1>{portfolioPageText.h_thisPortfolioIsNotAvailable}</h1>
         <p>Please contact the organization that sent you this link.</p>
       </main>
     );

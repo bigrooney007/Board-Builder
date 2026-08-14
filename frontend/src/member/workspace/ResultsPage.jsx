@@ -8,6 +8,7 @@ import { MemberShell } from "../MemberShell";
 import { MaterialCard, downloadMaterialPdf } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { useBranding } from "./ApplicantModules";
+import { myBoardText } from "../../content/appContent";
 
 const CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard";
 const PUBLIC_API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -134,19 +135,19 @@ export default function RecruitmentResultsPage() {
         <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Board Recruitment — Self-Guided System</Link>
         <header className="member-page-heading">
           <p className="eyebrow">Your board</p>
-          <h1>My Board</h1>
+          <h1>{myBoardText.h_myBoard}</h1>
         </header>
         {error && (
           <section className="workspace-panel" data-testid="results-error-state">
-            <h2>We Could Not Load Your Results</h2>
+            <h2>{myBoardText.h_weCouldNotLoadYour}</h2>
             <p>{error}</p>
             <button className="button" onClick={() => { setError(""); load(); }} data-testid="results-retry-button">Try Again</button>
           </section>
         )}
-        {!error && applications === null && <p className="workspace-note">Loading your recruitment results…</p>}
+        {!error && applications === null && <p className="workspace-note">{myBoardText.n_loadingYourRecruitmentResults}</p>}
         {!error && applications !== null && list.length === 0 && (
           <section className="workspace-panel" data-testid="results-empty-state">
-            <h2>Your Recruitment Results</h2>
+            <h2>{myBoardText.h_yourRecruitmentResults}</h2>
             <p>Your recruitment results will appear here as applicants move through the recruitment process.</p>
             <Link className="button" to="/app/recruitment/self-guided/module/2">Go to Your Recruitment Campaign</Link>
           </section>
@@ -154,7 +155,7 @@ export default function RecruitmentResultsPage() {
         {!error && applications !== null && list.length > 0 && (
           <>
             <section className="workspace-panel" data-testid="results-summary">
-              <h2>Recruitment Summary</h2>
+              <h2>{myBoardText.h_recruitmentSummary}</h2>
               <div className="results-summary-grid">
                 {[["Applications Received", list.length, "results-count-applications"], ["Interviewed", interviewed, "results-count-interviewed"], ["Joined the Board", joined.length, "results-count-joined"], ["Not Selected", notSelected.length, "results-count-not-selected"], ["Still In Progress", inProgress.length, "results-count-in-progress"]].map(([label, value, testId]) => (
                   <div className="results-stat" key={label} data-testid={testId}><strong>{value}</strong><span>{label}</span></div>
@@ -162,26 +163,26 @@ export default function RecruitmentResultsPage() {
               </div>
             </section>
             <section className="workspace-panel" data-testid="results-joined-section">
-              <h2>My Board</h2>
-              {joined.length === 0 && <p className="workspace-note">Board members appear here as soon as they are formally confirmed in Step 5.</p>}
+              <h2>{myBoardText.h_myBoard}</h2>
+              {joined.length === 0 && <p className="workspace-note">{myBoardText.n_boardMembersAppearHereAs}</p>}
               {joined.map((application) => <BoardMemberResultCard application={application} branding={branding} onChanged={load} key={application.application_id} />)}
             </section>
             {inProgress.length > 0 && (
               <section className="workspace-panel" data-testid="results-in-progress-section">
-                <h2>Still In Progress</h2>
+                <h2>{myBoardText.h_stillInProgress}</h2>
                 <ul className="readiness-list">{inProgress.map((a) => <li key={a.application_id}>{a.profile_snapshot?.full_name || a.applicant_email} — {a.status}</li>)}</ul>
               </section>
             )}
             {notSelected.length > 0 && (
               <section className="workspace-panel" data-testid="results-not-selected-section">
-                <h2>Not Selected</h2>
+                <h2>{myBoardText.h_notSelected}</h2>
                 <ul className="readiness-list">{notSelected.map((a) => <li key={a.application_id}>{a.profile_snapshot?.full_name || a.applicant_email} — {a.status}</li>)}</ul>
               </section>
             )}
           </>
         )}
         <section className="workspace-panel results-support-panel" data-testid="results-support-cta">
-          <h2>Need Help Moving Forward?</h2>
+          <h2>{myBoardText.h_needHelpMovingForward}</h2>
           <p>Get help reviewing your new board, preparing for your first meeting or helping your board start strongly.</p>
           <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="book-call-rooney-button">Book a Call With Rooney <ExternalLink size={15} /></a>
         </section>

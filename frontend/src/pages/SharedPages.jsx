@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
+import { sharedPagesText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -92,7 +93,7 @@ export function BoardProfileFormPage() {
       <main className="board-profile-page" data-testid="board-profile-page">
         {error && !status && <p className="submit-error" data-testid="board-profile-error">{error}</p>}
         {status === "submitted" ? (
-          <section className="shared-resource-card"><h1>Thank you</h1><p>Your board member profile has been submitted to {org}.</p></section>
+          <section className="shared-resource-card"><h1>{sharedPagesText.h_thankYou}</h1><p>Your board member profile has been submitted to {org}.</p></section>
         ) : org && (
           <section className="shared-resource-card">
             <p className="eyebrow">Board Member Profile</p>

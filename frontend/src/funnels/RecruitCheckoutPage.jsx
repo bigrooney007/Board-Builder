@@ -7,6 +7,7 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { useReviewMode } from "@/reviewMode";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { recruitCheckoutText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const TERMS_VERSION = "2026-06-recruitment-v1";
@@ -27,7 +28,7 @@ const GuaranteeModal = ({ close }) => {
     <div className="guarantee-modal-overlay" onClick={close} data-testid="guarantee-modal-overlay">
       <div className="guarantee-modal" onClick={(event) => event.stopPropagation()} data-testid="guarantee-modal">
         <button className="guarantee-close" onClick={close} aria-label="Close" data-testid="guarantee-modal-close"><X size={20} /></button>
-        <h2>Recruitment Guarantee</h2>
+        <h2>{recruitCheckoutText.h_recruitmentGuarantee}</h2>
         <p data-testid="guarantee-terms-text">{terms || "Loading…"}</p>
       </div>
     </div>
@@ -76,7 +77,7 @@ export default function RecruitCheckoutPage() {
         <section className="checkout-hero">
           <div className="checkout-card">
             <p className="eyebrow" data-testid="checkout-label">Guided Board Recruitment</p>
-            <h1 data-testid="checkout-heading">Build the Stronger Board Your Nonprofit Has Been Missing</h1>
+            <h1 data-testid="checkout-heading">{recruitCheckoutText.h_buildTheStrongerBoardYour}</h1>
             <p className="checkout-thirty" data-testid="checkout-thirty-minute">Start Recruiting Skilled Professionals in Less Than 30 Minutes</p>
             <p className="checkout-price" data-testid="checkout-price">$497 <span>One Time</span></p>
             <p data-testid="checkout-sales-copy">Recruit the committed, capable board members your nonprofit needs to move forward. Get the knowledge, resources, guidance, support and accountability you need to confidently build a stronger board around your mission. You will have what you need to execute and direct access to Rooney whenever you need help along the way. Your investment is also protected by our Recruitment Guarantee.</p>
@@ -84,7 +85,7 @@ export default function RecruitCheckoutPage() {
         </section>
         <section className="walkaway-section" data-testid="walkaway-section">
           <p className="eyebrow">The outcome</p>
-          <h2>What You Walk Away With</h2>
+          <h2>{recruitCheckoutText.h_whatYouWalkAwayWith}</h2>
           <div className="walkaway-grid">
             {OUTCOMES.map(({ icon: Icon, title, copy }) => (
               <article className="walkaway-card" key={title}>
@@ -95,21 +96,21 @@ export default function RecruitCheckoutPage() {
             ))}
             <article className="walkaway-card guarantee" onClick={() => setShowGuarantee(true)} role="button" tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setShowGuarantee(true)} data-testid="guarantee-card">
               <ShieldCheck size={24} />
-              <h3>Recruitment Guarantee</h3>
+              <h3>{recruitCheckoutText.h_recruitmentGuarantee}</h3>
               <p>Your investment is protected by our money-back Recruitment Guarantee. Click to read the Recruitment Guarantee terms.</p>
             </article>
           </div>
         </section>
         <section className="before-start-section" data-testid="thirty-minute-section">
           <p className="eyebrow">Begin quickly</p>
-          <h2>Start Recruiting in Less Than 30 Minutes</h2>
+          <h2>{recruitCheckoutText.h_startRecruitingInLessThan}</h2>
           <div className="before-start-list">
             <article><p>Move from knowing you need new board members to knowing exactly who to recruit and having what you need to begin reaching skilled professionals. Follow the guided process and you can start your recruitment campaign in less than 30 minutes.</p></article>
           </div>
         </section>
         <section className="before-start-section" data-testid="board-types-section">
           <p className="eyebrow">Every kind of board</p>
-          <h2>Build the Board Your Organization Needs</h2>
+          <h2>{recruitCheckoutText.h_buildTheBoardYourOrganization}</h2>
           <div className="before-start-list">
             <article><p>Use the guided process to recruit committed professionals for your governing, working or advisory board based on the skills, relationships and experience your organization needs.</p></article>
           </div>

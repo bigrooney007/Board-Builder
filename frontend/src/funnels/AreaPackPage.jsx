@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { areaPackText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -24,7 +25,7 @@ export default function AreaPackPage() {
     setBusy(false);
   };
 
-  if (error && !data) return <main className="legal-page"><h1>Strategic Area Development Pack</h1><p data-testid="area-pack-error">{error}</p></main>;
+  if (error && !data) return <main className="legal-page"><h1>{areaPackText.h_strategicAreaDevelopmentPack}</h1><p data-testid="area-pack-error">{error}</p></main>;
   if (!data) return <main className="legal-page"><p>Loading…</p></main>;
   return (
     <main className="legal-page" data-testid="area-pack-page" style={{ maxWidth: "820px", margin: "0 auto", padding: "32px 16px" }}>
@@ -34,7 +35,7 @@ export default function AreaPackPage() {
       <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "16px", borderRadius: "10px" }} data-testid="area-pack-text">{data.pack_text}</pre>
       {done ? (
         <div data-testid="area-pack-thanks">
-          <h2>Detailed Plan Submitted</h2>
+          <h2>{areaPackText.h_detailedPlanSubmitted}</h2>
           <p>Thank you. Your detailed plan for {data.area} has been submitted{data.submitted_at ? ` (${data.submitted_at.slice(0, 10)})` : ""} and will be presented to the Board. You can submit an updated version below at any time before the Board meeting.</p>
           <button className="button button-back button-small" onClick={() => setDone(false)} data-testid="area-pack-resubmit">Submit an Updated Version</button>
         </div>

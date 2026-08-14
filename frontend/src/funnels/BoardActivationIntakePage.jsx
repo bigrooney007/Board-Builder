@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { activationIntakeText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -155,18 +156,18 @@ export default function BoardActivationIntakePage() {
     <FunnelLayout restrained>
       <main data-testid="aintake-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="aintake-hero">
-          <h1 data-testid="aintake-headline">Tell Me About Your Fundraising</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="aintake-subtitle">Give me the information I need to start activating your Board around fundraising. Ask once — remembered throughout your Activation journey.</p>
+          <h1 data-testid="aintake-headline">{activationIntakeText.h_tellMeAboutYourFundraising}</h1>
+          <p className="funnel-hero-banner-supporting" data-testid="aintake-subtitle">{activationIntakeText.s_giveMeTheInformationI}</p>
           <i aria-hidden="true" />
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="aintake-checking"><h2>Confirming Your Payment…</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="aintake-checking"><h2>{activationIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="aintake-blocked">
-            <h2>This Form Is for Customers Who Have Completed Payment</h2>
+            <h2>{activationIntakeText.h_thisFormIsForCustomers}</h2>
             <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to activate your board:</p>
             <div className="intake-blocked-links">
               <Link className="button" to="/activate-your-board-yourself" data-testid="aintake-blocked-diy-link">Do It Yourself — $497</Link>
@@ -180,13 +181,13 @@ export default function BoardActivationIntakePage() {
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
             {purchaseSource === "direct_diy_board_activation_497" ? (
               <>
-                <h2>You're Ready to Start</h2>
+                <h2>{activationIntakeText.h_youreReadyToStart}</h2>
                 <p>Taking you to your start page…</p>
                 <a className="button" href={nextUrl || "/activation-start-here"} data-testid="aintake-start-here-link">Open My Start Page</a>
               </>
             ) : (
               <>
-                <h2>Let's Schedule Your Call With Rooney</h2>
+                <h2>{activationIntakeText.h_letsScheduleYourCallWith}</h2>
                 <p>Taking you to the calendar…</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="aintake-calendly-link">Open the Calendar</a>
               </>
@@ -201,7 +202,7 @@ export default function BoardActivationIntakePage() {
 
             {step === 0 && (
               <div data-testid="aintake-step-1">
-                <h2 className="intake-step-title">Your Organization's Direction</h2>
+                <h2 className="intake-step-title">{activationIntakeText.h_yourOrganizationsDirection}</h2>
                 <div className="two-col-fields">
                   <TextField label="Your Name" name="your_name" form={form} set={set} errors={errors} />
                   <TextField label="Email Address" name="email" type="email" form={form} set={set} errors={errors} />
@@ -214,7 +215,7 @@ export default function BoardActivationIntakePage() {
 
             {step === 1 && (
               <div data-testid="aintake-step-2">
-                <h2 className="intake-step-title">Your Fundraising Today</h2>
+                <h2 className="intake-step-title">{activationIntakeText.h_yourFundraisingToday}</h2>
                 <AreaField label="What Is Your Organization's Fundraising Goal for the Next 12 Months?" name="fundraising_goal" form={form} set={set} errors={errors} />
                 <TextField label="How Much Money Does Your Organization Need to Raise Over the Next 12 Months?" name="amount_needed" form={form} set={set} errors={errors} disabled={amountNotSure} />
                 <label className="choice" style={{ marginTop: -8, marginBottom: 14, display: "inline-flex" }}>
@@ -233,7 +234,7 @@ export default function BoardActivationIntakePage() {
 
             {step === 2 && (
               <div data-testid="aintake-step-3">
-                <h2 className="intake-step-title">Who Carries Fundraising</h2>
+                <h2 className="intake-step-title">{activationIntakeText.h_whoCarriesFundraising}</h2>
                 <MultiField legend="Who Currently Carries Most of the Fundraising Responsibility in Your Organization?" name="fundraising_carriers" options={CARRIER_OPTIONS} form={form} toggle={toggle} errors={errors} />
                 <AreaField label="Anything you want to add about how fundraising responsibility currently works?" name="fundraising_carriers_detail" required={false} rows={3} form={form} set={set} errors={errors} />
                 <TextField label="How Many Board Members Do You Currently Have?" name="present_board" type="number" form={form} set={set} errors={errors} />
@@ -243,7 +244,7 @@ export default function BoardActivationIntakePage() {
 
             {step === 3 && (
               <div data-testid="aintake-step-4">
-                <h2 className="intake-step-title">Your Board & Fundraising</h2>
+                <h2 className="intake-step-title">{activationIntakeText.h_yourBoardFundraising}</h2>
                 <SelectField label="How Involved Is Your Board in Fundraising Today?" name="board_fundraising_involvement" options={INVOLVEMENT_OPTIONS} form={form} set={set} errors={errors} />
                 <MultiField legend="What Fundraising Activities Are Your Board Members Currently Involved In?" name="board_fundraising_activities" options={ACTIVITY_OPTIONS} form={form} toggle={toggle} errors={errors} />
                 {form.board_fundraising_activities.includes("Other") && (
@@ -256,7 +257,7 @@ export default function BoardActivationIntakePage() {
 
             {step === 4 && (
               <div data-testid="aintake-step-5">
-                <h2 className="intake-step-title">What You Want to Change</h2>
+                <h2 className="intake-step-title">{activationIntakeText.h_whatYouWantToChange}</h2>
                 <SelectField label="Has Your Board Previously Participated in Developing a Fundraising Plan?" name="previous_fundraising_planning" options={["Yes", "Partially", "No", "Not Sure"]} form={form} set={set} errors={errors} />
                 <SelectField label="Has Your Board Participated in Broader Organizational or Strategic Planning?" name="broader_strategic_planning" options={["Yes", "Partially", "No", "Not Sure"]} form={form} set={set} errors={errors} />
                 <AreaField label="What Would You Most Like to Change About Your Board's Involvement in Fundraising?" name="desired_change" form={form} set={set} errors={errors} />

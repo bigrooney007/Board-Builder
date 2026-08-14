@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, X } from "lucide-react";
 import { memberApi } from "./api";
+import { activationM4Text } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -111,14 +112,14 @@ export default function ActivationModule4() {
   return (
     <div data-testid="activation-module4">
       <section className="member-card" data-testid="am4-intro">
-        <h2>Turn the Fundraising Strategy Into a Board-Owned Plan</h2>
+        <h2>{activationM4Text.h_turnTheFundraisingStrategyInto}</h2>
         <p>The Board has helped build the strategy and reviewed the plan.</p>
         <p>The next step is to bring everyone together, work through the feedback, agree on the direction and establish what the Board will actually help carry.</p>
         <p><strong>This is where participation becomes ownership.</strong></p>
       </section>
 
       <section className="member-card" data-testid="am4-context">
-        <h2>Where Things Stand</h2>
+        <h2>{activationM4Text.h_whereThingsStand}</h2>
         <p data-testid="am4-context-line">Strategy: <strong>{data.strategy.status === "Ready for Board Review" ? `Ready for Board Review · v${data.strategy.review_version}` : data.strategy.status}</strong> · Board reviews received: <strong>{data.reviews.length}</strong></p>
         {data.reviews.map((review) => (
           <div key={review.name} style={{ borderLeft: "3px solid #000", paddingLeft: 12, margin: "12px 0" }} data-testid={`am4-review-${review.name.split(" ")[0].toLowerCase()}`}>
@@ -157,14 +158,14 @@ export default function ActivationModule4() {
       </section>
 
       <section className="member-card" data-testid="am4-conclusion-card">
-        <h2>Plan Adoption Conclusion</h2>
+        <h2>{activationM4Text.h_planAdoptionConclusion}</h2>
         <p>After the Board discussion, record in your own words what happened, what was agreed, what changed and what still needs attention.</p>
         <textarea rows={6} style={{ width: "100%" }} value={conclusion} onChange={(e) => { setConclusion(e.target.value); setConclusionSaved(false); }} data-testid="am4-conclusion-text" />
         <button type="button" className="button" onClick={saveConclusion} data-testid="am4-save-conclusion" style={{ marginTop: 10 }}>{conclusionSaved ? "Conclusion Saved" : "SAVE CONCLUSION"}</button>
       </section>
 
       <section className="member-card" data-testid="am4-plan-status-card">
-        <h2>Plan Status</h2>
+        <h2>{activationM4Text.h_planStatus}</h2>
         <p>Record the Board's adoption outcome. This is your recorded organizational outcome — it is not inferred from the reviews.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {PLAN_STATUSES.map((status) => (
@@ -194,7 +195,7 @@ export default function ActivationModule4() {
       </section>
 
       <section className="member-card" data-testid="am4-responsibilities">
-        <h2>Board Member Responsibilities</h2>
+        <h2>{activationM4Text.h_boardMemberResponsibilities}</h2>
         <p>Record what each Board Member actually agreed to carry during the adoption discussion. Nothing is assigned automatically.</p>
         {data.members.map((member) => {
           const edit = respEdits[member.participant_id] || {};
@@ -229,7 +230,7 @@ export default function ActivationModule4() {
 
       {showEdit && (
         <Modal onClose={() => setShowEdit(false)} testId="am4-edit-modal">
-          <h2>Edit Facilitation Guide</h2>
+          <h2>{activationM4Text.h_editFacilitationGuide}</h2>
           <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am4-edit-text" />
           <button type="button" className="button" onClick={saveGuide} data-testid="am4-save-button">SAVE</button>
         </Modal>

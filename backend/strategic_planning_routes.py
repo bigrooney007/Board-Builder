@@ -18,6 +18,12 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ai_service import generate_structured
+from content_templates import (
+    sp_form_invitation_email,
+    sp_generic_form_invitation_email,
+    sp_review_invitation_email,
+    sp_signature,
+)
 from auth_service import authenticate_admin
 from reactivation_routes import build_portfolio_pdf, email_html, origin_of
 from reference_routes import extract_reference_text
@@ -366,19 +372,8 @@ def create_strategic_planning_router(db) -> APIRouter:
     def planning_email(project: dict, participant: dict, link: str) -> dict:
         first = (participant.get("name") or "").split(" ")[0]
         organization = project["organization_name"]
-        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
-        body = (
-            f"Dear {first},\n\n"
-            f"We are beginning the process of building the strategic plan for {organization}, and I want the Board involved in shaping it.\n\n"
-            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
-            "Your ideas, experience and perspective will help shape our direction, priorities and how each of us can contribute.\n\n"
-            "Please complete the Strategic Planning Form below.\n\n"
-            "[COMPLETE MY STRATEGIC PLANNING FORM]\n\n"
-            "Your responses will be combined with the ideas of the other Board Members as we build the plan.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
-        )
-        return {"subject": f"Help Us Build Our Strategic Plan | {organization}", "body": body,
-                "button_label": "COMPLETE MY STRATEGIC PLANNING FORM", "form_link": link}
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return {**sp_form_invitation_email(first, organization, signature), "form_link": link}
 
     @router.get("/admin/sp/projects/{project_id}/participants/{participant_id}/email-preview")
     async def form_email_preview(project_id: str, participant_id: str, request: Request):
@@ -600,17 +595,8 @@ def create_strategic_planning_router(db) -> APIRouter:
     def review_email(project: dict, participant: dict, link: str) -> dict:
         first = (participant.get("name") or "").split(" ")[0]
         organization = project["organization_name"]
-        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
-        body = (
-            f"Dear {first},\n\n"
-            f"The ideas the Board shared have been consolidated into the Foundational Strategic Plan for {organization}.\n\n"
-            "Before area owners develop the detailed plans, I want every Board Member to review the consolidated thinking, challenge it, improve it and add anything that is missing.\n\n"
-            "For each strategic area you can support it as written, suggest a change, add an idea, or flag it for Board discussion.\n\n"
-            "[REVIEW THE FOUNDATIONAL PLAN]\n\n"
-            f"Thank you for helping us refine this together.\n\n{signature}"
-        )
-        return {"subject": f"Review Our Foundational Strategic Plan | {organization}", "body": body,
-                "button_label": "REVIEW THE FOUNDATIONAL PLAN", "form_link": link}
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return {**sp_review_invitation_email(first, organization, signature), "form_link": link}
 
     @router.get("/admin/sp/projects/{project_id}/participants/{participant_id}/review-email-preview")
     async def review_email_preview(project_id: str, participant_id: str, request: Request):
@@ -1196,18 +1182,8 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     def generic_form_email(project: dict, link: str) -> dict:
         organization = project["organization_name"]
-        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
-        body = (
-            "Dear Board Member,\n\n"
-            f"We are beginning the process of building the strategic plan for {organization}, and I want the Board involved in shaping it.\n\n"
-            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
-            "Your ideas, experience and perspective will help shape our direction, priorities and how each of us can contribute.\n\n"
-            "Please complete the Strategic Planning Form using the link below.\n\n"
-            f"{link}\n\n"
-            "Your responses will be combined with the ideas of the other Board Members as we build the plan.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
-        )
-        return {"subject": f"Help Us Build Our Strategic Plan | {organization}", "body": body, "form_link": link}
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return sp_generic_form_invitation_email(organization, link, signature)
 
     @router.get("/admin/sp/projects/{project_id}/form-email")
     async def form_email(project_id: str, request: Request):

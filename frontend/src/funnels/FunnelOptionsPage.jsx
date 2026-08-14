@@ -5,6 +5,7 @@ import { Check, ExternalLink, LockKeyhole } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { CALENDLY_URL, funnelConfigs } from "./funnelConfig";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import { funnelOptionsText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -57,7 +58,7 @@ export default function FunnelOptionsPage({ offerSource }) {
             <article className={`pricing-card simple-offer ${matched === "diy" ? "matched" : ""}`} data-testid="recruitment-tier-97">
               {matched === "diy" && <MatchBadge tier="97" />}
               <span className="tier-label">I want to do it myself.</span>
-              <h2>Do It Yourself</h2>
+              <h2>{funnelOptionsText.h_doItYourself}</h2>
               <div className="price"><strong>$97</strong><span>One Time</span></div>
               <p>Recruit the quality board members your nonprofit needs without guessing what to do next. Get the knowledge and resources you need to confidently build a stronger, more capable board yourself.</p>
               {buyButton("97", live97, "I’ll Do It Myself — $97", "recruitment-tier-97-button")}
@@ -66,7 +67,7 @@ export default function FunnelOptionsPage({ offerSource }) {
               <span className="popular-ribbon" data-testid="recruitment-most-popular">Most Popular</span>
               {matched === "self_guided" && <MatchBadge tier="497" />}
               <span className="tier-label">I want guidance while I recruit my board.</span>
-              <h2>Self-Guided Recruitment</h2>
+              <h2>{funnelOptionsText.h_selfguidedRecruitment}</h2>
               <div className="price"><strong>$497</strong><span>One Time</span></div>
               <p>Build the stronger board your nonprofit has been missing. Attract qualified professionals, choose the right people for your organization, and come out of the process with committed new board members ready to help your nonprofit move forward.</p>
               {buyButton("497", live497, "Help Me Recruit My Board — $497", "recruitment-tier-497-button")}
@@ -74,7 +75,7 @@ export default function FunnelOptionsPage({ offerSource }) {
             <article className={`pricing-card high-support simple-offer ${matched === "done_with_you" ? "matched" : ""}`} data-testid="recruitment-tier-3497">
               {matched === "done_with_you" && <MatchBadge tier="3497" />}
               <span className="tier-label">I want someone to work with me.</span>
-              <h2>Done With You</h2>
+              <h2>{funnelOptionsText.h_doneWithYou}</h2>
               <div className="price"><strong>$3,497</strong></div>
               <p>Get the board members your nonprofit needs without carrying the recruitment process alone. Bring in qualified professionals with the skills, experience, relationships and fundraising capacity your organization needs, and get them properly onboarded and ready to serve.</p>
               <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="recruitment-calendly-button">Help Me Recruit My Board <ExternalLink size={16} /></a>

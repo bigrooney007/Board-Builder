@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { FunnelChoices, FunnelRadioCards, FunnelSelect, FunnelText, FunnelTextarea } from "./FunnelFormControls";
 import { funnelConfigs } from "./funnelConfig";
 import { useReviewMode } from "@/reviewMode";
+import { funnelStepText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const emptyContact = { name: "", email: "", phone: "", organization: "", website: "", city: "", state_region: "", country: "" };
@@ -117,7 +118,7 @@ export const FunnelStepForm = ({ offerSource }) => {
             <button type="button" className="button button-back step-back" onClick={goBack} data-testid={`${offerSource}-back-button`}><ArrowLeft size={16} /> Back</button>
           ) : <span />}
           <button type="button" className="button funnel-submit" disabled={submitting} onClick={goForward} data-testid={isLast ? `${offerSource}-submit-button` : `${offerSource}-continue-button`}>
-            {submitting ? "Saving…" : isLast ? config.submit : <>Continue <ArrowRight size={16} /></>}
+            {submitting ? "Saving…" : isLast ? config.submit : <>{funnelStepText.t_continue}<ArrowRight size={16} /></>}
           </button>
         </div>
       </div>

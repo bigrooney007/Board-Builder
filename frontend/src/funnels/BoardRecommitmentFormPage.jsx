@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
+import { recommitFormText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -97,12 +98,12 @@ export default function BoardRecommitmentFormPage() {
       <main data-testid="recommit-page">
         {gate === "loading" && <div className="intake-card"><p>Loading…</p></div>}
         {gate === "invalid" && (
-          <div className="intake-card" data-testid="recommit-invalid"><h2>This Link Is Not Valid</h2><p>Please contact the person who sent you this form for a new link.</p></div>
+          <div className="intake-card" data-testid="recommit-invalid"><h2>{recommitFormText.h_thisLinkIsNotValid}</h2><p>Please contact the person who sent you this form for a new link.</p></div>
         )}
         {(gate === "done" || gate === "already") && (
           <div className="intake-card" data-testid="recommit-thankyou">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Submitted</p>
-            <h2>Thank You</h2>
+            <h2>{recommitFormText.h_thankYou}</h2>
             <p>Your Board Member Profile &amp; Recommitment Form has been submitted to <strong>{org}</strong>.</p>
             <p>The organization will review your responses and follow up with you regarding your Board role and next steps.</p>
           </div>
@@ -110,9 +111,9 @@ export default function BoardRecommitmentFormPage() {
         {gate === "ready" && (
           <>
             <section className="funnel-hero-banner brp-hero intake-hero" data-testid="recommit-hero">
-              <h1>Board Member Profile &amp; Recommitment Form</h1>
+              <h1>{recommitFormText.h_boardMemberProfileAmpRecommitment}</h1>
               <p className="funnel-hero-banner-supporting" data-testid="recommit-supporting">{org} is taking time to strengthen how the Board works together and make sure every Board Member has clarity about their role, capacity and areas of contribution.</p>
-              <p className="funnel-hero-banner-secondary">Please complete this form honestly. Your responses will help guide a conversation about how you would like to continue contributing to the organization.</p>
+              <p className="funnel-hero-banner-secondary">{recommitFormText.s_pleaseCompleteThisFormHonestly}</p>
               <i aria-hidden="true" />
             </section>
             <section className="intake-shell" data-testid="recommit-form">
@@ -121,7 +122,7 @@ export default function BoardRecommitmentFormPage() {
               )}
               {errorText && <p className="submit-error" data-testid="recommit-error">{errorText}</p>}
 
-              <h2 className="intake-step-title">About You</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_aboutYou}</h2>
               <div className="two-col-fields">
                 <Text label="Full Name" name="full_name" form={form} set={set} required />
                 <Text label="Preferred Name" name="preferred_name" form={form} set={set} />
@@ -146,7 +147,7 @@ export default function BoardRecommitmentFormPage() {
               {form.expertise.includes("Other") && <Text label="Other expertise" name="expertise_other" form={form} set={set} />}
               <Multi legend="Which types of relationships or professional networks could you potentially help the organization connect with?" name="networks" options={NETWORKS} form={form} toggle={toggle} />
 
-              <h2 className="intake-step-title">Your Experience on the Board</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_yourExperienceOnTheBoard}</h2>
               <Area label={`What originally interested you in serving on the Board of ${org}?`} name="why_joined" form={form} set={set} />
               <Select label="How did you originally become involved with the Board?" name="how_recruited" options={HOW_RECRUITED} form={form} set={set} />
               <Area label="When you joined the Board, what did you understand your role and responsibilities to be?" name="original_role_expectation" form={form} set={set} />
@@ -159,7 +160,7 @@ export default function BoardRecommitmentFormPage() {
               <Select label="Have you had an opportunity to contribute to the organization's strategic direction or planning?" name="planning_participation" options={["Yes", "Somewhat", "No", "Not Sure"]} form={form} set={set} />
               <Area label="If you would like greater involvement in planning or strategic decisions, tell us how. (optional)" name="planning_involvement_desire" required={false} rows={3} form={form} set={set} />
 
-              <h2 className="intake-step-title">Recommitment</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_recommitment}</h2>
               <fieldset className="field choice-field" data-testid="recommit-recommitment-options">
                 <legend>Looking ahead, are you willing and able to continue serving actively on the Board? <b>*</b></legend>
                 <div>
@@ -178,23 +179,23 @@ export default function BoardRecommitmentFormPage() {
                 <Select label="If continuing as an active Board Member is not realistic for you, would you be open to supporting the organization in another volunteer or support role?" name="support_role_openness" options={["Yes", "Maybe — I would like to discuss it", "No"]} form={form} set={set} required={false} />
               )}
 
-              <h2 className="intake-step-title">How You Want to Contribute</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_howYouWantToContribute}</h2>
               <Multi legend="If you continue serving, where would you most like to contribute?" name="contribution_interests" options={CONTRIBUTIONS} form={form} toggle={toggle} />
               <Multi legend="Which fundraising activities would you be comfortable helping with?" name="fundraising_comfort" options={FUNDRAISING} form={form} toggle={toggle} />
               <Area label="What areas of responsibility would you be willing to take greater ownership of over the next 6–12 months?" name="ownership_areas" form={form} set={set} />
               <Area label="Are there any areas where you would be interested in taking a leadership role?" name="leadership_interest" form={form} set={set} />
               <Area label="What support, information or resources would help you contribute more effectively?" name="support_needed" form={form} set={set} />
 
-              <h2 className="intake-step-title">Your Capacity</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_yourCapacity}</h2>
               <Select label="Realistically, how much time can you commit to Board responsibilities each month?" name="monthly_availability" options={AVAILABILITY} form={form} set={set} />
               <Select label="Are you able to participate consistently in the organization's current Board meeting schedule?" name="meeting_participation" options={MEETINGS} form={form} set={set} />
               <Area label="Is there anything about your current availability or circumstances that the organization should understand when discussing your Board responsibilities? (optional)" name="constraints" required={false} rows={3} form={form} set={set} />
 
-              <h2 className="intake-step-title">Final Questions</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_finalQuestions}</h2>
               <Area label="If you continue serving, what would make your Board service meaningful and worthwhile to you?" name="meaningful_service" form={form} set={set} />
               <Area label="Is there anything else you would like the Founder or Board leadership to understand before you discuss your future role on the Board? (optional)" name="anything_else" required={false} rows={3} form={form} set={set} />
 
-              <h2 className="intake-step-title">Confirmation</h2>
+              <h2 className="intake-step-title">{recommitFormText.h_confirmation}</h2>
               <label className="choice" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.confirmation} onChange={() => setForm((current) => ({ ...current, confirmation: !current.confirmation }))} data-testid="recommit-confirmation" />
                 <span>I confirm that the information I have provided reflects my current availability, interests and willingness to serve. I understand that completing this form does not by itself change my current Board status and that the organization may follow up with me to discuss my role and responsibilities. <b>*</b></span>

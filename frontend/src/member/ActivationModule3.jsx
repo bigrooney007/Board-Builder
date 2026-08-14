@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Mail, X } from "lucide-react";
 import { memberApi } from "./api";
+import { activationM3Text } from "../content/appContent";
 
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
 const dialogStyle = { background: "#fff", maxWidth: 760, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
@@ -110,13 +111,13 @@ export default function ActivationModule3() {
   return (
     <div data-testid="activation-module3">
       <section className="member-card" data-testid="am3-intro">
-        <h2>Turn the Board's Ideas Into One Fundraising Strategy</h2>
+        <h2>{activationM3Text.h_turnTheBoardsIdeasInto}</h2>
         <p>Your Board has now contributed ideas about who the organization should build relationships with, which fundraising opportunities to prioritize, what relationships already exist around the Board, how members are willing to participate, and what they believe should happen first.</p>
         <p>The next step is to combine those ideas with the organization's goals and direction and build one Fundraising Strategy Plan the Board can review together.</p>
       </section>
 
       <section className="member-card" data-testid="am3-planning-counts">
-        <h2>Board Planning Responses</h2>
+        <h2>{activationM3Text.h_boardPlanningResponses}</h2>
         <p data-testid="am3-planning-count-line">
           <strong>{data.planning.invited}</strong> Board Members Invited · <strong>{data.planning.received}</strong> Responses Received · <strong>{data.planning.waiting}</strong> Waiting · <strong>{data.planning.included}</strong> Responses That Will Be Included
         </p>
@@ -155,7 +156,7 @@ export default function ActivationModule3() {
       </section>
 
       <section className="member-card" data-testid="am3-review-summary">
-        <h2>Board Fundraising Strategy Review</h2>
+        <h2>{activationM3Text.h_boardFundraisingStrategyReview}</h2>
         <p data-testid="am3-review-counts">
           <strong>{data.review_progress.invited}</strong> Invited · <strong>{data.review_progress.received}</strong> Review{data.review_progress.received === 1 ? "" : "s"} Received · <strong>{data.review_progress.waiting}</strong> Waiting
         </p>
@@ -199,7 +200,7 @@ export default function ActivationModule3() {
 
       {showEdit && (
         <Modal onClose={() => setShowEdit(false)} testId="am3-edit-modal">
-          <h2>Edit Fundraising Strategy Plan</h2>
+          <h2>{activationM3Text.h_editFundraisingStrategyPlan}</h2>
           <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am3-edit-text" />
           <button type="button" className="button" onClick={saveEdit} disabled={saving} data-testid="am3-save-button">{saving ? "Saving…" : "SAVE"}</button>
         </Modal>

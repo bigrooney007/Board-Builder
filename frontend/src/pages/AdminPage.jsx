@@ -3,6 +3,7 @@ import axios from "axios";
 import { CheckCircle, Download, Eye, FileText, LogOut, Pencil, RefreshCw, Search, Sparkles, Users, XCircle } from "lucide-react";
 import { ClientDeliverySection } from "@/admin/ClientDeliverySection";
 import { StrategicPlanningSection } from "@/admin/StrategicPlanningSection";
+import { adminPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -33,7 +34,7 @@ const ReviewResumePanel = () => {
   return (
     <div className="review-resume-panel" data-testid="review-resume-panel">
       <div>
-        <h3>Recruitment Experience Review</h3>
+        <h3>{adminPageText.h_recruitmentExperienceReview}</h3>
         <p>Last reviewed: <strong data-testid="review-last-label">{progress.last_label || progress.last_route}</strong></p>
         <p>Last activity: {progress.updated_at ? new Date(progress.updated_at).toLocaleString() : ""}</p>
       </div>
@@ -80,7 +81,7 @@ const ImportApplicants = ({ refresh }) => {
       <button className="button button-back button-small" onClick={() => setOpen(!open)} data-testid="admin-import-toggle">Import Board Applicants</button>
       {open && (
         <div className="admin-import-panel" data-testid="admin-import-panel">
-          <h3>Import Existing Board Applicants</h3>
+          <h3>{adminPageText.h_importExistingBoardApplicants}</h3>
           <p>Upload a CSV with at least an Email column (First Name, Last Name, Phone, City, State, Country, LinkedIn, Professional Title and Employer columns are recognized automatically). Existing applicants are matched by email — their richer information and unsubscribe status are preserved. The import itself never sends any email.</p>
           <input type="file" accept=".csv,text/csv" onChange={(event) => { setFile(event.target.files[0]); setPreview(null); setResult(null); }} data-testid="admin-import-file" />
           <label className="terms-check">
@@ -263,7 +264,7 @@ const ReferenceLibrarySection = () => {
   return (
     <section data-testid="admin-reference-library">
       <h2 className="reference-heading">Recruitment Execution Reference Library</h2>
-      <p className="admin-message">Private founder-only examples Claude uses for structure and methodology when generating customer materials. Client-specific details are never copied into customer outputs. A material is only used once you mark it Approved.</p>
+      <p className="admin-message">{adminPageText.m_privateFounderonlyExamplesClaudeUses}</p>
       <div className="admin-filters reference-upload-row">
         <input type="file" accept=".docx,.pdf,.doc,.txt" onChange={(event) => setFile(event.target.files?.[0] || null)} data-testid="reference-file-input" />
         <input placeholder="Title (optional)" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} data-testid="reference-title-input" />

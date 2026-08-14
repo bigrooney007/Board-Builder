@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { reactivationIntakeText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -155,18 +156,18 @@ export default function BoardReactivationIntakePage() {
     <FunnelLayout restrained>
       <main data-testid="rintake-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="rintake-hero">
-          <h1 data-testid="rintake-headline">Tell Me About Your Board</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="rintake-subtitle">Give me the information I need to start reactivating your Board. Ask once — remembered throughout your Reactivation journey.</p>
+          <h1 data-testid="rintake-headline">{reactivationIntakeText.h_tellMeAboutYourBoard}</h1>
+          <p className="funnel-hero-banner-supporting" data-testid="rintake-subtitle">{reactivationIntakeText.s_giveMeTheInformationI}</p>
           <i aria-hidden="true" />
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="rintake-checking"><h2>Confirming Your Payment…</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="rintake-checking"><h2>{reactivationIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="rintake-blocked">
-            <h2>This Form Is for Customers Who Have Completed Payment</h2>
+            <h2>{reactivationIntakeText.h_thisFormIsForCustomers}</h2>
             <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to reactivate your board:</p>
             <div className="intake-blocked-links">
               <Link className="button" to="/reactivate-your-board-yourself" data-testid="rintake-blocked-diy-link">Do It Yourself — $497</Link>
@@ -180,13 +181,13 @@ export default function BoardReactivationIntakePage() {
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
             {purchaseSource === "direct_diy_board_reactivation_497" ? (
               <>
-                <h2>You're Ready to Start</h2>
+                <h2>{reactivationIntakeText.h_youreReadyToStart}</h2>
                 <p>Taking you to your start page…</p>
                 <a className="button" href={nextUrl || "/reactivation-start-here"} data-testid="rintake-start-here-link">Open My Start Page</a>
               </>
             ) : (
               <>
-                <h2>Let's Schedule Your Call With Rooney</h2>
+                <h2>{reactivationIntakeText.h_letsScheduleYourCallWith}</h2>
                 <p>Taking you to the calendar…</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="rintake-calendly-link">Open the Calendar</a>
               </>
@@ -201,7 +202,7 @@ export default function BoardReactivationIntakePage() {
 
             {step === 0 && (
               <div data-testid="rintake-step-1">
-                <h2 className="intake-step-title">Your Organization's Direction</h2>
+                <h2 className="intake-step-title">{reactivationIntakeText.h_yourOrganizationsDirection}</h2>
                 <div className="two-col-fields">
                   <TextField label="Your Name" name="your_name" form={form} set={set} errors={errors} />
                   <TextField label="Email Address" name="email" type="email" form={form} set={set} errors={errors} />
@@ -216,7 +217,7 @@ export default function BoardReactivationIntakePage() {
 
             {step === 1 && (
               <div data-testid="rintake-step-2">
-                <h2 className="intake-step-title">Your Current Board</h2>
+                <h2 className="intake-step-title">{reactivationIntakeText.h_yourCurrentBoard}</h2>
                 <TextField label="How Many Board Members Do You Currently Have?" name="present_board" type="number" form={form} set={set} errors={errors} />
                 <TextField label="How Many Are Actively Participating?" name="active_board" type="number" form={form} set={set} errors={errors} />
                 <TextField label="How Many Are Currently Disengaged or Inactive?" name="disengaged_board" type="number" form={form} set={set} errors={errors} />
@@ -227,7 +228,7 @@ export default function BoardReactivationIntakePage() {
 
             {step === 2 && (
               <div data-testid="rintake-step-3">
-                <h2 className="intake-step-title">How Your Board Was Built</h2>
+                <h2 className="intake-step-title">{reactivationIntakeText.h_howYourBoardWasBuilt}</h2>
                 <MultiField legend="How Were Most of Your Current Board Members Originally Recruited?" name="recruited_how" options={RECRUITED_OPTIONS} form={form} toggle={toggle} errors={errors} />
                 <AreaField label="What Were Board Members Told Their Responsibilities Would Be When They Joined?" name="original_responsibilities" form={form} set={set} errors={errors} />
                 <SelectField label="Do Your Current Board Members Have Clearly Defined Roles or Areas of Responsibility?" name="roles_defined" options={["Yes", "Some Do", "No", "Not Sure"]} form={form} set={set} errors={errors} />
@@ -241,7 +242,7 @@ export default function BoardReactivationIntakePage() {
 
             {step === 3 && (
               <div data-testid="rintake-step-4">
-                <h2 className="intake-step-title">Disengagement</h2>
+                <h2 className="intake-step-title">{reactivationIntakeText.h_disengagement}</h2>
                 <SelectField label="Does the Organization Currently Have a Strategic Plan?" name="strategic_plan" options={["Yes", "No", "In Progress"]} form={form} set={set} errors={errors} />
                 <SelectField label="Have Your Current Board Members Participated in Creating or Adopting the Organization's Strategic Direction?" name="board_participated_planning" options={["Yes", "Some Members", "No", "Not Sure"]} form={form} set={set} errors={errors} />
                 <AreaField label="If relevant, briefly explain how the Board has been involved in planning." name="planning_involvement" required={false} rows={3} form={form} set={set} errors={errors} />
@@ -258,7 +259,7 @@ export default function BoardReactivationIntakePage() {
 
             {step === 4 && (
               <div data-testid="rintake-step-5">
-                <h2 className="intake-step-title">Meetings & Transitions</h2>
+                <h2 className="intake-step-title">{reactivationIntakeText.h_meetingsTransitions}</h2>
                 <SelectField label="How Often Does Your Board Meet?" name="meeting_frequency" options={["Monthly", "Every Other Month", "Quarterly", "Rarely / Irregularly", "We Are Not Currently Meeting", "Other"]} form={form} set={set} errors={errors} />
                 <AreaField label="What Does a Typical Board Meeting Currently Look Like?" name="typical_meeting" form={form} set={set} errors={errors} />
                 <SelectField label="Do Board Members normally leave meetings with clear individual responsibilities?" name="clear_responsibilities_after_meetings" options={["Yes", "Sometimes", "No"]} form={form} set={set} errors={errors} />

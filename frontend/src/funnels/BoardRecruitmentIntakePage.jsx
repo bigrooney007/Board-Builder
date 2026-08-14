@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { recruitIntakeText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -173,18 +174,18 @@ export default function BoardRecruitmentIntakePage() {
     <FunnelLayout restrained>
       <main data-testid="intake-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="intake-hero">
-          <h1 data-testid="intake-headline">Tell Me About Your Organization and Board</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="intake-subtitle">Give me the information I need to start your board recruitment.</p>
+          <h1 data-testid="intake-headline">{recruitIntakeText.h_tellMeAboutYourOrganization}</h1>
+          <p className="funnel-hero-banner-supporting" data-testid="intake-subtitle">{recruitIntakeText.s_giveMeTheInformationI}</p>
           <i aria-hidden="true" />
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="intake-checking"><h2>Confirming Your Payment…</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="intake-checking"><h2>{recruitIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="intake-blocked">
-            <h2>This Form Is for Customers Who Have Completed Payment</h2>
+            <h2>{recruitIntakeText.h_thisFormIsForCustomers}</h2>
             <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:</p>
             <div className="intake-blocked-links">
               <Link className="button" to="/recruit-your-board-yourself" data-testid="intake-blocked-diy-link">Do It Yourself — $497</Link>
@@ -198,13 +199,13 @@ export default function BoardRecruitmentIntakePage() {
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
             {purchaseSource === "direct_diy_board_recruitment_497" ? (
               <>
-                <h2>You're Ready to Start</h2>
+                <h2>{recruitIntakeText.h_youreReadyToStart}</h2>
                 <p>Taking you to your start page…</p>
                 <a className="button" href={nextUrl || "/recruitment-start-here"} data-testid="intake-start-here-link">Open My Start Page</a>
               </>
             ) : (
               <>
-                <h2>Let's Schedule Your Call With Rooney</h2>
+                <h2>{recruitIntakeText.h_letsScheduleYourCallWith}</h2>
                 <p>Taking you to the calendar…</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="intake-calendly-link">Open the Calendar</a>
               </>
@@ -219,7 +220,7 @@ export default function BoardRecruitmentIntakePage() {
 
             {step === 0 && (
               <div data-testid="intake-step-1">
-                <h2 className="intake-step-title">About You and Your Organization</h2>
+                <h2 className="intake-step-title">{recruitIntakeText.h_aboutYouAndYourOrganization}</h2>
                 <div className="two-col-fields">
                   <label className="field"><span>Your Name <b>*</b></span><input value={form.your_name} onChange={set("your_name")} data-testid="intake-your-name" />{errors.your_name && <p className="field-error">{errors.your_name}</p>}</label>
                   <label className="field"><span>Email Address <b>*</b></span><input type="email" value={form.email} onChange={set("email")} data-testid="intake-email" />{errors.email && <p className="field-error">{errors.email}</p>}</label>
@@ -263,7 +264,7 @@ export default function BoardRecruitmentIntakePage() {
 
             {step === 1 && (
               <div data-testid="intake-step-2">
-                <h2 className="intake-step-title">LinkedIn</h2>
+                <h2 className="intake-step-title">{recruitIntakeText.h_linkedin}</h2>
                 <YesNo legend="Does your nonprofit have a LinkedIn organization page?" value={form.org_linkedin} onChange={setValue("org_linkedin")} testId="intake-org-linkedin" error={errors.org_linkedin} />
                 {form.org_linkedin === "Yes" && (
                   <label className="field"><span>LinkedIn Organization Page URL <b>*</b></span><input value={form.org_linkedin_url} onChange={set("org_linkedin_url")} data-testid="intake-org-linkedin-url" />{errors.org_linkedin_url && <p className="field-error">{errors.org_linkedin_url}</p>}</label>
@@ -277,7 +278,7 @@ export default function BoardRecruitmentIntakePage() {
 
             {step === 2 && (
               <div data-testid="intake-step-3">
-                <h2 className="intake-step-title">Your Present Board</h2>
+                <h2 className="intake-step-title">{recruitIntakeText.h_yourPresentBoard}</h2>
                 <NumberOrNotSure label="How many board members do you currently have?" value={form.present_board} notSure={form.present_board_not_sure} onValue={setValue("present_board")} onNotSure={setValue("present_board_not_sure")} testId="intake-present-board" error={errors.present_board} />
                 <NumberOrNotSure label="How many of them are actively participating?" value={form.active_board} notSure={form.active_board_not_sure} onValue={setValue("active_board")} onNotSure={setValue("active_board_not_sure")} testId="intake-active-board" error={errors.active_board} />
                 <NumberOrNotSure label="How many new board members would you like to recruit?" value={form.new_members_count} notSure={form.new_members_not_sure} onValue={setValue("new_members_count")} onNotSure={setValue("new_members_not_sure")} testId="intake-new-members" error={errors.new_members_count} />
@@ -288,7 +289,7 @@ export default function BoardRecruitmentIntakePage() {
 
             {step === 3 && (
               <div data-testid="intake-step-4">
-                <h2 className="intake-step-title">The Board You Need</h2>
+                <h2 className="intake-step-title">{recruitIntakeText.h_theBoardYouNeed}</h2>
                 <fieldset className="field choice-field">
                   <legend>What skills, experience, relationships or professional backgrounds would you like to add to your board? <b>*</b></legend>
                   <div className="choice-grid">
@@ -311,7 +312,7 @@ export default function BoardRecruitmentIntakePage() {
 
             {step === 4 && (
               <div data-testid="intake-step-5">
-                <h2 className="intake-step-title">Board Logistics</h2>
+                <h2 className="intake-step-title">{recruitIntakeText.h_boardLogistics}</h2>
                 <label className="field"><span>How often does your board meet? <b>*</b></span>
                   <select value={form.meeting_frequency} onChange={set("meeting_frequency")} data-testid="intake-meeting-frequency">
                     <option value="">Choose one…</option>

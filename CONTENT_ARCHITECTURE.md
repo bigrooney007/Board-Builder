@@ -44,14 +44,17 @@ Use stable, descriptive, dot-path keys, e.g.
 
 ## Current centralization state (June 2026)
 
-- Public pages: fully centralized in `siteContent.js` (16 pages).
-- Reactivation app experience: fully centralized in `appContent.js`.
-- Shared course chrome (forbidden card, module-1 training cards, activation
-  overview/preview, video placeholders): centralized in `appContent.js`.
-- Strategic Planning admin workspace: section headings + primary action buttons
-  centralized (`strategicPlanningAdminContent`); remaining inline helper text is
-  scheduled to migrate during the next Strategic Planning pass.
-- Recruitment/Activation deep workspace components (`ApplicantModules.jsx`,
-  `WorkspaceModules.jsx`, `ActivationModule2–5`, `MaterialCard.jsx`) and public
-  funnel form pages still hold inline copy — migrate them into `appContent.js`
-  during their respective correction passes, using the conventions above.
+- Public pages: fully centralized in `siteContent.js` (16 pages, verbatim).
+- Application copy: `appContent.js` holds 42 namespaces / 320+ entries covering
+  Recruitment, Reactivation, Activation, Strategic Planning (admin + public),
+  Admin surfaces, member dashboard/auth/shell, all intake funnels and funnel
+  chrome. 61 of 63 string-bearing frontend files consume canonical content.
+- Intentionally excluded files: `pages/BlogPages.jsx` (blog article data) and
+  `pages/LegalPage.jsx` (long-form legal documents — treat as documents, not UI copy).
+- Static emails: Reactivation + Strategic Planning templates live in
+  `backend/content_templates.py`. Recruitment/Activation emails are composed
+  dynamically from AI-generated material + candidate data (intentionally dynamic).
+- Residual inline strings: short labels inside conditional expressions,
+  `placeholder`/`aria` attributes and `window.alert` fallbacks in deep workspace
+  components. When touching those components, move the string to the file's
+  existing `appContent.js` namespace.

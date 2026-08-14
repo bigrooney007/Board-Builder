@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Copy, Mail, Phone, Plus, UserPlus, X } from "lucide-react";
 import { memberApi } from "./api";
+import { activationM2Text } from "../content/appContent";
 
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
 const dialogStyle = { background: "#fff", maxWidth: 760, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
@@ -268,7 +269,7 @@ export default function ActivationModule2() {
   return (
     <div data-testid="activation-module2">
       <section className="member-card" data-testid="am2-intro">
-        <h2>Build the Plan With Your Board</h2>
+        <h2>{activationM2Text.h_buildThePlanWithYour}</h2>
         <p>Do not create a fundraising plan and hand it to your Board.</p>
         <p>Get your Board involved in building it.</p>
         <p>Their ideas, professional experience, relationships and willingness to participate should help shape how your organization raises money.</p>
@@ -305,7 +306,7 @@ export default function ActivationModule2() {
       </section>
 
       <section className="member-card" data-testid="am2-progress-summary">
-        <h2>Board Fundraising Planning Progress</h2>
+        <h2>{activationM2Text.h_boardFundraisingPlanningProgress}</h2>
         <p data-testid="am2-progress-counts">
           <strong>{data.progress.invited}</strong> Invited · <strong>{data.progress.received}</strong> Response{data.progress.received === 1 ? "" : "s"} Received · <strong>{data.progress.waiting}</strong> Waiting
         </p>
@@ -316,7 +317,7 @@ export default function ActivationModule2() {
 
       {data.suggestions.length > 0 && (
         <section className="member-card" data-testid="am2-suggestions">
-          <h2>Board Members Already in Your Account</h2>
+          <h2>{activationM2Text.h_boardMembersAlreadyInYour}</h2>
           <p>These current Board Members already exist in your account. Add anyone who should participate in the fundraising planning process.</p>
           {data.suggestions.map((person) => (
             <div key={`${person.source}-${person.ref_id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee", flexWrap: "wrap", gap: 8 }}>
@@ -381,7 +382,7 @@ export default function ActivationModule2() {
 
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)} testId="am2-add-modal">
-          <h2>Add Current Board Member</h2>
+          <h2>{activationM2Text.h_addCurrentBoardMember}</h2>
           <p>The Board Member will complete the planning form through their own secure link. You only need their contact details.</p>
           <label className="field"><span>Full Name <b>*</b></span><input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} data-testid="am2-add-name" /></label>
           <label className="field"><span>Email <b>*</b></span><input type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} data-testid="am2-add-email" /></label>
@@ -399,10 +400,10 @@ export default function ActivationModule2() {
 
       {showEdit && editForm && (
         <Modal onClose={() => setShowEdit(false)} testId="am2-edit-modal">
-          <h2>Edit Board Fundraising Planning Form</h2>
+          <h2>{activationM2Text.h_editBoardFundraisingPlanningForm}</h2>
           <label className="field"><span>Introduction</span><textarea rows={7} value={editForm.introduction} onChange={(e) => setEditForm({ ...editForm, introduction: e.target.value })} data-testid="am2-edit-introduction" /></label>
           <label className="field"><span>Fundraising Goal Context (shown to Board Members)</span><textarea rows={4} value={editForm.goal_context} onChange={(e) => setEditForm({ ...editForm, goal_context: e.target.value })} data-testid="am2-edit-goal-context" /></label>
-          <h3 style={{ margin: "14px 0 6px" }}>Questions</h3>
+          <h3 style={{ margin: "14px 0 6px" }}>{activationM2Text.h_questions}</h3>
           {editForm.prompt_list.map((entry) => (
             <label className="field" key={entry.id}><span className="eyebrow">{entry.section}</span>
               <input value={editForm.question_prompts[entry.id]} onChange={(e) => setEditForm({ ...editForm, question_prompts: { ...editForm.question_prompts, [entry.id]: e.target.value } })} data-testid={`am2-edit-question-${entry.id}`} />
@@ -425,7 +426,7 @@ export default function ActivationModule2() {
 
       {script && (
         <Modal onClose={() => setScript(null)} testId="am2-script-modal">
-          <h2>Reminder Call Script</h2>
+          <h2>{activationM2Text.h_reminderCallScript}</h2>
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6 }} data-testid="am2-script-body">{script.script}</div>
           <label className="field" style={{ marginTop: 14 }}><span>Call Notes (optional)</span>
             <textarea rows={4} value={notes} onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }} data-testid="am2-call-notes" />

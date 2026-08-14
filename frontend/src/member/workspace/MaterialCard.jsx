@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CheckCircle2, Copy, Download, Pencil, Printer, RefreshCw, Send, Sparkles } from "lucide-react";
 import { memberApi } from "../api";
+import { materialCardContent as MC } from "../../content/appContent";
 
 export const printText = (title, text) => {
   const win = window.open("", "_blank");
@@ -103,18 +104,18 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
       const url = `${window.location.origin}/shared/${response.data.share_token}`;
       setShareUrl(url);
       await navigator.clipboard?.writeText(url);
-      setShareMessage("Published. Your live secure link is ready (and copied) — anyone with it sees the current version.");
-    } catch { setShareMessage("Could not publish this resource."); }
+      setShareMessage(MC.publishSuccess);
+    } catch { setShareMessage(MC.publishError); }
   };
 
   const applyDesign = async () => {
-    if (!designText.trim()) { setDesignMessage("Describe what you want changed — for example: “Make the heading smaller” or “Move the logo to the top right”."); return; }
+    if (!designText.trim()) { setDesignMessage(MC.designEmptyError); return; }
     setBusy(true); setDesignMessage("");
     try {
       await memberApi.post(`/workspace/materials/${material.material_id}/design`, { instruction: designText });
-      setDesignMessage("Design updated — your published page now uses the new design. The content itself is unchanged.");
+      setDesignMessage(MC.designSuccess);
       setDesignText("");
-    } catch (err) { setDesignMessage(err.response?.data?.detail || "The design change could not be applied. Please try again."); }
+    } catch (err) { setDesignMessage(err.response?.data?.detail || MC.designError); }
     setBusy(false);
   };
 
@@ -128,7 +129,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
       }
       await memberApi.post("/workspace/generate", { type, application_id: applicationId, instructions });
       await refresh();
-    } catch (err) { setError(err.response?.data?.detail || err.message || "Generation failed. Your information is preserved — you can try again."); }
+    } catch (err) { setError(err.response?.data?.detail || err.message || MC.generationError); }
     setBusy(false);
   };
 
@@ -138,14 +139,14 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
       await memberApi.put(`/workspace/materials/${material.material_id}`, { display_text: draft });
       setEditing(false);
       await refresh();
-    } catch (err) { setError(err.response?.data?.detail || "We could not save your changes."); }
+    } catch (err) { setError(err.response?.data?.detail || MC.saveError); }
     setBusy(false);
   };
 
   const approve = async () => {
     setBusy(true);
     try { await memberApi.post(`/workspace/materials/${material.material_id}/approve`); await refresh(); }
-    catch (err) { setError(err.response?.data?.detail || "Could not approve."); }
+    catch (err) { setError(err.response?.data?.detail || MC.approveError); }
     setBusy(false);
   };
 
@@ -157,7 +158,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
   return (
     <section className="material-card" data-testid={testId || `material-${type}`}>
       <div className="material-card-head">
-        <h3>{title}{approvable && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{material ? (approved ? "Approved" : "Generated") : "Not Generated"}</span>}</h3>
+        <h3>{title}{approvable && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{material ? (approved ? MC.statusApproved : MC.statusGenerated) : MC.statusNotGenerated}</span>}</h3>
         {material && !hideDisplay && (
           <label className="version-select">Version
             <select value={material.current_version} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>
@@ -177,30 +178,30 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
         <>
           {hideDisplay ? summary : <pre className="material-display" data-testid={`material-${type}-display`}>{version.display_text}</pre>}
           <div className="material-actions">
-            {!hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> Edit</button>}
-            <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? "Generating…" : "Regenerate"}</button>
-            {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>}
-            {!hideDisplay && <button className="button button-back" onClick={() => downloadMaterialPdf(material)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>}
-            {shareable && <button className="button button-back" onClick={publish} data-testid={`share-${type}`}><Copy size={14} /> Publish — Live Secure Link</button>}
-            {shareable && <button className="button button-back" onClick={() => setDesignOpen(!designOpen)} data-testid={`edit-design-${type}`}><Pencil size={14} /> Edit Design</button>}
-            {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> Approve</button>}
+            {!hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> {MC.edit}</button>}
+            <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? MC.generating : MC.regenerate}</button>
+            {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> {MC.copy}</button>}
+            {!hideDisplay && <button className="button button-back" onClick={() => downloadMaterialPdf(material)} data-testid={`download-${type}`}><Download size={14} /> {MC.downloadPdf}</button>}
+            {shareable && <button className="button button-back" onClick={publish} data-testid={`share-${type}`}><Copy size={14} /> {MC.publish}</button>}
+            {shareable && <button className="button button-back" onClick={() => setDesignOpen(!designOpen)} data-testid={`edit-design-${type}`}><Pencil size={14} /> {MC.editDesign}</button>}
+            {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> {MC.approve}</button>}
             {extraActions}
           </div>
           {shareUrl && (
-            <p className="member-success" data-testid={`share-url-${type}`}>Live secure link: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
+            <p className="member-success" data-testid={`share-url-${type}`}>{MC.liveLinkLabel} <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
           )}
           {designOpen && (
             <div className="material-edit" data-testid={`design-panel-${type}`}>
-              <p className="workspace-note">Tell us exactly what you want changed about the design of the published page — in your own words. For example: “Make the heading smaller”, “Move the organization logo to the top right”, “Add more spacing between sections”, “Make this page look more formal”. The content never changes.</p>
+              <p className="workspace-note">{MC.designPrompt}</p>
               <textarea rows="3" value={designText} onChange={(event) => setDesignText(event.target.value)} data-testid={`design-instruction-${type}`} />
               <div className="material-actions">
-                <button className="button" disabled={busy} onClick={applyDesign} data-testid={`apply-design-${type}`}>{busy ? "Applying…" : "Apply Design Change"}</button>
+                <button className="button" disabled={busy} onClick={applyDesign} data-testid={`apply-design-${type}`}>{busy ? MC.applyingDesign : MC.applyDesign}</button>
                 <button className="button button-back" onClick={() => setDesignOpen(false)}>Close</button>
               </div>
               {designMessage && <p className="member-success" data-testid={`design-message-${type}`}>{designMessage}</p>}
             </div>
           )}
-          {approvable && !approved && <p className="workspace-note">Read it, edit anything you want changed, then approve it before use. Editing an approved resource returns it to Draft for re-approval.</p>}
+          {approvable && !approved && <p className="workspace-note">{MC.approveNote}</p>}
           {shareMessage && <p className="member-success">{shareMessage}</p>}
           <p className="material-meta">Created {new Date(version.created_at).toLocaleString()} · Status: {approvable ? (approved ? "Approved" : "Draft") : material.status}</p>
         </>
@@ -209,14 +210,14 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
         <div className="material-edit">
           <textarea rows="16" value={draft} onChange={(event) => setDraft(event.target.value)} data-testid={`edit-${type}-textarea`} />
           <div className="material-actions">
-            <button className="button" disabled={busy} onClick={saveEdit} data-testid={`save-${type}`}>Save Changes</button>
-            <button className="button button-back" onClick={() => setEditing(false)}>Cancel</button>
+            <button className="button" disabled={busy} onClick={saveEdit} data-testid={`save-${type}`}>{MC.saveChanges}</button>
+            <button className="button button-back" onClick={() => setEditing(false)}>{MC.cancel}</button>
           </div>
         </div>
       )}
       {error && (
         <div className="submit-error material-error" data-testid={`error-${type}`}>
-          {error} <button className="link-button" disabled={busy} onClick={() => generate(false)}>Try Again</button>
+          {error} <button className="link-button" disabled={busy} onClick={() => generate(false)}>{MC.tryAgain}</button>
         </div>
       )}
     </section>

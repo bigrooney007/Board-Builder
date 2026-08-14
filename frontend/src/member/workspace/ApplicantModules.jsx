@@ -4,6 +4,7 @@ import { Download, FileText, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
 import { MaterialCard, SendMaterialButton, currentVersion, printBranded } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
+import { recruitmentWorkspaceText } from "../../content/appContent";
 
 export const useApplications = () => {
   const [applications, setApplications] = useState([]);
@@ -115,7 +116,7 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
   return (
     <div className="applicant-detail" data-testid="applicant-detail">
       <div className="detail-section">
-        <h3>Applicant Profile</h3>
+        <h3>{recruitmentWorkspaceText.h_applicantProfile}</h3>
         <dl>{Object.entries(snapshot).filter(([, value]) => value).map(([key, value]) => <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{value}</dd></div>)}</dl>
         <div className="material-actions">
           <label className="field status-field"><span>Application status</span>
@@ -129,14 +130,14 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
       </div>
       {showApplication && hasAnswers && (
         <div className="detail-section" data-testid="application-answers">
-          <h3>Application Answers</h3>
+          <h3>{recruitmentWorkspaceText.h_applicationAnswers}</h3>
           <dl>{Object.entries(application.answers || {}).map(([key, value]) => key === "custom" ? null : <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{String(value) || "—"}</dd></div>)}</dl>
           {application.answers?.custom && Object.keys(application.answers.custom).length > 0 && <dl>{Object.entries(application.answers.custom).map(([key, value]) => <div key={key}><dt>Custom question</dt><dd>{String(value) || "—"}</dd></div>)}</dl>}
         </div>
       )}
       <CandidateActions application={application} refresh={async () => { await refresh(); if (onChanged) onChanged(); }} branding={branding} />
       <div className="detail-section">
-        <h3>Private Notes (never shown to the applicant)</h3>
+        <h3>{recruitmentWorkspaceText.h_privateNotesNeverShownTo}</h3>
         <textarea rows="4" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="applicant-notes" />
         <button className="button button-back" onClick={saveNotes} data-testid="save-notes-button">Save Notes</button>
       </div>
@@ -175,8 +176,8 @@ const ExternalApplicantForm = ({ refresh }) => {
   };
   return (
     <section className="workspace-panel" data-testid="external-applicant-form">
-      <h2>Add External Applicant</h2>
-      <p className="material-description">Applicants may also come to you through LinkedIn, email, referrals or your personal network. Add their name, CV and any relevant details you have — nothing is ever invented. They then enter the exact same interview workflow as your hosted applicants.</p>
+      <h2>{recruitmentWorkspaceText.h_addExternalApplicant}</h2>
+      <p className="material-description">{recruitmentWorkspaceText.d_applicantsMayAlsoComeTo}</p>
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
         <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
@@ -201,8 +202,8 @@ export const Module4Applicants = () => {
   return (
     <div data-testid="module4-workspace">
       <section className="workspace-panel">
-        <h2>Your Board Applicants</h2>
-        <p className="material-description">Everyone who applies through your Board Application appears here automatically — nothing is re-entered. Review each candidate, view their application and CV, then use the actions to invite them to interview, prepare their candidate-specific interview guide, and follow up after the interview. You decide who moves forward — never the AI.</p>
+        <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_everyoneWhoAppliesThroughYour}</p>
         {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">No applications yet. When your recruitment campaign is launched, applications will appear here.</p>}
         {applications.map((application) => (
           <div className={`applicant-row ${openId === application.application_id ? "open" : ""}`} key={application.application_id} data-testid={`applicant-row-${application.application_id}`}>
@@ -344,7 +345,7 @@ const ReferenceProcessPanel = ({ application }) => {
                 <p className="workspace-note" data-testid="hosted-email-note">Candidate Email: <strong>{hostedEmail}</strong> (from their board application)</p>
               ) : !emailConfirmed && process.extracted_email ? (
                 <div className="material-actions" data-testid="extracted-email-confirm">
-                  <p className="workspace-note">We found this email address in the applicant's CV — please confirm it before anything is sent:</p>
+                  <p className="workspace-note">{recruitmentWorkspaceText.n_weFoundThisEmailAddress}</p>
                   <label className="field" style={{ minWidth: 280 }}><span>Candidate Email</span>
                     <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="candidate-email-input" />
                   </label>
@@ -352,7 +353,7 @@ const ReferenceProcessPanel = ({ application }) => {
                 </div>
               ) : !emailConfirmed ? (
                 <div className="material-actions" data-testid="missing-email-entry">
-                  <p className="workspace-note">We could not confidently find an email address for this applicant — we never guess. Enter it below:</p>
+                  <p className="workspace-note">{recruitmentWorkspaceText.n_weCouldNotConfidentlyFind}</p>
                   <label className="field" style={{ minWidth: 280 }}><span>Candidate Email Address</span>
                     <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="candidate-email-input" />
                   </label>
@@ -426,8 +427,8 @@ const BackgroundCheckPanel = ({ application }) => {
   const saveCheck = async () => { await memberApi.patch(`/workspace/applications/${application.application_id}`, { background_check: check }); setMessage("Background check record saved."); };
   return (
     <div className="detail-section" data-testid="background-check-panel">
-      <h3>Background Check Record</h3>
-      <p className="workspace-note">Nonprofit Board Builder does not perform background checks and does not endorse, rank or select any provider. No applicant information is shared. The nonprofit remains responsible for its selection decision.</p>
+      <h3>{recruitmentWorkspaceText.h_backgroundCheckRecord}</h3>
+      <p className="workspace-note">{recruitmentWorkspaceText.n_nonprofitBoardBuilderDoesNot}</p>
       <div className="two-col-fields">
         <label className="field"><span>Background check</span><select value={check.status || "Not started"} onChange={(event) => setCheck({ ...check, status: event.target.value })} data-testid="background-status">{["Not Required", "Not started", "Pending", "In progress", "Completed", "Follow-up required"].map((option) => <option key={option}>{option}</option>)}</select></label>
         <label className="field"><span>Requested date</span><input value={check.requested_date || ""} onChange={(event) => setCheck({ ...check, requested_date: event.target.value })} /></label>
@@ -496,8 +497,8 @@ export const BoardProfilePanel = () => {
   };
   return (
     <div className="detail-section" data-testid="board-profile-panel">
-      <h3>Board Member Profile Form</h3>
-      <p className="material-description">Collect the professional information, skills, experience and interests you need to understand how each new board member can contribute. One standard hosted form — candidate-specific secure links with prefilled information are created automatically with each Conditional Appointment.</p>
+      <h3>{recruitmentWorkspaceText.h_boardMemberProfileForm}</h3>
+      <p className="material-description">{recruitmentWorkspaceText.d_collectTheProfessionalInformationSkills}</p>
       {!form ? (
         <button className="button" onClick={load} data-testid="generate-board-profile-form">Create Board Member Profile Form</button>
       ) : (
@@ -699,15 +700,15 @@ export const Module5References = () => {
   return (
     <div data-testid="module5-workspace">
       <section className="workspace-panel" data-testid="module5-background-check-section">
-        <h2>Background Check</h2>
-        <p className="material-description">Nonprofit Board Builder does not perform background checks and does not endorse, rank or select any provider. Use a provider your organization trusts — then record the result on each applicant below.</p>
+        <h2>{recruitmentWorkspaceText.h_backgroundCheck}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_nonprofitBoardBuilderDoesNot}</p>
         <div className="material-actions">
           <button className="button" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
         </div>
       </section>
       <section className="workspace-panel" data-testid="module5-decide-forward-section">
-        <h2>Decide Who Moves Forward</h2>
-        <p className="material-description">Review the applicants you interviewed and select the people you would like to move forward in your board recruitment process. Your organization decides — never the AI. Marking a decision sends nothing automatically; it only prepares the right next steps for your review.</p>
+        <h2>{recruitmentWorkspaceText.h_decideWhoMovesForward}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_reviewTheApplicantsYouInterviewed}</p>
         {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Step 4 appear here automatically once applications arrive.</p>}
         {sorted.map((application) => (
           <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
@@ -732,8 +733,8 @@ export const Module5References = () => {
       </section>
 
       <section className="workspace-panel" data-testid="module5-prepare-section">
-        <h2>Prepare Your New Board Member Materials</h2>
-        <p className="material-description">Prepare the documents and information your selected board members will need before onboarding. Generate each resource, review it, make any changes you want, and approve the final version. These are generated once for your organization — candidate-specific links are created automatically later.</p>
+        <h2>{recruitmentWorkspaceText.h_prepareYourNewBoardMember}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_prepareTheDocumentsAndInformation}</p>
         <ul className="readiness-list" data-testid="prepare-status-list">
           {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
         </ul>
@@ -749,10 +750,10 @@ export const Module5References = () => {
       </section>
 
       <section className="workspace-panel" data-testid="module5-decide-section">
-        <h2>Schedule the Board Onboarding Session</h2>
-        <p className="material-description">Choose when you would like to meet with your new board members for onboarding. This information will automatically be included in their Conditional Appointment email, along with each candidate's secure links — nothing is ever pasted manually.</p>
+        <h2>{recruitmentWorkspaceText.h_scheduleTheBoardOnboardingSession}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_chooseWhenYouWouldLike}</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
-        {!detail && <p className="workspace-note">Choose a candidate above to prepare their Conditional Appointment email.</p>}
+        {!detail && <p className="workspace-note">{recruitmentWorkspaceText.n_chooseACandidateAboveTo}</p>}
         {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} profileReady={profileReady} key={`dec-${detail.application_id}`} />}
       </section>
     </div>
@@ -825,8 +826,8 @@ const FirstMeetingPanel = ({ orgMaterials, refreshOrg, boardMembers }) => {
   };
   return (
     <section className="workspace-panel" data-testid="first-meeting-panel">
-      <h2>Your First Board Meeting</h2>
-      <p className="material-description">This meeting is the transition from recruitment into active board participation. We only need the meeting details — your organization information is already stored, and the details are saved once for every board member.</p>
+      <h2>{recruitmentWorkspaceText.h_yourFirstBoardMeeting}</h2>
+      <p className="material-description">{recruitmentWorkspaceText.d_thisMeetingIsTheTransition}</p>
       <div className="two-col-fields">
         <label className="field"><span>Meeting Date <b>*</b></span><input value={meeting.date} onChange={(event) => setMeeting({ ...meeting, date: event.target.value })} data-testid="meeting-date" /></label>
         <label className="field"><span>Meeting Time <b>*</b></span><input value={meeting.time} onChange={(event) => setMeeting({ ...meeting, time: event.target.value })} data-testid="meeting-time" /></label>
@@ -844,7 +845,7 @@ const FirstMeetingPanel = ({ orgMaterials, refreshOrg, boardMembers }) => {
         material={material} refresh={refreshOrg} approvable beforeGenerate={saveMeeting} />
       {material?.status === "Approved" && boardMembers.length > 0 && (
         <div className="detail-section" data-testid="first-meeting-recipients">
-          <h3>Recipients (formally appointed board members only)</h3>
+          <h3>{recruitmentWorkspaceText.h_recipientsFormallyAppointedBoardMembers}</h3>
           {boardMembers.map((member) => (
             <label className="checkbox-field" key={member.application_id}>
               <input type="checkbox" checked={recipients.includes(member.application_id)} onChange={() => toggle(member.application_id)} data-testid={`recipient-${member.application_id}`} />
@@ -890,8 +891,8 @@ export const Module6Onboarding = () => {
   return (
     <div data-testid="module6-workspace">
       <section className="workspace-panel" data-testid="module6-members-section">
-        <h2>Onboard Your New Board Members</h2>
-        <p className="material-description">Complete the final steps for the people you have selected, formally welcome them to your board, and prepare them to begin serving. Completion of every item never appoints anyone automatically — your organization confirms each appointment.</p>
+        <h2>{recruitmentWorkspaceText.h_onboardYourNewBoardMembers}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_completeTheFinalStepsFor}</p>
         {session?.date && (
           <div className="material-actions" data-testid="session-status-controls">
             <span className="signature-status">Onboarding Session: <strong>{session.status || "Scheduled"}</strong> — {session.date} {session.time || ""}</span>
@@ -903,14 +904,14 @@ export const Module6Onboarding = () => {
       </section>
 
       <section className="workspace-panel" data-testid="module6-resources-section">
-        <h2>Onboarding Resources Prepared in Step 5</h2>
+        <h2>{recruitmentWorkspaceText.h_onboardingResourcesPreparedInStep}</h2>
         {[["organization_overview", "Organization Overview"], ["board_manual", "Board Manual"], ...AGREEMENTS].map(([type, title]) => (
           <PreparedResource key={type} type={type} title={title} material={orgMaterials[type]} branding={branding} />
         ))}
       </section>
 
       <section className="workspace-panel" data-testid="module6-script-section">
-        <h2>Prepare for Your Board Onboarding Session</h2>
+        <h2>{recruitmentWorkspaceText.h_prepareForYourBoardOnboarding}</h2>
         <MaterialCard type="onboarding_script" title="Board Member Onboarding Facilitator Guide" buttonLabel="Generate My Board Onboarding Script"
           description="A practical facilitator guide you can have open during the onboarding session and follow from beginning to end — welcome and introductions, why the organization exists, where it is going, the role of the board, how you will work together, how each member can contribute, fundraising and ambassadorship, the board documents, next steps and closing."
           material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />
@@ -919,8 +920,8 @@ export const Module6Onboarding = () => {
       <FirstMeetingPanel orgMaterials={orgMaterials} refreshOrg={refreshOrg} boardMembers={boardMembers} />
 
       <section className="workspace-panel" data-testid="complete-recruitment-panel">
-        <h2>Your Board</h2>
-        <p className="material-description">See every person who has joined your board, their professional profiles, and the engagement guide for working with each of them.</p>
+        <h2>{recruitmentWorkspaceText.h_yourBoard}</h2>
+        <p className="material-description">{recruitmentWorkspaceText.d_seeEveryPersonWhoHas}</p>
         <Link className="button" to="/app/recruitment/self-guided/results" data-testid="view-results-button">View My Board</Link>
       </section>
     </div>

@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
+import { strategyReviewText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,9 +49,9 @@ export default function StrategyReviewPage() {
     }
   };
 
-  if (state === "loading") return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-loading"><h2>Loading…</h2></div></main></FunnelLayout>;
+  if (state === "loading") return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-loading"><h2>{strategyReviewText.h_loading}</h2></div></main></FunnelLayout>;
   if (state === "invalid") {
-    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-invalid"><h2>This Review Link Is Not Valid</h2><p>Please contact the person who sent you this link and ask them to resend your personal review link.</p></div></main></FunnelLayout>;
+    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-invalid"><h2>{strategyReviewText.h_thisReviewLinkIsNot}</h2><p>Please contact the person who sent you this link and ask them to resend your personal review link.</p></div></main></FunnelLayout>;
   }
   if (state === "done") {
     return (
@@ -58,7 +59,7 @@ export default function StrategyReviewPage() {
         <main>
           <div className="intake-card" data-testid="sr-thank-you">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Review submitted</p>
-            <h2>Thank You</h2>
+            <h2>{strategyReviewText.h_thankYou}</h2>
             <p>Your review of the Fundraising Strategy Plan has been submitted to {context.organization_name}.</p>
             <p>Your input will help the Board work through the strategy and agree on the way forward together.</p>
           </div>
@@ -71,7 +72,7 @@ export default function StrategyReviewPage() {
     <FunnelLayout restrained>
       <main data-testid="sr-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="sr-hero">
-          <h1 data-testid="sr-title">Fundraising Strategy Plan</h1>
+          <h1 data-testid="sr-title">{strategyReviewText.h_fundraisingStrategyPlan}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="sr-organization">{context.organization_name}</p>
           <i aria-hidden="true" />
         </section>
@@ -79,7 +80,7 @@ export default function StrategyReviewPage() {
         <section className="intake-shell" data-testid="sr-body">
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 8, padding: 20, marginBottom: 24, background: "#fff" }} data-testid="sr-strategy-text">{context.strategy_text}</div>
 
-          <h2 className="intake-step-title" data-testid="sr-your-review-heading">Your Review</h2>
+          <h2 className="intake-step-title" data-testid="sr-your-review-heading">{strategyReviewText.h_yourReview}</h2>
           <fieldset className="field choice-field" data-testid="sr-position-field">
             <legend>After reviewing the Fundraising Strategy Plan, which best reflects your position? <b>*</b></legend>
             <div className="choice-grid" style={{ gridTemplateColumns: "1fr" }}>

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, FileText, Mail, RefreshCw, Users, X } from "lucide-react";
+import { Copy, Download, FileText, Mail, RefreshCw, Users, X } from "lucide-react";
 import { memberApi } from "./api";
+import { reactivationContent } from "../content/appContent";
+
+const D = reactivationContent.dashboard;
 
 const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };

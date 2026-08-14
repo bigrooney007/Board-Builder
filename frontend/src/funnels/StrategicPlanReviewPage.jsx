@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { spReviewText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -29,18 +30,18 @@ export default function StrategicPlanReviewPage() {
     setBusy(false);
   };
 
-  if (error && !data) return <main className="legal-page"><h1>Foundational Plan Review</h1><p data-testid="sp-review-error">{error}</p></main>;
+  if (error && !data) return <main className="legal-page"><h1>{spReviewText.h_foundationalPlanReview}</h1><p data-testid="sp-review-error">{error}</p></main>;
   if (!data) return <main className="legal-page"><p>Loading…</p></main>;
   if (done) return (
     <main className="legal-page" data-testid="sp-review-thanks">
-      <h1>Thank You</h1>
+      <h1>{spReviewText.h_thankYou}</h1>
       <p>Your review has been recorded. Your input will help refine the Foundational Strategic Plan for {data.organization_name} before the detailed area plans are developed.</p>
     </main>
   );
   return (
     <main className="legal-page" data-testid="sp-review-page" style={{ maxWidth: "820px", margin: "0 auto", padding: "32px 16px" }}>
       <p className="eyebrow">{data.organization_name}</p>
-      <h1>Foundational Strategic Plan — Board Review & Refinement</h1>
+      <h1>{spReviewText.h_foundationalStrategicPlanBoardReview}</h1>
       <p>Review the consolidated thinking below. For each strategic area, support it, suggest a change, add an idea, or flag it for Board discussion. This is refinement, not formal adoption.</p>
       <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "16px", borderRadius: "10px", maxHeight: "420px", overflow: "auto" }} data-testid="sp-review-plan-text">{data.display_text}</pre>
       <form onSubmit={submit}>

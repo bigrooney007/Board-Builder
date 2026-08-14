@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, X } from "lucide-react";
 import { memberApi } from "./api";
+import { activationM5Text } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -57,14 +58,14 @@ export default function ActivationModule5() {
   return (
     <div data-testid="activation-module5">
       <section className="member-card" data-testid="am5-intro">
-        <h2>Give Your Board the Tools to Start Taking Action</h2>
+        <h2>{activationM5Text.h_giveYourBoardTheTools}</h2>
         <p>The Board has helped build the fundraising plan, reviewed the strategy and agreed on the direction.</p>
         <p>Now give Board Members practical tools they can use to begin carrying their part of the fundraising work.</p>
       </section>
 
       {!data.gate_open ? (
         <section className="member-card" data-testid="am5-locked">
-          <h2>The Plan Must Be Adopted First</h2>
+          <h2>{activationM5Text.h_thePlanMustBeAdopted}</h2>
           <p>The Fundraising Strategy Plan must be resolved and adopted — with your Plan Adoption Conclusion recorded — before execution tools are generated.</p>
           {data.plan_status === "Further Review Needed" && <p data-testid="am5-further-review-note">Your recorded plan status is <strong>Further Review Needed</strong>. Return to Module 4 to work through the outstanding items and record adoption.</p>}
           <Link className="button" to="/app/activation/self-guided/module/4" data-testid="am5-back-to-module4">GO TO MODULE 4 — FACILITATE PLAN ADOPTION</Link>
@@ -99,7 +100,7 @@ export default function ActivationModule5() {
 
           {toolkit.status === "Approved" && (
             <section className="member-card" style={{ textAlign: "center" }} data-testid="am5-completion">
-              <h2>Your Board Is Ready to Start Executing</h2>
+              <h2>{activationM5Text.h_yourBoardIsReadyTo}</h2>
               <p>Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.</p>
               <p>The next step is to go to your Fundraising Board Dashboard, where you can see each Board Member's responsibility and create their individual Fundraising Portfolio.</p>
               <Link className="button rwr-cta-button" to="/app/activation/self-guided/my-fundraising-board" data-testid="am5-go-to-board">GO TO MY FUNDRAISING BOARD</Link>
@@ -112,7 +113,7 @@ export default function ActivationModule5() {
         <div style={overlayStyle} data-testid="am5-edit-modal">
           <div style={dialogStyle}>
             <button type="button" onClick={() => setShowEdit(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid="am5-edit-modal-close"><X size={20} /></button>
-            <h2>Edit Execution Toolkit</h2>
+            <h2>{activationM5Text.h_editExecutionToolkit}</h2>
             <textarea rows={22} style={{ width: "100%" }} value={editText} onChange={(e) => setEditText(e.target.value)} data-testid="am5-edit-text" />
             <button type="button" className="button" onClick={saveEdit} data-testid="am5-save-button">SAVE</button>
           </div>

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { recruitProcessText } from "../content/appContent";
 
 const STAGES = [
   ["01", "Identify the Board Members Your Organization Needs", "Your organization needs a board with the skills, experience, credibility, relationships and capacity it needs to succeed. The first step is identifying the gap between the board you have today and the powerhouse board your organization needs. That clarity drives the entire recruitment effort."],
@@ -18,7 +19,7 @@ export default function RecruitProcessPage() {
       <main className="recruit-process-page" data-testid="recruit-process-page">
         <section className="process-hero">
           <p className="eyebrow">Board Recruitment</p>
-          <h1 data-testid="process-heading">Your Path to Building the Board Your Nonprofit Needs</h1>
+          <h1 data-testid="process-heading">{recruitProcessText.h_yourPathToBuildingThe}</h1>
           <p>Recruiting the right board is not just about bringing in the right people. It is also about bringing them in the right way so they understand the mission, commit to the organization and participate fully in building it.</p>
           <p>Having worked with hundreds of nonprofits to strengthen their boards over the last decade, here are the 5 steps we recommend to build the board your organization needs.</p>
         </section>
@@ -35,7 +36,7 @@ export default function RecruitProcessPage() {
           ))}
         </section>
         <section className="process-final" data-testid="process-final-section">
-          <h2>Build the Board Your Mission Deserves</h2>
+          <h2>{recruitProcessText.h_buildTheBoardYourMission}</h2>
           <p>You do not need more names on your board. You need committed people with the capacity to help your nonprofit grow, raise money, build relationships and move the mission forward.</p>
           <Link className="button process-final-button" to="/recruit/checkout" data-testid="process-final-cta">Start Building My Board <ArrowRight size={18} /></Link>
         </section>
