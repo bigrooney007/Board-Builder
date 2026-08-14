@@ -443,6 +443,33 @@ def create_workspace_router(db) -> APIRouter:
         await db.share_links.insert_one({"share_token": token, "material_id": material_id, "user_id": member["user_id"], "created_at": now_iso()})
         return {"share_token": token}
 
+    @router.post("/materials/{material_id}/design")
+    async def edit_material_design(material_id: str, payload: dict, request: Request):
+        member = await current_member(request)
+        instruction = str(payload.get("instruction", "")).strip()
+        if not instruction:
+            raise HTTPException(status_code=422, detail="Describe what you want changed about the design")
+        material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0, "material_id": 1, "design_spec": 1, "title": 1, "design_instruction_history": 1})
+        if not material:
+            raise HTTPException(status_code=404, detail="Material not found")
+        current = material.get("design_spec") or {"heading_scale": 1, "logo_position": "left", "body_font": "serif",
+                                                  "spacing_scale": 1, "text_align": "left", "accent_intensity": "standard"}
+        context = (f"DOCUMENT: {material.get('title', '')}\n\nCURRENT DESIGN VALUES:\n"
+                   + "\n".join(f"- {key}: {value}" for key, value in current.items())
+                   + f"\n\nCUSTOMER'S DESIGN INSTRUCTION:\n{instruction}")
+        structured = await generate_structured("resource_design_adjustments", context)
+        spec = {
+            "heading_scale": min(max(float(structured.get("heading_scale", current.get("heading_scale", 1)) or 1), 0.6), 1.5),
+            "logo_position": structured.get("logo_position") if structured.get("logo_position") in {"left", "right", "center"} else current.get("logo_position", "left"),
+            "body_font": structured.get("body_font") if structured.get("body_font") in {"serif", "sans-serif"} else current.get("body_font", "serif"),
+            "spacing_scale": min(max(float(structured.get("spacing_scale", current.get("spacing_scale", 1)) or 1), 0.6), 2),
+            "text_align": structured.get("text_align") if structured.get("text_align") in {"left", "center"} else current.get("text_align", "left"),
+            "accent_intensity": structured.get("accent_intensity") if structured.get("accent_intensity") in {"subtle", "standard", "strong"} else current.get("accent_intensity", "standard"),
+        }
+        await db.generated_materials.update_one({"material_id": material_id}, {"$set": {
+            "design_spec": spec, "design_instruction_history": (material.get("design_instruction_history") or []) + [{"instruction": instruction, "applied_at": now_iso()}]}})
+        return {"design_spec": spec}
+
     @router.get("/board-profile-form")
     async def board_profile_form(request: Request):
         member = await current_member(request)

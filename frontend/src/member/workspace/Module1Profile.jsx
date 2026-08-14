@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
-import { BrandingPanel, useBranding } from "./ApplicantModules";
 
 export const SKILL_OPTIONS = ["Fundraising", "Corporate Partnerships", "Major Donors", "Grant Development", "Finance", "Accounting", "Governance", "Legal", "Marketing", "Communications", "Public Relations", "Community Relationships", "Strategic Planning", "Human Resources", "Technology", "Program Development", "Operations", "Government/Public Policy", "Healthcare", "Education", "Professional/Business Connections", "Lived Experience", "Other"];
 
@@ -62,7 +61,6 @@ const KnownInfoSummary = ({ data }) => {
 
 export const Module1Profile = ({ onConfirmed }) => {
   const { byType, refresh } = useMaterials();
-  const [branding, setBranding] = useBranding();
   const [stored, setStored] = useState({});
   const [form, setForm] = useState({ organization_name: "", mission: "", current_board_skills: [], current_board_skills_other: "", desired_board_skills: [], desired_board_skills_other: "" });
   const [errors, setErrors] = useState({});
@@ -157,15 +155,10 @@ export const Module1Profile = ({ onConfirmed }) => {
             onToggle={toggle("desired_board_skills")} onOther={(value) => setForm({ ...form, desired_board_skills_other: value })}
             testId="module1-desired-skills" error={errors.desired} />
         )}
-        <div data-testid="module1-branding-section">
-          <BrandingPanel branding={branding} setBranding={setBranding}
-            heading="Add Your Organization Branding (optional)"
-            description="We will use your logo and colors to professionally brand the Recruitment materials and documents we create for your organization. You only add them once — if you skip this, a professional neutral design is used." />
-        </div>
         <MaterialCard
           type="powerhouse_board_blueprint"
           title="The Board Members Your Organization Needs"
-          buttonLabel="Generate the Board Members I Need"
+          buttonLabel="Generate the Board We Need"
           description="One exact profile for each new board member you want to recruit — who they are, why they matter to your organization and what to look for. Read it, edit anything you want changed, then approve it. The approved result is used automatically throughout your recruitment campaign."
           material={byType.powerhouse_board_blueprint}
           refresh={refresh}

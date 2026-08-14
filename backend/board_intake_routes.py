@@ -58,6 +58,9 @@ class IntakeSubmission(BaseModel):
     application_deadline: str = ""
     deadline_date: str = ""
     anything_else: str = ""
+    logo_data: str = ""
+    primary_color: str = ""
+    secondary_color: str = ""
 
 
 def create_board_intake_router(db) -> APIRouter:
@@ -131,7 +134,7 @@ def create_board_intake_router(db) -> APIRouter:
                 "organization_prefill": organization_prefill, "calendly_url": CALENDLY_URL}
 
     async def merge_into_recruitment_profile(user_id: str, payload: IntakeSubmission, now: str):
-        existing = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1, "strategy_intake": 1}) or {}
+        existing = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1, "strategy_intake": 1, "branding": 1}) or {}
         data = existing.get("data", {}) or {}
         intake_data = {
             "organization_name": payload.organization_name, "website": payload.website, "mission": payload.mission,
@@ -166,9 +169,16 @@ def create_board_intake_router(db) -> APIRouter:
         for key, value in intake_strategy.items():
             if value not in ("", None) and not merged_strategy.get(key):
                 merged_strategy[key] = value
+        sets = {"data": merged, "strategy_intake": merged_strategy, "updated_at": now}
+        existing_branding = existing.get("branding", {}) or {}
+        branding_updates = {key: value for key, value in {
+            "logo_data": payload.logo_data, "primary_color": payload.primary_color,
+            "secondary_color": payload.secondary_color}.items() if value and not existing_branding.get(key)}
+        if branding_updates:
+            sets["branding"] = {**existing_branding, **branding_updates}
         await db.recruitment_profiles.update_one(
             {"user_id": user_id},
-            {"$set": {"data": merged, "strategy_intake": merged_strategy, "updated_at": now},
+            {"$set": sets,
              "$setOnInsert": {"created_at": now}},
             upsert=True,
         )

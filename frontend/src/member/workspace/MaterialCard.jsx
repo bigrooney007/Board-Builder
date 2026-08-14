@@ -90,16 +90,32 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [shareMessage, setShareMessage] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
+  const [designOpen, setDesignOpen] = useState(false);
+  const [designText, setDesignText] = useState("");
+  const [designMessage, setDesignMessage] = useState("");
   const version = currentVersion(material);
   const approved = material?.status === "Approved";
 
-  const copyShareLink = async () => {
+  const publish = async () => {
     try {
       const response = await memberApi.post(`/workspace/materials/${material.material_id}/share`);
       const url = `${window.location.origin}/shared/${response.data.share_token}`;
+      setShareUrl(url);
       await navigator.clipboard?.writeText(url);
-      setShareMessage("Share link copied. Anyone with this unlisted link can view the current version.");
-    } catch { setShareMessage("Could not create the share link."); }
+      setShareMessage("Published. Your live secure link is ready (and copied) — anyone with it sees the current version.");
+    } catch { setShareMessage("Could not publish this resource."); }
+  };
+
+  const applyDesign = async () => {
+    if (!designText.trim()) { setDesignMessage("Describe what you want changed — for example: “Make the heading smaller” or “Move the logo to the top right”."); return; }
+    setBusy(true); setDesignMessage("");
+    try {
+      await memberApi.post(`/workspace/materials/${material.material_id}/design`, { instruction: designText });
+      setDesignMessage("Design updated — your published page now uses the new design. The content itself is unchanged.");
+      setDesignText("");
+    } catch (err) { setDesignMessage(err.response?.data?.detail || "The design change could not be applied. Please try again."); }
+    setBusy(false);
   };
 
   const generate = async (isRegenerate) => {
@@ -165,10 +181,25 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
             <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? "Generating…" : "Regenerate"}</button>
             {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> Copy</button>}
             {!hideDisplay && <button className="button button-back" onClick={() => downloadMaterialPdf(material)} data-testid={`download-${type}`}><Download size={14} /> Download PDF</button>}
-            {shareable && <button className="button button-back" onClick={copyShareLink} data-testid={`share-${type}`}><Copy size={14} /> Copy Share Link</button>}
+            {shareable && <button className="button button-back" onClick={publish} data-testid={`share-${type}`}><Copy size={14} /> Publish — Live Secure Link</button>}
+            {shareable && <button className="button button-back" onClick={() => setDesignOpen(!designOpen)} data-testid={`edit-design-${type}`}><Pencil size={14} /> Edit Design</button>}
             {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> Approve</button>}
             {extraActions}
           </div>
+          {shareUrl && (
+            <p className="member-success" data-testid={`share-url-${type}`}>Live secure link: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
+          )}
+          {designOpen && (
+            <div className="material-edit" data-testid={`design-panel-${type}`}>
+              <p className="workspace-note">Tell us exactly what you want changed about the design of the published page — in your own words. For example: “Make the heading smaller”, “Move the organization logo to the top right”, “Add more spacing between sections”, “Make this page look more formal”. The content never changes.</p>
+              <textarea rows="3" value={designText} onChange={(event) => setDesignText(event.target.value)} data-testid={`design-instruction-${type}`} />
+              <div className="material-actions">
+                <button className="button" disabled={busy} onClick={applyDesign} data-testid={`apply-design-${type}`}>{busy ? "Applying…" : "Apply Design Change"}</button>
+                <button className="button button-back" onClick={() => setDesignOpen(false)}>Close</button>
+              </div>
+              {designMessage && <p className="member-success" data-testid={`design-message-${type}`}>{designMessage}</p>}
+            </div>
+          )}
           {approvable && !approved && <p className="workspace-note">Read it, edit anything you want changed, then approve it before use. Editing an approved resource returns it to Draft for re-approval.</p>}
           {shareMessage && <p className="member-success">{shareMessage}</p>}
           <p className="material-meta">Created {new Date(version.created_at).toLocaleString()} · Status: {approvable ? (approved ? "Approved" : "Draft") : material.status}</p>

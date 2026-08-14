@@ -149,7 +149,76 @@ const PortfolioWorkflow = ({ row, reload }) => {
   );
 };
 
-const MemberCard = ({ row, withPortfolio, reload, badge }) => (
+const OutcomeEmailWorkflow = ({ row, label, reload }) => {
+  const id = row.member_record_id;
+  const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState(null);
+  const [mode, setMode] = useState("");
+  const [draft, setDraft] = useState("");
+  const [copied, setCopied] = useState(false);
+  const exists = Boolean(row.outcome_email || email);
+
+  const generate = async () => {
+    setBusy(true);
+    try {
+      const res = await memberApi.post(`/reactivation/board-members/${id}/outcome-email`);
+      setEmail(res.data);
+      setMode("view");
+      reload();
+    } catch (err) { window.alert(err.response?.data?.detail || "Generation failed. Please try again."); }
+    setBusy(false);
+  };
+  const open = async () => {
+    const res = email || (await memberApi.get(`/reactivation/board-members/${id}/outcome-email`)).data;
+    setEmail(res);
+    setMode("view");
+  };
+  const saveEdit = async () => {
+    await memberApi.put(`/reactivation/materials/${email.material_id}`, { display_text: draft });
+    setEmail({ ...email, display_text: draft });
+    setMode("view");
+    reload();
+  };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(email.display_text); } catch { window.prompt("Copy:", email.display_text); }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <div style={{ marginTop: 12 }} data-testid={`outcome-email-${id}`}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" className="button" onClick={generate} disabled={busy} data-testid={`outcome-email-generate-${id}`}>
+          <Mail size={15} /> {busy ? "Generating…" : exists ? D.regenerateEmailButton : label}
+        </button>
+        {exists && <button type="button" className="button button-outline" onClick={open} data-testid={`outcome-email-view-${id}`}>{D.viewEmailButton}</button>}
+      </div>
+      {exists && <p className="eyebrow" style={{ marginTop: 6 }}>{D.emailReadyLabel}</p>}
+      {mode && email && (
+        <Modal onClose={() => setMode("")} testId={`outcome-email-modal-${id}`} wide>
+          <h2>{row.name} — Prepared Email</h2>
+          <p><strong>To:</strong> {email.to_name} &lt;{email.to_email}&gt;</p>
+          {mode === "view" ? (
+            <>
+              <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 16, borderRadius: 6, maxHeight: 480, overflowY: "auto" }} data-testid={`outcome-email-text-${id}`}>{email.display_text}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button type="button" className="button" onClick={copy} data-testid={`outcome-email-copy-${id}`}><Copy size={15} /> {copied ? "Copied!" : D.copyEmailButton}</button>
+                <button type="button" className="button button-outline" onClick={() => { setDraft(email.display_text); setMode("edit"); }} data-testid={`outcome-email-edit-${id}`}>EDIT</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <textarea rows={18} value={draft} onChange={(e) => setDraft(e.target.value)} style={{ width: "100%" }} data-testid={`outcome-email-edit-text-${id}`} />
+              <button type="button" className="button" onClick={saveEdit} data-testid={`outcome-email-save-${id}`}>SAVE</button>
+            </>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const MemberCard = ({ row, withPortfolio, reload, badge, extra = null }) => (
   <article className="member-card" data-testid={`myboard-member-${row.member_record_id}`}>
     <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <div>
@@ -164,6 +233,7 @@ const MemberCard = ({ row, withPortfolio, reload, badge }) => (
     {row.contribution_interests?.length > 0 && <p style={{ margin: "10px 0 0" }}><strong>Primary Contribution:</strong> {row.contribution_interests.slice(0, 3).join(", ")}</p>}
     {row.expertise?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>Expertise:</strong> {row.expertise.slice(0, 6).join(", ")}</p>}
     {withPortfolio && <PortfolioWorkflow row={row} reload={reload} />}
+    {extra}
   </article>
 );
 
@@ -189,7 +259,31 @@ export default function ReactivationStep5() {
       </section>
 
       <section className="member-card" data-testid="myboard-summary">
-        <p data-testid="myboard-summary-counts">
+        <h2 style={{ marginTop: 0 }}>{D.heading}</h2>
+        {D.intro.map((p) => <p key={p}>{p}</p>)}
+        {(() => {
+          const rows = Object.values(groups).flat();
+          const stats = [
+            [D.pipelineLabels.responded, rows.filter((r) => r.status === "COMPLETED").length],
+            [D.pipelineLabels.analyzed, rows.filter((r) => r.analyzed).length],
+            [D.pipelineLabels.conversations, rows.filter((r) => r.conversation_outcome && (r.conversation_conclusion || "").trim()).length],
+            [D.pipelineLabels.steppedUp, summary.active],
+            [D.pipelineLabels.advisory, summary.advisory],
+            [D.pipelineLabels.steppedDown, summary.stepping_down],
+            [D.pipelineLabels.portfolios, summary.portfolios_approved],
+          ];
+          return (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 12 }} data-testid="myboard-pipeline">
+              {stats.map(([label, count]) => (
+                <div key={label} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "12px 10px", textAlign: "center", background: count > 0 ? "#fafaf6" : "#fff" }} data-testid={`myboard-stat-${label.replace(/\s+/g, "-").toLowerCase()}`}>
+                  <div style={{ fontSize: "1.5rem", fontWeight: 800 }}>{count}</div>
+                  <div className="eyebrow" style={{ margin: 0 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+        <p data-testid="myboard-summary-counts" style={{ marginTop: 12 }}>
           <strong>{summary.reviewed}</strong> Board Member{summary.reviewed === 1 ? "" : "s"} Reviewed
           {summary.active > 0 && <> · <strong>{summary.active}</strong> Continuing Active</>}
           {summary.advisory > 0 && <> · <strong>{summary.advisory}</strong> Advisory</>}
@@ -218,7 +312,8 @@ export default function ReactivationStep5() {
       {groups.advisory.length > 0 && (
         <section data-testid="myboard-advisory-section">
           <h2 style={{ margin: "24px 0 10px" }}>Advisory Board / Advisory Members</h2>
-          {groups.advisory.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ADVISORY" />)}
+          {groups.advisory.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ADVISORY"
+            extra={<OutcomeEmailWorkflow row={row} label={D.advisoryEmailButton} reload={load} />} />)}
         </section>
       )}
       {groups.support.length > 0 && (
@@ -230,14 +325,15 @@ export default function ReactivationStep5() {
       {groups.stepping_down.length > 0 && (
         <section data-testid="myboard-transitions-section">
           <h2 style={{ margin: "24px 0 10px" }}>Board Transitions</h2>
-          {groups.stepping_down.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="STEPPING DOWN" />)}
+          {groups.stepping_down.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="STEPPING DOWN"
+            extra={<OutcomeEmailWorkflow row={row} label={D.followUpEmailButton} reload={load} />} />)}
         </section>
       )}
       {groups.follow_up.length > 0 && (
         <section data-testid="myboard-followup-section">
           <h2 style={{ margin: "24px 0 10px" }}>Follow-Up Still Needed</h2>
           {groups.follow_up.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="FOLLOW-UP NEEDED" />)}
-          <Link className="button button-outline" to="/app/reactivation/self-guided/module/3" data-testid="myboard-return-step3">RETURN TO STEP 3 — HAVE THE CONVERSATIONS</Link>
+          <Link className="button button-outline" to="/app/reactivation/self-guided/module/4" data-testid="myboard-return-step3">RETURN TO STEP 4 — HAVE THE CONVERSATIONS</Link>
         </section>
       )}
       {groups.waiting.length > 0 && (

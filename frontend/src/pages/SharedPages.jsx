@@ -19,17 +19,30 @@ export function SharedResourcePage() {
     axios.get(`${API}/shared/${token}`).then((response) => setResource(response.data)).catch(() => setError("This shared resource is not available."));
   }, [token]);
   const primary = resource?.primary_color || "#1d3a2f";
+  const spec = resource?.design_spec || {};
+  const headingScale = Number(spec.heading_scale) || 1;
+  const spacingScale = Number(spec.spacing_scale) || 1;
+  const logoPosition = spec.logo_position || "left";
   return (
     <main className="hosted-agreement-page" data-testid="shared-resource-page">
       {error && <div className="member-card" style={{ margin: "60px auto", maxWidth: 480 }}><h2>{error}</h2></div>}
       {resource && (
-        <article className="hosted-agreement" style={{ "--agreement-primary": primary }}>
-          <header className="hosted-agreement-head">
-            {resource.logo_data && <img src={resource.logo_data} alt={`${resource.organization_name} logo`} className="hosted-agreement-logo" />}
+        <article className="hosted-agreement" style={{
+          "--agreement-primary": spec.accent_intensity === "subtle" ? "#3b3b36" : primary,
+          fontFamily: spec.body_font === "sans-serif" ? "'Helvetica Neue', Arial, sans-serif" : undefined,
+          textAlign: spec.text_align === "center" ? "center" : undefined,
+          borderTop: spec.accent_intensity === "strong" ? `6px solid ${primary}` : undefined,
+        }}>
+          <header className="hosted-agreement-head" style={logoPosition === "center" ? { textAlign: "center" } : undefined}>
+            {resource.logo_data && <img src={resource.logo_data} alt={`${resource.organization_name} logo`} className="hosted-agreement-logo" style={{
+              float: logoPosition === "right" ? "right" : undefined,
+              display: logoPosition === "center" ? "block" : undefined,
+              margin: logoPosition === "center" ? "0 auto 12px" : undefined,
+            }} />}
             {resource.organization_name && <p className="hosted-agreement-org">{resource.organization_name}</p>}
-            <h1 data-testid="shared-resource-title">{resource.title}</h1>
+            <h1 data-testid="shared-resource-title" style={headingScale !== 1 ? { fontSize: `${Math.round(headingScale * 28)}px` } : undefined}>{resource.title}</h1>
           </header>
-          <div className="hosted-agreement-body" data-testid="shared-resource-body">{resource.display_text}</div>
+          <div className="hosted-agreement-body" data-testid="shared-resource-body" style={spacingScale !== 1 ? { lineHeight: 1.7 * spacingScale } : undefined}>{resource.display_text}</div>
         </article>
       )}
     </main>

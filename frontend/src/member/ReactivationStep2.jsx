@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Copy, Mail, Phone, Plus, UserPlus, X } from "lucide-react";
+import { Copy, Mail, Sparkles } from "lucide-react";
 import { memberApi } from "./api";
+import { reactivationContent } from "../content/appContent";
 
-const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
-const dialogStyle = { background: "#fff", maxWidth: 720, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
+const C = reactivationContent.step2;
 
-const Modal = ({ children, onClose, testId }) => (
-  <div style={overlayStyle} data-testid={testId}>
-    <div style={dialogStyle}>
-      <button type="button" onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer" }} data-testid={`${testId}-close`}><X size={20} /></button>
-      {children}
-    </div>
-  </div>
-);
-
-const RESPONSE_SECTIONS = [
+// Response labels/sections are shared with later steps.
+export const RESPONSE_SECTIONS = [
   ["Professional Profile", ["full_name", "preferred_name", "email", "phone", "city_state", "linkedin", "current_position", "employer", "industry", "years_experience"]],
   ["Professional Expertise", ["expertise", "expertise_other"]],
   ["Networks", ["networks"]],
@@ -27,7 +18,7 @@ const RESPONSE_SECTIONS = [
   ["Additional Comments", ["meaningful_service", "anything_else"]],
 ];
 
-const LABELS = {
+export const LABELS = {
   full_name: "Full Name", preferred_name: "Preferred Name", email: "Email", phone: "Phone", city_state: "City / State / Region", linkedin: "LinkedIn",
   current_position: "Current Professional Position", employer: "Organization / Employer", industry: "Industry / Professional Field", years_experience: "Years of Professional Experience",
   expertise: "Professional skills, experience or expertise", expertise_other: "Other expertise", networks: "Relationships / professional networks",
@@ -73,210 +64,100 @@ export const ResponseView = ({ data, testPrefix = "step2" }) => (
 );
 
 export default function ReactivationStep2() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [roster, setRoster] = useState(null);
+  const [form, setForm] = useState(null);
   const [error, setError] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", email: "", phone: "", role: "" });
-  const [addError, setAddError] = useState("");
-  const [preview, setPreview] = useState(null);
-  const [sending, setSending] = useState(false);
-  const [script, setScript] = useState(null);
-  const [notes, setNotes] = useState("");
-  const [notesSaved, setNotesSaved] = useState(false);
-  const [response, setResponse] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [email, setEmail] = useState(null);
   const [copied, setCopied] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
-    memberApi.get("/reactivation/roster").then((res) => setRoster(res.data)).catch(() => setError("We could not load your Board."));
+    memberApi.get("/reactivation/recommitment-form").then((res) => setForm(res.data)).catch(() => setError(C.errors.load));
   }, []);
   useEffect(load, [load]);
 
-  const openResponse = useCallback((memberId) => {
-    memberApi.get(`/reactivation/board-members/${memberId}/response`).then((res) => setResponse(res.data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const memberId = searchParams.get("member");
-    if (memberId && roster) {
-      openResponse(memberId);
-      setSearchParams({}, { replace: true });
-    }
-  }, [roster, searchParams, setSearchParams, openResponse]);
-
-  const addMember = async () => {
-    setAddError("");
-    if (!addForm.name.trim() || !addForm.email.trim()) { setAddError("Full Name and Email Address are required."); return; }
-    try {
-      await memberApi.post("/reactivation/board-members", addForm);
-      setShowAdd(false);
-      setAddForm({ name: "", email: "", phone: "", role: "" });
-      load();
-    } catch (err) {
-      setAddError(err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || "Could not add this Board Member.");
-    }
+  const act = async (fn) => {
+    setBusy(true); setError("");
+    try { await fn(); load(); } catch (err) { setError(err.response?.data?.detail || C.errors.action); }
+    setBusy(false);
   };
 
-  const importPerson = async (applicationId) => {
-    try { await memberApi.post("/reactivation/board-members/import", { application_id: applicationId }); load(); } catch { /* ignore */ }
-  };
-
-  const openPreview = (member, type) => {
-    memberApi.get(`/reactivation/board-members/${member.member_record_id}/email-preview`, { params: { type } })
-      .then((res) => setPreview({ ...res.data, member, type }))
-      .catch(() => {});
-  };
-
-  const sendEmail = async () => {
-    setSending(true);
-    try {
-      await memberApi.post(`/reactivation/board-members/${preview.member.member_record_id}/send`, { type: preview.type });
-      setPreview(null);
-      load();
-    } catch { /* keep modal open */ }
-    setSending(false);
-  };
-
-  const openScript = (member) => {
-    memberApi.get(`/reactivation/board-members/${member.member_record_id}/call-script`).then((res) => {
-      setScript({ ...res.data, member });
-      setNotes(res.data.call_notes || "");
-      setNotesSaved(false);
-    }).catch(() => {});
-  };
-
-  const saveNotes = async () => {
-    await memberApi.put(`/reactivation/board-members/${script.member.member_record_id}/call-notes`, { notes });
-    setNotesSaved(true);
-    load();
-  };
-
-  const copyLink = async (member) => {
-    const res = await memberApi.get(`/reactivation/board-members/${member.member_record_id}/email-preview`, { params: { type: "initial" } });
-    try { await navigator.clipboard.writeText(res.data.form_link); } catch { window.prompt("Copy this form link:", res.data.form_link); }
-    setCopied(member.member_record_id);
+  const copy = async (text, tag) => {
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy:", text); }
+    setCopied(tag);
     setTimeout(() => setCopied(""), 2500);
   };
 
-  if (error) return <p className="submit-error">{error}</p>;
-  if (!roster) return <p className="sh-loading">Loading your Board…</p>;
+  if (error && !form) return <p className="submit-error">{error}</p>;
+  if (!form) return <p className="sh-loading">Loading…</p>;
+  const link = form.generic_token ? `${window.location.origin}/board-recommitment/${form.generic_token}` : "";
 
   return (
     <div data-testid="reactivation-step2">
       <section className="member-card" data-testid="step2-intro">
-        <h2>Find Out Who Is Ready to Stand Up</h2>
-        <p>Before you start having difficult conversations, give every current Board Member an opportunity to tell you where they are, what they can realistically contribute, and whether they are willing and able to continue serving actively.</p>
-        <p>Their responses will help you understand who is ready to stand up, who needs clearer responsibility, and who may need to step down or transition into another role.</p>
+        <h2>{C.heading}</h2>
+        {C.intro.map((p) => <p key={p}>{p}</p>)}
       </section>
+      {error && <p className="submit-error" data-testid="step2-error">{error}</p>}
 
-      <section className="member-card" data-testid="step2-progress-summary">
-        <h2>Board Recommitment Progress</h2>
-        <p data-testid="step2-progress-counts">
-          <strong>{roster.progress.total}</strong> Current Board Member{roster.progress.total === 1 ? "" : "s"} · <strong>{roster.progress.completed}</strong> Completed · <strong>{roster.progress.waiting}</strong> Waiting for Response
-        </p>
-      </section>
-
-      {roster.existing_people.length > 0 && (
-        <section className="member-card" data-testid="step2-existing-people">
-          <h2>Board Members Already in Your Account</h2>
-          <p>These people joined your Board through Recruitment. Add anyone who is currently serving so they can complete their Recommitment Form.</p>
-          {roster.existing_people.map((person) => (
-            <div key={person.application_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #eee" }}>
-              <span><strong>{person.name}</strong> · {person.email}</span>
-              <button type="button" className="button button-outline" onClick={() => importPerson(person.application_id)} data-testid={`step2-import-${person.application_id}`}><UserPlus size={15} /> Add to Current Board</button>
-            </div>
-          ))}
+      {form.status === "NONE" && (
+        <section className="member-card" data-testid="step2-generate-form">
+          <p>{C.frameworkNote}</p>
+          <button type="button" className="button" disabled={busy} onClick={() => act(() => memberApi.post("/reactivation/recommitment-form/generate"))} data-testid="step2-generate-form-button">
+            <Sparkles size={16} /> {busy ? "Generating…" : C.generateFormButton}
+          </button>
         </section>
       )}
 
-      <section className="member-card" data-testid="step2-roster">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Your Current Board</h2>
-          <button type="button" className="button" onClick={() => setShowAdd(true)} data-testid="step2-add-member-button"><Plus size={16} /> ADD CURRENT BOARD MEMBER</button>
-        </div>
-        {!roster.members.length && <p data-testid="step2-empty-roster" style={{ marginTop: 14 }}>No current Board Members yet. Add your current Board Members to begin.</p>}
-        {roster.members.map((member) => (
-          <article key={member.member_record_id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 16 }} data-testid={`step2-member-card-${member.member_record_id}`}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{member.name}</h3>
-                <p style={{ margin: "4px 0 0" }}>{member.role || "Board Member"} · {member.email}</p>
+      {form.status === "Draft" && (
+        <section className="member-card" data-testid="step2-form-draft">
+          <h2>Review Your Recommitment Form</h2>
+          <p>{C.formReadyNote}</p>
+          {editing ? (
+            <>
+              <textarea rows={12} value={draft} onChange={(e) => setDraft(e.target.value)} style={{ width: "100%" }} data-testid="step2-form-editor" />
+              <button type="button" className="button" disabled={busy} onClick={() => act(async () => { await memberApi.put("/reactivation/recommitment-form", { text: draft }); setEditing(false); })} data-testid="step2-form-save">{C.saveButton}</button>
+            </>
+          ) : (
+            <>
+              <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6 }} data-testid="step2-form-intro-text">{form.intro_text}</div>
+              <p style={{ marginTop: 10 }}>{C.frameworkNote}</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button type="button" className="button button-outline" onClick={() => { setDraft(form.intro_text); setEditing(true); }} data-testid="step2-form-edit">{C.editButton}</button>
+                <button type="button" className="button" disabled={busy} onClick={() => act(() => memberApi.post("/reactivation/recommitment-form/approve"))} data-testid="step2-form-approve">{C.approveButton}</button>
               </div>
-              <span className="eyebrow" data-testid={`step2-status-${member.member_record_id}`} style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }}>{member.status}</span>
+            </>
+          )}
+        </section>
+      )}
+
+      {form.status === "Approved" && (
+        <section className="member-card" data-testid="step2-form-approved">
+          <h2>Your Recommitment Form Is Live</h2>
+          <p>{C.approvedNote}</p>
+          <p><strong>{C.formLinkLabel}:</strong> <span style={{ wordBreak: "break-all" }} data-testid="step2-form-link">{link}</span></p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="button button-outline" onClick={() => copy(link, "link")} data-testid="step2-copy-link"><Copy size={15} /> {copied === "link" ? C.copiedLabel : C.copyLinkButton}</button>
+            {!email && (
+              <button type="button" className="button" onClick={() => memberApi.get("/reactivation/recommitment-email").then((res) => setEmail(res.data)).catch(() => setError(C.errors.action))} data-testid="step2-generate-email">
+                <Mail size={15} /> {C.generateEmailButton}
+              </button>
+            )}
+            <button type="button" className="button button-outline" onClick={() => { setDraft(form.intro_text); setEditing(true); act(() => memberApi.put("/reactivation/recommitment-form", { text: form.intro_text })); }} data-testid="step2-reopen-form">{C.editButton}</button>
+          </div>
+          {email && (
+            <div style={{ marginTop: 16 }} data-testid="step2-email-block">
+              <h3>{C.emailLabel}</h3>
+              <p><strong>Subject:</strong> <span data-testid="step2-email-subject">{email.subject}</span></p>
+              <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="step2-email-body">{email.body}</div>
+              <button type="button" className="button" style={{ marginTop: 10 }} onClick={() => copy(`Subject: ${email.subject}\n\n${email.body.replace(/\[[^\]]+\]/, email.form_link)}`, "email")} data-testid="step2-copy-email">
+                <Copy size={15} /> {copied === "email" ? C.copiedLabel : C.copyEmailButton}
+              </button>
             </div>
-            <p className="eyebrow" style={{ marginTop: 10 }}>
-              {member.last_sent_at && <>Form sent {new Date(member.last_sent_at).toLocaleDateString()} · </>}
-              {member.last_reminder_at && <>Last reminder {new Date(member.last_reminder_at).toLocaleDateString()}</>}
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {member.status === "NOT SENT" && (
-                <button type="button" className="button" onClick={() => openPreview(member, "initial")} data-testid={`step2-send-form-${member.member_record_id}`}><Mail size={15} /> SEND RECOMMITMENT FORM</button>
-              )}
-              {member.status === "SENT" && (
-                <>
-                  <button type="button" className="button button-outline" onClick={() => copyLink(member)} data-testid={`step2-copy-link-${member.member_record_id}`}><Copy size={15} /> {copied === member.member_record_id ? "Link Copied" : "COPY FORM LINK"}</button>
-                  <button type="button" className="button button-outline" onClick={() => openPreview(member, "reminder")} data-testid={`step2-send-reminder-${member.member_record_id}`}><Mail size={15} /> SEND REMINDER EMAIL</button>
-                  <button type="button" className="button button-outline" onClick={() => openScript(member)} data-testid={`step2-call-script-${member.member_record_id}`}><Phone size={15} /> VIEW REMINDER CALL SCRIPT</button>
-                  <button type="button" className="button button-outline" onClick={() => openPreview(member, "initial")} data-testid={`step2-resend-${member.member_record_id}`}>RESEND FORM</button>
-                </>
-              )}
-              {member.status === "COMPLETED" && (
-                <button type="button" className="button" onClick={() => openResponse(member.member_record_id)} data-testid={`step2-view-response-${member.member_record_id}`}>VIEW RESPONSE</button>
-              )}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section style={{ textAlign: "center", margin: "26px 0" }}>
-        <Link className="button rwr-cta-button" to="/app/reactivation/self-guided/module/3" data-testid="step2-continue-step3">CONTINUE TO STEP 3 — HAVE THE DIFFICULT CONVERSATIONS</Link>
-      </section>
-
-      {showAdd && (
-        <Modal onClose={() => setShowAdd(false)} testId="step2-add-modal">
-          <h2>Add Current Board Member</h2>
-          <p>The Board Member will complete their own profile through their secure form. You only need their contact details.</p>
-          <label className="field"><span>Full Name <b>*</b></span><input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} data-testid="step2-add-name" /></label>
-          <label className="field"><span>Email Address <b>*</b></span><input type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} data-testid="step2-add-email" /></label>
-          <label className="field"><span>Phone Number</span><input value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} data-testid="step2-add-phone" /></label>
-          <label className="field"><span>Current Board Role / Position</span>
-            <select value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })} data-testid="step2-add-role">
-              <option value="">Choose one…</option>
-              {["Board Member", "Chair", "Treasurer", "Secretary", "Advisory Board Member", "Other"].map((role) => <option key={role}>{role}</option>)}
-            </select>
-          </label>
-          {addError && <p className="submit-error" data-testid="step2-add-error">{addError}</p>}
-          <button type="button" className="button" onClick={addMember} data-testid="step2-add-submit">Add Board Member</button>
-        </Modal>
-      )}
-
-      {preview && (
-        <Modal onClose={() => setPreview(null)} testId="step2-send-modal">
-          <h2>{preview.type === "reminder" ? "Review Reminder Email" : "Review Recommitment Form Email"}</h2>
-          <p><strong>To:</strong> {preview.to_name} &lt;{preview.to_email}&gt;</p>
-          <p><strong>Subject:</strong> <span data-testid="step2-email-subject">{preview.subject}</span></p>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="step2-email-body">{preview.body}</div>
-          <p style={{ marginTop: 10 }}><strong>Secure Form Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="step2-email-link">{preview.form_link}</span></p>
-          <button type="button" className="button" onClick={sendEmail} disabled={sending} data-testid="step2-send-confirm">{sending ? "Sending…" : "SEND"}</button>
-        </Modal>
-      )}
-
-      {script && (
-        <Modal onClose={() => setScript(null)} testId="step2-script-modal">
-          <h2>Reminder Call Script</h2>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6 }} data-testid="step2-script-body">{script.script}</div>
-          <label className="field" style={{ marginTop: 14 }}><span>Call Notes (optional)</span>
-            <textarea rows={4} value={notes} onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }} data-testid="step2-call-notes" />
-          </label>
-          <button type="button" className="button" onClick={saveNotes} data-testid="step2-save-notes">{notesSaved ? "Notes Saved" : "Save Call Notes"}</button>
-        </Modal>
-      )}
-
-      {response && (
-        <Modal onClose={() => setResponse(null)} testId="step2-response-modal">
-          <h2>{response.member.name} — Recommitment Response</h2>
-          <ResponseView data={response} />
-        </Modal>
+          )}
+          <p className="eyebrow" style={{ marginTop: 14 }} data-testid="step2-responses-count">{C.responsesLabel(form.responses_received)}</p>
+        </section>
       )}
     </div>
   );

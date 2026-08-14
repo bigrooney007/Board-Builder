@@ -223,7 +223,9 @@ export const CourseModulePage = ({ productSlug }) => {
               <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="mark-complete-button">
                 {module.completed ? <><CheckCircle2 size={16} /> Step Completed</> : "Mark This Step Complete"}
               </button>
-              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Step <ArrowRight size={16} /></button>
+              {!(productSlug === "self-guided" && number === 1) && (
+                <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Step <ArrowRight size={16} /></button>
+              )}
             </div>
             <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />
           </>

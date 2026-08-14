@@ -54,6 +54,7 @@ import { WorkspaceModeBanner } from "@/operatorMode";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
 import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
 import AreaPackPage from "@/funnels/AreaPackPage";
+import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const HomeExperience = () => {
@@ -142,6 +143,8 @@ export default function App() {
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
           <Route path="/area-pack/:token" element={<AreaPackPage />} />
+          <Route path="/strategic-plan/:token" element={<PublicStrategicPlanPage />} />
+          <Route path="/strategic-action-plan/:token" element={<PublicActionPlanPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>

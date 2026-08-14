@@ -91,6 +91,16 @@ class ProjectCreate(BaseModel):
     mission: str = ""
 
 
+class ProjectGenerate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    organization_name: str = Field(min_length=1)
+    founder_name: str = Field(min_length=1)
+    founder_email: EmailStr
+    founder_title: str = ""
+    mission: str = ""
+    form_content: str = Field(min_length=20)
+
+
 class ParticipantCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     name: str = Field(min_length=1)
@@ -232,14 +242,17 @@ def create_strategic_planning_router(db) -> APIRouter:
         plan = await db.sp_plans.find_one({"project_id": project_id}, {"_id": 0}) or {}
         by_id = {p["participant_id"]: p for p in participants}
         return {
-            "project": project,
+            "project": {**project, "generic_form_token": project.get("generic_form_token", "")},
             "participants": [participant_row(p) for p in participants],
             "form": {"status": form.get("status", "NONE"), "introduction": form.get("content", {}).get("introduction", ""),
                      "sections": form.get("content", {}).get("sections", []), "approved_version": form.get("approved_version", 0),
                      "generation_error": form.get("generation_error", ""), "source_filename": form.get("source_filename", "")},
             "plan": {"status": plan.get("status", "NONE"), "display_text": plan.get("display_text", ""),
                      "generation_error": plan.get("generation_error", ""), "finalized_text": plan.get("finalized_text", ""),
-                     "finalized_at": plan.get("finalized_at", ""), "review_version": plan.get("review_version", 0)},
+                     "finalized_at": plan.get("finalized_at", ""), "review_version": plan.get("review_version", 0),
+                     "owner_suggestions": plan.get("owner_suggestions", []), "suggestion_status": plan.get("suggestion_status", "NONE")},
+            "action_plan": {"status": plan.get("action_status", "NONE"), "text": plan.get("action_text", ""),
+                            "generation_error": plan.get("action_generation_error", ""), "share_token": plan.get("action_share_token", "")},
             "areas": [area_row(a, by_id) for a in plan.get("areas", [])],
             "final_plan": {"status": plan.get("final_status", "NONE"), "display_text": plan.get("final_display_text", ""),
                            "generation_error": plan.get("final_generation_error", ""), "share_token": plan.get("final_share_token", ""),
@@ -428,17 +441,39 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     @router.get("/strategic-planning-form/{token}")
     async def public_form(token: str):
-        record = await participant_by_form_token(token)
-        project = await owned_project(record["project_id"])
-        content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
-        return {"organization_name": project["organization_name"],
-                "submitted": record["status"] == "COMPLETED",
-                "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
-                "form": content}
+        record = await db.sp_participants.find_one({"form_token": token}, {"_id": 0})
+        if record:
+            project = await owned_project(record["project_id"])
+            content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
+            return {"organization_name": project["organization_name"],
+                    "submitted": record["status"] == "COMPLETED",
+                    "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
+                    "form": content}
+        project = await db.sp_projects.find_one({"generic_form_token": token}, {"_id": 0})
+        if not project:
+            raise HTTPException(status_code=404, detail="This form link is not valid")
+        content = await approved_form_content(project["project_id"], 0)
+        return {"organization_name": project["organization_name"], "submitted": False,
+                "prefill": {"full_name": "", "email": ""}, "form": content}
 
     @router.post("/strategic-planning-form/{token}", status_code=201)
     async def submit_form(token: str, payload: FormSubmission):
-        record = await participant_by_form_token(token)
+        record = await db.sp_participants.find_one({"form_token": token}, {"_id": 0})
+        if not record:
+            project_by_token = await db.sp_projects.find_one({"generic_form_token": token}, {"_id": 0})
+            if not project_by_token:
+                raise HTTPException(status_code=404, detail="This form link is not valid")
+            email = str(payload.email).lower()
+            record = await db.sp_participants.find_one({"project_id": project_by_token["project_id"], "email": email}, {"_id": 0})
+            if not record:
+                record = {
+                    "participant_id": str(uuid.uuid4()), "project_id": project_by_token["project_id"],
+                    "name": payload.full_name, "email": email, "role": "", "expertise": "",
+                    "status": "SENT", "form_token": secrets.token_urlsafe(32),
+                    "review_status": "NOT SENT", "review_token": secrets.token_urlsafe(32),
+                    "created_at": now_iso(), "joined_via": "form_link",
+                }
+                await db.sp_participants.insert_one({**record})
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         project = await owned_project(record["project_id"])
@@ -695,23 +730,63 @@ def create_strategic_planning_router(db) -> APIRouter:
         plan = await current_plan(project_id)
         if plan.get("status") != "Finalized":
             raise HTTPException(status_code=409, detail="Finalize the Foundational Plan before assigning strategic areas")
+        if plan.get("suggestion_status") == "Generating":
+            return {"status": "Generating"}
         participants = await db.sp_participants.find({"project_id": project_id}, {"_id": 0}).to_list(300)
-        suggestions = []
-        for area in plan.get("areas", []):
-            keywords = (area["area"] + " " + area.get("direction", "")).lower()
-            best, best_score = None, 0
-            for participant in participants:
-                profile = f"{participant.get('role', '')} {participant.get('expertise', '')}".lower()
-                own_ideas = " ".join(str(v) for v in (participant.get("response") or {}).values() if isinstance(v, str)).lower()
-                score = sum(1 for word in profile.split() if len(word) > 3 and word in keywords)
-                score += sum(1 for word in area["area"].lower().split() if len(word) > 3 and word in own_ideas)
-                if score > best_score:
-                    best, best_score = participant, score
-            suggestions.append({"area_key": area["area_key"], "area": area["area"],
-                                "suggested_participant_id": (best or {}).get("participant_id", ""),
-                                "suggested_name": (best or {}).get("name", ""),
-                                "basis": "role, expertise and their own submitted ideas" if best_score else "no clear alignment found — assign manually"})
-        return {"suggestions": suggestions, "organization_name": project["organization_name"]}
+        areas = plan.get("areas", [])
+        await db.sp_plans.update_one({"project_id": project_id}, {"$set": {"suggestion_status": "Generating"}})
+
+        def keyword_suggestions():
+            rows = []
+            for area in areas:
+                keywords = (area["area"] + " " + area.get("direction", "")).lower()
+                best, best_score = None, 0
+                for participant in participants:
+                    profile = f"{participant.get('role', '')} {participant.get('expertise', '')}".lower()
+                    own_ideas = " ".join(str(v) for v in (participant.get("response") or {}).values() if isinstance(v, str)).lower()
+                    score = sum(1 for word in profile.split() if len(word) > 3 and word in keywords)
+                    score += sum(1 for word in area["area"].lower().split() if len(word) > 3 and word in own_ideas)
+                    if score > best_score:
+                        best, best_score = participant, score
+                rows.append({"area_key": area["area_key"], "area": area["area"],
+                             "suggested_participant_id": (best or {}).get("participant_id", ""),
+                             "suggested_name": (best or {}).get("name", ""),
+                             "basis": "role, expertise and their own submitted ideas" if best_score else "no clear alignment found — assign manually"})
+            return rows
+
+        context = (
+            f"ORGANIZATION: {project['organization_name']}\n\nSTRATEGIC AREAS NEEDING AN OWNER:\n"
+            + "\n".join(f"- area_key: {a['area_key']} | AREA: {a['area']} | DIRECTION: {a.get('direction', '')} | PRIORITIES: {'; '.join(a.get('proposed_priorities', []))}" for a in areas)
+            + "\n\nBOARD MEMBERS (their skills, experience and their own submitted planning responses):\n\n"
+            + "\n\n".join(response_context(p) for p in participants)
+        )
+
+        async def run_suggestions():
+            try:
+                structured = await generate_structured("strategic_area_owner_recommendation", context)
+                by_name = {p["name"].strip().lower(): p for p in participants}
+                rows = []
+                by_key = {a["area_key"]: a for a in areas}
+                for item in structured.get("recommendations", []):
+                    area = by_key.get(str(item.get("area_key", "")))
+                    if not area:
+                        continue
+                    match = by_name.get(str(item.get("recommended_name", "")).strip().lower(), {})
+                    rows.append({"area_key": area["area_key"], "area": area["area"],
+                                 "suggested_participant_id": match.get("participant_id", ""),
+                                 "suggested_name": match.get("name", ""),
+                                 "basis": str(item.get("reason", "")) or "no clear alignment found — assign manually"})
+                covered = {r["area_key"] for r in rows}
+                rows.extend(r for r in keyword_suggestions() if r["area_key"] not in covered)
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "owner_suggestions": rows, "suggestion_status": "Ready"}})
+            except Exception as exc:
+                logger.error("SP owner suggestion failed for %s: %s", project_id, exc)
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "owner_suggestions": keyword_suggestions(), "suggestion_status": "Ready"}})
+
+        asyncio.create_task(run_suggestions())
+        return {"status": "Generating"}
 
     @router.put("/admin/sp/projects/{project_id}/areas/{area_key}/owner")
     async def assign_owner(project_id: str, area_key: str, payload: OwnerAssignment, request: Request):
@@ -1062,8 +1137,6 @@ def create_strategic_planning_router(db) -> APIRouter:
         return {"title": "Strategic Plan", "organization_name": project["organization_name"],
                 "display_text": plan["final_display_text"], "issued_by": project["founder_name"]}
 
-    return router
-
     @router.get("/admin/sp/projects/{project_id}/final-plan/pdf")
     async def final_pdf(project_id: str, request: Request):
         await admin(request)
@@ -1074,5 +1147,292 @@ def create_strategic_planning_router(db) -> APIRouter:
         return build_portfolio_pdf("STRATEGIC PLAN", project["organization_name"],
                                    {"organization_name": project["organization_name"], "issued_by": project["founder_name"]},
                                    plan["final_display_text"])
+
+    # ---------------- SIMPLIFIED PROJECT CREATION (pasted form content) ----------------
+
+    @router.post("/admin/sp/projects/generate", status_code=201)
+    async def generate_project(payload: ProjectGenerate, request: Request):
+        await admin(request)
+        project = {
+            "project_id": str(uuid.uuid4()), "organization_name": payload.organization_name,
+            "founder_name": payload.founder_name, "founder_email": str(payload.founder_email).lower(),
+            "founder_title": payload.founder_title, "mission": payload.mission,
+            "generic_form_token": secrets.token_urlsafe(32),
+            "status": "Active", "created_at": now_iso(),
+        }
+        await db.sp_projects.insert_one({**project})
+        project_id = project["project_id"]
+        now = now_iso()
+        text = payload.form_content
+        await db.sp_forms.insert_one({
+            "form_id": str(uuid.uuid4()), "project_id": project_id, "status": "Generating",
+            "generation_error": "", "source_filename": "Pasted form content",
+            "master_source_text": text[:120000], "approved_version": 0, "approved_versions": [],
+            "created_at": now, "updated_at": now})
+
+        async def run_structure():
+            try:
+                context = (
+                    f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission', '')}\n\n"
+                    f"FOUNDER'S SUPPLIED MASTER STRATEGIC PLANNING FORM (the ONLY authority for questions):\n{text[:60000]}"
+                )
+                structured = await generate_structured("strategic_planning_form_structure", context)
+                content_payload = {"introduction": str(structured.get("introduction", "")).strip(),
+                                   "sections": assign_question_ids(structured.get("sections", []))}
+                stamp = now_iso()
+                await db.sp_forms.update_one({"project_id": project_id}, {"$set": {
+                    "status": "Approved", "content": content_payload, "approved_version": 1,
+                    "approved_at": stamp, "updated_at": stamp},
+                    "$push": {"approved_versions": {"version": 1, "content": content_payload, "approved_at": stamp}}})
+            except Exception as exc:
+                logger.error("SP project form generation failed for %s: %s", project_id, exc)
+                await db.sp_forms.update_one({"project_id": project_id}, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300], "updated_at": now_iso()}})
+
+        asyncio.create_task(run_structure())
+        return {"project": project, "status": "Generating"}
+
+    # ---------------- GENERIC FORM LINK + EMAIL TO SEND ----------------
+
+    def generic_form_email(project: dict, link: str) -> dict:
+        organization = project["organization_name"]
+        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
+        body = (
+            "Dear Board Member,\n\n"
+            f"We are beginning the process of building the strategic plan for {organization}, and I want the Board involved in shaping it.\n\n"
+            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
+            "Your ideas, experience and perspective will help shape our direction, priorities and how each of us can contribute.\n\n"
+            "Please complete the Strategic Planning Form using the link below.\n\n"
+            f"{link}\n\n"
+            "Your responses will be combined with the ideas of the other Board Members as we build the plan.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        )
+        return {"subject": f"Help Us Build Our Strategic Plan | {organization}", "body": body, "form_link": link}
+
+    @router.get("/admin/sp/projects/{project_id}/form-email")
+    async def form_email(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        form = await db.sp_forms.find_one({"project_id": project_id}, {"_id": 0, "status": 1})
+        if not form or form.get("status") != "Approved":
+            raise HTTPException(status_code=409, detail="The Strategic Planning Form is not ready yet")
+        if not project.get("generic_form_token"):
+            token = secrets.token_urlsafe(32)
+            await db.sp_projects.update_one({"project_id": project_id}, {"$set": {"generic_form_token": token}})
+            project["generic_form_token"] = token
+        link = f"{origin_of(request)}/strategic-planning-form/{project['generic_form_token']}"
+        return generic_form_email(project, link)
+
+    # ---------------- EMAIL DRAFT PLAN TO ALL RESPONDENTS ----------------
+
+    @router.get("/admin/sp/projects/{project_id}/review-email-preview")
+    async def bulk_review_email_preview(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if plan.get("status") not in {"Approved", "Synchronized", "Finalized"}:
+            raise HTTPException(status_code=409, detail="Approve the draft plan before preparing the Board review email")
+        respondents = await db.sp_participants.find({"project_id": project_id, "status": "COMPLETED"}, {"_id": 0}).to_list(300)
+        if not respondents:
+            raise HTTPException(status_code=409, detail="No Board Members have completed the Strategic Planning Form yet")
+        sample = review_email(project, respondents[0], "each Board Member receives their own secure review link automatically")
+        return {"recipients": [{"name": r["name"], "email": r["email"]} for r in respondents],
+                "subject": sample["subject"], "body": sample["body"]}
+
+    @router.post("/admin/sp/projects/{project_id}/send-review-all")
+    async def send_review_all(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if plan.get("status") not in {"Approved", "Synchronized", "Finalized"}:
+            raise HTTPException(status_code=409, detail="Approve the draft plan before sending it for Board review")
+        respondents = await db.sp_participants.find({"project_id": project_id, "status": "COMPLETED"}, {"_id": 0}).to_list(300)
+        if not respondents:
+            raise HTTPException(status_code=409, detail="No Board Members have completed the Strategic Planning Form yet")
+        sent, failed = [], []
+        now = now_iso()
+        for record in respondents:
+            email = review_email(project, record, f"{origin_of(request)}/strategic-plan-review/{record['review_token']}")
+            try:
+                await send_email(record["email"], email["subject"], email["body"], email["button_label"], email["form_link"],
+                                 reply_to=project.get("founder_email", ""))
+            except Exception:
+                logger.exception("SP bulk review send failed for %s", record["participant_id"])
+                failed.append(record["name"])
+                continue
+            updates = {"last_review_sent_at": now}
+            if record.get("review_status") in {"", "NOT SENT", None}:
+                updates["review_status"] = "SENT"
+            if not record.get("review_version"):
+                updates["review_version"] = plan.get("review_version", 1)
+            await db.sp_participants.update_one({"participant_id": record["participant_id"]}, {"$set": updates})
+            sent.append(record["name"])
+        return {"status": "sent", "sent": sent, "failed": failed, "sent_at": now}
+
+    # ---------------- SYNCHRONIZE FOUNDATIONAL PLAN ----------------
+
+    @router.post("/admin/sp/projects/{project_id}/plan/synchronize")
+    async def synchronize_plan(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if plan.get("status") == "Synchronizing":
+            return {"status": "Synchronizing"}
+        if plan.get("status") not in {"Approved", "Synchronized", "Finalized"}:
+            raise HTTPException(status_code=409, detail="Approve the draft plan before synchronizing the Board's review")
+        reviews = await db.sp_participants.find({"project_id": project_id, "review_status": "COMPLETED"}, {"_id": 0}).to_list(300)
+        if not reviews:
+            raise HTTPException(status_code=409, detail="No Board review responses have been received yet")
+        responses = await db.sp_participants.find({"project_id": project_id, "status": "COMPLETED"}, {"_id": 0}).to_list(300)
+        previous_status = plan.get("status")
+        await db.sp_plans.update_one({"project_id": project_id}, {"$set": {"status": "Synchronizing", "generation_error": ""}})
+        area_titles = {a["area_key"]: a["area"] for a in plan.get("areas", [])}
+        review_lines = []
+        for reviewer in reviews:
+            for r in reviewer.get("review_responses", []):
+                review_lines.append(f"{reviewer['name']} on [{area_titles.get(r['area_key'], r['area_key'])}]: {r['choice']}"
+                                    + (f" — {r['comment']}" if r.get("comment") else ""))
+        context = (
+            f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission', '')}\n\n"
+            f"CURRENT DRAFT FOUNDATIONAL PLAN:\n{plan.get('display_text', '')}\n\n"
+            "EVERY BOARD REVIEW CHOICE AND COMMENT:\n" + "\n".join(review_lines) + "\n\n"
+            "ORIGINAL BOARD MEMBER RESPONSES:\n\n" + "\n\n".join(response_context(r) for r in responses)
+        )
+
+        async def run_sync():
+            try:
+                structured = await generate_structured("strategic_plan_synchronized", context)
+                prior = {a["area"].strip().lower(): a for a in plan.get("areas", [])}
+                areas = []
+                for index, area in enumerate(structured.get("areas", []), start=1):
+                    title = str(area.get("area", ""))
+                    old = prior.get(title.strip().lower(), {})
+                    areas.append({
+                        "area_key": old.get("area_key", f"area{index}n"), "area": title,
+                        "direction": str(area.get("direction", "")),
+                        "ideas_shared": [str(i) for i in area.get("ideas_shared", [])],
+                        "proposed_priorities": [str(p) for p in area.get("proposed_priorities", [])],
+                        "status": old.get("status", "NOT ASSIGNED"),
+                        "owner_participant_id": old.get("owner_participant_id", ""),
+                        "pack_status": old.get("pack_status", "NONE"),
+                        "pack_token": old.get("pack_token") or secrets.token_urlsafe(32),
+                        "pack_text": old.get("pack_text", ""),
+                        "submitted_plan": old.get("submitted_plan", ""),
+                        "plan_submitted_at": old.get("plan_submitted_at", ""),
+                        "adoption_conclusion": old.get("adoption_conclusion", ""),
+                        "adopted": old.get("adopted", False)})
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "status": "Synchronized", "structured": structured, "areas": areas,
+                    "display_text": plan_display(structured, project["organization_name"]),
+                    "synchronized_at": now_iso(), "updated_at": now_iso()}})
+            except Exception as exc:
+                logger.error("SP plan synchronization failed for %s: %s", project_id, exc)
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "status": previous_status, "generation_error": f"Synchronization failed: {str(exc)[:280]}"}})
+
+        asyncio.create_task(run_sync())
+        return {"status": "Synchronizing"}
+
+    # ---------------- ONE-PAGE ACTION PLAN ----------------
+
+    @router.post("/admin/sp/projects/{project_id}/action-plan/generate")
+    async def generate_action_plan(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if plan.get("status") not in {"Synchronized", "Finalized"}:
+            raise HTTPException(status_code=409, detail="Synchronize or finalize the Foundational Plan before generating the Action Plan")
+        if plan.get("action_status") == "Generating":
+            return {"status": "Generating"}
+        await db.sp_plans.update_one({"project_id": project_id}, {"$set": {"action_status": "Generating", "action_generation_error": ""}})
+        owners = {p["participant_id"]: p["name"] for p in await db.sp_participants.find({"project_id": project_id}, {"_id": 0}).to_list(300)}
+        ownership = "\n".join(f"- {a['area']}: {owners.get(a.get('owner_participant_id', ''), 'unassigned')}" for a in plan.get("areas", []))
+        context = (f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission', '')}\n\n"
+                   f"SYNCHRONIZED FOUNDATIONAL STRATEGIC PLAN:\n{plan.get('finalized_text') or plan.get('display_text', '')}\n\n"
+                   f"AREA OWNERSHIP (where assigned):\n{ownership}")
+
+        async def run_action():
+            try:
+                structured = await generate_structured("strategic_action_plan", context)
+                text = "\n".join(["STRATEGIC PLANNING ACTION PLAN", project["organization_name"], ""]
+                                 + [f"{str(s.get('heading', '')).upper()}\n{s.get('content', '')}\n" for s in structured.get("sections", [])]).strip()
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "action_status": "Draft", "action_text": text, "action_updated_at": now_iso()}})
+            except Exception as exc:
+                logger.error("SP action plan failed for %s: %s", project_id, exc)
+                await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+                    "action_status": "Failed", "action_generation_error": str(exc)[:300]}})
+
+        asyncio.create_task(run_action())
+        return {"status": "Generating"}
+
+    @router.put("/admin/sp/projects/{project_id}/action-plan")
+    async def edit_action_plan(project_id: str, payload: TextPayload, request: Request):
+        await admin(request)
+        if not (await current_plan(project_id)).get("action_text"):
+            raise HTTPException(status_code=409, detail="Generate the Action Plan first")
+        await db.sp_plans.update_one({"project_id": project_id}, {"$set": {"action_text": payload.text, "action_status": "Draft"}})
+        return {"action_status": "Draft"}
+
+    @router.post("/admin/sp/projects/{project_id}/action-plan/approve")
+    async def approve_action_plan(project_id: str, request: Request):
+        await admin(request)
+        plan = await current_plan(project_id)
+        if plan.get("action_status") not in {"Draft", "Approved"} or not plan.get("action_text"):
+            raise HTTPException(status_code=409, detail="There is no draft Action Plan ready to approve")
+        token = plan.get("action_share_token") or secrets.token_urlsafe(32)
+        await db.sp_plans.update_one({"project_id": project_id}, {"$set": {
+            "action_status": "Approved", "action_share_token": token, "action_approved_at": now_iso()}})
+        return {"action_status": "Approved", "action_share_token": token}
+
+    @router.get("/admin/sp/projects/{project_id}/action-plan/pdf")
+    async def action_plan_pdf(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if not plan.get("action_text"):
+            raise HTTPException(status_code=404, detail="The Action Plan has not been generated yet")
+        return build_portfolio_pdf("STRATEGIC PLANNING ACTION PLAN", project["organization_name"],
+                                   {"organization_name": project["organization_name"], "issued_by": project["founder_name"]},
+                                   plan["action_text"])
+
+    @router.get("/admin/sp/projects/{project_id}/action-plan/email-preview")
+    async def action_plan_email_preview(project_id: str, request: Request):
+        await admin(request)
+        project = await owned_project(project_id)
+        plan = await current_plan(project_id)
+        if plan.get("action_status") != "Approved":
+            raise HTTPException(status_code=409, detail="Approve the Action Plan before preparing the delivery email")
+        link = f"{origin_of(request)}/strategic-action-plan/{plan['action_share_token']}"
+        body = (f"Dear {project['founder_name'].split(' ')[0]},\n\n"
+                f"The one-page Strategic Planning Action Plan for {project['organization_name']} is ready.\n\n"
+                "It summarizes your organization's immediate strategic direction and the practical next actions that follow from your Foundational Strategic Plan.\n\n"
+                "[VIEW OUR ACTION PLAN]\n\n"
+                "You can view it online or download the PDF from the same page.\n\nRooney Akpesiri\nThe Nonprofit Board Builder")
+        return {"to_name": project["founder_name"], "to_email": project["founder_email"],
+                "subject": f"Your Strategic Planning Action Plan | {project['organization_name']}",
+                "body": body, "button_label": "VIEW OUR ACTION PLAN", "form_link": link}
+
+    @router.post("/admin/sp/projects/{project_id}/action-plan/send")
+    async def send_action_plan(project_id: str, request: Request):
+        email = await action_plan_email_preview(project_id, request)
+        try:
+            await send_email(email["to_email"], email["subject"], email["body"], email["button_label"], email["form_link"])
+        except Exception as exc:
+            logger.exception("SP action plan send failed for %s", project_id)
+            raise HTTPException(status_code=502, detail="The email could not be sent. Please try again.") from exc
+        now = now_iso()
+        await db.sp_plans.update_one({"project_id": project_id}, {"$push": {"action_sends": {"to_email": email["to_email"], "sent_at": now}}})
+        return {"status": "sent", "sent_at": now}
+
+    @router.get("/strategic-action-plan/{token}")
+    async def public_action_plan(token: str):
+        plan = await db.sp_plans.find_one({"action_share_token": token, "action_status": "Approved"}, {"_id": 0})
+        if not plan:
+            raise HTTPException(status_code=404, detail="This link is not valid")
+        project = await owned_project(plan["project_id"])
+        return {"title": "Strategic Planning Action Plan", "organization_name": project["organization_name"],
+                "display_text": plan["action_text"], "issued_by": project["founder_name"],
+                "pdf_available": False}
 
     return router

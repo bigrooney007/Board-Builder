@@ -146,6 +146,10 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
 
 const ExternalApplicantForm = ({ refresh }) => {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [notes, setNotes] = useState("");
   const [cvFile, setCvFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -158,8 +162,12 @@ const ExternalApplicantForm = ({ refresh }) => {
       const payload = new FormData();
       payload.append("name", name);
       payload.append("cv", cvFile);
+      payload.append("email", email);
+      payload.append("phone", phone);
+      payload.append("linkedin", linkedin);
+      payload.append("notes", notes);
       await memberApi.post("/workspace/applications/external", payload, { headers: { "Content-Type": "multipart/form-data" } });
-      setName(""); setCvFile(null);
+      setName(""); setEmail(""); setPhone(""); setLinkedin(""); setNotes(""); setCvFile(null);
       setMessage("Applicant added. They now use the exact same interview actions as your hosted applicants.");
       refresh();
     } catch (err) { setMessage(err.response?.data?.detail || "Could not add the applicant."); }
@@ -168,10 +176,14 @@ const ExternalApplicantForm = ({ refresh }) => {
   return (
     <section className="workspace-panel" data-testid="external-applicant-form">
       <h2>Add External Applicant</h2>
-      <p className="material-description">Applicants may also come to you through LinkedIn, email, referrals or your personal network. We only need their name and CV — usable professional details (email, position, employer) are extracted from the CV when reliably present, and nothing is ever invented. If their email is missing, you are asked for it only when you actually send them an email.</p>
+      <p className="material-description">Applicants may also come to you through LinkedIn, email, referrals or your personal network. Add their name, CV and any relevant details you have — nothing is ever invented. They then enter the exact same interview workflow as your hosted applicants.</p>
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
         <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
+        <label className="field"><span>Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
+        <label className="field"><span>Phone</span><input value={phone} onChange={(event) => setPhone(event.target.value)} data-testid="external-applicant-phone" /></label>
+        <label className="field"><span>LinkedIn</span><input value={linkedin} onChange={(event) => setLinkedin(event.target.value)} data-testid="external-applicant-linkedin" /></label>
+        <label className="field"><span>Relevant applicant information (optional)</span><textarea rows="2" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="external-applicant-notes" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add External Applicant"}</button>
       {message && <p className="member-success" data-testid="external-applicant-message">{message}</p>}
@@ -540,27 +552,37 @@ const OnboardingSessionPanel = ({ session, setSession }) => {
   );
 };
 
-const ConditionalPanel = ({ application, orgMaterials, session, onChanged }) => {
+const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profileReady }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const missing = PREPARE_TOOLS.filter(([type]) => docStage(orgMaterials[type]) !== "Approved").map(([, title]) => title);
+  if (!session.date) missing.push("Onboarding Session date & time");
+  const referenceStarted = Boolean(application.reference_check_status);
+  const offerUnlocked = profileReady && referenceStarted && Boolean(session.date);
   return (
     <div className="detail-section" data-testid="conditional-panel">
       <h3>Prepare Conditional Appointment — {application.profile_snapshot?.full_name}</h3>
       <ul className="readiness-list" data-testid="conditional-checklist">
-        <li className={["References Submitted", "In Progress", "Completed"].includes(application.reference_check_status) ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
+        <li className={profileReady ? "done" : ""}>Board Member Profile Form: {profileReady ? "Generated" : "Not Generated"}</li>
+        <li className={referenceStarted ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
         <li className={["Completed", "Not Required"].includes(application.background_check?.status) ? "done" : ""}>Background Check: {application.background_check?.status || "Not recorded"}</li>
         {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
         <li className={session.date ? "done" : ""}>Onboarding Session: {session.date ? `Scheduled — ${session.date} ${session.time || ""}` : "Not scheduled"}</li>
       </ul>
-      {missing.length > 0 && <p className="submit-error" data-testid="conditional-missing">Complete the following onboarding materials before preparing this candidate's Conditional Appointment: {missing.join(", ")}</p>}
-      <MaterialCard type="conditional_offer" title="Conditional Board Appointment Email" buttonLabel="Generate Conditional Board Appointment Email"
+      {missing.length > 0 && <p className="submit-error" data-testid="conditional-missing">Complete the following before preparing this candidate's Conditional Appointment: {missing.join(", ")}</p>}
+      {!offerUnlocked && (
+        <p className="workspace-note" data-testid="conditional-offer-locked">
+          The Conditional Board Offer unlocks in sequence: generate this candidate's required resources and Board Member Profile Form, start their Reference Check, and schedule the onboarding date and time above. Still needed:{" "}
+          {[!profileReady && "Board Member Profile Form", !referenceStarted && "Reference Check", !session.date && "onboarding date/time"].filter(Boolean).join(", ")}.
+        </p>
+      )}
+      {offerUnlocked && <MaterialCard type="conditional_offer" title="Conditional Board Appointment Email" buttonLabel="Generate Conditional Board Appointment Email"
         description="One professional email telling the candidate your organization would like them to join the board (conditional while remaining requirements are completed), inviting them to the Board Onboarding Session, and automatically including their secure candidate-specific links: Organization Overview, Board Manual, the three agreements for signature, their Board Member Profile Form, and the Reference Information Form only if still needed. You never paste links manually."
         applicationId={application.application_id} material={byType.conditional_offer} refresh={refresh} approvable
         extraActions={byType.conditional_offer?.status === "Approved" ? (
           <SendMaterialButton type="conditional_offer" applicationId={application.application_id}
             label={application.emails_sent?.conditional_offer ? "Send Updated Appointment Information" : `Send Conditional Appointment to ${application.applicant_email || "candidate"}`}
             sentAt={application.emails_sent?.conditional_offer} onSent={onChanged} />
-        ) : null} />
+        ) : null} />}
       <MaterialCard type="after_interview_rejection" title="After-Interview Rejection Email" buttonLabel="Generate After-Interview Rejection Email"
         description="A respectful, concise, professional email for an applicant you interviewed but have decided not to continue with. No onboarding resources are included."
         applicationId={application.application_id} material={byType.after_interview_rejection} refresh={refresh}
@@ -634,7 +656,7 @@ const CandidateDecisionCard = ({ application, selected, onSelect, onDecision, bu
 export const Module5References = () => {
   const { applications, refresh: refreshApps } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
-  const [branding, setBranding] = useBranding();
+  const [branding] = useBranding();
   const [session, setSession] = useState({});
   const [selectedId, setSelectedId] = useState("");
   const [detail, setDetail] = useState(null);
@@ -666,15 +688,26 @@ export const Module5References = () => {
   const sorted = [...applications].sort((a, b) => Number(Boolean(b.interview_completed)) - Number(Boolean(a.interview_completed)));
   const movingForward = detail && detail.status === "Moving Forward";
   const notMovingForward = detail && ["Not Moving Forward", "Not Selected"].includes(detail.status);
+  const [profileReady, setProfileReady] = useState(false);
+  useEffect(() => {
+    if (!detail?.application_id) { setProfileReady(false); return; }
+    memberApi.get(`/workspace/board-profile-link/${detail.application_id}`)
+      .then((r) => setProfileReady(Boolean(r.data?.link)))
+      .catch(() => setProfileReady(false));
+  }, [detail?.application_id, detail?.updated_at]);
 
   return (
     <div data-testid="module5-workspace">
+      <section className="workspace-panel" data-testid="module5-background-check-section">
+        <h2>Background Check</h2>
+        <p className="material-description">Nonprofit Board Builder does not perform background checks and does not endorse, rank or select any provider. Use a provider your organization trusts — then record the result on each applicant below.</p>
+        <div className="material-actions">
+          <button className="button" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
+        </div>
+      </section>
       <section className="workspace-panel" data-testid="module5-decide-forward-section">
         <h2>Decide Who Moves Forward</h2>
         <p className="material-description">Review the applicants you interviewed and select the people you would like to move forward in your board recruitment process. Your organization decides — never the AI. Marking a decision sends nothing automatically; it only prepares the right next steps for your review.</p>
-        <div className="material-actions">
-          <button className="button button-back" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
-        </div>
         {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Step 4 appear here automatically once applications arrive.</p>}
         {sorted.map((application) => (
           <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
@@ -690,7 +723,9 @@ export const Module5References = () => {
                   : "this candidate's next step is the Reference Check below. That email includes only the secure Reference Information Form — onboarding materials are sent later with the Conditional Appointment."}
               </p>
             )}
-            {(movingForward || !notMovingForward) && <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} />}
+            {(movingForward || !notMovingForward) && (profileReady ? <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} /> : (
+              <p className="workspace-note" data-testid="reference-locked-note">The Reference Check becomes available once this candidate is moved forward and their Board Member Profile Form has been generated. Move them forward above to prepare their resources first.</p>
+            ))}
             {(movingForward || !notMovingForward) && <BackgroundCheckPanel application={detail} key={`bg-${detail.application_id}`} />}
           </div>
         )}
@@ -702,7 +737,6 @@ export const Module5References = () => {
         <ul className="readiness-list" data-testid="prepare-status-list">
           {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
         </ul>
-        <BrandingPanel branding={branding} setBranding={setBranding} />
         {PREPARE_TOOLS.map(([type, title, buttonLabel, description]) => (
           <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} approvable
             shareable={type === "organization_overview" || type === "board_manual"}
@@ -719,7 +753,7 @@ export const Module5References = () => {
         <p className="material-description">Choose when you would like to meet with your new board members for onboarding. This information will automatically be included in their Conditional Appointment email, along with each candidate's secure links — nothing is ever pasted manually.</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
         {!detail && <p className="workspace-note">Choose a candidate above to prepare their Conditional Appointment email.</p>}
-        {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} key={`dec-${detail.application_id}`} />}
+        {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} profileReady={profileReady} key={`dec-${detail.application_id}`} />}
       </section>
     </div>
   );

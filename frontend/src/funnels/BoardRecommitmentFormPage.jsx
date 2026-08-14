@@ -116,6 +116,9 @@ export default function BoardRecommitmentFormPage() {
               <i aria-hidden="true" />
             </section>
             <section className="intake-shell" data-testid="recommit-form">
+              {context?.introduction && (
+                <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 16, borderRadius: 8, marginBottom: 18 }} data-testid="recommit-introduction">{context.introduction}</div>
+              )}
               {errorText && <p className="submit-error" data-testid="recommit-error">{errorText}</p>}
 
               <h2 className="intake-step-title">About You</h2>

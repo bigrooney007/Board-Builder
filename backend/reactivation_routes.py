@@ -15,6 +15,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from auth_service import authenticate_admin
 from member_auth import authenticate_member, require_entitlement
 from ai_service import generate_structured
+from content_templates import (
+    recommitment_form_intro,
+    recommitment_outreach_email,
+    recommitment_reminder_call_script,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,38 +106,8 @@ def origin_of(request: Request) -> str:
 
 def build_outreach_email(kind: str, member: dict, founder_name: str, founder_title: str, organization: str, form_link: str) -> dict:
     first = (member.get("name") or "").split(" ")[0]
-    signature = founder_name + (f"\n{founder_title}" if founder_title else "") + f"\n{organization}"
-    if kind == "reminder":
-        subject = f"Reminder: Board Member Recommitment Form | {organization}"
-        body = (
-            f"Dear {first},\n\n"
-            f"I wanted to follow up on the Board Member Profile & Recommitment Form I sent you for {organization}.\n\n"
-            "We are using the responses from each Board Member to understand where everyone is, how people would like to contribute moving forward, and what support or clarity may be needed.\n\n"
-            "If you have not completed yours yet, please use the link below:\n\n"
-            "[COMPLETE MY FORM]\n\n"
-            "Your response will help us prepare for the conversation about your Board role and how we move forward together.\n\n"
-            f"Thank you,\n{signature}"
-        )
-        button_label = "COMPLETE MY FORM"
-    else:
-        subject = f"Board Recommitment & Profile | {organization}"
-        body = (
-            f"Dear {first},\n\n"
-            f"As we continue strengthening the Board of {organization}, we are taking time to make sure every Board Member has clarity about their role, capacity and how they would like to contribute moving forward.\n\n"
-            "Please take a few minutes to complete your Board Member Profile & Recommitment Form.\n\n"
-            "Your responses will help us understand:\n"
-            "- how you would like to continue contributing\n"
-            "- the expertise and experience you bring\n"
-            "- the areas where you would most like to help\n"
-            "- the level of time you can realistically commit\n"
-            "- any support or clarity you need from the organization\n\n"
-            "This is not about pressuring anyone to stay.\n\n"
-            "It is about having an honest understanding of where each Board Member is and making sure the people serving on the Board are positioned to contribute meaningfully.\n\n"
-            "[COMPLETE MY BOARD MEMBER PROFILE & RECOMMITMENT FORM]\n\n"
-            f"Thank you for taking the time to complete it.\n\n{signature}"
-        )
-        button_label = "COMPLETE MY BOARD MEMBER PROFILE & RECOMMITMENT FORM"
-    return {"subject": subject, "body": body, "button_label": button_label, "form_link": form_link}
+    email = recommitment_outreach_email(kind, first, founder_name, founder_title, organization)
+    return {**email, "form_link": form_link}
 
 
 def email_html(body: str, button_label: str, link: str) -> str:
@@ -357,15 +332,7 @@ def create_reactivation_router(db) -> APIRouter:
         context = await founder_context(member["user_id"])
         first = (record.get("name") or "").split(" ")[0]
         founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "me"
-        script = (
-            f"Hi {first}, it's {founder_first} from {context['organization']}.\n\n"
-            "I wanted to quickly follow up on the Board Member Profile & Recommitment Form I sent you.\n\n"
-            "We're asking every Board Member to complete it because I want to understand where everyone is, what people realistically have capacity for, and how each person would like to contribute moving forward.\n\n"
-            "This isn't about pressuring anyone.\n\n"
-            "I want us to have an honest picture of who is able to continue serving actively, where people need more clarity, and where we may need to make changes so the Board can function properly.\n\n"
-            "I can resend the link to you now if that would help.\n\n"
-            "Is there anything that's making it difficult for you to complete it?"
-        )
+        script = recommitment_reminder_call_script(first, founder_first, context["organization"])
         return {"script": script, "call_notes": record.get("call_notes", ""), "form_status": record["status"]}
 
     @router.put("/reactivation/board-members/{member_record_id}/call-notes")
@@ -489,11 +456,13 @@ def create_reactivation_router(db) -> APIRouter:
                     follow_up += 1
             rows.append({**public_record(record), "recommitment": recommitment,
                          "conversation_conclusion": conclusion, "conversation_outcome": outcome,
+                         "conversation_direction": record.get("conversation_direction", ""),
                          "conversation_complete": done,
                          "script": material_summary(material_by_member.get(record["member_record_id"]))})
         return {
             "members": rows,
             "outcome_options": allowed_outcomes(intake.get("transition_options", [])),
+            "directions": CONVERSATION_DIRECTIONS,
             "progress": {"total": len(records), "conversations_completed": completed_conversations,
                          "follow_up_needed": follow_up, "waiting_for_form": waiting},
         }
@@ -520,6 +489,18 @@ def create_reactivation_router(db) -> APIRouter:
         context += ", ".join(permitted) if permitted else "The organization has not decided on transition options yet — do not present specific transition structures; the founder will decide the appropriate path in the conversation."
         context += ("\n\nTHIS BOARD MEMBER (their actual Board Member Profile & Recommitment Form response):\n"
                     + json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str))
+        analysis_material = await db.generated_materials.find_one(
+            {"user_id": member["user_id"], "type": "reactivation_response_analysis", "application_id": member_record_id,
+             "status": {"$nin": ["Generating", "Failed"]}}, {"_id": 0})
+        if analysis_material:
+            context += "\n\nUNDERSTANDING OF THEIR RESPONSE (interpretation already reviewed by the founder):\n" + current_display(analysis_material)[:8000]
+        if record.get("call_notes"):
+            context += "\n\nFOUNDER'S PREVIOUS NOTES ABOUT THIS BOARD MEMBER:\n" + record["call_notes"]
+        direction = record.get("conversation_direction", "")
+        if direction:
+            context += (f"\n\nFOUNDER-SELECTED CONVERSATION DIRECTION: {direction}\n"
+                        + DIRECTION_GUIDANCE.get(direction, "")
+                        + "\nWrite the entire script specifically for this direction and this person — never a generic script.")
         query = {"user_id": member["user_id"], "type": "reactivation_conversation_script", "application_id": member_record_id}
         existing = await db.generated_materials.find_one(query, {"_id": 0, "material_id": 1, "status": 1})
         if existing and existing.get("status") == "Generating":
@@ -718,14 +699,25 @@ def create_reactivation_router(db) -> APIRouter:
             {"user_id": user_id, "type": PORTFOLIO_TYPE},
             {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "share_token": 1, "sent_at": 1, "updated_at": 1, "sent_version": 1, "current_version": 1}).to_list(300)
         by_member = {m["application_id"]: m for m in materials}
+        email_materials = await db.generated_materials.find(
+            {"user_id": user_id, "type": {"$in": ["reactivation_stepped_down_followup", "reactivation_advisory_confirmation"]}},
+            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1}).to_list(300)
+        emails_by_member = {m["application_id"]: m for m in email_materials}
+        analyses = await db.generated_materials.find(
+            {"user_id": user_id, "type": "reactivation_response_analysis", "status": {"$nin": ["Generating", "Failed"]}},
+            {"_id": 0, "application_id": 1}).to_list(300)
+        analyzed_ids = {m["application_id"] for m in analyses}
         groups = {"active": [], "advisory": [], "support": [], "stepping_down": [], "follow_up": [], "waiting": []}
         for record in records:
             outcome = record.get("conversation_outcome", "")
             response = record.get("response") or {}
             row = {**public_record(record), "conversation_outcome": outcome,
                    "conversation_conclusion": record.get("conversation_conclusion", ""),
+                   "conversation_direction": record.get("conversation_direction", ""),
+                   "analyzed": record["member_record_id"] in analyzed_ids,
                    "professional_role": response.get("current_position", ""), "employer": response.get("employer", ""),
                    "expertise": response.get("expertise", []), "contribution_interests": response.get("contribution_interests", []),
+                   "outcome_email": material_summary(emails_by_member.get(record["member_record_id"])),
                    "portfolio": portfolio_summary(by_member.get(record["member_record_id"]))}
             if outcome == OUTCOME_ACTIVE:
                 groups["active"].append(row)
@@ -921,20 +913,50 @@ def create_reactivation_router(db) -> APIRouter:
 
     @router.get("/board-recommitment/{token}")
     async def public_form_context(token: str):
-        record = await record_by_token(token)
-        context = await founder_context(record["user_id"])
+        record = await db.reactivation_board_members.find_one({"form_token": token}, {"_id": 0})
+        if record:
+            context = await founder_context(record["user_id"])
+            form = await db.reactivation_forms.find_one({"user_id": record["user_id"]}, {"_id": 0, "intro_text": 1, "status": 1})
+            return {
+                "organization_name": context["organization"],
+                "introduction": (form or {}).get("intro_text", "") if (form or {}).get("status") == "Approved" else "",
+                "submitted": record["status"] == "COMPLETED",
+                "allow_advisory": ADVISORY_OPTION in context["transition_options"],
+                "allow_support_role": SUPPORT_OPTION in context["transition_options"],
+                "recommitment_options": RECOMMITMENT_OPTIONS,
+                "prefill": {"full_name": record.get("name", ""), "email": record.get("email", ""), "phone": record.get("phone", ""), "role": record.get("role", "")},
+            }
+        form = await db.reactivation_forms.find_one({"generic_token": token, "status": "Approved"}, {"_id": 0})
+        if not form:
+            raise HTTPException(status_code=404, detail="This form link is not valid")
+        context = await founder_context(form["user_id"])
         return {
             "organization_name": context["organization"],
-            "submitted": record["status"] == "COMPLETED",
+            "introduction": form.get("intro_text", ""),
+            "submitted": False,
             "allow_advisory": ADVISORY_OPTION in context["transition_options"],
             "allow_support_role": SUPPORT_OPTION in context["transition_options"],
             "recommitment_options": RECOMMITMENT_OPTIONS,
-            "prefill": {"full_name": record.get("name", ""), "email": record.get("email", ""), "phone": record.get("phone", ""), "role": record.get("role", "")},
+            "prefill": {"full_name": "", "email": "", "phone": "", "role": ""},
         }
 
     @router.post("/board-recommitment/{token}", status_code=201)
     async def submit_recommitment(token: str, payload: RecommitmentSubmission, request: Request):
-        record = await record_by_token(token)
+        record = await db.reactivation_board_members.find_one({"form_token": token}, {"_id": 0})
+        if not record:
+            form = await db.reactivation_forms.find_one({"generic_token": token, "status": "Approved"}, {"_id": 0})
+            if not form:
+                raise HTTPException(status_code=404, detail="This form link is not valid")
+            email = str(payload.email).lower()
+            record = await db.reactivation_board_members.find_one({"user_id": form["user_id"], "email": email}, {"_id": 0})
+            if not record:
+                record = {
+                    "member_record_id": str(uuid.uuid4()), "user_id": form["user_id"],
+                    "name": payload.full_name, "email": email, "phone": payload.phone, "role": "",
+                    "source": "recommitment_link", "status": "SENT", "form_token": secrets.token_urlsafe(32),
+                    "call_notes": "", "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+                await db.reactivation_board_members.insert_one({**record})
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         if not payload.confirmation:
@@ -953,7 +975,7 @@ def create_reactivation_router(db) -> APIRouter:
             if context["founder_email"]:
                 first = payload.full_name.split(" ")[0]
                 founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
-                view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/2?member={record['member_record_id']}"
+                view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/3?member={record['member_record_id']}"
                 body = (
                     f"Hi {founder_first},\n\n"
                     f"{payload.full_name} has completed their Board Member Profile & Recommitment Form for {context['organization']}.\n\n"
@@ -970,6 +992,236 @@ def create_reactivation_router(db) -> APIRouter:
         except Exception:
             logger.exception("Founder recommitment notification failed for %s", record["member_record_id"])
         return {"status": "submitted", "organization_name": context["organization"]}
+
+    # ---------------- STEP 2: RECOMMITMENT FORM WORKFLOW ----------------
+
+    class FormTextPayload(BaseModel):
+        text: str = Field(min_length=1)
+
+    @router.get("/reactivation/recommitment-form")
+    async def get_recommitment_form(request: Request):
+        member = await reactivation_member(request)
+        form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        completed = await db.reactivation_board_members.count_documents({"user_id": member["user_id"], "status": "COMPLETED"})
+        return {"status": form.get("status", "NONE"), "intro_text": form.get("intro_text", ""),
+                "generic_token": form.get("generic_token", ""), "responses_received": completed}
+
+    @router.post("/reactivation/recommitment-form/generate")
+    async def generate_recommitment_form(request: Request):
+        member = await reactivation_member(request)
+        context = await founder_context(member["user_id"])
+        intake = await user_intake(member["user_id"])
+        intro = recommitment_form_intro(context["organization"], intake.get("mission", ""))
+        existing = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "generic_token": 1})
+        token = (existing or {}).get("generic_token") or secrets.token_urlsafe(32)
+        now = datetime.now(timezone.utc).isoformat()
+        await db.reactivation_forms.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"status": "Draft", "intro_text": intro, "generic_token": token, "updated_at": now},
+             "$setOnInsert": {"created_at": now}}, upsert=True)
+        return {"status": "Draft", "intro_text": intro, "generic_token": token}
+
+    @router.put("/reactivation/recommitment-form")
+    async def edit_recommitment_form(payload: FormTextPayload, request: Request):
+        member = await reactivation_member(request)
+        form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "status": 1})
+        if not form:
+            raise HTTPException(status_code=409, detail="Generate the Recommitment Form first")
+        await db.reactivation_forms.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"intro_text": payload.text, "status": "Draft", "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Draft"}
+
+    @router.post("/reactivation/recommitment-form/approve")
+    async def approve_recommitment_form(request: Request):
+        member = await reactivation_member(request)
+        form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "status": 1})
+        if not form:
+            raise HTTPException(status_code=409, detail="Generate the Recommitment Form first")
+        await db.reactivation_forms.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"status": "Approved", "approved_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Approved"}
+
+    @router.get("/reactivation/recommitment-email")
+    async def recommitment_email(request: Request):
+        member = await reactivation_member(request)
+        form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "status": 1, "generic_token": 1})
+        if not form or form.get("status") != "Approved":
+            raise HTTPException(status_code=409, detail="Generate and approve the Recommitment Form first")
+        context = await founder_context(member["user_id"])
+        link = f"{origin_of(request)}/board-recommitment/{form['generic_token']}"
+        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"])
+        return {**email, "form_link": link}
+
+    # ---------------- STEP 3: UNDERSTAND THEIR RESPONSE ----------------
+
+    ANALYSIS_TYPE = "reactivation_response_analysis"
+    CONVERSATION_DIRECTIONS = ["Remain and Step Up", "Step Down", "Move to Advisory Board"]
+    DIRECTION_GUIDANCE = {
+        "Remain and Step Up": "This Board Member is remaining on the Board and agreeing to step up. The script must address their commitment, their responsibilities, their increased role, expectations going forward, and the appropriate conversation points to confirm all of it clearly and warmly.",
+        "Step Down": "This Board Member is stepping down. The script must help the founder acknowledge their decision respectfully, conduct the conversation professionally, clarify the transition, address any relevant organizational process, and establish clear next steps.",
+        "Move to Advisory Board": "This Board Member is transitioning from the governing Board into an advisory role. The script must clarify the transition, what the advisory relationship means, expectations, future involvement, and next steps.",
+    }
+
+    class DirectionPayload(BaseModel):
+        direction: str = ""
+
+    def analysis_display(structured: dict, name: str) -> str:
+        first = name.split(" ")[0].upper() if name else "THIS BOARD MEMBER"
+        lines = [f"UNDERSTANDING {first}'S RESPONSE", "",
+                 "WHAT THEY APPEAR TO BE COMMUNICATING", structured.get("what_they_are_communicating", ""), "",
+                 "APPARENT LEVEL OF COMMITMENT", structured.get("commitment_level", ""), "",
+                 "CONCERNS OR RESERVATIONS"]
+        concerns = structured.get("concerns_or_reservations", [])
+        lines.extend([f"- {c}" for c in concerns] if concerns else ["- None expressed in their responses"])
+        lines.extend(["", "WILLINGNESS TO CONTINUE", structured.get("willingness_to_continue", ""), "",
+                      "WILLINGNESS TO TAKE GREATER RESPONSIBILITY", structured.get("willingness_for_greater_responsibility", ""), "",
+                      "ARE THEY CONSIDERING STEPPING DOWN?", structured.get("considering_stepping_down", ""), "",
+                      "IS AN ADVISORY ROLE APPROPRIATE?", structured.get("advisory_role_appropriate", ""), "",
+                      "IMPORTANT TO UNDERSTAND BEFORE THE CONVERSATION"])
+        lines.extend(f"- {item}" for item in structured.get("important_issues_before_conversation", []))
+        lines.extend(["", "RECOMMENDED NEXT COURSE OF ACTION", structured.get("recommended_next_action", ""), "",
+                      "RECOMMENDED DIRECTION FOR THE CONVERSATION", structured.get("recommended_conversation_direction", "")])
+        return "\n".join(lines)
+
+    @router.get("/reactivation/understand")
+    async def understand_step(request: Request):
+        member = await reactivation_member(request)
+        user_id = member["user_id"]
+        records = await db.reactivation_board_members.find({"user_id": user_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
+        materials = await db.generated_materials.find(
+            {"user_id": user_id, "type": ANALYSIS_TYPE},
+            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1}).to_list(300)
+        by_member = {m["application_id"]: m for m in materials}
+        rows = []
+        analyzed = 0
+        for record in records:
+            response = record.get("response") or {}
+            analysis = material_summary(by_member.get(record["member_record_id"]))
+            if analysis and analysis["status"] not in {"Generating", "Failed"}:
+                analyzed += 1
+            rows.append({**public_record(record),
+                         "recommitment": response.get("recommitment", ""),
+                         "professional_role": response.get("current_position", ""), "employer": response.get("employer", ""),
+                         "expertise": response.get("expertise", []), "contribution_interests": response.get("contribution_interests", []),
+                         "monthly_availability": response.get("monthly_availability", ""),
+                         "conversation_direction": record.get("conversation_direction", ""),
+                         "analysis": analysis})
+        completed = sum(1 for r in records if r["status"] == "COMPLETED")
+        return {"members": rows, "directions": CONVERSATION_DIRECTIONS,
+                "progress": {"total": len(records), "responded": completed, "analyzed": analyzed,
+                             "waiting": len(records) - completed}}
+
+    @router.post("/reactivation/board-members/{member_record_id}/analysis")
+    async def generate_analysis(member_record_id: str, request: Request):
+        member = await reactivation_member(request)
+        record = await owned_board_member(member["user_id"], member_record_id)
+        if record["status"] != "COMPLETED" or not record.get("response"):
+            raise HTTPException(status_code=409, detail="This Board Member has not completed their Recommitment Form yet — their response is needed before it can be understood.")
+        query = {"user_id": member["user_id"], "type": ANALYSIS_TYPE, "application_id": member_record_id}
+        existing = await db.generated_materials.find_one(query, {"_id": 0, "material_id": 1, "status": 1})
+        if existing and existing.get("status") == "Generating":
+            return {"material_id": existing["material_id"], "status": "Generating"}
+        intake = await user_intake(member["user_id"])
+        org_context = {key: intake.get(key, "") for key in [
+            "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
+            "disengage_reason", "expected_contribution", "actually_happening"]}
+        context = ("ORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
+                   + "\n\nTHIS BOARD MEMBER'S ACTUAL PROFILE & RECOMMITMENT FORM RESPONSE:\n"
+                   + json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str))
+        now = datetime.now(timezone.utc).isoformat()
+        if existing:
+            material_id = existing["material_id"]
+            await db.generated_materials.update_one(query, {"$set": {"status": "Generating", "updated_at": now}})
+        else:
+            material_id = str(uuid.uuid4())
+            await db.generated_materials.insert_one({
+                "material_id": material_id, "user_id": member["user_id"], "type": ANALYSIS_TYPE,
+                "application_id": member_record_id, "module": 3, "title": "Understanding Their Response",
+                "versions": [], "current_version": 0, "status": "Generating",
+                "created_at": now, "updated_at": now})
+
+        async def run_analysis():
+            try:
+                structured = await generate_structured(ANALYSIS_TYPE, context)
+                await save_reactivation_material(member["user_id"], ANALYSIS_TYPE, "Understanding Their Response",
+                                                 member_record_id, structured, analysis_display(structured, record["name"]))
+            except Exception as exc:
+                logger.error("Response analysis failed for %s: %s", member_record_id, exc)
+                await db.generated_materials.update_one(query, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_analysis())
+        return {"material_id": material_id, "status": "Generating"}
+
+    @router.put("/reactivation/board-members/{member_record_id}/direction")
+    async def save_direction(member_record_id: str, payload: DirectionPayload, request: Request):
+        member = await reactivation_member(request)
+        await owned_board_member(member["user_id"], member_record_id)
+        if payload.direction and payload.direction not in CONVERSATION_DIRECTIONS:
+            raise HTTPException(status_code=422, detail="Invalid conversation direction")
+        await db.reactivation_board_members.update_one(
+            {"member_record_id": member_record_id},
+            {"$set": {"conversation_direction": payload.direction}})
+        return {"status": "saved"}
+
+    # ---------------- DASHBOARD OUTCOME EMAILS ----------------
+
+    OUTCOME_EMAIL_TYPES = {
+        "Stepping Down From the Board": ("reactivation_stepped_down_followup", "Stepped-Down Follow-Up Email"),
+        "Transitioning to an Advisory Role": ("reactivation_advisory_confirmation", "Advisory Board Confirmation Email"),
+    }
+
+    @router.post("/reactivation/board-members/{member_record_id}/outcome-email")
+    async def generate_outcome_email(member_record_id: str, request: Request):
+        member = await reactivation_member(request)
+        record = await owned_board_member(member["user_id"], member_record_id)
+        outcome = record.get("conversation_outcome", "")
+        if outcome not in OUTCOME_EMAIL_TYPES:
+            raise HTTPException(status_code=409, detail="Record the final outcome (Stepping Down or Advisory) before generating this email.")
+        material_type, title = OUTCOME_EMAIL_TYPES[outcome]
+        intake = await user_intake(member["user_id"])
+        context_data = await founder_context(member["user_id"])
+        context = (f"ORGANIZATION: {context_data['organization']}\nFOUNDER: {context_data['founder_name']}"
+                   + (f" ({context_data['founder_title']})" if context_data.get("founder_title") else "")
+                   + f"\n\nBOARD MEMBER: {record['name']} — current role: {record.get('role', 'Board Member')}"
+                   + f"\n\nRECORDED FINAL OUTCOME: {outcome}"
+                   + "\n\nFOUNDER'S POST-CALL NOTES (what actually happened and was agreed — highest authority):\n"
+                   + (record.get("conversation_conclusion") or "No notes recorded.")
+                   + "\n\nTHE BOARD MEMBER'S OWN FORM RESPONSES (for accurate acknowledgement of their service):\n"
+                   + json.dumps(record.get("response") or {}, indent=1, default=str)[:6000])
+        if outcome == "Stepping Down From the Board":
+            if intake.get("bylaws_text"):
+                context += "\n\nORGANIZATION BYLAWS EXTRACT (use ONLY procedures actually stated here):\n" + intake["bylaws_text"][:15000]
+            elif intake.get("resignation_process"):
+                context += "\n\nORGANIZATION'S DESCRIBED RESIGNATION PROCESS (use this, never invent requirements):\n" + intake["resignation_process"]
+            else:
+                context += "\n\nNo bylaws or resignation process were provided — do NOT cite any procedure; confirm next steps generally."
+        try:
+            structured = await generate_structured(material_type, context)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Generation failed: {str(exc)[:300]}. Your information is preserved — you can try again.") from exc
+        display = f"SUBJECT: {structured.get('subject', '')}\n\n{structured.get('body', '')}"
+        material = await save_reactivation_material(member["user_id"], material_type, title, member_record_id, structured, display)
+        full = await db.generated_materials.find_one({"material_id": material["material_id"]}, {"_id": 0})
+        return {**material, "display_text": current_display(full), "to_name": record["name"], "to_email": record.get("email", "")}
+
+    @router.get("/reactivation/board-members/{member_record_id}/outcome-email")
+    async def get_outcome_email(member_record_id: str, request: Request):
+        member = await reactivation_member(request)
+        record = await owned_board_member(member["user_id"], member_record_id)
+        outcome = record.get("conversation_outcome", "")
+        if outcome not in OUTCOME_EMAIL_TYPES:
+            raise HTTPException(status_code=404, detail="No outcome email applies to this Board Member")
+        material_type, _ = OUTCOME_EMAIL_TYPES[outcome]
+        material = await db.generated_materials.find_one(
+            {"user_id": member["user_id"], "type": material_type, "application_id": member_record_id}, {"_id": 0})
+        if not material:
+            raise HTTPException(status_code=404, detail="This email has not been generated yet")
+        return {"material_id": material["material_id"], "status": material["status"],
+                "display_text": current_display(material), "to_name": record["name"], "to_email": record.get("email", "")}
 
     # ---------------- ADMIN ----------------
 

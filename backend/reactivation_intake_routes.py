@@ -7,8 +7,10 @@ from typing import List
 
 import resend
 import stripe
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from ai_service import extract_cv_text
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ class ReactivationIntakeSubmission(BaseModel):
     session_id: str = Field(min_length=1)
     your_name: str = Field(min_length=1)
     email: EmailStr
+    has_bylaws: str = ""
+    resignation_process: str = ""
     organization_name: str = Field(min_length=1)
     mission: str = Field(min_length=1)
     direction_12_24: str = Field(min_length=1)
@@ -186,5 +190,21 @@ def create_reactivation_intake_router(db) -> APIRouter:
                 logger.exception("Owner reactivation intake notification failed for session %s", payload.session_id)
         redirect_url = DIY_START_ROUTE if transaction["purchase_source"] == "direct_diy_board_reactivation_497" else CALENDLY_URL
         return {"status": "submitted", "redirect_url": redirect_url}
+
+    @router.post("/bylaws", status_code=201)
+    async def upload_bylaws(session_id: str = Form(...), file: UploadFile = File(...)):
+        await verified_transaction(session_id)
+        intake = await db.board_reactivation_intakes.find_one({"session_id": session_id}, {"_id": 0, "intake_id": 1})
+        if not intake:
+            raise HTTPException(status_code=404, detail="Submit the intake form before uploading your bylaws")
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Bylaws file is too large (10MB maximum)")
+        text = extract_cv_text(content, file.filename or "bylaws")
+        await db.board_reactivation_intakes.update_one(
+            {"session_id": session_id},
+            {"$set": {"has_bylaws": "Yes", "bylaws_filename": file.filename or "", "bylaws_text": text[:120000],
+                      "bylaws_uploaded_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "uploaded", "filename": file.filename or ""}
 
     return router

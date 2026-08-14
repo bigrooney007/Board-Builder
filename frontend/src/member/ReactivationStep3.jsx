@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { Download, FileText, RefreshCw, X } from "lucide-react";
 import { memberApi } from "./api";
 import { ResponseView } from "./ReactivationStep2";
+import { reactivationContent } from "../content/appContent";
+
+const C = reactivationContent.step4;
 
 const OUTCOME_LABELS = {
   "Continuing as an Active Board Member": "ACTIVE — RECOMMITTED",
@@ -23,7 +26,7 @@ const Modal = ({ children, onClose, testId, wide }) => (
   </div>
 );
 
-const MemberConversation = ({ row, outcomeOptions, reload }) => {
+const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
   const [busy, setBusy] = useState("");
   const [material, setMaterial] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -33,7 +36,14 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
   const [conclusion, setConclusion] = useState(row.conversation_conclusion || "");
   const [conclusionSaved, setConclusionSaved] = useState(false);
   const [outcome, setOutcome] = useState(row.conversation_outcome || "");
+  const [direction, setDirection] = useState(row.conversation_direction || "");
   const id = row.member_record_id;
+
+  const saveDirection = async (value) => {
+    setDirection(value);
+    await memberApi.put(`/reactivation/board-members/${id}/direction`, { direction: value });
+    reload();
+  };
 
   const loadMaterial = useCallback(async () => {
     if (!row.script) return null;
@@ -147,10 +157,18 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
         <p className="eyebrow" style={{ margin: 0 }}>Recommitment Response</p>
         <p style={{ margin: "4px 0 0", fontWeight: 700 }}>{row.recommitment}</p>
       </div>
+      <div style={{ margin: "6px 0 12px" }} data-testid={`step3-direction-block-${id}`}>
+        <h3 style={{ marginBottom: 4 }}>{C.directionLabel}</h3>
+        <p style={{ marginTop: 0 }}>{C.directionHint}</p>
+        <select value={direction} onChange={(e) => saveDirection(e.target.value)} data-testid={`step3-direction-${id}`} style={{ maxWidth: 420 }}>
+          <option value="">{C.directionPlaceholder}</option>
+          {directions.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="button button-outline" onClick={openResponse} data-testid={`step3-view-response-${id}`}>VIEW RECOMMITMENT RESPONSE</button>
-        <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`step3-generate-${id}`}>
-          {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> REGENERATE SCRIPT</> : <><FileText size={15} /> GENERATE DIFFICULT CONVERSATION SCRIPT</>}
+        <button type="button" className="button" onClick={generate} disabled={busy === "generate" || !direction} title={!direction ? C.directionPlaceholder : ""} data-testid={`step3-generate-${id}`}>
+          {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> {C.regenerateScript}</> : <><FileText size={15} /> {C.generateScript}</>}
         </button>
         {(row.script || material) && !["Generating", "Failed"].includes(scriptStatus) && busy !== "generate" && (
           <>
@@ -166,16 +184,16 @@ const MemberConversation = ({ row, outcomeOptions, reload }) => {
       )}
 
       <div style={{ marginTop: 20 }}>
-        <h3 style={{ marginBottom: 4 }}>Conversation Conclusion</h3>
-        <p style={{ marginTop: 0 }}>After speaking with this Board Member, record what you actually agreed. This will become the basis for the next step.</p>
+        <h3 style={{ marginBottom: 4 }}>{C.conclusionHeading}</h3>
+        <p style={{ marginTop: 0 }}>{C.conclusionHint}</p>
         <textarea rows={4} value={conclusion} onChange={(e) => { setConclusion(e.target.value); setConclusionSaved(false); }}
-          placeholder="Include what they agreed to do, what responsibility they are prepared to carry, any limits on their availability, what support they need, and any transition that was agreed."
+          placeholder={C.conclusionPlaceholder}
           style={{ width: "100%" }} data-testid={`step3-conclusion-${id}`} />
-        <button type="button" className="button" onClick={saveConclusion} style={{ marginTop: 8 }} data-testid={`step3-save-conclusion-${id}`}>{conclusionSaved ? "Conclusion Saved" : "SAVE CONVERSATION CONCLUSION"}</button>
+        <button type="button" className="button" onClick={saveConclusion} style={{ marginTop: 8 }} data-testid={`step3-save-conclusion-${id}`}>{conclusionSaved ? C.conclusionSaved : C.saveConclusion}</button>
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <h3 style={{ marginBottom: 4 }}>Conversation Outcome</h3>
+        <h3 style={{ marginBottom: 4 }}>{C.outcomeHeading}</h3>
         <select value={outcome} onChange={(e) => saveOutcome(e.target.value)} data-testid={`step3-outcome-${id}`} style={{ maxWidth: 420 }}>
           <option value="">Choose the actual outcome…</option>
           {outcomeOptions.map((option) => <option key={option}>{option}</option>)}
@@ -219,10 +237,8 @@ export default function ReactivationStep3() {
   return (
     <div data-testid="reactivation-step3">
       <section className="member-card" data-testid="step3-intro">
-        <h2>Have the Conversations That Need to Happen</h2>
-        <p>You now have information directly from your Board Members about their experience, capacity, interests and willingness to continue serving.</p>
-        <p>The next step is to talk with each person.</p>
-        <p>The goal is not to pressure anyone into staying. It is to get clarity about who is ready to stand up, what responsibility they are prepared to carry, and whether anyone needs to step down or transition into another role.</p>
+        <h2>{C.heading}</h2>
+        {C.intro.map((p) => <p key={p}>{p}</p>)}
       </section>
 
       <section className="member-card" data-testid="step3-progress">
@@ -242,12 +258,8 @@ export default function ReactivationStep3() {
       )}
 
       {data.members.map((row) => (
-        <MemberConversation key={row.member_record_id} row={row} outcomeOptions={data.outcome_options} reload={load} />
+        <MemberConversation key={row.member_record_id} row={row} outcomeOptions={data.outcome_options} directions={data.directions || ["Remain and Step Up", "Step Down", "Move to Advisory Board"]} reload={load} />
       ))}
-
-      <section style={{ textAlign: "center", margin: "26px 0" }}>
-        <Link className="button rwr-cta-button" to="/app/reactivation/self-guided/module/4" data-testid="step3-continue-step4">CONTINUE TO STEP 4 — EQUIP EACH BOARD MEMBER</Link>
-      </section>
     </div>
   );
 }

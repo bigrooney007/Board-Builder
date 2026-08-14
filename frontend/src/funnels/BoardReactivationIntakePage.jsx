@@ -19,6 +19,7 @@ const INITIAL = {
   strategic_plan: "", board_participated_planning: "", planning_involvement: "",
   disengage_reason: "", disengage_when: "", disengagement_signs: [], disengagement_signs_other: "", reactivation_attempts: "", attempts_outcome: "",
   meeting_frequency: "", typical_meeting: "", clear_responsibilities_after_meetings: "", transition_options: [], anything_else: "",
+  has_bylaws: "", resignation_process: "",
 };
 
 const TextField = ({ label, name, form, set, errors, required = true, type = "text" }) => (
@@ -64,6 +65,7 @@ export default function BoardReactivationIntakePage() {
   const [nextUrl, setNextUrl] = useState("");
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(INITIAL);
+  const [bylawsFile, setBylawsFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -132,6 +134,14 @@ export default function BoardReactivationIntakePage() {
     setSubmitError("");
     try {
       const response = await axios.post(`${API}/board-reactivation-intake/submit`, { ...form, session_id: sessionId });
+      if (form.has_bylaws === "Yes, I have them" && bylawsFile) {
+        try {
+          const upload = new FormData();
+          upload.append("session_id", sessionId);
+          upload.append("file", bylawsFile);
+          await axios.post(`${API}/board-reactivation-intake/bylaws`, upload);
+        } catch { /* bylaws are optional — never block completion */ }
+      }
       setNextUrl(response.data.redirect_url);
       setGate("done");
       setTimeout(() => window.location.replace(response.data.redirect_url), 1500);
@@ -253,6 +263,17 @@ export default function BoardReactivationIntakePage() {
                 <AreaField label="What Does a Typical Board Meeting Currently Look Like?" name="typical_meeting" form={form} set={set} errors={errors} />
                 <SelectField label="Do Board Members normally leave meetings with clear individual responsibilities?" name="clear_responsibilities_after_meetings" options={["Yes", "Sometimes", "No"]} form={form} set={set} errors={errors} />
                 <MultiField legend="If a Board Member is no longer willing or able to serve actively, what options would your organization be open to considering?" name="transition_options" options={TRANSITION_OPTIONS} form={form} toggle={toggle} errors={errors} />
+                <SelectField label="Do you have your organization's bylaws?" name="has_bylaws" options={["Yes, I have them", "No, I don't have them"]} form={form} set={set} errors={errors} />
+                {form.has_bylaws === "Yes, I have them" && (
+                  <label className="field" data-testid="rintake-bylaws-upload">
+                    <span>Upload your organization's bylaws (PDF, Word or text)</span>
+                    <input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setBylawsFile(event.target.files?.[0] || null)} data-testid="rintake-bylaws-file" />
+                    {bylawsFile && <span className="field-helper">Selected: {bylawsFile.name}</span>}
+                  </label>
+                )}
+                {form.has_bylaws === "No, I don't have them" && (
+                  <AreaField label="Please describe your organization's board resignation process." name="resignation_process" required={false} rows={3} form={form} set={set} errors={errors} />
+                )}
                 <AreaField label="Is There Anything Else I Should Know About Your Board Before We Begin?" name="anything_else" required={false} rows={3} form={form} set={set} errors={errors} />
               </div>
             )}

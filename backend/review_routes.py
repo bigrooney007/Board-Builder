@@ -72,7 +72,8 @@ def create_review_router(db) -> APIRouter:
         org = (await db.opportunities.find_one({"user_id": material["user_id"]}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", "")
         return {"title": material["title"], "display_text": current["display_text"] if current else "",
                 "organization_name": org, "logo_data": branding.get("logo_data", ""),
-                "primary_color": branding.get("primary_color", ""), "secondary_color": branding.get("secondary_color", "")}
+                "primary_color": branding.get("primary_color", ""), "secondary_color": branding.get("secondary_color", ""),
+                "design_spec": material.get("design_spec", {})}
 
     @router.get("/board-profile/{token}")
     async def board_profile_meta(token: str):

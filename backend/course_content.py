@@ -139,10 +139,10 @@ SELF_GUIDED_MODULES = [
 PRODUCT_KEYS = {"recruitment_basic", "recruitment_self_guided"}
 
 REACTIVATION_MODULES = [
-    {"number": 1, "title": "Why Boards Disengage", "kind": "training"},
-    {"number": 2, "title": "Reactivating Your Board", "kind": "shell"},
-    {"number": 3, "title": "Having the Difficult Conversation", "kind": "shell"},
-    {"number": 4, "title": "Equipping Each Board Member", "kind": "shell"},
+    {"number": 1, "title": "Understand the Situation", "kind": "training"},
+    {"number": 2, "title": "Generate the Recommitment Form", "kind": "shell"},
+    {"number": 3, "title": "Understand Their Response", "kind": "shell"},
+    {"number": 4, "title": "Have the Hard Conversation", "kind": "shell"},
     {"number": 5, "title": "My Board", "kind": "dashboard"},
 ]
 

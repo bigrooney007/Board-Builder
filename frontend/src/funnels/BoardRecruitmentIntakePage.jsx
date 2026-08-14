@@ -21,6 +21,7 @@ const INITIAL = {
   meeting_frequency: "", meeting_frequency_other: "", meeting_format: "", meeting_location: "", virtual_meeting_info: "",
   board_term: "", board_term_other: "", time_commitment: "", max_board_size: "", max_board_size_unknown: false,
   application_deadline: "", deadline_date: "", anything_else: "",
+  logo_data: "", primary_color: "", secondary_color: "",
 };
 
 const NumberOrNotSure = ({ label, value, notSure, onValue, onNotSure, testId, error }) => (
@@ -237,6 +238,26 @@ export default function BoardRecruitmentIntakePage() {
                   </select>
                   {errors.board_type && <p className="field-error">{errors.board_type}</p>}
                 </label>
+                <fieldset className="field" data-testid="intake-branding">
+                  <legend>Your Organization Branding (optional — provide it once, we reuse it everywhere)</legend>
+                  <span className="field-helper">Your logo and brand colors are used to professionally brand every resource we create for you — application forms, emails, agreements, documents and board member portfolios. You will not be asked again.</span>
+                  <label className="field"><span>Organization Logo (PNG/JPG, up to 500KB)</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-testid="intake-logo" onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 500 * 1024) { setErrors((c) => ({ ...c, logo_data: "Logo must be 500KB or smaller." })); return; }
+                      const reader = new FileReader();
+                      reader.onload = () => { setForm((c) => ({ ...c, logo_data: reader.result })); setErrors((c) => ({ ...c, logo_data: "" })); };
+                      reader.readAsDataURL(file);
+                    }} />
+                    {form.logo_data && <img src={form.logo_data} alt="Your logo" style={{ maxHeight: 60, maxWidth: 200, objectFit: "contain", marginTop: 6 }} data-testid="intake-logo-preview" />}
+                    {errors.logo_data && <p className="field-error">{errors.logo_data}</p>}
+                  </label>
+                  <div className="two-col-fields">
+                    <label className="field"><span>Primary Brand Color</span><input type="color" value={form.primary_color || "#1d3a2f"} onChange={set("primary_color")} data-testid="intake-primary-color" /></label>
+                    <label className="field"><span>Secondary Brand Color</span><input type="color" value={form.secondary_color || "#f4f1ea"} onChange={set("secondary_color")} data-testid="intake-secondary-color" /></label>
+                  </div>
+                </fieldset>
               </div>
             )}
 

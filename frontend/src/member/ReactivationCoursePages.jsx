@@ -6,8 +6,10 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { SupportBox, VideoBlock } from "./CoursePages";
 import ReactivationStep2 from "./ReactivationStep2";
+import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
+import { reactivationContent } from "../content/appContent";
 
 const META = {
   key: "reactivation_self_guided",
@@ -79,8 +81,8 @@ const StepShell = ({ moduleNumber }) => {
   if (moduleNumber === 1) {
     return (
       <section className="member-card" data-testid="reactivation-step1-training">
-        <h2>Understand Why Boards Disengage</h2>
-        <p>This step is training only. Watch the video above, then mark this step complete and continue to Step 2 to begin working through your current Board Members.</p>
+        <h2>{reactivationContent.step1.heading}</h2>
+        {reactivationContent.step1.body.map((p) => <p key={p}>{p}</p>)}
       </section>
     );
   }
@@ -88,18 +90,10 @@ const StepShell = ({ moduleNumber }) => {
     return <ReactivationStep2 />;
   }
   if (moduleNumber === 3) {
-    return <ReactivationStep3 />;
+    return <ReactivationUnderstand />;
   }
   if (moduleNumber === 4) {
-    return (
-      <section className="member-card" data-testid="reactivation-step4-shell">
-        <h2>Give Every Board Member Clear Responsibility</h2>
-        <p>The conversation should not end with a vague promise to become more involved.</p>
-        <p>For every Board Member who is continuing with the organization, create a clear Board Member Portfolio showing where they can contribute, what responsibility they have agreed to carry, and how their experience can help move the organization forward.</p>
-        <p>Your Board Member Portfolios are generated and managed from <strong>My Board</strong>, using each person's Recommitment responses, your Conversation Conclusion and the outcome you selected.</p>
-        <Link className="button rwr-cta-button" to="/app/reactivation/self-guided/module/5" data-testid="reactivation-step4-continue">CONTINUE TO MY BOARD</Link>
-      </section>
-    );
+    return <ReactivationStep3 />;
   }
   return <ReactivationStep5 />;
 };

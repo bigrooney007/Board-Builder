@@ -10,11 +10,21 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [qualifying, setQualifying] = useState([]);
 
   useEffect(() => {
     if (loading) return;
     if (!member) { navigate("/login"); return; }
-    memberApi.get("/members/dashboard").then((response) => setData(response.data)).catch(() => setError("We could not load your dashboard."));
+    memberApi.get("/members/dashboard").then((response) => {
+      setData(response.data);
+      const hasRecruitment = response.data.products.some((p) => !p.entitlement.startsWith("reactivation_") && !p.entitlement.startsWith("activation_"));
+      if (hasRecruitment) {
+        memberApi.get("/workspace/applications").then((r) => {
+          setQualifying((r.data.applications || []).filter((a) =>
+            ["Moving Forward", "Selected", "Conditional Appointment"].includes(a.status) || a.final_outcome === "Joined Board"));
+        }).catch(() => {});
+      }
+    }).catch(() => setError("We could not load your dashboard."));
   }, [loading, member, navigate]);
 
   return (
@@ -48,6 +58,17 @@ export const DashboardPage = () => {
           </section>
           );
         })}
+        {qualifying.length > 0 && (
+          <section className="member-card dashboard-product" data-testid="dashboard-candidate-actions">
+            <p className="eyebrow">Board Recruitment — Your Candidates</p>
+            <h2>Board Member Portfolio &amp; Final Board Offer</h2>
+            <p>{qualifying.map((a) => a.profile_snapshot?.full_name || a.applicant_email).filter(Boolean).join(", ")} {qualifying.length === 1 ? "has" : "have"} reached the candidate stage.</p>
+            <div className="material-actions">
+              <button className="button" onClick={() => navigate("/app/recruitment/self-guided/results")} data-testid="dashboard-portfolio-button">Board Member Portfolio <ArrowRight size={16} /></button>
+              <button className="button button-back" onClick={() => navigate("/app/recruitment/self-guided/module/6")} data-testid="dashboard-final-offer-button">Generate Final Board Offer Email <ArrowRight size={16} /></button>
+            </div>
+          </section>
+        )}
       </main>
     </MemberShell>
   );
