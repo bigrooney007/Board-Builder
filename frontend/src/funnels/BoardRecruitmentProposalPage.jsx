@@ -5,6 +5,7 @@ import { CalendarClock, CheckCircle2, Check, ShieldCheck, X } from "lucide-react
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -67,7 +68,7 @@ export default function BoardRecruitmentProposalPage() {
       <main data-testid="brp-page">
         <section className="funnel-hero-banner brp-hero" data-testid="brp-hero">
           <p className="eyebrow" data-testid="brp-hero-eyebrow">Board Recruitment Project Proposal</p>
-          <h1 data-testid="brp-headline">Build the Board Your Nonprofit Needs</h1>
+          <h1 data-testid="brp-headline">{SITE_CONTENT.recruitProposal.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="brp-hero-intro">Your nonprofit should not have to keep struggling because you do not have the right people around the table.</p>
           <i aria-hidden="true" />
         </section>
@@ -149,8 +150,8 @@ export default function BoardRecruitmentProposalPage() {
 
         <section className="brp-section brp-guarantee" data-testid="brp-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 className="brp-section-title" data-testid="brp-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="brp-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+          <h2 className="brp-section-title" data-testid="brp-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="brp-guarantee-copy">{SITE_CONTENT.shared.guaranteePrefix}<strong>{SITE_CONTENT.shared.guaranteeStrong}</strong></p>
           {guaranteeConfigured && (
             <button type="button" className="link-button rwr-terms-link" onClick={() => setShowTerms(true)} data-testid="brp-guarantee-terms-link">View Guarantee Terms</button>
           )}
@@ -166,7 +167,7 @@ export default function BoardRecruitmentProposalPage() {
           <p>You do not have to spend the next several months trying to figure out where to find board members or how to recruit them.</p>
           <p><strong>Let’s get the right people around your table and get your organization moving forward.</strong></p>
           {cancelled && <p className="rwr-cta-notice" data-testid="brp-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="brp-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT — LET'S START RECRUITING YOUR BOARD TOGETHER"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="brp-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.recruitProposal.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="brp-cta-notice">{ctaNotice}</p>}
           <div>
             <Link className="button button-outline offer-cross-link" to="/recruit-your-board-yourself" data-testid="brp-diy-cross-link">Prefer to Do It By Yourself?</Link>

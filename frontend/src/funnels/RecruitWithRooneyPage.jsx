@@ -5,6 +5,7 @@ import { PlayCircle, ShieldCheck, X } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,7 +47,7 @@ export default function RecruitWithRooneyPage() {
     <FunnelLayout restrained>
       <main data-testid="rwr-page">
         <section className="funnel-hero-banner rwr-hero" data-testid="rwr-hero">
-          <h1 data-testid="rwr-headline">Recruit the Board Members Your Nonprofit Needs in 2 Weeks</h1>
+          <h1 data-testid="rwr-headline">{SITE_CONTENT.recruitWithRooney.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="rwr-subheadline">Build your board with me.</p>
           <i aria-hidden="true" />
         </section>

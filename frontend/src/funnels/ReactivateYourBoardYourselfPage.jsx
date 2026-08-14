@@ -5,6 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -44,7 +45,7 @@ export default function ReactivateYourBoardYourselfPage() {
     <FunnelLayout restrained>
       <main data-testid="rxdiy-page">
         <section className="funnel-hero-banner brp-hero" data-testid="rxdiy-hero">
-          <h1 data-testid="rxdiy-headline">Reactivate Your Board Yourself</h1>
+          <h1 data-testid="rxdiy-headline">{SITE_CONTENT.reactivateDiy.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="rxdiy-hero-supporting"><strong>Stop Carrying Board Members Who Are Not Carrying the Mission</strong></p>
           <p className="funnel-hero-banner-secondary" data-testid="rxdiy-hero-copy">Follow the process to find out who is ready to stand up, who needs clearer responsibility, and who is no longer prepared to serve — without pressuring people, destroying relationships or continuing to carry dead weight on your Board.</p>
           <i aria-hidden="true" />
@@ -81,13 +82,13 @@ export default function ReactivateYourBoardYourselfPage() {
 
         <section className="brp-section brp-guarantee" data-testid="rxdiy-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 className="brp-section-title" data-testid="rxdiy-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="rxdiy-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+          <h2 className="brp-section-title" data-testid="rxdiy-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="rxdiy-guarantee-copy">{SITE_CONTENT.shared.guaranteePrefix}<strong>{SITE_CONTENT.shared.guaranteeStrong}</strong></p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="rxdiy-cta-section">
           {cancelled && <p className="rwr-cta-notice" data-testid="rxdiy-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="rxdiy-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT AND START REACTIVATING MY BOARD"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="rxdiy-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.reactivateDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="rxdiy-cta-notice">{ctaNotice}</p>}
           <div>
             <Link className="button button-outline offer-cross-link" to="/board-reactivation-proposal" data-testid="rxdiy-dwm-cross-link">Want Me To Do It With You?</Link>

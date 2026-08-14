@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -72,7 +73,7 @@ export default function BoardTransformationPage() {
       <main className="bt-page" data-testid="board-transformation-page" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px" }}>
         <header style={{ marginBottom: 28 }}>
           <p className="eyebrow" data-testid="bt-eyebrow">Board Transformation</p>
-          <h1 data-testid="bt-headline">What Does This Board Actually Need?</h1>
+          <h1 data-testid="bt-headline">{SITE_CONTENT.boardTransformation.headline}</h1>
           <p data-testid="bt-intro">Answer four short questions about your Board and we will show you the exact steps to take to fix it and transform your Board Members into fundraising champions for your mission.</p>
         </header>
 

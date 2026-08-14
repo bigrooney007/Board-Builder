@@ -5,6 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,7 +47,7 @@ export default function RecruitYourBoardYourselfPage() {
     <FunnelLayout restrained>
       <main data-testid="dyi-page">
         <section className="funnel-hero-banner brp-hero" data-testid="dyi-hero">
-          <h1 data-testid="dyi-headline">Recruit Your Board Yourself</h1>
+          <h1 data-testid="dyi-headline">{SITE_CONTENT.recruitDiy.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="dyi-hero-supporting">Watch me run the recruitment process, then do what I do for your own nonprofit.</p>
           <i aria-hidden="true" />
         </section>
@@ -90,8 +91,8 @@ export default function RecruitYourBoardYourselfPage() {
 
         <section className="brp-section brp-guarantee" data-testid="dyi-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 className="brp-section-title" data-testid="dyi-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="dyi-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+          <h2 className="brp-section-title" data-testid="dyi-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="dyi-guarantee-copy">{SITE_CONTENT.shared.guaranteePrefix}<strong>{SITE_CONTENT.shared.guaranteeStrong}</strong></p>
         </section>
 
         <section className="brp-section" data-testid="dyi-after-payment-section">
@@ -101,7 +102,7 @@ export default function RecruitYourBoardYourselfPage() {
 
         <section className="brp-section brp-final-cta" data-testid="dyi-cta-section">
           {cancelled && <p className="rwr-cta-notice" data-testid="dyi-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="dyi-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT AND START RECRUITING MY BOARD"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="dyi-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.recruitDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="dyi-cta-notice">{ctaNotice}</p>}
           <div>
             <Link className="button button-outline offer-cross-link" to="/board-recruitment-proposal" data-testid="dyi-dwm-cross-link">Want Me To Do It With You?</Link>

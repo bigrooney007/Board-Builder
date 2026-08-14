@@ -5,6 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -44,7 +45,7 @@ export default function ActivateYourBoardYourselfPage() {
     <FunnelLayout restrained>
       <main data-testid="adiy-page">
         <section className="funnel-hero-banner brp-hero" data-testid="adiy-hero">
-          <h1 data-testid="adiy-headline">Activate Your Board to Start Raising Money</h1>
+          <h1 data-testid="adiy-headline">{SITE_CONTENT.activateDiy.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="adiy-hero-supporting"><strong>Stop Carrying Fundraising Alone</strong></p>
           <p className="funnel-hero-banner-secondary" data-testid="adiy-hero-copy">You should not be the only person carrying the fundraising responsibility for your organization. Your Board should understand what the organization is trying to fund, help build the fundraising strategy, take ownership of the plan, accept clear responsibilities and have the tools they need to begin taking action.</p>
           <i aria-hidden="true" />
@@ -81,13 +82,13 @@ export default function ActivateYourBoardYourselfPage() {
 
         <section className="brp-section brp-guarantee" data-testid="adiy-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 className="brp-section-title" data-testid="adiy-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="adiy-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+          <h2 className="brp-section-title" data-testid="adiy-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="adiy-guarantee-copy">{SITE_CONTENT.shared.guaranteePrefix}<strong>{SITE_CONTENT.shared.guaranteeStrong}</strong></p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="adiy-cta-section">
           {cancelled && <p className="rwr-cta-notice" data-testid="adiy-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="adiy-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT AND START ACTIVATING MY BOARD"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="adiy-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.activateDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="adiy-cta-notice">{ctaNotice}</p>}
           <div>
             <Link className="button button-outline offer-cross-link" to="/board-activation-proposal" data-testid="adiy-dwm-cross-link">Want Me To Do It With You?</Link>

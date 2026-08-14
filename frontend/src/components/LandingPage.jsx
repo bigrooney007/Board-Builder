@@ -2,6 +2,7 @@ import { ArrowRight, Check, RefreshCcw, Rocket, Users } from "lucide-react";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { BlogSlider } from "@/pages/BlogPages";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
@@ -44,7 +45,7 @@ export const LandingPage = ({ onJoin }) => (
         <h1 data-testid="hero-headline">Build the Powerhouse <em>Fundraising Board</em> Your Nonprofit Needs to Succeed</h1>
         <p className="hero-lead" data-testid="hero-supporting-text">Tell us about your present board.</p>
         <p data-testid="hero-description">Answer four short questions about your Board and we will show you the exact steps to take to fix it and transform your Board Members into fundraising champions for your mission.</p>
-        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">TELL ME WHAT MY BOARD NEEDS</a></p>
+        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">{SITE_CONTENT.home.cta}</a></p>
         <p className="hero-note" data-testid="hero-response-time"><Check size={17} /> Choose the board problem you want to solve and build your starting point.</p>
       </div>
       <div className="hero-visual" aria-hidden="true">

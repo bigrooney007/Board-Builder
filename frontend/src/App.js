@@ -50,6 +50,10 @@ import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
 import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferencePages";
 import { ReviewProgressTracker } from "@/reviewMode";
+import { WorkspaceModeBanner } from "@/operatorMode";
+import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
+import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
+import AreaPackPage from "@/funnels/AreaPackPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 
 const HomeExperience = () => {
@@ -70,6 +74,7 @@ export default function App() {
     <BrowserRouter>
       <MemberAuthProvider>
         <ReviewProgressTracker />
+        <WorkspaceModeBanner />
         <Routes>
           <Route path="/" element={<HomeExperience />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
@@ -134,6 +139,9 @@ export default function App() {
           <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
           <Route path="/reference-form/:token" element={<CandidateReferenceFormPage />} />
           <Route path="/referee-form/:token" element={<RefereeFormPage />} />
+          <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
+          <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
+          <Route path="/area-pack/:token" element={<AreaPackPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>

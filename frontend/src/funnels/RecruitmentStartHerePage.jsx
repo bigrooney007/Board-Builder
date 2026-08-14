@@ -4,6 +4,7 @@ import { Eye, FileText, HelpCircle, Rocket, Zap } from "lucide-react";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { MemberShell } from "@/member/MemberShell";
 import { usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const BLOCKS = [
   {
@@ -61,7 +62,7 @@ export default function RecruitmentStartHerePage() {
     <MemberShell>
       <main className="sh-page" data-testid="start-here-page">
         <section className="funnel-hero-banner brp-hero sh-hero" data-testid="start-here-hero">
-          <h1 data-testid="start-here-headline">You're Ready to Start Recruiting Your Board</h1>
+          <h1 data-testid="start-here-headline">{SITE_CONTENT.recruitStartHere.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="start-here-subtitle">Follow the process, use the materials we create for you, and ask for help anytime you need it.</p>
           <i aria-hidden="true" />
         </section>
@@ -77,7 +78,7 @@ export default function RecruitmentStartHerePage() {
         </section>
 
         <section className="sh-cta" data-testid="start-here-cta-section">
-          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/1" data-testid="start-here-module1-button">START STEP 1 — RECRUITING BOARD MEMBERS THE RIGHT WAY</Link>
+          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/1" data-testid="start-here-module1-button">{SITE_CONTENT.recruitStartHere.cta}</Link>
         </section>
       </main>
     </MemberShell>

@@ -5,6 +5,7 @@ import { PlayCircle, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -25,7 +26,7 @@ export default function ActivateWithRooneyPage() {
     <FunnelLayout restrained>
       <main data-testid="awr-page">
         <section className="funnel-hero-banner rwr-hero" data-testid="awr-hero">
-          <h1 data-testid="awr-headline">Turn Your Board Into Fundraising Champions for Your Mission</h1>
+          <h1 data-testid="awr-headline">{SITE_CONTENT.activateWithRooney.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="awr-subheadline">Your Board should understand the fundraising direction, help build the plan, take ownership of the work and know exactly how they can help raise money for the organization. You can lead the process yourself with my guidance and tools, or I can work through the process with you.</p>
           <i aria-hidden="true" />
         </section>
@@ -70,8 +71,8 @@ export default function ActivateWithRooneyPage() {
 
         <section className="rwr-section rwr-guarantee" data-testid="awr-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 data-testid="awr-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="awr-guarantee-copy">Your investment is protected by our 100% money-back guarantee.</p>
+          <h2 data-testid="awr-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="awr-guarantee-copy">{SITE_CONTENT.shared.guaranteeSentence}</p>
         </section>
 
         <TestimonialCarousel heading="See What Other Nonprofit Leaders Have Said" idPrefix="awr" />

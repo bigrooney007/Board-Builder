@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -50,7 +51,7 @@ export default function BoardTransformationResultPage() {
           <>
             <header style={{ marginBottom: 30 }}>
               <p className="eyebrow">Prepared for {result.organization}</p>
-              <h1 data-testid="bt-result-headline">Your Board Transformation Journey</h1>
+              <h1 data-testid="bt-result-headline">{SITE_CONTENT.boardTransformationResult.headline}</h1>
             </header>
 
             <section data-testid="bt-result-framework" style={{ marginBottom: 34 }}>

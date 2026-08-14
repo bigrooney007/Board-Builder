@@ -7,7 +7,13 @@ export const memberApi = axios.create({
 
 memberApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("memberToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const operateAs = sessionStorage.getItem("operateAsUserId");
+  if (operateAs) {
+    config.headers["X-Operate-As"] = operateAs;
+    delete config.headers.Authorization;
+  } else if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

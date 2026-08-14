@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
@@ -21,7 +22,7 @@ export default function AboutRooneyPage() {
             <img src={founderPhotoUrl} alt="Rooney Akpesiri, The Nonprofit Board Builder" data-testid="about-rooney-photo" />
           </div>
           <div className="ar-hero-copy">
-            <h1 data-testid="about-rooney-name">Rooney Akpesiri</h1>
+            <h1 data-testid="about-rooney-name">{SITE_CONTENT.aboutRooney.headline}</h1>
             <p className="ar-hero-title" data-testid="about-rooney-title">The Nonprofit Board Builder</p>
             {ABOUT_ROONEY_SUBTITLE && (
               <p className="ar-hero-subtitle" data-testid="about-rooney-subtitle">{ABOUT_ROONEY_SUBTITLE}</p>

@@ -5,6 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -44,7 +45,7 @@ export default function BoardActivationProposalPage() {
       <main data-testid="ap-page">
         <section className="funnel-hero-banner brp-hero" data-testid="ap-hero">
           <p className="eyebrow" data-testid="ap-hero-eyebrow">Board Fundraising Activation Project Proposal</p>
-          <h1 data-testid="ap-headline">Turn Your Board Into Fundraising Champions for Your Mission</h1>
+          <h1 data-testid="ap-headline">{SITE_CONTENT.activateProposal.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="ap-hero-supporting"><strong>Stop Carrying Fundraising Alone — We Will Activate Your Board Together</strong></p>
           <i aria-hidden="true" />
         </section>
@@ -73,13 +74,13 @@ export default function BoardActivationProposalPage() {
 
         <section className="brp-section brp-guarantee" data-testid="ap-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 className="brp-section-title" data-testid="ap-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="ap-guarantee-copy">Your investment is protected by our <strong>100% money-back guarantee.</strong></p>
+          <h2 className="brp-section-title" data-testid="ap-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="ap-guarantee-copy">{SITE_CONTENT.shared.guaranteePrefix}<strong>{SITE_CONTENT.shared.guaranteeStrong}</strong></p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="ap-cta-section">
           {cancelled && <p className="rwr-cta-notice" data-testid="ap-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
-          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="ap-cta-button">{busy ? "Preparing Checkout…" : "MAKE PAYMENT — LET'S ACTIVATE YOUR BOARD TOGETHER"}</button>
+          <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="ap-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.activateProposal.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="ap-cta-notice">{ctaNotice}</p>}
           <div>
             <Link className="button button-outline offer-cross-link" to="/activate-your-board-yourself" data-testid="ap-diy-cross-link">Prefer to Do It By Yourself?</Link>

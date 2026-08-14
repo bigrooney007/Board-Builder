@@ -5,6 +5,7 @@ import { PlayCircle, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { SITE_CONTENT } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -25,7 +26,7 @@ export default function ReactivateWithRooneyPage() {
     <FunnelLayout restrained>
       <main data-testid="rxr-page">
         <section className="funnel-hero-banner rwr-hero" data-testid="rxr-hero">
-          <h1 data-testid="rxr-headline">Reactivate Your Board Without Destroying Relationships</h1>
+          <h1 data-testid="rxr-headline">{SITE_CONTENT.reactivateWithRooney.headline}</h1>
           <p className="funnel-hero-banner-supporting" data-testid="rxr-subheadline">Get the Board Members who are ready to serve to stand up, take responsibility and help move the organization forward — and have the difficult conversations with those who are no longer prepared to carry Board responsibility.</p>
           <i aria-hidden="true" />
         </section>
@@ -70,8 +71,8 @@ export default function ReactivateWithRooneyPage() {
 
         <section className="rwr-section rwr-guarantee" data-testid="rxr-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
-          <h2 data-testid="rxr-guarantee-heading">100% Money-Back Guarantee</h2>
-          <p data-testid="rxr-guarantee-copy">Your investment is protected by our 100% money-back guarantee.</p>
+          <h2 data-testid="rxr-guarantee-heading">{SITE_CONTENT.shared.guaranteeHeading}</h2>
+          <p data-testid="rxr-guarantee-copy">{SITE_CONTENT.shared.guaranteeSentence}</p>
         </section>
 
         <TestimonialCarousel heading="See What Other Nonprofit Leaders Have Said" idPrefix="rxr" />
