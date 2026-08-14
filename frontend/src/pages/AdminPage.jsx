@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { CheckCircle, Download, Eye, FileText, LogOut, Pencil, RefreshCw, Search, Sparkles, Users, XCircle } from "lucide-react";
+import { ClientDeliverySection } from "@/admin/ClientDeliverySection";
+import { StrategicPlanningSection } from "@/admin/StrategicPlanningSection";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -129,11 +131,6 @@ const Profile = ({ applicant, close, refresh }) => {
 };
 
 const blogStatusClass = (status) => ({ "Pending Review": "pending", Published: "published", Rejected: "rejected", Generating: "generating" }[status] || "failed");
-// eslint-disable-next-line import/first
-import { ClientDeliverySection } from "@/admin/ClientDeliverySection";
-// eslint-disable-next-line import/first
-import { StrategicPlanningSection } from "@/admin/StrategicPlanningSection";
-
 const renderBlogBody = (body) => (body || "").split(/\n{2,}|\n(?=## )/).map((block, index) => {
   const trimmed = block.trim();
   if (!trimmed) return null;
