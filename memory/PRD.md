@@ -296,3 +296,10 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - CONTENT_ARCHITECTURE.md documents the whole layer; no duplicate exports; all refs resolve; build + backend verified
 - Also this session: Reactivation workflow correction (Steps 1-5 incl. Understand Their Response, direction scripts, bylaws intake, outcome emails, dashboard pipeline), Recruitment + SP corrections, prod build fix (AdminPage imports)
 - NOT run per user instruction: functional/regression tests, emails, payments, deployment
+
+## 2026-06: Cross-Offer Dashboard Link Correction (user-approved, exactly 4 edits)
+- MyFundraisingBoardPage.jsx: RECRUIT NEW BOARD MEMBERS -> /recruit-your-board-yourself; REACTIVATE MY BOARD -> /reactivate-your-board-yourself
+- ReactivationStep5.jsx: RECRUIT NEW BOARD MEMBERS -> /recruit-your-board-yourself; ACTIVATE MY BOARD -> /activate-your-board-yourself
+- Authenticated dashboard cross-offers now land on $497 DIY sales pages, never /recruit, /reactivate, /activate lead-capture funnels
+- Untouched per instruction: public landing/funnel links, admin review link, payments, intake routing, auth, entitlements
+- Verification: static only (routes confirmed in App.js lines 92/97/106; frontend compiling, service RUNNING). No functional testing per standing user command.

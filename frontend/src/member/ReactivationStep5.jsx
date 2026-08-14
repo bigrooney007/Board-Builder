@@ -357,12 +357,12 @@ export default function ReactivationStep5() {
           <article className="ar-offer-card" data-testid="myboard-recruit-cta">
             <h3>Still Missing the Right People Around the Table?</h3>
             <p className="ar-offer-copy">Reactivating your current Board shows you who is ready to serve. If you still have important skills, experience or relationships missing, recruit the Board Members your organization still needs.</p>
-            <Link className="button" to="/recruit" data-testid="myboard-recruit-button">RECRUIT NEW BOARD MEMBERS</Link>
+            <Link className="button" to="/recruit-your-board-yourself" data-testid="myboard-recruit-button">RECRUIT NEW BOARD MEMBERS</Link>
           </article>
           <article className="ar-offer-card" data-testid="myboard-activate-cta">
             <h3>Your Board Is Back at the Table. Now Put Them to Work.</h3>
             <p className="ar-offer-copy">The next step is to activate your Board to take ownership, help raise money and build your organization's fundraising system.</p>
-            <Link className="button" to="/activate" data-testid="myboard-activate-button">ACTIVATE MY BOARD</Link>
+            <Link className="button" to="/activate-your-board-yourself" data-testid="myboard-activate-button">ACTIVATE MY BOARD</Link>
           </article>
         </div>
       </section>

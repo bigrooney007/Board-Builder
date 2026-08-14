@@ -146,10 +146,10 @@ export default function MyFundraisingBoardPage() {
         <section className="member-card" data-testid="mfb-cross-sells">
           <h2>{myFundraisingBoardText.h_stillMissingTheRightPeople}</h2>
           <p>If the Board still has skill, experience, capacity or relationship gaps, recruit the right people to complete the Board.</p>
-          <Link className="button" to="/recruit" data-testid="mfb-cross-recruit">RECRUIT NEW BOARD MEMBERS</Link>
+          <Link className="button" to="/recruit-your-board-yourself" data-testid="mfb-cross-recruit">RECRUIT NEW BOARD MEMBERS</Link>
           <h2 style={{ marginTop: 22 }}>Have Board Members Who Still Are Not Carrying Their Responsibility?</h2>
           <p>If some Board Members remain disengaged, reactivate them so those ready to serve can stand up and carry responsibility, while those no longer prepared to serve can be dealt with appropriately.</p>
-          <Link className="button button-outline" to="/reactivate" data-testid="mfb-cross-reactivate">REACTIVATE MY BOARD</Link>
+          <Link className="button button-outline" to="/reactivate-your-board-yourself" data-testid="mfb-cross-reactivate">REACTIVATE MY BOARD</Link>
         </section>
 
         {viewDoc && (
