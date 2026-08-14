@@ -27,7 +27,7 @@ if not BASE:
 BASE = BASE.rstrip("/")
 
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 CATEGORY_CTA = {
     "fundraising_activation": "/activate",

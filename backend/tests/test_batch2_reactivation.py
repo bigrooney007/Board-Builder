@@ -20,7 +20,7 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PW = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PW = os.environ["ADMIN_PASSWORD"]
 RECRUIT_EMAIL = "module-tester@example.com"
 RECRUIT_PW = "ModuleTest123!"
 

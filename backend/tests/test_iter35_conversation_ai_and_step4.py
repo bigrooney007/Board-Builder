@@ -32,7 +32,7 @@ FOUNDER_PW = "UITest123!"
 RECRUIT_EMAIL = "module-tester@example.com"
 RECRUIT_PW = "ModuleTest123!"
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PW = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PW = os.environ["ADMIN_PASSWORD"]
 
 TARGET_MEMBER_ID = "3a8be71b-b8c7-41f4-a87e-b82b28376a68"  # TEST Batch3 Sarah Recommit
 EXPECTED_RECOMMITMENT = "Yes — but I need greater clarity about my role and responsibilities."

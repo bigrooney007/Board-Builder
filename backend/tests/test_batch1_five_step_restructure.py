@@ -15,7 +15,7 @@ MONGO = MongoClient(os.environ.get("MONGO_URL", "mongodb://localhost:27017"))
 DB = MONGO[os.environ.get("DB_NAME", "test_database")]
 
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 EXPECTED_TITLES = [
     "Identify the Board Members Your Organization Needs",

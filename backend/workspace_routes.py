@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from ai_service import GENERATION_TYPES, extract_cv_text, generate_structured
 from member_auth import authenticate_member, require_entitlement
 from opportunity_emails import send_opportunity_broadcast, send_signature_request
-from reactivation_routes import email_html as portfolio_email_html, origin_of
+from reactivation_routes import email_html as portfolio_email_html
 from workspace_service import (
     APPLICATION_STATUSES, BACKGROUND_STATUSES, CORE_QUESTIONS, REFERENCE_OUTCOMES,
     application_context_text, build_org_context, get_current_material, get_lead, get_profile,

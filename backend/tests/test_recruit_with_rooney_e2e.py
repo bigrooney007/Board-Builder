@@ -16,7 +16,7 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if os.environ.get("RE
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 TEST_EMAIL_PREFIX = "TEST_rwr_"
 
 

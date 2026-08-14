@@ -16,7 +16,7 @@ import requests
 
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 SIX_STAGES = [
     "Identify the Board Members Your Organization Needs",

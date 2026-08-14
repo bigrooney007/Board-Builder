@@ -23,7 +23,7 @@ sys.path.insert(0, "/app/backend")
 
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 FOUNDER_REF_ID = "860f14a8d196abf2"
 
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")

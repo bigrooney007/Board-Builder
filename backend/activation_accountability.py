@@ -19,7 +19,6 @@ async def activation_stage(db, user_id: str) -> dict:
     invited = sum(1 for p in participants if p["status"] in {"SENT", "COMPLETED"})
     received = sum(1 for p in participants if p["status"] == "COMPLETED")
     strategy = await db.activation_strategies.find_one({"user_id": user_id}, {"_id": 0, "status": 1}) or {}
-    reviews = sum(1 for p in participants if p.get("responsibility_status") or p.get("status") == "COMPLETED")
     reviewed = await db.activation_participants.count_documents({"user_id": user_id, "review_status": "REVIEWED"})
     adoption = await db.activation_adoptions.find_one({"user_id": user_id}, {"_id": 0}) or {}
     adopted = bool(adoption.get("conclusion", "").strip() and adoption.get("plan_status") in {"Adopted as Presented", "Adopted With Changes"} and adoption.get("finalized"))

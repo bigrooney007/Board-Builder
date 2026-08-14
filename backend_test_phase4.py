@@ -7,16 +7,19 @@ import sys
 from datetime import datetime, timezone
 
 import httpx
+from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+
+load_dotenv("/app/backend/.env")
 
 # Base URL from frontend/.env
 BASE_URL = "https://portfolio-dashboard-67.preview.emergentagent.com/api"
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = "test_database"
 
-# Admin credentials from test_credentials.md
+# Admin credentials from backend environment
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
-ADMIN_PASSWORD = "PC8JX97y7YjPUel9-gM5gAem"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 # Test data
 TEST_LEAD_EMAIL = "phase4.lead@test.com"

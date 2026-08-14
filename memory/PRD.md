@@ -253,3 +253,12 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - Batch 5 (BUILT, untested): My Fundraising Board dashboard (MyFundraisingBoardPage.jsx), Individual Fundraising Portfolio generation + secure /fundraising-portfolio pages (FundraisingPortfolioPage.jsx), Activation DIY 21-day accountability (activation_accountability.py, enrolls on $497 activation claim), Activation prospect nurture (flag ACTIVATION_LEAD_NURTURE_ENABLED=false — OFF).
 - USER COMMAND: "BUILD EVERYTHING FIRST. DO NOT TEST YET." — no testing agent run for Batches 4-5; awaiting user's final one-shot complete Activation test authorization + checklist.
 - Mocked/pending: all Activation videos are placeholders; ACTIVATION_LEAD_NURTURE_ENABLED=false; production NOT deployed.
+
+## Code Review Fixes (June 2026) — Applied, behavior-preserving only
+- REAL BUG FIXED: marketing_service.py NURTURE_TEMPLATES defined "fundraising_activation" twice — stale 4-template block (retired /activate/options URLs) silently overrode the Batch 5 Rooney-voice 3-template set. Stale block deleted; correct templates (about-rooney / $497 DIY / $2,497 DWM) now active (flag still false).
+- Secrets: hardcoded admin password removed from 15 tests/*.py + backend_test_phase4.py → os.environ["ADMIN_PASSWORD"]; new tests/conftest.py loads backend/.env (+frontend/.env for REACT_APP_BACKEND_URL fallback); pycache purged. Password now only in .env + memory/test_credentials.md.
+- Dead code: unused `reviews` var removed (activation_accountability.activation_stage); shadowed `origin_of` import removed (workspace_routes.py).
+- FALSE POSITIVES (verified, not changed): flagged `is` comparisons are `is not None` (correct); no literal `is` comparisons in production code; pyflakes full scan found zero undefined variables.
+- DEFERRED per user's standing "do not redesign / no testing" order: refactor of create_activation_planning_router (1,171 lines) + other high-complexity functions, import reorganization, test-file `is True` style. Revisit only after owner's manual Activation testing.
+- PRE-EXISTING (untouched): tests/test_nonprofit_board_builder_automation_e2e.py fails collection (imports removed automation_service.applicant_email — stale legacy test).
+- Verified via compile/import checks + backend health only (no e2e/emails/payments, per user's stand-by order).
