@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
-import { initialsFor, testimonials } from "./testimonialsData";
+import { initialsFor, testimonials } from "../content/testimonials";
 
 export const TestimonialCarousel = ({ heading, idPrefix = "carousel", priorityNames }) => {
   const items = priorityNames

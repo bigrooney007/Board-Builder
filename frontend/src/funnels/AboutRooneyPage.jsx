@@ -40,18 +40,18 @@ export default function AboutRooneyPage() {
           <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">Choose the part of the Board Transformation journey your organization needs first.</p>
           <div className="ar-offer-grid">
             <article className="ar-offer-card" data-testid="about-rooney-recruit-card">
-              <h3 data-testid="about-rooney-recruit-heading">Recruit Your Board</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-recruit-copy">Bring the right people around the table.</p>
+              <h3 data-testid="about-rooney-recruit-heading">{SITE_CONTENT.aboutRooney.offers.recruit.heading}</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-recruit-copy">{SITE_CONTENT.aboutRooney.offers.recruit.copy}</p>
               <Link className="button" to="/recruit-with-rooney" data-testid="about-rooney-recruit-button">RECRUIT MY BOARD</Link>
             </article>
             <article className="ar-offer-card" data-testid="about-rooney-reactivate-card">
-              <h3 data-testid="about-rooney-reactivate-heading">Reactivate Your Board</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-reactivate-copy">Get existing Board Members to stand up, take responsibility, or step down appropriately.</p>
+              <h3 data-testid="about-rooney-reactivate-heading">{SITE_CONTENT.aboutRooney.offers.reactivate.heading}</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-reactivate-copy">{SITE_CONTENT.aboutRooney.offers.reactivate.copy}</p>
               <Link className="button" to="/reactivate-with-rooney" data-testid="about-rooney-reactivate-button">REACTIVATE MY BOARD</Link>
             </article>
             <article className="ar-offer-card" data-testid="about-rooney-activate-card">
-              <h3 data-testid="about-rooney-activate-heading">Activate Your Board</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-activate-copy">Turn your Board into fundraising champions who help carry the fundraising responsibility.</p>
+              <h3 data-testid="about-rooney-activate-heading">{SITE_CONTENT.aboutRooney.offers.activate.heading}</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-activate-copy">{SITE_CONTENT.aboutRooney.offers.activate.copy}</p>
               <Link className="button" to="/activate-with-rooney" data-testid="about-rooney-activate-button">ACTIVATE MY BOARD</Link>
             </article>
           </div>

@@ -1074,6 +1074,7 @@ p { line-height: 1.72; }
 .ar-hero-copy h1 { margin: 0 0 6px; }
 .ar-hero-title { color: #72dfc1; text-transform: uppercase; letter-spacing: .18em; font-weight: 800; font-size: 14px; margin: 0 0 20px; }
 .ar-hero-subtitle { color: #dcefe6; font-size: 18px; line-height: 1.7; font-weight: 600; max-width: 640px; margin: 0 auto; }
+.ar-hero-copy .button { margin-top: 26px; }
 .ar-offers { max-width: 1080px; margin: 0 auto; padding: 66px 24px 30px; text-align: center; }
 .ar-offers h2 { color: var(--forest); font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 10px; }
 .ar-offers-supporting { color: #56645c; font-size: 16px; margin: 0 0 36px; }

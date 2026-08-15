@@ -56,7 +56,12 @@ export const SITE_CONTENT = {
     "cta": "START ACTIVATING MY BOARD"
   },
   "aboutRooney": {
-    "headline": "Rooney Akpesiri"
+    "headline": "Rooney Akpesiri",
+    "offers": {
+      "recruit": {"heading": "Recruit New Board Members", "copy": "Bring the right people with the right skills and experience into your board in 2 weeks."},
+      "reactivate": {"heading": "Reactivate Your Board", "copy": "Get Your board members To Step Up and Those no longer willing to continue to step down without damaging your relationships"},
+      "activate": {"heading": "Build A Fundraising Board", "copy": "Get Your Board To Raise Money and Build Your Organization's fundraising system."}
+    }
   },
   "home": {"cta": "TELL ME WHAT MY BOARD NEEDS"},
   "boardTransformation": {"headline": "What Does This Board Actually Need?"},
