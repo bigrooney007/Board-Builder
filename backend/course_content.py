@@ -20,14 +20,14 @@ LINKEDIN_LAUNCH_INSTRUCTIONS = [
 BASIC_MODULES = [
     {
         "number": 1,
-        "title": "Recruiting Board Members the Right Way",
+        "title": "Understanding the Board Recruitment Process",
         "resources": [
             {"title": "How to Use This Training", "content": "Watch the training video above, then continue to Step 2 to identify the board members your organization needs."},
         ],
     },
     {
         "number": 2,
-        "title": "Identify the Board Members Your Organization Needs",
+        "title": "Identifying the People Your Board Needs",
         "resources": [
             {"title": "Board Needs Worksheet", "content": "Use this worksheet to list the most important results your organization must accomplish in the next 12 months, the skills and relationships your present board already provides, and the specific gaps your new board members must fill."},
             {"title": "Board Profile Template", "content": "For each seat you want to fill, define the professional background, skills, networks, fundraising capacity and lived experience the ideal board member should bring, along with the expectations they must accept."},
@@ -84,12 +84,12 @@ BASIC_MODULES = [
 SELF_GUIDED_MODULES = [
     {
         "number": 1,
-        "title": "Recruiting Board Members the Right Way",
+        "title": "Understanding the Board Recruitment Process",
         "kind": "training",
     },
     {
         "number": 2,
-        "title": "Identify the Board Members Your Organization Needs",
+        "title": "Identifying the People Your Board Needs",
         "workspace": {
             "heading": "Your Board Recruitment Workspace",
             "text": "This is where you will complete the deeper organizational and board profile used throughout your recruitment process.",

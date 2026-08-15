@@ -21,9 +21,8 @@ export const sharedCourseContent = {
 
 export const recruitmentContent = {
   module1: {
-    heading: "Start Here: Recruiting Board Members the Right Way",
-    body: "This training shows you how the whole recruitment process works before you begin executing it. Watch the training above, then continue to Step 2 to identify the board members your organization needs.",
-    continueButton: "Continue to Step 2 — Identify the Board Members Your Organization Needs",
+    heading: "Understanding the Board Recruitment Process",
+    body: "This training shows you how the whole board recruitment process works before you begin executing it. Watch the training above to understand the complete journey you are about to take, then use the module navigation below to continue to Module 2 and identify the people your board needs.",
   },
   module2: {
     generateBoardButton: "Generate the Board We Need",

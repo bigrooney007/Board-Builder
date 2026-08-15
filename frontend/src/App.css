@@ -1075,6 +1075,32 @@ p { line-height: 1.72; }
 .ar-hero-title { color: #72dfc1; text-transform: uppercase; letter-spacing: .18em; font-weight: 800; font-size: 14px; margin: 0 0 20px; }
 .ar-hero-subtitle { color: #dcefe6; font-size: 18px; line-height: 1.7; font-weight: 600; max-width: 640px; margin: 0 auto; }
 .ar-hero-copy .button { margin-top: 26px; }
+
+/* ---------- Homepage intro / how-we-help ---------- */
+.home-intro, .home-how { max-width: 820px; margin: 0 auto; text-align: left; }
+.home-intro h2, .home-how h2 { color: var(--forest); font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 18px; }
+.home-intro p, .home-how p { color: #1c1c1c; font-size: 17px; line-height: 1.85; margin: 0 0 16px; }
+
+/* ---------- Board assessment restyle ---------- */
+.bt-page .member-card { padding: 34px 30px; }
+.bt-page .member-card h2 { color: #111; font-size: clamp(21px, 2.6vw, 26px); line-height: 1.4; margin: 0 0 18px; }
+.bt-page .member-card p { color: #1c1c1c; font-size: 17px; line-height: 1.75; margin: 0 0 14px; }
+.bt-page .field span { color: #111; font-size: 16px; font-weight: 600; display: block; margin-bottom: 8px; }
+.bt-page .field input { padding: 13px 14px; font-size: 16px; }
+.bt-page .field { margin-bottom: 20px !important; }
+.bt-options { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.bt-option { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 1.5px solid #d7ded9; border-radius: 10px; cursor: pointer; background: #fff; color: #111; font-size: 16px; line-height: 1.5; transition: border-color .15s ease, background-color .15s ease; }
+.bt-option:hover { border-color: var(--forest); }
+.bt-option.selected { border-color: var(--forest); background: #eef7f1; font-weight: 600; }
+.bt-option input { width: 18px; height: 18px; accent-color: var(--forest); flex-shrink: 0; }
+.bt-page header h1 { color: #111; font-size: clamp(28px, 3.6vw, 40px); margin: 0 0 12px; }
+.bt-page header p { color: #1c1c1c; font-size: 17px; line-height: 1.75; }
+
+/* ---------- Central + offer video pages ---------- */
+.video-stage { background: #0d221a; border-radius: 14px; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; margin: 0 0 30px; }
+.video-page-title { color: var(--forest); font-size: clamp(28px, 3.6vw, 40px); margin: 0 0 8px; }
+.video-stage span { color: #dcefe6; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+.offer-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
 .ar-offers { max-width: 1080px; margin: 0 auto; padding: 66px 24px 30px; text-align: center; }
 .ar-offers h2 { color: var(--forest); font-size: clamp(27px, 3.6vw, 38px); margin: 0 0 10px; }
 .ar-offers-supporting { color: #56645c; font-size: 16px; margin: 0 0 36px; }

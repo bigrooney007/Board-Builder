@@ -41,18 +41,26 @@ export const LandingPage = ({ onJoin }) => (
 
     <section id="top" className="hero" data-testid="hero-section">
       <div className="hero-copy">
-        <p className="eyebrow" data-testid="hero-eyebrow">Your mission needs more than a board on paper</p>
-        <h1 data-testid="hero-headline">Build the Powerhouse <em>Fundraising Board</em> Your Nonprofit Needs to Succeed</h1>
-        <p className="hero-lead" data-testid="hero-supporting-text">Tell us about your present board.</p>
-        <p data-testid="hero-description">Answer four short questions about your Board and we will show you the exact steps to take to fix it and transform your Board Members into fundraising champions for your mission.</p>
+        <h1 data-testid="hero-headline">{SITE_CONTENT.home.heroTitle}</h1>
+        <p className="hero-lead" data-testid="hero-supporting-text">{SITE_CONTENT.home.heroSubtitle}</p>
         <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">{SITE_CONTENT.home.cta}</a></p>
-        <p className="hero-note" data-testid="hero-response-time"><Check size={17} /> Choose the board problem you want to solve and build your starting point.</p>
       </div>
       <div className="hero-visual" aria-hidden="true">
         <div className="visual-grid" />
         <div className="mission-card"><span className="mission-label">MISSION</span><strong>Turn shared purpose into fundraising momentum.</strong><div className="people-row"><i /><i /><i /><i /><i /></div></div>
         <div className="impact-stat"><strong>3</strong><span>stages to a stronger board</span></div>
       </div>
+    </section>
+
+    <section className="section home-intro" data-testid="home-intro-section">
+      <h2 data-testid="home-intro-heading">{SITE_CONTENT.home.introHeading}</h2>
+      {SITE_CONTENT.home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+    </section>
+
+    <section className="section home-how" data-testid="home-how-section">
+      <h2 data-testid="home-how-heading">{SITE_CONTENT.home.howHeading}</h2>
+      {SITE_CONTENT.home.howParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p style={{ marginTop: 18 }}><a className="button" href="/board-transformation" data-testid="home-how-cta-button">{SITE_CONTENT.home.cta}</a></p>
     </section>
 
     <section id="how-it-works" className="section transformation" data-testid="transformation-section">

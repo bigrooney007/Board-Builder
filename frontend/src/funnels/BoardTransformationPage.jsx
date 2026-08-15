@@ -74,7 +74,7 @@ export default function BoardTransformationPage() {
         <header style={{ marginBottom: 28 }}>
           <p className="eyebrow" data-testid="bt-eyebrow">Board Transformation</p>
           <h1 data-testid="bt-headline">{SITE_CONTENT.boardTransformation.headline}</h1>
-          <p data-testid="bt-intro">Answer four short questions about your Board and we will show you the exact steps to take to fix it and transform your Board Members into fundraising champions for your mission.</p>
+          <p data-testid="bt-intro">{SITE_CONTENT.boardTransformation.intro}</p>
         </header>
 
         {step === 0 && (

@@ -22,7 +22,7 @@ STAGES = {
         "module": 1,
     },
     "module1": {
-        "focus": "the Recruiting Board Members the Right Way training",
+        "focus": "the Understanding the Board Recruitment Process training",
         "opening": "I'm checking in to see if you've been able to go through the Recruiting Board Members the Right Way training.",
         "support": "The training sets up everything that follows, so start there. If anything is unclear or you want to talk anything through before you move into the process, reply to this email and let me know.",
         "cta": "CONTINUE BUILDING MY BOARD",

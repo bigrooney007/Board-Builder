@@ -166,7 +166,6 @@ const SelfGuidedWorkspace = ({ moduleNumber }) => {
       <section className="member-card" data-testid="module1-training-card">
         <h2>{recruitmentContent.module1.heading}</h2>
         <p>{recruitmentContent.module1.body}</p>
-        <Link className="button" to="/app/recruitment/self-guided/module/2" data-testid="module1-continue-to-step-2">{recruitmentContent.module1.continueButton}</Link>
       </section>
     );
   }
