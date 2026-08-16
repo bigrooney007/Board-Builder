@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
-import { activationM4Text } from "../content/appContent";
+import { activationM4Text, activationModule4Text } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -138,7 +138,7 @@ export default function ActivationModule4() {
   };
 
   if (error) return <p className="submit-error">{error}</p>;
-  if (!data) return <p className="sh-loading">Loading your plan adoption workspace…</p>;
+  if (!data) return <p className="sh-loading">{activationModule4Text.loadingYourPlanAdoptionWorkspace}</p>;
 
   const adoption = data.adoption;
   const guideStatus = adoption.guide_status || "NONE";
@@ -149,9 +149,9 @@ export default function ActivationModule4() {
     <div data-testid="activation-module4">
       <section className="member-card" data-testid="am4-intro">
         <h2>{activationM4Text.h_turnTheFundraisingStrategyInto}</h2>
-        <p>The Board has helped build the strategy and reviewed the plan.</p>
-        <p>The next step is to bring everyone together, work through the feedback, agree on the direction and establish what the Board will actually help carry.</p>
-        <p><strong>This is where participation becomes ownership.</strong></p>
+        <p>{activationModule4Text.theBoardHasHelpedBuild}</p>
+        <p>{activationModule4Text.theNextStepIsTo}</p>
+        <p><strong>{activationModule4Text.thisIsWhereParticipationBecomes}</strong></p>
       </section>
 
       <section className="member-card" data-testid="am4-participants-card">
@@ -185,9 +185,9 @@ export default function ActivationModule4() {
           <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am4-revised-status">{revisedStatus === "NONE" ? "NOT GENERATED" : revisedStatus.toUpperCase()}</span>
         </div>
         <p style={{ marginTop: 10 }}>{activationM4Text.d_revisedFundraisingStrategyPlan}</p>
-        {revisedStatus === "Failed" && <p className="submit-error" data-testid="am4-revised-error">Generation failed. Please try again.</p>}
+        {revisedStatus === "Failed" && <p className="submit-error" data-testid="am4-revised-error">{activationModule4Text.generationFailedPleaseTryAgain}</p>}
         {revisedStatus === "Generating" || generatingRevised ? (
-          <p data-testid="am4-revised-generating">Generating the revised Fundraising Strategy Plan from the Board's responses and reviews… It will appear here automatically.</p>
+          <p data-testid="am4-revised-generating">{activationModule4Text.generatingTheRevisedFundraisingStrategy}</p>
         ) : (
           <button type="button" className="button" onClick={generateRevised} data-testid="am4-generate-revised-button">{adoption.revised_text ? "REGENERATE FUNDRAISING STRATEGY" : "GENERATE FUNDRAISING STRATEGY"}</button>
         )}
@@ -203,8 +203,8 @@ export default function ActivationModule4() {
           <label className="field"><span>Adoption meeting date</span><input type="date" value={meeting.meeting_date} onChange={(e) => setMeeting({ ...meeting, meeting_date: e.target.value })} data-testid="am4-meeting-date" /></label>
           <label className="field"><span>Adoption meeting time</span><input type="time" value={meeting.meeting_time} onChange={(e) => setMeeting({ ...meeting, meeting_time: e.target.value })} data-testid="am4-meeting-time" /></label>
         </div>
-        <label className="field"><span>Meeting link (if there is one)</span><input value={meeting.meeting_link} onChange={(e) => setMeeting({ ...meeting, meeting_link: e.target.value })} data-testid="am4-meeting-link" /></label>
-        <label className="field"><span>Any other meeting details (optional)</span><textarea rows={3} value={meeting.meeting_notes} onChange={(e) => setMeeting({ ...meeting, meeting_notes: e.target.value })} data-testid="am4-meeting-notes" /></label>
+        <label className="field"><span>{activationModule4Text.meetingLinkIfThereIs}</span><input value={meeting.meeting_link} onChange={(e) => setMeeting({ ...meeting, meeting_link: e.target.value })} data-testid="am4-meeting-link" /></label>
+        <label className="field"><span>{activationModule4Text.anyOtherMeetingDetailsOptional}</span><textarea rows={3} value={meeting.meeting_notes} onChange={(e) => setMeeting({ ...meeting, meeting_notes: e.target.value })} data-testid="am4-meeting-notes" /></label>
         <button type="button" className="button" onClick={saveMeeting} data-testid="am4-save-meeting">{meetingSaved ? "Details Saved" : "SAVE MEETING DETAILS"}</button>
       </section>
 
@@ -228,12 +228,12 @@ export default function ActivationModule4() {
 
       <section className="member-card" data-testid="am4-guide-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Plan Adoption Facilitation Guide</h2>
+          <h2 style={{ margin: 0 }}>{activationModule4Text.planAdoptionFacilitationGuide}</h2>
           <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am4-guide-status">{guideStatus === "NONE" ? "NOT GENERATED" : guideStatus.toUpperCase()}</span>
         </div>
-        {adoption.guide_error && guideStatus === "Failed" && <p className="submit-error">Generation failed. Please try again.</p>}
+        {adoption.guide_error && guideStatus === "Failed" && <p className="submit-error">{activationModule4Text.generationFailedPleaseTryAgain2}</p>}
         {guideStatus === "Generating" || generatingGuide ? (
-          <p data-testid="am4-generating">Generating your Facilitation Guide from the strategy and your Board's actual feedback… It will appear here automatically.</p>
+          <p data-testid="am4-generating">{activationModule4Text.generatingYourFacilitationGuideFrom}</p>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
             <button type="button" className="button" onClick={generateGuide} data-testid="am4-generate-button">{adoption.guide_text ? "REGENERATE" : "GENERATE FACILITATION GUIDE"}</button>
@@ -249,7 +249,7 @@ export default function ActivationModule4() {
         {adoption.guide_text && guideStatus !== "Generating" && (
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 14, maxHeight: 380, overflowY: "auto" }} data-testid="am4-guide-text">{adoption.guide_text}</div>
         )}
-        <p className="eyebrow" style={{ marginTop: 10 }}>This guide is your internal facilitation resource. It is not sent to Board Members.</p>
+        <p className="eyebrow" style={{ marginTop: 10 }}>{activationModule4Text.thisGuideIsYourInternal}</p>
       </section>
 
       <section className="member-card" data-testid="am4-conclusion-card">
@@ -261,7 +261,7 @@ export default function ActivationModule4() {
 
       <section className="member-card" data-testid="am4-plan-status-card">
         <h2>{activationM4Text.h_planStatus}</h2>
-        <p>Record the Board's adoption outcome. This is your recorded organizational outcome — it is not inferred from the reviews.</p>
+        <p>{activationModule4Text.recordTheBoardsAdoptionOutcome}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {PLAN_STATUSES.map((status) => (
             <label className={`choice ${adoption.plan_status === status ? "selected" : ""}`} key={status}>
@@ -271,14 +271,14 @@ export default function ActivationModule4() {
           ))}
         </div>
         {adoption.plan_status === "Further Review Needed" && (
-          <p className="submit-error" style={{ marginTop: 12 }} data-testid="am4-blocked-note">The strategy must be resolved and adopted before execution tools are generated. Module 5 remains locked. Your strategy and Board reviews are preserved.</p>
+          <p className="submit-error" style={{ marginTop: 12 }} data-testid="am4-blocked-note">{activationModule4Text.theStrategyMustBeResolved}</p>
         )}
         {adoption.plan_status === "Adopted as Presented" && adoption.finalized && (
-          <p style={{ marginTop: 12 }} data-testid="am4-adopted-note"><strong>The strategy version your Board reviewed is now the adopted strategy.</strong></p>
+          <p style={{ marginTop: 12 }} data-testid="am4-adopted-note"><strong>{activationModule4Text.theStrategyVersionYourBoard}</strong></p>
         )}
         {adoption.plan_status === "Adopted With Changes" && (
           <div style={{ marginTop: 14 }} data-testid="am4-changes-area">
-            <p>Edit the strategy to reflect what was actually agreed during the adoption discussion, then finalize it. The version your Board reviewed and their reviews are preserved separately.</p>
+            <p>{activationModule4Text.editTheStrategyToReflect}</p>
             <textarea rows={14} style={{ width: "100%" }} value={adoptedDraft} onChange={(e) => setAdoptedDraft(e.target.value)} data-testid="am4-adopted-draft" />
             <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
               <button type="button" className="button button-outline" onClick={saveAdoptedDraft} data-testid="am4-save-adopted-draft">SAVE EDITS</button>
@@ -291,9 +291,9 @@ export default function ActivationModule4() {
 
       <section style={{ textAlign: "center", margin: "26px 0" }}>
         {data.module5_ready ? (
-          <p className="eyebrow" data-testid="am4-module5-unlocked">Module 5 is unlocked. Use the Next Module navigation below to continue.</p>
+          <p className="eyebrow" data-testid="am4-module5-unlocked">{activationModule4Text.module5IsUnlockedUse}</p>
         ) : (
-          <p className="eyebrow" data-testid="am4-module5-locked">Module 5 opens once your Plan Adoption Conclusion is saved and the plan is adopted and finalized.</p>
+          <p className="eyebrow" data-testid="am4-module5-locked">{activationModule4Text.module5OpensOnceYour}</p>
         )}
       </section>
 

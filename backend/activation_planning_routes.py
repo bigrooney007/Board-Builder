@@ -12,6 +12,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from member_auth import authenticate_member, require_entitlement
 from ai_service import generate_structured
+from content_templates import (activation_adoption_meeting_email, activation_planning_email,
+                               activation_review_email, activation_signature)
 from reactivation_routes import build_portfolio_pdf, email_html, origin_of
 
 logger = logging.getLogger(__name__)
@@ -602,19 +604,9 @@ def create_activation_planning_router(db) -> APIRouter:
             await db.activation_planning_forms.update_one({"user_id": user_id}, {"$set": {"shared_form_token": token}})
         context = await founder_context(user_id)
         form_link = f"{origin_of(request)}/planning-form/{token}"
-        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
-        subject = f"Help Us Build Our Fundraising Plan | {context['organization']}"
-        body = (
-            "Dear Board Members,\n\n"
-            f"We are beginning the process of building the fundraising plan for {context['organization']}, and I want the Board involved in shaping it.\n\n"
-            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
-            "Your ideas, experience, relationships and perspective can help us determine who we should be building relationships with, which fundraising opportunities we should prioritize, and how each of us can contribute.\n\n"
-            "Please complete the short Board Fundraising Planning Form here:\n\n"
-            f"{form_link}\n\n"
-            "Your responses will be combined with the ideas of the other Board Members and our organizational priorities as we build the Fundraising Strategy Plan.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
-        )
-        return {"subject": subject, "body": body, "form_link": form_link}
+        email = activation_planning_email(context["organization"], form_link,
+                                          activation_signature(context["founder_name"], context["founder_title"], context["organization"]))
+        return {"subject": email["subject"], "body": email["body"], "form_link": form_link}
 
     # ---------------- FOUNDER: SEND / REMIND ----------------
 
@@ -1017,19 +1009,9 @@ def create_activation_planning_router(db) -> APIRouter:
             await db.activation_strategies.update_one({"user_id": user_id}, {"$set": {"shared_review_token": token}})
         context = await founder_context(user_id)
         review_link = f"{origin_of(request)}/strategy-review/{token}"
-        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
-        subject = f"Please Review Our Fundraising Strategy Plan | {context['organization']}"
-        body = (
-            "Dear Board Members,\n\n"
-            f"Thank you for contributing your ideas to the fundraising planning process for {context['organization']}.\n\n"
-            "We have now brought the Board's input together with the organization's fundraising goals and priorities and developed the Fundraising Strategy Plan for Board review.\n\n"
-            "Before we move into adopting the plan, please review the strategy. You can approve each idea, disapprove it with your reason, and share any suggestions, concerns or issues you believe the Board should discuss.\n\n"
-            "Please review the plan here:\n\n"
-            f"{review_link}\n\n"
-            "Your review will help us prepare for the Board discussion where we will work through the strategy and agree on the way forward.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
-        )
-        return {"subject": subject, "body": body, "review_link": review_link}
+        email = activation_review_email(context["organization"], review_link,
+                                        activation_signature(context["founder_name"], context["founder_title"], context["organization"]))
+        return {"subject": email["subject"], "body": email["body"], "review_link": review_link}
 
     # ---------------- PUBLIC: STRATEGY REVIEW ----------------
 
@@ -1264,24 +1246,14 @@ def create_activation_planning_router(db) -> APIRouter:
             await db.activation_adoptions.update_one({"user_id": user_id}, {"$set": {"plan_share_token": token}})
         context = await founder_context(user_id)
         plan_link = f"{origin_of(request)}/strategy-plan/{token}"
-        signature = context["founder_name"] + (f"\n{context['founder_title']}" if context["founder_title"] else "") + f"\n{context['organization']}"
         meeting_lines = f"Date: {adoption['meeting_date']}\nTime: {adoption['meeting_time']}"
         if adoption.get("meeting_link"):
             meeting_lines += f"\nMeeting link: {adoption['meeting_link']}"
         if adoption.get("meeting_notes"):
             meeting_lines += f"\n{adoption['meeting_notes']}"
-        subject = f"Board Meeting: Adopting Our Fundraising Strategy Plan | {context['organization']}"
-        body = (
-            "Dear Board Members,\n\n"
-            f"Thank you for helping build and review the Fundraising Strategy Plan for {context['organization']}.\n\n"
-            "The next step is to come together, work through the Board's feedback, agree on the direction and adopt the plan we will carry together.\n\n"
-            f"{meeting_lines}\n\n"
-            "Please review the current Fundraising Strategy Plan before the meeting:\n\n"
-            f"{plan_link}\n\n"
-            "During the meeting we will work through the feedback from the Board's review, confirm our priorities and agree on what each of us will help carry.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
-        )
-        return {"subject": subject, "body": body, "plan_link": plan_link}
+        email = activation_adoption_meeting_email(context["organization"], meeting_lines, plan_link,
+                                                  activation_signature(context["founder_name"], context["founder_title"], context["organization"]))
+        return {"subject": email["subject"], "body": email["body"], "plan_link": plan_link}
 
     @router.post("/activation/adoption/guide/generate")
     async def generate_guide(request: Request):

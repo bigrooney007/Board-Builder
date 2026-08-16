@@ -1,9 +1,10 @@
 import { CheckboxGroup, FormActions, RadioGroup, SelectField, TextAreaField, TextField } from "./FormControls";
+import { stepThreeText } from "../../content/siteContent";
 
 const areas = ["Fundraising", "Corporate partnerships", "Grant development", "Major donors", "Financial management", "Legal support", "Marketing", "Public relations", "Community outreach", "Program development", "Volunteer recruitment", "Strategic planning", "Governance", "Technology", "Operations", "Connections and introductions", "Lived experience connected to our mission", "Something else."];
 
 export const StepThree = ({ data, update, errors, onBack, onNext }) => <div className="form-step" data-testid="assessment-step-3">
-  <div className="form-title"><p className="eyebrow">Step 3 of 4</p><h1 data-testid="step-3-heading">Tell Us Which Board Members You Need</h1><p data-testid="step-3-description">Define the experience, skills and connections your board is missing.</p></div>
+  <div className="form-title"><p className="eyebrow">Step 3 of 4</p><h1 data-testid="step-3-heading">{stepThreeText.tellUsWhichBoardMembers}</h1><p data-testid="step-3-description">{stepThreeText.defineTheExperienceSkillsAnd}</p></div>
   <div className="form-grid two-col"><TextField name="new_board_members_needed" label="How many new board members would you like to recruit?" type="number" value={data.new_board_members_needed} update={update} error={errors.new_board_members_needed} /><SelectField name="recruitment_timeline" label="How soon do you need them?" value={data.recruitment_timeline} update={update} error={errors.recruitment_timeline} options={["Within 30 days", "Within 60 days", "Within 90 days", "Within six months", "Not sure"]} /></div>
   <CheckboxGroup name="areas_carried_alone" label="What areas have you been carrying alone that you need board members to help with?" value={data.areas_carried_alone} update={update} error={errors.areas_carried_alone} options={areas} />
   <TextAreaField name="missing_skills_networks" label="Which skills, experience or networks are missing from your present board?" value={data.missing_skills_networks} update={update} error={errors.missing_skills_networks} />

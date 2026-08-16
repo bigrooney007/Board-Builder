@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { BlogSlider } from "@/pages/BlogPages";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, landingPageText } from "@/content/siteContent";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
@@ -19,7 +19,7 @@ const OfferChoices = ({ location }) => (
 export const LandingPage = ({ onJoin }) => (
   <main data-testid="landing-page">
     <nav className="site-nav" data-testid="site-navigation">
-      <a className="brand" href="#top" data-testid="brand-logo-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="brand-logo-image" /></a>
+      <a className="brand" href="#top" data-testid="brand-logo-link"><img src={logoUrl} alt={landingPageText.nonprofitBoardBuilder} data-testid="brand-logo-image" /></a>
       <div className="nav-links">
         <a href="#success-stories" data-testid="success-stories-link">{home.nav.successStories}</a>
         <a href="#my-story" data-testid="my-story-link">{home.nav.myStory}</a>
@@ -57,6 +57,6 @@ export const LandingPage = ({ onJoin }) => (
 
     <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">{home.joinNetwork.eyebrow}</p><h2>{home.joinNetwork.heading}</h2><p>{home.joinNetwork.text}</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">{home.joinNetwork.button} <ArrowRight size={18} /></button></section>
 
-    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">{home.footer.statement}</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">{home.footer.about}</a><a href="#footer" data-testid="footer-contact-link">{home.footer.contact}</a><a href="/privacy-policy" data-testid="footer-privacy-link">{home.footer.privacy}</a><a href="/terms" data-testid="footer-terms-link">{home.footer.terms}</a></div></footer>
+    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt={landingPageText.nonprofitBoardBuilder2} data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">{home.footer.statement}</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">{home.footer.about}</a><a href="#footer" data-testid="footer-contact-link">{home.footer.contact}</a><a href="/privacy-policy" data-testid="footer-privacy-link">{home.footer.privacy}</a><a href="/terms" data-testid="footer-terms-link">{home.footer.terms}</a></div></footer>
   </main>
 );

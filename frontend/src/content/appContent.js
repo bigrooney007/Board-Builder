@@ -315,6 +315,18 @@ export const adminPageText = {
   h_recruitmentExperienceReview: "Recruitment Experience Review",
   h_importExistingBoardApplicants: "Import Existing Board Applicants",
   m_privateFounderonlyExamplesClaudeUses: "Private founder-only examples Claude uses for structure and methodology when generating customer materials. Client-specific details are never copied into customer outputs. A material is only used once you mark it Approved.",
+  privateAccessForTheNonprofit: "Private access for the Nonprofit Board Builder owner.",
+  uploadACsvWithAt: "Upload a CSV with at least an Email column (First Name, Last Name, Phone, City, State, Country, LinkedIn, Professional Title and Employer columns are recognized automatically). Existing applicants are matched by email \u2014 their richer information and unsubscribe status are preserved. The import itself never sends any email.",
+  iConfirmThesePeopleGave: "I confirm these people gave permission to be contacted about board opportunities.",
+  previewNothingHasBeenImported: "Preview \u2014 nothing has been imported yet",
+  noBlogPostsYetGenerate: "No blog posts yet. Generate your first draft above.",
+  bodyUseAtTheStart: "Body (use \"## \" at the start of a line for subheadings, blank line between paragraphs)",
+  recruitmentExecutionReferenceLibrary: "Recruitment Execution Reference Library",
+  noReferenceMaterialsYet: "No reference materials yet.",
+  sendBoardOpportunityAndNonprofit: "Send board-opportunity and nonprofit broadcasts through the Resend Broadcast dashboard using the Board Applicants or Nonprofit Leaders segment.",
+  resourceTagsCommaSeparatedOptional: "Resource tags (comma separated, optional)",
+  searchNameOrEmail: "Search name or email",
+  selectAllApplicants: "Select all applicants"
 };
 
 export const authText = {
@@ -350,10 +362,15 @@ export const myBoardText = {
 
 export const materialsLibraryText = {
   h_myRecruitmentMaterials: "My Recruitment Materials",
+  selfGuidedRecruitmentSystem: " Self-Guided Recruitment System",
+  everyGeneratedResourceStaysAvailable: "Every generated resource stays available here, organized by step, with full version history.",
+  noMaterialsYetGenerateMaterials: "No materials yet. Generate materials inside the course modules."
 };
 
 export const sharedPagesText = {
   h_thankYou: "Thank you",
+  completeThisProfileSoThe: "Complete this profile so the organization has an accurate record of the skills, relationships and experience you bring to the board.",
+  submitMyBoardMemberProfile: "Submit My Board Member Profile"
 };
 
 export const joinBoardText = {
@@ -364,6 +381,7 @@ export const joinBoardText = {
 
 export const portfolioPageText = {
   h_thisPortfolioIsNotAvailable: "This Portfolio Is Not Available",
+  pleaseContactTheOrganizationThat: "Please contact the organization that sent you this link."
 };
 
 export const recruitIntakeText = {
@@ -496,6 +514,7 @@ export const memberShellText = {
   t_myBoardBuilder: "My Board Builder",
   t_logOut: "Log Out",
   t_logIn: "Log In",
+  nonprofitBoardBuilder: "Nonprofit Board Builder"
 };
 
 export const funnelLayoutText = {
@@ -506,10 +525,14 @@ export const funnelLayoutText = {
   t_logIn: "Log In",
   t_chooseYourBoardSolution: "Choose Your Board Solution",
   t_privacyPolicy: "Privacy Policy",
+  nonprofitBoardBuilderHelpsNonprofits: "Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.",
+  nonprofitBoardBuilder: "Nonprofit Board Builder",
+  nonprofitBoardBuilder2: "Nonprofit Board Builder"
 };
 
 export const funnelFormText = {
   t_yourStartingPoint: "Your starting point",
+  tellUsWhatIsHappening: "Tell us what is happening now. Your result will use only the information you submit."
 };
 
 export const funnelControlsText = {
@@ -518,4 +541,260 @@ export const funnelControlsText = {
 
 export const funnelStepText = {
   t_continue: "Continue ",
+};
+
+// ---- AUTO-MIGRATED CANONICAL CONTENT (platform-wide centralization) ----
+
+export const clientDeliverySectionText = {
+  doWithYouClients: "Do-With-You Clients",
+  noVerifiedDoWithYou: "No verified Do-With-You clients yet.",
+};
+
+export const strategicPlanningSectionText = {
+  preparedEmailNothingIsSent: "Prepared email \u2014 nothing is sent until you choose Send",
+  sendThisOneSecureLink: "Send this one secure link to your Board Members \u2014 each person enters their own name and email when they complete the form. You do not need to enter Board Member emails first.",
+  pasteTheStrategicPlanningForm: "Paste the Strategic Planning Form content below and click Generate. The multi-step Board form, its secure link and the prepared email are created automatically.",
+  createStrategicPlanningProject: "Create Strategic Planning Project",
+  strategicPlanningFormContent: "Strategic Planning Form Content",
+  noStrategicPlanningProjectsYet: "No Strategic Planning projects yet.",
+  creatingTheHostedMultiStep: "Creating the hosted multi-step form from your supplied content\u2026",
+  replaceViaFileUpload: "Replace via File Upload",
+  everyoneWhoCompletesTheForm: "Everyone who completes the form appears here automatically with their submitted name and email \u2014 you never re-enter them.",
+  addABoardMemberManually: "Add a Board Member manually (optional)",
+  synchronizingTheBoardsReviewInto: "Synchronizing the Board's review into the Foundational Plan\u2026",
+  boardReviewAmpRefinementResponses: "Board Review &amp; Refinement responses",
+  noReviewsSubmittedYet: "No reviews submitted yet.",
+  finalizeTheFoundationalPlanTo: "Finalize the Foundational Plan to unlock area assignment.",
+  aiRecommendationNoClearFit: "AI Recommendation: no clear fit \u2014 assign manually or leave unassigned.",
+  prepareSendDeliveryEmail: "Prepare / Send Delivery Email",
+  savingReturnsTheFormTo: "Saving returns the form to Draft \u2014 approve it again to update the live form link.",
+  adoptedByTheBoard: "Adopted by the Board",
+  pasteTheFullContentInstructions: "Paste the full content / instructions of the Strategic Planning Form here \u2014 it is the source authority for the generated form.",
+  boardDiscussionConclusionModificationsFor: "Board discussion conclusion / modifications for this area",
+};
+
+export const activationCoursePagesText = {
+  backToBoardFundraisingActivation: "Back to Board Fundraising Activation",
+};
+
+export const activationModule2Text = {
+  loadingYourFundraisingPlanningWorkspace: "Loading your fundraising planning workspace\u2026",
+  doNotCreateAFundraising: "Do not create a fundraising plan and hand it to your Board.",
+  getYourBoardInvolvedIn: "Get your Board involved in building it.",
+  theirIdeasProfessionalExperienceRelationships: "Their ideas, professional experience, relationships and willingness to participate should help shape how your organization raises money.",
+  whenPeopleParticipateInBuilding: "When people participate in building the plan, they are more likely to understand it, take ownership of it and help execute it.",
+  boardFundraisingPlanningForm: "Board Fundraising Planning Form",
+  generateOneOrganizationSpecificPlanning: "Generate one organization-specific planning form built from your Activation intake. Review and edit it, then approve it so it can be shared with your Board.",
+  yourActivationIntakeWasNot: "Your Activation intake was not found. Complete the Activation intake before generating your planning form.",
+  generationFailedPleaseTryAgain: "Generation failed. Please try again.",
+  generatingYourBoardFundraisingPlanning: "Generating your Board Fundraising Planning Form\u2026 This can take a minute. It will appear here automatically.",
+  theFormMustBeApproved: "The form must be approved before the Board email can be generated.",
+  fundraisingGoalContextShownTo: "Fundraising Goal Context (shown to Board Members)",
+};
+
+export const activationModule3Text = {
+  loadingYourStrategyWorkspace: "Loading your strategy workspace\u2026",
+  yourBoardHasNowContributed: "Your Board has now contributed ideas about who the organization should build relationships with, which fundraising opportunities to prioritize, what relationships already exist around the Board, how members are willing to participate, and what they believe should happen first.",
+  theNextStepIsTo: "The next step is to combine those ideas with the organization's goals and direction and build one Fundraising Strategy Plan the Board can review together.",
+  theStrategyUsesTheResponses: "The strategy uses the responses currently received. Responses that arrive later remain saved and can be included only by intentionally regenerating the plan.",
+  generationFailedPleaseTryAgain: "Generation failed. Please try again.",
+  buildingYourFundraisingStrategyPlan: "Building your Fundraising Strategy Plan from your intake and the Board's responses\u2026 This can take a minute or two. It will appear here automatically.",
+  approveForBoardReview: "APPROVE FOR BOARD REVIEW",
+  approveThePlanForBoard: "Approve the plan for Board review before generating the review email.",
+};
+
+export const activationModule4Text = {
+  loadingYourPlanAdoptionWorkspace: "Loading your plan adoption workspace\u2026",
+  theBoardHasHelpedBuild: "The Board has helped build the strategy and reviewed the plan.",
+  theNextStepIsTo: "The next step is to bring everyone together, work through the feedback, agree on the direction and establish what the Board will actually help carry.",
+  thisIsWhereParticipationBecomes: "This is where participation becomes ownership.",
+  generationFailedPleaseTryAgain: "Generation failed. Please try again.",
+  generatingTheRevisedFundraisingStrategy: "Generating the revised Fundraising Strategy Plan from the Board's responses and reviews\u2026 It will appear here automatically.",
+  meetingLinkIfThereIs: "Meeting link (if there is one)",
+  anyOtherMeetingDetailsOptional: "Any other meeting details (optional)",
+  planAdoptionFacilitationGuide: "Plan Adoption Facilitation Guide",
+  generationFailedPleaseTryAgain2: "Generation failed. Please try again.",
+  generatingYourFacilitationGuideFrom: "Generating your Facilitation Guide from the strategy and your Board's actual feedback\u2026 It will appear here automatically.",
+  thisGuideIsYourInternal: "This guide is your internal facilitation resource. It is not sent to Board Members.",
+  recordTheBoardsAdoptionOutcome: "Record the Board's adoption outcome. This is your recorded organizational outcome \u2014 it is not inferred from the reviews.",
+  theStrategyMustBeResolved: "The strategy must be resolved and adopted before execution tools are generated. Module 5 remains locked. Your strategy and Board reviews are preserved.",
+  theStrategyVersionYourBoard: "The strategy version your Board reviewed is now the adopted strategy.",
+  editTheStrategyToReflect: "Edit the strategy to reflect what was actually agreed during the adoption discussion, then finalize it. The version your Board reviewed and their reviews are preserved separately.",
+  module5IsUnlockedUse: "Module 5 is unlocked. Use the Next Module navigation below to continue.",
+  module5OpensOnceYour: "Module 5 opens once your Plan Adoption Conclusion is saved and the plan is adopted and finalized.",
+};
+
+export const activationModule5Text = {
+  loadingYourExecutionToolkitWorkspace: "Loading your execution toolkit workspace\u2026",
+  theBoardHasHelpedBuild: "The Board has helped build the fundraising plan, reviewed the strategy and agreed on the direction.",
+  nowGiveBoardMembersPractical: "Now give Board Members practical tools they can use to begin carrying their part of the fundraising work.",
+  theFundraisingStrategyPlanMust: "The Fundraising Strategy Plan must be resolved and adopted \u2014 with your Plan Adoption Conclusion recorded \u2014 before execution tools are generated.",
+  yourRecordedPlanStatusIs: "Your recorded plan status is ",
+  returnToModule4To: ". Return to Module 4 to work through the outstanding items and record adoption.",
+  goToModule4Facilitate: "GO TO MODULE 4 \u2014 FACILITATE PLAN ADOPTION",
+  agreedFundraisingResponsibilityAreaThey: "Agreed Fundraising Responsibility / Area They Agreed to Support",
+  generatingFollowUpEmail: "Generating follow-up email\u2026",
+  generationFailedPleaseTryAgain: "Generation failed. Please try again.",
+  boardFundraisingExecutionToolkit: "Board Fundraising Execution Toolkit",
+  oneOrganizationLevelSetOf: "One organization-level set of practical emails, text messages, call scripts and stewardship tools built from your adopted strategy and the responsibilities your Board actually agreed to carry.",
+  generationFailedPleaseTryAgain2: "Generation failed. Please try again.",
+  generatingYourBoardFundraisingExecution: "Generating your Board Fundraising Execution Toolkit\u2026 It will appear here automatically.",
+  yourBoardHelpedBuildThe: "Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.",
+  theNextStepIsTo: "The next step is to go to your Fundraising Board Dashboard, where you can see each Board Member's responsibility and create their individual Fundraising Portfolio.",
+};
+
+export const authPagesText = {
+  enterYourAccountEmailAnd: "Enter your account email and we will send you a reset link.",
+};
+
+export const coursePagesText = {
+  theTrainingVideoForThis: "The training video for this module will appear here as soon as it is published.",
+  needHelpWithThisStep: "Need Help With This Step?",
+  ifYouAreStuckNeed: "If you are stuck, need clarification or want help executing this part of the process, send us a request.",
+  whatDoYouNeedHelp: "What do you need help with? ",
+  tellUsWhatYouNeed: "Tell us what you need help with ",
+};
+
+export const dashboardPageText = {
+  yourAccountDoesNotInclude: "Your account does not include a program yet. When you purchase a Recruitment program, it will appear here.",
+  boardRecruitmentYourCandidates: "Board Recruitment \u2014 Your Candidates",
+  generateFinalBoardOfferEmail: "Generate Final Board Offer Email ",
+};
+
+
+export const myFundraisingBoardPageText = {
+  loadingMyFundraisingBoard: "Loading My Fundraising Board\u2026",
+  yourBoardHelpedBuildThe: "Your Board helped build the fundraising plan, reviewed it, adopted the direction and agreed how members will help carry the work. This is where you can see what each Board Member owns, equip them with their individual Fundraising Portfolio and keep the Board connected to the fundraising strategy.",
+  finalAdoptedFundraisingStrategyPlan: "FINAL ADOPTED FUNDRAISING STRATEGY PLAN",
+  approvedBoardFundraisingExecutionToolkit: "APPROVED BOARD FUNDRAISING EXECUTION TOOLKIT",
+  completePlanAdoptionModule4: "Complete plan adoption (Module 4) and approve your Execution Toolkit (Module 5) to unlock your full Fundraising Board.",
+  goToModule5To: "Go to Module 5 to record responsibilities",
+  yourBoardHasHelpedBuild: "Your Board has helped build the fundraising plan, reviewed and adopted the strategy, agreed how members will help carry the work, and now has the tools and individual direction needed to begin taking action.",
+  yourJobNowIsTo: "Your job now is to keep the plan moving, support Board Members in carrying their responsibilities and keep fundraising connected to the mission.",
+  ifTheBoardStillHas: "If the Board still has skill, experience, capacity or relationship gaps, recruit the right people to complete the Board.",
+  recruitNewBoardMembers: "RECRUIT NEW BOARD MEMBERS",
+  haveBoardMembersWhoStill: "Have Board Members Who Still Are Not Carrying Their Responsibility?",
+  ifSomeBoardMembersRemain: "If some Board Members remain disengaged, reactivate them so those ready to serve can stand up and carry responsibility, while those no longer prepared to serve can be dealt with appropriately.",
+};
+
+export const purchaseSuccessPageText = {
+  pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
+  weCouldNotFindA: "We could not find a checkout session. If you completed a purchase, please contact us.",
+  ifYouCompletedThePayment: "If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.",
+  goToMyBoardBuilder: "Go to My Board Builder",
+  alreadyHaveAnAccountLog: "Already have an account? Log in",
+  needAnAccountCreateOne: "Need an account? Create one",
+};
+
+export const reactivationCoursePagesText = {
+  backToBoardReactivation: "Back to Board Reactivation",
+};
+
+export const reactivationStep2Text = {
+  openToAnAdvisoryRole: "Open to an Advisory role: ",
+  openToAnotherSupportRole: "Open to another support role: ",
+  reviewYourRecommitmentForm: "Review Your Recommitment Form",
+  yourRecommitmentFormIsLive: "Your Recommitment Form Is Live",
+};
+
+export const reactivationStep3Text = {
+  waitingForRecommitmentForm: "Waiting for Recommitment Form",
+  thisBoardMemberHasNot: "This Board Member has not yet completed their Recommitment &amp; Profile Form. Their response is needed before a person-specific conversation script can be generated.",
+  returnToStep2: "RETURN TO STEP 2",
+  scriptGenerationDidNotComplete: "Script generation did not complete. Your information is preserved \u2014 click Regenerate to try again.",
+  chooseTheActualOutcome: "Choose the actual outcome\u2026",
+  waitingForRecommitmentForm2: " Waiting for Recommitment Form",
+  noCurrentBoardMembersYet: "No current Board Members yet. Add your Board Members and send their Recommitment Forms in Step 2 first.",
+  goToStep2: "GO TO STEP 2",
+};
+
+export const reactivationStep5Text = {
+  generateBoardMemberPortfolio: " GENERATE BOARD MEMBER PORTFOLIO",
+  portfolioLinkInsertedAutomatically: "Portfolio Link (inserted automatically):",
+  youNowHaveAClearer: "You now have a clearer picture of who is ready to carry Board responsibility, where each continuing member can contribute, and who is transitioning or stepping down.",
+  thisIsTheBoardYou: "This is the Board you can begin building with.",
+  waitingForRecommitmentForm: " Waiting for Recommitment Form",
+  youHaveReactivatedYourBoard: "You Have Reactivated Your Board",
+  youNowKnowWhoIs: "You now know who is ready to stand up, where your continuing Board Members can contribute, what responsibilities they have agreed to carry, and where transitions need to happen.",
+  yourNextJobIsTo: "Your next job is to keep those responsibilities active and build with the people who have recommitted.",
+  advisoryBoardAdvisoryMembers: "Advisory Board / Advisory Members",
+  followUpStillNeeded: "Follow-Up Still Needed",
+  returnToStep4Have: "RETURN TO STEP 4 \u2014 HAVE THE CONVERSATIONS",
+  waitingForRecommitmentForm2: "Waiting for Recommitment Form",
+  noReactivatedBoardMembersTo: "No reactivated Board Members to show yet. Work through Steps 1\u20134 first.",
+  goToStep2: "GO TO STEP 2",
+  stillMissingTheRightPeople: "Still Missing the Right People Around the Table?",
+  reactivatingYourCurrentBoardShows: "Reactivating your current Board shows you who is ready to serve. If you still have important skills, experience or relationships missing, recruit the Board Members your organization still needs.",
+  recruitNewBoardMembers: "RECRUIT NEW BOARD MEMBERS",
+  yourBoardIsBackAt: "Your Board Is Back at the Table. Now Put Them to Work.",
+  theNextStepIsTo: "The next step is to activate your Board to take ownership, help raise money and build your organization's fundraising system.",
+};
+
+export const reactivationUnderstandText = {
+  wantsToContributeIn: "Wants to contribute in:",
+  goToStep2: "GO TO STEP 2",
+};
+
+export const applicantModulesText = {
+  relevantApplicantInformationOptional: "Relevant applicant information (optional)",
+  noApplicationsYetWhenYour: "No applications yet. When your recruitment campaign is launched, applications will appear here.",
+  fromTheirBoardApplication: " (from their board application)",
+  emailTheSecureFormLink: "Email (the secure form link is added automatically below your message)",
+  saveBackgroundCheckRecord: "Save Background Check Record",
+  createBoardMemberProfileForm: "Create Board Member Profile Form",
+  boardMemberProfileFormIs: "Board Member Profile Form is ready.",
+  whatDateWouldYouLike: "What date would you like to hold the Board Onboarding Session?",
+  whatTimeWouldYouLike: "What time would you like to hold the session?",
+  whatTimezoneShouldWeUse: "What timezone should we use?",
+  howWillTheOnboardingSession: "How will the onboarding session be held?",
+  whatMeetingLinkShouldWe: "What meeting link should we include? (Zoom, Google Meet, Teams or another link)",
+  whereWillTheOnboardingSession: "Where will the onboarding session take place?",
+  isThereAnythingYouWould: "Is there anything you would like the new board members to prepare before the session? (optional)",
+  copyReviewAmpSignLink: "Copy Review &amp; Sign Link",
+  doNotMoveForward: "Do Not Move Forward",
+  findBackgroundCheckProvidersNear: "Find Background Check Providers Near Me",
+  yourApplicantsFromStep4: "Your applicants from Step 4 appear here automatically once applications arrive.",
+  theReferenceCheckBecomesAvailable: "The Reference Check becomes available once this candidate is moved forward and their Board Member Profile Form has been generated. Move them forward above to prepare their resources first.",
+  confirmReadyForFormalAppointment: "Confirm Ready for Formal Appointment",
+  meetingChatLinkOptional: "Meeting Chat Link (optional)",
+  sendFirstBoardMeetingInvitation: "Send First Board Meeting Invitation",
+  sendUpdatedMeetingInformation: "Send Updated Meeting Information",
+  candidatesAppearHereOnceYou: "Candidates appear here once you send their Conditional Appointment in Step 5.",
+  conditionalBoardAppointmentEmail: "Conditional Board Appointment Email",
+  afterInterviewRejectionEmail: "After-Interview Rejection Email",
+  formalBoardAppointmentEmail: "Formal Board Appointment Email",
+  firstBoardMeetingInvitationEmail: "First Board Meeting Invitation Email",
+  boardMemberOnboardingFacilitatorGuide: "Board Member Onboarding Facilitator Guide",
+};
+
+
+export const module1ProfileText = {
+  tellUsAboutTheOther: "Tell us about the other skills or experience",
+  whatWeAlreadyKnowAbout: "What We Already Know About Your Organization and Board",
+  youProvidedThisInformationWhen: "You provided this information when you got started \u2014 you never need to enter it again. It is used automatically throughout your recruitment process.",
+  theBoardMembersYourOrganization: "The Board Members Your Organization Needs",
+  basedOnTheInformationYou: "Based on the information you provided about your organization and board, we will identify the board members your nonprofit should prioritize recruiting.",
+  weJustNeedALittle: "We just need a little more information before we identify your board members. You only enter it once.",
+  whatIsYourOrganizationsMission: "What is your organization's mission statement? ",
+  enterTheMissionStatementYou: "Enter the mission statement you want applicants, board members and supporters to see in your Recruitment materials. You only enter it once \u2014 it is used automatically everywhere it belongs.",
+  theBoardMembersYourOrganization2: "The Board Members Your Organization Needs",
+};
+
+export const resultsPageText = {
+  boardRecruitmentSelfGuidedSystem: " Board Recruitment \u2014 Self-Guided System",
+  yourRecruitmentResultsWillAppear: "Your recruitment results will appear here as applicants move through the recruitment process.",
+  goToYourRecruitmentCampaign: "Go to Your Recruitment Campaign",
+  getHelpReviewingYourNew: "Get help reviewing your new board, preparing for your first meeting or helping your board start strongly.",
+  bookACallWithRooney: "Book a Call With Rooney ",
+  boardMemberEngagementGuide: "Board Member Engagement Guide",
+  boardMemberPortfolio: "Board Member Portfolio",
+};
+
+export const workspaceModulesText = {
+  launchAnnouncementNote: " and initiates one Board Applicant Network announcement. Duplicate launches are prevented automatically. Your materials are for you to share \u2014 nothing is automatically posted to LinkedIn, job boards or social media.",
+  useThisLinkInYour: "Use this link in your job post, LinkedIn post, emails and messages. It becomes publicly accessible when you launch your recruitment campaign below.",
+  yourBoardApplicationIsReady: "Your Board Application is ready, your recruitment materials have been created, and your opportunity has been launched through the Nonprofit Board Builder recruitment network. Use the materials above to continue sharing your opportunity through your professional, social and referral networks.",
+  continueToStep4Select: "Continue to Step 4 \u2014 Select and Interview Your Applicants",
+  launchMyRecruitmentCampaign: "Launch My Recruitment Campaign",
+  launchingMakesTheApplicationPublic: "Launching makes the application public at ",
 };

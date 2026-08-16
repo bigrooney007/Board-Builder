@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
 import { planningFormText } from "../content/appContent";
+import { planningFormPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -71,7 +72,7 @@ export default function PlanningFormPage() {
   if (state === "invalid") {
     return (
       <FunnelLayout restrained>
-        <main><div className="intake-card" data-testid="pf-invalid"><h2>{planningFormText.h_thisFormLinkIsNot}</h2><p>Please contact the person who sent you this link and ask them to resend your personal form link.</p></div></main>
+        <main><div className="intake-card" data-testid="pf-invalid"><h2>{planningFormText.h_thisFormLinkIsNot}</h2><p>{planningFormPageText.pleaseContactThePersonWho}</p></div></main>
       </FunnelLayout>
     );
   }
@@ -83,7 +84,7 @@ export default function PlanningFormPage() {
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Response submitted</p>
             <h2>{planningFormText.h_thankYou}</h2>
             <p data-testid="pf-thank-you-copy">Your fundraising planning response has been submitted to {context.organization_name}.</p>
-            <p>Your ideas will be considered alongside the responses of the other Board Members as the organization's Fundraising Strategy Plan is developed.</p>
+            <p>{planningFormPageText.yourIdeasWillBeConsidered}</p>
           </div>
         </main>
       </FunnelLayout>

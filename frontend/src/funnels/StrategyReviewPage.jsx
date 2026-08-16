@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
 import { strategyReviewText } from "../content/appContent";
+import { strategyReviewPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -73,7 +74,7 @@ export default function StrategyReviewPage() {
 
   if (state === "loading") return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-loading"><h2>{strategyReviewText.h_loading}</h2></div></main></FunnelLayout>;
   if (state === "invalid") {
-    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-invalid"><h2>{strategyReviewText.h_thisReviewLinkIsNot}</h2><p>Please contact the person who sent you this link and ask them to resend the review link.</p></div></main></FunnelLayout>;
+    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-invalid"><h2>{strategyReviewText.h_thisReviewLinkIsNot}</h2><p>{strategyReviewPageText.pleaseContactThePersonWho}</p></div></main></FunnelLayout>;
   }
   if (state === "done") {
     return (
@@ -83,7 +84,7 @@ export default function StrategyReviewPage() {
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Review submitted</p>
             <h2>{strategyReviewText.h_thankYou}</h2>
             <p>Your review of the Fundraising Strategy Plan has been submitted to {context.organization_name}.</p>
-            <p>Your input will help the Board work through the strategy and agree on the way forward together.</p>
+            <p>{strategyReviewPageText.yourInputWillHelpThe}</p>
           </div>
         </main>
       </FunnelLayout>
@@ -130,7 +131,7 @@ export default function StrategyReviewPage() {
                   </label>
                 </div>
                 {entry.decision === "Disapprove" && (
-                  <label className="field" style={{ marginTop: 10 }}><span>Why do you disapprove of this idea? <b>*</b></span>
+                  <label className="field" style={{ marginTop: 10 }}><span>{strategyReviewPageText.whyDoYouDisapproveOf}<b>*</b></span>
                     <textarea rows={3} value={entry.reason || ""} onChange={(e) => setIdea(idea.key, { reason: e.target.value })} data-testid={`sr-reason-${idea.key}`} />
                   </label>
                 )}
@@ -141,7 +142,7 @@ export default function StrategyReviewPage() {
 
           <h2 className="intake-step-title" data-testid="sr-your-review-heading">{strategyReviewText.h_yourReview}</h2>
           <fieldset className="field choice-field" data-testid="sr-position-field">
-            <legend>After reviewing the Fundraising Strategy Plan, which best reflects your position? <b>*</b></legend>
+            <legend>{strategyReviewPageText.afterReviewingTheFundraisingStrategy}<b>*</b></legend>
             <div className="choice-grid" style={{ gridTemplateColumns: "1fr" }}>
               {context.options.map((option) => (
                 <label className={`choice ${position === option ? "selected" : ""}`} key={option}>
@@ -158,12 +159,12 @@ export default function StrategyReviewPage() {
             {errors.discussion && <p className="field-error">{errors.discussion}</p>}
           </label>
 
-          <label className="field"><span>Based on this plan, where do you see yourself being able to contribute? <b>*</b></span>
+          <label className="field"><span>{strategyReviewPageText.basedOnThisPlanWhere}<b>*</b></span>
             <textarea rows={5} value={contribution} onChange={(e) => setContribution(e.target.value)} data-testid="sr-contribution" />
             {errors.contribution && <p className="field-error">{errors.contribution}</p>}
           </label>
 
-          <label className="field"><span>What support or resources would help you contribute effectively? (optional)</span>
+          <label className="field"><span>{strategyReviewPageText.whatSupportOrResourcesWould}</span>
             <textarea rows={4} value={support} onChange={(e) => setSupport(e.target.value)} data-testid="sr-support" />
           </label>
 

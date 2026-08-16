@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
-import { activationM3Text } from "../content/appContent";
+import { activationM3Text, activationModule3Text } from "../content/appContent";
 
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
 const dialogStyle = { background: "#fff", maxWidth: 760, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
@@ -90,7 +90,7 @@ export default function ActivationModule3() {
   };
 
   if (error) return <p className="submit-error">{error}</p>;
-  if (!data) return <p className="sh-loading">Loading your strategy workspace…</p>;
+  if (!data) return <p className="sh-loading">{activationModule3Text.loadingYourStrategyWorkspace}</p>;
 
   const strategy = data.strategy;
   const ready = strategy.status === "Ready for Board Review";
@@ -99,8 +99,8 @@ export default function ActivationModule3() {
     <div data-testid="activation-module3">
       <section className="member-card" data-testid="am3-intro">
         <h2>{activationM3Text.h_turnTheBoardsIdeasInto}</h2>
-        <p>Your Board has now contributed ideas about who the organization should build relationships with, which fundraising opportunities to prioritize, what relationships already exist around the Board, how members are willing to participate, and what they believe should happen first.</p>
-        <p>The next step is to combine those ideas with the organization's goals and direction and build one Fundraising Strategy Plan the Board can review together.</p>
+        <p>{activationModule3Text.yourBoardHasNowContributed}</p>
+        <p>{activationModule3Text.theNextStepIsTo}</p>
       </section>
 
       <section className="member-card" data-testid="am3-planning-counts">
@@ -108,7 +108,7 @@ export default function ActivationModule3() {
         <p data-testid="am3-planning-count-line">
           <strong>{data.planning.received}</strong> Response{data.planning.received === 1 ? "" : "s"} Received · <strong>{data.planning.included}</strong> Response{data.planning.included === 1 ? "" : "s"} That Will Be Included
         </p>
-        <p data-testid="am3-incomplete-note">The strategy uses the responses currently received. Responses that arrive later remain saved and can be included only by intentionally regenerating the plan.</p>
+        <p data-testid="am3-incomplete-note">{activationModule3Text.theStrategyUsesTheResponses}</p>
       </section>
 
       <section className="member-card" data-testid="am3-strategy-card">
@@ -118,9 +118,9 @@ export default function ActivationModule3() {
             {strategy.status === "NONE" ? "NOT BUILT" : strategy.status === "Ready for Board Review" ? `READY FOR BOARD REVIEW · v${strategy.review_version}` : strategy.status.toUpperCase()}
           </span>
         </div>
-        {strategy.status === "Failed" && <p className="submit-error" data-testid="am3-generation-error">Generation failed. Please try again.</p>}
+        {strategy.status === "Failed" && <p className="submit-error" data-testid="am3-generation-error">{activationModule3Text.generationFailedPleaseTryAgain}</p>}
         {strategy.status === "Generating" || generating ? (
-          <p data-testid="am3-generating">Building your Fundraising Strategy Plan from your intake and the Board's responses… This can take a minute or two. It will appear here automatically.</p>
+          <p data-testid="am3-generating">{activationModule3Text.buildingYourFundraisingStrategyPlan}</p>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
             <button type="button" className="button" onClick={generate} data-testid="am3-generate-button">
@@ -129,7 +129,7 @@ export default function ActivationModule3() {
             {strategy.display_text && (
               <>
                 <button type="button" className="button button-outline" onClick={() => { setEditText(strategy.display_text); setShowEdit(true); }} data-testid="am3-edit-button">EDIT PLAN</button>
-                {!ready && <button type="button" className="button" onClick={approve} data-testid="am3-approve-button">APPROVE FOR BOARD REVIEW</button>}
+                {!ready && <button type="button" className="button" onClick={approve} data-testid="am3-approve-button">{activationModule3Text.approveForBoardReview}</button>}
               </>
             )}
           </div>
@@ -137,7 +137,7 @@ export default function ActivationModule3() {
         {strategy.display_text && strategy.status !== "Generating" && (
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", borderRadius: 8, padding: 18, marginTop: 14, maxHeight: 420, overflowY: "auto" }} data-testid="am3-strategy-text">{strategy.display_text}</div>
         )}
-        {strategy.display_text && !ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am3-approval-required">Approve the plan for Board review before generating the review email.</p>}
+        {strategy.display_text && !ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am3-approval-required">{activationModule3Text.approveThePlanForBoard}</p>}
       </section>
 
       <section className="member-card" data-testid="am3-email-card">

@@ -8,6 +8,7 @@ import { useReviewMode } from "@/reviewMode";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { PAGE_META, usePageMeta } from "@/seo";
 import { recruitCheckoutText } from "../content/appContent";
+import { recruitCheckoutPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const TERMS_VERSION = "2026-06-recruitment-v1";
@@ -78,9 +79,9 @@ export default function RecruitCheckoutPage() {
           <div className="checkout-card">
             <p className="eyebrow" data-testid="checkout-label">Guided Board Recruitment</p>
             <h1 data-testid="checkout-heading">{recruitCheckoutText.h_buildTheStrongerBoardYour}</h1>
-            <p className="checkout-thirty" data-testid="checkout-thirty-minute">Start Recruiting Skilled Professionals in Less Than 30 Minutes</p>
+            <p className="checkout-thirty" data-testid="checkout-thirty-minute">{recruitCheckoutPageText.startRecruitingSkilledProfessionalsIn}</p>
             <p className="checkout-price" data-testid="checkout-price">$497 <span>One Time</span></p>
-            <p data-testid="checkout-sales-copy">Recruit the committed, capable board members your nonprofit needs to move forward. Get the knowledge, resources, guidance, support and accountability you need to confidently build a stronger board around your mission. You will have what you need to execute and direct access to Rooney whenever you need help along the way. Your investment is also protected by our Recruitment Guarantee.</p>
+            <p data-testid="checkout-sales-copy">{recruitCheckoutPageText.recruitTheCommittedCapableBoard}</p>
           </div>
         </section>
         <section className="walkaway-section" data-testid="walkaway-section">
@@ -97,7 +98,7 @@ export default function RecruitCheckoutPage() {
             <article className="walkaway-card guarantee" onClick={() => setShowGuarantee(true)} role="button" tabIndex={0} onKeyDown={(event) => event.key === "Enter" && setShowGuarantee(true)} data-testid="guarantee-card">
               <ShieldCheck size={24} />
               <h3>{recruitCheckoutText.h_recruitmentGuarantee}</h3>
-              <p>Your investment is protected by our money-back Recruitment Guarantee. Click to read the Recruitment Guarantee terms.</p>
+              <p>{recruitCheckoutPageText.yourInvestmentIsProtectedBy}</p>
             </article>
           </div>
         </section>
@@ -105,24 +106,24 @@ export default function RecruitCheckoutPage() {
           <p className="eyebrow">Begin quickly</p>
           <h2>{recruitCheckoutText.h_startRecruitingInLessThan}</h2>
           <div className="before-start-list">
-            <article><p>Move from knowing you need new board members to knowing exactly who to recruit and having what you need to begin reaching skilled professionals. Follow the guided process and you can start your recruitment campaign in less than 30 minutes.</p></article>
+            <article><p>{recruitCheckoutPageText.moveFromKnowingYouNeed}</p></article>
           </div>
         </section>
         <section className="before-start-section" data-testid="board-types-section">
-          <p className="eyebrow">Every kind of board</p>
+          <p className="eyebrow">{recruitCheckoutPageText.everyKindOfBoard}</p>
           <h2>{recruitCheckoutText.h_buildTheBoardYourOrganization}</h2>
           <div className="before-start-list">
-            <article><p>Use the guided process to recruit committed professionals for your governing, working or advisory board based on the skills, relationships and experience your organization needs.</p></article>
+            <article><p>{recruitCheckoutPageText.useTheGuidedProcessTo}</p></article>
           </div>
         </section>
         <section className="checkout-commit" data-testid="checkout-commit-section">
           <label className="terms-check" data-testid="terms-agreement-label">
             <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} data-testid="terms-agreement-checkbox" />
-            <span>I have read the program information and agree to the <Link to="/terms" target="_blank">Terms of Purchase</Link>, <Link to="/terms" target="_blank">Refund Policy</Link> and <button type="button" className="link-button inline-link" onClick={(event) => { event.preventDefault(); setShowGuarantee(true); }} data-testid="terms-guarantee-link">Recruitment Guarantee Terms</button>.</span>
+            <span>{recruitCheckoutPageText.iHaveReadTheProgram}<Link to="/terms" target="_blank">Terms of Purchase</Link>, <Link to="/terms" target="_blank">Refund Policy</Link> and <button type="button" className="link-button inline-link" onClick={(event) => { event.preventDefault(); setShowGuarantee(true); }} data-testid="terms-guarantee-link">Recruitment Guarantee Terms</button>.</span>
           </label>
           {error && <p className="submit-error" data-testid="checkout-error">{error}</p>}
           <button className="button" disabled={!enabled || busy} onClick={proceed} data-testid="checkout-pay-button">
-            {enabled ? (busy ? "Opening secure checkout…" : "Start Building My Board — $497") : <><LockKeyhole size={16} /> Program Access Opening Soon</>}
+            {enabled ? (busy ? "Opening secure checkout…" : "Start Building My Board — $497") : <><LockKeyhole size={16} />{recruitCheckoutPageText.programAccessOpeningSoon}</>}
           </button>
           {reviewMode && (
             <button className="button review-bypass-button" onClick={enterReview} data-testid="owner-review-continue-button">

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, aboutRooneyPageText } from "@/content/siteContent";
 
 const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
@@ -19,16 +19,16 @@ export default function AboutRooneyPage() {
       <main data-testid="about-rooney-page">
         <section className="funnel-hero-banner ar-hero" data-testid="about-rooney-hero">
           <div className="ar-hero-photo">
-            <img src={founderPhotoUrl} alt="Rooney Akpesiri, The Nonprofit Board Builder" data-testid="about-rooney-photo" />
+            <img src={founderPhotoUrl} alt={aboutRooneyPageText.rooneyAkpesiriTheNonprofitBoard} data-testid="about-rooney-photo" />
           </div>
           <div className="ar-hero-copy">
             <h1 data-testid="about-rooney-name">{SITE_CONTENT.aboutRooney.headline}</h1>
-            <p className="ar-hero-title" data-testid="about-rooney-title">The Nonprofit Board Builder</p>
+            <p className="ar-hero-title" data-testid="about-rooney-title">{aboutRooneyPageText.theNonprofitBoardBuilder}</p>
             {ABOUT_ROONEY_SUBTITLE && (
               <p className="ar-hero-subtitle" data-testid="about-rooney-subtitle">{ABOUT_ROONEY_SUBTITLE}</p>
             )}
-            <p className="ar-hero-subtitle" data-testid="about-rooney-diagnostic-copy">Answer four short questions about your Board and I will show you the steps to take to fix it and build a Board that helps carry your mission.</p>
-            <Link className="button" to="/board-transformation" data-testid="about-rooney-diagnostic-button">TELL ME WHAT MY BOARD NEEDS</Link>
+            <p className="ar-hero-subtitle" data-testid="about-rooney-diagnostic-copy">{aboutRooneyPageText.answerFourShortQuestionsAbout}</p>
+            <Link className="button" to="/board-transformation" data-testid="about-rooney-diagnostic-button">{aboutRooneyPageText.tellMeWhatMyBoard}</Link>
           </div>
           <i aria-hidden="true" />
         </section>
@@ -36,8 +36,8 @@ export default function AboutRooneyPage() {
         <TestimonialCarousel idPrefix="about-rooney" />
 
         <section className="ar-offers" data-testid="about-rooney-offers-section">
-          <h2 data-testid="about-rooney-offers-heading">Three Ways I Can Help You Transform Your Board</h2>
-          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">Choose the part of the Board Transformation journey your organization needs first.</p>
+          <h2 data-testid="about-rooney-offers-heading">{aboutRooneyPageText.threeWaysICanHelp}</h2>
+          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">{aboutRooneyPageText.chooseThePartOfThe}</p>
           <div className="ar-offer-grid">
             <article className="ar-offer-card" data-testid="about-rooney-recruit-card">
               <h3 data-testid="about-rooney-recruit-heading">{SITE_CONTENT.aboutRooney.offers.recruit.heading}</h3>
@@ -59,20 +59,20 @@ export default function AboutRooneyPage() {
 
         <section className="ar-about" data-testid="about-rooney-story-section">
           <h2 data-testid="about-rooney-story-heading">Meet Rooney Akpesiri</h2>
-          <p className="ar-about-subheading" data-testid="about-rooney-story-subheading">The Nonprofit Board Builder</p>
+          <p className="ar-about-subheading" data-testid="about-rooney-story-subheading">{aboutRooneyPageText.theNonprofitBoardBuilder2}</p>
           <div className="ar-about-body" data-testid="about-rooney-story-body">
-            <p>I'm Rooney. Known to many as the Nonprofit Board Builder.</p>
-            <p>I started as a nonprofit founder many years ago, where I built my first board.</p>
-            <p>I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.</p>
-            <p>Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.</p>
-            <p>Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time.</p>
+            <p>{aboutRooneyPageText.imRooneyKnownToMany}</p>
+            <p>{aboutRooneyPageText.iStartedAsANonprofit}</p>
+            <p>{aboutRooneyPageText.iMadeMistakesDamagedRelationships}</p>
+            <p>{aboutRooneyPageText.sinceThenIHaveServed}</p>
+            <p>{aboutRooneyPageText.todayITeachCoachAnd}</p>
           </div>
         </section>
 
         <section className="ar-book-call" data-testid="about-rooney-book-call-section">
-          <h2 data-testid="about-rooney-book-call-heading">Want to Discuss Your Board With Me?</h2>
-          <p className="ar-book-call-copy" data-testid="about-rooney-book-call-copy">If you want to talk through where your Board is today, what you are trying to build, and whether I can help, book a call with me and let's discuss it.</p>
-          <a className="button" href={BOOK_A_CALL_URL} target="_blank" rel="noreferrer" data-testid="about-rooney-book-call-button">BOOK A CALL WITH ROONEY</a>
+          <h2 data-testid="about-rooney-book-call-heading">{aboutRooneyPageText.wantToDiscussYourBoard}</h2>
+          <p className="ar-book-call-copy" data-testid="about-rooney-book-call-copy">{aboutRooneyPageText.ifYouWantToTalk}</p>
+          <a className="button" href={BOOK_A_CALL_URL} target="_blank" rel="noreferrer" data-testid="about-rooney-book-call-button">{aboutRooneyPageText.bookACallWithRooney}</a>
         </section>
       </main>
     </FunnelLayout>

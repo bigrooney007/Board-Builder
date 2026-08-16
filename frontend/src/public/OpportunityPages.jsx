@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
+import { opportunityPagesText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -68,7 +69,7 @@ export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, o
       ) : (
         <div className="step-fields">
           <label className="field" data-testid="application-cv">
-            <span>Upload résumé/CV <b>*</b></span>
+            <span>{opportunityPagesText.uploadRSumCv}<b>*</b></span>
             <input type="file" ref={cvRef} accept=".pdf,.doc,.docx" />
             {errors.cv && <p className="field-error">{errors.cv}</p>}
           </label>
@@ -88,9 +89,9 @@ export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, o
 const SubmittedScreen = ({ organizationName, supporting }) => (
   <section className="workspace-panel application-submitted" data-testid="application-submitted">
     <CheckCircle2 size={34} />
-    <h1>Your Application Has Been Submitted</h1>
+    <h1>{opportunityPagesText.yourApplicationHasBeenSubmitted}</h1>
     <p>{supporting || `Your application has been submitted to ${organizationName} for consideration. Completing an application does not guarantee an interview or board appointment.`}</p>
-    <p className="workspace-note">Would you like to create a Board Applicant profile so we can notify you about future nonprofit board opportunities? <a href="/join-a-board">Join the Board Applicant Network</a></p>
+    <p className="workspace-note">{opportunityPagesText.wouldYouLikeToCreate}<a href="/join-a-board">{opportunityPagesText.joinTheBoardApplicantNetwork}</a></p>
   </section>
 );
 
@@ -122,10 +123,10 @@ export const OpportunityApplyPage = () => {
               <p className="apply-intro" data-testid="public-apply-intro">{(data.intro_sentences || []).join(" ")}</p>
             </header>
             {data.status === "Closed" ? (
-              <div className="member-card" data-testid="applications-closed"><h2>Applications Closed</h2><p>This recruitment campaign is no longer accepting applications.</p></div>
+              <div className="member-card" data-testid="applications-closed"><h2>Applications Closed</h2><p>{opportunityPagesText.thisRecruitmentCampaignIsNo}</p></div>
             ) : (
               <section className="workspace-panel">
-                <h2>Apply to Join the Board</h2>
+                <h2>{opportunityPagesText.applyToJoinTheBoard}</h2>
                 <ApplicationForm questions={[...data.core_questions, ...data.custom_questions.map((question) => ({ ...question, required: false }))]} submitLabel="Submit My Board Application" onSubmit={submit} />
               </section>
             )}
@@ -173,7 +174,7 @@ export const SavedProfileApplyPage = () => {
               <p className="eyebrow">Board Applicant Network</p>
               <h1 data-testid="apply-heading">Apply to Join the Board of {data.opportunity.organization_name}</h1>
             </header>
-            {data.already_applied && <div className="member-card" data-testid="already-applied"><h2>You Have Already Applied</h2><p>An application from your profile has already been submitted for this opportunity.</p></div>}
+            {data.already_applied && <div className="member-card" data-testid="already-applied"><h2>{opportunityPagesText.youHaveAlreadyApplied}</h2><p>{opportunityPagesText.anApplicationFromYourProfile}</p></div>}
             {!data.already_applied && mode === "confirm" && (
               <section className="workspace-panel">
                 <h2>Your Professional Profile</h2>
@@ -185,20 +186,20 @@ export const SavedProfileApplyPage = () => {
                 {error && <p className="submit-error">{error}</p>}
                 <div className="material-actions">
                   <button className="button" disabled={busy} onClick={confirm} data-testid="confirm-application-button">Confirm My Application</button>
-                  <button className="button button-back" onClick={() => setMode("update")} data-testid="apply-updated-button">Apply With Updated Information</button>
+                  <button className="button button-back" onClick={() => setMode("update")} data-testid="apply-updated-button">{opportunityPagesText.applyWithUpdatedInformation}</button>
                 </div>
               </section>
             )}
             {!data.already_applied && mode === "update" && (
               <section className="workspace-panel">
-                <h2>Apply With Updated Information</h2>
-                <p className="workspace-note">Update anything that has changed for this opportunity. Fields you leave blank keep your saved profile information. A new CV upload is optional — your saved CV is used otherwise.</p>
+                <h2>{opportunityPagesText.applyWithUpdatedInformation2}</h2>
+                <p className="workspace-note">{opportunityPagesText.updateAnythingThatHasChanged}</p>
                 <ApplicationForm
                   questions={[...data.opportunity.core_questions.map((question) => ({ ...question, required: false })), ...data.opportunity.custom_questions.map((question) => ({ ...question, required: false }))]}
                   submitLabel="Submit My Updated Application" onSubmit={submitUpdated} requireCv={false} />
                 <label className="choice update-profile-choice">
                   <input type="checkbox" checked={updateProfile} onChange={(event) => setUpdateProfile(event.target.checked)} data-testid="update-profile-checkbox" />
-                  <span>Also update my Board Applicant profile with these changes</span>
+                  <span>{opportunityPagesText.alsoUpdateMyBoardApplicant}</span>
                 </label>
               </section>
             )}
@@ -294,14 +295,14 @@ export const SignAgreementPage = () => {
           ) : (
             <section className="hosted-agreement-sign" data-testid="sign-form">
               <h2>Sign Agreement</h2>
-              <label className="choice"><input type="checkbox" checked={form.agreed} onChange={(event) => setForm({ ...form, agreed: event.target.checked })} data-testid="sign-agree-checkbox" /><span>I have read and agree to the terms of this agreement.</span></label>
+              <label className="choice"><input type="checkbox" checked={form.agreed} onChange={(event) => setForm({ ...form, agreed: event.target.checked })} data-testid="sign-agree-checkbox" /><span>{opportunityPagesText.iHaveReadAndAgree}</span></label>
               <div className="two-col-fields">
                 <label className="field"><span>Full legal name <b>*</b></span><input value={form.typed_signature} onChange={(event) => setForm({ ...form, typed_signature: event.target.value })} data-testid="sign-name-input" /></label>
                 <label className="field"><span>Confirm your email <b>*</b></span><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} data-testid="sign-email-input" /></label>
                 <label className="field"><span>Date <b>*</b></span><input value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} data-testid="sign-date-input" /></label>
               </div>
               <div className="signature-method-toggle" data-testid="signature-method-toggle">
-                <button type="button" className={`button button-small ${method === "typed" ? "" : "button-back"}`} onClick={() => setMethod("typed")} data-testid="method-typed">Type My Name to Sign</button>
+                <button type="button" className={`button button-small ${method === "typed" ? "" : "button-back"}`} onClick={() => setMethod("typed")} data-testid="method-typed">{opportunityPagesText.typeMyNameToSign}</button>
                 <button type="button" className={`button button-small ${method === "typed" ? "button-back" : ""}`} onClick={() => setMethod("drawn")} data-testid="method-drawn">Use My Signature</button>
               </div>
               {method === "typed" ? (
@@ -310,7 +311,7 @@ export const SignAgreementPage = () => {
                 <>
                   <SignatureCanvas onChange={(image) => { setDrawnImage(image); setMethod("drawn"); }} />
                   <label className="field" style={{ marginTop: 6 }}>
-                    <span>Or upload a saved signature image (PNG or JPG)</span>
+                    <span>{opportunityPagesText.orUploadASavedSignature}</span>
                     <input type="file" accept="image/png,image/jpeg" data-testid="signature-upload-input" onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (!file) return;
@@ -326,7 +327,7 @@ export const SignAgreementPage = () => {
               )}
               {error && <p className="submit-error" data-testid="sign-error">{error}</p>}
               <button className="button" disabled={busy || !form.agreed || !form.typed_signature || !form.email || (method !== "typed" && !drawnImage)} onClick={sign} data-testid="sign-agreement-button">{busy ? "Recording…" : "Sign Agreement"}</button>
-              <p className="material-meta">This electronic signature process does not constitute legal advice. The organization remains responsible for determining whether its document and signature process meets its legal requirements.</p>
+              <p className="material-meta">{opportunityPagesText.thisElectronicSignatureProcessDoes}</p>
             </section>
           )}
         </article>

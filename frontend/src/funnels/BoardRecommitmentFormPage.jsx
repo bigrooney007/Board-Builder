@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
 import { recommitFormText } from "../content/appContent";
+import { boardRecommitmentFormPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -98,14 +99,14 @@ export default function BoardRecommitmentFormPage() {
       <main data-testid="recommit-page">
         {gate === "loading" && <div className="intake-card"><p>Loading…</p></div>}
         {gate === "invalid" && (
-          <div className="intake-card" data-testid="recommit-invalid"><h2>{recommitFormText.h_thisLinkIsNotValid}</h2><p>Please contact the person who sent you this form for a new link.</p></div>
+          <div className="intake-card" data-testid="recommit-invalid"><h2>{recommitFormText.h_thisLinkIsNotValid}</h2><p>{boardRecommitmentFormPageText.pleaseContactThePersonWho}</p></div>
         )}
         {(gate === "done" || gate === "already") && (
           <div className="intake-card" data-testid="recommit-thankyou">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Submitted</p>
             <h2>{recommitFormText.h_thankYou}</h2>
-            <p>Your Board Member Profile &amp; Recommitment Form has been submitted to <strong>{org}</strong>.</p>
-            <p>The organization will review your responses and follow up with you regarding your Board role and next steps.</p>
+            <p>{boardRecommitmentFormPageText.yourBoardMemberProfileAmp}<strong>{org}</strong>.</p>
+            <p>{boardRecommitmentFormPageText.theOrganizationWillReviewYour}</p>
           </div>
         )}
         {gate === "ready" && (
@@ -162,7 +163,7 @@ export default function BoardRecommitmentFormPage() {
 
               <h2 className="intake-step-title">{recommitFormText.h_recommitment}</h2>
               <fieldset className="field choice-field" data-testid="recommit-recommitment-options">
-                <legend>Looking ahead, are you willing and able to continue serving actively on the Board? <b>*</b></legend>
+                <legend>{boardRecommitmentFormPageText.lookingAheadAreYouWilling}<b>*</b></legend>
                 <div>
                   {(context.recommitment_options || []).map((option) => (
                     <label className={`choice ${form.recommitment === option ? "selected" : ""}`} key={option} style={{ display: "flex", marginBottom: 8 }}>
@@ -198,7 +199,7 @@ export default function BoardRecommitmentFormPage() {
               <h2 className="intake-step-title">{recommitFormText.h_confirmation}</h2>
               <label className="choice" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <input type="checkbox" checked={form.confirmation} onChange={() => setForm((current) => ({ ...current, confirmation: !current.confirmation }))} data-testid="recommit-confirmation" />
-                <span>I confirm that the information I have provided reflects my current availability, interests and willingness to serve. I understand that completing this form does not by itself change my current Board status and that the organization may follow up with me to discuss my role and responsibilities. <b>*</b></span>
+                <span>{boardRecommitmentFormPageText.iConfirmThatTheInformation}<b>*</b></span>
               </label>
 
               {errorText && <p className="submit-error">{errorText}</p>}

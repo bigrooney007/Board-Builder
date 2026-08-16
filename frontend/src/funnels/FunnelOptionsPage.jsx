@@ -6,10 +6,11 @@ import { FunnelLayout } from "./FunnelLayout";
 import { CALENDLY_URL, funnelConfigs } from "./funnelConfig";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { funnelOptionsText } from "../content/appContent";
+import { funnelOptionsPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const MatchBadge = ({ tier }) => <span className="match-badge" data-testid={`recruitment-match-badge-${tier}`}>Matches the support you selected</span>;
+const MatchBadge = ({ tier }) => <span className="match-badge" data-testid={`recruitment-match-badge-${tier}`}>{funnelOptionsPageText.matchesTheSupportYouSelected}</span>;
 
 export default function FunnelOptionsPage({ offerSource }) {
   const config = funnelConfigs[offerSource];
@@ -39,7 +40,7 @@ export default function FunnelOptionsPage({ offerSource }) {
     const enabled = live || internalTest;
     return (
       <button className="button disabled-program-button" disabled={!enabled || opening === tier} onClick={() => openCheckout(tier)} data-testid={testId}>
-        {enabled ? (opening === tier ? "Opening checkout…" : liveLabel) : <><LockKeyhole size={16} /> Program Access Opening Soon</>}
+        {enabled ? (opening === tier ? "Opening checkout…" : liveLabel) : <><LockKeyhole size={16} />{funnelOptionsPageText.programAccessOpeningSoon}</>}
       </button>
     );
   };
@@ -48,7 +49,7 @@ export default function FunnelOptionsPage({ offerSource }) {
     <FunnelLayout>
       <main className="options-page" data-testid={`${offerSource}-options-page`}>
         <section className="options-heading">
-          <p className="eyebrow">Choose how you want to move forward</p>
+          <p className="eyebrow">{funnelOptionsPageText.chooseHowYouWantTo}</p>
           <h1 data-testid={`${offerSource}-options-heading`}>{config.optionsHeading}</h1>
           <p>{config.optionsSupporting}</p>
         </section>
@@ -57,28 +58,28 @@ export default function FunnelOptionsPage({ offerSource }) {
           <section className="pricing-grid recruitment-offers">
             <article className={`pricing-card simple-offer ${matched === "diy" ? "matched" : ""}`} data-testid="recruitment-tier-97">
               {matched === "diy" && <MatchBadge tier="97" />}
-              <span className="tier-label">I want to do it myself.</span>
+              <span className="tier-label">{funnelOptionsPageText.iWantToDoIt}</span>
               <h2>{funnelOptionsText.h_doItYourself}</h2>
               <div className="price"><strong>$97</strong><span>One Time</span></div>
-              <p>Recruit the quality board members your nonprofit needs without guessing what to do next. Get the knowledge and resources you need to confidently build a stronger, more capable board yourself.</p>
+              <p>{funnelOptionsPageText.recruitTheQualityBoardMembers}</p>
               {buyButton("97", live97, "I’ll Do It Myself — $97", "recruitment-tier-97-button")}
             </article>
             <article className={`pricing-card featured simple-offer most-popular ${matched === "self_guided" ? "matched" : ""}`} data-testid="recruitment-tier-497">
               <span className="popular-ribbon" data-testid="recruitment-most-popular">Most Popular</span>
               {matched === "self_guided" && <MatchBadge tier="497" />}
-              <span className="tier-label">I want guidance while I recruit my board.</span>
+              <span className="tier-label">{funnelOptionsPageText.iWantGuidanceWhileI}</span>
               <h2>{funnelOptionsText.h_selfguidedRecruitment}</h2>
               <div className="price"><strong>$497</strong><span>One Time</span></div>
-              <p>Build the stronger board your nonprofit has been missing. Attract qualified professionals, choose the right people for your organization, and come out of the process with committed new board members ready to help your nonprofit move forward.</p>
+              <p>{funnelOptionsPageText.buildTheStrongerBoardYour}</p>
               {buyButton("497", live497, "Help Me Recruit My Board — $497", "recruitment-tier-497-button")}
             </article>
             <article className={`pricing-card high-support simple-offer ${matched === "done_with_you" ? "matched" : ""}`} data-testid="recruitment-tier-3497">
               {matched === "done_with_you" && <MatchBadge tier="3497" />}
-              <span className="tier-label">I want someone to work with me.</span>
+              <span className="tier-label">{funnelOptionsPageText.iWantSomeoneToWork}</span>
               <h2>{funnelOptionsText.h_doneWithYou}</h2>
               <div className="price"><strong>$3,497</strong></div>
-              <p>Get the board members your nonprofit needs without carrying the recruitment process alone. Bring in qualified professionals with the skills, experience, relationships and fundraising capacity your organization needs, and get them properly onboarded and ready to serve.</p>
-              <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="recruitment-calendly-button">Help Me Recruit My Board <ExternalLink size={16} /></a>
+              <p>{funnelOptionsPageText.getTheBoardMembersYour}</p>
+              <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="recruitment-calendly-button">{funnelOptionsPageText.helpMeRecruitMyBoard}<ExternalLink size={16} /></a>
             </article>
           </section>
         ) : (
@@ -87,7 +88,7 @@ export default function FunnelOptionsPage({ offerSource }) {
               <span className="tier-label">Learn and execute</span>
               <h2>{config.option97}</h2>
               <div className="price"><strong>$97</strong><span>One Time</span></div>
-              <p>For nonprofit founders and leaders who are comfortable using technology and want the complete process, training, instructions and ready-to-use resources.</p>
+              <p>{funnelOptionsPageText.forNonprofitFoundersAndLeaders}</p>
               <ul>{["Complete training and process", "Step-by-step instructions", "Examples and ready-to-use resources", "Your team executes everything"].map((item) => <li key={item}><Check size={15} />{item}</li>)}</ul>
               {buyButton("97", live97, "Get the $97 Program", `${offerSource}-tier-97-button`)}
             </article>
@@ -95,7 +96,7 @@ export default function FunnelOptionsPage({ offerSource }) {
               <span className="tier-label">Self-guided system</span>
               <h2>{config.option497}</h2>
               <div className="price"><strong>$497</strong><span>One Time</span></div>
-              <p>The full training plus the guided execution platform that walks you through the process and helps create the materials required to execute.</p>
+              <p>{funnelOptionsPageText.theFullTrainingPlusThe}</p>
               <ul>{["Complete training and resources", "Guided execution platform", "Help creating required materials", "You lead execution with structured support"].map((item) => <li key={item}><Check size={15} />{item}</li>)}</ul>
               {buyButton("497", live497, "Get the Self-Guided System", `${offerSource}-tier-497-button`)}
             </article>
@@ -103,9 +104,9 @@ export default function FunnelOptionsPage({ offerSource }) {
               <span className="tier-label">Higher-support execution</span>
               <h2>{config.option3497}</h2>
               <div className="price"><strong>$3,497</strong></div>
-              <p>Work directly with Nonprofit Board Builder through the higher-support execution option to move the complete process forward with you.</p>
-              <ul><li><Check size={15} />Execution planning</li><li><Check size={15} />Direct strategic support</li><li><Check size={15} />Offer-specific implementation guidance</li><li><Check size={15} />A clear path from decision to execution</li></ul>
-              <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid={`${offerSource}-calendly-button`}>Schedule My Execution Planning Call <ExternalLink size={16} /></a>
+              <p>{funnelOptionsPageText.workDirectlyWithNonprofitBoard}</p>
+              <ul><li><Check size={15} />Execution planning</li><li><Check size={15} />Direct strategic support</li><li><Check size={15} />{funnelOptionsPageText.offerSpecificImplementationGuidance}</li><li><Check size={15} />{funnelOptionsPageText.aClearPathFromDecision}</li></ul>
+              <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid={`${offerSource}-calendly-button`}>{funnelOptionsPageText.scheduleMyExecutionPlanningCall}<ExternalLink size={16} /></a>
             </article>
           </section>
         )}

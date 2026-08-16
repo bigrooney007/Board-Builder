@@ -5,7 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, activateYourBoardYourselfPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,18 +46,18 @@ export default function ActivateYourBoardYourselfPage() {
       <main data-testid="adiy-page">
         <section className="funnel-hero-banner brp-hero" data-testid="adiy-hero">
           <h1 data-testid="adiy-headline">{SITE_CONTENT.activateDiy.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="adiy-hero-supporting"><strong>Stop Carrying Fundraising Alone</strong></p>
-          <p className="funnel-hero-banner-secondary" data-testid="adiy-hero-copy">You should not be the only person carrying the fundraising responsibility for your organization. Your Board should understand what the organization is trying to fund, help build the fundraising strategy, take ownership of the plan, accept clear responsibilities and have the tools they need to begin taking action.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="adiy-hero-supporting"><strong>{activateYourBoardYourselfPageText.stopCarryingFundraisingAlone}</strong></p>
+          <p className="funnel-hero-banner-secondary" data-testid="adiy-hero-copy">{activateYourBoardYourselfPageText.youShouldNotBeThe}</p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section" data-testid="adiy-positioning-section">
-          <h2 className="brp-section-title" data-testid="adiy-positioning-heading">People Who Plan Together Execute Together</h2>
-          <p data-testid="adiy-positioning-copy">The goal is not to create a fundraising plan by yourself and then hand it to your Board. The Board participates in building the plan so members understand where the strategy came from, see their own ideas reflected in it, and are more prepared to take ownership of execution.</p>
+          <h2 className="brp-section-title" data-testid="adiy-positioning-heading">{activateYourBoardYourselfPageText.peopleWhoPlanTogetherExecute}</h2>
+          <p data-testid="adiy-positioning-copy">{activateYourBoardYourselfPageText.theGoalIsNotTo}</p>
         </section>
 
         <section className="brp-section brp-result" data-testid="adiy-result-section">
-          <h2 className="brp-section-title" data-testid="adiy-result-heading">What Changes When You Follow the Process</h2>
+          <h2 className="brp-section-title" data-testid="adiy-result-heading">{activateYourBoardYourselfPageText.whatChangesWhenYouFollow}</h2>
           <div data-testid="adiy-result-list">
             {OUTCOMES.map(([title, copy]) => (
               <div className="dyi-outcome" key={title} style={{ textAlign: "left", margin: "0 auto 22px", maxWidth: 720 }}>
@@ -69,15 +69,15 @@ export default function ActivateYourBoardYourselfPage() {
         </section>
 
         <section className="brp-section" data-testid="adiy-support-section">
-          <h2 className="brp-section-title" data-testid="adiy-support-heading">You Are Doing It Yourself. You Are Not Doing It Alone.</h2>
-          <p data-testid="adiy-support-copy">You are following my complete process for taking a Board from limited fundraising participation to ownership and execution — and you have the tools and support structure you need to execute it.</p>
+          <h2 className="brp-section-title" data-testid="adiy-support-heading">{activateYourBoardYourselfPageText.youAreDoingItYourself}</h2>
+          <p data-testid="adiy-support-copy">{activateYourBoardYourselfPageText.youAreFollowingMyComplete}</p>
         </section>
 
         <section className="brp-section brp-investment" data-testid="adiy-investment-section">
           <h2 className="brp-section-title" data-testid="adiy-investment-heading">Your Investment</h2>
           <p className="brp-today-price" data-testid="adiy-price">$497</p>
           <p className="dyi-payment-line" data-testid="adiy-payment-line"><strong>One-time payment.</strong></p>
-          <p className="dyi-payment-line" data-testid="adiy-no-membership-line">No monthly membership. No subscription.</p>
+          <p className="dyi-payment-line" data-testid="adiy-no-membership-line">{activateYourBoardYourselfPageText.noMonthlyMembershipNoSubscription}</p>
         </section>
 
         <section className="brp-section brp-guarantee" data-testid="adiy-guarantee-section">
@@ -87,11 +87,11 @@ export default function ActivateYourBoardYourselfPage() {
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="adiy-cta-section">
-          {cancelled && <p className="rwr-cta-notice" data-testid="adiy-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
+          {cancelled && <p className="rwr-cta-notice" data-testid="adiy-cancelled-notice">{activateYourBoardYourselfPageText.yourPaymentWasNotCompleted}</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="adiy-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.activateDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="adiy-cta-notice">{ctaNotice}</p>}
           <div>
-            <Link className="button button-outline offer-cross-link" to="/board-activation-proposal" data-testid="adiy-dwm-cross-link">Want Me To Do It With You?</Link>
+            <Link className="button button-outline offer-cross-link" to="/board-activation-proposal" data-testid="adiy-dwm-cross-link">{activateYourBoardYourselfPageText.wantMeToDoIt}</Link>
           </div>
         </section>
 

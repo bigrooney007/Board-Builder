@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
-import { activationM5Text, activationContent } from "../content/appContent";
+import { activationM5Text, activationContent, activationModule5Text } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -105,7 +105,7 @@ export default function ActivationModule5() {
   };
 
   if (error) return <p className="submit-error">{error}</p>;
-  if (!data) return <p className="sh-loading">Loading your execution toolkit workspace…</p>;
+  if (!data) return <p className="sh-loading">{activationModule5Text.loadingYourExecutionToolkitWorkspace}</p>;
 
   const toolkit = data.toolkit;
 
@@ -113,16 +113,16 @@ export default function ActivationModule5() {
     <div data-testid="activation-module5">
       <section className="member-card" data-testid="am5-intro">
         <h2>{activationM5Text.h_giveYourBoardTheTools}</h2>
-        <p>The Board has helped build the fundraising plan, reviewed the strategy and agreed on the direction.</p>
-        <p>Now give Board Members practical tools they can use to begin carrying their part of the fundraising work.</p>
+        <p>{activationModule5Text.theBoardHasHelpedBuild}</p>
+        <p>{activationModule5Text.nowGiveBoardMembersPractical}</p>
       </section>
 
       {!data.gate_open ? (
         <section className="member-card" data-testid="am5-locked">
           <h2>{activationM5Text.h_thePlanMustBeAdopted}</h2>
-          <p>The Fundraising Strategy Plan must be resolved and adopted — with your Plan Adoption Conclusion recorded — before execution tools are generated.</p>
-          {data.plan_status === "Further Review Needed" && <p data-testid="am5-further-review-note">Your recorded plan status is <strong>Further Review Needed</strong>. Return to Module 4 to work through the outstanding items and record adoption.</p>}
-          <Link className="button" to="/app/activation/self-guided/module/4" data-testid="am5-back-to-module4">GO TO MODULE 4 — FACILITATE PLAN ADOPTION</Link>
+          <p>{activationModule5Text.theFundraisingStrategyPlanMust}</p>
+          {data.plan_status === "Further Review Needed" && <p data-testid="am5-further-review-note">{activationModule5Text.yourRecordedPlanStatusIs}<strong>Further Review Needed</strong>{activationModule5Text.returnToModule4To}</p>}
+          <Link className="button" to="/app/activation/self-guided/module/4" data-testid="am5-back-to-module4">{activationModule5Text.goToModule4Facilitate}</Link>
         </section>
       ) : (
         <>
@@ -140,7 +140,7 @@ export default function ActivationModule5() {
                     </div>
                     <span className="eyebrow" style={{ alignSelf: "flex-start", padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid={`am5-resp-status-${member.participant_id}`}>{member.responsibility_status}</span>
                   </div>
-                  <label className="field" style={{ marginTop: 12 }}><span>Agreed Fundraising Responsibility / Area They Agreed to Support</span>
+                  <label className="field" style={{ marginTop: 12 }}><span>{activationModule5Text.agreedFundraisingResponsibilityAreaThey}</span>
                     <textarea rows={3} value={edit.agreed_responsibility ?? member.agreed_responsibility} onChange={(e) => setRespEdits({ ...respEdits, [member.participant_id]: { ...edit, agreed_responsibility: e.target.value } })} data-testid={`am5-responsibility-${member.participant_id}`} />
                   </label>
                   <label className="field"><span>Responsibility Status</span>
@@ -151,12 +151,12 @@ export default function ActivationModule5() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     <button type="button" className="button" onClick={() => saveResponsibility(member)} data-testid={`am5-save-resp-${member.participant_id}`}>{savedResp === member.participant_id ? "Saved" : "SAVE RESPONSIBILITY"}</button>
                     {member.followup_status === "Generating" ? (
-                      <p style={{ margin: 0, alignSelf: "center" }} data-testid={`am5-followup-generating-${member.participant_id}`}>Generating follow-up email…</p>
+                      <p style={{ margin: 0, alignSelf: "center" }} data-testid={`am5-followup-generating-${member.participant_id}`}>{activationModule5Text.generatingFollowUpEmail}</p>
                     ) : (
                       <button type="button" className="button button-outline" onClick={() => generateFollowup(member)} data-testid={`am5-generate-followup-${member.participant_id}`}><Mail size={15} /> {member.followup_body ? "REGENERATE FOLLOW-UP EMAIL" : "GENERATE FOLLOW-UP EMAIL"}</button>
                     )}
                   </div>
-                  {member.followup_status === "Failed" && <p className="submit-error" data-testid={`am5-followup-error-${member.participant_id}`}>Generation failed. Please try again.</p>}
+                  {member.followup_status === "Failed" && <p className="submit-error" data-testid={`am5-followup-error-${member.participant_id}`}>{activationModule5Text.generationFailedPleaseTryAgain}</p>}
                   {member.followup_body && member.followup_status !== "Generating" && (
                     <div style={{ marginTop: 12 }} data-testid={`am5-followup-preview-${member.participant_id}`}>
                       <p><strong>Subject:</strong> <span data-testid={`am5-followup-subject-${member.participant_id}`}>{member.followup_subject}</span></p>
@@ -174,13 +174,13 @@ export default function ActivationModule5() {
 
           <section className="member-card" data-testid="am5-toolkit-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-              <h2 style={{ margin: 0 }}>Board Fundraising Execution Toolkit</h2>
+              <h2 style={{ margin: 0 }}>{activationModule5Text.boardFundraisingExecutionToolkit}</h2>
               <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am5-toolkit-status">{toolkit.status === "NONE" ? "NOT GENERATED" : toolkit.status.toUpperCase()}</span>
             </div>
-            <p style={{ marginTop: 10 }}>One organization-level set of practical emails, text messages, call scripts and stewardship tools built from your adopted strategy and the responsibilities your Board actually agreed to carry.</p>
-            {toolkit.status === "Failed" && <p className="submit-error">Generation failed. Please try again.</p>}
+            <p style={{ marginTop: 10 }}>{activationModule5Text.oneOrganizationLevelSetOf}</p>
+            {toolkit.status === "Failed" && <p className="submit-error">{activationModule5Text.generationFailedPleaseTryAgain2}</p>}
             {toolkit.status === "Generating" || generating ? (
-              <p data-testid="am5-generating">Generating your Board Fundraising Execution Toolkit… It will appear here automatically.</p>
+              <p data-testid="am5-generating">{activationModule5Text.generatingYourBoardFundraisingExecution}</p>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
                 <button type="button" className="button" onClick={generate} data-testid="am5-generate-button">{toolkit.display_text ? "REGENERATE" : "GENERATE MY BOARD FUNDRAISING EXECUTION TOOLKIT"}</button>
@@ -201,8 +201,8 @@ export default function ActivationModule5() {
           {toolkit.status === "Approved" && (
             <section className="member-card" style={{ textAlign: "center" }} data-testid="am5-completion">
               <h2>{activationM5Text.h_yourBoardIsReadyTo}</h2>
-              <p>Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.</p>
-              <p>The next step is to go to your Fundraising Board Dashboard, where you can see each Board Member's responsibility and create their individual Fundraising Portfolio.</p>
+              <p>{activationModule5Text.yourBoardHelpedBuildThe}</p>
+              <p>{activationModule5Text.theNextStepIsTo}</p>
             </section>
           )}
         </>

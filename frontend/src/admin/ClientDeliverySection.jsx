@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { enterOperatorMode } from "@/operatorMode";
-import { adminClientDeliveryText } from "../content/appContent";
+import { adminClientDeliveryText, clientDeliverySectionText } from "../content/appContent";
 
 const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
 const err = (e) => (typeof e.response?.data?.detail === "string" ? e.response.data.detail : "Action failed.");
@@ -39,14 +39,14 @@ export const ClientDeliverySection = () => {
           <a key={j.key} className="button button-small" href={j.route} data-testid={`test-journey-${j.key}`}>Test {j.label} Journey</a>
         ))}
       </div>
-      <h2 className="reference-heading" style={{ marginTop: "28px" }}>Do-With-You Clients</h2>
+      <h2 className="reference-heading" style={{ marginTop: "28px" }}>{clientDeliverySectionText.doWithYouClients}</h2>
       <p className="admin-message">{adminClientDeliveryText.m_everyVerifiedDowithyouCustomerAcross}</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead><tr>{["Founder", "Organization", "Offer", "Purchase Date", "Intake", "Workspace", ""].map((h) => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>
-            {clients.length === 0 && <tr><td colSpan="7" data-testid="dwm-empty">No verified Do-With-You clients yet.</td></tr>}
+            {clients.length === 0 && <tr><td colSpan="7" data-testid="dwm-empty">{clientDeliverySectionText.noVerifiedDoWithYou}</td></tr>}
             {clients.map((row) => (
               <tr key={row.session_id} data-testid={`dwm-row-${row.session_id.slice(-8)}`}>
                 <td>{row.founder_name || row.founder_email}</td>

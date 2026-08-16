@@ -5,7 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, boardActivationProposalPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -44,26 +44,26 @@ export default function BoardActivationProposalPage() {
     <FunnelLayout restrained>
       <main data-testid="ap-page">
         <section className="funnel-hero-banner brp-hero" data-testid="ap-hero">
-          <p className="eyebrow" data-testid="ap-hero-eyebrow">Board Fundraising Activation Project Proposal</p>
+          <p className="eyebrow" data-testid="ap-hero-eyebrow">{boardActivationProposalPageText.boardFundraisingActivationProjectProposal}</p>
           <h1 data-testid="ap-headline">{SITE_CONTENT.activateProposal.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="ap-hero-supporting"><strong>Stop Carrying Fundraising Alone — We Will Activate Your Board Together</strong></p>
+          <p className="funnel-hero-banner-supporting" data-testid="ap-hero-supporting"><strong>{boardActivationProposalPageText.stopCarryingFundraisingAloneWe}</strong></p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section brp-summary" data-testid="ap-summary-section">
           <h2 className="brp-section-title" data-testid="ap-summary-heading">Executive Summary</h2>
-          <p>Fundraising should not sit almost entirely on the founder or executive director while the Board remains on the sidelines.</p>
-          <p>The purpose of this project is to work with your organization through a structured Board Fundraising Activation process that gets Board Members involved in building the fundraising plan, reviewing and adopting the strategy, accepting clear responsibilities and becoming equipped to help execute it.</p>
-          <p><strong>The outcome is not simply a fundraising document.</strong></p>
-          <p data-testid="ap-summary-goal">The outcome is a Board that understands the fundraising direction, has participated in shaping it, knows what it is responsible for and is better equipped to help the organization raise money.</p>
+          <p>{boardActivationProposalPageText.fundraisingShouldNotSitAlmost}</p>
+          <p>{boardActivationProposalPageText.thePurposeOfThisProject}</p>
+          <p><strong>{boardActivationProposalPageText.theOutcomeIsNotSimply}</strong></p>
+          <p data-testid="ap-summary-goal">{boardActivationProposalPageText.theOutcomeIsABoard}</p>
         </section>
 
         <section className="brp-section brp-result" data-testid="ap-outcomes-section">
-          <h2 className="brp-section-title" data-testid="ap-outcomes-heading">What We Will Accomplish Together</h2>
+          <h2 className="brp-section-title" data-testid="ap-outcomes-heading">{boardActivationProposalPageText.whatWeWillAccomplishTogether}</h2>
           <ul className="brp-list icon-list" data-testid="ap-outcomes-list">
             {OUTCOMES.map((point) => <li key={point}><Check size={16} aria-hidden="true" /><span>{point}</span></li>)}
           </ul>
-          <p data-testid="ap-with-rooney-line">I work through the process <strong>with</strong> you — your organization is not simply purchasing documents.</p>
+          <p data-testid="ap-with-rooney-line">{boardActivationProposalPageText.iWorkThroughTheProcess}<strong>with</strong>{boardActivationProposalPageText.youYourOrganizationIsNot}</p>
         </section>
 
         <section className="brp-section brp-investment" data-testid="ap-investment-section">
@@ -79,11 +79,11 @@ export default function BoardActivationProposalPage() {
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="ap-cta-section">
-          {cancelled && <p className="rwr-cta-notice" data-testid="ap-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
+          {cancelled && <p className="rwr-cta-notice" data-testid="ap-cancelled-notice">{boardActivationProposalPageText.yourPaymentWasNotCompleted}</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="ap-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.activateProposal.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="ap-cta-notice">{ctaNotice}</p>}
           <div>
-            <Link className="button button-outline offer-cross-link" to="/activate-your-board-yourself" data-testid="ap-diy-cross-link">Prefer to Do It By Yourself?</Link>
+            <Link className="button button-outline offer-cross-link" to="/activate-your-board-yourself" data-testid="ap-diy-cross-link">{boardActivationProposalPageText.preferToDoItBy}</Link>
           </div>
         </section>
 

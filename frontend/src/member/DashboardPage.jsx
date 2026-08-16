@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
-import { dashboardText } from "../content/appContent";
+import { dashboardText, dashboardPageText } from "../content/appContent";
 
 export const DashboardPage = () => {
   const { member, loading } = useMemberAuth();
@@ -40,7 +40,7 @@ export const DashboardPage = () => {
         {data && data.products.length === 0 && (
           <div className="member-card" data-testid="dashboard-empty">
             <h2>{dashboardText.h_noProgramsYet}</h2>
-            <p>Your account does not include a program yet. When you purchase a Recruitment program, it will appear here.</p>
+            <p>{dashboardPageText.yourAccountDoesNotInclude}</p>
           </div>
         )}
         {data && data.products.map((product) => {
@@ -61,12 +61,12 @@ export const DashboardPage = () => {
         })}
         {qualifying.length > 0 && (
           <section className="member-card dashboard-product" data-testid="dashboard-candidate-actions">
-            <p className="eyebrow">Board Recruitment — Your Candidates</p>
+            <p className="eyebrow">{dashboardPageText.boardRecruitmentYourCandidates}</p>
             <h2>{dashboardText.h_boardMemberPortfolioAmpFinal}</h2>
             <p>{qualifying.map((a) => a.profile_snapshot?.full_name || a.applicant_email).filter(Boolean).join(", ")} {qualifying.length === 1 ? "has" : "have"} reached the candidate stage.</p>
             <div className="material-actions">
               <button className="button" onClick={() => navigate("/app/recruitment/self-guided/results")} data-testid="dashboard-portfolio-button">Board Member Portfolio <ArrowRight size={16} /></button>
-              <button className="button button-back" onClick={() => navigate("/app/recruitment/self-guided/module/6")} data-testid="dashboard-final-offer-button">Generate Final Board Offer Email <ArrowRight size={16} /></button>
+              <button className="button button-back" onClick={() => navigate("/app/recruitment/self-guided/module/6")} data-testid="dashboard-final-offer-button">{dashboardPageText.generateFinalBoardOfferEmail}<ArrowRight size={16} /></button>
             </div>
           </section>
         )}

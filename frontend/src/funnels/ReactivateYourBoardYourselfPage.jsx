@@ -5,7 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, reactivateYourBoardYourselfPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,18 +46,18 @@ export default function ReactivateYourBoardYourselfPage() {
       <main data-testid="rxdiy-page">
         <section className="funnel-hero-banner brp-hero" data-testid="rxdiy-hero">
           <h1 data-testid="rxdiy-headline">{SITE_CONTENT.reactivateDiy.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="rxdiy-hero-supporting"><strong>Stop Carrying Board Members Who Are Not Carrying the Mission</strong></p>
-          <p className="funnel-hero-banner-secondary" data-testid="rxdiy-hero-copy">Follow the process to find out who is ready to stand up, who needs clearer responsibility, and who is no longer prepared to serve — without pressuring people, destroying relationships or continuing to carry dead weight on your Board.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="rxdiy-hero-supporting"><strong>{reactivateYourBoardYourselfPageText.stopCarryingBoardMembersWho}</strong></p>
+          <p className="funnel-hero-banner-secondary" data-testid="rxdiy-hero-copy">{reactivateYourBoardYourselfPageText.followTheProcessToFind}</p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section" data-testid="rxdiy-positioning-section">
-          <h2 className="brp-section-title" data-testid="rxdiy-positioning-heading">Reactivate the Board You Already Have</h2>
-          <p data-testid="rxdiy-positioning-copy">You will work through your current Board one person at a time, understand what caused the disengagement, find out who is willing and able to recommit, have the conversations that need to happen, and give the people who remain clear areas of responsibility.</p>
+          <h2 className="brp-section-title" data-testid="rxdiy-positioning-heading">{reactivateYourBoardYourselfPageText.reactivateTheBoardYouAlready}</h2>
+          <p data-testid="rxdiy-positioning-copy">{reactivateYourBoardYourselfPageText.youWillWorkThroughYour}</p>
         </section>
 
         <section className="brp-section brp-result" data-testid="rxdiy-result-section">
-          <h2 className="brp-section-title" data-testid="rxdiy-result-heading">What You Will Walk Away With</h2>
+          <h2 className="brp-section-title" data-testid="rxdiy-result-heading">{reactivateYourBoardYourselfPageText.whatYouWillWalkAway}</h2>
           <div data-testid="rxdiy-result-list">
             {OUTCOMES.map(([title, copy]) => (
               <div className="dyi-outcome" key={title} style={{ textAlign: "left", margin: "0 auto 22px", maxWidth: 720 }}>
@@ -69,8 +69,8 @@ export default function ReactivateYourBoardYourselfPage() {
         </section>
 
         <section className="brp-section" data-testid="rxdiy-support-section">
-          <h2 className="brp-section-title" data-testid="rxdiy-support-heading">You Are Doing It Yourself. You Are Not Doing It Alone.</h2>
-          <p data-testid="rxdiy-support-copy">I will show you the process, the platform will give you what you need to execute it, and when you get stuck, you can reach out to me for help.</p>
+          <h2 className="brp-section-title" data-testid="rxdiy-support-heading">{reactivateYourBoardYourselfPageText.youAreDoingItYourself}</h2>
+          <p data-testid="rxdiy-support-copy">{reactivateYourBoardYourselfPageText.iWillShowYouThe}</p>
         </section>
 
         <section className="brp-section brp-investment" data-testid="rxdiy-investment-section">
@@ -87,11 +87,11 @@ export default function ReactivateYourBoardYourselfPage() {
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="rxdiy-cta-section">
-          {cancelled && <p className="rwr-cta-notice" data-testid="rxdiy-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
+          {cancelled && <p className="rwr-cta-notice" data-testid="rxdiy-cancelled-notice">{reactivateYourBoardYourselfPageText.yourPaymentWasNotCompleted}</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="rxdiy-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.reactivateDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="rxdiy-cta-notice">{ctaNotice}</p>}
           <div>
-            <Link className="button button-outline offer-cross-link" to="/board-reactivation-proposal" data-testid="rxdiy-dwm-cross-link">Want Me To Do It With You?</Link>
+            <Link className="button button-outline offer-cross-link" to="/board-reactivation-proposal" data-testid="rxdiy-dwm-cross-link">{reactivateYourBoardYourselfPageText.wantMeToDoIt}</Link>
           </div>
         </section>
 

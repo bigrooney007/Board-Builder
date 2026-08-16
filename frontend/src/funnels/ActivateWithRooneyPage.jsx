@@ -5,7 +5,7 @@ import { PlayCircle, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, activateWithRooneyPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -27,7 +27,7 @@ export default function ActivateWithRooneyPage() {
       <main data-testid="awr-page">
         <section className="funnel-hero-banner rwr-hero" data-testid="awr-hero">
           <h1 data-testid="awr-headline">{SITE_CONTENT.activateWithRooney.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="awr-subheadline">Your Board should understand the fundraising direction, help build the plan, take ownership of the work and know exactly how they can help raise money for the organization. You can lead the process yourself with my guidance and tools, or I can work through the process with you.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="awr-subheadline">{activateWithRooneyPageText.yourBoardShouldUnderstandThe}</p>
           <i aria-hidden="true" />
         </section>
 
@@ -36,7 +36,7 @@ export default function ActivateWithRooneyPage() {
             {videoUrl ? (
               <iframe
                 src={toEmbedUrl(videoUrl)}
-                title="Activate Your Board With Rooney"
+                title={activateWithRooneyPageText.activateYourBoardWithRooney2}
                 allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 data-testid="awr-video-embed"
@@ -44,27 +44,27 @@ export default function ActivateWithRooneyPage() {
             ) : (
               <div className="rwr-video-placeholder" data-testid="awr-video-placeholder">
                 <PlayCircle size={58} aria-hidden="true" />
-                <p>Board Fundraising Activation Video Coming Soon</p>
+                <p>{activateWithRooneyPageText.boardFundraisingActivationVideoComing}</p>
               </div>
             )}
           </div>
         </section>
 
         <section className="ar-offers rwr-offers" data-testid="awr-offer-section">
-          <h2 data-testid="awr-offers-heading">Two Ways I Can Help You Activate Your Board</h2>
-          <p className="ar-offers-supporting" data-testid="awr-offers-supporting">Choose the level of support that works best for you.</p>
+          <h2 data-testid="awr-offers-heading">{activateWithRooneyPageText.twoWaysICanHelp}</h2>
+          <p className="ar-offers-supporting" data-testid="awr-offers-supporting">{activateWithRooneyPageText.chooseTheLevelOfSupport}</p>
           <div className="ar-offer-grid">
             <article className="ar-offer-card" data-testid="awr-diy-card">
-              <h3 data-testid="awr-diy-heading">Activate Your Board Yourself</h3>
+              <h3 data-testid="awr-diy-heading">{activateWithRooneyPageText.activateYourBoardYourself}</h3>
               <p className="ar-offer-price" data-testid="awr-diy-price">$497</p>
-              <p className="ar-offer-copy" data-testid="awr-diy-copy">Lead your Board through the complete fundraising activation process yourself, with the process, tools and support you need to move from Board disengagement in fundraising to Board ownership and execution — get the Board involved in building the fundraising plan, turn everyone's ideas into one fundraising strategy, bring the plan back to the Board for review, facilitate adoption, establish clear responsibility and equip Board Members with practical fundraising tools.</p>
-              <Link className="button" to="/activate-your-board-yourself" data-testid="awr-diy-button">I WANT TO ACTIVATE MY BOARD MYSELF</Link>
+              <p className="ar-offer-copy" data-testid="awr-diy-copy">{activateWithRooneyPageText.leadYourBoardThroughThe}</p>
+              <Link className="button" to="/activate-your-board-yourself" data-testid="awr-diy-button">{activateWithRooneyPageText.iWantToActivateMy}</Link>
             </article>
             <article className="ar-offer-card" data-testid="awr-dwm-card">
-              <h3 data-testid="awr-dwm-heading">Activate Your Board With Rooney</h3>
+              <h3 data-testid="awr-dwm-heading">{activateWithRooneyPageText.activateYourBoardWithRooney}</h3>
               <p className="ar-offer-price" data-testid="awr-dwm-price">$2,497</p>
-              <p className="ar-offer-copy" data-testid="awr-dwm-copy">Rooney works through the Board Fundraising Activation process with you so your organization does not have to figure out how to turn Board Members into fundraising participants alone — Board participation in planning, one fundraising strategy, Board review and adoption, clear ownership, practical execution, and a founder who is no longer carrying fundraising alone.</p>
-              <Link className="button" to="/board-activation-proposal" data-testid="awr-dwm-button">I WANT ROONEY TO HELP ACTIVATE MY BOARD</Link>
+              <p className="ar-offer-copy" data-testid="awr-dwm-copy">{activateWithRooneyPageText.rooneyWorksThroughTheBoard}</p>
+              <Link className="button" to="/board-activation-proposal" data-testid="awr-dwm-button">{activateWithRooneyPageText.iWantRooneyToHelp}</Link>
             </article>
           </div>
         </section>

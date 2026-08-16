@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
 import { recruitIntakeText } from "../content/appContent";
+import { boardRecruitmentIntakePageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -180,16 +181,16 @@ export default function BoardRecruitmentIntakePage() {
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="intake-checking"><h2>{recruitIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="intake-checking"><h2>{recruitIntakeText.h_confirmingYourPayment}</h2><p>{boardRecruitmentIntakePageText.pleaseWaitWhileWeVerify}</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="intake-blocked">
             <h2>{recruitIntakeText.h_thisFormIsForCustomers}</h2>
-            <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:</p>
+            <p>{boardRecruitmentIntakePageText.weCouldNotFindA}</p>
             <div className="intake-blocked-links">
-              <Link className="button" to="/recruit-your-board-yourself" data-testid="intake-blocked-diy-link">Do It Yourself — $497</Link>
-              <Link className="button button-outline" to="/board-recruitment-proposal" data-testid="intake-blocked-dwm-link">Do It With Me — $1,997</Link>
+              <Link className="button" to="/recruit-your-board-yourself" data-testid="intake-blocked-diy-link">{boardRecruitmentIntakePageText.doItYourself497}</Link>
+              <Link className="button button-outline" to="/board-recruitment-proposal" data-testid="intake-blocked-dwm-link">{boardRecruitmentIntakePageText.doItWithMe1}</Link>
             </div>
           </div>
         )}
@@ -200,13 +201,13 @@ export default function BoardRecruitmentIntakePage() {
             {purchaseSource === "direct_diy_board_recruitment_497" ? (
               <>
                 <h2>{recruitIntakeText.h_youreReadyToStart}</h2>
-                <p>Taking you to your start page…</p>
-                <a className="button" href={nextUrl || "/recruitment-start-here"} data-testid="intake-start-here-link">Open My Start Page</a>
+                <p>{boardRecruitmentIntakePageText.takingYouToYourStart}</p>
+                <a className="button" href={nextUrl || "/recruitment-start-here"} data-testid="intake-start-here-link">{boardRecruitmentIntakePageText.openMyStartPage}</a>
               </>
             ) : (
               <>
                 <h2>{recruitIntakeText.h_letsScheduleYourCallWith}</h2>
-                <p>Taking you to the calendar…</p>
+                <p>{boardRecruitmentIntakePageText.takingYouToTheCalendar}</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="intake-calendly-link">Open the Calendar</a>
               </>
             )}
@@ -230,7 +231,7 @@ export default function BoardRecruitmentIntakePage() {
                 <label className="field"><span>Mission <b>*</b></span><textarea rows="3" value={form.mission} onChange={set("mission")} data-testid="intake-mission" />{errors.mission && <p className="field-error">{errors.mission}</p>}</label>
                 <div className="two-col-fields">
                   <label className="field"><span>City <b>*</b></span><input value={form.city} onChange={set("city")} data-testid="intake-city" />{errors.city && <p className="field-error">{errors.city}</p>}</label>
-                  <label className="field"><span>State <b>*</b></span><input value={form.state} onChange={set("state")} data-testid="intake-state" /><span className="field-helper">Required for US organizations.</span>{errors.state && <p className="field-error">{errors.state}</p>}</label>
+                  <label className="field"><span>State <b>*</b></span><input value={form.state} onChange={set("state")} data-testid="intake-state" /><span className="field-helper">{boardRecruitmentIntakePageText.requiredForUsOrganizations}</span>{errors.state && <p className="field-error">{errors.state}</p>}</label>
                 </div>
                 <label className="field"><span>Board Type <b>*</b></span>
                   <select value={form.board_type} onChange={set("board_type")} data-testid="intake-board-type">
@@ -240,9 +241,9 @@ export default function BoardRecruitmentIntakePage() {
                   {errors.board_type && <p className="field-error">{errors.board_type}</p>}
                 </label>
                 <fieldset className="field" data-testid="intake-branding">
-                  <legend>Your Organization Branding (optional — provide it once, we reuse it everywhere)</legend>
-                  <span className="field-helper">Your logo and brand colors are used to professionally brand every resource we create for you — application forms, emails, agreements, documents and board member portfolios. You will not be asked again.</span>
-                  <label className="field"><span>Organization Logo (PNG/JPG, up to 500KB)</span>
+                  <legend>{boardRecruitmentIntakePageText.yourOrganizationBrandingOptionalProvide}</legend>
+                  <span className="field-helper">{boardRecruitmentIntakePageText.yourLogoAndBrandColors}</span>
+                  <label className="field"><span>{boardRecruitmentIntakePageText.organizationLogoPngJpgUp}</span>
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-testid="intake-logo" onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (!file) return;
@@ -267,11 +268,11 @@ export default function BoardRecruitmentIntakePage() {
                 <h2 className="intake-step-title">{recruitIntakeText.h_linkedin}</h2>
                 <YesNo legend="Does your nonprofit have a LinkedIn organization page?" value={form.org_linkedin} onChange={setValue("org_linkedin")} testId="intake-org-linkedin" error={errors.org_linkedin} />
                 {form.org_linkedin === "Yes" && (
-                  <label className="field"><span>LinkedIn Organization Page URL <b>*</b></span><input value={form.org_linkedin_url} onChange={set("org_linkedin_url")} data-testid="intake-org-linkedin-url" />{errors.org_linkedin_url && <p className="field-error">{errors.org_linkedin_url}</p>}</label>
+                  <label className="field"><span>{boardRecruitmentIntakePageText.linkedinOrganizationPageUrl}<b>*</b></span><input value={form.org_linkedin_url} onChange={set("org_linkedin_url")} data-testid="intake-org-linkedin-url" />{errors.org_linkedin_url && <p className="field-error">{errors.org_linkedin_url}</p>}</label>
                 )}
                 <YesNo legend="Do you personally have a LinkedIn account/profile?" value={form.personal_linkedin} onChange={setValue("personal_linkedin")} testId="intake-personal-linkedin" error={errors.personal_linkedin} />
                 {form.personal_linkedin === "Yes" && (
-                  <label className="field"><span>Your LinkedIn Profile URL <b>*</b></span><input value={form.personal_linkedin_url} onChange={set("personal_linkedin_url")} data-testid="intake-personal-linkedin-url" />{errors.personal_linkedin_url && <p className="field-error">{errors.personal_linkedin_url}</p>}</label>
+                  <label className="field"><span>{boardRecruitmentIntakePageText.yourLinkedinProfileUrl}<b>*</b></span><input value={form.personal_linkedin_url} onChange={set("personal_linkedin_url")} data-testid="intake-personal-linkedin-url" />{errors.personal_linkedin_url && <p className="field-error">{errors.personal_linkedin_url}</p>}</label>
                 )}
               </div>
             )}
@@ -282,8 +283,8 @@ export default function BoardRecruitmentIntakePage() {
                 <NumberOrNotSure label="How many board members do you currently have?" value={form.present_board} notSure={form.present_board_not_sure} onValue={setValue("present_board")} onNotSure={setValue("present_board_not_sure")} testId="intake-present-board" error={errors.present_board} />
                 <NumberOrNotSure label="How many of them are actively participating?" value={form.active_board} notSure={form.active_board_not_sure} onValue={setValue("active_board")} onNotSure={setValue("active_board_not_sure")} testId="intake-active-board" error={errors.active_board} />
                 <NumberOrNotSure label="How many new board members would you like to recruit?" value={form.new_members_count} notSure={form.new_members_not_sure} onValue={setValue("new_members_count")} onNotSure={setValue("new_members_not_sure")} testId="intake-new-members" error={errors.new_members_count} />
-                <label className="field"><span>What skills, experience or strengths are already represented on your current board? <b>*</b></span><textarea rows="4" value={form.current_board_strengths} onChange={set("current_board_strengths")} data-testid="intake-current-strengths" />{errors.current_board_strengths && <p className="field-error">{errors.current_board_strengths}</p>}</label>
-                <label className="field"><span>What are the biggest challenges you are experiencing with your present board? <b>*</b></span><textarea rows="4" value={form.board_challenges} onChange={set("board_challenges")} data-testid="intake-board-challenges" />{errors.board_challenges && <p className="field-error">{errors.board_challenges}</p>}</label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.whatSkillsExperienceOrStrengths}<b>*</b></span><textarea rows="4" value={form.current_board_strengths} onChange={set("current_board_strengths")} data-testid="intake-current-strengths" />{errors.current_board_strengths && <p className="field-error">{errors.current_board_strengths}</p>}</label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.whatAreTheBiggestChallenges}<b>*</b></span><textarea rows="4" value={form.board_challenges} onChange={set("board_challenges")} data-testid="intake-board-challenges" />{errors.board_challenges && <p className="field-error">{errors.board_challenges}</p>}</label>
               </div>
             )}
 
@@ -291,7 +292,7 @@ export default function BoardRecruitmentIntakePage() {
               <div data-testid="intake-step-4">
                 <h2 className="intake-step-title">{recruitIntakeText.h_theBoardYouNeed}</h2>
                 <fieldset className="field choice-field">
-                  <legend>What skills, experience, relationships or professional backgrounds would you like to add to your board? <b>*</b></legend>
+                  <legend>{boardRecruitmentIntakePageText.whatSkillsExperienceRelationshipsOr}<b>*</b></legend>
                   <div className="choice-grid">
                     {SKILL_OPTIONS.map((option) => (
                       <label className={`choice ${form.desired_skills.includes(option) ? "selected" : ""}`} key={option}>
@@ -303,25 +304,25 @@ export default function BoardRecruitmentIntakePage() {
                   {errors.desired_skills && <p className="field-error">{errors.desired_skills}</p>}
                 </fieldset>
                 {form.desired_skills.includes("Other") && (
-                  <label className="field"><span>Tell us about the other skills or experience <b>*</b></span><input value={form.desired_skills_other} onChange={set("desired_skills_other")} data-testid="intake-skills-other" />{errors.desired_skills_other && <p className="field-error">{errors.desired_skills_other}</p>}</label>
+                  <label className="field"><span>{boardRecruitmentIntakePageText.tellUsAboutTheOther}<b>*</b></span><input value={form.desired_skills_other} onChange={set("desired_skills_other")} data-testid="intake-skills-other" />{errors.desired_skills_other && <p className="field-error">{errors.desired_skills_other}</p>}</label>
                 )}
-                <label className="field"><span>What do you most need your new board members to help your organization accomplish? <b>*</b></span><textarea rows="4" value={form.accomplish} onChange={set("accomplish")} data-testid="intake-accomplish" />{errors.accomplish && <p className="field-error">{errors.accomplish}</p>}</label>
-                <label className="field"><span>Is there anything specific you already know you want in the people you recruit?</span><textarea rows="3" value={form.specific_wants} onChange={set("specific_wants")} data-testid="intake-specific-wants" /></label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.whatDoYouMostNeed}<b>*</b></span><textarea rows="4" value={form.accomplish} onChange={set("accomplish")} data-testid="intake-accomplish" />{errors.accomplish && <p className="field-error">{errors.accomplish}</p>}</label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.isThereAnythingSpecificYou}</span><textarea rows="3" value={form.specific_wants} onChange={set("specific_wants")} data-testid="intake-specific-wants" /></label>
               </div>
             )}
 
             {step === 4 && (
               <div data-testid="intake-step-5">
                 <h2 className="intake-step-title">{recruitIntakeText.h_boardLogistics}</h2>
-                <label className="field"><span>How often does your board meet? <b>*</b></span>
+                <label className="field"><span>{boardRecruitmentIntakePageText.howOftenDoesYourBoard}<b>*</b></span>
                   <select value={form.meeting_frequency} onChange={set("meeting_frequency")} data-testid="intake-meeting-frequency">
                     <option value="">Choose one…</option>
                     {["Monthly", "Every Other Month", "Quarterly", "Other"].map((option) => <option key={option}>{option}</option>)}
                   </select>
                   {errors.meeting_frequency && <p className="field-error">{errors.meeting_frequency}</p>}
                 </label>
-                {form.meeting_frequency === "Other" && <label className="field"><span>Tell us your meeting schedule <b>*</b></span><input value={form.meeting_frequency_other} onChange={set("meeting_frequency_other")} data-testid="intake-frequency-other" />{errors.meeting_frequency_other && <p className="field-error">{errors.meeting_frequency_other}</p>}</label>}
-                <label className="field"><span>How are your board meetings held? <b>*</b></span>
+                {form.meeting_frequency === "Other" && <label className="field"><span>{boardRecruitmentIntakePageText.tellUsYourMeetingSchedule}<b>*</b></span><input value={form.meeting_frequency_other} onChange={set("meeting_frequency_other")} data-testid="intake-frequency-other" />{errors.meeting_frequency_other && <p className="field-error">{errors.meeting_frequency_other}</p>}</label>}
+                <label className="field"><span>{boardRecruitmentIntakePageText.howAreYourBoardMeetings}<b>*</b></span>
                   <select value={form.meeting_format} onChange={set("meeting_format")} data-testid="intake-meeting-format">
                     <option value="">Choose one…</option>
                     {["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}
@@ -341,11 +342,11 @@ export default function BoardRecruitmentIntakePage() {
                   </select>
                   {errors.board_term && <p className="field-error">{errors.board_term}</p>}
                 </label>
-                {form.board_term === "Other" && <label className="field"><span>Tell us the term length <b>*</b></span><input value={form.board_term_other} onChange={set("board_term_other")} data-testid="intake-term-other" />{errors.board_term_other && <p className="field-error">{errors.board_term_other}</p>}</label>}
-                <label className="field"><span>Expected Monthly Time Commitment</span><input value={form.time_commitment} onChange={set("time_commitment")} data-testid="intake-time-commitment" /></label>
-                <label className="field"><span>Maximum Board Size According to Your Bylaws or Governing Documents <b>*</b></span>
+                {form.board_term === "Other" && <label className="field"><span>{boardRecruitmentIntakePageText.tellUsTheTermLength}<b>*</b></span><input value={form.board_term_other} onChange={set("board_term_other")} data-testid="intake-term-other" />{errors.board_term_other && <p className="field-error">{errors.board_term_other}</p>}</label>}
+                <label className="field"><span>{boardRecruitmentIntakePageText.expectedMonthlyTimeCommitment}</span><input value={form.time_commitment} onChange={set("time_commitment")} data-testid="intake-time-commitment" /></label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.maximumBoardSizeAccordingTo}<b>*</b></span>
                   <input type="number" min="1" disabled={form.max_board_size_unknown} value={form.max_board_size} onChange={set("max_board_size")} data-testid="intake-max-board-size" />
-                  <span className="choice intake-not-sure"><input type="checkbox" checked={form.max_board_size_unknown} onChange={(event) => setForm({ ...form, max_board_size_unknown: event.target.checked, max_board_size: event.target.checked ? "" : form.max_board_size })} data-testid="intake-max-size-unknown" /><span>Not Specified / I Don't Know</span></span>
+                  <span className="choice intake-not-sure"><input type="checkbox" checked={form.max_board_size_unknown} onChange={(event) => setForm({ ...form, max_board_size_unknown: event.target.checked, max_board_size: event.target.checked ? "" : form.max_board_size })} data-testid="intake-max-size-unknown" /><span>{boardRecruitmentIntakePageText.notSpecifiedIDontKnow}</span></span>
                   {errors.max_board_size && <p className="field-error">{errors.max_board_size}</p>}
                 </label>
                 <label className="field"><span>Application Deadline <b>*</b></span>
@@ -356,7 +357,7 @@ export default function BoardRecruitmentIntakePage() {
                   {errors.application_deadline && <p className="field-error">{errors.application_deadline}</p>}
                 </label>
                 {form.application_deadline === "Specific Date" && <label className="field"><span>Deadline Date <b>*</b></span><input type="date" value={form.deadline_date} onChange={set("deadline_date")} data-testid="intake-deadline-date" />{errors.deadline_date && <p className="field-error">{errors.deadline_date}</p>}</label>}
-                <label className="field"><span>Is There Anything Else I Should Know Before We Start Recruiting Your Board?</span><textarea rows="3" value={form.anything_else} onChange={set("anything_else")} data-testid="intake-anything-else" /></label>
+                <label className="field"><span>{boardRecruitmentIntakePageText.isThereAnythingElseI}</span><textarea rows="3" value={form.anything_else} onChange={set("anything_else")} data-testid="intake-anything-else" /></label>
               </div>
             )}
 

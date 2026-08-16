@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Copy, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
-import { activationM2Text } from "../content/appContent";
+import { activationM2Text, activationModule2Text } from "../content/appContent";
 
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
 const dialogStyle = { background: "#fff", maxWidth: 760, width: "100%", padding: "28px", borderRadius: 8, position: "relative" };
@@ -202,7 +202,7 @@ export default function ActivationModule2() {
   };
 
   if (error) return <p className="submit-error">{error}</p>;
-  if (!data) return <p className="sh-loading">Loading your fundraising planning workspace…</p>;
+  if (!data) return <p className="sh-loading">{activationModule2Text.loadingYourFundraisingPlanningWorkspace}</p>;
 
   const form = data.form;
   const formApproved = form.status === "Approved";
@@ -212,24 +212,24 @@ export default function ActivationModule2() {
     <div data-testid="activation-module2">
       <section className="member-card" data-testid="am2-intro">
         <h2>{activationM2Text.h_buildThePlanWithYour}</h2>
-        <p>Do not create a fundraising plan and hand it to your Board.</p>
-        <p>Get your Board involved in building it.</p>
-        <p>Their ideas, professional experience, relationships and willingness to participate should help shape how your organization raises money.</p>
-        <p>When people participate in building the plan, they are more likely to understand it, take ownership of it and help execute it.</p>
+        <p>{activationModule2Text.doNotCreateAFundraising}</p>
+        <p>{activationModule2Text.getYourBoardInvolvedIn}</p>
+        <p>{activationModule2Text.theirIdeasProfessionalExperienceRelationships}</p>
+        <p>{activationModule2Text.whenPeopleParticipateInBuilding}</p>
       </section>
 
       <section className="member-card" data-testid="am2-form-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Board Fundraising Planning Form</h2>
+          <h2 style={{ margin: 0 }}>{activationModule2Text.boardFundraisingPlanningForm}</h2>
           <span className="eyebrow" style={{ padding: "4px 10px", border: "1px solid #000", borderRadius: 999 }} data-testid="am2-form-status">
             {form.status === "NONE" ? "NOT GENERATED" : form.status.toUpperCase()}{formApproved ? ` · v${form.approved_version}` : ""}
           </span>
         </div>
-        <p style={{ marginTop: 10 }}>Generate one organization-specific planning form built from your Activation intake. Review and edit it, then approve it so it can be shared with your Board.</p>
-        {!data.has_intake && <p className="submit-error" data-testid="am2-no-intake">Your Activation intake was not found. Complete the Activation intake before generating your planning form.</p>}
-        {form.status === "Failed" && <p className="submit-error" data-testid="am2-generation-error">Generation failed. Please try again.</p>}
+        <p style={{ marginTop: 10 }}>{activationModule2Text.generateOneOrganizationSpecificPlanning}</p>
+        {!data.has_intake && <p className="submit-error" data-testid="am2-no-intake">{activationModule2Text.yourActivationIntakeWasNot}</p>}
+        {form.status === "Failed" && <p className="submit-error" data-testid="am2-generation-error">{activationModule2Text.generationFailedPleaseTryAgain}</p>}
         {form.status === "Generating" || generating ? (
-          <p data-testid="am2-generating">Generating your Board Fundraising Planning Form… This can take a minute. It will appear here automatically.</p>
+          <p data-testid="am2-generating">{activationModule2Text.generatingYourBoardFundraisingPlanning}</p>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
             <button type="button" className="button" onClick={generate} data-testid="am2-generate-button">
@@ -244,7 +244,7 @@ export default function ActivationModule2() {
           </div>
         )}
         {form.content && form.status !== "Generating" && <FormPreview content={form.content} />}
-        {form.content && !formApproved && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am2-approval-required">The form must be approved before the Board email can be generated.</p>}
+        {form.content && !formApproved && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="am2-approval-required">{activationModule2Text.theFormMustBeApproved}</p>}
       </section>
 
       <section className="member-card" data-testid="am2-email-card">
@@ -281,7 +281,7 @@ export default function ActivationModule2() {
         <Modal onClose={() => setShowEdit(false)} testId="am2-edit-modal">
           <h2>{activationM2Text.h_editBoardFundraisingPlanningForm}</h2>
           <label className="field"><span>Introduction</span><textarea rows={7} value={editForm.introduction} onChange={(e) => setEditForm({ ...editForm, introduction: e.target.value })} data-testid="am2-edit-introduction" /></label>
-          <label className="field"><span>Fundraising Goal Context (shown to Board Members)</span><textarea rows={4} value={editForm.goal_context} onChange={(e) => setEditForm({ ...editForm, goal_context: e.target.value })} data-testid="am2-edit-goal-context" /></label>
+          <label className="field"><span>{activationModule2Text.fundraisingGoalContextShownTo}</span><textarea rows={4} value={editForm.goal_context} onChange={(e) => setEditForm({ ...editForm, goal_context: e.target.value })} data-testid="am2-edit-goal-context" /></label>
           <h3 style={{ margin: "14px 0 6px" }}>{activationM2Text.h_questions}</h3>
           {editForm.prompt_list.map((entry) => (
             <label className="field" key={entry.id}><span className="eyebrow">{entry.section}</span>

@@ -5,6 +5,7 @@ import { StepOne } from "@/components/form/StepOne";
 import { StepTwo } from "@/components/form/StepTwo";
 import { StepThree } from "@/components/form/StepThree";
 import { StepFour } from "@/components/form/StepFour";
+import { assessmentFormText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
@@ -76,7 +77,7 @@ export const AssessmentForm = ({ onComplete, onHome }) => {
     <main className="form-page" data-testid="board-assessment-form-page">
       <header className="form-header">
         <button onClick={onHome} className="back-home" data-testid="assessment-back-home-button"><ArrowLeft size={17} /> Homepage</button>
-        <div className="form-brand" data-testid="assessment-brand"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="assessment-brand-logo-image" /></div>
+        <div className="form-brand" data-testid="assessment-brand"><img src={logoUrl} alt={assessmentFormText.nonprofitBoardBuilder} data-testid="assessment-brand-logo-image" /></div>
         <span className="secure-note" data-testid="assessment-private-note">Private assessment</span>
       </header>
       <section className="form-shell">

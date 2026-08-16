@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Download, FileText, Mail, RefreshCw, Users, X } from "lucide-react";
 import { memberApi } from "./api";
-import { reactivationContent } from "../content/appContent";
+import { reactivationContent, reactivationStep5Text } from "../content/appContent";
 
 const D = reactivationContent.dashboard;
 
@@ -107,7 +107,7 @@ const PortfolioWorkflow = ({ row, reload }) => {
       <p className="eyebrow" data-testid={`myboard-portfolio-status-${id}`}>Portfolio: {status}{row.portfolio?.sent_at ? ` · sent ${new Date(row.portfolio.sent_at).toLocaleString()}` : ""}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-generate-portfolio-${id}`}>
-          {busy === "generate" ? "Generating…" : status === "NOT GENERATED" ? <><FileText size={15} /> GENERATE BOARD MEMBER PORTFOLIO</> : <><RefreshCw size={15} /> REGENERATE</>}
+          {busy === "generate" ? "Generating…" : status === "NOT GENERATED" ? <><FileText size={15} />{reactivationStep5Text.generateBoardMemberPortfolio}</> : <><RefreshCw size={15} /> REGENERATE</>}
         </button>
         {status !== "NOT GENERATED" && (
           <>
@@ -144,7 +144,7 @@ const PortfolioWorkflow = ({ row, reload }) => {
           <p><strong>To:</strong> {emailDraft.to_name} &lt;{emailDraft.to_email}&gt;</p>
           <label className="field"><span>Subject</span><input value={emailDraft.subject} onChange={(e) => setEmailDraft({ ...emailDraft, subject: e.target.value })} data-testid={`myboard-email-subject-${id}`} /></label>
           <label className="field"><span>Email Body</span><textarea rows={12} value={emailDraft.body} onChange={(e) => setEmailDraft({ ...emailDraft, body: e.target.value })} data-testid={`myboard-email-body-${id}`} /></label>
-          <p><strong>Portfolio Link (inserted automatically):</strong> <span style={{ wordBreak: "break-all" }} data-testid={`myboard-email-link-${id}`}>{emailDraft.portfolio_link}</span></p>
+          <p><strong>{reactivationStep5Text.portfolioLinkInsertedAutomatically}</strong> <span style={{ wordBreak: "break-all" }} data-testid={`myboard-email-link-${id}`}>{emailDraft.portfolio_link}</span></p>
           <button type="button" className="button" onClick={sendEmail} disabled={busy === "send"} data-testid={`myboard-send-email-${id}`}>{busy === "send" ? "Sending…" : "SEND PORTFOLIO"}</button>
         </Modal>
       )}
@@ -257,8 +257,8 @@ export default function ReactivationStep5() {
     <div data-testid="reactivation-myboard">
       <section className="member-card" data-testid="myboard-intro">
         <h2><Users size={20} aria-hidden="true" /> Your Reactivated Board</h2>
-        <p>You now have a clearer picture of who is ready to carry Board responsibility, where each continuing member can contribute, and who is transitioning or stepping down.</p>
-        <p>This is the Board you can begin building with.</p>
+        <p>{reactivationStep5Text.youNowHaveAClearer}</p>
+        <p>{reactivationStep5Text.thisIsTheBoardYou}</p>
       </section>
 
       <section className="member-card" data-testid="myboard-summary">
@@ -293,16 +293,16 @@ export default function ReactivationStep5() {
           {summary.support > 0 && <> · <strong>{summary.support}</strong> Support Role</>}
           {summary.stepping_down > 0 && <> · <strong>{summary.stepping_down}</strong> Stepping Down</>}
           {summary.follow_up > 0 && <> · <strong>{summary.follow_up}</strong> Follow-Up Needed</>}
-          {summary.waiting > 0 && <> · <strong>{summary.waiting}</strong> Waiting for Recommitment Form</>}
+          {summary.waiting > 0 && <> · <strong>{summary.waiting}</strong>{reactivationStep5Text.waitingForRecommitmentForm}</>}
           {summary.portfolios_approved > 0 && <> · <strong>{summary.portfolios_approved}</strong> Portfolio{summary.portfolios_approved === 1 ? "" : "s"} Approved</>}
         </p>
       </section>
 
       {processed > 0 && (
         <section className="member-card" data-testid="myboard-completion">
-          <h2>You Have Reactivated Your Board</h2>
-          <p>You now know who is ready to stand up, where your continuing Board Members can contribute, what responsibilities they have agreed to carry, and where transitions need to happen.</p>
-          <p>Your next job is to keep those responsibilities active and build with the people who have recommitted.</p>
+          <h2>{reactivationStep5Text.youHaveReactivatedYourBoard}</h2>
+          <p>{reactivationStep5Text.youNowKnowWhoIs}</p>
+          <p>{reactivationStep5Text.yourNextJobIsTo}</p>
         </section>
       )}
 
@@ -314,7 +314,7 @@ export default function ReactivationStep5() {
       )}
       {groups.advisory.length > 0 && (
         <section data-testid="myboard-advisory-section">
-          <h2 style={{ margin: "24px 0 10px" }}>Advisory Board / Advisory Members</h2>
+          <h2 style={{ margin: "24px 0 10px" }}>{reactivationStep5Text.advisoryBoardAdvisoryMembers}</h2>
           {groups.advisory.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ADVISORY"
             extra={<OutcomeEmailWorkflow row={row} label={D.advisoryEmailButton} reload={load} />} />)}
         </section>
@@ -334,34 +334,34 @@ export default function ReactivationStep5() {
       )}
       {groups.follow_up.length > 0 && (
         <section data-testid="myboard-followup-section">
-          <h2 style={{ margin: "24px 0 10px" }}>Follow-Up Still Needed</h2>
+          <h2 style={{ margin: "24px 0 10px" }}>{reactivationStep5Text.followUpStillNeeded}</h2>
           {groups.follow_up.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="FOLLOW-UP NEEDED" />)}
-          <Link className="button button-outline" to="/app/reactivation/self-guided/module/4" data-testid="myboard-return-step3">RETURN TO STEP 4 — HAVE THE CONVERSATIONS</Link>
+          <Link className="button button-outline" to="/app/reactivation/self-guided/module/4" data-testid="myboard-return-step3">{reactivationStep5Text.returnToStep4Have}</Link>
         </section>
       )}
       {groups.waiting.length > 0 && (
         <section data-testid="myboard-waiting-section">
-          <h2 style={{ margin: "24px 0 10px" }}>Waiting for Recommitment Form</h2>
+          <h2 style={{ margin: "24px 0 10px" }}>{reactivationStep5Text.waitingForRecommitmentForm2}</h2>
           {groups.waiting.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio={false} reload={load} badge="WAITING" />)}
         </section>
       )}
       {summary.reviewed === 0 && (
         <section className="member-card" data-testid="myboard-empty">
-          <p>No reactivated Board Members to show yet. Work through Steps 1–4 first.</p>
-          <Link className="button" to="/app/reactivation/self-guided/module/2">GO TO STEP 2</Link>
+          <p>{reactivationStep5Text.noReactivatedBoardMembersTo}</p>
+          <Link className="button" to="/app/reactivation/self-guided/module/2">{reactivationStep5Text.goToStep2}</Link>
         </section>
       )}
 
       <section style={{ marginTop: 34 }} data-testid="myboard-crosssell">
         <div className="ar-offer-grid">
           <article className="ar-offer-card" data-testid="myboard-recruit-cta">
-            <h3>Still Missing the Right People Around the Table?</h3>
-            <p className="ar-offer-copy">Reactivating your current Board shows you who is ready to serve. If you still have important skills, experience or relationships missing, recruit the Board Members your organization still needs.</p>
-            <Link className="button" to="/recruit-your-board-yourself" data-testid="myboard-recruit-button">RECRUIT NEW BOARD MEMBERS</Link>
+            <h3>{reactivationStep5Text.stillMissingTheRightPeople}</h3>
+            <p className="ar-offer-copy">{reactivationStep5Text.reactivatingYourCurrentBoardShows}</p>
+            <Link className="button" to="/recruit-your-board-yourself" data-testid="myboard-recruit-button">{reactivationStep5Text.recruitNewBoardMembers}</Link>
           </article>
           <article className="ar-offer-card" data-testid="myboard-activate-cta">
-            <h3>Your Board Is Back at the Table. Now Put Them to Work.</h3>
-            <p className="ar-offer-copy">The next step is to activate your Board to take ownership, help raise money and build your organization's fundraising system.</p>
+            <h3>{reactivationStep5Text.yourBoardIsBackAt}</h3>
+            <p className="ar-offer-copy">{reactivationStep5Text.theNextStepIsTo}</p>
             <Link className="button" to="/activate-your-board-yourself" data-testid="myboard-activate-button">ACTIVATE MY BOARD</Link>
           </article>
         </div>

@@ -1,4 +1,5 @@
 import { useMemberAuth } from "@/member/MemberAuthContext";
+import { operatorModeText } from "./content/siteContent";
 
 export const enterOperatorMode = (userId, organization, product) => {
   sessionStorage.setItem("operateAsUserId", userId);
@@ -26,7 +27,7 @@ export const WorkspaceModeBanner = () => {
   if (member?.review_mode) {
     return (
       <div className="review-mode-banner" data-testid="admin-test-mode-banner" style={{ background: "#8a5a00", color: "#fff", padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <span>TEST MODE — Admin Product Journey (isolated test workspace, no emails are sent automatically, no real client data is affected)</span>
+        <span>{operatorModeText.testModeAdminProductJourney}</span>
         <a className="button button-small" href="/admin" data-testid="test-mode-back-to-admin">Back to Admin</a>
       </div>
     );

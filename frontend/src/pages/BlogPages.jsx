@@ -4,6 +4,7 @@ import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
+import { blogPagesText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
@@ -35,8 +36,8 @@ export const BlogPage = () => {
       <main className="member-page blog-page" data-testid="blog-page">
         <header className="member-page-heading">
           <p className="eyebrow">Insights</p>
-          <h1 data-testid="blog-heading">Nonprofit Board Builder Insights</h1>
-          <p>Practical strategies to help you reactivate your present board, recruit the board members you are missing and activate your board to start raising money.</p>
+          <h1 data-testid="blog-heading">{blogPagesText.nonprofitBoardBuilderInsights}</h1>
+          <p>{blogPagesText.practicalStrategiesToHelpYou}</p>
         </header>
         <div className="blog-filters" data-testid="blog-filters">
           <button className={filter === "" ? "active" : ""} onClick={() => setFilter("")} data-testid="blog-filter-all">All</button>
@@ -44,7 +45,7 @@ export const BlogPage = () => {
             <button className={filter === category.key ? "active" : ""} onClick={() => setFilter(category.key)} key={category.key} data-testid={`blog-filter-${category.key}`}>{category.name}</button>
           ))}
         </div>
-        {posts.length === 0 && <p className="workspace-note" data-testid="blog-empty">Articles are coming soon.</p>}
+        {posts.length === 0 && <p className="workspace-note" data-testid="blog-empty">{blogPagesText.articlesAreComingSoon}</p>}
         <div className="blog-grid">{posts.map((post) => <PostCard post={post} key={post.slug} />)}</div>
       </main>
     </FunnelLayout>
@@ -67,7 +68,7 @@ export const BlogPostPage = () => {
   return (
     <FunnelLayout>
       <main className="member-page blog-article-page" data-testid="blog-article-page">
-        {error && <div className="member-card"><h2>{error}</h2><Link className="button" to="/blog">Back to All Articles</Link></div>}
+        {error && <div className="member-card"><h2>{error}</h2><Link className="button" to="/blog">{blogPagesText.backToAllArticles}</Link></div>}
         {post && (
           <>
             <header className="member-page-heading">
@@ -97,7 +98,7 @@ export const BlogSlider = () => {
   const go = (next) => setActive(((next % posts.length) + posts.length) % posts.length);
   return (
     <section className="section blog-slider-section" data-testid="homepage-blog-slider">
-      <div className="section-heading"><div><p className="eyebrow">Insights</p><h2 data-testid="blog-slider-heading">Latest From Nonprofit Board Builder</h2></div></div>
+      <div className="section-heading"><div><p className="eyebrow">Insights</p><h2 data-testid="blog-slider-heading">{blogPagesText.latestFromNonprofitBoardBuilder}</h2></div></div>
       <div className="blog-slider" onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }}
         onTouchEnd={(event) => { if (touchStart.current === null) return; const delta = event.changedTouches[0].clientX - touchStart.current; if (Math.abs(delta) > 45) go(active + (delta < 0 ? 1 : -1)); touchStart.current = null; }}>
         <div className="blog-slider-track" style={{ transform: `translateX(-${active * 100}%)` }}>

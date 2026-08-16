@@ -6,7 +6,7 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { Module3Launch } from "./workspace/WorkspaceModules";
-import { recruitmentContent, sharedCourseContent } from "../content/appContent";
+import { recruitmentContent, sharedCourseContent, coursePagesText } from "../content/appContent";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 
 const PRODUCT_META = {
@@ -64,7 +64,7 @@ export const VideoBlock = ({ module, testPrefix, placeholderTitle }) => {
     <div className="module-video placeholder" data-testid={`${testPrefix}-video-placeholder`}>
       <PlayCircle size={38} />
       <h3>{placeholderTitle || "Training Video Coming Soon"}</h3>
-      <p>The training video for this module will appear here as soon as it is published.</p>
+      <p>{coursePagesText.theTrainingVideoForThis}</p>
     </div>
   );
 };
@@ -87,19 +87,19 @@ export const SupportBox = ({ productKey, moduleNumber, supportTypes }) => {
   };
   return (
     <section className="support-box" data-testid="module-support-box">
-      <div className="support-box-heading"><LifeBuoy size={22} /><h2>Need Help With This Step?</h2></div>
-      <p>If you are stuck, need clarification or want help executing this part of the process, send us a request.</p>
+      <div className="support-box-heading"><LifeBuoy size={22} /><h2>{coursePagesText.needHelpWithThisStep}</h2></div>
+      <p>{coursePagesText.ifYouAreStuckNeed}</p>
       {confirmation ? (
         <p className="member-success" data-testid="support-confirmation">{confirmation}</p>
       ) : (
         <form onSubmit={submit}>
-          <label className="field"><span>What do you need help with? <b>*</b></span>
+          <label className="field"><span>{coursePagesText.whatDoYouNeedHelp}<b>*</b></span>
             <select value={supportType} onChange={(event) => setSupportType(event.target.value)} data-testid="support-type-select">
               <option value="">Select one</option>
               {(supportTypes || []).map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
-          <label className="field"><span>Tell us what you need help with <b>*</b></span>
+          <label className="field"><span>{coursePagesText.tellUsWhatYouNeed}<b>*</b></span>
             <textarea rows="4" value={message} onChange={(event) => setMessage(event.target.value)} required data-testid="support-message-textarea" />
           </label>
           {error && <p className="submit-error" data-testid="support-error">{error}</p>}

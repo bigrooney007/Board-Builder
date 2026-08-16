@@ -4,6 +4,7 @@ import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
 import { usePageMeta } from "@/seo";
 import { strategyPlanText } from "../content/appContent";
+import { strategyPlanPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -22,7 +23,7 @@ export default function StrategyPlanPage() {
 
   if (state === "loading") return <FunnelLayout restrained><main><div className="intake-card" data-testid="sp-plan-loading"><h2>{strategyPlanText.h_loading}</h2></div></main></FunnelLayout>;
   if (state === "invalid") {
-    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sp-plan-invalid"><h2>{strategyPlanText.h_thisPlanLinkIsNot}</h2><p>Please contact the person who sent you this link and ask them to resend it.</p></div></main></FunnelLayout>;
+    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sp-plan-invalid"><h2>{strategyPlanText.h_thisPlanLinkIsNot}</h2><p>{strategyPlanPageText.pleaseContactThePersonWho}</p></div></main></FunnelLayout>;
   }
 
   return (

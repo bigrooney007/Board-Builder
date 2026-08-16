@@ -4,6 +4,7 @@ import axios from "axios";
 import { Download } from "lucide-react";
 import { usePageMeta } from "@/seo";
 import { fundraisingPortfolioText } from "../content/appContent";
+import { fundraisingPortfolioPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -18,7 +19,7 @@ export default function FundraisingPortfolioPage() {
   }, [token]);
 
   if (invalid) {
-    return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24, fontFamily: "Arial, sans-serif" }} data-testid="fp-invalid"><h1>{fundraisingPortfolioText.h_thisPortfolioLinkIsNot}</h1><p>Please contact the person who sent you this link.</p></main>;
+    return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24, fontFamily: "Arial, sans-serif" }} data-testid="fp-invalid"><h1>{fundraisingPortfolioText.h_thisPortfolioLinkIsNot}</h1><p>{fundraisingPortfolioPageText.pleaseContactThePersonWho}</p></main>;
   }
   if (!data) return <main style={{ maxWidth: 720, margin: "60px auto", padding: 24 }} data-testid="fp-loading"><p>Loading…</p></main>;
 

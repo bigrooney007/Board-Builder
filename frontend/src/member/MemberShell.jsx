@@ -14,7 +14,7 @@ export const MemberShell = ({ children }) => {
     <div className="member-shell">
       <ReviewModeBanner />
       <nav className="site-nav member-nav" data-testid="member-navigation">
-        <Link className="brand" to="/" data-testid="member-home-logo"><img src={logoUrl} alt="Nonprofit Board Builder" /></Link>
+        <Link className="brand" to="/" data-testid="member-home-logo"><img src={logoUrl} alt={memberShellText.nonprofitBoardBuilder} /></Link>
         <div className="nav-links">
           <Link to="/app" data-testid="member-dashboard-link">{memberShellText.t_myBoardBuilder}</Link>
         </div>

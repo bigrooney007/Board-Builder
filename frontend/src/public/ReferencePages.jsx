@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
+import { referencePagesText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -19,7 +20,7 @@ const ReferenceFields = ({ index, value, onChange }) => (
       <label className="field"><span>Email Address *</span><input type="email" value={value.email} onChange={(event) => onChange({ ...value, email: event.target.value })} data-testid={`ref${index + 1}-email`} /></label>
       <label className="field"><span>Phone Number (optional)</span><input value={value.phone} onChange={(event) => onChange({ ...value, phone: event.target.value })} data-testid={`ref${index + 1}-phone`} /></label>
     </div>
-    <label className="field"><span>How long have they known or worked with you? *</span><input value={value.duration} onChange={(event) => onChange({ ...value, duration: event.target.value })} data-testid={`ref${index + 1}-duration`} /></label>
+    <label className="field"><span>{referencePagesText.howLongHaveTheyKnown}</span><input value={value.duration} onChange={(event) => onChange({ ...value, duration: event.target.value })} data-testid={`ref${index + 1}-duration`} /></label>
   </fieldset>
 );
 
@@ -58,14 +59,14 @@ export default function CandidateReferenceFormPage() {
         {meta && (
           <>
             <header className="member-page-heading">
-              <p className="eyebrow">Board Appointment Reference Process</p>
-              <h1 data-testid="reference-form-heading">Provide Your Professional References</h1>
+              <p className="eyebrow">{referencePagesText.boardAppointmentReferenceProcess}</p>
+              <h1 data-testid="reference-form-heading">{referencePagesText.provideYourProfessionalReferences}</h1>
               <p>Hello {meta.candidate_name || "there"}. As part of the board appointment process, please provide two professional references. Each referee will receive a short confidential reference form by email.</p>
             </header>
             {(done || meta.submitted) ? (
               <div className="member-card" data-testid="reference-form-done">
                 <CheckCircle2 size={30} />
-                <h2>Your References Have Been Recorded</h2>
+                <h2>{referencePagesText.yourReferencesHaveBeenRecorded}</h2>
                 <p>{done || "Your references have already been provided. Each referee has received a secure reference form."}</p>
               </div>
             ) : (
@@ -75,7 +76,7 @@ export default function CandidateReferenceFormPage() {
                 ))}
                 <label className="checkbox-field" data-testid="reference-permission">
                   <input type="checkbox" checked={permission} onChange={(event) => setPermission(event.target.checked)} />
-                  <span>I confirm that I have permission to provide my referees' contact information for this reference process.</span>
+                  <span>{referencePagesText.iConfirmThatIHave}</span>
                 </label>
                 {error && <p className="submit-error" data-testid="reference-form-error">{error}</p>}
                 <button className="button" disabled={busy} onClick={submit} data-testid="submit-references-button">{busy ? "Submitting…" : "Submit My References"}</button>
@@ -164,7 +165,7 @@ export function RefereeFormPage() {
                 </label>
                 <label className="choice" style={{ alignItems: "flex-start" }}>
                   <input type="checkbox" checked={Boolean(answers.declaration_confirmed)} onChange={(event) => setAnswers({ ...answers, declaration_confirmed: event.target.checked })} data-testid="referee-declaration" />
-                  <span>I confirm that the information I have provided reflects my own experience and knowledge of the candidate. *</span>
+                  <span>{referencePagesText.iConfirmThatTheInformation}</span>
                 </label>
                 {error && <p className="submit-error" data-testid="referee-form-error">{error}</p>}
                 <button className="button" disabled={busy} onClick={submit} data-testid="submit-referee-button">{busy ? "Submitting…" : "Submit Reference"}</button>

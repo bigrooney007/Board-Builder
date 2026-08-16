@@ -9,7 +9,7 @@ import ActivationModule2 from "./ActivationModule2";
 import ActivationModule3 from "./ActivationModule3";
 import ActivationModule4 from "./ActivationModule4";
 import ActivationModule5 from "./ActivationModule5";
-import { activationContent, sharedCourseContent } from "../content/appContent";
+import { activationContent, sharedCourseContent, activationCoursePagesText } from "../content/appContent";
 
 const META = {
   key: "activation_self_guided",
@@ -138,7 +138,7 @@ export const ActivationModulePage = () => {
       <main className="member-page module-page" data-testid="activation-module-page">
         {forbidden && <ForbiddenCard />}
         {error && <p className="submit-error">{error}</p>}
-        {course && !module && <div className="member-card" data-testid="activation-module-not-found"><h2>Module Not Found</h2><Link className="button" to={META.base}>Back to Board Fundraising Activation</Link></div>}
+        {course && !module && <div className="member-card" data-testid="activation-module-not-found"><h2>Module Not Found</h2><Link className="button" to={META.base}>{activationCoursePagesText.backToBoardFundraisingActivation}</Link></div>}
         {module && (
           <>
             <header className="member-page-heading">

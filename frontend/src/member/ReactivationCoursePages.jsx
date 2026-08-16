@@ -9,7 +9,7 @@ import ReactivationStep2 from "./ReactivationStep2";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
-import { reactivationContent, sharedCourseContent } from "../content/appContent";
+import { reactivationContent, sharedCourseContent, reactivationCoursePagesText } from "../content/appContent";
 
 const META = {
   key: "reactivation_self_guided",
@@ -130,7 +130,7 @@ export const ReactivationModulePage = () => {
       <main className="member-page module-page" data-testid="reactivation-module-page">
         {forbidden && <ForbiddenCard />}
         {error && <p className="submit-error">{error}</p>}
-        {course && !module && <div className="member-card"><h2>Step Not Found</h2><Link className="button" to={META.base}>Back to Board Reactivation</Link></div>}
+        {course && !module && <div className="member-card"><h2>Step Not Found</h2><Link className="button" to={META.base}>{reactivationCoursePagesText.backToBoardReactivation}</Link></div>}
         {module && (
           <>
             <header className="member-page-heading">

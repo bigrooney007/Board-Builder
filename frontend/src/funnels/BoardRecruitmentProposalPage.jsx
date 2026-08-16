@@ -5,7 +5,7 @@ import { CalendarClock, CheckCircle2, Check, ShieldCheck, X } from "lucide-react
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, boardRecruitmentProposalPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -67,84 +67,84 @@ export default function BoardRecruitmentProposalPage() {
     <FunnelLayout restrained>
       <main data-testid="brp-page">
         <section className="funnel-hero-banner brp-hero" data-testid="brp-hero">
-          <p className="eyebrow" data-testid="brp-hero-eyebrow">Board Recruitment Project Proposal</p>
+          <p className="eyebrow" data-testid="brp-hero-eyebrow">{boardRecruitmentProposalPageText.boardRecruitmentProjectProposal}</p>
           <h1 data-testid="brp-headline">{SITE_CONTENT.recruitProposal.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="brp-hero-intro">Your nonprofit should not have to keep struggling because you do not have the right people around the table.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="brp-hero-intro">{boardRecruitmentProposalPageText.yourNonprofitShouldNotHave}</p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section brp-summary" data-testid="brp-summary-section">
           <h2 className="brp-section-title" data-testid="brp-summary-heading">Executive Summary</h2>
-          <p data-testid="brp-summary-whether">Whether you need one new board member or need to build an entirely new board, the objective of this engagement is simple:</p>
-          <p className="brp-summary-objective" data-testid="brp-summary-objective">Help you recruit the board members your nonprofit needs to grow, raise money, build relationships and move your mission forward.</p>
-          <p data-testid="brp-summary-timeline-line">Over the next two weeks, we will work together to identify, recruit, select and properly bring in skilled professionals with the experience, credibility, relationships and willingness to help your organization succeed.</p>
+          <p data-testid="brp-summary-whether">{boardRecruitmentProposalPageText.whetherYouNeedOneNew}</p>
+          <p className="brp-summary-objective" data-testid="brp-summary-objective">{boardRecruitmentProposalPageText.helpYouRecruitTheBoard}</p>
+          <p data-testid="brp-summary-timeline-line">{boardRecruitmentProposalPageText.overTheNextTwoWeeks}</p>
         </section>
 
         <section className="brp-section" data-testid="brp-how-section">
-          <h2 className="brp-section-title" data-testid="brp-how-heading">Here Is How We Will Work Together</h2>
+          <h2 className="brp-section-title" data-testid="brp-how-heading">{boardRecruitmentProposalPageText.hereIsHowWeWill}</h2>
 
           <article className="brp-step-card" data-testid="brp-step-1">
             <div className="brp-step-number">1</div>
             <div className="brp-step-body">
-              <h3>Launch Your Recruitment Campaign</h3>
-              <p>During our first 30-minute session, we will identify the exact board members your nonprofit needs and launch your board recruitment campaign.</p>
-              <p>We will launch your recruitment across various platforms using strategies we have mastered over the years.</p>
-              <p>The objective is to put your opportunity in front of enough quality people that <strong>you have people to choose from instead of simply accepting whoever happens to show up.</strong></p>
+              <h3>{boardRecruitmentProposalPageText.launchYourRecruitmentCampaign}</h3>
+              <p>{boardRecruitmentProposalPageText.duringOurFirst30Minute}</p>
+              <p>{boardRecruitmentProposalPageText.weWillLaunchYourRecruitment}</p>
+              <p>{boardRecruitmentProposalPageText.theObjectiveIsToPut}<strong>{boardRecruitmentProposalPageText.youHavePeopleToChoose}</strong></p>
             </div>
           </article>
 
           <article className="brp-step-card" data-testid="brp-step-2">
             <div className="brp-step-number">2</div>
             <div className="brp-step-body">
-              <h3>Decide Who You Want</h3>
-              <p>As applications begin coming in, your job is to review every applicant and decide who you want to meet.</p>
-              <p>We will invite them in to meet with you so you can better understand their:</p>
+              <h3>{boardRecruitmentProposalPageText.decideWhoYouWant}</h3>
+              <p>{boardRecruitmentProposalPageText.asApplicationsBeginComingIn}</p>
+              <p>{boardRecruitmentProposalPageText.weWillInviteThemIn}</p>
               <ul className="brp-list icon-list">
                 {STEP_TWO_POINTS.map((point) => <li key={point}><Check size={16} aria-hidden="true" /><span>{point}</span></li>)}
               </ul>
-              <p>If you need help with the selection process, we can also provide the guidance and training you need to confidently choose who belongs on your board.</p>
+              <p>{boardRecruitmentProposalPageText.ifYouNeedHelpWith}</p>
             </div>
           </article>
 
           <article className="brp-step-card" data-testid="brp-step-3">
             <div className="brp-step-number">3</div>
             <div className="brp-step-body">
-              <h3>Get Your Board Members Up To Speed and Ready To Build With You</h3>
-              <p>Once you have selected the people you want, we come back in.</p>
-              <p>Recruiting somebody is not enough.</p>
-              <p>Your new board members need to understand what is expected of them and how they are supposed to support you and the organization.</p>
-              <p>We will help make sure your new board members understand:</p>
+              <h3>{boardRecruitmentProposalPageText.getYourBoardMembersUp}</h3>
+              <p>{boardRecruitmentProposalPageText.onceYouHaveSelectedThe}</p>
+              <p>{boardRecruitmentProposalPageText.recruitingSomebodyIsNotEnough}</p>
+              <p>{boardRecruitmentProposalPageText.yourNewBoardMembersNeed}</p>
+              <p>{boardRecruitmentProposalPageText.weWillHelpMakeSure}</p>
               <ul className="brp-list icon-list">
                 {STEP_THREE_POINTS.map((point) => <li key={point}><Check size={16} aria-hidden="true" /><span>{point}</span></li>)}
               </ul>
-              <p>We will also take them through the necessary onboarding documentation, including:</p>
+              <p>{boardRecruitmentProposalPageText.weWillAlsoTakeThem}</p>
               <ul className="brp-list brp-list-strong">
                 {ONBOARDING_DOCUMENTS.map((doc) => <li key={doc}><strong>{doc}</strong></li>)}
               </ul>
-              <p>This way, you will gather important information about who they are, their professional experience, skills, relationships and the areas of the organization where they are interested in serving so you can start positioning them.</p>
+              <p>{boardRecruitmentProposalPageText.thisWayYouWillGather}</p>
             </div>
           </article>
         </section>
 
         <section className="brp-section brp-result" data-testid="brp-result-section">
           <h2 className="brp-section-title">The Result</h2>
-          <p className="brp-result-headline" data-testid="brp-result-headline">In Two Weeks, You Will Have the Board Your Nonprofit Needs.</p>
-          <p>A board of skilled professionals with the experience, credibility and willingness to help your organization succeed.</p>
-          <p>And because you participate in the process with us, you will not only have new board members.</p>
-          <p><strong>You will understand how the process works and be able to recruit board members again whenever your nonprofit needs them.</strong></p>
-          <p>Plus, you will not have to start from scratch the next time your organization needs another board member. You will understand the process and have the tools and resources to recruit again.</p>
+          <p className="brp-result-headline" data-testid="brp-result-headline">{boardRecruitmentProposalPageText.inTwoWeeksYouWill}</p>
+          <p>{boardRecruitmentProposalPageText.aBoardOfSkilledProfessionals}</p>
+          <p>{boardRecruitmentProposalPageText.andBecauseYouParticipateIn}</p>
+          <p><strong>{boardRecruitmentProposalPageText.youWillUnderstandHowThe}</strong></p>
+          <p>{boardRecruitmentProposalPageText.plusYouWillNotHave}</p>
         </section>
 
         <section className="brp-section brp-timeline" data-testid="brp-timeline-section">
           <h2 className="brp-section-title">Project Timeline</h2>
           <p className="brp-timeline-value" data-testid="brp-timeline-value"><CalendarClock size={34} aria-hidden="true" /> 2 Weeks</p>
-          <p className="brp-timeline-note">We also understand that every organization operates differently, so if you need to work within a different timeline, we are open to working with you within your organization's schedule.</p>
+          <p className="brp-timeline-note">{boardRecruitmentProposalPageText.weAlsoUnderstandThatEvery}</p>
         </section>
 
         <section className="brp-section brp-investment" data-testid="brp-investment-section">
           <h2 className="brp-section-title">Your Investment</h2>
           <p className="brp-standard-price" data-testid="brp-reference-price"><s>$3,997</s></p>
-          <p className="brp-discount-line" data-testid="brp-discount-line">But if you are ready to make payment and get started today, we are offering you a discount</p>
+          <p className="brp-discount-line" data-testid="brp-discount-line">{boardRecruitmentProposalPageText.butIfYouAreReady}</p>
           <p className="brp-today-price" data-testid="brp-today-price">TODAY: $1,997</p>
         </section>
 
@@ -158,19 +158,19 @@ export default function BoardRecruitmentProposalPage() {
         </section>
 
         <section className="brp-section" data-testid="brp-after-payment-section">
-          <h2 className="brp-section-title" data-testid="brp-after-payment-heading">What Happens After You Make Payment</h2>
-          <p data-testid="brp-after-payment-copy">After making payment, you will tell us about your organization and board and then choose a convenient time to meet with me for our first session so we can start recruiting your board together.</p>
+          <h2 className="brp-section-title" data-testid="brp-after-payment-heading">{boardRecruitmentProposalPageText.whatHappensAfterYouMake}</h2>
+          <p data-testid="brp-after-payment-copy">{boardRecruitmentProposalPageText.afterMakingPaymentYouWill}</p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="brp-final-cta-section">
-          <h2 className="brp-section-title" data-testid="brp-ready-heading">Ready to Build Your Board?</h2>
-          <p>You do not have to spend the next several months trying to figure out where to find board members or how to recruit them.</p>
-          <p><strong>Let’s get the right people around your table and get your organization moving forward.</strong></p>
-          {cancelled && <p className="rwr-cta-notice" data-testid="brp-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
+          <h2 className="brp-section-title" data-testid="brp-ready-heading">{boardRecruitmentProposalPageText.readyToBuildYourBoard}</h2>
+          <p>{boardRecruitmentProposalPageText.youDoNotHaveTo}</p>
+          <p><strong>{boardRecruitmentProposalPageText.letSGetTheRight}</strong></p>
+          {cancelled && <p className="rwr-cta-notice" data-testid="brp-cancelled-notice">{boardRecruitmentProposalPageText.yourPaymentWasNotCompleted}</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="brp-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.recruitProposal.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="brp-cta-notice">{ctaNotice}</p>}
           <div>
-            <Link className="button button-outline offer-cross-link" to="/recruit-your-board-yourself" data-testid="brp-diy-cross-link">Prefer to Do It By Yourself?</Link>
+            <Link className="button button-outline offer-cross-link" to="/recruit-your-board-yourself" data-testid="brp-diy-cross-link">{boardRecruitmentProposalPageText.preferToDoItBy}</Link>
           </div>
         </section>
 
@@ -214,28 +214,28 @@ export const BoardRecruitmentProposalConfirmedPage = () => {
         {state === "checking" && (
           <div className="brp-confirm-card" data-testid="brp-confirm-checking">
             <h1>Confirming Your Payment…</h1>
-            <p>Please wait while we verify your payment with Stripe.</p>
+            <p>{boardRecruitmentProposalPageText.pleaseWaitWhileWeVerify}</p>
           </div>
         )}
         {state === "missing" && (
           <div className="brp-confirm-card" data-testid="brp-confirm-missing">
             <h1>Missing Payment Details</h1>
-            <p>We could not find a checkout session. If you completed a payment, please contact us.</p>
-            <Link className="button" to="/board-recruitment-proposal">Return to the Proposal</Link>
+            <p>{boardRecruitmentProposalPageText.weCouldNotFindA}</p>
+            <Link className="button" to="/board-recruitment-proposal">{boardRecruitmentProposalPageText.returnToTheProposal}</Link>
           </div>
         )}
         {(state === "failed" || state === "timeout") && (
           <div className="brp-confirm-card" data-testid="brp-confirm-failed">
-            <h1>We Could Not Confirm Your Payment Yet</h1>
-            <p>If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.</p>
-            <Link className="button" to="/board-recruitment-proposal">Return to the Proposal</Link>
+            <h1>{boardRecruitmentProposalPageText.weCouldNotConfirmYour}</h1>
+            <p>{boardRecruitmentProposalPageText.ifYouCompletedThePayment}</p>
+            <Link className="button" to="/board-recruitment-proposal">{boardRecruitmentProposalPageText.returnToTheProposal2}</Link>
           </div>
         )}
         {state === "paid" && (
           <div className="brp-confirm-card" data-testid="brp-confirm-paid">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Payment confirmed</p>
-            <h1>Tell Me About Your Organization and Board</h1>
-            <p>Taking you to a short form so we can start your board recruitment…</p>
+            <h1>{boardRecruitmentProposalPageText.tellMeAboutYourOrganization}</h1>
+            <p>{boardRecruitmentProposalPageText.takingYouToAShort}</p>
             <a className="button" href={`/board-recruitment-intake?session_id=${sessionId}`} data-testid="brp-intake-link">Continue</a>
           </div>
         )}

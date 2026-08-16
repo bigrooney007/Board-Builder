@@ -1,5 +1,5 @@
 import { ArrowRight, BriefcaseBusiness, GraduationCap, HeartHandshake, Map, TrendingUp } from "lucide-react";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, founderStorySectionText } from "@/content/siteContent";
 
 const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
@@ -11,7 +11,7 @@ export const FounderStorySection = () => {
     <>
       <section id="my-story" className="founder-section" data-testid="founder-story-section">
         <div className="founder-photo-panel">
-          <div className="founder-photo-frame"><img src={founderPhotoUrl} alt="Rooney Akpesiri, the Nonprofit Board Builder" data-testid="founder-photo" /><span data-testid="founder-photo-caption">{content.photoCaption}</span></div>
+          <div className="founder-photo-frame"><img src={founderPhotoUrl} alt={founderStorySectionText.rooneyAkpesiriTheNonprofitBoard} data-testid="founder-photo" /><span data-testid="founder-photo-caption">{content.photoCaption}</span></div>
         </div>
         <div className="founder-story-copy">
           <p className="eyebrow" data-testid="founder-story-eyebrow">{content.eyebrow}</p>

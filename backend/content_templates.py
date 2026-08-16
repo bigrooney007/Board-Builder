@@ -110,3 +110,55 @@ def sp_review_invitation_email(first: str, organization: str, signature: str) ->
     )
     return {"subject": f"Review Our Foundational Strategic Plan | {organization}", "body": body,
             "button_label": "REVIEW THE FOUNDATIONAL PLAN"}
+
+
+def activation_signature(founder_name: str, founder_title: str, organization: str) -> str:
+    return founder_name + (f"\n{founder_title}" if founder_title else "") + f"\n{organization}"
+
+
+def activation_planning_email(organization: str, form_link: str, signature: str) -> dict:
+    return {
+        "subject": f"Help Us Build Our Fundraising Plan | {organization}",
+        "body": (
+            "Dear Board Members,\n\n"
+            f"We are beginning the process of building the fundraising plan for {organization}, and I want the Board involved in shaping it.\n\n"
+            "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
+            "Your ideas, experience, relationships and perspective can help us determine who we should be building relationships with, which fundraising opportunities we should prioritize, and how each of us can contribute.\n\n"
+            "Please complete the short Board Fundraising Planning Form here:\n\n"
+            f"{form_link}\n\n"
+            "Your responses will be combined with the ideas of the other Board Members and our organizational priorities as we build the Fundraising Strategy Plan.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        ),
+    }
+
+
+def activation_review_email(organization: str, review_link: str, signature: str) -> dict:
+    return {
+        "subject": f"Please Review Our Fundraising Strategy Plan | {organization}",
+        "body": (
+            "Dear Board Members,\n\n"
+            f"Thank you for contributing your ideas to the fundraising planning process for {organization}.\n\n"
+            "We have now brought the Board's input together with the organization's fundraising goals and priorities and developed the Fundraising Strategy Plan for Board review.\n\n"
+            "Before we move into adopting the plan, please review the strategy. You can approve each idea, disapprove it with your reason, and share any suggestions, concerns or issues you believe the Board should discuss.\n\n"
+            "Please review the plan here:\n\n"
+            f"{review_link}\n\n"
+            "Your review will help us prepare for the Board discussion where we will work through the strategy and agree on the way forward.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        ),
+    }
+
+
+def activation_adoption_meeting_email(organization: str, meeting_lines: str, plan_link: str, signature: str) -> dict:
+    return {
+        "subject": f"Board Meeting: Adopting Our Fundraising Strategy Plan | {organization}",
+        "body": (
+            "Dear Board Members,\n\n"
+            f"Thank you for helping build and review the Fundraising Strategy Plan for {organization}.\n\n"
+            "The next step is to come together, work through the Board's feedback, agree on the direction and adopt the plan we will carry together.\n\n"
+            f"{meeting_lines}\n\n"
+            "Please review the current Fundraising Strategy Plan before the meeting:\n\n"
+            f"{plan_link}\n\n"
+            "During the meeting we will work through the feedback from the Board's review, confirm our priorities and agree on what each of us will help carry.\n\n"
+            f"Thank you for helping us build this together.\n\n{signature}"
+        ),
+    }

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
-import { recruitmentContent } from "../../content/appContent";
+import { recruitmentContent, module1ProfileText } from "../../content/appContent";
 
 export const SKILL_OPTIONS = ["Fundraising", "Corporate Partnerships", "Major Donors", "Grant Development", "Finance", "Accounting", "Governance", "Legal", "Marketing", "Communications", "Public Relations", "Community Relationships", "Strategic Planning", "Human Resources", "Technology", "Program Development", "Operations", "Government/Public Policy", "Healthcare", "Education", "Professional/Business Connections", "Lived Experience", "Other"];
 
@@ -17,7 +17,7 @@ const SkillPicker = ({ label, values, other, onToggle, onOther, testId, error })
       </label>
     ))}</div>
     {values.includes("Other") && (
-      <label className="field"><span>Tell us about the other skills or experience</span>
+      <label className="field"><span>{module1ProfileText.tellUsAboutTheOther}</span>
         <input value={other} onChange={(event) => onOther(event.target.value)} data-testid={`${testId}-other`} />
       </label>
     )}
@@ -49,8 +49,8 @@ const KnownInfoSummary = ({ data }) => {
   if (!rows.length) return null;
   return (
     <div className="known-info-summary" data-testid="module1-known-info">
-      <h3>What We Already Know About Your Organization and Board</h3>
-      <p className="material-description">You provided this information when you got started — you never need to enter it again. It is used automatically throughout your recruitment process.</p>
+      <h3>{module1ProfileText.whatWeAlreadyKnowAbout}</h3>
+      <p className="material-description">{module1ProfileText.youProvidedThisInformationWhen}</p>
       <dl>
         {rows.map(([label, value]) => (
           <div className="known-info-row" key={label}><dt>{label}</dt><dd>{value}</dd></div>
@@ -123,11 +123,11 @@ export const Module1Profile = ({ onConfirmed }) => {
   return (
     <div data-testid="module1-workspace">
       <section className="workspace-panel" data-testid="module1-intake">
-        <h2>The Board Members Your Organization Needs</h2>
-        <p className="material-description">Based on the information you provided about your organization and board, we will identify the board members your nonprofit should prioritize recruiting.</p>
+        <h2>{module1ProfileText.theBoardMembersYourOrganization}</h2>
+        <p className="material-description">{module1ProfileText.basedOnTheInformationYou}</p>
         <KnownInfoSummary data={stored} />
         {askingAnything && (
-          <p className="workspace-note" data-testid="module1-missing-info-note">We just need a little more information before we identify your board members. You only enter it once.</p>
+          <p className="workspace-note" data-testid="module1-missing-info-note">{module1ProfileText.weJustNeedALittle}</p>
         )}
         {askOrgName && (
           <label className="field"><span>Organization name <b>*</b></span>
@@ -136,9 +136,9 @@ export const Module1Profile = ({ onConfirmed }) => {
           </label>
         )}
         {askMission && (
-          <label className="field"><span>What is your organization's mission statement? <b>*</b></span>
+          <label className="field"><span>{module1ProfileText.whatIsYourOrganizationsMission}<b>*</b></span>
             <textarea rows="3" value={form.mission} onChange={(event) => setForm({ ...form, mission: event.target.value })} data-testid="module1-mission" />
-            <span className="field-helper">Enter the mission statement you want applicants, board members and supporters to see in your Recruitment materials. You only enter it once — it is used automatically everywhere it belongs.</span>
+            <span className="field-helper">{module1ProfileText.enterTheMissionStatementYou}</span>
             {errors.mission && <p className="field-error">{errors.mission}</p>}
           </label>
         )}
@@ -158,7 +158,7 @@ export const Module1Profile = ({ onConfirmed }) => {
         )}
         <MaterialCard
           type="powerhouse_board_blueprint"
-          title="The Board Members Your Organization Needs"
+          title={module1ProfileText.theBoardMembersYourOrganization2}
           buttonLabel={recruitmentContent.module2.generateBoardButton}
           description="One exact profile for each new board member you want to recruit — who they are, why they matter to your organization and what to look for. Read it, edit anything you want changed, then approve it. The approved result is used automatically throughout your recruitment campaign."
           material={byType.powerhouse_board_blueprint}

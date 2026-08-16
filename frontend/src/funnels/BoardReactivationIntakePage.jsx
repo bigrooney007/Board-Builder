@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
 import { reactivationIntakeText } from "../content/appContent";
+import { boardReactivationIntakePageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -162,16 +163,16 @@ export default function BoardReactivationIntakePage() {
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="rintake-checking"><h2>{reactivationIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="rintake-checking"><h2>{reactivationIntakeText.h_confirmingYourPayment}</h2><p>{boardReactivationIntakePageText.pleaseWaitWhileWeVerify}</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="rintake-blocked">
             <h2>{reactivationIntakeText.h_thisFormIsForCustomers}</h2>
-            <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to reactivate your board:</p>
+            <p>{boardReactivationIntakePageText.weCouldNotFindA}</p>
             <div className="intake-blocked-links">
-              <Link className="button" to="/reactivate-your-board-yourself" data-testid="rintake-blocked-diy-link">Do It Yourself — $497</Link>
-              <Link className="button button-outline" to="/board-reactivation-proposal" data-testid="rintake-blocked-dwm-link">Do It With Me — $1,997</Link>
+              <Link className="button" to="/reactivate-your-board-yourself" data-testid="rintake-blocked-diy-link">{boardReactivationIntakePageText.doItYourself497}</Link>
+              <Link className="button button-outline" to="/board-reactivation-proposal" data-testid="rintake-blocked-dwm-link">{boardReactivationIntakePageText.doItWithMe1}</Link>
             </div>
           </div>
         )}
@@ -182,13 +183,13 @@ export default function BoardReactivationIntakePage() {
             {purchaseSource === "direct_diy_board_reactivation_497" ? (
               <>
                 <h2>{reactivationIntakeText.h_youreReadyToStart}</h2>
-                <p>Taking you to your start page…</p>
-                <a className="button" href={nextUrl || "/reactivation-start-here"} data-testid="rintake-start-here-link">Open My Start Page</a>
+                <p>{boardReactivationIntakePageText.takingYouToYourStart}</p>
+                <a className="button" href={nextUrl || "/reactivation-start-here"} data-testid="rintake-start-here-link">{boardReactivationIntakePageText.openMyStartPage}</a>
               </>
             ) : (
               <>
                 <h2>{reactivationIntakeText.h_letsScheduleYourCallWith}</h2>
-                <p>Taking you to the calendar…</p>
+                <p>{boardReactivationIntakePageText.takingYouToTheCalendar}</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="rintake-calendly-link">Open the Calendar</a>
               </>
             )}
@@ -267,7 +268,7 @@ export default function BoardReactivationIntakePage() {
                 <SelectField label="Do you have your organization's bylaws?" name="has_bylaws" options={["Yes, I have them", "No, I don't have them"]} form={form} set={set} errors={errors} />
                 {form.has_bylaws === "Yes, I have them" && (
                   <label className="field" data-testid="rintake-bylaws-upload">
-                    <span>Upload your organization's bylaws (PDF, Word or text)</span>
+                    <span>{boardReactivationIntakePageText.uploadYourOrganizationsBylawsPdf}</span>
                     <input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setBylawsFile(event.target.files?.[0] || null)} data-testid="rintake-bylaws-file" />
                     {bylawsFile && <span className="field-helper">Selected: {bylawsFile.name}</span>}
                   </label>

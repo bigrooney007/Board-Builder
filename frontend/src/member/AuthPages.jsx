@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
-import { authText } from "../content/appContent";
+import { authText, authPagesText } from "../content/appContent";
 
 const Field = ({ label, type = "text", value, onChange, testId, autoComplete }) => (
   <label className="field"><span>{label} <b>*</b></span><input type={type} value={value} autoComplete={autoComplete} onChange={(event) => onChange(event.target.value)} data-testid={testId} required /></label>
@@ -60,7 +60,7 @@ export const ForgotPasswordPage = () => {
         <form className="member-auth-card" onSubmit={submit}>
           <p className="eyebrow">Password help</p>
           <h1>{authText.h_forgotYourPassword}</h1>
-          <p>Enter your account email and we will send you a reset link.</p>
+          <p>{authPagesText.enterYourAccountEmailAnd}</p>
           <Field label="Email" type="email" value={email} onChange={setEmail} testId="member-forgot-email" autoComplete="email" />
           {message && <p className="member-success" data-testid="member-forgot-success">{message}</p>}
           {error && <p className="submit-error">{error}</p>}

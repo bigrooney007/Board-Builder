@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { spReviewText } from "../content/appContent";
+import { strategicPlanReviewPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -42,7 +43,7 @@ export default function StrategicPlanReviewPage() {
     <main className="legal-page" data-testid="sp-review-page" style={{ maxWidth: "820px", margin: "0 auto", padding: "32px 16px" }}>
       <p className="eyebrow">{data.organization_name}</p>
       <h1>{spReviewText.h_foundationalStrategicPlanBoardReview}</h1>
-      <p>Review the consolidated thinking below. For each strategic area, support it, suggest a change, add an idea, or flag it for Board discussion. This is refinement, not formal adoption.</p>
+      <p>{strategicPlanReviewPageText.reviewTheConsolidatedThinkingBelow}</p>
       <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "16px", borderRadius: "10px", maxHeight: "420px", overflow: "auto" }} data-testid="sp-review-plan-text">{data.display_text}</pre>
       <form onSubmit={submit}>
         <label>Your Name<input required value={name} onChange={(e) => setName(e.target.value)} data-testid="sp-review-name" style={{ display: "block", width: "100%" }} /></label>
@@ -55,7 +56,7 @@ export default function StrategicPlanReviewPage() {
                   onChange={() => setResponses({ ...responses, [area.area_key]: { ...(responses[area.area_key] || {}), choice } })} /> {choice}
               </label>
             ))}
-            <textarea rows="2" style={{ width: "100%" }} placeholder="Comments / details (optional)"
+            <textarea rows="2" style={{ width: "100%" }} placeholder={strategicPlanReviewPageText.commentsDetailsOptional}
               value={responses[area.area_key]?.comment || ""}
               onChange={(e) => setResponses({ ...responses, [area.area_key]: { ...(responses[area.area_key] || {}), comment: e.target.value } })}
               data-testid={`sp-review-comment-${area.area_key}`} />

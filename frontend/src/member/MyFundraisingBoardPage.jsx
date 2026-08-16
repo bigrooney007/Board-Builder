@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { MemberShell } from "./MemberShell";
-import { myFundraisingBoardText } from "../content/appContent";
+import { myFundraisingBoardText, myFundraisingBoardPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -64,7 +64,7 @@ export default function MyFundraisingBoardPage() {
   };
 
   if (error) return <MemberShell><main className="member-page"><p className="submit-error" data-testid="mfb-error">{error}</p></main></MemberShell>;
-  if (!data) return <MemberShell><main className="member-page"><p className="sh-loading">Loading My Fundraising Board…</p></main></MemberShell>;
+  if (!data) return <MemberShell><main className="member-page"><p className="sh-loading">{myFundraisingBoardPageText.loadingMyFundraisingBoard}</p></main></MemberShell>;
 
   return (
     <MemberShell>
@@ -72,7 +72,7 @@ export default function MyFundraisingBoardPage() {
         <header className="member-page-heading">
           <p className="eyebrow">Board Fundraising Activation</p>
           <h1>My Fundraising Board</h1>
-          <p data-testid="mfb-supporting">Your Board helped build the fundraising plan, reviewed it, adopted the direction and agreed how members will help carry the work. This is where you can see what each Board Member owns, equip them with their individual Fundraising Portfolio and keep the Board connected to the fundraising strategy.</p>
+          <p data-testid="mfb-supporting">{myFundraisingBoardPageText.yourBoardHelpedBuildThe}</p>
         </header>
 
         <section className="member-card" data-testid="mfb-counts">
@@ -84,10 +84,10 @@ export default function MyFundraisingBoardPage() {
         <section className="member-card" data-testid="mfb-resources">
           <h2>{myFundraisingBoardText.h_yourFundraisingDirection}</h2>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="button" onClick={() => setViewDoc({ title: "Final Adopted Fundraising Strategy Plan", text: data.adopted_strategy })} disabled={!data.adopted_strategy} data-testid="mfb-view-strategy">FINAL ADOPTED FUNDRAISING STRATEGY PLAN</button>
-            <button type="button" className="button button-outline" onClick={() => setViewDoc({ title: "Approved Board Fundraising Execution Toolkit", text: data.toolkit_text })} disabled={!data.toolkit_text} data-testid="mfb-view-toolkit">APPROVED BOARD FUNDRAISING EXECUTION TOOLKIT</button>
+            <button type="button" className="button" onClick={() => setViewDoc({ title: "Final Adopted Fundraising Strategy Plan", text: data.adopted_strategy })} disabled={!data.adopted_strategy} data-testid="mfb-view-strategy">{myFundraisingBoardPageText.finalAdoptedFundraisingStrategyPlan}</button>
+            <button type="button" className="button button-outline" onClick={() => setViewDoc({ title: "Approved Board Fundraising Execution Toolkit", text: data.toolkit_text })} disabled={!data.toolkit_text} data-testid="mfb-view-toolkit">{myFundraisingBoardPageText.approvedBoardFundraisingExecutionToolkit}</button>
           </div>
-          {!data.ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="mfb-not-ready">Complete plan adoption (Module 4) and approve your Execution Toolkit (Module 5) to unlock your full Fundraising Board.</p>}
+          {!data.ready && <p className="eyebrow" style={{ marginTop: 10 }} data-testid="mfb-not-ready">{myFundraisingBoardPageText.completePlanAdoptionModule4}</p>}
         </section>
 
         <section data-testid="mfb-members">
@@ -108,7 +108,7 @@ export default function MyFundraisingBoardPage() {
                 {member.agreed_responsibility ? (
                   <p style={{ marginTop: 10 }} data-testid={`mfb-responsibility-${member.participant_id}`}><strong>Agreed Fundraising Responsibility:</strong> {member.agreed_responsibility}</p>
                 ) : (
-                  <p style={{ marginTop: 10 }} data-testid={`mfb-no-responsibility-${member.participant_id}`}>No fundraising responsibility has been recorded for this member yet.{member.responsibility_status === "Follow-Up Needed" && " Follow up and record what is agreed."} <Link to="/app/activation/self-guided/module/5">Go to Module 5 to record responsibilities</Link>.</p>
+                  <p style={{ marginTop: 10 }} data-testid={`mfb-no-responsibility-${member.participant_id}`}>No fundraising responsibility has been recorded for this member yet.{member.responsibility_status === "Follow-Up Needed" && " Follow up and record what is agreed."} <Link to="/app/activation/self-guided/module/5">{myFundraisingBoardPageText.goToModule5To}</Link>.</p>
                 )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                   {member.fp_status === "Generating" ? (
@@ -138,17 +138,17 @@ export default function MyFundraisingBoardPage() {
         {data.ready && (
           <section className="member-card" style={{ textAlign: "center" }} data-testid="mfb-completion">
             <h2>{myFundraisingBoardText.h_yourFundraisingBoardIsReady}</h2>
-            <p>Your Board has helped build the fundraising plan, reviewed and adopted the strategy, agreed how members will help carry the work, and now has the tools and individual direction needed to begin taking action.</p>
-            <p>Your job now is to keep the plan moving, support Board Members in carrying their responsibilities and keep fundraising connected to the mission.</p>
+            <p>{myFundraisingBoardPageText.yourBoardHasHelpedBuild}</p>
+            <p>{myFundraisingBoardPageText.yourJobNowIsTo}</p>
           </section>
         )}
 
         <section className="member-card" data-testid="mfb-cross-sells">
           <h2>{myFundraisingBoardText.h_stillMissingTheRightPeople}</h2>
-          <p>If the Board still has skill, experience, capacity or relationship gaps, recruit the right people to complete the Board.</p>
-          <Link className="button" to="/recruit-your-board-yourself" data-testid="mfb-cross-recruit">RECRUIT NEW BOARD MEMBERS</Link>
-          <h2 style={{ marginTop: 22 }}>Have Board Members Who Still Are Not Carrying Their Responsibility?</h2>
-          <p>If some Board Members remain disengaged, reactivate them so those ready to serve can stand up and carry responsibility, while those no longer prepared to serve can be dealt with appropriately.</p>
+          <p>{myFundraisingBoardPageText.ifTheBoardStillHas}</p>
+          <Link className="button" to="/recruit-your-board-yourself" data-testid="mfb-cross-recruit">{myFundraisingBoardPageText.recruitNewBoardMembers}</Link>
+          <h2 style={{ marginTop: 22 }}>{myFundraisingBoardPageText.haveBoardMembersWhoStill}</h2>
+          <p>{myFundraisingBoardPageText.ifSomeBoardMembersRemain}</p>
           <Link className="button button-outline" to="/reactivate-your-board-yourself" data-testid="mfb-cross-reactivate">REACTIVATE MY BOARD</Link>
         </section>
 

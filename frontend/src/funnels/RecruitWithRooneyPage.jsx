@@ -5,7 +5,7 @@ import { PlayCircle, ShieldCheck, X } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, recruitWithRooneyPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,7 +48,7 @@ export default function RecruitWithRooneyPage() {
       <main data-testid="rwr-page">
         <section className="funnel-hero-banner rwr-hero" data-testid="rwr-hero">
           <h1 data-testid="rwr-headline">{SITE_CONTENT.recruitWithRooney.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="rwr-subheadline">Build your board with me.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="rwr-subheadline">{recruitWithRooneyPageText.buildYourBoardWithMe}</p>
           <i aria-hidden="true" />
         </section>
 
@@ -57,7 +57,7 @@ export default function RecruitWithRooneyPage() {
             {videoUrl ? (
               <iframe
                 src={toEmbedUrl(videoUrl)}
-                title="Recruit Your Board With Rooney"
+                title={recruitWithRooneyPageText.recruitYourBoardWithRooney}
                 allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 data-testid="rwr-video-embed"
@@ -65,7 +65,7 @@ export default function RecruitWithRooneyPage() {
             ) : (
               <div className="rwr-video-placeholder" data-testid="rwr-video-placeholder">
                 <PlayCircle size={58} aria-hidden="true" />
-                <p>Board Recruitment Video Coming Soon</p>
+                <p>{recruitWithRooneyPageText.boardRecruitmentVideoComingSoon}</p>
               </div>
             )}
           </div>
@@ -74,27 +74,27 @@ export default function RecruitWithRooneyPage() {
         <section className="rwr-section rwr-guarantee" data-testid="rwr-guarantee-section">
           <ShieldCheck className="rwr-guarantee-icon" size={40} aria-hidden="true" />
           <h2 data-testid="rwr-guarantee-heading">100% Refund Guarantee</h2>
-          <p data-testid="rwr-guarantee-copy">Your investment is protected by my 100% refund guarantee.</p>
+          <p data-testid="rwr-guarantee-copy">{recruitWithRooneyPageText.yourInvestmentIsProtectedBy}</p>
           {guaranteeConfigured && (
             <button type="button" className="link-button rwr-terms-link" onClick={() => setShowTerms(true)} data-testid="rwr-guarantee-terms-link">View Guarantee Terms</button>
           )}
         </section>
 
         <section className="ar-offers rwr-offers" data-testid="rwr-offer-section">
-          <h2 data-testid="rwr-offers-heading">Two Ways I Can Help You Recruit Your Board</h2>
-          <p className="ar-offers-supporting" data-testid="rwr-offers-supporting">Choose the level of support that works best for you.</p>
+          <h2 data-testid="rwr-offers-heading">{recruitWithRooneyPageText.twoWaysICanHelp}</h2>
+          <p className="ar-offers-supporting" data-testid="rwr-offers-supporting">{recruitWithRooneyPageText.chooseTheLevelOfSupport}</p>
           <div className="ar-offer-grid">
             <article className="ar-offer-card" data-testid="rwr-diy-card">
-              <h3 data-testid="rwr-diy-heading">Recruit Your Board Yourself</h3>
+              <h3 data-testid="rwr-diy-heading">{recruitWithRooneyPageText.recruitYourBoardYourself}</h3>
               <p className="ar-offer-price" data-testid="rwr-diy-price">$497</p>
-              <p className="ar-offer-copy" data-testid="rwr-diy-copy">Watch me run the process, follow what I do, use the execution materials we provide and reach out whenever you need help along the way.</p>
-              <Link className="button" to="/recruit-your-board-yourself" data-testid="rwr-diy-button">DO IT YOURSELF — $497</Link>
+              <p className="ar-offer-copy" data-testid="rwr-diy-copy">{recruitWithRooneyPageText.watchMeRunTheProcess}</p>
+              <Link className="button" to="/recruit-your-board-yourself" data-testid="rwr-diy-button">{recruitWithRooneyPageText.doItYourself497}</Link>
             </article>
             <article className="ar-offer-card" data-testid="rwr-dwm-card">
-              <h3 data-testid="rwr-dwm-heading">Recruit Your Board With Me</h3>
+              <h3 data-testid="rwr-dwm-heading">{recruitWithRooneyPageText.recruitYourBoardWithMe}</h3>
               <p className="ar-offer-price" data-testid="rwr-dwm-price"><s className="rwr-dwm-reference" data-testid="rwr-dwm-reference-price">$3,997</s> $1,997</p>
-              <p className="ar-offer-copy" data-testid="rwr-dwm-copy">We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.</p>
-              <Link className="button" to="/board-recruitment-proposal" data-testid="rwr-dwm-button">DO IT WITH ME — $1,997</Link>
+              <p className="ar-offer-copy" data-testid="rwr-dwm-copy">{recruitWithRooneyPageText.weHandleTheOutreachYou}</p>
+              <Link className="button" to="/board-recruitment-proposal" data-testid="rwr-dwm-button">{recruitWithRooneyPageText.doItWithMe1}</Link>
             </article>
           </div>
         </section>

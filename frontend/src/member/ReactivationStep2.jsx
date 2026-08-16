@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Mail, Sparkles } from "lucide-react";
 import { memberApi } from "./api";
-import { reactivationContent } from "../content/appContent";
+import { reactivationContent, reactivationStep2Text } from "../content/appContent";
 
 const C = reactivationContent.step2;
 
@@ -36,8 +36,8 @@ export const ResponseView = ({ data, testPrefix = "step2" }) => (
     <div className="member-card" style={{ borderLeft: "4px solid #000", marginBottom: 18 }} data-testid={`${testPrefix}-recommitment-answer`}>
       <p className="eyebrow">Recommitment Response</p>
       <p style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0 }}>{data.response.recommitment}</p>
-      {data.response.advisory_openness && <p style={{ margin: "8px 0 0" }}>Open to an Advisory role: <strong>{data.response.advisory_openness}</strong></p>}
-      {data.response.support_role_openness && <p style={{ margin: "8px 0 0" }}>Open to another support role: <strong>{data.response.support_role_openness}</strong></p>}
+      {data.response.advisory_openness && <p style={{ margin: "8px 0 0" }}>{reactivationStep2Text.openToAnAdvisoryRole}<strong>{data.response.advisory_openness}</strong></p>}
+      {data.response.support_role_openness && <p style={{ margin: "8px 0 0" }}>{reactivationStep2Text.openToAnotherSupportRole}<strong>{data.response.support_role_openness}</strong></p>}
     </div>
     {RESPONSE_SECTIONS.map(([section, keys]) => {
       const rows = keys.filter((key) => {
@@ -112,7 +112,7 @@ export default function ReactivationStep2() {
 
       {form.status === "Draft" && (
         <section className="member-card" data-testid="step2-form-draft">
-          <h2>Review Your Recommitment Form</h2>
+          <h2>{reactivationStep2Text.reviewYourRecommitmentForm}</h2>
           <p>{C.formReadyNote}</p>
           {editing ? (
             <>
@@ -134,7 +134,7 @@ export default function ReactivationStep2() {
 
       {form.status === "Approved" && (
         <section className="member-card" data-testid="step2-form-approved">
-          <h2>Your Recommitment Form Is Live</h2>
+          <h2>{reactivationStep2Text.yourRecommitmentFormIsLive}</h2>
           <p>{C.approvedNote}</p>
           <p><strong>{C.formLinkLabel}:</strong> <span style={{ wordBreak: "break-all" }} data-testid="step2-form-link">{link}</span></p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

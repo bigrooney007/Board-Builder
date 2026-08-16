@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, boardTransformationPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -79,7 +79,7 @@ export default function BoardTransformationPage() {
 
         {step === 0 && (
           <section className="member-card" data-testid="bt-step-contact">
-            <h2>Tell Us Where to Send Your Results</h2>
+            <h2>{boardTransformationPageText.tellUsWhereToSend}</h2>
             {[["name", "Name"], ["email", "Email"], ["organization", "Organization Name"], ["phone", "Phone Number"]].map(([key, label]) => (
               <label className="field" key={key} style={{ display: "block", marginBottom: 12 }}>
                 <span>{label} <b>*</b></span>
@@ -91,13 +91,13 @@ export default function BoardTransformationPage() {
 
         {step === 1 && (
           <section className="member-card" data-testid="bt-step-1">
-            <h2>What Does Your Board Look Like Today?</h2>
+            <h2>{boardTransformationPageText.whatDoesYourBoardLook}</h2>
             <label className="field" style={{ display: "block", marginBottom: 12 }}>
-              <span>How many Board Members do you currently have? <b>*</b></span>
+              <span>{boardTransformationPageText.howManyBoardMembersDo}<b>*</b></span>
               <input type="number" min="0" value={answers.present_board} onChange={(e) => setAnswer("present_board", e.target.value)} data-testid="bt-total-members" />
             </label>
             <label className="field" style={{ display: "block" }}>
-              <span>How many of those Board Members are currently active? <b>*</b></span>
+              <span>{boardTransformationPageText.howManyOfThoseBoard}<b>*</b></span>
               <input type="number" min="0" value={answers.active_board} onChange={(e) => setAnswer("active_board", e.target.value)} data-testid="bt-active-members" />
             </label>
           </section>
@@ -105,16 +105,16 @@ export default function BoardTransformationPage() {
 
         {step === 2 && (
           <section className="member-card" data-testid="bt-step-2">
-            <h2>Do You Need More People Around the Table?</h2>
-            <p>Do you think you need to recruit new Board Members?</p>
+            <h2>{boardTransformationPageText.doYouNeedMorePeople}</h2>
+            <p>{boardTransformationPageText.doYouThinkYouNeed}</p>
             <RadioGroup name="need_recruit" options={RECRUIT_OPTIONS} value={answers.need_recruit} onChange={(v) => setAnswer("need_recruit", v)} />
           </section>
         )}
 
         {step === 3 && (
           <section className="member-card" data-testid="bt-step-3">
-            <h2>What Do You Want to Do About Your Inactive Board Members?</h2>
-            <p>Would you like to reactivate the Board Members who are currently inactive?</p>
+            <h2>{boardTransformationPageText.whatDoYouWantTo}</h2>
+            <p>{boardTransformationPageText.wouldYouLikeToReactivate}</p>
             <RadioGroup name="reactivate_inactive" options={REACTIVATE_OPTIONS} value={answers.reactivate_inactive} onChange={(v) => setAnswer("reactivate_inactive", v)} />
           </section>
         )}
@@ -122,9 +122,9 @@ export default function BoardTransformationPage() {
         {step === 4 && (
           <section className="member-card" data-testid="bt-step-4">
             <h2>What About Fundraising?</h2>
-            <p>Do your Board Members currently help raise money?</p>
+            <p>{boardTransformationPageText.doYourBoardMembersCurrently}</p>
             <RadioGroup name="board_fundraising_now" options={FUNDRAISING_NOW_OPTIONS} value={answers.board_fundraising_now} onChange={(v) => setAnswer("board_fundraising_now", v)} />
-            <p style={{ marginTop: 18 }}>Would you like your Board Members to actively help raise money for the organization?</p>
+            <p style={{ marginTop: 18 }}>{boardTransformationPageText.wouldYouLikeYourBoard}</p>
             <RadioGroup name="want_fundraising" options={WANT_FUNDRAISING_OPTIONS} value={answers.want_fundraising} onChange={(v) => setAnswer("want_fundraising", v)} />
           </section>
         )}

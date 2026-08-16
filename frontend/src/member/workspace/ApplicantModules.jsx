@@ -4,7 +4,7 @@ import { Download, FileText, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
 import { MaterialCard, SendMaterialButton, currentVersion, printBranded } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
-import { recruitmentWorkspaceText } from "../../content/appContent";
+import { recruitmentWorkspaceText, applicantModulesText } from "../../content/appContent";
 
 export const useApplications = () => {
   const [applications, setApplications] = useState([]);
@@ -184,7 +184,7 @@ const ExternalApplicantForm = ({ refresh }) => {
         <label className="field"><span>Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
         <label className="field"><span>Phone</span><input value={phone} onChange={(event) => setPhone(event.target.value)} data-testid="external-applicant-phone" /></label>
         <label className="field"><span>LinkedIn</span><input value={linkedin} onChange={(event) => setLinkedin(event.target.value)} data-testid="external-applicant-linkedin" /></label>
-        <label className="field"><span>Relevant applicant information (optional)</span><textarea rows="2" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="external-applicant-notes" /></label>
+        <label className="field"><span>{applicantModulesText.relevantApplicantInformationOptional}</span><textarea rows="2" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="external-applicant-notes" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add External Applicant"}</button>
       {message && <p className="member-success" data-testid="external-applicant-message">{message}</p>}
@@ -204,7 +204,7 @@ export const Module4Applicants = () => {
       <section className="workspace-panel">
         <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
         <p className="material-description">{recruitmentWorkspaceText.d_everyoneWhoAppliesThroughYour}</p>
-        {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">No applications yet. When your recruitment campaign is launched, applications will appear here.</p>}
+        {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">{applicantModulesText.noApplicationsYetWhenYour}</p>}
         {applications.map((application) => (
           <div className={`applicant-row ${openId === application.application_id ? "open" : ""}`} key={application.application_id} data-testid={`applicant-row-${application.application_id}`}>
             <button className="applicant-row-head" onClick={() => setOpenId(openId === application.application_id ? "" : application.application_id)}>
@@ -342,7 +342,7 @@ const ReferenceProcessPanel = ({ application }) => {
           {waitingForCandidate && process.status === "Not Started" && (
             <>
               {isHosted && hostedEmail ? (
-                <p className="workspace-note" data-testid="hosted-email-note">Candidate Email: <strong>{hostedEmail}</strong> (from their board application)</p>
+                <p className="workspace-note" data-testid="hosted-email-note">Candidate Email: <strong>{hostedEmail}</strong>{applicantModulesText.fromTheirBoardApplication}</p>
               ) : !emailConfirmed && process.extracted_email ? (
                 <div className="material-actions" data-testid="extracted-email-confirm">
                   <p className="workspace-note">{recruitmentWorkspaceText.n_weFoundThisEmailAddress}</p>
@@ -368,7 +368,7 @@ const ReferenceProcessPanel = ({ application }) => {
               {showPreview && (
                 <div className="material-edit" data-testid="candidate-email-preview">
                   <label className="field"><span>Subject</span><input value={subject} onChange={(event) => setSubject(event.target.value)} data-testid="candidate-email-subject" /></label>
-                  <label className="field"><span>Email (the secure form link is added automatically below your message)</span>
+                  <label className="field"><span>{applicantModulesText.emailTheSecureFormLink}</span>
                     <textarea rows="7" value={body} onChange={(event) => setBody(event.target.value)} data-testid="candidate-email-body" />
                   </label>
                   <div className="material-actions">
@@ -435,7 +435,7 @@ const BackgroundCheckPanel = ({ application }) => {
         <label className="field"><span>Completed date</span><input value={check.completed_date || ""} onChange={(event) => setCheck({ ...check, completed_date: event.target.value })} /></label>
       </div>
       <label className="field"><span>Notes</span><textarea rows="2" value={check.notes || ""} onChange={(event) => setCheck({ ...check, notes: event.target.value })} /></label>
-      <button className="button button-back" onClick={saveCheck} data-testid="save-background-button">Save Background Check Record</button>
+      <button className="button button-back" onClick={saveCheck} data-testid="save-background-button">{applicantModulesText.saveBackgroundCheckRecord}</button>
       {message && <p className="member-success">{message}</p>}
     </div>
   );
@@ -500,10 +500,10 @@ export const BoardProfilePanel = () => {
       <h3>{recruitmentWorkspaceText.h_boardMemberProfileForm}</h3>
       <p className="material-description">{recruitmentWorkspaceText.d_collectTheProfessionalInformationSkills}</p>
       {!form ? (
-        <button className="button" onClick={load} data-testid="generate-board-profile-form">Create Board Member Profile Form</button>
+        <button className="button" onClick={load} data-testid="generate-board-profile-form">{applicantModulesText.createBoardMemberProfileForm}</button>
       ) : (
         <>
-          <p className="member-success">Board Member Profile Form is ready.</p>
+          <p className="member-success">{applicantModulesText.boardMemberProfileFormIs}</p>
           <div className="material-actions">
             <code className="app-link-code" data-testid="board-profile-link">{`${window.location.origin}/board-profile/${form.share_token}`}</code>
             <button className="button button-back" onClick={async () => { await navigator.clipboard?.writeText(`${window.location.origin}/board-profile/${form.share_token}`); setMessage("Link copied."); }} data-testid="copy-board-profile-link">Copy Link</button>
@@ -535,18 +535,18 @@ const OnboardingSessionPanel = ({ session, setSession }) => {
   return (
     <div className="detail-section" data-testid="onboarding-session-panel">
       <div className="two-col-fields">
-        <label className="field"><span>What date would you like to hold the Board Onboarding Session?</span><input type="date" value={session.date || ""} onChange={(event) => setSession({ ...session, date: event.target.value })} data-testid="session-date" /></label>
-        <label className="field"><span>What time would you like to hold the session?</span><input type="time" value={session.time || ""} onChange={(event) => setSession({ ...session, time: event.target.value })} data-testid="session-time" /></label>
-        <label className="field"><span>What timezone should we use?</span>
+        <label className="field"><span>{applicantModulesText.whatDateWouldYouLike}</span><input type="date" value={session.date || ""} onChange={(event) => setSession({ ...session, date: event.target.value })} data-testid="session-date" /></label>
+        <label className="field"><span>{applicantModulesText.whatTimeWouldYouLike}</span><input type="time" value={session.time || ""} onChange={(event) => setSession({ ...session, time: event.target.value })} data-testid="session-time" /></label>
+        <label className="field"><span>{applicantModulesText.whatTimezoneShouldWeUse}</span>
           <select value={TIMEZONES.includes(session.timezone) ? session.timezone : (session.timezone ? "Other" : "")} onChange={(event) => setSession({ ...session, timezone: event.target.value === "Other" ? (TIMEZONES.includes(session.timezone) ? "" : session.timezone || "") || "Other" : event.target.value })} data-testid="session-timezone">
             <option value="">Select timezone</option>{TIMEZONES.map((zone) => <option key={zone}>{zone}</option>)}
           </select>
         </label>
-        <label className="field"><span>How will the onboarding session be held?</span><select value={session.format || ""} onChange={(event) => setSession({ ...session, format: event.target.value })} data-testid="session-format"><option value="">Select</option>{["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}</select></label>
-        {(session.format === "Virtual" || session.format === "Hybrid") && <label className="field"><span>What meeting link should we include? (Zoom, Google Meet, Teams or another link)</span><input value={session.link || ""} onChange={(event) => setSession({ ...session, link: event.target.value })} data-testid="session-link" /></label>}
-        {(session.format === "In Person" || session.format === "Hybrid") && <label className="field"><span>Where will the onboarding session take place?</span><input value={session.location || ""} onChange={(event) => setSession({ ...session, location: event.target.value })} data-testid="session-location" /></label>}
+        <label className="field"><span>{applicantModulesText.howWillTheOnboardingSession}</span><select value={session.format || ""} onChange={(event) => setSession({ ...session, format: event.target.value })} data-testid="session-format"><option value="">Select</option>{["Virtual", "In Person", "Hybrid"].map((option) => <option key={option}>{option}</option>)}</select></label>
+        {(session.format === "Virtual" || session.format === "Hybrid") && <label className="field"><span>{applicantModulesText.whatMeetingLinkShouldWe}</span><input value={session.link || ""} onChange={(event) => setSession({ ...session, link: event.target.value })} data-testid="session-link" /></label>}
+        {(session.format === "In Person" || session.format === "Hybrid") && <label className="field"><span>{applicantModulesText.whereWillTheOnboardingSession}</span><input value={session.location || ""} onChange={(event) => setSession({ ...session, location: event.target.value })} data-testid="session-location" /></label>}
       </div>
-      <label className="field"><span>Is there anything you would like the new board members to prepare before the session? (optional)</span><textarea rows="2" value={session.prepare || ""} onChange={(event) => setSession({ ...session, prepare: event.target.value })} data-testid="session-prepare" /></label>
+      <label className="field"><span>{applicantModulesText.isThereAnythingYouWould}</span><textarea rows="2" value={session.prepare || ""} onChange={(event) => setSession({ ...session, prepare: event.target.value })} data-testid="session-prepare" /></label>
       <button className="button button-back" onClick={save} data-testid="save-session-button">Save Onboarding Session</button>
       {message && <p className="member-success">{message}</p>}
     </div>
@@ -576,7 +576,7 @@ const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profi
           {[!profileReady && "Board Member Profile Form", !referenceStarted && "Reference Check", !session.date && "onboarding date/time"].filter(Boolean).join(", ")}.
         </p>
       )}
-      {offerUnlocked && <MaterialCard type="conditional_offer" title="Conditional Board Appointment Email" buttonLabel="Generate Conditional Board Appointment Email"
+      {offerUnlocked && <MaterialCard type="conditional_offer" title={applicantModulesText.conditionalBoardAppointmentEmail} buttonLabel="Generate Conditional Board Appointment Email"
         description="One professional email telling the candidate your organization would like them to join the board (conditional while remaining requirements are completed), inviting them to the Board Onboarding Session, and automatically including their secure candidate-specific links: Organization Overview, Board Manual, the three agreements for signature, their Board Member Profile Form, and the Reference Information Form only if still needed. You never paste links manually."
         applicationId={application.application_id} material={byType.conditional_offer} refresh={refresh} approvable
         extraActions={byType.conditional_offer?.status === "Approved" ? (
@@ -584,7 +584,7 @@ const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profi
             label={application.emails_sent?.conditional_offer ? "Send Updated Appointment Information" : `Send Conditional Appointment to ${application.applicant_email || "candidate"}`}
             sentAt={application.emails_sent?.conditional_offer} onSent={onChanged} />
         ) : null} />}
-      <MaterialCard type="after_interview_rejection" title="After-Interview Rejection Email" buttonLabel="Generate After-Interview Rejection Email"
+      <MaterialCard type="after_interview_rejection" title={applicantModulesText.afterInterviewRejectionEmail} buttonLabel="Generate After-Interview Rejection Email"
         description="A respectful, concise, professional email for an applicant you interviewed but have decided not to continue with. No onboarding resources are included."
         applicationId={application.application_id} material={byType.after_interview_rejection} refresh={refresh}
         extraActions={<SendMaterialButton type="after_interview_rejection" applicationId={application.application_id} label={application.emails_sent?.after_interview_rejection ? "Send Updated" : "Send"} sentAt={application.emails_sent?.after_interview_rejection} onSent={onChanged} />} />
@@ -619,7 +619,7 @@ const CandidateStatusList = ({ application }) => {
           <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>
             {title}: {signatureStatus(type)}
             {record && record.status !== "Signed" && record.token && (
-              <button className="link-button" onClick={() => copyLink(record.token)} data-testid={`copy-sign-link-${type}`} style={{ marginLeft: 8 }}>Copy Review &amp; Sign Link</button>
+              <button className="link-button" onClick={() => copyLink(record.token)} data-testid={`copy-sign-link-${type}`} style={{ marginLeft: 8 }}>{applicantModulesText.copyReviewAmpSignLink}</button>
             )}
           </li>
         );
@@ -647,7 +647,7 @@ const CandidateDecisionCard = ({ application, selected, onSelect, onDecision, bu
           <button className="button button-small" disabled={busyId === application.application_id} onClick={() => onDecision(application.application_id, "move_forward")} data-testid={`move-forward-${application.application_id}`}>Move Forward</button>
         )}
         {!["Not Moving Forward", "Not Selected", "Selected"].includes(application.status) && (
-          <button className="button button-back button-small" disabled={busyId === application.application_id} onClick={() => onDecision(application.application_id, "do_not_move_forward")} data-testid={`do-not-move-forward-${application.application_id}`}>Do Not Move Forward</button>
+          <button className="button button-back button-small" disabled={busyId === application.application_id} onClick={() => onDecision(application.application_id, "do_not_move_forward")} data-testid={`do-not-move-forward-${application.application_id}`}>{applicantModulesText.doNotMoveForward}</button>
         )}
       </div>
     </div>
@@ -703,13 +703,13 @@ export const Module5References = () => {
         <h2>{recruitmentWorkspaceText.h_backgroundCheck}</h2>
         <p className="material-description">{recruitmentWorkspaceText.d_nonprofitBoardBuilderDoesNot}</p>
         <div className="material-actions">
-          <button className="button" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">Find Background Check Providers Near Me</button>
+          <button className="button" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">{applicantModulesText.findBackgroundCheckProvidersNear}</button>
         </div>
       </section>
       <section className="workspace-panel" data-testid="module5-decide-forward-section">
         <h2>{recruitmentWorkspaceText.h_decideWhoMovesForward}</h2>
         <p className="material-description">{recruitmentWorkspaceText.d_reviewTheApplicantsYouInterviewed}</p>
-        {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">Your applicants from Step 4 appear here automatically once applications arrive.</p>}
+        {sorted.length === 0 && <p className="workspace-note" data-testid="no-candidates-note">{applicantModulesText.yourApplicantsFromStep4}</p>}
         {sorted.map((application) => (
           <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
         ))}
@@ -725,7 +725,7 @@ export const Module5References = () => {
               </p>
             )}
             {(movingForward || !notMovingForward) && (profileReady ? <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} /> : (
-              <p className="workspace-note" data-testid="reference-locked-note">The Reference Check becomes available once this candidate is moved forward and their Board Member Profile Form has been generated. Move them forward above to prepare their resources first.</p>
+              <p className="workspace-note" data-testid="reference-locked-note">{applicantModulesText.theReferenceCheckBecomesAvailable}</p>
             ))}
             {(movingForward || !notMovingForward) && <BackgroundCheckPanel application={detail} key={`bg-${detail.application_id}`} />}
           </div>
@@ -785,10 +785,10 @@ const MemberReadiness = ({ application, onChanged }) => {
         <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Sent" : "Not Sent"}</li>
       </ul>
       {!joined && !confirmedReady && (
-        <button className="button" onClick={() => { if (window.confirm(`Confirm that ${application.profile_snapshot?.full_name} is ready for formal appointment? Your organization controls this decision.`)) setConfirmedReady(true); }} data-testid="confirm-ready-button">Confirm Ready for Formal Appointment</button>
+        <button className="button" onClick={() => { if (window.confirm(`Confirm that ${application.profile_snapshot?.full_name} is ready for formal appointment? Your organization controls this decision.`)) setConfirmedReady(true); }} data-testid="confirm-ready-button">{applicantModulesText.confirmReadyForFormalAppointment}</button>
       )}
       {(confirmedReady || joined) && (
-        <MaterialCard type="formal_appointment_email" title="Formal Board Appointment Email" buttonLabel="Generate Formal Board Appointment Email"
+        <MaterialCard type="formal_appointment_email" title={applicantModulesText.formalBoardAppointmentEmail} buttonLabel="Generate Formal Board Appointment Email"
           description="Confirms the appointment is now official, welcomes them to the board using your organization's board type, and covers what happens next. This is different from the Conditional Appointment email."
           applicationId={application.application_id} material={byType.formal_appointment_email} refresh={refresh} approvable
           extraActions={byType.formal_appointment_email?.status === "Approved" ? (
@@ -837,10 +837,10 @@ const FirstMeetingPanel = ({ orgMaterials, refreshOrg, boardMembers }) => {
         {(meeting.format === "In Person" || meeting.format === "Hybrid") && <label className="field"><span>Location</span><input value={meeting.location} onChange={(event) => setMeeting({ ...meeting, location: event.target.value })} data-testid="meeting-location" /></label>}
         <label className="field"><span>Meeting ID (optional)</span><input value={meeting.meeting_id} onChange={(event) => setMeeting({ ...meeting, meeting_id: event.target.value })} data-testid="meeting-id" /></label>
         <label className="field"><span>Passcode (optional)</span><input value={meeting.passcode} onChange={(event) => setMeeting({ ...meeting, passcode: event.target.value })} data-testid="meeting-passcode" /></label>
-        <label className="field"><span>Meeting Chat Link (optional)</span><input value={meeting.chat_link} onChange={(event) => setMeeting({ ...meeting, chat_link: event.target.value })} data-testid="meeting-chat" /></label>
+        <label className="field"><span>{applicantModulesText.meetingChatLinkOptional}</span><input value={meeting.chat_link} onChange={(event) => setMeeting({ ...meeting, chat_link: event.target.value })} data-testid="meeting-chat" /></label>
       </div>
       <label className="field"><span>Additional Instructions (optional)</span><textarea rows="2" value={meeting.instructions} onChange={(event) => setMeeting({ ...meeting, instructions: event.target.value })} data-testid="meeting-prepare" /></label>
-      <MaterialCard type="first_board_meeting_invitation" title="First Board Meeting Invitation Email" buttonLabel="Generate First Board Meeting Invitation"
+      <MaterialCard type="first_board_meeting_invitation" title={applicantModulesText.firstBoardMeetingInvitationEmail} buttonLabel="Generate First Board Meeting Invitation"
         description="One professional email inviting your new board members to their first Board Meeting — the moment recruitment becomes active board participation. Meeting details are saved once and inserted automatically; a Board Member Profile reminder appears only for members who have not completed theirs. Nothing is sent automatically."
         material={material} refresh={refreshOrg} approvable beforeGenerate={saveMeeting} />
       {material?.status === "Approved" && boardMembers.length > 0 && (
@@ -853,8 +853,8 @@ const FirstMeetingPanel = ({ orgMaterials, refreshOrg, boardMembers }) => {
             </label>
           ))}
           <div className="material-actions">
-            <button className="button" disabled={!recipients.length} onClick={() => send(false)} data-testid="send-first-meeting-button">Send First Board Meeting Invitation</button>
-            <button className="button button-back" disabled={!recipients.length} onClick={() => send(true)} data-testid="send-updated-meeting-button">Send Updated Meeting Information</button>
+            <button className="button" disabled={!recipients.length} onClick={() => send(false)} data-testid="send-first-meeting-button">{applicantModulesText.sendFirstBoardMeetingInvitation}</button>
+            <button className="button button-back" disabled={!recipients.length} onClick={() => send(true)} data-testid="send-updated-meeting-button">{applicantModulesText.sendUpdatedMeetingInformation}</button>
           </div>
           {message && <p className="member-success" data-testid="first-meeting-message">{message}</p>}
         </div>
@@ -899,7 +899,7 @@ export const Module6Onboarding = () => {
             {session.status !== "Completed" && <button className="button button-back" onClick={() => markSession("Completed")} data-testid="mark-session-completed">Mark Session Completed</button>}
           </div>
         )}
-        {candidates.length === 0 && <p className="workspace-note" data-testid="no-conditional">Candidates appear here once you send their Conditional Appointment in Step 5.</p>}
+        {candidates.length === 0 && <p className="workspace-note" data-testid="no-conditional">{applicantModulesText.candidatesAppearHereOnceYou}</p>}
         {candidates.map((application) => <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />)}
       </section>
 
@@ -912,7 +912,7 @@ export const Module6Onboarding = () => {
 
       <section className="workspace-panel" data-testid="module6-script-section">
         <h2>{recruitmentWorkspaceText.h_prepareForYourBoardOnboarding}</h2>
-        <MaterialCard type="onboarding_script" title="Board Member Onboarding Facilitator Guide" buttonLabel="Generate My Board Onboarding Script"
+        <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate My Board Onboarding Script"
           description="A practical facilitator guide you can have open during the onboarding session and follow from beginning to end — welcome and introductions, why the organization exists, where it is going, the role of the board, how you will work together, how each member can contribute, fundraising and ambassadorship, the board documents, next steps and closing."
           material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />
       </section>

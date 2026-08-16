@@ -8,7 +8,7 @@ import { MemberShell } from "../MemberShell";
 import { MaterialCard, downloadMaterialPdf } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { useBranding } from "./ApplicantModules";
-import { myBoardText } from "../../content/appContent";
+import { myBoardText, resultsPageText } from "../../content/appContent";
 
 const CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard";
 const PUBLIC_API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -94,13 +94,13 @@ const BoardMemberResultCard = ({ application, branding, onChanged }) => {
     <div className="board-member-result" data-testid={`board-member-${application.application_id}`}>
       <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">Board Member</span></h3>
       <p className="material-meta">{[snapshot.profession, snapshot.employer, snapshot.location].filter(Boolean).join(" · ")}{application.board_role ? ` · Role: ${application.board_role}` : ""}{application.formal_appointment_date ? ` · Joined ${new Date(application.formal_appointment_date).toLocaleDateString()}` : ""}</p>
-      <MaterialCard type="board_member_engagement_guide" title="Board Member Engagement Guide" buttonLabel="Generate Engagement Guide"
+      <MaterialCard type="board_member_engagement_guide" title={resultsPageText.boardMemberEngagementGuide} buttonLabel="Generate Engagement Guide"
         description="A one-page internal guide for you: where this member's expertise creates the most value, how to engage them, strong early responsibilities, relationships and fundraising, leadership alignment and their first 90 days. Built only from their application, CV and Board Member Profile — never from confidential references or background checks. This stays internal and is never sent to the member."
         applicationId={application.application_id} material={engagement} refresh={refresh} approvable
         extraActions={engagement ? (
           <button className="button button-back" onClick={() => downloadMaterialPdf(engagement)} data-testid={`engagement-pdf-${application.application_id}`}><Download size={14} /> Download Branded PDF</button>
         ) : null} />
-      <MaterialCard type="board_member_portfolio" title="Board Member Portfolio" buttonLabel="Generate Board Member Portfolio"
+      <MaterialCard type="board_member_portfolio" title={resultsPageText.boardMemberPortfolio} buttonLabel="Generate Board Member Portfolio"
         description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included. Generate it, edit anything you want changed, approve it, then share it with the member using the secure link, PDF or portfolio email."
         applicationId={application.application_id} material={portfolio} refresh={refresh} approvable />
       <PortfolioActions application={application} portfolio={portfolio} refresh={refresh} />
@@ -132,7 +132,7 @@ export default function RecruitmentResultsPage() {
   return (
     <MemberShell>
       <main className="member-page recruitment-results-page" data-testid="recruitment-results-page">
-        <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Board Recruitment — Self-Guided System</Link>
+        <Link className="member-back-link" to="/app/recruitment/self-guided"><ArrowLeft size={15} />{resultsPageText.boardRecruitmentSelfGuidedSystem}</Link>
         <header className="member-page-heading">
           <p className="eyebrow">Your board</p>
           <h1>{myBoardText.h_myBoard}</h1>
@@ -148,8 +148,8 @@ export default function RecruitmentResultsPage() {
         {!error && applications !== null && list.length === 0 && (
           <section className="workspace-panel" data-testid="results-empty-state">
             <h2>{myBoardText.h_yourRecruitmentResults}</h2>
-            <p>Your recruitment results will appear here as applicants move through the recruitment process.</p>
-            <Link className="button" to="/app/recruitment/self-guided/module/2">Go to Your Recruitment Campaign</Link>
+            <p>{resultsPageText.yourRecruitmentResultsWillAppear}</p>
+            <Link className="button" to="/app/recruitment/self-guided/module/2">{resultsPageText.goToYourRecruitmentCampaign}</Link>
           </section>
         )}
         {!error && applications !== null && list.length > 0 && (
@@ -183,8 +183,8 @@ export default function RecruitmentResultsPage() {
         )}
         <section className="workspace-panel results-support-panel" data-testid="results-support-cta">
           <h2>{myBoardText.h_needHelpMovingForward}</h2>
-          <p>Get help reviewing your new board, preparing for your first meeting or helping your board start strongly.</p>
-          <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="book-call-rooney-button">Book a Call With Rooney <ExternalLink size={15} /></a>
+          <p>{resultsPageText.getHelpReviewingYourNew}</p>
+          <a className="button" href={CALENDLY_URL} target="_blank" rel="noreferrer" data-testid="book-call-rooney-button">{resultsPageText.bookACallWithRooney}<ExternalLink size={15} /></a>
         </section>
       </main>
     </MemberShell>

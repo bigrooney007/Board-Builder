@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ExternalLink, Globe } from "lucide-react";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
-import { recruitmentModulesText } from "../../content/appContent";
+import { recruitmentModulesText, workspaceModulesText } from "../../content/appContent";
 
 export const useMaterials = (applicationId = "") => {
   const [byType, setByType] = useState({});
@@ -55,7 +55,7 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved }) => {
               ))}
             </div>
           )}
-          <p className="material-meta">Use this link in your job post, LinkedIn post, emails and messages. It becomes publicly accessible when you launch your recruitment campaign below.</p>
+          <p className="material-meta">{workspaceModulesText.useThisLinkInYour}</p>
         </>
       )}
       {message && <p className="member-success">{message}</p>}
@@ -126,22 +126,22 @@ export const Module3Launch = () => {
         {launched && (
           <div className="member-success" data-testid="published-info">
             <h3>{recruitmentModulesText.h_yourRecruitmentCampaignIsLive}</h3>
-            <p>Your Board Application is ready, your recruitment materials have been created, and your opportunity has been launched through the Nonprofit Board Builder recruitment network. Use the materials above to continue sharing your opportunity through your professional, social and referral networks.</p>
+            <p>{workspaceModulesText.yourBoardApplicationIsReady}</p>
             <p>Launched {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "delivered as an internal preview to the program owner" : "delivered to eligible Applicant Network members"}).
               <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a></p>
-            <Link className="button" to="/app/recruitment/self-guided/module/4" data-testid="continue-to-step-3">Continue to Step 4 — Select and Interview Your Applicants</Link>
+            <Link className="button" to="/app/recruitment/self-guided/module/4" data-testid="continue-to-step-3">{workspaceModulesText.continueToStep4Select}</Link>
           </div>
         )}
         {message && <p className="member-success">{message}</p>}
         {error && <p className="submit-error" data-testid="publish-error">{error}</p>}
         <div className="material-actions">
           {!launched && opportunity?.status !== "Closed" && (
-            <button className="button" disabled={busy || !(readiness.application_saved && readiness.materials_generated)} onClick={publish} data-testid="publish-button">Launch My Recruitment Campaign</button>
+            <button className="button" disabled={busy || !(readiness.application_saved && readiness.materials_generated)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
           )}
           {launched && <button className="button button-back" onClick={closeCampaign} data-testid="close-campaign-button">Close Recruitment Campaign</button>}
           {opportunity?.status === "Closed" && <p className="workspace-note">{recruitmentModulesText.n_thisCampaignIsClosedApplications}</p>}
         </div>
-        <p className="material-meta">Launching makes the application public at <Link to={publicUrl}>{publicUrl || "…"}</Link> and initiates one Board Applicant Network announcement. Duplicate launches are prevented automatically. Your materials are for you to share — nothing is automatically posted to LinkedIn, job boards or social media.</p>
+        <p className="material-meta">{workspaceModulesText.launchingMakesTheApplicationPublic}<Link to={publicUrl}>{publicUrl || "…"}</Link>{workspaceModulesText.launchAnnouncementNote}</p>
       </section>
     </div>
   );

@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
 import { recruitProcessText } from "../content/appContent";
+import { recruitProcessPageText } from "../content/siteContent";
 
 const STAGES = [
   ["01", "Identify the Board Members Your Organization Needs", "Your organization needs a board with the skills, experience, credibility, relationships and capacity it needs to succeed. The first step is identifying the gap between the board you have today and the powerhouse board your organization needs. That clarity drives the entire recruitment effort."],
@@ -20,8 +21,8 @@ export default function RecruitProcessPage() {
         <section className="process-hero">
           <p className="eyebrow">Board Recruitment</p>
           <h1 data-testid="process-heading">{recruitProcessText.h_yourPathToBuildingThe}</h1>
-          <p>Recruiting the right board is not just about bringing in the right people. It is also about bringing them in the right way so they understand the mission, commit to the organization and participate fully in building it.</p>
-          <p>Having worked with hundreds of nonprofits to strengthen their boards over the last decade, here are the 5 steps we recommend to build the board your organization needs.</p>
+          <p>{recruitProcessPageText.recruitingTheRightBoardIs}</p>
+          <p>{recruitProcessPageText.havingWorkedWithHundredsOf}</p>
         </section>
         <section className="process-steps" data-testid="process-steps">
           {STAGES.map(([number, title, copy]) => (
@@ -30,15 +31,15 @@ export default function RecruitProcessPage() {
               <div>
                 <h2>{title}</h2>
                 <p>{copy}</p>
-                {number === "01" && <Link className="button" to="/recruit/checkout" data-testid="process-step-1-cta">Identify the Board My Nonprofit Needs <ArrowRight size={16} /></Link>}
+                {number === "01" && <Link className="button" to="/recruit/checkout" data-testid="process-step-1-cta">{recruitProcessPageText.identifyTheBoardMyNonprofit}<ArrowRight size={16} /></Link>}
               </div>
             </article>
           ))}
         </section>
         <section className="process-final" data-testid="process-final-section">
           <h2>{recruitProcessText.h_buildTheBoardYourMission}</h2>
-          <p>You do not need more names on your board. You need committed people with the capacity to help your nonprofit grow, raise money, build relationships and move the mission forward.</p>
-          <Link className="button process-final-button" to="/recruit/checkout" data-testid="process-final-cta">Start Building My Board <ArrowRight size={18} /></Link>
+          <p>{recruitProcessPageText.youDoNotNeedMore}</p>
+          <Link className="button process-final-button" to="/recruit/checkout" data-testid="process-final-cta">{recruitProcessPageText.startBuildingMyBoard}<ArrowRight size={18} /></Link>
         </section>
       </main>
     </FunnelLayout>

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Download, FileText, RefreshCw, X } from "lucide-react";
 import { memberApi } from "./api";
 import { ResponseView } from "./ReactivationStep2";
-import { reactivationContent } from "../content/appContent";
+import { reactivationContent, reactivationStep3Text } from "../content/appContent";
 
 const C = reactivationContent.step4;
 
@@ -135,9 +135,9 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
       <article className="member-card" data-testid={`step3-waiting-${id}`}>
         <h3 style={{ marginBottom: 4 }}>{row.name}</h3>
         <p style={{ margin: "0 0 8px" }}>{row.role || "Board Member"}</p>
-        <p className="eyebrow" data-testid={`step3-waiting-badge-${id}`}>Waiting for Recommitment Form</p>
-        <p>This Board Member has not yet completed their Recommitment &amp; Profile Form. Their response is needed before a person-specific conversation script can be generated.</p>
-        <Link className="button button-outline" to="/app/reactivation/self-guided/module/2" data-testid={`step3-return-step2-${id}`}>RETURN TO STEP 2</Link>
+        <p className="eyebrow" data-testid={`step3-waiting-badge-${id}`}>{reactivationStep3Text.waitingForRecommitmentForm}</p>
+        <p>{reactivationStep3Text.thisBoardMemberHasNot}</p>
+        <Link className="button button-outline" to="/app/reactivation/self-guided/module/2" data-testid={`step3-return-step2-${id}`}>{reactivationStep3Text.returnToStep2}</Link>
       </article>
     );
   }
@@ -180,7 +180,7 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
         )}
       </div>
       {scriptStatus === "Failed" && busy !== "generate" && (
-        <p style={{ marginTop: 8 }} data-testid={`step3-generation-failed-${id}`}>Script generation did not complete. Your information is preserved — click Regenerate to try again.</p>
+        <p style={{ marginTop: 8 }} data-testid={`step3-generation-failed-${id}`}>{reactivationStep3Text.scriptGenerationDidNotComplete}</p>
       )}
 
       <div style={{ marginTop: 20 }}>
@@ -195,7 +195,7 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
       <div style={{ marginTop: 18 }}>
         <h3 style={{ marginBottom: 4 }}>{C.outcomeHeading}</h3>
         <select value={outcome} onChange={(e) => saveOutcome(e.target.value)} data-testid={`step3-outcome-${id}`} style={{ maxWidth: 420 }}>
-          <option value="">Choose the actual outcome…</option>
+          <option value="">{reactivationStep3Text.chooseTheActualOutcome}</option>
           {outcomeOptions.map((option) => <option key={option}>{option}</option>)}
         </select>
       </div>
@@ -246,14 +246,14 @@ export default function ReactivationStep3() {
         <p data-testid="step3-progress-counts">
           <strong>{data.progress.total}</strong> Current Board Member{data.progress.total === 1 ? "" : "s"} · <strong>{data.progress.conversations_completed}</strong> Conversation{data.progress.conversations_completed === 1 ? "" : "s"} Completed
           {data.progress.follow_up_needed > 0 && <> · <strong>{data.progress.follow_up_needed}</strong> Follow-Up Needed</>}
-          {data.progress.waiting_for_form > 0 && <> · <strong>{data.progress.waiting_for_form}</strong> Waiting for Recommitment Form</>}
+          {data.progress.waiting_for_form > 0 && <> · <strong>{data.progress.waiting_for_form}</strong>{reactivationStep3Text.waitingForRecommitmentForm2}</>}
         </p>
       </section>
 
       {!data.members.length && (
         <section className="member-card" data-testid="step3-empty">
-          <p>No current Board Members yet. Add your Board Members and send their Recommitment Forms in Step 2 first.</p>
-          <Link className="button" to="/app/reactivation/self-guided/module/2">GO TO STEP 2</Link>
+          <p>{reactivationStep3Text.noCurrentBoardMembersYet}</p>
+          <Link className="button" to="/app/reactivation/self-guided/module/2">{reactivationStep3Text.goToStep2}</Link>
         </section>
       )}
 

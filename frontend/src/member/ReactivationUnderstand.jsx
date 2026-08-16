@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Brain, Eye, X } from "lucide-react";
 import { memberApi } from "./api";
 import { ResponseView } from "./ReactivationStep2";
-import { reactivationContent } from "../content/appContent";
+import { reactivationContent, reactivationUnderstandText } from "../content/appContent";
 
 const C = reactivationContent.step3;
 const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", overflowY: "auto", padding: "40px 16px" };
@@ -92,7 +92,7 @@ const MemberUnderstanding = ({ row, reload }) => {
         <p style={{ margin: "4px 0 0", fontWeight: 700 }} data-testid={`understand-recommitment-${id}`}>{row.recommitment}</p>
       </div>
       {row.expertise?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>Expertise:</strong> {row.expertise.slice(0, 6).join(", ")}</p>}
-      {row.contribution_interests?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>Wants to contribute in:</strong> {row.contribution_interests.slice(0, 4).join(", ")}</p>}
+      {row.contribution_interests?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>{reactivationUnderstandText.wantsToContributeIn}</strong> {row.contribution_interests.slice(0, 4).join(", ")}</p>}
       {row.monthly_availability && <p style={{ margin: "6px 0 0" }}><strong>Availability:</strong> {row.monthly_availability}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
         <button type="button" className="button" onClick={generate} disabled={busy} data-testid={`understand-generate-${id}`}>
@@ -142,7 +142,7 @@ export default function ReactivationUnderstand() {
       {responded.length === 0 && (
         <section className="member-card" data-testid="understand-empty">
           <p>{C.emptyState}</p>
-          <Link className="button button-outline" to="/app/reactivation/self-guided/module/2">GO TO STEP 2</Link>
+          <Link className="button button-outline" to="/app/reactivation/self-guided/module/2">{reactivationUnderstandText.goToStep2}</Link>
         </section>
       )}
       {responded.map((row) => <MemberUnderstanding key={row.member_record_id} row={row} reload={load} />)}

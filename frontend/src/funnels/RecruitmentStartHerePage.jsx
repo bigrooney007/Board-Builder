@@ -4,7 +4,7 @@ import { Eye, FileText, HelpCircle, Rocket, Zap } from "lucide-react";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { MemberShell } from "@/member/MemberShell";
 import { usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, recruitmentStartHerePageText } from "@/content/siteContent";
 
 const BLOCKS = [
   {
@@ -63,7 +63,7 @@ export default function RecruitmentStartHerePage() {
       <main className="sh-page" data-testid="start-here-page">
         <section className="funnel-hero-banner brp-hero sh-hero" data-testid="start-here-hero">
           <h1 data-testid="start-here-headline">{SITE_CONTENT.recruitStartHere.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="start-here-subtitle">Follow the process, use the materials we create for you, and ask for help anytime you need it.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="start-here-subtitle">{recruitmentStartHerePageText.followTheProcessUseThe}</p>
           <i aria-hidden="true" />
         </section>
 

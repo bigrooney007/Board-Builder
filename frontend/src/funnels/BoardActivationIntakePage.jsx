@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { PAGE_META, usePageMeta } from "@/seo";
 import { activationIntakeText } from "../content/appContent";
+import { boardActivationIntakePageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -162,16 +163,16 @@ export default function BoardActivationIntakePage() {
         </section>
 
         {gate === "checking" && (
-          <div className="intake-card" data-testid="aintake-checking"><h2>{activationIntakeText.h_confirmingYourPayment}</h2><p>Please wait while we verify your payment with Stripe.</p></div>
+          <div className="intake-card" data-testid="aintake-checking"><h2>{activationIntakeText.h_confirmingYourPayment}</h2><p>{boardActivationIntakePageText.pleaseWaitWhileWeVerify}</p></div>
         )}
 
         {gate === "blocked" && (
           <div className="intake-card" data-testid="aintake-blocked">
             <h2>{activationIntakeText.h_thisFormIsForCustomers}</h2>
-            <p>We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to activate your board:</p>
+            <p>{boardActivationIntakePageText.weCouldNotFindA}</p>
             <div className="intake-blocked-links">
-              <Link className="button" to="/activate-your-board-yourself" data-testid="aintake-blocked-diy-link">Do It Yourself — $497</Link>
-              <Link className="button button-outline" to="/board-activation-proposal" data-testid="aintake-blocked-dwm-link">Do It With Rooney — $2,497</Link>
+              <Link className="button" to="/activate-your-board-yourself" data-testid="aintake-blocked-diy-link">{boardActivationIntakePageText.doItYourself497}</Link>
+              <Link className="button button-outline" to="/board-activation-proposal" data-testid="aintake-blocked-dwm-link">{boardActivationIntakePageText.doItWithRooney2}</Link>
             </div>
           </div>
         )}
@@ -182,13 +183,13 @@ export default function BoardActivationIntakePage() {
             {purchaseSource === "direct_diy_board_activation_497" ? (
               <>
                 <h2>{activationIntakeText.h_youreReadyToStart}</h2>
-                <p>Taking you to your start page…</p>
-                <a className="button" href={nextUrl || "/activation-start-here"} data-testid="aintake-start-here-link">Open My Start Page</a>
+                <p>{boardActivationIntakePageText.takingYouToYourStart}</p>
+                <a className="button" href={nextUrl || "/activation-start-here"} data-testid="aintake-start-here-link">{boardActivationIntakePageText.openMyStartPage}</a>
               </>
             ) : (
               <>
                 <h2>{activationIntakeText.h_letsScheduleYourCallWith}</h2>
-                <p>Taking you to the calendar…</p>
+                <p>{boardActivationIntakePageText.takingYouToTheCalendar}</p>
                 <a className="button" href={nextUrl || calendlyUrl} data-testid="aintake-calendly-link">Open the Calendar</a>
               </>
             )}

@@ -98,7 +98,7 @@ export function BoardProfileFormPage() {
           <section className="shared-resource-card">
             <p className="eyebrow">Board Member Profile</p>
             <h1>{org}</h1>
-            <p>Complete this profile so the organization has an accurate record of the skills, relationships and experience you bring to the board.</p>
+            <p>{sharedPagesText.completeThisProfileSoThe}</p>
             <div className="step-fields">
               {PROFILE_FIELDS.map(([name, label, type, required]) => (
                 <label className="field" key={name} data-testid={`board-profile-${name}`}>
@@ -109,7 +109,7 @@ export function BoardProfileFormPage() {
                 </label>
               ))}
             </div>
-            <button className="button" onClick={submit} data-testid="board-profile-submit">Submit My Board Member Profile</button>
+            <button className="button" onClick={submit} data-testid="board-profile-submit">{sharedPagesText.submitMyBoardMemberProfile}</button>
           </section>
         )}
       </main>

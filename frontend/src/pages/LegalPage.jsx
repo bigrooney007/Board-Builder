@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { legalPageText } from "../content/siteContent";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
@@ -25,5 +26,5 @@ const termsSections = [
 export default function LegalPage({ type }) {
   const privacy = type === "privacy";
   const sections = privacy ? privacySections : termsSections;
-  return <main className="legal-page" data-testid={privacy ? "privacy-policy-page" : "terms-page"}><header className="legal-header"><Link to="/"><img src={logoUrl} alt="Nonprofit Board Builder" /></Link><Link className="button button-small" to="/">Return Home</Link></header><article><p className="eyebrow">Nonprofit Board Builder</p><h1>{privacy ? "Privacy Policy" : "Terms"}</h1><p className="legal-updated">Last updated August 4, 2026</p>{sections.map(([heading, text]) => <section key={heading}><h2>{heading}</h2><p>{text}</p></section>)}</article></main>;
+  return <main className="legal-page" data-testid={privacy ? "privacy-policy-page" : "terms-page"}><header className="legal-header"><Link to="/"><img src={logoUrl} alt={legalPageText.nonprofitBoardBuilder} /></Link><Link className="button button-small" to="/">Return Home</Link></header><article><p className="eyebrow">Nonprofit Board Builder</p><h1>{privacy ? "Privacy Policy" : "Terms"}</h1><p className="legal-updated">{legalPageText.lastUpdatedAugust42026}</p>{sections.map(([heading, text]) => <section key={heading}><h2>{heading}</h2><p>{text}</p></section>)}</article></main>;
 }

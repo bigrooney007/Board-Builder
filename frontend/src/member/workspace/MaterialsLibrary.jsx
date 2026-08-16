@@ -18,11 +18,11 @@ export const MaterialsLibraryPage = () => {
     <MemberShell>
       <main className="member-page" data-testid="materials-library-page">
         <header className="member-page-heading">
-          <Link className="module-breadcrumb" to="/app/recruitment/self-guided"><ArrowLeft size={15} /> Self-Guided Recruitment System</Link>
+          <Link className="module-breadcrumb" to="/app/recruitment/self-guided"><ArrowLeft size={15} />{materialsLibraryText.selfGuidedRecruitmentSystem}</Link>
           <h1>{materialsLibraryText.h_myRecruitmentMaterials}</h1>
-          <p>Every generated resource stays available here, organized by step, with full version history.</p>
+          <p>{materialsLibraryText.everyGeneratedResourceStaysAvailable}</p>
         </header>
-        {materials.length === 0 && <div className="member-card"><p>No materials yet. Generate materials inside the course modules.</p></div>}
+        {materials.length === 0 && <div className="member-card"><p>{materialsLibraryText.noMaterialsYetGenerateMaterials}</p></div>}
         {Object.keys(grouped).sort().map((module) => (
           <section className="member-card" key={module}>
             <h2>{MODULE_NAMES[module] || `Module ${module}`}</h2>

@@ -22,7 +22,7 @@ export default function PortfolioPage() {
     return (
       <main style={{ padding: 60, textAlign: "center", fontFamily: "Georgia, serif" }} data-testid="portfolio-invalid">
         <h1>{portfolioPageText.h_thisPortfolioIsNotAvailable}</h1>
-        <p>Please contact the organization that sent you this link.</p>
+        <p>{portfolioPageText.pleaseContactTheOrganizationThat}</p>
       </main>
     );
   }

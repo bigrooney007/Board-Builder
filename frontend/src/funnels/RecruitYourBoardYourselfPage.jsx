@@ -5,7 +5,7 @@ import { Check, ShieldCheck } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { PAGE_META, usePageMeta } from "@/seo";
-import { SITE_CONTENT } from "@/content/siteContent";
+import { SITE_CONTENT, recruitYourBoardYourselfPageText } from "@/content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,20 +48,20 @@ export default function RecruitYourBoardYourselfPage() {
       <main data-testid="dyi-page">
         <section className="funnel-hero-banner brp-hero" data-testid="dyi-hero">
           <h1 data-testid="dyi-headline">{SITE_CONTENT.recruitDiy.headline}</h1>
-          <p className="funnel-hero-banner-supporting" data-testid="dyi-hero-supporting">Watch me run the recruitment process, then do what I do for your own nonprofit.</p>
+          <p className="funnel-hero-banner-supporting" data-testid="dyi-hero-supporting">{recruitYourBoardYourselfPageText.watchMeRunTheRecruitment}</p>
           <i aria-hidden="true" />
         </section>
 
         <section className="brp-section" data-testid="dyi-offer-section">
-          <h2 className="brp-section-title" data-testid="dyi-offer-heading">Build the Board Your Nonprofit Needs</h2>
-          <p data-testid="dyi-instructions-paragraph">This is not a course teaching theory. You will not simply learn about board recruitment — you will follow the process step by step, launch your recruitment campaign, work through your applicants, and properly bring the people you select into your organization.</p>
-          <p>I will show you exactly how I run the board recruitment process.</p>
-          <p>You watch me do it.</p>
-          <p>Then you follow what I do for your own organization, using the materials created specifically for your nonprofit to actually recruit your board.</p>
+          <h2 className="brp-section-title" data-testid="dyi-offer-heading">{recruitYourBoardYourselfPageText.buildTheBoardYourNonprofit}</h2>
+          <p data-testid="dyi-instructions-paragraph">{recruitYourBoardYourselfPageText.thisIsNotACourse}</p>
+          <p>{recruitYourBoardYourselfPageText.iWillShowYouExactly}</p>
+          <p>{recruitYourBoardYourselfPageText.youWatchMeDoIt}</p>
+          <p>{recruitYourBoardYourselfPageText.thenYouFollowWhatI}</p>
         </section>
 
         <section className="brp-section brp-result" data-testid="dyi-result-section">
-          <h2 className="brp-section-title" data-testid="dyi-result-heading">What You Will Walk Away With</h2>
+          <h2 className="brp-section-title" data-testid="dyi-result-heading">{recruitYourBoardYourselfPageText.whatYouWillWalkAway}</h2>
           <div data-testid="dyi-result-list">
             {OUTCOMES.map(([title, copy]) => (
               <div className="dyi-outcome" key={title} style={{ textAlign: "left", margin: "0 auto 22px", maxWidth: 720 }}>
@@ -73,13 +73,13 @@ export default function RecruitYourBoardYourselfPage() {
         </section>
 
         <section className="brp-section" data-testid="dyi-support-section">
-          <h2 className="brp-section-title" data-testid="dyi-support-heading">You Are Doing It Yourself. You Are Not Doing It Alone.</h2>
-          <p data-testid="dyi-support-copy">I will show you the process, the platform will give you the materials you need to execute, and if you get stuck anywhere along the way, you can reach out to me for help using the Need Help With This Step? support built into every step.</p>
+          <h2 className="brp-section-title" data-testid="dyi-support-heading">{recruitYourBoardYourselfPageText.youAreDoingItYourself}</h2>
+          <p data-testid="dyi-support-copy">{recruitYourBoardYourselfPageText.iWillShowYouThe}</p>
         </section>
 
         <section className="brp-section" data-testid="dyi-repeatable-section">
-          <h2 className="brp-section-title" data-testid="dyi-repeatable-heading">Learn the Process Once. Use It Again Whenever You Need It.</h2>
-          <p data-testid="dyi-repeatable-copy">By going through the process yourself, you learn how board recruitment actually works — and you can repeat it whenever your organization needs to recruit again.</p>
+          <h2 className="brp-section-title" data-testid="dyi-repeatable-heading">{recruitYourBoardYourselfPageText.learnTheProcessOnceUse}</h2>
+          <p data-testid="dyi-repeatable-copy">{recruitYourBoardYourselfPageText.byGoingThroughTheProcess}</p>
         </section>
 
         <section className="brp-section brp-investment" data-testid="dyi-investment-section">
@@ -97,15 +97,15 @@ export default function RecruitYourBoardYourselfPage() {
 
         <section className="brp-section" data-testid="dyi-after-payment-section">
           <h2 className="brp-section-title" data-testid="dyi-after-payment-heading">Start Immediately</h2>
-          <p data-testid="dyi-after-payment-copy">After making payment, tell us about your organization and board and begin following the process immediately. You can work toward launching your board recruitment campaign in the next 30 minutes using the instructions and materials provided.</p>
+          <p data-testid="dyi-after-payment-copy">{recruitYourBoardYourselfPageText.afterMakingPaymentTellUs}</p>
         </section>
 
         <section className="brp-section brp-final-cta" data-testid="dyi-cta-section">
-          {cancelled && <p className="rwr-cta-notice" data-testid="dyi-cancelled-notice">Your payment was not completed. You can get started whenever you're ready.</p>}
+          {cancelled && <p className="rwr-cta-notice" data-testid="dyi-cancelled-notice">{recruitYourBoardYourselfPageText.yourPaymentWasNotCompleted}</p>}
           <button type="button" className="button rwr-cta-button brp-cta-button" onClick={makePayment} disabled={busy} data-testid="dyi-cta-button">{busy ? "Preparing Checkout…" : SITE_CONTENT.recruitDiy.cta}</button>
           {ctaNotice && <p className="rwr-cta-notice" data-testid="dyi-cta-notice">{ctaNotice}</p>}
           <div>
-            <Link className="button button-outline offer-cross-link" to="/board-recruitment-proposal" data-testid="dyi-dwm-cross-link">Want Me To Do It With You?</Link>
+            <Link className="button button-outline offer-cross-link" to="/board-recruitment-proposal" data-testid="dyi-dwm-cross-link">{recruitYourBoardYourselfPageText.wantMeToDoIt}</Link>
           </div>
         </section>
 

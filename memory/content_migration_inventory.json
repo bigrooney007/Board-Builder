@@ -1,0 +1,3512 @@
+[
+ {
+  "file": "operatorMode.jsx",
+  "key": "testModeAdminProductJourney",
+  "value": "TEST MODE \u2014 Admin Product Journey (isolated test workspace, no emails are sent automatically, no real client data is affected)",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "uploadRSumCv",
+  "value": "Upload r\u00e9sum\u00e9/CV ",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "yourApplicationHasBeenSubmitted",
+  "value": "Your Application Has Been Submitted",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "wouldYouLikeToCreate",
+  "value": "Would you like to create a Board Applicant profile so we can notify you about future nonprofit board opportunities? ",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "joinTheBoardApplicantNetwork",
+  "value": "Join the Board Applicant Network",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "thisRecruitmentCampaignIsNo",
+  "value": "This recruitment campaign is no longer accepting applications.",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "applyToJoinTheBoard",
+  "value": "Apply to Join the Board",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "youHaveAlreadyApplied",
+  "value": "You Have Already Applied",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "anApplicationFromYourProfile",
+  "value": "An application from your profile has already been submitted for this opportunity.",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "applyWithUpdatedInformation",
+  "value": "Apply With Updated Information",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "applyWithUpdatedInformation2",
+  "value": "Apply With Updated Information",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "updateAnythingThatHasChanged",
+  "value": "Update anything that has changed for this opportunity. Fields you leave blank keep your saved profile information. A new CV upload is optional \u2014 your saved CV is used otherwise.",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "alsoUpdateMyBoardApplicant",
+  "value": "Also update my Board Applicant profile with these changes",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "iHaveReadAndAgree",
+  "value": "I have read and agree to the terms of this agreement.",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "typeMyNameToSign",
+  "value": "Type My Name to Sign",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "orUploadASavedSignature",
+  "value": "Or upload a saved signature image (PNG or JPG)",
+  "kind": "text"
+ },
+ {
+  "file": "public/OpportunityPages.jsx",
+  "key": "thisElectronicSignatureProcessDoes",
+  "value": "This electronic signature process does not constitute legal advice. The organization remains responsible for determining whether its document and signature process meets its legal requirements.",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "howLongHaveTheyKnown",
+  "value": "How long have they known or worked with you? *",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "boardAppointmentReferenceProcess",
+  "value": "Board Appointment Reference Process",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "provideYourProfessionalReferences",
+  "value": "Provide Your Professional References",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "yourReferencesHaveBeenRecorded",
+  "value": "Your References Have Been Recorded",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "iConfirmThatIHave",
+  "value": "I confirm that I have permission to provide my referees' contact information for this reference process.",
+  "kind": "text"
+ },
+ {
+  "file": "public/ReferencePages.jsx",
+  "key": "iConfirmThatTheInformation",
+  "value": "I confirm that the information I have provided reflects my own experience and knowledge of the candidate. *",
+  "kind": "text"
+ },
+ {
+  "file": "admin/ClientDeliverySection.jsx",
+  "key": "doWithYouClients",
+  "value": "Do-With-You Clients",
+  "kind": "text"
+ },
+ {
+  "file": "admin/ClientDeliverySection.jsx",
+  "key": "noVerifiedDoWithYou",
+  "value": "No verified Do-With-You clients yet.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "preparedEmailNothingIsSent",
+  "value": "Prepared email \u2014 nothing is sent until you choose Send",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "sendThisOneSecureLink",
+  "value": "Send this one secure link to your Board Members \u2014 each person enters their own name and email when they complete the form. You do not need to enter Board Member emails first.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "pasteTheStrategicPlanningForm",
+  "value": "Paste the Strategic Planning Form content below and click Generate. The multi-step Board form, its secure link and the prepared email are created automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "createStrategicPlanningProject",
+  "value": "Create Strategic Planning Project",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "strategicPlanningFormContent",
+  "value": "Strategic Planning Form Content",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "noStrategicPlanningProjectsYet",
+  "value": "No Strategic Planning projects yet.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "creatingTheHostedMultiStep",
+  "value": "Creating the hosted multi-step form from your supplied content\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "replaceViaFileUpload",
+  "value": "Replace via File Upload",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "everyoneWhoCompletesTheForm",
+  "value": "Everyone who completes the form appears here automatically with their submitted name and email \u2014 you never re-enter them.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "addABoardMemberManually",
+  "value": "Add a Board Member manually (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "synchronizingTheBoardsReviewInto",
+  "value": "Synchronizing the Board's review into the Foundational Plan\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "boardReviewAmpRefinementResponses",
+  "value": "Board Review &amp; Refinement responses",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "noReviewsSubmittedYet",
+  "value": "No reviews submitted yet.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "finalizeTheFoundationalPlanTo",
+  "value": "Finalize the Foundational Plan to unlock area assignment.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "aiRecommendationNoClearFit",
+  "value": "AI Recommendation: no clear fit \u2014 assign manually or leave unassigned.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "prepareSendDeliveryEmail",
+  "value": "Prepare / Send Delivery Email",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "savingReturnsTheFormTo",
+  "value": "Saving returns the form to Draft \u2014 approve it again to update the live form link.",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "adoptedByTheBoard",
+  "value": "Adopted by the Board",
+  "kind": "text"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "pasteTheFullContentInstructions",
+  "value": "Paste the full content / instructions of the Strategic Planning Form here \u2014 it is the source authority for the generated form.",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "admin/StrategicPlanningSection.jsx",
+  "key": "boardDiscussionConclusionModificationsFor",
+  "value": "Board discussion conclusion / modifications for this area",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "member/ActivationCoursePages.jsx",
+  "key": "backToBoardFundraisingActivation",
+  "value": "Back to Board Fundraising Activation",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "loadingYourFundraisingPlanningWorkspace",
+  "value": "Loading your fundraising planning workspace\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "doNotCreateAFundraising",
+  "value": "Do not create a fundraising plan and hand it to your Board.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "getYourBoardInvolvedIn",
+  "value": "Get your Board involved in building it.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "theirIdeasProfessionalExperienceRelationships",
+  "value": "Their ideas, professional experience, relationships and willingness to participate should help shape how your organization raises money.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "whenPeopleParticipateInBuilding",
+  "value": "When people participate in building the plan, they are more likely to understand it, take ownership of it and help execute it.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "boardFundraisingPlanningForm",
+  "value": "Board Fundraising Planning Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "generateOneOrganizationSpecificPlanning",
+  "value": "Generate one organization-specific planning form built from your Activation intake. Review and edit it, then approve it so it can be shared with your Board.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "yourActivationIntakeWasNot",
+  "value": "Your Activation intake was not found. Complete the Activation intake before generating your planning form.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "generationFailedPleaseTryAgain",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "generatingYourBoardFundraisingPlanning",
+  "value": "Generating your Board Fundraising Planning Form\u2026 This can take a minute. It will appear here automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "theFormMustBeApproved",
+  "value": "The form must be approved before the Board email can be generated.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule2.jsx",
+  "key": "fundraisingGoalContextShownTo",
+  "value": "Fundraising Goal Context (shown to Board Members)",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "loadingYourStrategyWorkspace",
+  "value": "Loading your strategy workspace\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "yourBoardHasNowContributed",
+  "value": "Your Board has now contributed ideas about who the organization should build relationships with, which fundraising opportunities to prioritize, what relationships already exist around the Board, how members are willing to participate, and what they believe should happen first.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "theNextStepIsTo",
+  "value": "The next step is to combine those ideas with the organization's goals and direction and build one Fundraising Strategy Plan the Board can review together.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "theStrategyUsesTheResponses",
+  "value": "The strategy uses the responses currently received. Responses that arrive later remain saved and can be included only by intentionally regenerating the plan.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "generationFailedPleaseTryAgain",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "buildingYourFundraisingStrategyPlan",
+  "value": "Building your Fundraising Strategy Plan from your intake and the Board's responses\u2026 This can take a minute or two. It will appear here automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "approveForBoardReview",
+  "value": "APPROVE FOR BOARD REVIEW",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule3.jsx",
+  "key": "approveThePlanForBoard",
+  "value": "Approve the plan for Board review before generating the review email.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "loadingYourPlanAdoptionWorkspace",
+  "value": "Loading your plan adoption workspace\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "theBoardHasHelpedBuild",
+  "value": "The Board has helped build the strategy and reviewed the plan.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "theNextStepIsTo",
+  "value": "The next step is to bring everyone together, work through the feedback, agree on the direction and establish what the Board will actually help carry.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "thisIsWhereParticipationBecomes",
+  "value": "This is where participation becomes ownership.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "generationFailedPleaseTryAgain",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "generatingTheRevisedFundraisingStrategy",
+  "value": "Generating the revised Fundraising Strategy Plan from the Board's responses and reviews\u2026 It will appear here automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "meetingLinkIfThereIs",
+  "value": "Meeting link (if there is one)",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "anyOtherMeetingDetailsOptional",
+  "value": "Any other meeting details (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "planAdoptionFacilitationGuide",
+  "value": "Plan Adoption Facilitation Guide",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "generationFailedPleaseTryAgain2",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "generatingYourFacilitationGuideFrom",
+  "value": "Generating your Facilitation Guide from the strategy and your Board's actual feedback\u2026 It will appear here automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "thisGuideIsYourInternal",
+  "value": "This guide is your internal facilitation resource. It is not sent to Board Members.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "recordTheBoardsAdoptionOutcome",
+  "value": "Record the Board's adoption outcome. This is your recorded organizational outcome \u2014 it is not inferred from the reviews.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "theStrategyMustBeResolved",
+  "value": "The strategy must be resolved and adopted before execution tools are generated. Module 5 remains locked. Your strategy and Board reviews are preserved.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "theStrategyVersionYourBoard",
+  "value": "The strategy version your Board reviewed is now the adopted strategy.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "editTheStrategyToReflect",
+  "value": "Edit the strategy to reflect what was actually agreed during the adoption discussion, then finalize it. The version your Board reviewed and their reviews are preserved separately.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "module5IsUnlockedUse",
+  "value": "Module 5 is unlocked. Use the Next Module navigation below to continue.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule4.jsx",
+  "key": "module5OpensOnceYour",
+  "value": "Module 5 opens once your Plan Adoption Conclusion is saved and the plan is adopted and finalized.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "loadingYourExecutionToolkitWorkspace",
+  "value": "Loading your execution toolkit workspace\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "theBoardHasHelpedBuild",
+  "value": "The Board has helped build the fundraising plan, reviewed the strategy and agreed on the direction.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "nowGiveBoardMembersPractical",
+  "value": "Now give Board Members practical tools they can use to begin carrying their part of the fundraising work.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "theFundraisingStrategyPlanMust",
+  "value": "The Fundraising Strategy Plan must be resolved and adopted \u2014 with your Plan Adoption Conclusion recorded \u2014 before execution tools are generated.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "yourRecordedPlanStatusIs",
+  "value": "Your recorded plan status is ",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "returnToModule4To",
+  "value": ". Return to Module 4 to work through the outstanding items and record adoption.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "goToModule4Facilitate",
+  "value": "GO TO MODULE 4 \u2014 FACILITATE PLAN ADOPTION",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "agreedFundraisingResponsibilityAreaThey",
+  "value": "Agreed Fundraising Responsibility / Area They Agreed to Support",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "generatingFollowUpEmail",
+  "value": "Generating follow-up email\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "generationFailedPleaseTryAgain",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "boardFundraisingExecutionToolkit",
+  "value": "Board Fundraising Execution Toolkit",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "oneOrganizationLevelSetOf",
+  "value": "One organization-level set of practical emails, text messages, call scripts and stewardship tools built from your adopted strategy and the responsibilities your Board actually agreed to carry.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "generationFailedPleaseTryAgain2",
+  "value": "Generation failed. Please try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "generatingYourBoardFundraisingExecution",
+  "value": "Generating your Board Fundraising Execution Toolkit\u2026 It will appear here automatically.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "yourBoardHelpedBuildThe",
+  "value": "Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ActivationModule5.jsx",
+  "key": "theNextStepIsTo",
+  "value": "The next step is to go to your Fundraising Board Dashboard, where you can see each Board Member's responsibility and create their individual Fundraising Portfolio.",
+  "kind": "text"
+ },
+ {
+  "file": "member/AuthPages.jsx",
+  "key": "enterYourAccountEmailAnd",
+  "value": "Enter your account email and we will send you a reset link.",
+  "kind": "text"
+ },
+ {
+  "file": "member/CoursePages.jsx",
+  "key": "theTrainingVideoForThis",
+  "value": "The training video for this module will appear here as soon as it is published.",
+  "kind": "text"
+ },
+ {
+  "file": "member/CoursePages.jsx",
+  "key": "needHelpWithThisStep",
+  "value": "Need Help With This Step?",
+  "kind": "text"
+ },
+ {
+  "file": "member/CoursePages.jsx",
+  "key": "ifYouAreStuckNeed",
+  "value": "If you are stuck, need clarification or want help executing this part of the process, send us a request.",
+  "kind": "text"
+ },
+ {
+  "file": "member/CoursePages.jsx",
+  "key": "whatDoYouNeedHelp",
+  "value": "What do you need help with? ",
+  "kind": "text"
+ },
+ {
+  "file": "member/CoursePages.jsx",
+  "key": "tellUsWhatYouNeed",
+  "value": "Tell us what you need help with ",
+  "kind": "text"
+ },
+ {
+  "file": "member/DashboardPage.jsx",
+  "key": "yourAccountDoesNotInclude",
+  "value": "Your account does not include a program yet. When you purchase a Recruitment program, it will appear here.",
+  "kind": "text"
+ },
+ {
+  "file": "member/DashboardPage.jsx",
+  "key": "boardRecruitmentYourCandidates",
+  "value": "Board Recruitment \u2014 Your Candidates",
+  "kind": "text"
+ },
+ {
+  "file": "member/DashboardPage.jsx",
+  "key": "generateFinalBoardOfferEmail",
+  "value": "Generate Final Board Offer Email ",
+  "kind": "text"
+ },
+ {
+  "file": "member/MemberShell.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "loadingMyFundraisingBoard",
+  "value": "Loading My Fundraising Board\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "yourBoardHelpedBuildThe",
+  "value": "Your Board helped build the fundraising plan, reviewed it, adopted the direction and agreed how members will help carry the work. This is where you can see what each Board Member owns, equip them with their individual Fundraising Portfolio and keep the Board connected to the fundraising strategy.",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "finalAdoptedFundraisingStrategyPlan",
+  "value": "FINAL ADOPTED FUNDRAISING STRATEGY PLAN",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "approvedBoardFundraisingExecutionToolkit",
+  "value": "APPROVED BOARD FUNDRAISING EXECUTION TOOLKIT",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "completePlanAdoptionModule4",
+  "value": "Complete plan adoption (Module 4) and approve your Execution Toolkit (Module 5) to unlock your full Fundraising Board.",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "goToModule5To",
+  "value": "Go to Module 5 to record responsibilities",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "yourBoardHasHelpedBuild",
+  "value": "Your Board has helped build the fundraising plan, reviewed and adopted the strategy, agreed how members will help carry the work, and now has the tools and individual direction needed to begin taking action.",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "yourJobNowIsTo",
+  "value": "Your job now is to keep the plan moving, support Board Members in carrying their responsibilities and keep fundraising connected to the mission.",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "ifTheBoardStillHas",
+  "value": "If the Board still has skill, experience, capacity or relationship gaps, recruit the right people to complete the Board.",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "recruitNewBoardMembers",
+  "value": "RECRUIT NEW BOARD MEMBERS",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "haveBoardMembersWhoStill",
+  "value": "Have Board Members Who Still Are Not Carrying Their Responsibility?",
+  "kind": "text"
+ },
+ {
+  "file": "member/MyFundraisingBoardPage.jsx",
+  "key": "ifSomeBoardMembersRemain",
+  "value": "If some Board Members remain disengaged, reactivate them so those ready to serve can stand up and carry responsibility, while those no longer prepared to serve can be dealt with appropriately.",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "pleaseWaitWhileWeVerify",
+  "value": "Please wait while we verify your payment with Stripe.",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "weCouldNotFindA",
+  "value": "We could not find a checkout session. If you completed a purchase, please contact us.",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "ifYouCompletedThePayment",
+  "value": "If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "goToMyBoardBuilder",
+  "value": "Go to My Board Builder",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "alreadyHaveAnAccountLog",
+  "value": "Already have an account? Log in",
+  "kind": "text"
+ },
+ {
+  "file": "member/PurchaseSuccessPage.jsx",
+  "key": "needAnAccountCreateOne",
+  "value": "Need an account? Create one",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationCoursePages.jsx",
+  "key": "backToBoardReactivation",
+  "value": "Back to Board Reactivation",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep2.jsx",
+  "key": "openToAnAdvisoryRole",
+  "value": "Open to an Advisory role: ",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep2.jsx",
+  "key": "openToAnotherSupportRole",
+  "value": "Open to another support role: ",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep2.jsx",
+  "key": "reviewYourRecommitmentForm",
+  "value": "Review Your Recommitment Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep2.jsx",
+  "key": "yourRecommitmentFormIsLive",
+  "value": "Your Recommitment Form Is Live",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "waitingForRecommitmentForm",
+  "value": "Waiting for Recommitment Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "thisBoardMemberHasNot",
+  "value": "This Board Member has not yet completed their Recommitment &amp; Profile Form. Their response is needed before a person-specific conversation script can be generated.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "returnToStep2",
+  "value": "RETURN TO STEP 2",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "scriptGenerationDidNotComplete",
+  "value": "Script generation did not complete. Your information is preserved \u2014 click Regenerate to try again.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "chooseTheActualOutcome",
+  "value": "Choose the actual outcome\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "waitingForRecommitmentForm2",
+  "value": " Waiting for Recommitment Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "noCurrentBoardMembersYet",
+  "value": "No current Board Members yet. Add your Board Members and send their Recommitment Forms in Step 2 first.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep3.jsx",
+  "key": "goToStep2",
+  "value": "GO TO STEP 2",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "generateBoardMemberPortfolio",
+  "value": " GENERATE BOARD MEMBER PORTFOLIO",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "portfolioLinkInsertedAutomatically",
+  "value": "Portfolio Link (inserted automatically):",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "youNowHaveAClearer",
+  "value": "You now have a clearer picture of who is ready to carry Board responsibility, where each continuing member can contribute, and who is transitioning or stepping down.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "thisIsTheBoardYou",
+  "value": "This is the Board you can begin building with.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "waitingForRecommitmentForm",
+  "value": " Waiting for Recommitment Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "youHaveReactivatedYourBoard",
+  "value": "You Have Reactivated Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "youNowKnowWhoIs",
+  "value": "You now know who is ready to stand up, where your continuing Board Members can contribute, what responsibilities they have agreed to carry, and where transitions need to happen.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "yourNextJobIsTo",
+  "value": "Your next job is to keep those responsibilities active and build with the people who have recommitted.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "advisoryBoardAdvisoryMembers",
+  "value": "Advisory Board / Advisory Members",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "followUpStillNeeded",
+  "value": "Follow-Up Still Needed",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "returnToStep4Have",
+  "value": "RETURN TO STEP 4 \u2014 HAVE THE CONVERSATIONS",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "waitingForRecommitmentForm2",
+  "value": "Waiting for Recommitment Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "noReactivatedBoardMembersTo",
+  "value": "No reactivated Board Members to show yet. Work through Steps 1\u20134 first.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "goToStep2",
+  "value": "GO TO STEP 2",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "stillMissingTheRightPeople",
+  "value": "Still Missing the Right People Around the Table?",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "reactivatingYourCurrentBoardShows",
+  "value": "Reactivating your current Board shows you who is ready to serve. If you still have important skills, experience or relationships missing, recruit the Board Members your organization still needs.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "recruitNewBoardMembers",
+  "value": "RECRUIT NEW BOARD MEMBERS",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "yourBoardIsBackAt",
+  "value": "Your Board Is Back at the Table. Now Put Them to Work.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationStep5.jsx",
+  "key": "theNextStepIsTo",
+  "value": "The next step is to activate your Board to take ownership, help raise money and build your organization's fundraising system.",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationUnderstand.jsx",
+  "key": "wantsToContributeIn",
+  "value": "Wants to contribute in:",
+  "kind": "text"
+ },
+ {
+  "file": "member/ReactivationUnderstand.jsx",
+  "key": "goToStep2",
+  "value": "GO TO STEP 2",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "relevantApplicantInformationOptional",
+  "value": "Relevant applicant information (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "noApplicationsYetWhenYour",
+  "value": "No applications yet. When your recruitment campaign is launched, applications will appear here.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "fromTheirBoardApplication",
+  "value": " (from their board application)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "emailTheSecureFormLink",
+  "value": "Email (the secure form link is added automatically below your message)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "saveBackgroundCheckRecord",
+  "value": "Save Background Check Record",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "createBoardMemberProfileForm",
+  "value": "Create Board Member Profile Form",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "boardMemberProfileFormIs",
+  "value": "Board Member Profile Form is ready.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "whatDateWouldYouLike",
+  "value": "What date would you like to hold the Board Onboarding Session?",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "whatTimeWouldYouLike",
+  "value": "What time would you like to hold the session?",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "whatTimezoneShouldWeUse",
+  "value": "What timezone should we use?",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "howWillTheOnboardingSession",
+  "value": "How will the onboarding session be held?",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "whatMeetingLinkShouldWe",
+  "value": "What meeting link should we include? (Zoom, Google Meet, Teams or another link)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "whereWillTheOnboardingSession",
+  "value": "Where will the onboarding session take place?",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "isThereAnythingYouWould",
+  "value": "Is there anything you would like the new board members to prepare before the session? (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "copyReviewAmpSignLink",
+  "value": "Copy Review &amp; Sign Link",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "doNotMoveForward",
+  "value": "Do Not Move Forward",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "findBackgroundCheckProvidersNear",
+  "value": "Find Background Check Providers Near Me",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "yourApplicantsFromStep4",
+  "value": "Your applicants from Step 4 appear here automatically once applications arrive.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "theReferenceCheckBecomesAvailable",
+  "value": "The Reference Check becomes available once this candidate is moved forward and their Board Member Profile Form has been generated. Move them forward above to prepare their resources first.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "confirmReadyForFormalAppointment",
+  "value": "Confirm Ready for Formal Appointment",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "meetingChatLinkOptional",
+  "value": "Meeting Chat Link (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "sendFirstBoardMeetingInvitation",
+  "value": "Send First Board Meeting Invitation",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "sendUpdatedMeetingInformation",
+  "value": "Send Updated Meeting Information",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "candidatesAppearHereOnceYou",
+  "value": "Candidates appear here once you send their Conditional Appointment in Step 5.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "conditionalBoardAppointmentEmail",
+  "value": "Conditional Board Appointment Email",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "afterInterviewRejectionEmail",
+  "value": "After-Interview Rejection Email",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "formalBoardAppointmentEmail",
+  "value": "Formal Board Appointment Email",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "firstBoardMeetingInvitationEmail",
+  "value": "First Board Meeting Invitation Email",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ApplicantModules.jsx",
+  "key": "boardMemberOnboardingFacilitatorGuide",
+  "value": "Board Member Onboarding Facilitator Guide",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/MaterialsLibrary.jsx",
+  "key": "selfGuidedRecruitmentSystem",
+  "value": " Self-Guided Recruitment System",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/MaterialsLibrary.jsx",
+  "key": "everyGeneratedResourceStaysAvailable",
+  "value": "Every generated resource stays available here, organized by step, with full version history.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/MaterialsLibrary.jsx",
+  "key": "noMaterialsYetGenerateMaterials",
+  "value": "No materials yet. Generate materials inside the course modules.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "tellUsAboutTheOther",
+  "value": "Tell us about the other skills or experience",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "whatWeAlreadyKnowAbout",
+  "value": "What We Already Know About Your Organization and Board",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "youProvidedThisInformationWhen",
+  "value": "You provided this information when you got started \u2014 you never need to enter it again. It is used automatically throughout your recruitment process.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "theBoardMembersYourOrganization",
+  "value": "The Board Members Your Organization Needs",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "basedOnTheInformationYou",
+  "value": "Based on the information you provided about your organization and board, we will identify the board members your nonprofit should prioritize recruiting.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "weJustNeedALittle",
+  "value": "We just need a little more information before we identify your board members. You only enter it once.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "whatIsYourOrganizationsMission",
+  "value": "What is your organization's mission statement? ",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "enterTheMissionStatementYou",
+  "value": "Enter the mission statement you want applicants, board members and supporters to see in your Recruitment materials. You only enter it once \u2014 it is used automatically everywhere it belongs.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/Module1Profile.jsx",
+  "key": "theBoardMembersYourOrganization2",
+  "value": "The Board Members Your Organization Needs",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "boardRecruitmentSelfGuidedSystem",
+  "value": " Board Recruitment \u2014 Self-Guided System",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "yourRecruitmentResultsWillAppear",
+  "value": "Your recruitment results will appear here as applicants move through the recruitment process.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "goToYourRecruitmentCampaign",
+  "value": "Go to Your Recruitment Campaign",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "getHelpReviewingYourNew",
+  "value": "Get help reviewing your new board, preparing for your first meeting or helping your board start strongly.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "bookACallWithRooney",
+  "value": "Book a Call With Rooney ",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "boardMemberEngagementGuide",
+  "value": "Board Member Engagement Guide",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/ResultsPage.jsx",
+  "key": "boardMemberPortfolio",
+  "value": "Board Member Portfolio",
+  "kind": "attr:title"
+ },
+ {
+  "file": "member/workspace/WorkspaceModules.jsx",
+  "key": "useThisLinkInYour",
+  "value": "Use this link in your job post, LinkedIn post, emails and messages. It becomes publicly accessible when you launch your recruitment campaign below.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/WorkspaceModules.jsx",
+  "key": "yourBoardApplicationIsReady",
+  "value": "Your Board Application is ready, your recruitment materials have been created, and your opportunity has been launched through the Nonprofit Board Builder recruitment network. Use the materials above to continue sharing your opportunity through your professional, social and referral networks.",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/WorkspaceModules.jsx",
+  "key": "continueToStep4Select",
+  "value": "Continue to Step 4 \u2014 Select and Interview Your Applicants",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/WorkspaceModules.jsx",
+  "key": "launchMyRecruitmentCampaign",
+  "value": "Launch My Recruitment Campaign",
+  "kind": "text"
+ },
+ {
+  "file": "member/workspace/WorkspaceModules.jsx",
+  "key": "launchingMakesTheApplicationPublic",
+  "value": "Launching makes the application public at ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "theNonprofitBoardBuilder",
+  "value": "The Nonprofit Board Builder",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "answerFourShortQuestionsAbout",
+  "value": "Answer four short questions about your Board and I will show you the steps to take to fix it and build a Board that helps carry your mission.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "tellMeWhatMyBoard",
+  "value": "TELL ME WHAT MY BOARD NEEDS",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "threeWaysICanHelp",
+  "value": "Three Ways I Can Help You Transform Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "chooseThePartOfThe",
+  "value": "Choose the part of the Board Transformation journey your organization needs first.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "theNonprofitBoardBuilder2",
+  "value": "The Nonprofit Board Builder",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "imRooneyKnownToMany",
+  "value": "I'm Rooney. Known to many as the Nonprofit Board Builder.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "iStartedAsANonprofit",
+  "value": "I started as a nonprofit founder many years ago, where I built my first board.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "iMadeMistakesDamagedRelationships",
+  "value": "I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "sinceThenIHaveServed",
+  "value": "Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "todayITeachCoachAnd",
+  "value": "Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "wantToDiscussYourBoard",
+  "value": "Want to Discuss Your Board With Me?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "ifYouWantToTalk",
+  "value": "If you want to talk through where your Board is today, what you are trying to build, and whether I can help, book a call with me and let's discuss it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "bookACallWithRooney",
+  "value": "BOOK A CALL WITH ROONEY",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AboutRooneyPage.jsx",
+  "key": "rooneyAkpesiriTheNonprofitBoard",
+  "value": "Rooney Akpesiri, The Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "yourBoardShouldUnderstandThe",
+  "value": "Your Board should understand the fundraising direction, help build the plan, take ownership of the work and know exactly how they can help raise money for the organization. You can lead the process yourself with my guidance and tools, or I can work through the process with you.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "boardFundraisingActivationVideoComing",
+  "value": "Board Fundraising Activation Video Coming Soon",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "twoWaysICanHelp",
+  "value": "Two Ways I Can Help You Activate Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "chooseTheLevelOfSupport",
+  "value": "Choose the level of support that works best for you.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "activateYourBoardYourself",
+  "value": "Activate Your Board Yourself",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "leadYourBoardThroughThe",
+  "value": "Lead your Board through the complete fundraising activation process yourself, with the process, tools and support you need to move from Board disengagement in fundraising to Board ownership and execution \u2014 get the Board involved in building the fundraising plan, turn everyone's ideas into one fundraising strategy, bring the plan back to the Board for review, facilitate adoption, establish clear responsibility and equip Board Members with practical fundraising tools.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "iWantToActivateMy",
+  "value": "I WANT TO ACTIVATE MY BOARD MYSELF",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "activateYourBoardWithRooney",
+  "value": "Activate Your Board With Rooney",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "rooneyWorksThroughTheBoard",
+  "value": "Rooney works through the Board Fundraising Activation process with you so your organization does not have to figure out how to turn Board Members into fundraising participants alone \u2014 Board participation in planning, one fundraising strategy, Board review and adoption, clear ownership, practical execution, and a founder who is no longer carrying fundraising alone.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "iWantRooneyToHelp",
+  "value": "I WANT ROONEY TO HELP ACTIVATE MY BOARD",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateWithRooneyPage.jsx",
+  "key": "activateYourBoardWithRooney2",
+  "value": "Activate Your Board With Rooney",
+  "kind": "attr:title"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "stopCarryingFundraisingAlone",
+  "value": "Stop Carrying Fundraising Alone",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "youShouldNotBeThe",
+  "value": "You should not be the only person carrying the fundraising responsibility for your organization. Your Board should understand what the organization is trying to fund, help build the fundraising strategy, take ownership of the plan, accept clear responsibilities and have the tools they need to begin taking action.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "peopleWhoPlanTogetherExecute",
+  "value": "People Who Plan Together Execute Together",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "theGoalIsNotTo",
+  "value": "The goal is not to create a fundraising plan by yourself and then hand it to your Board. The Board participates in building the plan so members understand where the strategy came from, see their own ideas reflected in it, and are more prepared to take ownership of execution.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "whatChangesWhenYouFollow",
+  "value": "What Changes When You Follow the Process",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "youAreDoingItYourself",
+  "value": "You Are Doing It Yourself. You Are Not Doing It Alone.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "youAreFollowingMyComplete",
+  "value": "You are following my complete process for taking a Board from limited fundraising participation to ownership and execution \u2014 and you have the tools and support structure you need to execute it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "noMonthlyMembershipNoSubscription",
+  "value": "No monthly membership. No subscription.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivateYourBoardYourselfPage.jsx",
+  "key": "wantMeToDoIt",
+  "value": "Want Me To Do It With You?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivationStartHerePage.jsx",
+  "key": "youAreAboutToTake",
+  "value": "You are about to take your Board through a process that gets them involved in building the fundraising plan, agreeing how the Board will help carry it, and equipping members to begin taking action.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivationStartHerePage.jsx",
+  "key": "doNotSimplyTellYour",
+  "value": "Do not simply tell your Board to raise money.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivationStartHerePage.jsx",
+  "key": "buildThePlanWithThem",
+  "value": "Build the plan with them.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ActivationStartHerePage.jsx",
+  "key": "peopleWhoPlanTogetherExecute",
+  "value": "People who plan together execute together.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AreaPackPage.jsx",
+  "key": "submitAnUpdatedVersion",
+  "value": "Submit an Updated Version",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/AreaPackPage.jsx",
+  "key": "takeTheAgreedFoundationAbove",
+  "value": "Take the agreed foundation above and develop the detailed plan for your area. Paste or write your completed plan below.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "pleaseWaitWhileWeVerify",
+  "value": "Please wait while we verify your payment with Stripe.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "weCouldNotFindA",
+  "value": "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to activate your board:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "doItYourself497",
+  "value": "Do It Yourself \u2014 $497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "doItWithRooney2",
+  "value": "Do It With Rooney \u2014 $2,497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "takingYouToYourStart",
+  "value": "Taking you to your start page\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "openMyStartPage",
+  "value": "Open My Start Page",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationIntakePage.jsx",
+  "key": "takingYouToTheCalendar",
+  "value": "Taking you to the calendar\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "boardFundraisingActivationProjectProposal",
+  "value": "Board Fundraising Activation Project Proposal",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "stopCarryingFundraisingAloneWe",
+  "value": "Stop Carrying Fundraising Alone \u2014 We Will Activate Your Board Together",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "fundraisingShouldNotSitAlmost",
+  "value": "Fundraising should not sit almost entirely on the founder or executive director while the Board remains on the sidelines.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "thePurposeOfThisProject",
+  "value": "The purpose of this project is to work with your organization through a structured Board Fundraising Activation process that gets Board Members involved in building the fundraising plan, reviewing and adopting the strategy, accepting clear responsibilities and becoming equipped to help execute it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "theOutcomeIsNotSimply",
+  "value": "The outcome is not simply a fundraising document.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "theOutcomeIsABoard",
+  "value": "The outcome is a Board that understands the fundraising direction, has participated in shaping it, knows what it is responsible for and is better equipped to help the organization raise money.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "whatWeWillAccomplishTogether",
+  "value": "What We Will Accomplish Together",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "iWorkThroughTheProcess",
+  "value": "I work through the process ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "youYourOrganizationIsNot",
+  "value": " you \u2014 your organization is not simply purchasing documents.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardActivationProposalPage.jsx",
+  "key": "preferToDoItBy",
+  "value": "Prefer to Do It By Yourself?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "pleaseWaitWhileWeVerify",
+  "value": "Please wait while we verify your payment with Stripe.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "weCouldNotFindA",
+  "value": "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to reactivate your board:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "doItYourself497",
+  "value": "Do It Yourself \u2014 $497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "doItWithMe1",
+  "value": "Do It With Me \u2014 $1,997",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "takingYouToYourStart",
+  "value": "Taking you to your start page\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "openMyStartPage",
+  "value": "Open My Start Page",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "takingYouToTheCalendar",
+  "value": "Taking you to the calendar\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationIntakePage.jsx",
+  "key": "uploadYourOrganizationsBylawsPdf",
+  "value": "Upload your organization's bylaws (PDF, Word or text)",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "boardReactivationProjectProposal",
+  "value": "Board Reactivation Project Proposal",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "reactivateThePeopleWhoAre",
+  "value": "Reactivate the People Who Are Ready to Serve and Deal With the People Who Aren't",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "yourBoardShouldHelpCarry",
+  "value": "Your Board should help carry the organization forward. You should not have to keep carrying people who hold Board seats but are not prepared to take responsibility.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "yourOrganizationAlreadyHasBoard",
+  "value": "Your organization already has Board Members. The problem is that some or most of them are no longer actively carrying the responsibilities the organization needs them to carry.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "theAnswerIsNotTo",
+  "value": "The answer is not to keep sending reminders, pressuring people to participate or pretending the Board is functioning when the founder is still carrying most of the work.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "weWillWorkThroughThe",
+  "value": "We will work through the Board Reactivation process together.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "weWillUnderstandWhatCaused",
+  "value": "We will understand what caused the disengagement, give each Board Member an opportunity to recommit, have the difficult conversations that need to happen, identify who is prepared to stand up, help those who are not prepared to serve step down or transition appropriately, and give the people who remain clear areas of responsibility.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "theGoalIsAnActive",
+  "value": "The goal is an active Board whose members understand what they own and how they are expected to help move the organization forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "whatWeWillAccomplishTogether",
+  "value": "What We Will Accomplish Together",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardReactivationProposalPage.jsx",
+  "key": "preferToDoItBy",
+  "value": "Prefer to Do It By Yourself?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecommitmentFormPage.jsx",
+  "key": "pleaseContactThePersonWho",
+  "value": "Please contact the person who sent you this form for a new link.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecommitmentFormPage.jsx",
+  "key": "yourBoardMemberProfileAmp",
+  "value": "Your Board Member Profile &amp; Recommitment Form has been submitted to ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecommitmentFormPage.jsx",
+  "key": "theOrganizationWillReviewYour",
+  "value": "The organization will review your responses and follow up with you regarding your Board role and next steps.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecommitmentFormPage.jsx",
+  "key": "lookingAheadAreYouWilling",
+  "value": "Looking ahead, are you willing and able to continue serving actively on the Board? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecommitmentFormPage.jsx",
+  "key": "iConfirmThatTheInformation",
+  "value": "I confirm that the information I have provided reflects my current availability, interests and willingness to serve. I understand that completing this form does not by itself change my current Board status and that the organization may follow up with me to discuss my role and responsibilities. ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "pleaseWaitWhileWeVerify",
+  "value": "Please wait while we verify your payment with Stripe.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "weCouldNotFindA",
+  "value": "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "doItYourself497",
+  "value": "Do It Yourself \u2014 $497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "doItWithMe1",
+  "value": "Do It With Me \u2014 $1,997",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "takingYouToYourStart",
+  "value": "Taking you to your start page\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "openMyStartPage",
+  "value": "Open My Start Page",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "takingYouToTheCalendar",
+  "value": "Taking you to the calendar\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "requiredForUsOrganizations",
+  "value": "Required for US organizations.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "yourOrganizationBrandingOptionalProvide",
+  "value": "Your Organization Branding (optional \u2014 provide it once, we reuse it everywhere)",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "yourLogoAndBrandColors",
+  "value": "Your logo and brand colors are used to professionally brand every resource we create for you \u2014 application forms, emails, agreements, documents and board member portfolios. You will not be asked again.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "organizationLogoPngJpgUp",
+  "value": "Organization Logo (PNG/JPG, up to 500KB)",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "linkedinOrganizationPageUrl",
+  "value": "LinkedIn Organization Page URL ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "yourLinkedinProfileUrl",
+  "value": "Your LinkedIn Profile URL ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "whatSkillsExperienceOrStrengths",
+  "value": "What skills, experience or strengths are already represented on your current board? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "whatAreTheBiggestChallenges",
+  "value": "What are the biggest challenges you are experiencing with your present board? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "whatSkillsExperienceRelationshipsOr",
+  "value": "What skills, experience, relationships or professional backgrounds would you like to add to your board? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "tellUsAboutTheOther",
+  "value": "Tell us about the other skills or experience ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "whatDoYouMostNeed",
+  "value": "What do you most need your new board members to help your organization accomplish? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "isThereAnythingSpecificYou",
+  "value": "Is there anything specific you already know you want in the people you recruit?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "howOftenDoesYourBoard",
+  "value": "How often does your board meet? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "tellUsYourMeetingSchedule",
+  "value": "Tell us your meeting schedule ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "howAreYourBoardMeetings",
+  "value": "How are your board meetings held? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "tellUsTheTermLength",
+  "value": "Tell us the term length ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "expectedMonthlyTimeCommitment",
+  "value": "Expected Monthly Time Commitment",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "maximumBoardSizeAccordingTo",
+  "value": "Maximum Board Size According to Your Bylaws or Governing Documents ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "notSpecifiedIDontKnow",
+  "value": "Not Specified / I Don't Know",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentIntakePage.jsx",
+  "key": "isThereAnythingElseI",
+  "value": "Is There Anything Else I Should Know Before We Start Recruiting Your Board?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "boardRecruitmentProjectProposal",
+  "value": "Board Recruitment Project Proposal",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "yourNonprofitShouldNotHave",
+  "value": "Your nonprofit should not have to keep struggling because you do not have the right people around the table.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "whetherYouNeedOneNew",
+  "value": "Whether you need one new board member or need to build an entirely new board, the objective of this engagement is simple:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "helpYouRecruitTheBoard",
+  "value": "Help you recruit the board members your nonprofit needs to grow, raise money, build relationships and move your mission forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "overTheNextTwoWeeks",
+  "value": "Over the next two weeks, we will work together to identify, recruit, select and properly bring in skilled professionals with the experience, credibility, relationships and willingness to help your organization succeed.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "hereIsHowWeWill",
+  "value": "Here Is How We Will Work Together",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "launchYourRecruitmentCampaign",
+  "value": "Launch Your Recruitment Campaign",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "duringOurFirst30Minute",
+  "value": "During our first 30-minute session, we will identify the exact board members your nonprofit needs and launch your board recruitment campaign.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weWillLaunchYourRecruitment",
+  "value": "We will launch your recruitment across various platforms using strategies we have mastered over the years.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "theObjectiveIsToPut",
+  "value": "The objective is to put your opportunity in front of enough quality people that ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "youHavePeopleToChoose",
+  "value": "you have people to choose from instead of simply accepting whoever happens to show up.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "decideWhoYouWant",
+  "value": "Decide Who You Want",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "asApplicationsBeginComingIn",
+  "value": "As applications begin coming in, your job is to review every applicant and decide who you want to meet.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weWillInviteThemIn",
+  "value": "We will invite them in to meet with you so you can better understand their:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "ifYouNeedHelpWith",
+  "value": "If you need help with the selection process, we can also provide the guidance and training you need to confidently choose who belongs on your board.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "getYourBoardMembersUp",
+  "value": "Get Your Board Members Up To Speed and Ready To Build With You",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "onceYouHaveSelectedThe",
+  "value": "Once you have selected the people you want, we come back in.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "recruitingSomebodyIsNotEnough",
+  "value": "Recruiting somebody is not enough.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "yourNewBoardMembersNeed",
+  "value": "Your new board members need to understand what is expected of them and how they are supposed to support you and the organization.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weWillHelpMakeSure",
+  "value": "We will help make sure your new board members understand:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weWillAlsoTakeThem",
+  "value": "We will also take them through the necessary onboarding documentation, including:",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "thisWayYouWillGather",
+  "value": "This way, you will gather important information about who they are, their professional experience, skills, relationships and the areas of the organization where they are interested in serving so you can start positioning them.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "inTwoWeeksYouWill",
+  "value": "In Two Weeks, You Will Have the Board Your Nonprofit Needs.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "aBoardOfSkilledProfessionals",
+  "value": "A board of skilled professionals with the experience, credibility and willingness to help your organization succeed.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "andBecauseYouParticipateIn",
+  "value": "And because you participate in the process with us, you will not only have new board members.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "youWillUnderstandHowThe",
+  "value": "You will understand how the process works and be able to recruit board members again whenever your nonprofit needs them.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "plusYouWillNotHave",
+  "value": "Plus, you will not have to start from scratch the next time your organization needs another board member. You will understand the process and have the tools and resources to recruit again.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weAlsoUnderstandThatEvery",
+  "value": "We also understand that every organization operates differently, so if you need to work within a different timeline, we are open to working with you within your organization's schedule.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "butIfYouAreReady",
+  "value": "But if you are ready to make payment and get started today, we are offering you a discount",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "whatHappensAfterYouMake",
+  "value": "What Happens After You Make Payment",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "afterMakingPaymentYouWill",
+  "value": "After making payment, you will tell us about your organization and board and then choose a convenient time to meet with me for our first session so we can start recruiting your board together.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "readyToBuildYourBoard",
+  "value": "Ready to Build Your Board?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "youDoNotHaveTo",
+  "value": "You do not have to spend the next several months trying to figure out where to find board members or how to recruit them.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "letSGetTheRight",
+  "value": "Let\u2019s get the right people around your table and get your organization moving forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "preferToDoItBy",
+  "value": "Prefer to Do It By Yourself?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "pleaseWaitWhileWeVerify",
+  "value": "Please wait while we verify your payment with Stripe.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weCouldNotFindA",
+  "value": "We could not find a checkout session. If you completed a payment, please contact us.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "returnToTheProposal",
+  "value": "Return to the Proposal",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "weCouldNotConfirmYour",
+  "value": "We Could Not Confirm Your Payment Yet",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "ifYouCompletedThePayment",
+  "value": "If you completed the payment, it may still be processing. Please refresh this page in a moment or contact us for help.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "returnToTheProposal2",
+  "value": "Return to the Proposal",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "tellMeAboutYourOrganization",
+  "value": "Tell Me About Your Organization and Board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardRecruitmentProposalPage.jsx",
+  "key": "takingYouToAShort",
+  "value": "Taking you to a short form so we can start your board recruitment\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "tellUsWhereToSend",
+  "value": "Tell Us Where to Send Your Results",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "whatDoesYourBoardLook",
+  "value": "What Does Your Board Look Like Today?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "howManyBoardMembersDo",
+  "value": "How many Board Members do you currently have? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "howManyOfThoseBoard",
+  "value": "How many of those Board Members are currently active? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "doYouNeedMorePeople",
+  "value": "Do You Need More People Around the Table?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "doYouThinkYouNeed",
+  "value": "Do you think you need to recruit new Board Members?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "whatDoYouWantTo",
+  "value": "What Do You Want to Do About Your Inactive Board Members?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "wouldYouLikeToReactivate",
+  "value": "Would you like to reactivate the Board Members who are currently inactive?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "doYourBoardMembersCurrently",
+  "value": "Do your Board Members currently help raise money?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/BoardTransformationPage.jsx",
+  "key": "wouldYouLikeYourBoard",
+  "value": "Would you like your Board Members to actively help raise money for the organization?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FundraisingPortfolioPage.jsx",
+  "key": "pleaseContactThePersonWho",
+  "value": "Please contact the person who sent you this link.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelForm.jsx",
+  "key": "tellUsWhatIsHappening",
+  "value": "Tell us what is happening now. Your result will use only the information you submit.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelLayout.jsx",
+  "key": "nonprofitBoardBuilderHelpsNonprofits",
+  "value": "Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelLayout.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "funnels/FunnelLayout.jsx",
+  "key": "nonprofitBoardBuilder2",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "matchesTheSupportYouSelected",
+  "value": "Matches the support you selected",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "programAccessOpeningSoon",
+  "value": " Program Access Opening Soon",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "chooseHowYouWantTo",
+  "value": "Choose how you want to move forward",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "iWantToDoIt",
+  "value": "I want to do it myself.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "recruitTheQualityBoardMembers",
+  "value": "Recruit the quality board members your nonprofit needs without guessing what to do next. Get the knowledge and resources you need to confidently build a stronger, more capable board yourself.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "iWantGuidanceWhileI",
+  "value": "I want guidance while I recruit my board.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "buildTheStrongerBoardYour",
+  "value": "Build the stronger board your nonprofit has been missing. Attract qualified professionals, choose the right people for your organization, and come out of the process with committed new board members ready to help your nonprofit move forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "iWantSomeoneToWork",
+  "value": "I want someone to work with me.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "getTheBoardMembersYour",
+  "value": "Get the board members your nonprofit needs without carrying the recruitment process alone. Bring in qualified professionals with the skills, experience, relationships and fundraising capacity your organization needs, and get them properly onboarded and ready to serve.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "helpMeRecruitMyBoard",
+  "value": "Help Me Recruit My Board ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "forNonprofitFoundersAndLeaders",
+  "value": "For nonprofit founders and leaders who are comfortable using technology and want the complete process, training, instructions and ready-to-use resources.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "theFullTrainingPlusThe",
+  "value": "The full training plus the guided execution platform that walks you through the process and helps create the materials required to execute.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "workDirectlyWithNonprofitBoard",
+  "value": "Work directly with Nonprofit Board Builder through the higher-support execution option to move the complete process forward with you.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "offerSpecificImplementationGuidance",
+  "value": "Offer-specific implementation guidance",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "aClearPathFromDecision",
+  "value": "A clear path from decision to execution",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelOptionsPage.jsx",
+  "key": "scheduleMyExecutionPlanningCall",
+  "value": "Schedule My Execution Planning Call ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelResultPage.jsx",
+  "key": "buildingYourStartingPoint",
+  "value": "Building your starting point\u2026",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/FunnelResultPage.jsx",
+  "key": "basedOnlyOnYourAnswers",
+  "value": "Based only on your answers",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/PlanningFormPage.jsx",
+  "key": "pleaseContactThePersonWho",
+  "value": "Please contact the person who sent you this link and ask them to resend your personal form link.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/PlanningFormPage.jsx",
+  "key": "yourIdeasWillBeConsidered",
+  "value": "Your ideas will be considered alongside the responses of the other Board Members as the organization's Fundraising Strategy Plan is developed.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "getTheBoardMembersWho",
+  "value": "Get the Board Members who are ready to serve to stand up, take responsibility and help move the organization forward \u2014 and have the difficult conversations with those who are no longer prepared to carry Board responsibility.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "boardReactivationTrainingVideoComing",
+  "value": "Board Reactivation Training Video Coming Soon",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "twoWaysICanHelp",
+  "value": "Two Ways I Can Help You Reactivate Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "chooseTheLevelOfSupport",
+  "value": "Choose the level of support that works best for you.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "followTheBoardReactivationProcess",
+  "value": "Follow the Board Reactivation process yourself, work through your current Board Members, have the conversations that need to happen, and give the people who stay clear responsibility for helping move the organization forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "reactivateMyBoardMyself497",
+  "value": "REACTIVATE MY BOARD MYSELF \u2014 $497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "doItWithMe",
+  "value": "Do It With Me",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "workDirectlyWithRooneyThrough",
+  "value": "Work directly with Rooney through the Board Reactivation process so you can identify who is ready to stand up, deal with the people who are no longer prepared to serve, and rebuild an active Board with clear areas of responsibility.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "reactivateMyBoardWithRooney",
+  "value": "REACTIVATE MY BOARD WITH ROONEY \u2014 $1,997",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateWithRooneyPage.jsx",
+  "key": "reactivateYourBoardWithRooney",
+  "value": "Reactivate Your Board With Rooney",
+  "kind": "attr:title"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "stopCarryingBoardMembersWho",
+  "value": "Stop Carrying Board Members Who Are Not Carrying the Mission",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "followTheProcessToFind",
+  "value": "Follow the process to find out who is ready to stand up, who needs clearer responsibility, and who is no longer prepared to serve \u2014 without pressuring people, destroying relationships or continuing to carry dead weight on your Board.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "reactivateTheBoardYouAlready",
+  "value": "Reactivate the Board You Already Have",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "youWillWorkThroughYour",
+  "value": "You will work through your current Board one person at a time, understand what caused the disengagement, find out who is willing and able to recommit, have the conversations that need to happen, and give the people who remain clear areas of responsibility.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "whatYouWillWalkAway",
+  "value": "What You Will Walk Away With",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "youAreDoingItYourself",
+  "value": "You Are Doing It Yourself. You Are Not Doing It Alone.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "iWillShowYouThe",
+  "value": "I will show you the process, the platform will give you what you need to execute it, and when you get stuck, you can reach out to me for help.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivateYourBoardYourselfPage.jsx",
+  "key": "wantMeToDoIt",
+  "value": "Want Me To Do It With You?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivationStartHerePage.jsx",
+  "key": "youAreAboutToWork",
+  "value": "You are about to work through your Board one person at a time.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/ReactivationStartHerePage.jsx",
+  "key": "theGoalIsToUnderstand",
+  "value": "The goal is to understand what caused the disengagement, find out who is willing and able to stand up, have the conversations that need to happen, and give the people who remain clear responsibility for helping move the organization forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "startRecruitingSkilledProfessionalsIn",
+  "value": "Start Recruiting Skilled Professionals in Less Than 30 Minutes",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "recruitTheCommittedCapableBoard",
+  "value": "Recruit the committed, capable board members your nonprofit needs to move forward. Get the knowledge, resources, guidance, support and accountability you need to confidently build a stronger board around your mission. You will have what you need to execute and direct access to Rooney whenever you need help along the way. Your investment is also protected by our Recruitment Guarantee.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "yourInvestmentIsProtectedBy",
+  "value": "Your investment is protected by our money-back Recruitment Guarantee. Click to read the Recruitment Guarantee terms.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "moveFromKnowingYouNeed",
+  "value": "Move from knowing you need new board members to knowing exactly who to recruit and having what you need to begin reaching skilled professionals. Follow the guided process and you can start your recruitment campaign in less than 30 minutes.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "everyKindOfBoard",
+  "value": "Every kind of board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "useTheGuidedProcessTo",
+  "value": "Use the guided process to recruit committed professionals for your governing, working or advisory board based on the skills, relationships and experience your organization needs.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "iHaveReadTheProgram",
+  "value": "I have read the program information and agree to the ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitCheckoutPage.jsx",
+  "key": "programAccessOpeningSoon",
+  "value": " Program Access Opening Soon",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitProcessPage.jsx",
+  "key": "recruitingTheRightBoardIs",
+  "value": "Recruiting the right board is not just about bringing in the right people. It is also about bringing them in the right way so they understand the mission, commit to the organization and participate fully in building it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitProcessPage.jsx",
+  "key": "havingWorkedWithHundredsOf",
+  "value": "Having worked with hundreds of nonprofits to strengthen their boards over the last decade, here are the 5 steps we recommend to build the board your organization needs.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitProcessPage.jsx",
+  "key": "identifyTheBoardMyNonprofit",
+  "value": "Identify the Board My Nonprofit Needs ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitProcessPage.jsx",
+  "key": "youDoNotNeedMore",
+  "value": "You do not need more names on your board. You need committed people with the capacity to help your nonprofit grow, raise money, build relationships and move the mission forward.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitProcessPage.jsx",
+  "key": "startBuildingMyBoard",
+  "value": "Start Building My Board ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "buildYourBoardWithMe",
+  "value": "Build your board with me.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "boardRecruitmentVideoComingSoon",
+  "value": "Board Recruitment Video Coming Soon",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "yourInvestmentIsProtectedBy",
+  "value": "Your investment is protected by my 100% refund guarantee.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "twoWaysICanHelp",
+  "value": "Two Ways I Can Help You Recruit Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "chooseTheLevelOfSupport",
+  "value": "Choose the level of support that works best for you.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "recruitYourBoardYourself",
+  "value": "Recruit Your Board Yourself",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "watchMeRunTheProcess",
+  "value": "Watch me run the process, follow what I do, use the execution materials we provide and reach out whenever you need help along the way.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "doItYourself497",
+  "value": "DO IT YOURSELF \u2014 $497",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "recruitYourBoardWithMe",
+  "value": "Recruit Your Board With Me",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "weHandleTheOutreachYou",
+  "value": "We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "doItWithMe1",
+  "value": "DO IT WITH ME \u2014 $1,997",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitWithRooneyPage.jsx",
+  "key": "recruitYourBoardWithRooney",
+  "value": "Recruit Your Board With Rooney",
+  "kind": "attr:title"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "watchMeRunTheRecruitment",
+  "value": "Watch me run the recruitment process, then do what I do for your own nonprofit.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "buildTheBoardYourNonprofit",
+  "value": "Build the Board Your Nonprofit Needs",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "thisIsNotACourse",
+  "value": "This is not a course teaching theory. You will not simply learn about board recruitment \u2014 you will follow the process step by step, launch your recruitment campaign, work through your applicants, and properly bring the people you select into your organization.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "iWillShowYouExactly",
+  "value": "I will show you exactly how I run the board recruitment process.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "youWatchMeDoIt",
+  "value": "You watch me do it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "thenYouFollowWhatI",
+  "value": "Then you follow what I do for your own organization, using the materials created specifically for your nonprofit to actually recruit your board.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "whatYouWillWalkAway",
+  "value": "What You Will Walk Away With",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "youAreDoingItYourself",
+  "value": "You Are Doing It Yourself. You Are Not Doing It Alone.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "iWillShowYouThe",
+  "value": "I will show you the process, the platform will give you the materials you need to execute, and if you get stuck anywhere along the way, you can reach out to me for help using the Need Help With This Step? support built into every step.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "learnTheProcessOnceUse",
+  "value": "Learn the Process Once. Use It Again Whenever You Need It.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "byGoingThroughTheProcess",
+  "value": "By going through the process yourself, you learn how board recruitment actually works \u2014 and you can repeat it whenever your organization needs to recruit again.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "afterMakingPaymentTellUs",
+  "value": "After making payment, tell us about your organization and board and begin following the process immediately. You can work toward launching your board recruitment campaign in the next 30 minutes using the instructions and materials provided.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "yourPaymentWasNotCompleted",
+  "value": "Your payment was not completed. You can get started whenever you're ready.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitYourBoardYourselfPage.jsx",
+  "key": "wantMeToDoIt",
+  "value": "Want Me To Do It With You?",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/RecruitmentStartHerePage.jsx",
+  "key": "followTheProcessUseThe",
+  "value": "Follow the process, use the materials we create for you, and ask for help anytime you need it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategicPlanReviewPage.jsx",
+  "key": "reviewTheConsolidatedThinkingBelow",
+  "value": "Review the consolidated thinking below. For each strategic area, support it, suggest a change, add an idea, or flag it for Board discussion. This is refinement, not formal adoption.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategicPlanReviewPage.jsx",
+  "key": "commentsDetailsOptional",
+  "value": "Comments / details (optional)",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "funnels/StrategyPlanPage.jsx",
+  "key": "pleaseContactThePersonWho",
+  "value": "Please contact the person who sent you this link and ask them to resend it.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "pleaseContactThePersonWho",
+  "value": "Please contact the person who sent you this link and ask them to resend the review link.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "yourInputWillHelpThe",
+  "value": "Your input will help the Board work through the strategy and agree on the way forward together.",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "whyDoYouDisapproveOf",
+  "value": "Why do you disapprove of this idea? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "afterReviewingTheFundraisingStrategy",
+  "value": "After reviewing the Fundraising Strategy Plan, which best reflects your position? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "basedOnThisPlanWhere",
+  "value": "Based on this plan, where do you see yourself being able to contribute? ",
+  "kind": "text"
+ },
+ {
+  "file": "funnels/StrategyReviewPage.jsx",
+  "key": "whatSupportOrResourcesWould",
+  "value": "What support or resources would help you contribute effectively? (optional)",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "privateAccessForTheNonprofit",
+  "value": "Private access for the Nonprofit Board Builder owner.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "uploadACsvWithAt",
+  "value": "Upload a CSV with at least an Email column (First Name, Last Name, Phone, City, State, Country, LinkedIn, Professional Title and Employer columns are recognized automatically). Existing applicants are matched by email \u2014 their richer information and unsubscribe status are preserved. The import itself never sends any email.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "iConfirmThesePeopleGave",
+  "value": "I confirm these people gave permission to be contacted about board opportunities.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "previewNothingHasBeenImported",
+  "value": "Preview \u2014 nothing has been imported yet",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "noBlogPostsYetGenerate",
+  "value": "No blog posts yet. Generate your first draft above.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "bodyUseAtTheStart",
+  "value": "Body (use \"## \" at the start of a line for subheadings, blank line between paragraphs)",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "recruitmentExecutionReferenceLibrary",
+  "value": "Recruitment Execution Reference Library",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "noReferenceMaterialsYet",
+  "value": "No reference materials yet.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "sendBoardOpportunityAndNonprofit",
+  "value": "Send board-opportunity and nonprofit broadcasts through the Resend Broadcast dashboard using the Board Applicants or Nonprofit Leaders segment.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "resourceTagsCommaSeparatedOptional",
+  "value": "Resource tags (comma separated, optional)",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "searchNameOrEmail",
+  "value": "Search name or email",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "pages/AdminPage.jsx",
+  "key": "selectAllApplicants",
+  "value": "Select all applicants",
+  "kind": "attr:aria-label"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "nonprofitBoardBuilderInsights",
+  "value": "Nonprofit Board Builder Insights",
+  "kind": "text"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "practicalStrategiesToHelpYou",
+  "value": "Practical strategies to help you reactivate your present board, recruit the board members you are missing and activate your board to start raising money.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "articlesAreComingSoon",
+  "value": "Articles are coming soon.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "backToAllArticles",
+  "value": "Back to All Articles",
+  "kind": "text"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "latestFromNonprofitBoardBuilder",
+  "value": "Latest From Nonprofit Board Builder",
+  "kind": "text"
+ },
+ {
+  "file": "pages/BlogPages.jsx",
+  "key": "t45GoActiveDelta",
+  "value": " 45) go(active + (delta ",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "nonprofitBoardBuilderHelpsNonprofits",
+  "value": "Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "theNonprofitBoardApplicantNetwork",
+  "value": "The Nonprofit Board Applicant Network",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "tellUsAboutYourProfessional",
+  "value": "Tell us about your professional background, the causes you care about and the type of board opportunity you are looking for.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "weWillSaveYourProfile",
+  "value": "We will save your profile and email you when we have nonprofit board opportunities that match your experience, interests, location and availability.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "joinTheBoardApplicantNetwork",
+  "value": "Join the Board Applicant Network ",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "currentlyOpenToProfessionalsLiving",
+  "value": " Currently open to professionals living in the United States and United Kingdom.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "aClearPathToBoard",
+  "value": "A clear path to board service",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "bringWhatYouKnow",
+  "value": "Bring what you know",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "theyNeedPeopleWillingTo",
+  "value": "They need people willing to bring their skills, experience, relationships and commitment into the organization.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "pages/JoinBoardPage.jsx",
+  "key": "nonprofitBoardBuilder2",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "pages/LegalPage.jsx",
+  "key": "lastUpdatedAugust42026",
+  "value": "Last updated August 4, 2026",
+  "kind": "text"
+ },
+ {
+  "file": "pages/LegalPage.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "pages/PortfolioPage.jsx",
+  "key": "pleaseContactTheOrganizationThat",
+  "value": "Please contact the organization that sent you this link.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/SharedPages.jsx",
+  "key": "completeThisProfileSoThe",
+  "value": "Complete this profile so the organization has an accurate record of the skills, relationships and experience you bring to the board.",
+  "kind": "text"
+ },
+ {
+  "file": "pages/SharedPages.jsx",
+  "key": "submitMyBoardMemberProfile",
+  "value": "Submit My Board Member Profile",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "yourBoardApplicantProfileHas",
+  "value": "Your Board Applicant Profile Has Been Saved",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "thankYouForJoiningThe",
+  "value": "Thank you for joining the Nonprofit Board Builder Applicant Network.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "weWillReviewYourInformation",
+  "value": "We will review your information and email you whenever we have a nonprofit board opportunity that matches your professional experience, causes, location and availability.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "toYourContactsFavouritesOr",
+  "value": " to your contacts, favourites or safe-sender list so you do not miss new board opportunities.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "youCanUnsubscribeFromFuture",
+  "value": "You can unsubscribe from future opportunity emails at any time.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantConfirmation.jsx",
+  "key": "returnToNonprofitBoardBuilder",
+  "value": "Return to Nonprofit Board Builder",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "theBoardApplicantNetworkIs",
+  "value": "The Board Applicant Network is currently open only to professionals living in the United States and United Kingdom.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "rSumOrCv",
+  "value": "R\u00e9sum\u00e9 or CV",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "optionalPdfDocOrDocx",
+  "value": "Optional. PDF, DOC or DOCX, up to 8 MB.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "bySubmittingYourProfileYou",
+  "value": "By submitting your profile, you are asking Nonprofit Board Builder to save your professional information and contact you when a nonprofit board opportunity may match your skills, experience, causes, location and availability. You can unsubscribe from future board-opportunity emails at any time.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "tellUsAboutYourself",
+  "value": "Tell Us About Yourself",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "pasteTheLinkToYour",
+  "value": "Paste the link to your LinkedIn profile",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "tellUsAboutYourProfessional",
+  "value": "Tell Us About Your Professional Background",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "tellUsAboutTheBoard",
+  "value": "Tell Us About the Board Opportunities You Want",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "exampleBirminghamAndSurroundingAreas",
+  "value": "Example: Birmingham and surrounding areas, anywhere in Alabama, or remote opportunities across the United States",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "components/ApplicantFormSteps.jsx",
+  "key": "tellUsHowYouCan",
+  "value": "Tell Us How You Can Contribute",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/AssessmentForm.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "components/ConfirmationScreen.jsx",
+  "key": "thankYouWeHaveReceived",
+  "value": "Thank You \u2014 We Have Received Your Board Assessment",
+  "kind": "text"
+ },
+ {
+  "file": "components/ConfirmationScreen.jsx",
+  "key": "weWillPersonallyReviewYour",
+  "value": "We will personally review your present board, identify which board members can be reactivated, determine the exact type of board members you may need to recruit, and assess what must happen to activate your board around fundraising.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ConfirmationScreen.jsx",
+  "key": "pleaseLookOutForAn",
+  "value": "Please look out for an email from Nonprofit Board Builder shortly. We will explain what you need to do to begin transforming your present board into a powerhouse fundraising board and the available options for us to help you execute.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ConfirmationScreen.jsx",
+  "key": "weMayAlsoContactYou",
+  "value": "We may also contact you using the phone number provided if we are unable to reach you by email.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ConfirmationScreen.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "components/FounderStorySection.jsx",
+  "key": "rooneyAkpesiriTheNonprofitBoard",
+  "value": "Rooney Akpesiri, the Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "components/LandingPage.jsx",
+  "key": "nonprofitBoardBuilder",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "components/LandingPage.jsx",
+  "key": "nonprofitBoardBuilder2",
+  "value": "Nonprofit Board Builder",
+  "kind": "attr:alt"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "toolsBuiltForExecution",
+  "value": "Tools built for execution",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "weGiveYouTheStrategy",
+  "value": "We Give You the Strategy, Materials and Tools Required to Transform Your Board",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "youWillNotBeLeft",
+  "value": "You will not be left trying to work out what to do next. We create the forms, recruitment materials, planning tools and execution process required to reactivate, recruit and activate your board.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "brightFuturesLiteracyInitiative",
+  "value": "Bright Futures Literacy Initiative",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "brightFuturesLiteracyInitiative2",
+  "value": "Bright Futures Literacy Initiative",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "applyToJoinOurBoard",
+  "value": "Apply to Join Our Board",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "helpExpandLiteracyAccessFor",
+  "value": "Help expand literacy access for children and families.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardMemberMarcusReynolds",
+  "value": "Board Member: Marcus Reynolds",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardFundraisingPlanningForm",
+  "value": "Board Fundraising Planning Form",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whichFundraisingAreasAreYou",
+  "value": "Which fundraising areas are you most confident supporting?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whichPeopleOrBusinessesCould",
+  "value": "Which people or businesses could you introduce to the organization?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "regionalBanksLocalAccountingFirms",
+  "value": "Regional banks, local accounting firms and two Birmingham business associations.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whichPartOfTheFundraising",
+  "value": "Which part of the fundraising plan will you take responsibility for?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "helpIdentifyTenLocalCorporate",
+  "value": "Help identify ten local corporate prospects and make five direct introductions.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whatSupportOrMaterialsDo",
+  "value": "What support or materials do you need?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "corporatePartnershipOverviewEmailIntroduction",
+  "value": "Corporate partnership overview, email introduction and meeting talking points.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whenWillYouBegin",
+  "value": "When will you begin?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "brightFuturesLiteracyInitiative3",
+  "value": "Bright Futures Literacy Initiative",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardRecommitmentAndPlanningForm",
+  "value": "Board Recommitment and Planning Form",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "doYouRemainCommittedTo",
+  "value": "Do you remain committed to the mission of the organization?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "yesIAmFullyCommitted",
+  "value": "Yes, I am fully committed.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "iNeedMoreInformationBefore",
+  "value": "I need more information before recommitting.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "iAmNoLongerAble",
+  "value": "I am no longer able to continue.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "canYouAttendScheduledBoard",
+  "value": "Can you attend scheduled board meetings consistently?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whichAreasAreYouWilling",
+  "value": "Which areas are you willing to support?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whichResponsibilityAreYouPrepared",
+  "value": "Which responsibility are you prepared to accept during the next twelve months?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "helpBuildRelationshipsWithLocal",
+  "value": "Help build relationships with local employers and support the corporate fundraising committee.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "whatSupportDoYouNeed",
+  "value": "What support do you need to succeed?",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "clearExpectationsQuarterlyTargetsAnd",
+  "value": "Clear expectations, quarterly targets and ready-to-use outreach materials.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "iRecommitForTheNext",
+  "value": "I recommit for the next board term.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "iWouldLikeToDiscuss",
+  "value": "I would like to discuss a different role.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "iAmReadyToStep",
+  "value": "I am ready to step down respectfully.",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "submitMyRecommitmentDecision",
+  "value": "Submit My Recommitment Decision",
+  "kind": "text"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardProspectList",
+  "value": "Board Prospect List",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "applyToJoinOurBoard2",
+  "value": "Apply to Join Our Board",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardFundraisingPlanningForm2",
+  "value": "Board Fundraising Planning Form",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/ProductToolsSection.jsx",
+  "key": "boardRecommitmentAndPlanningForm2",
+  "value": "Board Recommitment and Planning Form",
+  "kind": "attr:title"
+ },
+ {
+  "file": "components/TestimonialCarousel.jsx",
+  "key": "t45GoActiveDelta",
+  "value": " 45) go(active + (delta ",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepFour.jsx",
+  "key": "tellUsAboutYourBoard",
+  "value": "Tell Us About Your Board\u2019s Fundraising",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepFour.jsx",
+  "key": "showUsHowYourBoard",
+  "value": "Show us how your board participates in fundraising now.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepFour.jsx",
+  "key": "iConfirmThatTheInformation",
+  "value": "I confirm that the information provided is accurate, that Nonprofit Board Builder may contact me about transforming our board, and that I agree to the Privacy Policy.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepFour.jsx",
+  "key": "bySubmittingThisAssessmentYou",
+  "value": "By submitting this assessment, you are asking Nonprofit Board Builder to review your present board, contact you about your submission and send you relevant board recruitment, reactivation and fundraising activation information. You can unsubscribe from future emails at any time.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepOne.jsx",
+  "key": "tellUsAboutYourOrganization",
+  "value": "Tell Us About Your Organization",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepOne.jsx",
+  "key": "helpUsUnderstandTheMission",
+  "value": "Help us understand the mission your board needs to move forward.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepOne.jsx",
+  "key": "whereIsYourOrganizationLocated",
+  "value": "Where is your organization located? ",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepOne.jsx",
+  "key": "exampleRaiseMoneyBuildPartnerships",
+  "value": "Example: Raise money, build partnerships, strengthen governance, recruit volunteers or expand programs",
+  "kind": "attr:placeholder"
+ },
+ {
+  "file": "components/form/StepThree.jsx",
+  "key": "tellUsWhichBoardMembers",
+  "value": "Tell Us Which Board Members You Need",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepThree.jsx",
+  "key": "defineTheExperienceSkillsAnd",
+  "value": "Define the experience, skills and connections your board is missing.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepTwo.jsx",
+  "key": "tellUsAboutYourPresent",
+  "value": "Tell Us About Your Present Board",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepTwo.jsx",
+  "key": "giveUsAClearPicture",
+  "value": "Give us a clear picture of your board today.",
+  "kind": "text"
+ },
+ {
+  "file": "components/form/StepTwo.jsx",
+  "key": "numberOrNotSure",
+  "value": "Number or Not sure",
+  "kind": "attr:placeholder"
+ }
+]

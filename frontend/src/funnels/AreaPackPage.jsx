@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { areaPackText } from "../content/appContent";
+import { areaPackPageText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -37,12 +38,12 @@ export default function AreaPackPage() {
         <div data-testid="area-pack-thanks">
           <h2>{areaPackText.h_detailedPlanSubmitted}</h2>
           <p>Thank you. Your detailed plan for {data.area} has been submitted{data.submitted_at ? ` (${data.submitted_at.slice(0, 10)})` : ""} and will be presented to the Board. You can submit an updated version below at any time before the Board meeting.</p>
-          <button className="button button-back button-small" onClick={() => setDone(false)} data-testid="area-pack-resubmit">Submit an Updated Version</button>
+          <button className="button button-back button-small" onClick={() => setDone(false)} data-testid="area-pack-resubmit">{areaPackPageText.submitAnUpdatedVersion}</button>
         </div>
       ) : (
         <form onSubmit={submit}>
           <h2>Submit Your Detailed Plan for {data.area}</h2>
-          <p>Take the agreed foundation above and develop the detailed plan for your area. Paste or write your completed plan below.</p>
+          <p>{areaPackPageText.takeTheAgreedFoundationAbove}</p>
           <textarea required rows="14" style={{ width: "100%" }} value={planText} onChange={(e) => setPlanText(e.target.value)} data-testid="area-pack-plan-input" />
           {error && <p className="submit-error">{error}</p>}
           <button className="button" type="submit" disabled={busy} data-testid="area-pack-submit" style={{ marginTop: "14px" }}>{busy ? "Submitting…" : "SUBMIT MY DETAILED AREA PLAN"}</button>

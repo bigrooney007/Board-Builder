@@ -1,4 +1,5 @@
 import { funnelControlsText } from "../content/appContent";
+import { funnelFormControlsText } from "../content/siteContent";
 export const FunnelError = ({ name, error }) => error ? <p className="field-error" data-testid={`funnel-${name}-error`}>{error}</p> : null;
 
 export const FunnelText = ({ name, label, value, update, error, required = true, type = "text", placeholder }) => <label className="field" data-testid={`funnel-${name}-field`}><span>{label}{required && <b> *</b>}</span><input type={type} value={value} placeholder={placeholder} min={type === "number" ? "0" : undefined} onChange={(event) => update(name, event.target.value)} data-testid={`funnel-${name}-input`} /><FunnelError name={name} error={error} /></label>;
