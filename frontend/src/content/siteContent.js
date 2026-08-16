@@ -88,16 +88,9 @@ export const SITE_CONTENT = {
       "activate": "Activate",
       "logIn": "Log In"
     },
-    "heroCard": {
-      "label": "MISSION",
-      "text": "Turn shared purpose into fundraising momentum.",
-      "stat": "3",
-      "statLabel": "stages to a stronger board"
-    },
     "finalCta": {
       "eyebrow": "A board built for impact",
       "heading": "Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission",
-      "text": "Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.",
       "reactivateButton": "Reactivate My Board",
       "recruitButton": "Recruit My Board",
       "activateButton": "Activate My Board to Raise Money"
@@ -118,8 +111,7 @@ export const SITE_CONTENT = {
   },
   "testimonialsSection": {
     "eyebrow": "Success stories",
-    "heading": "Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems",
-    "supportingText": "Founders and executive directors have worked with the Nonprofit Board Builder to recruit board members, activate their boards, build fundraising systems, recruit volunteers and create a clear structure for moving their missions forward."
+    "heading": "Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems"
   },
   "founderStory": {
     "eyebrow": "The story behind the process",
@@ -158,23 +150,24 @@ export const SITE_CONTENT = {
     }
   },
   "offerVideos": {
+    "checkoutError": "We could not start checkout. Please try again in a moment.",
     "recruitment": {
       "headline": "Recruit New Board Members",
       "videoPlaceholder": "Board Recruitment Video Coming Soon",
       "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU"
+      "dwyLabel": "DO IT WITH YOU — $1,997"
     },
     "reactivation": {
       "headline": "Reactivate Your Board",
       "videoPlaceholder": "Board Reactivation Video Coming Soon",
       "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU"
+      "dwyLabel": "DO IT WITH YOU — $1,997"
     },
     "activation": {
       "headline": "Activate Your Board Around Fundraising",
       "videoPlaceholder": "Board Activation Video Coming Soon",
       "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU"
+      "dwyLabel": "DO IT WITH YOU — $2,497"
     }
   }
 };

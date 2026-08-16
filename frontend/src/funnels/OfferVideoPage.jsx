@@ -1,17 +1,35 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { SITE_CONTENT } from "@/content/siteContent";
 
-const ROUTES = {
-  recruitment: { diy: "/recruit-your-board-yourself", dwy: "/board-recruitment-proposal" },
-  reactivation: { diy: "/reactivate-your-board-yourself", dwy: "/board-reactivation-proposal" },
-  activation: { diy: "/activate-your-board-yourself", dwy: "/board-activation-proposal" },
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const CHECKOUT_ENDPOINTS = {
+  recruitment: { diy: "diy-checkout", dwy: "direct-project-checkout" },
+  reactivation: { diy: "reactivation-diy-checkout", dwy: "reactivation-project-checkout" },
+  activation: { diy: "activation-diy-checkout", dwy: "activation-project-checkout" },
 };
 
 export default function OfferVideoPage({ offer }) {
   const content = SITE_CONTENT.offerVideos[offer];
-  const routes = ROUTES[offer];
+  const endpoints = CHECKOUT_ENDPOINTS[offer];
+  const [busy, setBusy] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const startCheckout = async (choice) => {
+    setBusy(choice);
+    setNotice("");
+    try {
+      const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin });
+      window.location.href = response.data.checkout_url;
+    } catch {
+      setNotice(SITE_CONTENT.offerVideos.checkoutError);
+      setBusy("");
+    }
+  };
+
   return (
     <FunnelLayout restrained>
       <main data-testid={`offer-video-page-${offer}`} style={{ maxWidth: 900, margin: "0 auto", padding: "48px 20px" }}>
@@ -25,9 +43,10 @@ export default function OfferVideoPage({ offer }) {
 
         <section data-testid={`offer-payment-choices-${offer}`}>
           <div className="offer-choice-grid">
-            <Link className="button" to={routes.diy} data-testid={`offer-diy-button-${offer}`}>{content.diyLabel}</Link>
-            <Link className="button button-outline" to={routes.dwy} data-testid={`offer-dwy-button-${offer}`}>{content.dwyLabel}</Link>
+            <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? "Starting Checkout…" : content.diyLabel}</button>
+            <button type="button" className="button button-outline" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? "Starting Checkout…" : content.dwyLabel}</button>
           </div>
+          {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
         </section>
 
         <div style={{ marginTop: 40 }}>

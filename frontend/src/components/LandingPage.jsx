@@ -28,20 +28,15 @@ export const LandingPage = ({ onJoin }) => (
       <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">{home.nav.reactivate}</a><a href="/recruit">{home.nav.recruit}</a><a href="/activate">{home.nav.activate}</a><a href="/login" data-testid="nav-login-link">{home.nav.logIn}</a></div>
     </nav>
 
-    <section id="top" className="hero" data-testid="hero-section">
-      <div className="hero-copy">
+    <section id="top" className="hero-banner" data-testid="hero-section">
+      <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
-        <p className="hero-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
-        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">{home.cta}</a></p>
-      </div>
-      <div className="hero-visual" aria-hidden="true">
-        <div className="visual-grid" />
-        <div className="mission-card"><span className="mission-label">{home.heroCard.label}</span><strong>{home.heroCard.text}</strong><div className="people-row"><i /><i /><i /><i /><i /></div></div>
-        <div className="impact-stat"><strong>{home.heroCard.stat}</strong><span>{home.heroCard.statLabel}</span></div>
+        <p className="hero-banner-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
+        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-transformation" data-testid="hero-board-transformation-button">{home.cta}</a></p>
       </div>
     </section>
 
-    <section className="section home-intro" data-testid="home-intro-section">
+    <section className="home-intro" data-testid="home-intro-section">
       <h2 data-testid="home-intro-heading">{home.introHeading}</h2>
       {home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
     </section>
@@ -56,7 +51,7 @@ export const LandingPage = ({ onJoin }) => (
 
     <FounderStorySection />
 
-    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">{home.finalCta.eyebrow}</p><h2 data-testid="final-cta-heading">{home.finalCta.heading}</h2><p data-testid="final-cta-text">{home.finalCta.text}</p><OfferChoices location="final" /></section>
+    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">{home.finalCta.eyebrow}</p><h2 data-testid="final-cta-heading">{home.finalCta.heading}</h2><OfferChoices location="final" /></section>
 
     <BlogSlider />
 

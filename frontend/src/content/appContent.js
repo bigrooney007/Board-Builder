@@ -22,7 +22,8 @@ export const sharedCourseContent = {
 export const recruitmentContent = {
   module1: {
     heading: "Understanding the Board Recruitment Process",
-    body: "This training shows you how the whole board recruitment process works before you begin executing it. Watch the training above to understand the complete journey you are about to take, then use the module navigation below to continue to Module 2 and identify the people your board needs.",
+    body: "This training shows you how the whole board recruitment process works before you begin executing it. Watch the training above to understand the complete journey you are about to take, then mark this step complete to continue to Module 2 and identify the people your board needs.",
+    nextButton: "NEXT: IDENTIFY THE PEOPLE YOUR BOARD NEEDS",
   },
   module2: {
     generateBoardButton: "Generate the Board We Need",

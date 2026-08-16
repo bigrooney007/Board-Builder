@@ -32,7 +32,6 @@ export const TestimonialsSection = () => {
       <div className="testimonials-heading">
         <p className="eyebrow" data-testid="testimonials-eyebrow">{SITE_CONTENT.testimonialsSection.eyebrow}</p>
         <h2 data-testid="testimonials-heading">{SITE_CONTENT.testimonialsSection.heading}</h2>
-        <p data-testid="testimonials-supporting-text">{SITE_CONTENT.testimonialsSection.supportingText}</p>
       </div>
       <div className="testimonial-slideshow" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} data-testid="testimonial-slideshow">
         <div className="testimonial-track" style={{ transform: `translateX(-${active * 100}%)` }}>{testimonials.map((testimonial, index) => <div className="testimonial-slide" key={`${testimonial.name}-${index}`} aria-hidden={active !== index}><TestimonialCard testimonial={testimonial} index={index} /></div>)}</div>
