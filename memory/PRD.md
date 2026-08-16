@@ -330,3 +330,13 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - Recruitment modules: course_content.py M1 retitled "Understanding the Board Recruitment Process", M2 "Identifying the People Your Board Needs" (both structures); appContent recruitmentContent.module1 heading/body updated, duplicate continue button REMOVED from CoursePages.jsx (standard module nav only); MaterialsLibrary MODULE_NAMES + accountability_service focus text synced. No module renumbering needed (content already in correct positions); no downloadable resource in M1
 - Verified: CI prod build OK x2, backend boot OK, homepage/offer/assessment screenshots confirm exact copy + routing. NOT functionally tested per instruction
 - Note: stale backend test assertions reference old M1 title (tests not run per instruction); reviewMode.jsx admin labels untouched (legacy numbering)
+
+## 2026-06: Homepage Cleanup + Complete Homepage Content Centralization + CTA text change
+- REMOVED 3 sections from LandingPage.jsx: "A practical path forward/Three Stages" (+stages array), "Clarity before action/Discover Exactly" (+discoveries array), "Start with the truth/Tell Us What Is Happening" (assessment-cta) — repo-wide grep confirms strings gone
+- Preserved: final-cta three-button section (explicitly preserved), testimonials, FounderStory, blog, join-network, footer
+- Removed dead nav links (How It Works, What We Help You Fix, Tools and Materials, Board Solutions) from homepage nav + JoinBoardPage nav (dead anchors after section removal); footer How It Works link removed
+- FULL centralization: every homepage static string now in SITE_CONTENT (home.nav, home.heroCard, home.finalCta, home.joinNetwork, home.footer + existing hero/intro/how); TestimonialsSection headings -> SITE_CONTENT.testimonialsSection; FounderStorySection copy -> SITE_CONTENT.founderStory (paragraphs, credibility, labels). ~60 homepage-rendered strings audited. Testimonial text still from content/testimonials.js
+- Single homepage implementation confirmed: App.js "/" -> HomeExperience -> LandingPage; no legacy/mobile variants; same canonical content across breakpoints
+- CTA text changed (user request): "Tell Us About Your Organization" -> "Tell Us About Your Board" (single key SITE_CONTENT.home.cta, updates hero + How We Help buttons)
+- Hero layout fix: .hero-copy max-width 710->1080 (border-box padding was squeezing content to 274px causing one-word-per-line title); h1 clamp reduced to 58px max
+- Verified: desktop + mobile screenshots, removed headings absent from rendered body, CI prod build OK, backend boot OK. Not functionally tested per standing instruction

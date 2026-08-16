@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { initialsFor, testimonials } from "../content/testimonials";
+import { SITE_CONTENT } from "../content/siteContent";
 
 const TestimonialCard = ({ testimonial, index }) => {
   return (
@@ -29,9 +30,9 @@ export const TestimonialsSection = () => {
   return (
     <section id="success-stories" className="section testimonials-section" data-testid="testimonials-section">
       <div className="testimonials-heading">
-        <p className="eyebrow" data-testid="testimonials-eyebrow">Success stories</p>
-        <h2 data-testid="testimonials-heading">Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems</h2>
-        <p data-testid="testimonials-supporting-text">Founders and executive directors have worked with the Nonprofit Board Builder to recruit board members, activate their boards, build fundraising systems, recruit volunteers and create a clear structure for moving their missions forward.</p>
+        <p className="eyebrow" data-testid="testimonials-eyebrow">{SITE_CONTENT.testimonialsSection.eyebrow}</p>
+        <h2 data-testid="testimonials-heading">{SITE_CONTENT.testimonialsSection.heading}</h2>
+        <p data-testid="testimonials-supporting-text">{SITE_CONTENT.testimonialsSection.supportingText}</p>
       </div>
       <div className="testimonial-slideshow" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} data-testid="testimonial-slideshow">
         <div className="testimonial-track" style={{ transform: `translateX(-${active * 100}%)` }}>{testimonials.map((testimonial, index) => <div className="testimonial-slide" key={`${testimonial.name}-${index}`} aria-hidden={active !== index}><TestimonialCard testimonial={testimonial} index={index} /></div>)}</div>

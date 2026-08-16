@@ -1,4 +1,4 @@
-import { ArrowRight, Check, RefreshCcw, Rocket, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { BlogSlider } from "@/pages/BlogPages";
@@ -6,93 +6,62 @@ import { SITE_CONTENT } from "@/content/siteContent";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
-const stages = [
-  { number: "01", icon: RefreshCcw, title: "Reactivate Your Present Board", text: "Identify the board members who can be recommitted, re-engaged and given meaningful responsibilities based on their strengths, experience and relationships.", button: "Reactivate My Board", path: "/reactivate" },
-  { number: "02", icon: Users, title: "Recruit the Board Members You Are Missing", text: "Identify and recruit people with the fundraising experience, professional skills and networks required to complement your present board.", button: "Recruit My Board", path: "/recruit" },
-  { number: "03", icon: Rocket, title: "Activate Your Board to Start Raising Money", text: "Help present and new board members take responsibility for fundraising in their areas of strength while contributing to the strategy, team, materials and consistent execution required to raise money.", button: "Activate My Board to Raise Money", path: "/activate" },
-];
+const home = SITE_CONTENT.home;
 
-const discoveries = [
-  ["Which Present Board Members Can Be Reactivated", "Identify the people who still believe in the mission and can become active again with clear expectations, responsibility and support."],
-  ["Which Board Members May Need to Step Down", "Recognize when inactive, disruptive or uncommitted board members are preventing the board from moving forward."],
-  ["The Exact Board Members You Need to Recruit", "Identify the skills, experience, relationships and fundraising capacity missing from the present board."],
-  ["How to Activate the Board Around Fundraising", "Give every board member a clear role based on what they know, who they know and what they can confidently help the organization execute."],
-  ["What Fundraising System the Board Must Help Build", "Determine whether the organization needs a fundraising strategy, fundraising team, fundraising materials or stronger execution."],
-  ["The Best Way to Transform the Board", "Determine whether the organization needs guidance, one-on-one support or complete help executing the board transformation."],
-];
-
-const OfferChoices = ({ location }) => <div className={`offer-choices ${location}`} data-testid={`${location}-offer-choices`}><a className="button" href="/reactivate" data-testid={`${location}-reactivate-button`}>Reactivate My Board</a><a className="button" href="/recruit" data-testid={`${location}-recruit-button`}>Recruit My Board</a><a className="button" href="/activate" data-testid={`${location}-activate-button`}>Activate My Board to Raise Money</a></div>;
+const OfferChoices = ({ location }) => (
+  <div className={`offer-choices ${location}`} data-testid={`${location}-offer-choices`}>
+    <a className="button" href="/reactivate" data-testid={`${location}-reactivate-button`}>{home.finalCta.reactivateButton}</a>
+    <a className="button" href="/recruit" data-testid={`${location}-recruit-button`}>{home.finalCta.recruitButton}</a>
+    <a className="button" href="/activate" data-testid={`${location}-activate-button`}>{home.finalCta.activateButton}</a>
+  </div>
+);
 
 export const LandingPage = ({ onJoin }) => (
   <main data-testid="landing-page">
     <nav className="site-nav" data-testid="site-navigation">
       <a className="brand" href="#top" data-testid="brand-logo-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="brand-logo-image" /></a>
       <div className="nav-links">
-        <a href="#how-it-works" data-testid="how-it-works-link">How It Works</a>
-        <a href="#what-we-fix" data-testid="what-we-fix-link">What We Help You Fix</a>
-        <a href="#tools-materials" data-testid="tools-materials-link">Tools and Materials</a>
-        <a href="#success-stories" data-testid="success-stories-link">Success Stories</a>
-        <a href="#my-story" data-testid="my-story-link">My Story</a>
-        <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">Join a Board</button>
-        <a href="#how-it-works" data-testid="board-solutions-link">Board Solutions</a>
+        <a href="#success-stories" data-testid="success-stories-link">{home.nav.successStories}</a>
+        <a href="#my-story" data-testid="my-story-link">{home.nav.myStory}</a>
+        <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">{home.nav.joinABoard}</button>
       </div>
-      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">Reactivate</a><a href="/recruit">Recruit</a><a href="/activate">Activate</a><a href="/login" data-testid="nav-login-link">Log In</a></div>
+      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">{home.nav.reactivate}</a><a href="/recruit">{home.nav.recruit}</a><a href="/activate">{home.nav.activate}</a><a href="/login" data-testid="nav-login-link">{home.nav.logIn}</a></div>
     </nav>
 
     <section id="top" className="hero" data-testid="hero-section">
       <div className="hero-copy">
-        <h1 data-testid="hero-headline">{SITE_CONTENT.home.heroTitle}</h1>
-        <p className="hero-lead" data-testid="hero-supporting-text">{SITE_CONTENT.home.heroSubtitle}</p>
-        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">{SITE_CONTENT.home.cta}</a></p>
+        <h1 data-testid="hero-headline">{home.heroTitle}</h1>
+        <p className="hero-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
+        <p style={{ marginTop: 14 }}><a className="button" href="/board-transformation" data-testid="hero-board-transformation-button">{home.cta}</a></p>
       </div>
       <div className="hero-visual" aria-hidden="true">
         <div className="visual-grid" />
-        <div className="mission-card"><span className="mission-label">MISSION</span><strong>Turn shared purpose into fundraising momentum.</strong><div className="people-row"><i /><i /><i /><i /><i /></div></div>
-        <div className="impact-stat"><strong>3</strong><span>stages to a stronger board</span></div>
+        <div className="mission-card"><span className="mission-label">{home.heroCard.label}</span><strong>{home.heroCard.text}</strong><div className="people-row"><i /><i /><i /><i /><i /></div></div>
+        <div className="impact-stat"><strong>{home.heroCard.stat}</strong><span>{home.heroCard.statLabel}</span></div>
       </div>
     </section>
 
     <section className="section home-intro" data-testid="home-intro-section">
-      <h2 data-testid="home-intro-heading">{SITE_CONTENT.home.introHeading}</h2>
-      {SITE_CONTENT.home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <h2 data-testid="home-intro-heading">{home.introHeading}</h2>
+      {home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
     </section>
 
     <section className="section home-how" data-testid="home-how-section">
-      <h2 data-testid="home-how-heading">{SITE_CONTENT.home.howHeading}</h2>
-      {SITE_CONTENT.home.howParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
-      <p style={{ marginTop: 18 }}><a className="button" href="/board-transformation" data-testid="home-how-cta-button">{SITE_CONTENT.home.cta}</a></p>
-    </section>
-
-    <section id="how-it-works" className="section transformation" data-testid="transformation-section">
-      <p className="eyebrow" data-testid="transformation-eyebrow">A practical path forward</p>
-      <h2 data-testid="transformation-heading">We Help You Transform Your Board in Three Stages</h2>
-      <div className="stage-grid">
-        {stages.map(({ number, icon: Icon, title, text, button, path }, index) => <article className="stage-card" key={title} data-testid={`transformation-stage-${index + 1}`}><div className="stage-top"><span>{number}</span><Icon size={25} /></div><h3>{title}</h3><p>{text}</p><a className="button stage-cta" href={path} data-testid={`stage-offer-button-${index + 1}`}>{button} <ArrowRight size={16} /></a></article>)}
-      </div>
+      <h2 data-testid="home-how-heading">{home.howHeading}</h2>
+      {home.howParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p style={{ marginTop: 18 }}><a className="button" href="/board-transformation" data-testid="home-how-cta-button">{home.cta}</a></p>
     </section>
 
     <TestimonialsSection />
 
-    <section id="what-we-fix" className="section discovery" data-testid="discovery-section">
-      <div className="section-heading"><div><p className="eyebrow" data-testid="discovery-eyebrow">Clarity before action</p><h2 data-testid="discovery-heading">Discover Exactly What Your Board Needs</h2></div><p data-testid="discovery-intro">Your board should become one of the strongest forces moving your mission and fundraising forward.</p></div>
-      <div className="discovery-grid">
-        {discoveries.map(([title, text], index) => <article key={title} className="discovery-card" data-testid={`discovery-card-${index + 1}`}><span className="check-seal"><Check size={17} /></span><div><h3>{title}</h3><p>{text}</p></div></article>)}
-      </div>
-    </section>
-
-    <section className="assessment-cta" data-testid="assessment-call-to-action">
-      <div><p className="eyebrow light" data-testid="assessment-cta-eyebrow">Start with the truth about your board</p><h2 data-testid="assessment-cta-heading">Tell Us What Is Happening With Your Present Board</h2><p data-testid="assessment-cta-text">Complete the assessment below. We will review your answers and tell you what to do to transform your present board into a powerhouse fundraising board.</p></div>
-      <OfferChoices location="middle" />
-    </section>
-
     <FounderStorySection />
 
-    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">A board built for impact</p><h2 data-testid="final-cta-heading">Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission</h2><p data-testid="final-cta-text">Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.</p><OfferChoices location="final" /></section>
+    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">{home.finalCta.eyebrow}</p><h2 data-testid="final-cta-heading">{home.finalCta.heading}</h2><p data-testid="final-cta-text">{home.finalCta.text}</p><OfferChoices location="final" /></section>
 
     <BlogSlider />
 
-    <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">Professional board service</p><h2>Are You a Professional Looking to Join a Nonprofit Board?</h2><p>Create your professional profile, tell us the causes you care about and receive board opportunities that match your skills, experience, location and availability.</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">Join the Board Applicant Network <ArrowRight size={18} /></button></section>
+    <section className="join-network-cta" data-testid="homepage-join-board-section"><div><p className="eyebrow light">{home.joinNetwork.eyebrow}</p><h2>{home.joinNetwork.heading}</h2><p>{home.joinNetwork.text}</p></div><button className="button button-light" onClick={onJoin} data-testid="homepage-join-network-button">{home.joinNetwork.button} <ArrowRight size={18} /></button></section>
 
-    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">About</a><a href="#how-it-works" data-testid="footer-how-it-works-link">How It Works</a><a href="#footer" data-testid="footer-contact-link">Contact</a><a href="/privacy-policy" data-testid="footer-privacy-link">Privacy Policy</a><a href="/terms" data-testid="footer-terms-link">Terms</a></div></footer>
+    <footer id="footer" className="footer" data-testid="site-footer"><a className="brand footer-brand" href="#top" data-testid="footer-brand-link"><img src={logoUrl} alt="Nonprofit Board Builder" data-testid="footer-brand-logo-image" /></a><p data-testid="footer-statement">{home.footer.statement}</p><div className="footer-links"><a href="#top" data-testid="footer-about-link">{home.footer.about}</a><a href="#footer" data-testid="footer-contact-link">{home.footer.contact}</a><a href="/privacy-policy" data-testid="footer-privacy-link">{home.footer.privacy}</a><a href="/terms" data-testid="footer-terms-link">{home.footer.terms}</a></div></footer>
   </main>
 );

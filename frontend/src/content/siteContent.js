@@ -64,7 +64,7 @@ export const SITE_CONTENT = {
     }
   },
   "home": {
-    "cta": "Tell Us About Your Organization",
+    "cta": "Tell Us About Your Board",
     "heroTitle": "Your Nonprofit Deserves The Right Leadership",
     "heroSubtitle": "Build the powerhouse fundraising board your nonprofit needs",
     "introHeading": "Your Board Is Your Organization's Most Important Asset",
@@ -78,6 +78,69 @@ export const SITE_CONTENT = {
       "You tell us about your organization by answering just five questions.",
       "Based on our encoded framework, you will get immediate access to the exact steps you can take to recruit new board members, reactivate your present board, and activate your entire board to start raising money and building your organization's fundraising system.",
       "You can either choose to fix, build, and transform your board yourself following clear instructions or you can bring us in to go through the process with you, providing you every support you need to succeed."
+    ],
+    "nav": {
+      "successStories": "Success Stories",
+      "myStory": "My Story",
+      "joinABoard": "Join a Board",
+      "reactivate": "Reactivate",
+      "recruit": "Recruit",
+      "activate": "Activate",
+      "logIn": "Log In"
+    },
+    "heroCard": {
+      "label": "MISSION",
+      "text": "Turn shared purpose into fundraising momentum.",
+      "stat": "3",
+      "statLabel": "stages to a stronger board"
+    },
+    "finalCta": {
+      "eyebrow": "A board built for impact",
+      "heading": "Build the Board Your Nonprofit Needs to Raise Money and Fulfil Its Mission",
+      "text": "Tell us what is happening with your present board. We will review your answers and show you what needs to change, which board members can be reactivated, the exact people you need to recruit and how to activate the entire board around fundraising.",
+      "reactivateButton": "Reactivate My Board",
+      "recruitButton": "Recruit My Board",
+      "activateButton": "Activate My Board to Raise Money"
+    },
+    "joinNetwork": {
+      "eyebrow": "Professional board service",
+      "heading": "Are You a Professional Looking to Join a Nonprofit Board?",
+      "text": "Create your professional profile, tell us the causes you care about and receive board opportunities that match your skills, experience, location and availability.",
+      "button": "Join the Board Applicant Network"
+    },
+    "footer": {
+      "statement": "Nonprofit Board Builder helps nonprofits reactivate, recruit and activate powerhouse fundraising boards.",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms"
+    }
+  },
+  "testimonialsSection": {
+    "eyebrow": "Success stories",
+    "heading": "Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems",
+    "supportingText": "Founders and executive directors have worked with the Nonprofit Board Builder to recruit board members, activate their boards, build fundraising systems, recruit volunteers and create a clear structure for moving their missions forward."
+  },
+  "founderStory": {
+    "eyebrow": "The story behind the process",
+    "heading": "I Built This Process From Experience",
+    "name": "Rooney Akpesiri, CNC, CDE, CNE",
+    "title": "The Nonprofit Board Builder",
+    "photoCaption": "Rooney Akpesiri",
+    "paragraphs": [
+      "I\u2019m Rooney. Known to many as the Nonprofit Board Builder.",
+      "I started as a nonprofit founder many years ago, where I built my first board.",
+      "I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.",
+      "Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.",
+      "Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time."
+    ],
+    "bookCallButton": "Book a Call With Rooney",
+    "credibility": [
+      "Served on nonprofit boards",
+      "Former Vice President of a fundraising consulting firm",
+      "Trained hundreds of nonprofit founders and fundraisers",
+      "Worked with nonprofits across the United States",
+      "Contributed to raising more than $5 million"
     ]
   },
   "boardTransformation": {
