@@ -1184,36 +1184,32 @@ p { line-height: 1.72; }
 .offer-choice-cell .button { width: 100%; }
 .offer-recommended-badge { align-self: center; font: 800 10px "Manrope", sans-serif; letter-spacing: .14em; text-transform: uppercase; background: #ffd76a; color: var(--forest); border-radius: 999px; padding: 4px 12px; }
 
-/* Offer sales pages (text-based, funnel step after Board Transformation video) */
-.offer-sales-page { max-width: 880px; margin: 0 auto; padding: 56px 20px 80px; }
-.offer-sales-hero { margin-bottom: 34px; }
-.offer-sales-hero h1 { color: var(--forest); font-size: clamp(34px, 4vw, 50px); line-height: 1.12; margin-bottom: 14px; }
-.offer-sales-lead { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 19px; line-height: 1.5; color: var(--green); max-width: 680px; margin-bottom: 0; }
-.offer-sales-body { background: var(--cream); border: 1px solid var(--line); border-radius: 16px; padding: clamp(26px, 4.4vw, 46px); margin-bottom: 44px; }
-.offer-sales-body p { max-width: 660px; color: #3d4a42; font-size: 16px; margin-bottom: 14px; }
-.offer-sales-body p:last-child { margin-bottom: 0; }
-.offer-sales-body section { margin-top: 36px; }
-.offer-sales-body h2 { color: var(--forest); font-size: clamp(22px, 2.6vw, 29px); line-height: 1.25; margin-bottom: 14px; }
+/* Offer sales pages — ONE shared visual system, three content variations */
+.offer-sales-page { background: #fff; }
+.offer-sales-banner { text-align: center; padding: 84px max(calc((100vw - 1240px)/2), 32px) 76px; }
+.offer-sales-banner h1 { margin: 0 auto 18px; max-width: 880px; }
+.offer-sales-banner .offer-sales-lead { margin: 0 auto; max-width: 720px; color: #dcefe6; font-family: "Manrope", sans-serif; font-weight: 700; font-size: 19px; line-height: 1.55; }
+.offer-sales-container { max-width: 860px; margin: 0 auto; padding: 56px 20px 80px; }
+.offer-sales-body p { max-width: 720px; color: #3d4a42; font-size: 16px; line-height: 1.75; margin: 0 0 16px; text-align: left; }
+.offer-sales-body section { margin-top: 42px; }
+.offer-sales-body h2 { color: var(--forest); font-size: clamp(22px, 2.6vw, 30px); line-height: 1.25; margin: 0 0 16px; text-align: left; }
+.offer-sales-offers { margin-top: 56px; }
 .offer-sales-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-.offer-sales-card { border: 1px solid var(--line); border-radius: 16px; padding: clamp(24px, 3.4vw, 34px); background: #fff; display: flex; flex-direction: column; }
-.offer-sales-card h2 { color: var(--forest); font-size: 21px; line-height: 1.3; letter-spacing: .02em; margin-bottom: 10px; }
-.offer-sales-card p { font-size: 15px; color: #3d4a42; margin-bottom: 12px; }
+.offer-sales-card { border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 14px; padding: clamp(24px, 3.4vw, 34px); background: #fff; box-shadow: 0 12px 32px rgba(8, 61, 42, .07); display: flex; flex-direction: column; }
+.offer-sales-card h2 { color: var(--forest); font-size: 20px; line-height: 1.3; letter-spacing: .02em; margin: 0 0 10px; text-align: left; }
+.offer-sales-card p { font-size: 15px; color: #3d4a42; line-height: 1.7; margin: 0 0 14px; text-align: left; }
 .offer-sales-card-sub { font-family: "Manrope", sans-serif; font-weight: 800; color: var(--forest) !important; font-size: 16px !important; }
-.offer-sales-price { font: 800 32px "Manrope", sans-serif; color: var(--green) !important; margin-bottom: 12px !important; }
+.offer-sales-price { font: 800 32px "Manrope", sans-serif; color: var(--green) !important; margin: 0 0 14px !important; }
 .offer-sales-card .button { margin-top: auto; width: 100%; }
-.offer-sales-card.dwy { background: var(--forest); border-color: var(--forest); }
-.offer-sales-card.dwy h2, .offer-sales-card.dwy .offer-sales-card-sub { color: #fff !important; }
-.offer-sales-card.dwy p { color: #cfe4da; }
-.offer-sales-card.dwy .offer-sales-price { color: var(--mint) !important; }
 .offer-sales-guarantee { margin: 12px 0 0 !important; font-size: 13px !important; font-weight: 700; color: var(--green) !important; text-align: center; }
-.offer-sales-card.dwy .offer-sales-guarantee { color: var(--mint) !important; }
-.offer-sales-testimonials { margin-top: 52px; }
-.offer-sales-closing { margin-top: 56px; text-align: center; }
-.offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin-bottom: 14px; }
-.offer-sales-closing p { max-width: 640px; margin: 0 auto 12px; color: #3d4a42; }
-.offer-sales-closing .offer-choice-grid { margin-top: 22px; }
+.offer-sales-testimonials { margin-top: 60px; }
+.offer-sales-closing { margin-top: 60px; text-align: center; }
+.offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin: 0 0 14px; }
+.offer-sales-closing p { max-width: 640px; margin: 0 auto 14px; color: #3d4a42; font-size: 16px; line-height: 1.75; }
+.offer-sales-closing .offer-choice-grid { margin: 24px auto 0; max-width: 640px; }
 @media (max-width: 760px) {
-  .offer-sales-page { padding: 40px 16px 64px; }
+  .offer-sales-banner { padding: 54px 20px 48px; }
+  .offer-sales-container { padding: 40px 16px 64px; }
   .offer-sales-grid { grid-template-columns: 1fr; }
 }
 
