@@ -149,25 +149,233 @@ export const SITE_CONTENT = {
       "activation": "Activate Your Board Around Fundraising"
     }
   },
-  "offerVideos": {
+  "offerSalesPages": {
     "checkoutError": "We could not start checkout. Please try again in a moment.",
+    "startingCheckout": "Starting Checkout…",
+    "guarantee": "Your investment is protected by my 100% refund guarantee.",
     "recruitment": {
-      "headline": "Recruit New Board Members",
-      "videoPlaceholder": "Board Recruitment Video Coming Soon",
-      "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU — $1,997"
+      "title": "Recruit New Board Members",
+      "lead": "How you recruit your board members is as important as the quality of board members you recruit.",
+      "opening": [
+        "Most founders think board recruitment is simply about finding good people and inviting them onto the board.",
+        "You find someone with good skills. You invite them in. They show up for the first meeting. And now you have a board member.",
+        "But here's the problem.",
+        "People brought in that way don't always see the importance of the work or the professionalism of the organization.",
+        "And when things get hard, they start giving you stories.",
+        "Before you know it, you're right back to where you started, running the organization all by yourself and spending your own resources.",
+        "I've been there. I know how it feels.",
+        "But you can actually recruit right.",
+        "You can have board members who participate, show up and commit to your mission.",
+        "It depends on how you recruit them."
+      ],
+      "sections": [
+        {
+          "heading": "There is a right way to recruit your board.",
+          "paragraphs": [
+            "Think about how you bring an employee into your organization.",
+            "They apply.",
+            "You interview them.",
+            "You conduct reference or background checks where necessary.",
+            "You onboard them.",
+            "You make sure they understand their responsibilities and expectations.",
+            "That process matters because it shows people the importance, seriousness and professionalism of the organization they are joining.",
+            "Board members deserve the same process.",
+            "When you recruit this way, people understand what they are joining and what is expected of them from the beginning."
+          ]
+        },
+        {
+          "heading": "You don't need a big network.",
+          "paragraphs": [
+            "What you need is the ability to execute the right recruitment process.",
+            "We can help you launch your recruitment campaign across multiple audiences, including people within your network, professionals looking to give back, recruitment platforms, and people who can refer qualified candidates."
+          ]
+        },
+        {
+          "heading": "We've seen how quickly this can move.",
+          "paragraphs": [
+            "In our last recruitment campaign a few days ago, we had over 51 applicants in less than 48 hours for an organization that has yet to get its 501(c)(3), with over 22 interviews booked.",
+            "The organization selected eight new board members and recommended seven others for the advisory board, as there was no remaining space on the board under their bylaws.",
+            "This is how fast your recruitment can move when the process is executed properly."
+          ]
+        },
+        {
+          "heading": "We'll help you get your recruitment campaign moving.",
+          "paragraphs": [
+            "Over the next 30 minutes, we can launch your board recruitment campaign.",
+            "Within 48 hours, you can begin selecting the people you want to move forward with.",
+            "Once you've made your selections, the onboarding process gets them into their responsibilities so they can start contributing to your organization.",
+            "And you have two ways to do it."
+          ]
+        }
+      ],
+      "diy": {
+        "heading": "RECRUIT YOUR BOARD YOURSELF",
+        "price": "$497",
+        "paragraphs": [
+          "Get access to the guidance, tools, and materials you need to recruit your board yourself; everything created specifically for you and your organization.",
+          "You'll see exactly how we execute each step of the process, then replicate it using the resources we've created specifically for you.",
+          "You also have our immediate support available when you need it, plus access to hundreds of professionals across the U.S who have indicated interest in giving back by joining a nonprofit board whose mission they care about."
+        ],
+        "buttonLabel": "DO IT YOURSELF"
+      },
+      "dwy": {
+        "heading": "DO IT WITH US",
+        "price": "",
+        "paragraphs": [
+          "Want us to step in and help you execute the recruitment?",
+          "We'll help launch your recruitment campaign.",
+          "You select the people you want to move forward with.",
+          "Then we step back in to help onboard your new board members and get them started with their responsibilities."
+        ],
+        "buttonLabel": "DO IT WITH US"
+      },
+      "closing": {
+        "heading": "Let's get your board recruited.",
+        "paragraphs": [
+          "Choose the level of support you need and let's get started."
+        ],
+        "showButtons": false,
+        "diyLabel": "DO IT YOURSELF",
+        "dwyLabel": "DO IT WITH US"
+      }
     },
     "reactivation": {
-      "headline": "Reactivate Your Board",
-      "videoPlaceholder": "Board Reactivation Video Coming Soon",
-      "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU — $1,997"
+      "title": "Reactivate Your Board",
+      "lead": "Your nonprofit deserves the right leadership.",
+      "opening": [
+        "Your organization deserves a board that is active, engaged, and committed to ensuring the mission and vision of the organization are achieved.",
+        "But maybe that isn't the reality right now.",
+        "Some board members have gone silent. Some are inactive. Some are disengaged. Some may even have become hostile.",
+        "And really, there's no one to blame.",
+        "Most board members do care. They want to support. They love the mission. Some may even be helping in their own personal capacity.",
+        "You care too. You want to work with them. You want to get the best out of them.",
+        "But somehow, it isn't working.",
+        "The good thing is this: your board can be reactivated.",
+        "We can get your board members to recommit, step up, accept responsibility, and begin working with you to build the organization.",
+        "But there is a clear process for doing that.",
+        "We call it the Board Reactivation Process."
+      ],
+      "sections": [
+        {
+          "heading": "The Board Reactivation Process",
+          "paragraphs": [
+            "Board reactivation is all about understanding why your board was or is the way it is, making the necessary corrections, having the difficult conversations, and moving every board member forward in a way that best serves the board member and the organization.",
+            "For some, that means stepping up, accepting responsibility, and taking on a clear portfolio.",
+            "For others, it may mean stepping down from the board and the organization, or simply stepping into another aspect of the organization, such as the advisory board.",
+            "The goal at the end is to make sure you aren't carrying any deadweight while creating the space for the right people who can help create results for your organization to step in."
+          ]
+        },
+        {
+          "heading": "You can start immediately.",
+          "paragraphs": [
+            "In the next 10 minutes, we can start the Board Recommitment process.",
+            "Over the next week, we can get your board recommitted and eager to start creating results with you.",
+            "We've done this process over and over again.",
+            "We understand how to get board members to respond, even when they no longer pick up calls, respond to emails, or seem available.",
+            "And there are two ways you can execute, depending on the kind of support you need and the resources you have available."
+          ]
+        }
+      ],
+      "diy": {
+        "heading": "DO IT YOURSELF",
+        "subheading": "Follow the process yourself with everything you need.",
+        "price": "$497",
+        "paragraphs": [
+          "You'll get the instructions and tailored materials required to execute the Board Reactivation Process.",
+          "You execute the process yourself, with support available as you reactivate your board."
+        ],
+        "buttonLabel": "GET STARTED ($497)"
+      },
+      "dwy": {
+        "heading": "DO IT WITH YOU",
+        "subheading": "Get Rooney to step in and help you through the process.",
+        "price": "$1,997",
+        "paragraphs": [
+          "We'll work with you to initiate the process, lead you through it, guide you through the difficult conversations, and support you as you work to reactivate your board.",
+          "The goal is simple:",
+          "Get your board members back active, committed, and contributing to the mission."
+        ],
+        "buttonLabel": "GET STARTED WITH ROONEY ($1,997)"
+      },
+      "closing": {
+        "heading": "Reactivate Your Board",
+        "paragraphs": [
+          "If you're ready to get your board moving again, choose the level of support you need; let's get you started and your board reactivated."
+        ],
+        "showButtons": true,
+        "diyLabel": "DO IT YOURSELF",
+        "dwyLabel": "DO IT WITH YOU"
+      }
     },
     "activation": {
-      "headline": "Activate Your Board Around Fundraising",
-      "videoPlaceholder": "Board Activation Video Coming Soon",
-      "diyLabel": "DO IT YOURSELF — $497",
-      "dwyLabel": "DO IT WITH YOU — $2,497"
+      "title": "Build a Fundraising Board",
+      "lead": "Your board has a responsibility to ensure your organization is adequately funded.",
+      "opening": [
+        "I'll repeat it.",
+        "It is your board's responsibility to ensure that your organization is adequately funded.",
+        "But sadly, many boards don't know this.",
+        "They think fundraising is the founder's responsibility. The founder raises the money, while the board provides oversight and holds the founder accountable.",
+        "That leaves too much responsibility falling back on you.",
+        "And your board can actually help you raise money.",
+        "The challenge is that most board members aren't professional fundraisers.",
+        "Some don't know how to raise money. Some don't feel comfortable asking people for money. And when you simply tell them to go raise a certain amount, they can quickly become disengaged when they don't know how to do it.",
+        "There is a better way to activate your board for fundraising.",
+        "We call it the Board Fundraising Activation Process."
+      ],
+      "sections": [
+        {
+          "heading": "Your board can raise money from their strengths.",
+          "paragraphs": [
+            "Getting your board to raise money isn't about simply telling them to go raise $10,000.",
+            "It isn't about handing them fundraising tools and expecting them to figure it out.",
+            "It's about creating the foundation that allows each board member to contribute in the way that best fits their strengths, expertise, network, and willingness to serve.",
+            "The Board Fundraising Activation Process helps you move your board from simply knowing that fundraising is their responsibility to actually participating in it.",
+            "When you do this properly, each board member can have a clear fundraising role while helping build the organization's overall fundraising system.",
+            "That's what gets your board members up and active in fundraising.",
+            "The result is a board that is actively helping your organization build its capacity to raise money."
+          ]
+        },
+        {
+          "heading": "You can start immediately.",
+          "paragraphs": [
+            "We've been in this space for years, have tried different ways of getting boards to raise money, and contributed to raising $5m for nonprofits across the US.",
+            "We've discovered what works.",
+            "And there are two ways you can execute the process."
+          ]
+        }
+      ],
+      "diy": {
+        "heading": "DO IT YOURSELF",
+        "subheading": "Get everything you need to activate your board for fundraising.",
+        "price": "$497",
+        "paragraphs": [
+          "You'll get the instructions, tools, materials, and resources required to execute the Board Fundraising Activation Process yourself.",
+          "You'll follow the process, engage your board, and begin moving your board members into active fundraising roles.",
+          "This is for self starters and leaders who can execute when provided the path and tools."
+        ],
+        "buttonLabel": "DO IT YOURSELF"
+      },
+      "dwy": {
+        "heading": "DO IT WITH YOU",
+        "subheading": "Get Rooney to work with you through the process.",
+        "price": "$2,497",
+        "paragraphs": [
+          "We'll work with you throughout the process, helping you activate your board and move your board members into active fundraising roles.",
+          "We'll help you make sure the process is executed properly for your organization so your board can start raising money and building the organization's fundraising capacity."
+        ],
+        "buttonLabel": "DO IT WITH YOU"
+      },
+      "closing": {
+        "heading": "Build A Fundraising Board",
+        "paragraphs": [
+          "Your board can do more than provide oversight.",
+          "They can help build your organization's fundraising capacity and ensure your organization is adequately funded.",
+          "Choose the level of support you need and let's get started."
+        ],
+        "showButtons": true,
+        "diyLabel": "DO IT YOURSELF",
+        "dwyLabel": "DO IT WITH YOU"
+      }
     }
   }
 };

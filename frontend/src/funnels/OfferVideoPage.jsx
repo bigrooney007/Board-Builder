@@ -12,8 +12,22 @@ const CHECKOUT_ENDPOINTS = {
   activation: { diy: "activation-diy-checkout", dwy: "activation-project-checkout" },
 };
 
+const OfferCard = ({ offer, choice, card, busy, startingLabel, guarantee, onBuy }) => (
+  <section className={`offer-sales-card ${choice}`} data-testid={`offer-${choice}-card-${offer}`}>
+    <h2 data-testid={`offer-${choice}-heading-${offer}`}>{card.heading}</h2>
+    {card.subheading && <p className="offer-sales-card-sub">{card.subheading}</p>}
+    {card.price && <p className="offer-sales-price" data-testid={`offer-${choice}-price-${offer}`}>{card.price}</p>}
+    {card.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+    <button type="button" className={`button ${choice === "dwy" ? "button-light" : ""}`} onClick={() => onBuy(choice)} disabled={Boolean(busy)} data-testid={`offer-${choice}-button-${offer}`}>
+      {busy === choice ? startingLabel : card.buttonLabel}
+    </button>
+    <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>{guarantee}</p>
+  </section>
+);
+
 export default function OfferVideoPage({ offer }) {
-  const content = SITE_CONTENT.offerVideos[offer];
+  const shared = SITE_CONTENT.offerSalesPages;
+  const content = shared[offer];
   const endpoints = CHECKOUT_ENDPOINTS[offer];
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
@@ -25,33 +39,54 @@ export default function OfferVideoPage({ offer }) {
       const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin });
       window.location.href = response.data.checkout_url;
     } catch {
-      setNotice(SITE_CONTENT.offerVideos.checkoutError);
+      setNotice(shared.checkoutError);
       setBusy("");
     }
   };
 
   return (
     <FunnelLayout restrained>
-      <main data-testid={`offer-video-page-${offer}`} style={{ maxWidth: 900, margin: "0 auto", padding: "48px 20px" }}>
-        <header style={{ marginBottom: 26, textAlign: "center" }}>
-          <h1 className="video-page-title" data-testid={`offer-headline-${offer}`}>{content.headline}</h1>
+      <main className="offer-sales-page" data-testid={`offer-sales-page-${offer}`}>
+        <header className="offer-sales-hero">
+          <h1 data-testid={`offer-headline-${offer}`}>{content.title}</h1>
+          <p className="offer-sales-lead" data-testid={`offer-lead-${offer}`}>{content.lead}</p>
         </header>
 
-        <div className="video-stage" data-testid={`offer-video-${offer}`}>
-          <span data-testid={`offer-video-placeholder-${offer}`}>{content.videoPlaceholder}</span>
-        </div>
+        <article className="offer-sales-body" data-testid={`offer-sales-body-${offer}`}>
+          {content.opening.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {content.sections.map((section) => (
+            <section key={section.heading}>
+              <h2>{section.heading}</h2>
+              {section.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+            </section>
+          ))}
+        </article>
 
-        <section data-testid={`offer-payment-choices-${offer}`}>
-          <div className="offer-choice-grid">
-            <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? "Starting Checkout…" : content.diyLabel}</button>
-            <button type="button" className="button button-outline" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? "Starting Checkout…" : content.dwyLabel}</button>
+        <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
+          <div className="offer-sales-grid">
+            <OfferCard offer={offer} choice="diy" card={content.diy} busy={busy} startingLabel={shared.startingCheckout} guarantee={shared.guarantee} onBuy={startCheckout} />
+            <OfferCard offer={offer} choice="dwy" card={content.dwy} busy={busy} startingLabel={shared.startingCheckout} guarantee={shared.guarantee} onBuy={startCheckout} />
           </div>
           {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
         </section>
 
-        <div style={{ marginTop: 40 }}>
+        <div className="offer-sales-testimonials">
           <TestimonialCarousel idPrefix={`offer-${offer}`} />
         </div>
+
+        <section className="offer-sales-closing" data-testid={`offer-closing-${offer}`}>
+          <h2>{content.closing.heading}</h2>
+          {content.closing.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {content.closing.showButtons && (
+            <>
+              <div className="offer-choice-grid">
+                <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-closing-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.closing.diyLabel}</button>
+                <button type="button" className="button button-outline" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-closing-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.closing.dwyLabel}</button>
+              </div>
+              <p className="offer-sales-guarantee" data-testid={`offer-closing-guarantee-${offer}`}>{shared.guarantee}</p>
+            </>
+          )}
+        </section>
       </main>
     </FunnelLayout>
   );
