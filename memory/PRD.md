@@ -44,14 +44,15 @@ Build only one professional green Nonprofit Board Builder landing page, one four
 1. Add the missing owner-email environment settings.
 2. Repeat the specified E2E flow once to verify delivery.
 
-## Funnel Architecture + Offer Sales Pages (June 2026) — Built, TESTING PENDING (user held testing)
+## Funnel Architecture + Offer Sales Pages (June 2026) — Built + TESTED (iteration_47: backend 4/4, frontend 53/54, sole fail = test-side false negative)
 - Final funnel confirmed already in place and preserved: Home (Tell Us About Your Board) → /board-transformation (assessment) → /board-transformation/result/:token (Main Board Transformation video + 3 pathway buttons) → /offer/{recruitment|reactivation|activation} → Stripe → existing post-payment intake → DIY platform / DWY Calendly-intake path.
 - The 3 /offer/* pages converted from video pages to text-based sales pages (same routes, same OfferVideoPage.jsx component file). Individual offer videos + placeholders REMOVED. Only video in the funnel is the main Board Transformation video.
 - Exact owner-supplied sales copy for Recruitment, Reactivation, Activation stored verbatim in SITE_CONTENT.offerSalesPages (siteContent.js — replaced old offerVideos block; single canonical source, no hardcoded copy in component).
 - Payment untouched: DIY/DWY buttons call the same 6 existing checkout endpoints (diy-checkout, direct-project-checkout, reactivation-diy/project-checkout, activation-diy/project-checkout). No Stripe products/prices changed. Guarantee line "Your investment is protected by my 100% refund guarantee." rendered under every payment button on these pages.
 - Testimonials: existing TestimonialCarousel retained on all three pages. Closing CTA sections with repeat buttons for Reactivation/Activation (per copy); Recruitment closing has no repeat buttons (per copy).
 - New CSS: .offer-sales-* block appended to App.css (responsive, cream body box, DIY white card / DWY forest card).
-- NOT TESTED YET: user instructed "do not run any test until i say so". No deployment. Next: await user approval, then verify funnel routing + checkout initiation + mobile/desktop rendering.
+- Testing (iteration_47.json, testing_agent): full E2E PASSED — Home CTA → assessment (5 steps) → result page video + 3 pathway buttons → /offer/* text sales pages (exact copy, prices $497/$1,997/$2,497, guarantee under every payment button, testimonials intact, closing buttons per copy) → all 6 Stripe checkout endpoints return live checkout_url (payments never completed); post-payment routing verified by inspection; 390px + 1920px responsive pass; /login + invalid-token regression pass. No fixes required. Non-blocking notes from tester: no null-guards in OfferVideoPage if an offer key were removed, generic checkout error catch, background 401 noise on public pages (pre-existing).
+- NOT deployed. Next: await owner go-ahead for production deployment.
 ## Phase 4 (Blog + Lead Nurture) — Complete
 - Public /blog + /blog/:slug pages with 3 categories, deterministic category CTAs, homepage "Latest From Nonprofit Board Builder" compact slider (max 6, prev/next/swipe).
 - Claude blog generation (marketing_service.py) with strict voice/writing rules, validation (word count, em dash, banned phrases, stats claims, duplicate slug/title), one automatic correction attempt, owner failure emails, unique category+scheduled_date key. Schedule: Mon Recruitment / Wed Reactivation / Fri Activation 8:00 AM ET.

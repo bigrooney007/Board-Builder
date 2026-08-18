@@ -1,0 +1,25 @@
+{
+  "summary": "End-to-end verification of the updated funnel with TEXT-BASED /offer/* sales pages. Backend: all 6 Stripe checkout endpoints (diy-checkout, direct-project-checkout, reactivation-diy-checkout, reactivation-project-checkout, activation-diy-checkout, activation-project-checkout) return 200 with a stripe.com checkout_url and session_id; /payments/status/{fake_id} returns 404; all funnel routes reachable; invalid board-transformation token returns clean error (not 500). Frontend: homepage hero CTA (hero-board-transformation-button) and mid-page CTA (home-how-cta-button) both navigate to /board-transformation. 5-step Board Assessment fills+submits with QA data and navigates to /board-transformation/result/{token} which shows bt-result-video and all 3 pathway buttons; bt-choose-recruit navigates directly to /offer/recruitment (no intermediate). /offer/recruitment: NO video element, headline 'Recruit New Board Members', lead correct, 'There is a right way to recruit your board.' and 51-applicants stat present, DIY card RECRUIT YOUR BOARD YOURSELF/$497/'DO IT YOURSELF', DWY card 'DO IT WITH US' with NO price and 'DO IT WITH US' button, guarantee under BOTH buttons, testimonial carousel present (idPrefix offer-recruitment, 29 nodes), closing 'Let's get your board recruited.' with NO repeat buttons. DIY button triggers POST /api/payments/diy-checkout (verified via request interception; Stripe redirect aborted before completion). /offer/reactivation: no video, headline/lead/sections correct, DIY $497 'GET STARTED ($497)', DWY $1,997 'GET STARTED WITH ROONEY ($1,997)', closing WITH repeat buttons + guarantee. /offer/activation: no video, headline 'Build a Fundraising Board', both sections present, DIY $497 'DO IT YOURSELF', DWY $2,497 'DO IT WITH YOU', closing WITH repeat buttons + guarantee. Responsive: at 390px both recruit and activation have zero horizontal overflow and offer cards stack single-column; at 1920px cards render side-by-side. Regression: /login loads with email input, / renders with footer, invalid result token renders graceful 'We could not load your result...' state. 53/54 automated assertions pass; the 1 'fail' is a false negative in the test's keyword list (page shows correct graceful error copy).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter47_offer_funnel.py",
+    "/app/test_reports/pytest/iter47_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "OfferVideoPage.jsx uses `<any of card.paragraphs>.map` and reads content.diy/dwy/closing without null checks; if a future offer key is missing from siteContent the page will crash. Consider a defensive default or an error boundary.",
+    "startCheckout swallows all errors with a bare `catch` and shows a generic notice; logging the underlying axios error (status + response body) would help debug real Stripe/API failures in prod.",
+    "Console shows repeated 401 errors on public pages (likely a background /api/auth/me or profile probe). Not blocking but noisy; consider gating that request behind an auth-token presence check to reduce log noise."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter47_offer_funnel.py (new regression suite for iter 47)"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "98% (53/54 - the 1 fail is a keyword-only false negative; graceful error copy IS rendered)"},
+  "test_credentials": "Public funnel - no login required. QA seed data used: name 'QA Test', email qa-funnel-test@example.com, org 'QA Test Org', phone 555-0100.",
+  "seed_data_creation": "One board_transformation funnel lead created with QA Test data (obviously fake). No payments completed; Stripe sessions created but redirect aborted client-side before Stripe.com navigation.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Funnel end-to-end verified after conversion of /offer/* pages from VSL to text-based sales pages. Canonical copy lives in SITE_CONTENT.offerSalesPages (siteContent.js line 152). OfferVideoPage.jsx has zero hardcoded sales copy. All 6 Stripe endpoints healthy. If retesting: use QA emails prefixed 'qa-' to avoid polluting real leads; abort **/stripe.com/** routes in Playwright before clicking checkout buttons.",
+  "rca of the issue": "N/A - all criteria met."
+}
