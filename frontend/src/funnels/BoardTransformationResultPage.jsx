@@ -26,6 +26,7 @@ export default function BoardTransformationResultPage() {
   }, [token]);
 
   const choose = async (product, route) => {
+    try { sessionStorage.setItem("bt_result_token", token); } catch { /* storage is best-effort */ }
     try { await axios.post(`${API}/funnel-leads/board-transformation/select`, { result_token: token, product }); } catch { /* selection is best-effort */ }
     navigate(route);
   };
@@ -50,11 +51,17 @@ export default function BoardTransformationResultPage() {
             <section data-testid="bt-result-choice">
               <h2 style={{ textAlign: "center" }} data-testid="bt-result-choose-heading">{content.chooseHeading}</h2>
               <div className="offer-choice-grid">
-                {OFFERS.map((offer) => (
-                  <button key={offer.key} type="button" className="button" onClick={() => choose(offer.key, offer.route)} data-testid={offer.testid}>
-                    {content.offers[offer.contentKey]}
-                  </button>
-                ))}
+                {OFFERS.map((offer) => {
+                  const recommended = (result.result?.recommendations || []).includes(offer.key);
+                  return (
+                    <div key={offer.key} className="offer-choice-cell">
+                      {recommended && <span className="offer-recommended-badge" data-testid={`bt-recommended-badge-${offer.key}`}>{content.recommendedBadge}</span>}
+                      <button type="button" className="button" onClick={() => choose(offer.key, offer.route)} data-testid={offer.testid}>
+                        {content.offers[offer.contentKey]}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 

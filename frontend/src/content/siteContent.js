@@ -143,6 +143,7 @@ export const SITE_CONTENT = {
     "headline": "Your Board Transformation Journey",
     "videoPlaceholder": "Board Transformation Video Coming Soon",
     "chooseHeading": "Which Would You Like to Do First?",
+    "recommendedBadge": "Recommended for your board",
     "offers": {
       "recruitment": "Recruit New Board Members",
       "reactivation": "Reactivate Your Board",

@@ -309,6 +309,8 @@ async def startup_tasks():
     app.state.reactivation_accountability_task = asyncio.create_task(reactivation_accountability_loop(db))
     from activation_accountability import activation_accountability_loop
     app.state.activation_accountability_task = asyncio.create_task(activation_accountability_loop(db))
+    from checkout_recovery import checkout_recovery_loop
+    app.state.checkout_recovery_task = asyncio.create_task(checkout_recovery_loop(db))
 
 
 @app.on_event("shutdown")

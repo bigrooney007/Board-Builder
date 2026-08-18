@@ -162,3 +162,19 @@ def activation_adoption_meeting_email(organization: str, meeting_lines: str, pla
             f"Thank you for helping us build this together.\n\n{signature}"
         ),
     }
+
+
+def checkout_recovery_email(first_name: str, organization: str, offer_name: str, offer_link: str) -> dict:
+    greeting = f"Hi {first_name}," if first_name else "Hi,"
+    org_part = f" at {organization}" if organization else ""
+    return {
+        "subject": "You started building your board — your next step is ready",
+        "body": (
+            f"{greeting}\n\n"
+            f"You took the first step toward transforming your board{org_part}, and you were moments away from getting started with {offer_name}.\n\n"
+            "If you got pulled away, no problem. Your next step is right where you left it:\n\n"
+            f"{offer_link}\n\n"
+            "If you have a question before you get started, just reply to this email and I'll personally answer it.\n\n"
+            "Rooney Akpesiri\nThe Nonprofit Board Builder"
+        ),
+    }

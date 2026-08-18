@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 49 focused test — REAL end-to-end Checkout Recovery Email send proven. Created /app/backend/tests/test_iter49_recovery_real_send.py with 10 tests, ALL PASSED (10/10). Key proof: (1) real Stripe TEST-mode checkout session created via POST /api/payments/diy-checkout with a seeded board_transformation result_token; lead_email set to delivered@resend.dev on the txn and created_at backdated 75 minutes; (2) stripe.checkout.Session.retrieve on the real session id returned status!=complete and payment_status!=paid (real re-check path, NOT warning path); (3) process_abandoned_checkouts(db) invoked DIRECTLY (env flag CHECKOUT_RECOVERY_ENABLED remains false — never modified); Resend actually accepted the send: recovery_email_status='sent', recovery_email_id is a non-empty Resend id, recovery_email_at ISO timestamp set; (4) email content asserted: subject == 'You started building your board — your next step is ready', body starts with 'Hi QA,', contains 'Recruit New Board Members', contains full absolute offer link {ORIGIN}/offer/recruitment (host non-blank), signature 'Rooney Akpesiri' present; build_recovery_html rendered the link as <a href=\"{link}\">{link}</a> anchor; (5) single-send guarantee: second immediate run left recovery_email_id and recovery_email_at unchanged for the original txn; a second backdated pending txn for delivered@resend.dev correctly became 'skipped' via the already-sent dedupe branch; (6) paid-customer guard: seeded paid txn + backdated pending txn for a different email → pending became 'skipped'; (7) flag safety: recovery_enabled() is False before and after; /app/backend/.env still contains CHECKOUT_RECOVERY_ENABLED=false, no CHECKOUT_RECOVERY_ENABLED=true anywhere; live background loop had performed zero recovery sends on non-qa transactions (LEAK query returned []); (8) cleanup: real Stripe test session expired via stripe.Session.expire, all seeded funnel_leads/payment_transactions rows deleted (verified count=0). Regression check with iter48 suite not re-run to stay focused per user instruction.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter49_recovery_real_send.py",
+    "/app/test_reports/pytest/iter49_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Real Resend send to delivered@resend.dev succeeded with the currently configured SENDER_EMAIL ('Nonprofit Board Builder <nonprofits@nonprofitboardbuilder.com>') and RESEND_API_KEY — production send path works. Still recommend a RECOVERY_ALLOWED_DOMAINS or RECOVERY_TEST_ONLY_RECIPIENT env safety net before flipping CHECKOUT_RECOVERY_ENABLED=true to prevent accidental sends during staging.",
+    "process_abandoned_checkouts dedupe (find_one recovery_email_status:'sent' per email) is NOT atomic — safe under the single background loop but a concurrency risk if ever scaled to multiple workers.",
+    "offer_link falls back to just the offer_path when origin_url is blank on the txn; build_recovery_html would then produce an anchor with a relative href. Recommend a FRONTEND_BASE_URL env fallback in checkout_recovery.py.",
+    "build_recovery_html replaces the offer_link paragraph only when the block equals offer_link exactly — a template edit that changes surrounding whitespace would silently downgrade the link to plain text. Consider passing offer_link as a structured field instead of relying on template string equality."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter49_recovery_real_send.py (new)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "not tested (focused backend-only iter49 per user)"},
+  "test_credentials": "No auth needed. Seed prefix: qa-recovery-iter49-. Real Stripe TEST checkout session created (expired in teardown). Recovery email sent to delivered@resend.dev (safe Resend inbox).",
+  "seed_data_creation": "1 funnel_lead (qa-recovery-iter49-real@example.com) + 1 real Stripe test session with backdated payment_transaction (lead_email overridden to delivered@resend.dev). 3 synthetic backdated payment_transactions with prefix cs_test_qa_recovery_iter49_ (2nd_pending, paidguard_paid, paidguard_pending). ALL cleaned in teardown — verified 0 remaining rows across funnel_leads (qa-recovery-iter49- regex), payment_transactions (session prefix, lead_email prefix, and delivered@resend.dev).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The checkout recovery email pipeline is fully proven end-to-end with a real Stripe test session and a real Resend send (delivered@resend.dev). Iter49 covers the exact assertion that iter48 stopped short of: recovery_email_status=='sent' with a non-empty Resend id when the Stripe re-check succeeds on a real session. Before flipping CHECKOUT_RECOVERY_ENABLED=true in production, main agent should add a domain safelist (see critical_code_review_comments).",
+  "rca of the issue": "N/A — no defects. Real Stripe test session + real Resend send both succeeded on the first invocation of process_abandoned_checkouts(db). Idempotency, per-email dedupe, and paid-customer guard all behaved deterministically. Env flag never modified."
+}

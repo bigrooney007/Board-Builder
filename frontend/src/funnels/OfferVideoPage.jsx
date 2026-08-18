@@ -36,7 +36,9 @@ export default function OfferVideoPage({ offer }) {
     setBusy(choice);
     setNotice("");
     try {
-      const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin });
+      let resultToken = "";
+      try { resultToken = sessionStorage.getItem("bt_result_token") || ""; } catch { /* storage is best-effort */ }
+      const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin, result_token: resultToken });
       window.location.href = response.data.checkout_url;
     } catch {
       setNotice(shared.checkoutError);

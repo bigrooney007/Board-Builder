@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
+from checkout_recovery import lead_checkout_context
 from funnel_models import CheckoutRequest
 
 
@@ -27,10 +28,12 @@ class RooneyCheckoutRequest(BaseModel):
 
 class DirectProjectCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
+    result_token: str = ""
 
 
 class DIYCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
+    result_token: str = ""
 
 
 _price_cache = {}
@@ -230,7 +233,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_board_recruitment_project",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_recruitment_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_recruitment_project",
             "offer": "Board Recruitment Project",
             "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
@@ -266,7 +269,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_diy_board_recruitment",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_diy_board_recruitment",
             "selected_tier": "497", "purchase_source": "direct_diy_board_recruitment_497",
             "offer": "Do It Yourself Board Recruitment",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
@@ -302,7 +305,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_diy_board_reactivation",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_diy_board_reactivation",
             "selected_tier": "497", "purchase_source": "direct_diy_board_reactivation_497",
             "offer": "Do It Yourself Board Reactivation",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
@@ -338,7 +341,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_board_reactivation_project",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_reactivation_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_reactivation_project",
             "offer": "Board Reactivation Project",
             "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
@@ -374,7 +377,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_diy_board_activation",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_diy_board_activation",
             "selected_tier": "497", "purchase_source": "direct_diy_board_activation_497",
             "offer": "Do It Yourself Board Fundraising Activation",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
@@ -410,7 +413,7 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, "lead_id": "", "offer_source": "direct_board_activation_project",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_activation_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_activation_project_2497",
             "offer": "Board Fundraising Activation Project",
             "amount": 249700, "currency": "usd", "status": "initiated", "payment_status": "pending",

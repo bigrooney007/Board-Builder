@@ -1179,6 +1179,11 @@ p { line-height: 1.72; }
 }
 
 
+/* Assessment-matched pathway recommendation badge */
+.offer-choice-cell { display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
+.offer-choice-cell .button { width: 100%; }
+.offer-recommended-badge { align-self: center; font: 800 10px "Manrope", sans-serif; letter-spacing: .14em; text-transform: uppercase; background: #ffd76a; color: var(--forest); border-radius: 999px; padding: 4px 12px; }
+
 /* Offer sales pages (text-based, funnel step after Board Transformation video) */
 .offer-sales-page { max-width: 880px; margin: 0 auto; padding: 56px 20px 80px; }
 .offer-sales-hero { margin-bottom: 34px; }
