@@ -270,14 +270,14 @@ export const SignAgreementPage = () => {
     <main className="hosted-agreement-page" data-testid="sign-agreement-page">
       {error && !data && <div className="member-card" style={{ margin: "60px auto", maxWidth: 480 }}><h2>{error}</h2></div>}
       {data && (
-        <article className="hosted-agreement" style={{ "--agreement-primary": primary }}>
-          <header className="hosted-agreement-head">
-            {data.logo_data && <img src={data.logo_data} alt={`${data.organization_name} logo`} className="hosted-agreement-logo" />}
-            <p className="hosted-agreement-org" data-testid="sign-org-name">{data.organization_name}</p>
+        <article className="hosted-agreement standard-document" style={{ "--agreement-primary": primary, borderColor: primary }}>
+          <header className="hosted-agreement-head standard-document-cover">
+            {data.logo_data && <img src={data.logo_data} alt={`${data.organization_name} logo`} className="hosted-agreement-logo standard-document-logo" />}
             <h1 data-testid="sign-heading">{data.agreement_title}</h1>
-            <p className="hosted-agreement-meta">Prepared for {data.board_member_name}{data.agreement_version ? ` · Version ${data.agreement_version}` : ""}</p>
+            <p className="hosted-agreement-org standard-document-org" data-testid="sign-org-name">{data.organization_name}</p>
+            <p className="hosted-agreement-meta">Prepared for {data.board_member_name}</p>
           </header>
-          <div className="hosted-agreement-body" data-testid="sign-document">{data.document}</div>
+          <div className="hosted-agreement-body standard-document-body" data-testid="sign-document">{data.document}</div>
           {signed ? (
             <section className="hosted-agreement-signed" data-testid="sign-success">
               <h2>Agreement Signed</h2>

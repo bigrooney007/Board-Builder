@@ -20,30 +20,26 @@ export function SharedResourcePage() {
     axios.get(`${API}/shared/${token}`).then((response) => setResource(response.data)).catch(() => setError("This shared resource is not available."));
   }, [token]);
   const primary = resource?.primary_color || "#1d3a2f";
-  const spec = resource?.design_spec || {};
-  const headingScale = Number(spec.heading_scale) || 1;
-  const spacingScale = Number(spec.spacing_scale) || 1;
-  const logoPosition = spec.logo_position || "left";
+  const createdBy = resource?.created_by || {};
   return (
     <main className="hosted-agreement-page" data-testid="shared-resource-page">
       {error && <div className="member-card" style={{ margin: "60px auto", maxWidth: 480 }}><h2>{error}</h2></div>}
       {resource && (
-        <article className="hosted-agreement" style={{
-          "--agreement-primary": spec.accent_intensity === "subtle" ? "#3b3b36" : primary,
-          fontFamily: spec.body_font === "sans-serif" ? "'Helvetica Neue', Arial, sans-serif" : undefined,
-          textAlign: spec.text_align === "center" ? "center" : undefined,
-          borderTop: spec.accent_intensity === "strong" ? `6px solid ${primary}` : undefined,
-        }}>
-          <header className="hosted-agreement-head" style={logoPosition === "center" ? { textAlign: "center" } : undefined}>
-            {resource.logo_data && <img src={resource.logo_data} alt={`${resource.organization_name} logo`} className="hosted-agreement-logo" style={{
-              float: logoPosition === "right" ? "right" : undefined,
-              display: logoPosition === "center" ? "block" : undefined,
-              margin: logoPosition === "center" ? "0 auto 12px" : undefined,
-            }} />}
-            {resource.organization_name && <p className="hosted-agreement-org">{resource.organization_name}</p>}
-            <h1 data-testid="shared-resource-title" style={headingScale !== 1 ? { fontSize: `${Math.round(headingScale * 28)}px` } : undefined}>{resource.title}</h1>
+        <article className="hosted-agreement standard-document" style={{ "--agreement-primary": primary, borderColor: primary }}>
+          <header className="hosted-agreement-head standard-document-cover">
+            {resource.logo_data && <img src={resource.logo_data} alt={`${resource.organization_name} logo`} className="hosted-agreement-logo standard-document-logo" />}
+            <h1 data-testid="shared-resource-title">{resource.title}</h1>
+            {resource.organization_name && <p className="hosted-agreement-org standard-document-org">{resource.organization_name}</p>}
           </header>
-          <div className="hosted-agreement-body" data-testid="shared-resource-body" style={spacingScale !== 1 ? { lineHeight: 1.7 * spacingScale } : undefined}>{resource.display_text}</div>
+          <div className="hosted-agreement-body standard-document-body" data-testid="shared-resource-body">{resource.display_text}</div>
+          {(createdBy.name || createdBy.organization) && (
+            <footer className="standard-document-created-by" data-testid="shared-resource-created-by">
+              <h2>Created By</h2>
+              {createdBy.name && <p>{createdBy.name}</p>}
+              {createdBy.title && <p>{createdBy.title}</p>}
+              {createdBy.organization && <p>{createdBy.organization}</p>}
+            </footer>
+          )}
         </article>
       )}
     </main>

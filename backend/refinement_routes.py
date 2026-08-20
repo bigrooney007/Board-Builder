@@ -563,95 +563,43 @@ def create_refinement_router(db) -> APIRouter:
     # ---------- Strategy PDF + Module 5 decision ----------
     @router.get("/workspace/strategy-pdf")
     async def strategy_pdf(request: Request):
-        from io import BytesIO
-        import base64 as b64
         from fastapi.responses import Response
-        from reportlab.lib.pagesizes import LETTER
-        from reportlab.lib.styles import ParagraphStyle
-        from reportlab.lib.units import mm
-        from reportlab.lib.colors import HexColor
-        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, KeepTogether, Image
         from ai_service import STRATEGY_TIMELINE_TEXT, STRATEGY_ROADMAP_TEXT, STRATEGY_NEXT_STEP_TEXT
+        from document_renderer import render_document_pdf, material_created_by
         member = await current_member(request)
         material = await db.generated_materials.find_one({"user_id": member["user_id"], "type": "recruitment_strategy", "application_id": ""}, {"_id": 0})
         if not material:
             raise HTTPException(status_code=404, detail="Generate your Recruitment Strategy first")
         structured = next((v.get("structured") for v in reversed(material["versions"]) if v.get("structured")), {}) or {}
-        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1, "data": 1})
+        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1})
         branding = (profile or {}).get("branding", {})
-        opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1})
-        org = (opportunity or {}).get("organization_name") or (profile or {}).get("data", {}).get("organization_name", "")
-        primary = branding.get("primary_color") or "#1d3a2f"
-        from datetime import datetime, timezone
-        today = datetime.now(timezone.utc).strftime("%B %d, %Y")
-        buffer = BytesIO()
-        doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=20 * mm, bottomMargin=20 * mm, title="Board Recruitment Strategy")
-        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
-
-        def footer(canvas, _doc):
-            canvas.saveState()
-            canvas.setFont("Helvetica", 8)
-            canvas.setFillColor(HexColor("#6b7a72"))
-            canvas.drawString(doc.leftMargin, 12 * mm, f"{org} — Board Recruitment Strategy")
-            canvas.drawRightString(doc.leftMargin + doc.width, 12 * mm, f"Page {canvas.getPageNumber()}")
-            canvas.restoreState()
-
-        doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=footer)])
-        h1 = ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=20, leading=25, textColor=HexColor(primary), spaceAfter=4)
-        h2 = ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=13, leading=17, textColor=HexColor(primary), spaceBefore=14, spaceAfter=6, keepWithNext=1)
-        h3 = ParagraphStyle("h3", fontName="Helvetica-Bold", fontSize=10.5, leading=14, spaceBefore=8, spaceAfter=2, keepWithNext=1)
-        body = ParagraphStyle("body", fontName="Helvetica", fontSize=10.5, leading=16, spaceAfter=6)
-        bullet = ParagraphStyle("bullet", parent=body, leftIndent=12, bulletIndent=2, spaceAfter=4)
-        meta = ParagraphStyle("meta", parent=body, textColor=HexColor("#5a6a61"))
-        story = []
-        logo = branding.get("logo_data", "")
-        if logo.startswith("data:image"):
-            try:
-                image_bytes = b64.b64decode(logo.split(",", 1)[1])
-                img = Image(BytesIO(image_bytes))
-                ratio = img.imageWidth / max(img.imageHeight, 1)
-                img.drawHeight = 16 * mm
-                img.drawWidth = min(16 * mm * ratio, 60 * mm)
-                img.hAlign = "LEFT"
-                story.extend([img, Spacer(1, 6)])
-            except Exception:
-                pass
-        story.extend([Paragraph("Board Recruitment Strategy", h1), Paragraph(org, ParagraphStyle("org", parent=body, fontSize=12, leading=16)), Paragraph(today, meta), Spacer(1, 10)])
-        esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;")
+        created_by = await material_created_by(db, member["user_id"])
+        parts = []
         if structured.get("executive_summary"):
-            story.extend([Paragraph("Executive Summary", h2), Paragraph(esc(structured["executive_summary"]), body)])
-        story.append(Paragraph("1. Board Members We Are Recruiting", h2))
+            parts += ["EXECUTIVE SUMMARY", structured["executive_summary"], ""]
+        parts.append("1. BOARD MEMBERS WE ARE RECRUITING")
         for role in structured.get("roles", [])[:5]:
-            story.append(KeepTogether([Paragraph(f"<b>{esc(role.get('role_name', ''))}</b> — {esc(role.get('person_sought', ''))}", bullet)]))
-        story.append(Paragraph("2. Recruitment Channels", h2))
+            parts.append(f"- {role.get('role_name', '')} — {role.get('person_sought', '')}")
+        parts += ["", "2. RECRUITMENT CHANNELS"]
         for entry in structured.get("channels", []):
-            story.append(KeepTogether([Paragraph(esc(entry.get("channel", "")).upper(), h3), Paragraph(esc(entry.get("approach", "")), body)]))
-        story.append(Paragraph("3. Selection Criteria", h2))
+            parts += [str(entry.get("channel", "")).upper(), entry.get("approach", ""), ""]
+        parts.append("3. SELECTION CRITERIA")
         for criterion in structured.get("selection_criteria", []):
-            story.append(Paragraph(f"• {esc(criterion)}", bullet))
-        for block, title in [(STRATEGY_TIMELINE_TEXT, "4. Recruitment Timeline"), (STRATEGY_ROADMAP_TEXT, "5. Your Recruitment Execution Roadmap"), (STRATEGY_NEXT_STEP_TEXT, "Your Next Step")]:
-            story.append(Paragraph(title, h2))
-            paragraphs = [p for p in block.split("\n\n")[1:] if p.strip()] or [block]
-            for paragraph in paragraphs:
-                parts = paragraph.split("\n", 1)
-                if len(parts) == 2 and parts[0].isupper() and len(parts[0]) < 70:
-                    story.append(KeepTogether([Paragraph(esc(parts[0]), h3), Paragraph(esc(parts[1]), body)]))
-                else:
-                    story.append(Paragraph(esc(paragraph.replace("\n", " ")), body))
-        doc.build(story)
-        return Response(content=buffer.getvalue(), media_type="application/pdf",
+            parts.append(f"- {criterion}")
+        for block, block_title in [(STRATEGY_TIMELINE_TEXT, "4. RECRUITMENT TIMELINE"), (STRATEGY_ROADMAP_TEXT, "5. YOUR RECRUITMENT EXECUTION ROADMAP"), (STRATEGY_NEXT_STEP_TEXT, "YOUR NEXT STEP")]:
+            parts += ["", block_title]
+            for paragraph in block.split("\n\n")[1:]:
+                if paragraph.strip():
+                    parts += [paragraph, ""]
+        pdf = render_document_pdf(title="Board Recruitment Strategy", org_name=created_by["organization"],
+                                  body_text="\n".join(parts), branding=branding, created_by=created_by)
+        return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": 'attachment; filename="Board Recruitment Strategy.pdf"'})
 
     @router.get("/workspace/material-pdf/{material_id}")
     async def material_pdf(material_id: str, request: Request):
-        from io import BytesIO
-        import base64 as b64
         from fastapi.responses import Response
-        from reportlab.lib.pagesizes import LETTER
-        from reportlab.lib.styles import ParagraphStyle
-        from reportlab.lib.units import mm
-        from reportlab.lib.colors import HexColor
-        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer, Image
+        from document_renderer import render_document_pdf, material_created_by
         member = await current_member(request)
         material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0})
         if not material:
@@ -660,71 +608,21 @@ def create_refinement_router(db) -> APIRouter:
         text = (current or {}).get("display_text", "")
         profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1})
         branding = (profile or {}).get("branding", {})
-        org = (await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", "")
-        primary = branding.get("primary_color") or "#1d3a2f"
+        created_by = await material_created_by(db, member["user_id"])
         title = material["title"]
-        buffer = BytesIO()
-        doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=20 * mm, bottomMargin=20 * mm, title=title)
-        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
-
-        def footer(canvas, _doc):
-            canvas.saveState()
-            canvas.setFont("Helvetica", 8)
-            canvas.setFillColor(HexColor("#6b7a72"))
-            canvas.drawString(doc.leftMargin, 12 * mm, f"{org} — {title}" if org else title)
-            canvas.drawRightString(doc.leftMargin + doc.width, 12 * mm, f"Page {canvas.getPageNumber()}")
-            canvas.restoreState()
-
-        doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=footer)])
-        h1 = ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=19, leading=24, textColor=HexColor(primary), spaceAfter=4)
-        h3 = ParagraphStyle("h3", fontName="Helvetica-Bold", fontSize=11, leading=15, textColor=HexColor(primary), spaceBefore=12, spaceAfter=4, keepWithNext=1)
-        body = ParagraphStyle("body", fontName="Helvetica", fontSize=10.5, leading=16, spaceAfter=7, firstLineIndent=0)
-        bullet = ParagraphStyle("bullet", parent=body, leftIndent=12, spaceAfter=4)
-        meta = ParagraphStyle("meta", parent=body, textColor=HexColor("#5a6a61"))
-        esc = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;")
-        story = []
-        logo = branding.get("logo_data", "")
-        if logo.startswith("data:image"):
-            try:
-                image_bytes = b64.b64decode(logo.split(",", 1)[1])
-                img = Image(BytesIO(image_bytes))
-                ratio = img.imageWidth / max(img.imageHeight, 1)
-                img.drawHeight = 15 * mm
-                img.drawWidth = min(15 * mm * ratio, 58 * mm)
-                img.hAlign = "LEFT"
-                story.extend([img, Spacer(1, 6)])
-            except Exception:
-                pass
-        story.append(Paragraph(esc(title), h1))
-        if org:
-            story.append(Paragraph(esc(org), meta))
-        story.append(Spacer(1, 8))
+        prepared_for = ""
+        if material.get("application_id"):
+            application = await db.opportunity_applications.find_one({"application_id": material["application_id"]}, {"_id": 0, "profile_snapshot": 1})
+            prepared_for = ((application or {}).get("profile_snapshot") or {}).get("full_name", "")
+            if not prepared_for:
+                record = await db.reactivation_board_members.find_one({"member_record_id": material["application_id"]}, {"_id": 0, "name": 1})
+                prepared_for = (record or {}).get("name", "")
         lines = [line.rstrip() for line in text.split("\n")]
         if lines and lines[0].strip().upper() == title.upper():
-            lines = lines[1:]
-        buffer_paragraph = []
-
-        def flush():
-            if buffer_paragraph:
-                story.append(Paragraph(esc(" ".join(buffer_paragraph)), body))
-                buffer_paragraph.clear()
-
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                flush()
-                continue
-            if stripped.startswith("- ") or stripped.startswith("• "):
-                flush()
-                story.append(Paragraph(f"• {esc(stripped[2:])}", bullet))
-            elif stripped == stripped.upper() and 2 < len(stripped) < 80 and any(c.isalpha() for c in stripped):
-                flush()
-                story.append(Paragraph(esc(stripped.title() if len(stripped) > 45 else stripped), h3))
-            else:
-                buffer_paragraph.append(stripped)
-        flush()
-        doc.build(story)
-        return Response(content=buffer.getvalue(), media_type="application/pdf",
+            text = "\n".join(lines[1:])
+        pdf = render_document_pdf(title=title, org_name=created_by["organization"], body_text=text,
+                                  branding=branding, created_by=created_by, prepared_for=prepared_for)
+        return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="{title}.pdf"'})
 
     @router.post("/workspace/applications/{application_id}/decision")

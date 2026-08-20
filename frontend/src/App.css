@@ -1179,6 +1179,17 @@ p { line-height: 1.72; }
 }
 
 
+/* Global document design standard (shared web documents) */
+.standard-document { border: 1.5px solid var(--agreement-primary, #000); background: #fff; }
+.standard-document-cover { text-align: center; padding: 34px 0 18px; }
+.standard-document-logo { display: block; margin: 0 auto 18px; float: none; max-height: 96px; }
+.standard-document-cover h1 { text-align: center; color: #000; }
+.standard-document-org { text-align: center; color: var(--agreement-primary, #000); font-weight: 700; }
+.standard-document-body { font-size: 16px; line-height: 2; color: #000; }
+.standard-document-created-by { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--agreement-primary, #000); }
+.standard-document-created-by h2 { font-size: 16px; color: var(--agreement-primary, #000); margin-bottom: 8px; }
+.standard-document-created-by p { margin: 0 0 4px; color: #000; }
+
 /* Homepage main video */
 .home-video-section { max-width: 960px; margin: 0 auto; padding: 8px 20px 44px; }
 .home-video-section .module-video { margin-bottom: 0; box-shadow: 0 14px 36px rgba(8, 61, 42, .12); }

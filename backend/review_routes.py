@@ -70,9 +70,12 @@ def create_review_router(db) -> APIRouter:
         profile = await db.recruitment_profiles.find_one({"user_id": material["user_id"]}, {"_id": 0, "branding": 1})
         branding = (profile or {}).get("branding", {})
         org = (await db.opportunities.find_one({"user_id": material["user_id"]}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", "")
-        return {"title": material["title"], "display_text": current["display_text"] if current else "",
+        from document_renderer import clean_document_text, material_created_by
+        created_by = await material_created_by(db, material["user_id"])
+        return {"title": material["title"], "display_text": clean_document_text(current["display_text"] if current else "", material["title"]),
                 "organization_name": org, "logo_data": branding.get("logo_data", ""),
                 "primary_color": branding.get("primary_color", ""), "secondary_color": branding.get("secondary_color", ""),
+                "created_by": created_by,
                 "design_spec": material.get("design_spec", {})}
 
     @router.get("/board-profile/{token}")

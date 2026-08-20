@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 51 — focused verification of the Global Document Design Standard. Backend: 15/15 pytest tests passed (/app/backend/tests/test_iter51_document_standard.py) covering document_renderer unit behaviour (artifact stripping, Title:/Content: -> heading/body, brand_color fallback + _logo_dominant_color from a generated PNG data URL, logo cover render), plus live PDF endpoints /api/workspace/material-pdf/{id}, /api/workspace/strategy-pdf, /api/reactivation/materials/{id}/pdf and /api/shared/{token}. Frontend: /shared/{token} and /sign/{token} both render the one standard-document layout (thin brand-color border, white bg, centered logo above centered title, org below title, black 2.0 line-height body, Created By footer); sign header no longer shows '· Version N' and signing controls are unchanged below the document. NO live AI generation was consumed (strategy verified via a temporary QA-seeded strategy material, deleted after). No signature was submitted on real data. One environment issue found and fixed: the CRA dev server was serving a STALE compiled OpportunityPages.jsx (sign page rendered the old header with '· Version 1' and no standard-document classes) — resolved by `sudo supervisorctl restart frontend`; after restart all sign-page checks pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/shared/{token}", "issue": "display_text still repeats the document title as its first body line (review_routes/clean_document_text does not drop a leading duplicate title line, while refinement_routes.material_pdf explicitly does). On /shared/... 'Board Opportunity' therefore appears twice: cover title + first body line."},
+      {"endpoint": "document_renderer._logo_dominant_color", "issue": "Uses PIL Image.getdata() which is deprecated (removal in Pillow 14) — DeprecationWarning emitted on every logo-derived brand colour; switch to get_flattened_data()."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/sign/{token} signing controls", "issues": ["The cursive typed-signature preview renders inline on the same row as, and immediately left of, the 'Sign Agreement' button, so the two visually collide once a name is typed (pre-existing, not part of this change but visible in the new standard layout)"]},
+      {"screen": "/shared/{token} body", "issues": ["Headings inside the body are only uppercased plain text (white-space: pre-wrap) — the PDF gets a real brand-coloured heading style while the web document has no visual heading hierarchy; consider rendering headings as elements for parity"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter51_document_standard.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional: strip the duplicate leading title line in /api/shared/{token} display_text (same rule already used in material_pdf) so the shared web document does not print its title twice",
+    "Optional: replace PIL getdata() with get_flattened_data() in document_renderer._logo_dominant_color",
+    "Optional polish: give the typed-signature preview its own row on /sign/{token} so it does not sit beside the Sign Agreement button"
+  ],
+  "critical_code_review_comments": [
+    "document_renderer.py is a clean single source of truth (all four PDF producers now call render_document_pdf) — no duplication found; page numbering correctly offsets the cover (getPageNumber() - 1).",
+    "clean_document_lines treats any all-uppercase line <90 chars as a heading; a body sentence written in caps (e.g. an ALL CAPS legal clause) would silently be re-styled as a heading and lose its trailing content — acceptable heuristic but worth a comment.",
+    "review_routes /shared/{token} returns branding/created_by without _id — verified no ObjectId leakage in any tested response.",
+    "Dev-server staleness: OpportunityPages.jsx edits were compiled into the bundle only after a frontend restart. Main agent should sanity-check the sign page in the browser after any further edit to that file."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter51_document_standard.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Temporarily inserted generated_materials doc material_id 'QA_ITER51_strategy' (type recruitment_strategy) for user f75a06c6-8331-4269-8065-2532715406e0 to exercise /api/workspace/strategy-pdf without a live AI call; deleted in fixture teardown (verified 0 leftovers). Filled the /sign form fields without submitting — signature_requests token b31b7be665da4e5e878bf50c306c4860 is still 'Ready for Signature' (unsigned).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "/app/memory/test_credentials.md used (module-tester@example.com / ModuleTest123! for the member-area regression). PDF endpoints were exercised by minting member JWTs with member_auth.create_member_token for existing db members f75a06c6-8331-4269-8065-2532715406e0 (recruitment) and b0f96ec0-f045-4c47-a81b-3badbdd1bda6 (reactivation) — no passwords needed.",
+  "context_for_next_testing_agent": "Reusable suite: /app/backend/tests/test_iter51_document_standard.py — run from /app/backend with `set -a && source .env && set +a && python -m pytest tests/test_iter51_document_standard.py -q`. Fixtures mint member Bearer tokens directly (create_member_token) for db users; useful pattern for any member-scoped endpoint. Fixed IDs used: material fcd4fddabaf349ce953e68460c4cb054 (board_opportunity, user f75a06c6…, branding primary_color #7a1f2b), reactivation material c32a70d1-42ec-44e1-b439-9f6a061a63ae (user b0f96ec0…), share token 1a355163f37b4646b898e8b816a7d303, signing token b31b7be665da4e5e878bf50c306c4860 (public API path is /api/public/sign/{token}, not /api/sign). Verified PDFs contain the title, 'Page 1', 'Created By', 'Prepared for <name>' and none of 'Title:', 'Content:', 'Sections:', 'Version 1'; cover+content = 2+ pages. Frontend measured values: shared & sign body font 16px / line-height 32px (ratio 2.0) black on white, article border 1px rgb(122,31,43), logo centred (0px offset) above the centred h1.",
+  "rca_of_the_issue": "Sign page initially rendered the pre-change markup (article class 'hosted-agreement' only, header 'Prepared for Iter16 Candidate · Version 1'). Root cause: the webpack dev server had not recompiled OpportunityPages.jsx — the served bundle contained only ONE occurrence of 'hosted-agreement-head standard-document-cover' (from SharedPages.jsx) instead of two, while line-number instrumentation still matched because the edit only added class names to existing lines. `supervisorctl restart frontend` produced a bundle with both occurrences and the page then matched the new standard exactly. No application-code defect."
+}

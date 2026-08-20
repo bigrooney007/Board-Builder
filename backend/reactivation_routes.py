@@ -573,46 +573,28 @@ def create_reactivation_router(db) -> APIRouter:
 
     @router.get("/reactivation/materials/{material_id}/pdf")
     async def reactivation_material_pdf(material_id: str, request: Request):
-        from io import BytesIO
         from fastapi.responses import Response
-        from reportlab.lib.pagesizes import LETTER
-        from reportlab.lib.styles import ParagraphStyle
-        from reportlab.lib.units import mm
-        from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Paragraph, Spacer
+        from document_renderer import render_document_pdf
         member = await reactivation_member(request)
         material = await owned_reactivation_material(member["user_id"], material_id)
         text = current_display(material)
-        buffer = BytesIO()
-        doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=18 * mm, bottomMargin=18 * mm, title=material["title"])
-        frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
-
-        def decorate(canvas, _doc):
-            canvas.saveState()
-            canvas.setLineWidth(0.9)
-            canvas.rect(10 * mm, 10 * mm, LETTER[0] - 20 * mm, LETTER[1] - 20 * mm)
-            canvas.setFont("Helvetica", 8)
-            canvas.drawRightString(doc.leftMargin + doc.width, 12.5 * mm, f"Page {canvas.getPageNumber()}")
-            canvas.restoreState()
-
-        doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=decorate)])
-        heading = ParagraphStyle("heading", fontName="Helvetica-Bold", fontSize=12.5, leading=16, spaceBefore=12, spaceAfter=5, keepWithNext=1)
-        body = ParagraphStyle("body", fontName="Helvetica", fontSize=10.5, leading=15.5, spaceAfter=6)
-        bullet = ParagraphStyle("bullet", parent=body, leftIndent=12, spaceAfter=4)
-        escape = lambda t: str(t).replace("&", "&amp;").replace("<", "&lt;")
-        story = []
-        for line in text.split("\n"):
-            stripped = line.strip()
-            if not stripped:
-                story.append(Spacer(1, 4))
-            elif stripped.startswith("- "):
-                story.append(Paragraph("• " + escape(stripped[2:]), bullet))
-            elif stripped == stripped.upper() and len(stripped) < 90 and any(ch.isalpha() for ch in stripped):
-                story.append(Paragraph(escape(stripped), heading))
-            else:
-                story.append(Paragraph(escape(stripped), body))
-        doc.build(story)
-        filename = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in f"{material['title']}".replace(" ", "-"))
-        return Response(content=buffer.getvalue(), media_type="application/pdf",
+        intake = await user_intake(member["user_id"])
+        created_by = {
+            "name": f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
+            "title": intake.get("founder_title", "") or "Founder",
+            "organization": intake.get("organization_name", ""),
+        }
+        profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "branding": 1})
+        branding = (profile or {}).get("branding", {})
+        prepared_for = ""
+        if material.get("application_id"):
+            record = await db.reactivation_board_members.find_one({"member_record_id": material["application_id"]}, {"_id": 0, "name": 1})
+            prepared_for = (record or {}).get("name", "")
+        title = material["title"]
+        pdf = render_document_pdf(title=title, org_name=created_by["organization"], body_text=text,
+                                  branding=branding, created_by=created_by, prepared_for=prepared_for)
+        filename = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in f"{title}".replace(" ", "-"))
+        return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'})
 
     class ConclusionPayload(BaseModel):
