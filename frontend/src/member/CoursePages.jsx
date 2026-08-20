@@ -194,11 +194,11 @@ export const CourseModulePage = ({ productSlug }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.product, number]);
 
-  const markComplete = async () => {
+  const nextStep = async () => {
     setMarking(true);
     try {
-      await memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: module.completed ? "uncompleted" : "completed" });
-      reload();
+      if (!module.completed) await memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: "completed" });
+      navigate(number < course.modules.length ? `${meta.base}/module/${number + 1}` : productSlug === "self-guided" ? "/app/recruitment/self-guided/results" : meta.base);
     } catch { /* ignore */ }
     setMarking(false);
   };
@@ -220,16 +220,7 @@ export const CourseModulePage = ({ productSlug }) => {
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             <div className="module-nav" data-testid="module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
-              <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="mark-complete-button">
-                {module.completed ? <><CheckCircle2 size={16} /> Step Completed</> : "Mark This Step Complete"}
-              </button>
-              {productSlug === "self-guided" && number === 1 ? (
-                module.completed && (
-                  <button className="button" onClick={() => navigate(`${meta.base}/module/2`)} data-testid="next-module-button">{recruitmentContent.module1.nextButton} <ArrowRight size={16} /></button>
-                )
-              ) : (
-                <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${meta.base}/module/${number + 1}`)} data-testid="next-module-button">Next Step <ArrowRight size={16} /></button>
-              )}
+              <button className="button" disabled={marking} onClick={nextStep} data-testid="next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />
           </>

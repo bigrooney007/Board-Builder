@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from auth_service import authenticate_admin
-from course_content import ACTIVATION_MODULES, ALL_PRODUCT_KEYS, BASIC_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES, SUPPORT_TYPES
+from course_content import ACTIVATION_MODULES, ALL_PRODUCT_KEYS, BASIC_MODULES, CANONICAL_COURSE_VIDEOS, REACTIVATION_MODULES, SELF_GUIDED_MODULES, SUPPORT_TYPES
 from member_auth import authenticate_member, new_uuid, require_entitlement
 
 
@@ -75,7 +75,7 @@ async def merged_course(db, member, product: str, modules: list) -> dict:
     for module in modules:
         record = progress.get(module["number"], {})
         item = dict(module)
-        item["youtube_url"] = videos.get(module["number"], "")
+        item["youtube_url"] = CANONICAL_COURSE_VIDEOS.get((product, module["number"])) or videos.get(module["number"], "")
         item["viewed"] = bool(record.get("viewed"))
         item["completed"] = bool(record.get("completed"))
         item["completed_at"] = record.get("completed_at", "")

@@ -221,16 +221,6 @@ def create_workspace_router(db) -> APIRouter:
                 if cv_doc and cv_doc.get("cv_text"):
                     context += "\n\nCANDIDATE CV / RESUME (extracted text — use only what is actually present):\n" + cv_doc["cv_text"][:12000]
         if payload.type == "conditional_offer":
-            missing = []
-            for doc_type in ONBOARDING_DOC_TYPES:
-                doc = await db.generated_materials.find_one({"user_id": user_id, "type": doc_type, "application_id": ""}, {"_id": 0, "status": 1})
-                if not doc or doc.get("status") != "Approved":
-                    missing.append(GENERATION_TYPES[doc_type]["title"])
-            profile_form = await db.board_profile_forms.find_one({"user_id": user_id}, {"_id": 0, "share_token": 1})
-            if not profile_form:
-                missing.append("Board Member Profile Form")
-            if missing:
-                raise HTTPException(status_code=409, detail="Complete the following onboarding materials before preparing this candidate's Conditional Appointment: " + ", ".join(missing))
             links = []
             overview_token = await ensure_share_token(user_id, "organization_overview")
             manual_token = await ensure_share_token(user_id, "board_manual")

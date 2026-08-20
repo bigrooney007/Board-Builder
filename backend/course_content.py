@@ -156,6 +156,32 @@ ACTIVATION_MODULES = [
 
 ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided", "activation_self_guided"}
 
+# Canonical video sources — explicit per (flow product, module). These are authoritative.
+CANONICAL_COURSE_VIDEOS = {
+    ("recruitment_self_guided", 1): "https://youtu.be/MADZN-LqAvA",
+    ("recruitment_self_guided", 2): "https://youtu.be/ZDudgx9O1Vg",
+    ("recruitment_self_guided", 3): "https://youtu.be/tESJV4jJVWs",
+    ("recruitment_self_guided", 4): "https://youtu.be/w4-kn3tayRQ",
+    ("recruitment_self_guided", 5): "https://youtu.be/0G9NC6A7vTE",
+    ("recruitment_self_guided", 6): "https://youtu.be/T_JBGaSBX6M",
+    ("recruitment_basic", 1): "https://youtu.be/MADZN-LqAvA",
+    ("recruitment_basic", 2): "https://youtu.be/ZDudgx9O1Vg",
+    ("recruitment_basic", 3): "https://youtu.be/tESJV4jJVWs",
+    ("recruitment_basic", 4): "https://youtu.be/w4-kn3tayRQ",
+    ("recruitment_basic", 5): "https://youtu.be/0G9NC6A7vTE",
+    ("recruitment_basic", 6): "https://youtu.be/T_JBGaSBX6M",
+    ("reactivation_self_guided", 1): "https://youtu.be/2wdW11ZInFQ",
+    ("reactivation_self_guided", 2): "https://youtu.be/FekXiaQAF8g",
+    ("reactivation_self_guided", 3): "https://youtu.be/DHXzONsqlcA",
+    ("reactivation_self_guided", 4): "https://youtu.be/NKN08iH8-FQ",
+    ("reactivation_self_guided", 5): "https://youtu.be/cursn2RtzzQ",
+    ("activation_self_guided", 1): "https://youtu.be/kcQqxpFALLA",
+    ("activation_self_guided", 2): "https://youtu.be/UmiZJS6Ygr8",
+    ("activation_self_guided", 3): "https://youtu.be/uNH70p8xQMI",
+    ("activation_self_guided", 4): "https://youtu.be/zshP-kDiGAM",
+    ("activation_self_guided", 5): "https://youtu.be/ngP-VDBVEHs",
+}
+
 SUPPORT_TYPES = [
     "I have a question about this module",
     "I need help using the platform",

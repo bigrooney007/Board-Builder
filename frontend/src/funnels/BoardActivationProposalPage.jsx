@@ -68,7 +68,7 @@ export default function BoardActivationProposalPage() {
 
         <section className="brp-section brp-investment" data-testid="ap-investment-section">
           <h2 className="brp-section-title" data-testid="ap-investment-heading">Your Investment</h2>
-          <p className="brp-today-price" data-testid="ap-today-price">$2,497</p>
+          <p className="brp-today-price" data-testid="ap-today-price">$5,497</p>
           <p className="dyi-payment-line" data-testid="ap-payment-line"><strong>One-time payment.</strong></p>
         </section>
 

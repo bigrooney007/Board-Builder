@@ -125,7 +125,6 @@ export const Module1Profile = ({ onConfirmed }) => {
       <section className="workspace-panel" data-testid="module1-intake">
         <h2>{module1ProfileText.theBoardMembersYourOrganization}</h2>
         <p className="material-description">{module1ProfileText.basedOnTheInformationYou}</p>
-        <KnownInfoSummary data={stored} />
         {askingAnything && (
           <p className="workspace-note" data-testid="module1-missing-info-note">{module1ProfileText.weJustNeedALittle}</p>
         )}

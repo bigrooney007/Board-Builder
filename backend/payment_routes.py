@@ -72,7 +72,7 @@ def resolve_diy_price_id() -> str:
 
 
 def resolve_direct_project_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_PRICE_ID", "direct_board_recruitment_project_1997", "Board Recruitment Project", 199700)
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_5497_PRICE_ID", "direct_board_recruitment_project_5497", "Board Recruitment Project", 549700)
 
 
 def resolve_reactivation_diy_price_id() -> str:
@@ -80,7 +80,7 @@ def resolve_reactivation_diy_price_id() -> str:
 
 
 def resolve_reactivation_project_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_REACTIVATION_PRICE_ID", "direct_board_reactivation_project_1997", "Board Reactivation Project", 199700)
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_REACTIVATION_5497_PRICE_ID", "direct_board_reactivation_project_5497", "Board Reactivation Project", 549700)
 
 
 def resolve_activation_diy_price_id() -> str:
@@ -88,7 +88,7 @@ def resolve_activation_diy_price_id() -> str:
 
 
 def resolve_activation_project_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_ACTIVATION_PRICE_ID", "direct_board_activation_project_2497", "Board Fundraising Activation Project", 249700)
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_ACTIVATION_5497_PRICE_ID", "direct_board_activation_project_5497", "Board Fundraising Activation Project", 549700)
 
 
 def create_payment_router(db) -> APIRouter:
@@ -236,7 +236,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_recruitment_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_recruitment_project",
             "offer": "Board Recruitment Project",
-            "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
@@ -344,7 +344,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_reactivation_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_reactivation_project",
             "offer": "Board Reactivation Project",
-            "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
@@ -416,7 +416,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_activation_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_activation_project_2497",
             "offer": "Board Fundraising Activation Project",
-            "amount": 249700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

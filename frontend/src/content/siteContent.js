@@ -65,6 +65,10 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
+    "mainVideo": {
+      "youtubeId": "lbz713woSB4",
+      "title": "Why Your Board Is The Way It Is AND What To Do To Fix It Starting Today"
+    },
     "heroTitle": "Your Nonprofit Deserves The Right Leadership",
     "heroSubtitle": "Build the powerhouse fundraising board your nonprofit needs",
     "introHeading": "Your Board Is Your Organization's Most Important Asset",
@@ -290,13 +294,13 @@ export const SITE_CONTENT = {
       "dwy": {
         "heading": "DO IT WITH YOU",
         "subheading": "Get Rooney to step in and help you through the process.",
-        "price": "$1,997",
+        "price": "$5,497",
         "paragraphs": [
           "We'll work with you to initiate the process, lead you through it, guide you through the difficult conversations, and support you as you work to reactivate your board.",
           "The goal is simple:",
           "Get your board members back active, committed, and contributing to the mission."
         ],
-        "buttonLabel": "GET STARTED WITH ROONEY ($1,997)"
+        "buttonLabel": "GET STARTED WITH ROONEY ($5,497)"
       },
       "closing": {
         "heading": "Reactivate Your Board",
@@ -359,7 +363,7 @@ export const SITE_CONTENT = {
       "dwy": {
         "heading": "DO IT WITH YOU",
         "subheading": "Get Rooney to work with you through the process.",
-        "price": "$2,497",
+        "price": "$5,497",
         "paragraphs": [
           "We'll work with you throughout the process, helping you activate your board and move your board members into active fundraising roles.",
           "We'll help you make sure the process is executed properly for your organization so your board can start raising money and building the organization's fundraising capacity."
@@ -476,7 +480,7 @@ export const boardActivationIntakePageText = {
   pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
   weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to activate your board:",
   doItYourself497: "Do It Yourself \u2014 $497",
-  doItWithRooney2: "Do It With Rooney \u2014 $2,497",
+  doItWithRooney2: "Do It With Rooney \u2014 $5,497",
   takingYouToYourStart: "Taking you to your start page\u2026",
   openMyStartPage: "Open My Start Page",
   takingYouToTheCalendar: "Taking you to the calendar\u2026",
@@ -500,7 +504,7 @@ export const boardReactivationIntakePageText = {
   pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
   weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to reactivate your board:",
   doItYourself497: "Do It Yourself \u2014 $497",
-  doItWithMe1: "Do It With Me \u2014 $1,997",
+  doItWithMe1: "Do It With Me \u2014 $5,497",
   takingYouToYourStart: "Taking you to your start page\u2026",
   openMyStartPage: "Open My Start Page",
   takingYouToTheCalendar: "Taking you to the calendar\u2026",
@@ -533,7 +537,7 @@ export const boardRecruitmentIntakePageText = {
   pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
   weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:",
   doItYourself497: "Do It Yourself \u2014 $497",
-  doItWithMe1: "Do It With Me \u2014 $1,997",
+  doItWithMe1: "Do It With Me \u2014 $5,497",
   takingYouToYourStart: "Taking you to your start page\u2026",
   openMyStartPage: "Open My Start Page",
   takingYouToTheCalendar: "Taking you to the calendar\u2026",
@@ -666,7 +670,7 @@ export const reactivateWithRooneyPageText = {
   reactivateMyBoardMyself497: "REACTIVATE MY BOARD MYSELF \u2014 $497",
   doItWithMe: "Do It With Me",
   workDirectlyWithRooneyThrough: "Work directly with Rooney through the Board Reactivation process so you can identify who is ready to stand up, deal with the people who are no longer prepared to serve, and rebuild an active Board with clear areas of responsibility.",
-  reactivateMyBoardWithRooney: "REACTIVATE MY BOARD WITH ROONEY \u2014 $1,997",
+  reactivateMyBoardWithRooney: "REACTIVATE MY BOARD WITH ROONEY \u2014 $5,497",
   reactivateYourBoardWithRooney: "Reactivate Your Board With Rooney",
 };
 
@@ -717,7 +721,7 @@ export const recruitWithRooneyPageText = {
   doItYourself497: "DO IT YOURSELF \u2014 $497",
   recruitYourBoardWithMe: "Recruit Your Board With Me",
   weHandleTheOutreachYou: "We handle the outreach, you decide who joins your board, and we help properly bring the people you select into your organization.",
-  doItWithMe1: "DO IT WITH ME \u2014 $1,997",
+  doItWithMe1: "DO IT WITH ME \u2014 $5,497",
   recruitYourBoardWithRooney: "Recruit Your Board With Rooney",
 };
 

@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 50 verification of the correction batch: canonical videos (backend map + 3 course APIs + frontend embeds), DWY $5,497 pricing (6 Stripe checkout sessions verified via Stripe API), NEXT STEP completion system in all 3 learning flows, and recruitment modules 1-6 restructure. Backend: 11/11 pytest tests passed (/app/backend/tests/test_iter50_videos_pricing.py). Frontend: all listed checks passed across homepage, 9 pricing/offer pages, recruitment M1-M6, reactivation M1/M5, activation M1. No functional defects found; only stale marketing/module copy noted as minor.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/payments/activation-project-checkout", "issue": "Amount is correct ($5,497 / 549700) but purchase_source string is still 'direct_board_activation_project_2497' (payment_routes.py ~401/417) — stale price in the source label will make reporting confusing"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Recruitment Module 1 body copy / Reactivation Step 1 copy (frontend/src/content/appContent.js lines 25 and 120)", "issues": ["Copy still instructs the user to 'mark this step complete to continue to Module 2' / 'mark this step complete and continue to Step 2' although the Mark-as-Completed buttons were replaced by the NEXT STEP button", "Unused string markStepComplete: 'Mark This Step Complete' remains in appContent.js (dead content)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter50_videos_pricing.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Update Module 1 recruitment body copy and reactivation Step 1 copy in frontend/src/content/appContent.js to reference the NEXT STEP button instead of 'mark this step complete'; delete the unused markStepComplete string",
+    "Rename purchase_source 'direct_board_activation_project_2497' to a 5497 label (or keep intentionally and document) in payment_routes.py",
+    "Optional cleanup: delete dead components CandidateStatusList, BackgroundCheckPanel, KnownInfoSummary (still defined but never rendered)"
+  ],
+  "critical_code_review_comments": [
+    "CANONICAL_COURSE_VIDEOS override in course_routes.merged_course correctly takes precedence over db.course_videos, so admin-stored URLs can no longer diverge — good; consider removing the now-dead course_videos admin editor or making it read-only to avoid confusing owners.",
+    "conditional_offer 409 gating is gone (only the generic 'Complete Module 1' 409 and org-name/mission 422 remain) — verified by code inspection of workspace_routes.py generate(); no live Claude generation was consumed.",
+    "ApplicantModules.jsx is large (800+ lines) and still contains unused components; splitting per-module files would reduce risk of regressions."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter50_videos_pricing.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Created external applicant 'QA Outside Applicant' with a /tmp/qa_cv.txt CV in module-tester@example.com's recruitment workspace to verify M4 end-to-end; deleted afterwards from opportunity_applications. Marked recruitment module 1 completed for module-tester@example.com via NEXT STEP / progress API.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Used /app/memory/test_credentials.md: module-tester@example.com / ModuleTest123! (recruitment), test_ui_batch2_6ca82f@example.com / UITest123! (reactivation), activation-tester-1786708997@example.com / ActTest123! (activation). All logins worked.",
+  "context_for_next_testing_agent": "Verified in iteration 50: (1) all 16 module videos + homepage video (home-main-video-embed -> youtube.com/embed/lbz713woSB4, rendered after the intro card at y~1010) match the canonical map; recruitment M1 iframe = MADZN-LqAvA, reactivation M5 now renders cursn2RtzzQ, activation M1 = kcQqxpFALLA. (2) Stripe TEST sessions verified through the Stripe API: direct-project / reactivation-project / activation-project = 549700; diy / reactivation-diy / activation-diy = 49700; no payment completed. (3) No '$1,997'/'$2,497' anywhere on /offer/reactivation, /offer/activation, /offer/recruitment, /reactivate-with-rooney, /recruit-with-rooney, /activate-with-rooney and the 3 proposal pages; /offer/reactivation shows the 'GET STARTED WITH ROONEY ($5,497)' button. (4) NEXT STEP: no 'Mark This Step Complete' button anywhere; next-step-button (recruitment M1 -> M2), reactivation-next-step-button (M5 -> course overview), activation-next-step-button (M1 -> M2) all work; POST /api/courses/progress action completed persists (module1.completed true). (5) Recruitment restructure verified: M2 module1-known-info absent; M3 exactly 4 campaign tools + Board Application panel and no LinkedIn card (LinkedIn only appears inside the Job Post description text); M4 external applicant form is first and has only name+CV, add flow succeeded end-to-end; M5 background-check-panel/candidate-status-list/conditional-checklist/conditional-offer-locked/conditional-missing all absent, only 'Find Background Check Providers Near Me' button, START REFERENCING and the Generate Conditional Board Appointment Email card show immediately for a New candidate; M6 has only module6-script-section + first-meeting-panel. Reusable suite: /app/backend/tests/test_iter50_videos_pricing.py (run from /app/backend with `set -a && source .env && set +a && python -m pytest tests/test_iter50_videos_pricing.py -q`).",
+  "rca_of_the_issue": "No defects requiring RCA. The only findings are stale copy strings in frontend/src/content/appContent.js referencing the removed Mark-as-Completed button and a stale '2497' substring inside the activation DWY purchase_source label (amount itself is 549700)."
+}

@@ -71,7 +71,7 @@ export default function BoardReactivationProposalPage() {
         <section className="brp-section brp-investment" data-testid="rxp-investment-section">
           <h2 className="brp-section-title" data-testid="rxp-investment-heading">Your Investment</h2>
           <p className="brp-standard-price" data-testid="rxp-reference-price"><s>$3,997</s></p>
-          <p className="brp-today-price" data-testid="rxp-today-price">$1,997</p>
+          <p className="brp-today-price" data-testid="rxp-today-price">$5,497</p>
           <p className="dyi-payment-line" data-testid="rxp-payment-line"><strong>One-time payment.</strong></p>
         </section>
 

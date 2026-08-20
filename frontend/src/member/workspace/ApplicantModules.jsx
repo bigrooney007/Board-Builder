@@ -147,10 +147,6 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
 
 const ExternalApplicantForm = ({ refresh }) => {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [linkedin, setLinkedin] = useState("");
-  const [notes, setNotes] = useState("");
   const [cvFile, setCvFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -163,12 +159,8 @@ const ExternalApplicantForm = ({ refresh }) => {
       const payload = new FormData();
       payload.append("name", name);
       payload.append("cv", cvFile);
-      payload.append("email", email);
-      payload.append("phone", phone);
-      payload.append("linkedin", linkedin);
-      payload.append("notes", notes);
       await memberApi.post("/workspace/applications/external", payload, { headers: { "Content-Type": "multipart/form-data" } });
-      setName(""); setEmail(""); setPhone(""); setLinkedin(""); setNotes(""); setCvFile(null);
+      setName(""); setCvFile(null);
       setMessage("Applicant added. They now use the exact same interview actions as your hosted applicants.");
       refresh();
     } catch (err) { setMessage(err.response?.data?.detail || "Could not add the applicant."); }
@@ -181,12 +173,8 @@ const ExternalApplicantForm = ({ refresh }) => {
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
         <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
-        <label className="field"><span>Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
-        <label className="field"><span>Phone</span><input value={phone} onChange={(event) => setPhone(event.target.value)} data-testid="external-applicant-phone" /></label>
-        <label className="field"><span>LinkedIn</span><input value={linkedin} onChange={(event) => setLinkedin(event.target.value)} data-testid="external-applicant-linkedin" /></label>
-        <label className="field"><span>{applicantModulesText.relevantApplicantInformationOptional}</span><textarea rows="2" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="external-applicant-notes" /></label>
       </div>
-      <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add External Applicant"}</button>
+      <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add Applicant"}</button>
       {message && <p className="member-success" data-testid="external-applicant-message">{message}</p>}
     </section>
   );
@@ -201,6 +189,7 @@ export const Module4Applicants = () => {
     : application.status === "Not Moving to Interview" ? "Not Moving to Interview" : "New";
   return (
     <div data-testid="module4-workspace">
+      <ExternalApplicantForm refresh={refresh} />
       <section className="workspace-panel">
         <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
         <p className="material-description">{recruitmentWorkspaceText.d_everyoneWhoAppliesThroughYour}</p>
@@ -220,7 +209,6 @@ export const Module4Applicants = () => {
           </div>
         ))}
       </section>
-      <ExternalApplicantForm refresh={refresh} />
     </div>
   );
 };
@@ -332,7 +320,7 @@ const ReferenceProcessPanel = ({ application }) => {
       <h3>Reference Check — {name}</h3>
       <p className="material-description">Collect and verify two professional references for this candidate before making your final board appointment decision. {name} receives a secure form asking for two references. When they submit, you are notified and the references appear below marked Ready to Contact — no reference is emailed until you click Email Reference for Confirmation. Each reference then receives their own secure five-question form, and you are notified as each response comes in. You make every decision — the platform only records the information.</p>
       {!process && (
-        <button className="button" disabled={busy} onClick={start} data-testid="start-reference-check-button">{busy ? "Starting…" : "Start Reference Check"}</button>
+        <button className="button" disabled={busy} onClick={start} data-testid="start-reference-check-button">{busy ? "Starting…" : "START REFERENCING"}</button>
       )}
       {process && (
         <>
@@ -555,35 +543,17 @@ const OnboardingSessionPanel = ({ session, setSession }) => {
 
 const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profileReady }) => {
   const { byType, refresh } = useMaterials(application.application_id);
-  const missing = PREPARE_TOOLS.filter(([type]) => docStage(orgMaterials[type]) !== "Approved").map(([, title]) => title);
-  if (!session.date) missing.push("Onboarding Session date & time");
-  const referenceStarted = Boolean(application.reference_check_status);
-  const offerUnlocked = profileReady && referenceStarted && Boolean(session.date);
   return (
     <div className="detail-section" data-testid="conditional-panel">
       <h3>Prepare Conditional Appointment — {application.profile_snapshot?.full_name}</h3>
-      <ul className="readiness-list" data-testid="conditional-checklist">
-        <li className={profileReady ? "done" : ""}>Board Member Profile Form: {profileReady ? "Generated" : "Not Generated"}</li>
-        <li className={referenceStarted ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
-        <li className={["Completed", "Not Required"].includes(application.background_check?.status) ? "done" : ""}>Background Check: {application.background_check?.status || "Not recorded"}</li>
-        {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
-        <li className={session.date ? "done" : ""}>Onboarding Session: {session.date ? `Scheduled — ${session.date} ${session.time || ""}` : "Not scheduled"}</li>
-      </ul>
-      {missing.length > 0 && <p className="submit-error" data-testid="conditional-missing">Complete the following before preparing this candidate's Conditional Appointment: {missing.join(", ")}</p>}
-      {!offerUnlocked && (
-        <p className="workspace-note" data-testid="conditional-offer-locked">
-          The Conditional Board Offer unlocks in sequence: generate this candidate's required resources and Board Member Profile Form, start their Reference Check, and schedule the onboarding date and time above. Still needed:{" "}
-          {[!profileReady && "Board Member Profile Form", !referenceStarted && "Reference Check", !session.date && "onboarding date/time"].filter(Boolean).join(", ")}.
-        </p>
-      )}
-      {offerUnlocked && <MaterialCard type="conditional_offer" title={applicantModulesText.conditionalBoardAppointmentEmail} buttonLabel="Generate Conditional Board Appointment Email"
+      <MaterialCard type="conditional_offer" title={applicantModulesText.conditionalBoardAppointmentEmail} buttonLabel="Generate Conditional Board Appointment Email"
         description="One professional email telling the candidate your organization would like them to join the board (conditional while remaining requirements are completed), inviting them to the Board Onboarding Session, and automatically including their secure candidate-specific links: Organization Overview, Board Manual, the three agreements for signature, their Board Member Profile Form, and the Reference Information Form only if still needed. You never paste links manually."
         applicationId={application.application_id} material={byType.conditional_offer} refresh={refresh} approvable
         extraActions={byType.conditional_offer?.status === "Approved" ? (
           <SendMaterialButton type="conditional_offer" applicationId={application.application_id}
             label={application.emails_sent?.conditional_offer ? "Send Updated Appointment Information" : `Send Conditional Appointment to ${application.applicant_email || "candidate"}`}
             sentAt={application.emails_sent?.conditional_offer} onSent={onChanged} />
-        ) : null} />}
+        ) : null} />
       <MaterialCard type="after_interview_rejection" title={applicantModulesText.afterInterviewRejectionEmail} buttonLabel="Generate After-Interview Rejection Email"
         description="A respectful, concise, professional email for an applicant you interviewed but have decided not to continue with. No onboarding resources are included."
         applicationId={application.application_id} material={byType.after_interview_rejection} refresh={refresh}
@@ -716,18 +686,7 @@ export const Module5References = () => {
         {detail && (
           <div className="candidate-progress" data-testid="candidate-progress">
             <h3>{detail.profile_snapshot?.full_name || detail.applicant_email} — <span data-testid="candidate-progress-status">{detail.status}</span></h3>
-            {movingForward && <CandidateStatusList application={detail} key={`status-${detail.application_id}-${detail.updated_at}`} />}
-            {movingForward && (
-              <p className="workspace-note" data-testid="next-step-hint">
-                Prepare Next-Step Email: {detail.reference_check_status === "Completed"
-                  ? "references are complete — prepare the Conditional Appointment below when your onboarding materials are ready."
-                  : "this candidate's next step is the Reference Check below. That email includes only the secure Reference Information Form — onboarding materials are sent later with the Conditional Appointment."}
-              </p>
-            )}
-            {(movingForward || !notMovingForward) && (profileReady ? <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} /> : (
-              <p className="workspace-note" data-testid="reference-locked-note">{applicantModulesText.theReferenceCheckBecomesAvailable}</p>
-            ))}
-            {(movingForward || !notMovingForward) && <BackgroundCheckPanel application={detail} key={`bg-${detail.application_id}`} />}
+            {(movingForward || !notMovingForward) && <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} />}
           </div>
         )}
       </section>
@@ -876,54 +835,19 @@ const PreparedResource = ({ type, title, material, branding }) => {
 };
 
 export const Module6Onboarding = () => {
-  const { applications, refresh } = useApplications();
+  const { applications } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
-  const [branding] = useBranding();
-  const [session, setSession] = useState({});
-  useEffect(() => { memberApi.get("/workspace/onboarding-session").then((r) => setSession(r.data.session || {})).catch(() => {}); }, []);
-  const candidates = applications.filter((a) => a.status === "Conditional Appointment" || a.status === "Selected");
   const boardMembers = applications.filter((a) => a.final_outcome === "Joined Board" || a.status === "Selected");
-  const markSession = async (status) => {
-    const next = { ...session, status };
-    await memberApi.put("/workspace/onboarding-session", next);
-    setSession(next);
-  };
   return (
     <div data-testid="module6-workspace">
-      <section className="workspace-panel" data-testid="module6-members-section">
-        <h2>{recruitmentWorkspaceText.h_onboardYourNewBoardMembers}</h2>
-        <p className="material-description">{recruitmentWorkspaceText.d_completeTheFinalStepsFor}</p>
-        {session?.date && (
-          <div className="material-actions" data-testid="session-status-controls">
-            <span className="signature-status">Onboarding Session: <strong>{session.status || "Scheduled"}</strong> — {session.date} {session.time || ""}</span>
-            {session.status !== "Completed" && <button className="button button-back" onClick={() => markSession("Completed")} data-testid="mark-session-completed">Mark Session Completed</button>}
-          </div>
-        )}
-        {candidates.length === 0 && <p className="workspace-note" data-testid="no-conditional">{applicantModulesText.candidatesAppearHereOnceYou}</p>}
-        {candidates.map((application) => <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />)}
-      </section>
-
-      <section className="workspace-panel" data-testid="module6-resources-section">
-        <h2>{recruitmentWorkspaceText.h_onboardingResourcesPreparedInStep}</h2>
-        {[["organization_overview", "Organization Overview"], ["board_manual", "Board Manual"], ...AGREEMENTS].map(([type, title]) => (
-          <PreparedResource key={type} type={type} title={title} material={orgMaterials[type]} branding={branding} />
-        ))}
-      </section>
-
       <section className="workspace-panel" data-testid="module6-script-section">
         <h2>{recruitmentWorkspaceText.h_prepareForYourBoardOnboarding}</h2>
-        <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate My Board Onboarding Script"
-          description="A practical facilitator guide you can have open during the onboarding session and follow from beginning to end — welcome and introductions, why the organization exists, where it is going, the role of the board, how you will work together, how each member can contribute, fundraising and ambassadorship, the board documents, next steps and closing."
+        <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate Onboarding Facilitation Guide"
+          description="A practical facilitation guide you can have open during the onboarding session and follow from beginning to end — welcome and introductions, why the organization exists, where it is going, the role of the board, how you will work together, how each member can contribute, fundraising and ambassadorship, the board documents, next steps and closing."
           material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />
       </section>
 
       <FirstMeetingPanel orgMaterials={orgMaterials} refreshOrg={refreshOrg} boardMembers={boardMembers} />
-
-      <section className="workspace-panel" data-testid="complete-recruitment-panel">
-        <h2>{recruitmentWorkspaceText.h_yourBoard}</h2>
-        <p className="material-description">{recruitmentWorkspaceText.d_seeEveryPersonWhoHas}</p>
-        <Link className="button" to="/app/recruitment/self-guided/results" data-testid="view-results-button">View My Board</Link>
-      </section>
     </div>
   );
 };

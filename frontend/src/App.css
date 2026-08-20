@@ -1179,6 +1179,10 @@ p { line-height: 1.72; }
 }
 
 
+/* Homepage main video */
+.home-video-section { max-width: 960px; margin: 0 auto; padding: 8px 20px 44px; }
+.home-video-section .module-video { margin-bottom: 0; box-shadow: 0 14px 36px rgba(8, 61, 42, .12); }
+
 /* Assessment-matched pathway recommendation badge */
 .offer-choice-cell { display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
 .offer-choice-cell .button { width: 100%; }

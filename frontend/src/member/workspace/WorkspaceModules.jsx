@@ -23,10 +23,9 @@ export const useMaterials = (applicationId = "") => {
 
 const CAMPAIGN_TOOLS = [
   ["board_recruitment_job_post", "Recruitment Job Post", "Generate My Recruitment Job Post", "Your primary professional board opportunity, ready for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch. Your application link is inserted automatically."],
-  ["linkedin_post", "LinkedIn Recruitment Post", "Generate My LinkedIn Recruitment Post", "A feed post in your voice for your LinkedIn profile and pages, speaking directly to your professional network."],
   ["recruitment_emails", "Recruitment Email", "Generate My Recruitment Email", "A professional email to send to your network, supporters, colleagues and community contacts inviting qualified people to consider the board opportunity."],
-  ["social_posts", "Social Media Recruitment Post", "Generate My Social Media Recruitment Post", "A shorter, shareable recruitment post for Facebook, Instagram and similar channels."],
-  ["referral_request_email", "Referral Recruitment Message", "Generate My Referral Recruitment Message", "A message asking board members, supporters, partners and colleagues to help identify people who may be a strong fit — and to forward your application link."],
+  ["social_posts", "Social Media Recruitment Post", "Generate My Social Media Recruitment Post", "A shareable recruitment post written as a real nonprofit recruitment announcement for your social channels, with your application call to action and link."],
+  ["referral_request_email", "Referral Email", "Generate My Referral Email", "A ready-to-forward message your board members, supporters, partners and colleagues can send to people who may be a strong fit — with your application link included."],
 ];
 
 const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved }) => {

@@ -62,7 +62,7 @@ export default function ActivateWithRooneyPage() {
             </article>
             <article className="ar-offer-card" data-testid="awr-dwm-card">
               <h3 data-testid="awr-dwm-heading">{activateWithRooneyPageText.activateYourBoardWithRooney}</h3>
-              <p className="ar-offer-price" data-testid="awr-dwm-price">$2,497</p>
+              <p className="ar-offer-price" data-testid="awr-dwm-price">$5,497</p>
               <p className="ar-offer-copy" data-testid="awr-dwm-copy">{activateWithRooneyPageText.rooneyWorksThroughTheBoard}</p>
               <Link className="button" to="/board-activation-proposal" data-testid="awr-dwm-button">{activateWithRooneyPageText.iWantRooneyToHelp}</Link>
             </article>

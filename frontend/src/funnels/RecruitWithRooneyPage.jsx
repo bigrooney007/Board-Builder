@@ -92,7 +92,7 @@ export default function RecruitWithRooneyPage() {
             </article>
             <article className="ar-offer-card" data-testid="rwr-dwm-card">
               <h3 data-testid="rwr-dwm-heading">{recruitWithRooneyPageText.recruitYourBoardWithMe}</h3>
-              <p className="ar-offer-price" data-testid="rwr-dwm-price"><s className="rwr-dwm-reference" data-testid="rwr-dwm-reference-price">$3,997</s> $1,997</p>
+              <p className="ar-offer-price" data-testid="rwr-dwm-price">$5,497</p>
               <p className="ar-offer-copy" data-testid="rwr-dwm-copy">{recruitWithRooneyPageText.weHandleTheOutreachYou}</p>
               <Link className="button" to="/board-recruitment-proposal" data-testid="rwr-dwm-button">{recruitWithRooneyPageText.doItWithMe1}</Link>
             </article>

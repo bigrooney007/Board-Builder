@@ -257,6 +257,13 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     profile = await get_profile(db, user_id)
     lead = await get_lead(db, member)
     parts = [profile_context_text(profile.get("data", {}), lead)]
+    founder_contact = {
+        "name": f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
+        "title": (profile.get("data", {}) or {}).get("founder_title", "") or "Founder",
+        "email": member.get("email", ""),
+        "phone": (lead or {}).get("phone", ""),
+    }
+    parts.insert(1, "FOUNDER CONTACT (sign every generated email with these actual details; omit empty items; never placeholders):\n" + json.dumps(founder_contact, indent=1))
     if profile.get("strategy_intake"):
         parts.append("BOARD RECRUITMENT LOGISTICS AND NETWORK (the founder's saved answers about board logistics, their network and recruitment channels — collected once through the Board Recruitment Intake):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
     blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")

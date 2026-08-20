@@ -62,7 +62,7 @@ export default function ReactivateWithRooneyPage() {
             </article>
             <article className="ar-offer-card" data-testid="rxr-dwm-card">
               <h3 data-testid="rxr-dwm-heading">{reactivateWithRooneyPageText.doItWithMe}</h3>
-              <p className="ar-offer-price" data-testid="rxr-dwm-price"><s className="rwr-dwm-reference" data-testid="rxr-dwm-reference-price">$3,997</s> $1,997</p>
+              <p className="ar-offer-price" data-testid="rxr-dwm-price">$5,497</p>
               <p className="ar-offer-copy" data-testid="rxr-dwm-copy">{reactivateWithRooneyPageText.workDirectlyWithRooneyThrough}</p>
               <Link className="button" to="/board-reactivation-proposal" data-testid="rxr-dwm-button">{reactivateWithRooneyPageText.reactivateMyBoardWithRooney}</Link>
             </article>

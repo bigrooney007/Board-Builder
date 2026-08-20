@@ -124,11 +124,11 @@ export const ActivationModulePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.product, number]);
 
-  const markComplete = async () => {
+  const nextStep = async () => {
     setMarking(true);
     try {
-      await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: module.completed ? "uncompleted" : "completed" });
-      reload();
+      if (!module.completed) await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: "completed" });
+      navigate(number < course.modules.length ? `${META.base}/module/${number + 1}` : "/app/activation/self-guided/my-fundraising-board");
     } catch { /* ignore */ }
     setMarking(false);
   };
@@ -150,10 +150,7 @@ export const ActivationModulePage = () => {
             <ModuleShell moduleNumber={number} />
             <div className="module-nav" data-testid="activation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
-              <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="activation-mark-complete-button">
-                {module.completed ? <><CheckCircle2 size={16} /> Module Completed</> : "Mark This Module Complete"}
-              </button>
-              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${META.base}/module/${number + 1}`)} data-testid="activation-next-button">Next Module <ArrowRight size={16} /></button>
+              <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={META.key} moduleNumber={number} supportTypes={course.support_types} />
           </>

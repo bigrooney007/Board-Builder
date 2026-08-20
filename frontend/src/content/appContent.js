@@ -13,7 +13,7 @@ export const sharedCourseContent = {
   nav: {
     previousStep: "Previous Step", nextStep: "Next Step",
     previousModule: "Previous Module", nextModule: "Next Module",
-    markStepComplete: "Mark This Step Complete", stepCompleted: "Step Completed",
+    stepCompleted: "Step Completed",
     markModuleComplete: "Mark This Module Complete", moduleCompleted: "Module Completed",
   },
   loadError: "We could not load this course.",
@@ -22,7 +22,7 @@ export const sharedCourseContent = {
 export const recruitmentContent = {
   module1: {
     heading: "Understanding the Board Recruitment Process",
-    body: "This training shows you how the whole board recruitment process works before you begin executing it. Watch the training above to understand the complete journey you are about to take, then mark this step complete to continue to Module 2 and identify the people your board needs.",
+    body: "This training shows you how the whole board recruitment process works before you begin executing it. Watch the training above to understand the complete journey you are about to take, then click NEXT STEP to continue to Module 2 and identify the people your board needs.",
     nextButton: "NEXT: IDENTIFY THE PEOPLE YOUR BOARD NEEDS",
   },
   module2: {
@@ -117,7 +117,7 @@ export const reactivationContent = {
     heading: "Understand the Situation",
     body: [
       "This step is training only. Watch the video above to understand why Boards disengage and what reactivating a Board actually requires.",
-      "When you are ready, mark this step complete and continue to Step 2 to generate your Board Recommitment Form.",
+      "When you are ready, click NEXT STEP to continue to Step 2 and generate your Board Recommitment Form.",
     ],
   },
   step2: {

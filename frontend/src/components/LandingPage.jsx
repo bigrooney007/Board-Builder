@@ -41,6 +41,12 @@ export const LandingPage = ({ onJoin }) => (
       {home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
     </section>
 
+    <section className="home-video-section" data-testid="home-main-video-section">
+      <div className="module-video" data-testid="home-main-video-embed">
+        <iframe src={`https://www.youtube.com/embed/${home.mainVideo.youtubeId}`} title={home.mainVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+      </div>
+    </section>
+
     <section className="section home-how" data-testid="home-how-section">
       <h2 data-testid="home-how-heading">{home.howHeading}</h2>
       {home.howParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}

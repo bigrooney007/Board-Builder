@@ -116,11 +116,11 @@ export const ReactivationModulePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.product, number]);
 
-  const markComplete = async () => {
+  const nextStep = async () => {
     setMarking(true);
     try {
-      await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: module.completed ? "uncompleted" : "completed" });
-      reload();
+      if (!module.completed) await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: "completed" });
+      navigate(number < course.modules.length ? `${META.base}/module/${number + 1}` : META.base);
     } catch { /* ignore */ }
     setMarking(false);
   };
@@ -138,14 +138,11 @@ export const ReactivationModulePage = () => {
               <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
               <h1 data-testid="reactivation-module-title">{module.title}</h1>
             </header>
-            {module.number !== 5 && <VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
+            {<VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
             <StepShell moduleNumber={number} />
             <div className="module-nav" data-testid="reactivation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
-              <button className={`button ${module.completed ? "completed-button" : ""}`} disabled={marking} onClick={markComplete} data-testid="reactivation-mark-complete-button">
-                {module.completed ? <><CheckCircle2 size={16} /> Step Completed</> : "Mark This Step Complete"}
-              </button>
-              <button className="button button-back" disabled={number >= course.modules.length} onClick={() => navigate(`${META.base}/module/${number + 1}`)} data-testid="reactivation-next-button">Next Step <ArrowRight size={16} /></button>
+              <button className="button" disabled={marking} onClick={nextStep} data-testid="reactivation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={META.key} moduleNumber={number} supportTypes={course.support_types} />
           </>
