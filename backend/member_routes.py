@@ -81,7 +81,7 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         extra_entitlements.append("recruitment_selection_onboarding")
     elif offer_source == "recruitment_selection_onboarding" and tier == "297":
         entitlement = "recruitment_selection_onboarding"
-        product_name = "Selection, Interview & Onboarding Package"
+        product_name = "Selection, Interview, Reference Check & Onboarding"
     elif offer_source == "direct_diy_board_reactivation" and tier == "497":
         entitlement = "reactivation_self_guided"
         product_name = "Do It Yourself Board Reactivation"
@@ -132,7 +132,7 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "recruitment_selection_onboarding":
         purchase.update({
             "purchase_source": "recruitment_selection_onboarding_297",
-            "offer": "Selection, Interview & Onboarding Package", "price_paid": 297,
+            "offer": "Selection, Interview, Reference Check & Onboarding", "price_paid": 297,
         })
     elif offer_source == "direct_diy_board_reactivation":
         purchase.update({

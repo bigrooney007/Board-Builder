@@ -138,7 +138,7 @@ def create_course_router(db) -> APIRouter:
         require_entitlement(member, allowed)
         if (payload.product == "recruitment_self_guided" and payload.module_number >= 4
                 and "recruitment_selection_onboarding" not in member.get("entitlements", [])):
-            raise HTTPException(status_code=403, detail="This step is included in the Selection, Interview & Onboarding Package")
+            raise HTTPException(status_code=403, detail="This step is included in the Selection, Interview, Reference Check & Onboarding")
         if member.get("review_mode"):
             return {"status": "ok", "modules_completed": 0, "percent_complete": 0, "review_mode": True}
         now = datetime.now(timezone.utc).isoformat()

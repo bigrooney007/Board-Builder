@@ -86,7 +86,7 @@ def resolve_direct_project_price_id() -> str:
 
 
 def resolve_selection_onboarding_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_RECRUITMENT_SELECTION_ONBOARDING_297_PRICE_ID", "recruitment_selection_onboarding_297", "Selection, Interview & Onboarding Package", 29700)
+    return resolve_offer_price_id("STRIPE_RECRUITMENT_SELECTION_ONBOARDING_297_PRICE_ID", "recruitment_selection_onboarding_297", "Selection, Interview, Reference Check & Onboarding", 29700)
 
 
 def resolve_reactivation_diy_price_id() -> str:
@@ -305,7 +305,7 @@ def create_payment_router(db) -> APIRouter:
             "metadata": {
                 "offer_source": "recruitment_selection_onboarding", "selected_tier": "297",
                 "purchase_source": "recruitment_selection_onboarding_297",
-                "offer": "Selection, Interview & Onboarding Package",
+                "offer": "Selection, Interview, Reference Check & Onboarding",
             },
         }
         try:
@@ -321,7 +321,7 @@ def create_payment_router(db) -> APIRouter:
         await db.payment_transactions.insert_one({
             "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "recruitment_selection_onboarding",
             "selected_tier": "297", "purchase_source": "recruitment_selection_onboarding_297",
-            "offer": "Selection, Interview & Onboarding Package",
+            "offer": "Selection, Interview, Reference Check & Onboarding",
             "amount": 29700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,

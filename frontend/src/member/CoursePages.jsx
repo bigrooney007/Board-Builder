@@ -137,7 +137,7 @@ export const CourseOverviewPage = ({ productSlug }) => {
               module.locked ? (
                 <Link className="module-list-item module-locked-item" to="/app/recruitment/selection-offer" key={module.number} data-testid={`module-locked-${module.number}`}>
                   <Lock className="module-todo" size={21} />
-                  <div><span>Step {module.position || module.number} · Selection, Interview &amp; Onboarding Package</span><h2>{module.title}</h2></div>
+                  <div><span>Step {module.position || module.number} · Selection, Interview, Reference Check &amp; Onboarding</span><h2>{module.title}</h2></div>
                   <ArrowRight size={17} />
                 </Link>
               ) : (
@@ -157,7 +157,7 @@ export const CourseOverviewPage = ({ productSlug }) => {
 
 const BasicResources = ({ module }) => (
   <section className="module-resources" data-testid="module-resources">
-    <h2>Module Resources</h2>
+    <h2>Step Resources</h2>
     {module.resources.map((resource) => (
       <details className="resource-item" key={resource.title} data-testid={`resource-${resource.title.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`}>
         <summary><FileText size={16} /> {resource.title}</summary>
@@ -225,7 +225,7 @@ export const CourseModulePage = ({ productSlug }) => {
       <main className="member-page module-page" data-testid={`course-module-page-${productSlug}`}>
         {forbidden && <ForbiddenCard />}
         {error && <p className="submit-error">{error}</p>}
-        {course && !module && <div className="member-card"><h2>Module Not Found</h2><Link className="button" to={meta.base}>Back to Course</Link></div>}
+        {course && !module && <div className="member-card"><h2>Step Not Found</h2><Link className="button" to={meta.base}>Back to Course</Link></div>}
         {module && !module.locked && (
           <>
             <header className="member-page-heading">

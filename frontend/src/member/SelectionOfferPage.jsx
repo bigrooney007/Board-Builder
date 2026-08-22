@@ -77,7 +77,7 @@ export default function SelectionOfferPage() {
         </section>
 
         <section className="member-card selection-offer-card" data-testid="selection-offer-card">
-          <h2>Selection, Interview &amp; Onboarding Package</h2>
+          <h2>Selection, Interview, Reference Check &amp; Onboarding</h2>
           <p className="selection-offer-price" data-testid="selection-offer-price">$297 <span>One Time</span></p>
           <p>Get access to the resources and guidance you need to select, interview, reference-check and onboard the board members you choose.</p>
           <ul className="selection-offer-list">
