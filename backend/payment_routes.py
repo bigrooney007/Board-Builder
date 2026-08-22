@@ -29,11 +29,21 @@ class RooneyCheckoutRequest(BaseModel):
 class DirectProjectCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
     result_token: str = ""
+    cancel_path: str = ""
 
 
 class DIYCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
     result_token: str = ""
+    cancel_path: str = ""
+
+
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation"}
+
+
+def resolve_cancel_url(payload, default_path: str) -> str:
+    path = payload.cancel_path if payload.cancel_path in ALLOWED_CANCEL_PATHS else default_path
+    return f"{payload.origin_url}{path}?checkout=cancelled"
 
 
 _price_cache = {}
@@ -215,7 +225,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_direct_project_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/board-recruitment-proposal?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/board-recruitment-proposal"),
             "metadata": {
                 "offer_source": "direct_board_recruitment_project",
                 "purchase_source": "direct_board_recruitment_project",
@@ -251,7 +261,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_diy_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/recruit-your-board-yourself?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/recruit-your-board-yourself"),
             "metadata": {
                 "offer_source": "direct_diy_board_recruitment", "selected_tier": "497",
                 "purchase_source": "direct_diy_board_recruitment_497",
@@ -287,7 +297,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_reactivation_diy_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/reactivate-your-board-yourself?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/reactivate-your-board-yourself"),
             "metadata": {
                 "offer_source": "direct_diy_board_reactivation", "selected_tier": "497",
                 "purchase_source": "direct_diy_board_reactivation_497",
@@ -323,7 +333,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_reactivation_project_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/board-reactivation-intake?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/board-reactivation-proposal?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/board-reactivation-proposal"),
             "metadata": {
                 "offer_source": "direct_board_reactivation_project",
                 "purchase_source": "direct_board_reactivation_project",
@@ -359,7 +369,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_activation_diy_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/activate-your-board-yourself?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/activate-your-board-yourself"),
             "metadata": {
                 "offer_source": "direct_diy_board_activation", "selected_tier": "497",
                 "purchase_source": "direct_diy_board_activation_497",
@@ -395,7 +405,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_activation_project_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/board-activation-intake?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/board-activation-proposal?checkout=cancelled",
+            "cancel_url": resolve_cancel_url(payload, "/board-activation-proposal"),
             "metadata": {
                 "offer_source": "direct_board_activation_project",
                 "purchase_source": "direct_board_activation_project_2497",

@@ -543,9 +543,9 @@ export const boardRecommitmentFormPageText = {
 
 export const boardRecruitmentIntakePageText = {
   pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
-  weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to recruit your board:",
-  doItYourself497: "Do It Yourself \u2014 $497",
-  doItWithMe1: "Do It With Me \u2014 $5,497",
+  weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, watch the video and choose how you would like to launch your board recruitment:",
+  doItYourself497: "Launch It Yourself \u2014 $497",
+  doItWithMe1: "Do It With Us \u2014 $2,497",
   takingYouToYourStart: "Taking you to your start page\u2026",
   openMyStartPage: "Open My Start Page",
   takingYouToTheCalendar: "Taking you to the calendar\u2026",

@@ -386,3 +386,16 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - /offer/recruitment converted to VIDEO sales page: YouTube zHgf-9XrLgg embed → buttons "Launch It Yourself — $497" + "Do It With Us — $2,497" → guarantee → testimonials. Long-form recruitment sales copy no longer rendered (canonical text retained in offerSalesPages for reference; component renders video branch when content.video present). Reactivation/Activation text sales pages unchanged.
 - PRICING NOTE: recruitment DWY checkout re-aligned from $5,497 → $2,497 (resolver lookup direct_board_recruitment_project_2497, amount 249700, verified live via Stripe session amount_total). Instruction assumed checkout already was $2,497; changed to keep displayed=charged. Reactivation ($5,497 DWY) and Activation ($5,497 DWY) checkouts and displays unchanged. Legacy pages (RecruitWithRooneyPage, BoardRecruitmentProposalPage) still display $5,497 recruitment DWY — NOT in scope of this instruction, flagged to owner.
 - OUTSTANDING from previous large instruction (platform-wide AI standard): SYSTEM_MESSAGE strengthened (finished-content/link/design rules), founder_phone added to reactivation+activation founder_context, renderer cover Created By added — audit regeneration + full 4-flow generation verification still pending.
+
+## Canonical Recruitment Funnel Lock-In (June 2026) — Complete, iteration_52: backend 100% (12/12) + frontend 100%
+- Canonical journey: AD → /recruit form → /offer/recruitment (video-led) → Stripe → /board-recruitment-intake → ($497: /recruitment-start-here → Module 1) | ($2,497: Calendly)
+- /recruit form now redirects to /offer/recruitment after submit (was /recruit-with-rooney); supporting text trimmed to canonical short version
+- Stripe verified: DIY 49700¢ → /purchase/success; DWY 249700¢ → /board-recruitment-intake. Cancel now returns to /offer/{recruitment,reactivation,activation} via allow-listed cancel_path (payment_routes.py resolve_cancel_url)
+- Fixed result_token attribution: OfferVideoPage falls back to funnelLeadContext sessionStorage (was only bt_result_token → always empty)
+- Intake blocked-card: labels now "Launch It Yourself — $497" / "Do It With Us — $2,497", both link to /offer/recruitment; owner email OFFER_LABELS corrected ($1,997 → $2,497)
+- Internal pages /recruit-with-rooney and /board-recruitment-proposal untouched per user instruction
+- User decision: keep Start Here orientation page for $497 buyers (no direct Module 1 jump); keep account creation at /purchase/success
+
+## Remaining backlog
+- P1: Regenerate /app/PROMPT_AUDIT.md + run 4-flow AI generation verification (Recruitment, Reactivation, Fundraising Activation, Strategic Planning) — pending from prior session
+- P2: Video watch tracking on sales videos

@@ -37,8 +37,11 @@ export default function OfferVideoPage({ offer }) {
     setNotice("");
     try {
       let resultToken = "";
-      try { resultToken = sessionStorage.getItem("bt_result_token") || ""; } catch { /* storage is best-effort */ }
-      const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin, result_token: resultToken });
+      try {
+        resultToken = sessionStorage.getItem("bt_result_token") || "";
+        if (!resultToken) resultToken = JSON.parse(sessionStorage.getItem("funnelLeadContext") || "{}").result_token || "";
+      } catch { /* storage is best-effort */ }
+      const response = await axios.post(`${API}/payments/${endpoints[choice]}`, { origin_url: window.location.origin, result_token: resultToken, cancel_path: window.location.pathname });
       window.location.href = response.data.checkout_url;
     } catch {
       setNotice(shared.checkoutError);

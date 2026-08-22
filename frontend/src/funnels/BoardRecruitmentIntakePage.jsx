@@ -189,8 +189,8 @@ export default function BoardRecruitmentIntakePage() {
             <h2>{recruitIntakeText.h_thisFormIsForCustomers}</h2>
             <p>{boardRecruitmentIntakePageText.weCouldNotFindA}</p>
             <div className="intake-blocked-links">
-              <Link className="button" to="/recruit-your-board-yourself" data-testid="intake-blocked-diy-link">{boardRecruitmentIntakePageText.doItYourself497}</Link>
-              <Link className="button button-outline" to="/board-recruitment-proposal" data-testid="intake-blocked-dwm-link">{boardRecruitmentIntakePageText.doItWithMe1}</Link>
+              <Link className="button" to="/offer/recruitment" data-testid="intake-blocked-diy-link">{boardRecruitmentIntakePageText.doItYourself497}</Link>
+              <Link className="button button-outline" to="/offer/recruitment" data-testid="intake-blocked-dwm-link">{boardRecruitmentIntakePageText.doItWithMe1}</Link>
             </div>
           </div>
         )}

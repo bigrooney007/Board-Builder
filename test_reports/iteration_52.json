@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 52 — validated the canonical public recruitment funnel end to end: /recruit copy + multi-step form, the new redirect to /offer/recruitment, the video sales page and both Stripe checkouts (amounts/success_url/cancel_url verified via stripe.checkout.Session.retrieve), /board-recruitment-intake gating for unpaid visitors, full 5-step intake UI submit for a paid DIY session (redirect to /recruitment-start-here), DWY intake redirect to Calendly (Mongo-simulated paid txn), /recruitment-start-here (5 blocks + Begin Module 1 -> module/1) and regressions for /reactivate and /activate. Backend: 12/12 pytest passed. Frontend: all 10 requested items pass. Two non-blocking defects found (stale $5,497 copy + legacy links on the intake blocked card; result_token never sent to checkout due to a sessionStorage key mismatch).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BoardRecruitmentIntakePage (blocked card)", "issue": "Stale pricing/copy inconsistent with the new canonical funnel: buttons read 'Do It Yourself — $497' and 'Do It With Me — $5,497' (should be $2,497 'Do It With Us') and they link to the legacy pages /recruit-your-board-yourself and /board-recruitment-proposal instead of the canonical /offer/recruitment. siteContent.js lines ~514-515 / ~547-548 still hold $5,497.", "selector": "[data-testid=\"intake-blocked-diy-link\"], [data-testid=\"intake-blocked-dwm-link\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "/recruit lead -> /offer/recruitment -> Stripe checkout attribution", "issue": "OfferVideoPage.jsx line 40 reads sessionStorage key 'bt_result_token', but FunnelStepForm.jsx line 76 stores the lead under 'funnelLeadContext' (JSON with result_token). Verified in the browser: both checkout POSTs send result_token:\"\", so the Stripe purchase is never attributed back to the funnel lead.", "affected_selectors": ["[data-testid=\"offer-diy-button-recruitment\"]", "[data-testid=\"offer-dwy-button-recruitment\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "/offer/recruitment", "issues": ["Large empty vertical gap (~90px) between the guarantee line and the testimonial carousel; the carousel looks detached from the offer block.", "Offer headline is 'Recruit New Board Members' with no lead paragraph under the video, so the page gives no framing text before the two price buttons (intentional video-led design, flagging for confirmation only)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter52_recruitment_funnel_offer.py",
+    "/app/test_reports/pytest/iter52_results.xml"
+  ],
+  "action_items": [
+    "Update the /board-recruitment-intake blocked-card copy to $2,497 'Do It With Us' and point both links to /offer/recruitment (siteContent.js boardRecruitmentIntakePageText).",
+    "Fix the result_token key mismatch: OfferVideoPage should read sessionStorage 'funnelLeadContext' (JSON.parse -> result_token) or FunnelStepForm should also write 'bt_result_token'.",
+    "Optional: tighten the whitespace between the guarantee text and the testimonial carousel on /offer/recruitment."
+  ],
+  "critical_code_review_comments": [
+    "ALLOWED_CANCEL_PATHS / resolve_cancel_url is a correct allow-list; verified an attacker-supplied cancel_path (https://evil.example.com/steal) is discarded and the default is used.",
+    "board_intake_routes.verified_transaction correctly returns 402 for a non-paid transaction and 404 for unknown/non-qualifying purchase_source; intake submit is idempotent-safe on re-context (submitted flag flips to true).",
+    "OfferVideoPage passes window.location.pathname as cancel_path — fine while the allow-list holds, but any new /offer/* route must be added to ALLOWED_CANCEL_PATHS or checkout silently falls back to a legacy cancel page.",
+    "BoardRecruitmentIntakePage.jsx is a single very large component (>370 lines of JSX with 5 inline steps); consider splitting each step into its own component for maintainability."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter52_recruitment_funnel_offer.py"],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% of the 10 requested checks passed"},
+  "seed_data_creation": "Mongo db test_database: temporary payment_transactions docs (session_id prefix cs_test_TEST*/cs_test_TESTUI*) for DIY $497 and DWY $2,497 paid simulations, plus the matching board_recruitment_intakes doc — all deleted after the run (verified 0 leftovers). Funnel leads created with TEST_ prefixed emails on /recruit, /reactivate, /activate.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Member used for /recruitment-start-here: module-tester@example.com / ModuleTest123! (entitlement recruitment_self_guided) — login at /login works and lands on /app.",
+  "context_for_next_testing_agent": "Backend regression suite for this funnel: /app/backend/tests/test_iter52_recruitment_funnel_offer.py (run from /app/backend with `set -a && source .env && set +a && python -m pytest tests/test_iter52_recruitment_funnel_offer.py -q`). It verifies Stripe amounts 49700/249700, success_url/cancel_url, the cancel_path allow-list fallback, intake gating (404/402), and both DIY (/recruitment-start-here) and DWY (Calendly) submit redirects using Mongo-simulated paid transactions. Frontend selectors that work: funnel form inputs are [data-testid=\"funnel-<field>-input\"]/-select (NOT name attributes); intake step 2 requires checking intake-org-linkedin-no / intake-personal-linkedin-no before Next. No real Stripe card payment was completed; both checkout buttons were verified to navigate to checkout.stripe.com.",
+  "rca_of_the_issue": "result_token mismatch: the funnel writes sessionStorage['funnelLeadContext'] = JSON.stringify({lead_id, result_token, ...}) but the offer page reads sessionStorage.getItem('bt_result_token'), which is never set on this path, so every checkout is created with an empty result_token and the payment cannot be joined to the funnel lead. Intake blocked-card copy issue is simply stale siteContent strings left over from the previous $5,497 'Do It With Me' offer."
+}

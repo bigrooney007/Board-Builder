@@ -1221,6 +1221,7 @@ p { line-height: 1.72; }
 .offer-sales-card .button { margin-top: auto; width: 100%; }
 .offer-sales-guarantee { margin: 12px 0 0 !important; font-size: 13px !important; font-weight: 700; color: var(--green) !important; text-align: center; }
 .offer-sales-testimonials { margin-top: 60px; }
+.offer-sales-video ~ .offer-sales-testimonials { margin-top: 28px; }
 .offer-sales-closing { margin-top: 60px; text-align: center; }
 .offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin: 0 0 14px; }
 .offer-sales-closing p { max-width: 640px; margin: 0 auto 14px; color: #3d4a42; font-size: 16px; line-height: 1.75; }

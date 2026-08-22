@@ -16,8 +16,8 @@ CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/recruitment-start-here"
 QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
 OFFER_LABELS = {
-    "direct_diy_board_recruitment_497": "Do It Yourself — $497",
-    "direct_board_recruitment_project": "Do It With Me — $1,997",
+    "direct_diy_board_recruitment_497": "Launch It Yourself — $497",
+    "direct_board_recruitment_project": "Do It With Us — $2,497",
 }
 
 
