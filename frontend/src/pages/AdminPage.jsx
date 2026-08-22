@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { CheckCircle, Download, Eye, FileText, LogOut, Pencil, RefreshCw, Search, Sparkles, Users, XCircle } from "lucide-react";
+import { CheckCircle, Copy, Download, Eye, FileText, LogOut, Pencil, RefreshCw, Search, Sparkles, Users, XCircle } from "lucide-react";
 import { ClientDeliverySection } from "@/admin/ClientDeliverySection";
 import { FunnelNumbersSection } from "@/admin/FunnelNumbersSection";
 import { StrategicPlanningSection } from "@/admin/StrategicPlanningSection";
@@ -271,6 +271,18 @@ const BlogPreview = ({ post, close, refresh }) => {
             {current.excerpt && <p className="blog-preview-excerpt" data-testid="admin-blog-preview-excerpt">{current.excerpt}</p>}
             <article className="blog-article-body" data-testid="admin-blog-preview-body">{renderBlogBody(current.body)}</article>
             {current.cta_label && <div className="blog-preview-cta" data-testid="admin-blog-preview-cta"><h3>{current.cta_label}</h3><span className="button">{current.cta_button}</span></div>}
+            {isPublished && (
+              <div className="blog-linkedin-block" data-testid="admin-blog-linkedin-block">
+                <div className="blog-linkedin-head">
+                  <h3>LinkedIn Post</h3>
+                  <div className="admin-profile-actions">
+                    {current.linkedin_snippet && <button className="button button-small" onClick={() => { navigator.clipboard.writeText(current.linkedin_snippet); setMessage("LinkedIn post copied to your clipboard."); }} data-testid="admin-blog-copy-linkedin-button"><Copy size={14} /> Copy</button>}
+                    <button className="button button-back button-small" onClick={() => act("linkedin-snippet", "LinkedIn post ready.")} disabled={!!busy} data-testid="admin-blog-generate-linkedin-button"><Sparkles size={14} /> {busy === "linkedin-snippet" ? "Writing…" : current.linkedin_snippet ? "Regenerate" : "Generate LinkedIn Post"}</button>
+                  </div>
+                </div>
+                {current.linkedin_snippet ? <pre className="blog-linkedin-snippet" data-testid="admin-blog-linkedin-snippet">{current.linkedin_snippet}</pre> : <p className="admin-message">No LinkedIn post yet. Generate one above.</p>}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1238,6 +1238,10 @@ p { line-height: 1.72; }
 .topic-schedule { margin-bottom: 26px; }
 .topic-schedule h2 { margin: 0 0 12px; font-size: 1.15rem; }
 .topic-detail-row td { font-size: 0.85rem; color: #3d4b43; background: #f7faf8; }
+.blog-linkedin-block { margin-top: 28px; border-top: 2px solid #e3ece7; padding-top: 18px; }
+.blog-linkedin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.blog-linkedin-head h3 { margin: 0; }
+.blog-linkedin-snippet { white-space: pre-wrap; font-family: inherit; font-size: 0.95rem; line-height: 1.6; background: #f7faf8; border: 1px solid #dfe9e3; border-radius: 8px; padding: 16px; margin-top: 12px; }
 .offer-sales-video ~ .offer-sales-testimonials { margin-top: 28px; }
 .offer-sales-closing { margin-top: 60px; text-align: center; }
 .offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin: 0 0 14px; }

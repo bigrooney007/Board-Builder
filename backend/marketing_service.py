@@ -270,6 +270,34 @@ def validate_article(article: dict, category_key: str, recent_titles: list, exis
     return errors
 
 
+async def generate_linkedin_snippet(db, post) -> str:
+    """Three-paragraph LinkedIn post (problem / possibility / article-as-methodology) + article link."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
+    chat = LlmChat(api_key=api_key, session_id=f"snippet-{uuid.uuid4()}", system_message=BLOG_SYSTEM).with_model("anthropic", os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"))
+    prompt = (
+        "Write a ready-to-paste LinkedIn post promoting this published article.\n\n"
+        f"Article title: {post['title']}\n"
+        f"Category: {CATEGORIES[post['category_key']]['name']}\n"
+        f"Article excerpt: {post.get('excerpt', '')}\n"
+        f"Article body:\n{post.get('body', '')[:3500]}\n\n"
+        "Structure — EXACTLY three paragraphs, EXACTLY two sentences each, separated by blank lines:\n"
+        "Paragraph 1: two sentences that identify the problem and make the founder recognize their present situation.\n"
+        "Paragraph 2: two sentences that help them see what becomes possible when the problem is addressed properly.\n"
+        "Paragraph 3: two sentences positioning the article as the methodology and driving them to read it.\n\n"
+        "Speak directly to nonprofit founders in Rooney's voice. No hashtags, no emojis, no links (the application appends the article link), no headings, no bullet points, no em dashes.\n"
+        'Return JSON: {"snippet": str}'
+    )
+    response = await chat.send_message(UserMessage(text=prompt))
+    data = parse_json_response(response)
+    text = (data.get("snippet") or "").strip()
+    if not text:
+        raise ValueError("Empty LinkedIn snippet")
+    origin = os.environ.get("PUBLIC_ORIGIN", "https://nonprofitboardbuilder.com").rstrip("/")
+    snippet = f"{text}\n\nRead the full article: {origin}/blog/{post['slug']}"
+    await db.blog_posts.update_one({"blog_post_id": post["blog_post_id"]}, {"$set": {"linkedin_snippet": snippet, "linkedin_snippet_generated_at": now_tz().isoformat()}})
+    return snippet
+
+
 async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str, publish_now: bool = False) -> dict:
     """Generate + validate + schedule one post from the canonical topic library. Unique key: category + scheduled_date."""
     config = CATEGORIES[category_key]
@@ -307,6 +335,12 @@ async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str,
         if publish_now:
             update["published_at"] = now_tz().isoformat()
         await db.blog_posts.update_one(query, {"$set": update})
+        if publish_now:
+            try:
+                post = await db.blog_posts.find_one(query, {"_id": 0})
+                await generate_linkedin_snippet(db, post)
+            except Exception as exc:
+                logger.warning("LinkedIn snippet generation failed for %s: %s", slug, exc)
         if not publish_now:
             await send_owner_alert("New Blog Draft Ready for Your Review", [("Category", config["name"]), ("Title", update["title"]), ("Scheduled date", scheduled_date), ("Review at", f"{os.environ.get('PUBLIC_ORIGIN', 'https://nonprofitboardbuilder.com')}/admin")])
         return {"status": update["publication_status"], "slug": slug, "title": update["title"]}

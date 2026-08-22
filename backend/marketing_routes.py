@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from auth_service import authenticate_admin
 from board_content_topics import BOARD_CONTENT_TOPICS
-from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, next_topic_for, now_tz, regenerate_blog_post, slugify_title
+from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, generate_linkedin_snippet, next_topic_for, now_tz, regenerate_blog_post, slugify_title
 
 PUBLIC_FIELDS = {"_id": 0, "blog_post_id": 1, "title": 1, "slug": 1, "category": 1, "category_key": 1, "excerpt": 1, "published_at": 1, "cta_label": 1, "cta_button": 1, "cta_url": 1}
 
@@ -127,7 +127,26 @@ def create_marketing_router(db) -> APIRouter:
             raise HTTPException(status_code=400, detail="This draft has no content to publish. Regenerate it first.")
         update = {"publication_status": "Published", "published_at": now_tz().isoformat(), "approved_at": now_tz().isoformat(), "error": ""}
         await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
+        try:
+            snippet = await generate_linkedin_snippet(db, {**post, **update})
+            update["linkedin_snippet"] = snippet
+        except Exception:
+            pass
         return {"post": {**post, **update}}
+
+    @router.post("/admin/blog/posts/{blog_post_id}/linkedin-snippet")
+    async def admin_generate_snippet(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        if post["publication_status"] != "Published":
+            raise HTTPException(status_code=409, detail="LinkedIn posts are created for published articles only")
+        try:
+            snippet = await generate_linkedin_snippet(db, post)
+        except Exception:
+            raise HTTPException(status_code=502, detail="Could not generate the LinkedIn post. Please try again.")
+        return {"post": {**post, "linkedin_snippet": snippet}, "snippet": snippet}
 
     @router.post("/admin/blog/posts/{blog_post_id}/reject")
     async def admin_reject_post(blog_post_id: str, request: Request):
