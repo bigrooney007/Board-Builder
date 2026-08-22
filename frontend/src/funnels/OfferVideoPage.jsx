@@ -51,10 +51,28 @@ export default function OfferVideoPage({ offer }) {
       <main className="offer-sales-page" data-testid={`offer-sales-page-${offer}`}>
         <header className="funnel-hero-banner offer-sales-banner" data-testid={`offer-hero-${offer}`}>
           <h1 data-testid={`offer-headline-${offer}`}>{content.title}</h1>
-          <p className="offer-sales-lead" data-testid={`offer-lead-${offer}`}>{content.lead}</p>
+          {!content.video && <p className="offer-sales-lead" data-testid={`offer-lead-${offer}`}>{content.lead}</p>}
           <i aria-hidden="true" />
         </header>
 
+        {content.video ? (
+          <div className="offer-sales-container">
+            <div className="module-video offer-sales-video" data-testid={`offer-video-embed-${offer}`}>
+              <iframe src={`https://www.youtube.com/embed/${content.video.youtubeId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            </div>
+            <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
+              <div className="offer-choice-grid">
+                <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.videoButtons.diyLabel}</button>
+                <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>
+              </div>
+              <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>{shared.guarantee}</p>
+              {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
+            </section>
+            <div className="offer-sales-testimonials">
+              <TestimonialCarousel idPrefix={`offer-${offer}`} />
+            </div>
+          </div>
+        ) : (
         <div className="offer-sales-container">
           <article className="offer-sales-body" data-testid={`offer-sales-body-${offer}`}>
             {content.opening.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
@@ -92,6 +110,7 @@ export default function OfferVideoPage({ offer }) {
             )}
           </section>
         </div>
+        )}
       </main>
     </FunnelLayout>
   );

@@ -18,7 +18,7 @@ export const funnelConfigs = {
   recruitment: {
     slug: "recruit", eyebrow: "Board Recruitment",
     heading: "Start the Process of Recruiting the Board Your Nonprofit Needs",
-    supporting: "Enter your organization details below and we will show you the 6-step process to build a board that commits, helps raise money and works with you to build the organization your mission deserves.",
+    supporting: "Enter your organization details below and we will show you the 2 ways to launch your board recruitment campaign and start building a board that commits, helps raise money and works with you to build the organization your mission deserves in just 30 minutes.",
     formHeading: "Tell Us About the Board You Want to Recruit",
     submit: "Show Me How You Can Help",
     redirectAfterSubmit: "rooney",

@@ -1179,6 +1179,9 @@ p { line-height: 1.72; }
 }
 
 
+.offer-sales-video { margin-bottom: 28px; box-shadow: 0 14px 36px rgba(8, 61, 42, .12); }
+.offer-sales-video + .offer-sales-offers { margin-top: 0; }
+
 /* Global document design standard (shared web documents) */
 .standard-document { border: 1.5px solid var(--agreement-primary, #000); background: #fff; }
 .standard-document-cover { text-align: center; padding: 34px 0 18px; }

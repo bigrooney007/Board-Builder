@@ -350,7 +350,8 @@ def create_activation_planning_router(db) -> APIRouter:
         return {
             "founder_name": f"{founder['first_name']} {founder['last_name']}".strip() if founder else "",
             "founder_email": (founder or {}).get("email", ""),
-            "founder_title": reactivation.get("founder_title", ""),
+            "founder_title": reactivation.get("founder_title", "") or intake.get("founder_title", ""),
+            "founder_phone": intake.get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
             "mission": profile.get("data", {}).get("mission", ""),
         }

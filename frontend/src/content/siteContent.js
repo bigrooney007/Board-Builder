@@ -160,6 +160,14 @@ export const SITE_CONTENT = {
     "guarantee": "Your investment is protected by my 100% refund guarantee.",
     "recruitment": {
       "title": "Recruit New Board Members",
+      "video": {
+        "youtubeId": "zHgf-9XrLgg",
+        "title": "Launch Your Board Recruitment Campaign in 30 Minutes & Get The Quality Support Your Nonprofit Needs"
+      },
+      "videoButtons": {
+        "diyLabel": "Launch It Yourself — $497",
+        "dwyLabel": "Do It With Us — $2,497"
+      },
       "lead": "How you recruit your board members is as important as the quality of board members you recruit.",
       "opening": [
         "Most founders think board recruitment is simply about finding good people and inviting them onto the board.",

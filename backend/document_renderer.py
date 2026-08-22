@@ -151,6 +151,11 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
     if prepared_for:
         story.append(Paragraph(f"Prepared for {esc(prepared_for)}", cover_meta))
     story.append(Paragraph(datetime.now(timezone.utc).strftime("%B %d, %Y"), cover_meta))
+    if created_by and created_by.get("name"):
+        cover_created = f"Created By: {created_by['name']}"
+        if created_by.get("title"):
+            cover_created += f" — {created_by['title']}"
+        story.append(Paragraph(esc(cover_created), cover_meta))
     story.extend([NextPageTemplate("content"), PageBreak()])
 
     for kind, text in clean_document_lines(body_text, title):
