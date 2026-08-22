@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "@/App.css";
 import { LandingPage } from "@/components/LandingPage";
 import { AssessmentForm } from "@/components/AssessmentForm";
@@ -46,6 +46,7 @@ import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
 import { DashboardPage } from "@/member/DashboardPage";
 import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
+import SelectionOfferPage from "@/member/SelectionOfferPage";
 import RecruitmentResultsPage from "@/member/workspace/ResultsPage";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
@@ -139,6 +140,7 @@ export default function App() {
           <Route path="/app/recruitment/self-guided/module/:moduleNumber" element={<CourseModulePage productSlug="self-guided" />} />
           <Route path="/app/recruitment/self-guided/results" element={<RecruitmentResultsPage />} />
           <Route path="/app/recruitment/self-guided/materials" element={<MaterialsLibraryPage />} />
+          <Route path="/app/recruitment/selection-offer" element={<SelectionOfferPage />} />
           <Route path="/board-opportunities/:slug/apply" element={<OpportunityApplyPage />} />
           <Route path="/apply/:token" element={<SavedProfileApplyPage />} />
           <Route path="/sign/:token" element={<SignAgreementPage />} />
@@ -153,6 +155,7 @@ export default function App() {
           <Route path="/strategic-action-plan/:token" element={<PublicActionPlanPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </MemberAuthProvider>
     </BrowserRouter>

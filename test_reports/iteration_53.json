@@ -1,0 +1,54 @@
+{
+  "summary": "Iteration 53 — verified the new two-stage recruitment offer end to end. Backend pytest suite (12/12 passed): all three Stripe checkout sessions verified via stripe.checkout.Session.retrieve (DIY 29700 / success /purchase/success / cancel /offer/recruitment?checkout=cancelled / metadata recruitment_campaign_diy_297; DWY 149700 / success /board-recruitment-intake / metadata direct_board_recruitment_project; Selection 29700 / cancel /app/recruitment/selection-offer?checkout=cancelled / metadata recruitment_selection_onboarding_297 with a DISTINCT price whose lookup_key is recruitment_selection_onboarding_297, confirmed different price id from the DIY 297 price). Unpaid real selection session cannot be claimed (register -> 402). Intake simulation: DIY paid txn -> context eligible + submit redirect /recruitment-start-here; DWY paid txn -> submit redirect Calendly; bogus session -> 404/402. Course gating for a stage-1-only member: exactly modules 2,3,4,5,6 at positions 1-5, locked flags {2:F,3:F,4:T,5:T,6:T}, progress on 2/3 = 200, module 4 = 403, /api/workspace/applications 403, /api/workspace/profile 200, /api/workspace/generate general_interview_invitation 403; after adding recruitment_selection_onboarding all modules unlock, applications 200, module-4 progress 200. Frontend E2E (Playwright): /recruit approved copy + single-step form submit redirects to /offer/recruitment; /offer/recruitment buttons read exactly 'Launch It Yourself — $297' and 'Do It With Us — $1,497', guarantee + testimonial carousel + video present, DIY click reaches Stripe US$297.00 checkout; intake blocked card shown without session_id and with bogus session, both links -> /offer/recruitment with correct $297/$1,497 labels; no $497/$2,497/$5,497 anywhere on /offer/recruitment or the intake blocked card (iter52 stale-pricing defect is fixed); member with both entitlements sees 5 STEP-labelled cards with real titles, '0 of 5 steps finished', no 'Module N', module/2 shows 'STEP 1 OF 5' + correct title, Previous Step disabled, NEXT STEP -> module/3, /app/recruitment/selection-offer redirects to module/4; stage-1-only member sees module-locked-4/5/6 linking to /app/recruitment/selection-offer, module/4 redirects to the selection offer, module 3 NEXT STEP -> selection offer, offer page shows headline 'Ready to Start Selection & Interviews?', $297 One Time, YouTube embed, and the buy button creates a real Stripe checkout; /recruitment-start-here shows 5 instruction blocks and CTA -> /app/recruitment/self-guided/module/2. No reactivation/activation funnel was touched.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "React router (SPA catch-all)",
+        "issue": "Unknown authenticated routes render a completely blank page instead of a 404/redirect (reproduced with /app/recruitment/does-not-exist and /app/recruitment/workspace — body length 0). Any bad internal link will look like a broken app.",
+        "selector": "body (empty)",
+        "priority": "LOW"
+      },
+      {
+        "component": "BoardRecruitmentIntakePage (blocked card)",
+        "issue": "Copy says 'watch the video and choose how you would like to launch your board recruitment' but the blocked card contains no video embed — only the two links. Either add the video or drop the 'watch the video' phrase.",
+        "selector": "[data-testid=\"intake-blocked\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "/app/recruitment/self-guided (stage-1-only member)",
+        "issues": ["Locked cards replace the 'STEP 3/4/5' eyebrow with 'SELECTION, INTERVIEW & ONBOARDING PACKAGE', so the 5-step numbering visually breaks (steps read 1, 2, then three unnumbered cards). Consider 'STEP 3 · LOCKED — SELECTION PACKAGE' to keep the sequence readable."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter53_two_stage_recruitment.py",
+    "/app/backend/tests/seed_iter53_members.py",
+    "/app/test_reports/pytest/iter53_results.xml"
+  ],
+  "action_items": [
+    "Optional: add a catch-all 404 route for unknown /app/* paths (currently blank screen).",
+    "Optional: align the intake blocked-card copy with the absence of a video embed."
+  ],
+  "critical_code_review_comments": [
+    "board_intake_routes.QUALIFYING_SOURCES still carries the legacy direct_diy_board_recruitment_497 source — intentional for grandfathering, but the OFFER_LABELS entry 'Launch It Yourself — $497 (legacy)' will render on the paid intake header for legacy customers; confirm that is acceptable.",
+    "payment_routes.create_selection_onboarding_checkout does not persist lead_checkout_context(result_token) like diy/direct-project checkouts do, so stage-2 purchases lose funnel-lead attribution. Low impact (buyer is already a member) but inconsistent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter53_two_stage_recruitment.py",
+    "/app/backend/tests/seed_iter53_members.py"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% of requested items 1-2,6,9-15 pass"},
+  "seed_data_creation": "Created member stage1b.tester@example.com / TestPass123! (user_id d821fb94-9074-47ab-a28e-b6a449400015) with ONLY entitlement recruitment_self_guided for locked-stage testing. Ephemeral TEST_* members/sessions/intakes created by the pytest suite are deleted by fixtures.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem; both-entitlement member stage1.tester@example.com / TestPass123!; stage-1-only member stage1b.tester@example.com / TestPass123!",
+  "context_for_next_testing_agent": "Run the suite with: cd /app/backend && set -a && source .env && set +a && REACT_APP_BACKEND_URL=<frontend .env> python -m pytest tests/test_iter53_two_stage_recruitment.py -q. stage1b.tester@example.com must keep ONLY recruitment_self_guided for locked-UI tests (tests/seed_iter53_members.py re-asserts it). /api/members/claim-purchase verifies with Stripe server-side, so entitlement grants cannot be simulated in Mongo via claim — grant entitlements directly in db test_database.members. Reactivation/activation funnels were NOT touched per user constraint.",
+  "rca_of_the_issue": "No functional defect found in the two-stage recruitment journey. Blank-screen on unknown /app/* routes is caused by the absence of a wildcard route in App.js (react-router renders nothing when no route matches)."
+}

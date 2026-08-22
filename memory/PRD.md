@@ -411,3 +411,13 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - OfferVideoPage fires one video-view ping per browser session (sessionStorage dedupe verified via reload).
 - AdminPage: new "Funnel Numbers" tab (data-testid admin-funnels-tab) renders FunnelNumbersSection table — verified live with real data (50 submits / 16 purchases / $22,952).
 - New collection: funnel_video_views {offer, viewed_at}.
+
+## Two-Stage Recruitment Offer Architecture (June 2026) — Complete, iteration_53: backend 100% (12/12) + frontend 100%
+- New pricing: DIY Campaign Launch $297 (recruitment_campaign_diy_297), Do It With Us $1,497 (direct_board_recruitment_project @149700), Selection Interview & Onboarding Package $297 (recruitment_selection_onboarding_297 — DISTINCT Stripe price). New endpoint POST /api/payments/selection-onboarding-checkout.
+- Module 1 removed from customer-facing sequence; modules 2-6 shown as Steps 1-5 by title (position field). Modules 4-6 stage="selection", locked without recruitment_selection_onboarding entitlement (course API + progress 403 + workspace/refinement route gating via selection_member + generate gates module>=4 types).
+- NEXT STEP after Step 2 (module 3) → /app/recruitment/selection-offer ("Ready to Start Selection & Interviews?" page, reuses M4 video w4-kn3tayRQ, $297 buy → Stripe → /purchase/success → claim → module 4).
+- Claim flow: tier 297 branches added; grandfathering — legacy 497/997 purchases + all 7 existing recruitment_self_guided members granted recruitment_selection_onboarding (migration run).
+- Intake: QUALIFYING_SOURCES/DIY_SOURCES include recruitment_campaign_diy_297; DIY → /recruitment-start-here (CTA now → module/2), DWY → Calendly. Marketing nurture emails updated ($297 / $1,497 → /offer/recruitment). Catch-all route added (unknown paths → /).
+- Reactivation/Activation funnels untouched per user instruction. Internal pages /recruit-with-rooney, /board-recruitment-proposal untouched.
+- KNOWN LIMITATION: the sales video CONTENT (YouTube zHgf-9XrLgg) shows old $497/$2,497 pricing inside the video — needs re-recorded video from owner.
+- Test members: stage1.tester@example.com (both entitlements), stage1b.tester@example.com (stage-1 only) — TestPass123!

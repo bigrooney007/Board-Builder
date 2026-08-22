@@ -67,12 +67,21 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     metadata = session.metadata or {}
     offer_source = metadata.get("offer_source", "")
     tier = metadata.get("selected_tier", "")
+    extra_entitlements = []
     if offer_source == "recruit_with_rooney" and tier == "997":
         entitlement = "recruitment_self_guided"
         product_name = "Recruit With Rooney"
+        extra_entitlements.append("recruitment_selection_onboarding")
+    elif offer_source == "direct_diy_board_recruitment" and tier == "297":
+        entitlement = "recruitment_self_guided"
+        product_name = "Board Recruitment Campaign Launch — Do It Yourself"
     elif offer_source == "direct_diy_board_recruitment" and tier == "497":
         entitlement = "recruitment_self_guided"
         product_name = "Do It Yourself Board Recruitment"
+        extra_entitlements.append("recruitment_selection_onboarding")
+    elif offer_source == "recruitment_selection_onboarding" and tier == "297":
+        entitlement = "recruitment_selection_onboarding"
+        product_name = "Selection, Interview & Onboarding Package"
     elif offer_source == "direct_diy_board_reactivation" and tier == "497":
         entitlement = "reactivation_self_guided"
         product_name = "Do It Yourself Board Reactivation"
@@ -82,6 +91,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
+        if tier == "497":
+            extra_entitlements.append("recruitment_selection_onboarding")
     else:
         raise HTTPException(status_code=400, detail="This purchase is not a Recruitment program purchase")
     lead_id = metadata.get("lead_id", "")
@@ -108,9 +119,20 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "support_program": "recruit_with_rooney", "price_paid": 997,
         })
     elif offer_source == "direct_diy_board_recruitment":
+        if tier == "297":
+            purchase.update({
+                "purchase_source": "recruitment_campaign_diy_297",
+                "offer": "Board Recruitment Campaign Launch — Do It Yourself", "price_paid": 297,
+            })
+        else:
+            purchase.update({
+                "purchase_source": "direct_diy_board_recruitment_497",
+                "offer": "Do It Yourself Board Recruitment", "price_paid": 497,
+            })
+    elif offer_source == "recruitment_selection_onboarding":
         purchase.update({
-            "purchase_source": "direct_diy_board_recruitment_497",
-            "offer": "Do It Yourself Board Recruitment", "price_paid": 497,
+            "purchase_source": "recruitment_selection_onboarding_297",
+            "offer": "Selection, Interview & Onboarding Package", "price_paid": 297,
         })
     elif offer_source == "direct_diy_board_reactivation":
         purchase.update({
@@ -123,9 +145,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "offer": "Do It Yourself Board Fundraising Activation", "price_paid": 497,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
-    update = {"$addToSet": {"entitlements": entitlement}, "$set": {"updated_at": now}}
+    add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
     if lead_id:
-        update["$addToSet"] = {"entitlements": entitlement, "lead_ids": lead_id}
+        add_to_set["lead_ids"] = lead_id
+    update = {"$addToSet": add_to_set, "$set": {"updated_at": now}}
     if session.customer:
         update["$set"]["stripe_customer_id"] = session.customer
     await db.members.update_one({"user_id": member["user_id"]}, update)

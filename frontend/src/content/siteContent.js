@@ -165,8 +165,8 @@ export const SITE_CONTENT = {
         "title": "Launch Your Board Recruitment Campaign in 30 Minutes & Get The Quality Support Your Nonprofit Needs"
       },
       "videoButtons": {
-        "diyLabel": "Launch It Yourself — $497",
-        "dwyLabel": "Do It With Us — $2,497"
+        "diyLabel": "Launch It Yourself — $297",
+        "dwyLabel": "Do It With Us — $1,497"
       },
       "lead": "How you recruit your board members is as important as the quality of board members you recruit.",
       "opening": [
@@ -223,7 +223,7 @@ export const SITE_CONTENT = {
       ],
       "diy": {
         "heading": "RECRUIT YOUR BOARD YOURSELF",
-        "price": "$497",
+        "price": "$297",
         "paragraphs": [
           "Get access to the guidance, tools, and materials you need to recruit your board yourself; everything created specifically for you and your organization.",
           "You'll see exactly how we execute each step of the process, then replicate it using the resources we've created specifically for you.",
@@ -543,9 +543,9 @@ export const boardRecommitmentFormPageText = {
 
 export const boardRecruitmentIntakePageText = {
   pleaseWaitWhileWeVerify: "Please wait while we verify your payment with Stripe.",
-  weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, watch the video and choose how you would like to launch your board recruitment:",
-  doItYourself497: "Launch It Yourself \u2014 $497",
-  doItWithMe1: "Do It With Us \u2014 $2,497",
+  weCouldNotFindA: "We could not find a completed qualifying purchase. If you just paid, please use the link Stripe returned you to. Otherwise, choose how you would like to launch your board recruitment:",
+  doItYourself497: "Launch It Yourself \u2014 $297",
+  doItWithMe1: "Do It With Us \u2014 $1,497",
   takingYouToYourStart: "Taking you to your start page\u2026",
   openMyStartPage: "Open My Start Page",
   takingYouToTheCalendar: "Taking you to the calendar\u2026",

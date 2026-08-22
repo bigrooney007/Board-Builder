@@ -100,6 +100,11 @@ def create_refinement_router(db) -> APIRouter:
         require_entitlement(member, {"recruitment_self_guided"})
         return member
 
+    async def selection_member(request: Request) -> dict:
+        member = await current_member(request)
+        require_entitlement(member, {"recruitment_selection_onboarding"})
+        return member
+
     async def owned_application(user_id: str, application_id: str) -> dict:
         application = await db.opportunity_applications.find_one(
             {"application_id": application_id, "owner_user_id": user_id}, {"_id": 0})
@@ -125,7 +130,7 @@ def create_refinement_router(db) -> APIRouter:
     # ---------- Reference process ----------
     @router.post("/workspace/reference-process", status_code=201)
     async def start_reference_process(payload: StartReference, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         application = await owned_application(member["user_id"], payload.application_id)
         existing = await db.reference_processes.find_one(
             {"owner_user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0})
@@ -148,14 +153,14 @@ def create_refinement_router(db) -> APIRouter:
 
     @router.get("/workspace/reference-process/{application_id}")
     async def get_reference_process(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         process = await db.reference_processes.find_one(
             {"owner_user_id": member["user_id"], "application_id": application_id}, {"_id": 0})
         return {"process": process}
 
     @router.post("/workspace/reference-process/{application_id}/send")
     async def send_candidate_form(application_id: str, payload: SendCandidateForm, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         process = await db.reference_processes.find_one(
             {"owner_user_id": member["user_id"], "application_id": application_id}, {"_id": 0})
         if not process:
@@ -192,7 +197,7 @@ def create_refinement_router(db) -> APIRouter:
 
     @router.post("/workspace/reference-process/{application_id}/resend-referee/{reference_id}")
     async def resend_referee(application_id: str, reference_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         process = await db.reference_processes.find_one(
             {"owner_user_id": member["user_id"], "application_id": application_id}, {"_id": 0})
         if not process:
@@ -370,13 +375,13 @@ def create_refinement_router(db) -> APIRouter:
     # ---------- Onboarding session ----------
     @router.get("/workspace/onboarding-session")
     async def get_onboarding_session(request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "onboarding_session": 1})
         return {"session": (profile or {}).get("onboarding_session", {})}
 
     @router.put("/workspace/onboarding-session")
     async def save_onboarding_session(payload: OnboardingSession, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         session = payload.model_dump()
         if session.get("status") == "Completed":
             session["completed_at"] = now_iso()
@@ -388,7 +393,7 @@ def create_refinement_router(db) -> APIRouter:
     # ---------- First board meeting invitation send ----------
     @router.put("/workspace/first-meeting")
     async def save_first_meeting(payload: FirstMeetingDetails, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         if not payload.date.strip() or not payload.time.strip() or not payload.timezone.strip():
             raise HTTPException(status_code=422, detail="Meeting date, time and timezone are required")
         await db.recruitment_profiles.update_one({"user_id": member["user_id"]},
@@ -397,13 +402,13 @@ def create_refinement_router(db) -> APIRouter:
 
     @router.get("/workspace/first-meeting")
     async def get_first_meeting(request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         profile = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "first_meeting": 1})
         return {"first_meeting": (profile or {}).get("first_meeting", {})}
 
     @router.post("/workspace/send-first-meeting")
     async def send_first_meeting(payload: FirstMeetingSend, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         material = await get_current_material(db, member["user_id"], "first_board_meeting_invitation", "")
         if not material or not material["current"]:
             raise HTTPException(status_code=409, detail="Generate and save the First Board Meeting Invitation first")
@@ -628,7 +633,7 @@ def create_refinement_router(db) -> APIRouter:
     @router.post("/workspace/applications/{application_id}/decision")
     async def candidate_decision(application_id: str, payload: dict, request: Request):
         """Move Forward / Do Not Move Forward. Never sends emails; prepares candidate-specific links idempotently."""
-        member = await current_member(request)
+        member = await selection_member(request)
         user_id = member["user_id"]
         application = await owned_application(user_id, application_id)
         decision = payload.get("decision")
@@ -693,7 +698,7 @@ def create_refinement_router(db) -> APIRouter:
     # ---------- Owner review progress ----------
     @router.get("/workspace/board-profile-link/{application_id}")
     async def get_profile_link_status(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         link = await db.board_profile_links.find_one({"user_id": member["user_id"], "application_id": application_id}, {"_id": 0, "status": 1, "token": 1})
         response = None
         if link:

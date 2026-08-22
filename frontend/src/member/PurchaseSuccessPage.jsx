@@ -47,9 +47,11 @@ export const PurchaseSuccessPage = () => {
         setClaimed(response.data.claimed);
         await refresh();
         if (response.data.claimed_source === "recruit_with_rooney_997") {
-          navigate("/app/recruitment/self-guided/module/1");
-        } else if (response.data.claimed_source === "direct_diy_board_recruitment_497") {
+          navigate("/app/recruitment/self-guided/module/2");
+        } else if (response.data.claimed_source === "direct_diy_board_recruitment_497" || response.data.claimed_source === "recruitment_campaign_diy_297") {
           navigate(`/board-recruitment-intake?session_id=${sessionId}`);
+        } else if (response.data.claimed_source === "recruitment_selection_onboarding_297") {
+          navigate("/app/recruitment/self-guided/module/4");
         } else if (response.data.claimed_source === "direct_diy_board_reactivation_497") {
           navigate(`/board-reactivation-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "direct_diy_board_activation_497") {
@@ -79,12 +81,14 @@ export const PurchaseSuccessPage = () => {
         claimedSource = response.claimed_source || "";
         setClaimed(claimedNow);
       }
-      if (claimedSource === "direct_diy_board_recruitment_497") {
+      if (claimedSource === "direct_diy_board_recruitment_497" || claimedSource === "recruitment_campaign_diy_297") {
         navigate(`/board-recruitment-intake?session_id=${sessionId}`);
+      } else if (claimedSource === "recruitment_selection_onboarding_297") {
+        navigate("/app/recruitment/self-guided/module/4");
       } else if (claimedSource === "direct_diy_board_reactivation_497") {
         navigate(`/board-reactivation-intake?session_id=${sessionId}`);
       } else {
-        navigate(claimedNow === "recruitment_self_guided" ? "/app/recruitment/self-guided/module/1" : claimedNow === "recruitment_basic" ? "/app/recruitment/basic/module/1" : "/app");
+        navigate(claimedNow === "recruitment_self_guided" ? "/app/recruitment/self-guided/module/2" : claimedNow === "recruitment_basic" ? "/app/recruitment/basic/module/1" : "/app");
       }
     } catch (err) {
       setError(err.response?.data?.detail || err.message || "We could not complete this step.");

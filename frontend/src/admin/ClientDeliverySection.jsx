@@ -7,7 +7,7 @@ const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api
 const err = (e) => (typeof e.response?.data?.detail === "string" ? e.response.data.detail : "Action failed.");
 
 const TEST_JOURNEYS = [
-  { key: "recruitment", label: "Recruitment", route: "/app/recruitment/self-guided/module/1" },
+  { key: "recruitment", label: "Recruitment", route: "/app/recruitment/self-guided/module/2" },
   { key: "reactivation", label: "Reactivation", route: "/app/reactivation/self-guided/module/1" },
   { key: "activation", label: "Activation", route: "/app/activation/self-guided/module/1" },
 ];

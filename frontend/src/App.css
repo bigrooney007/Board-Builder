@@ -1225,6 +1225,16 @@ p { line-height: 1.72; }
 .admin-funnel-numbers-head h2 { margin: 0; }
 .admin-funnel-totals td { border-top: 2px solid #1d3a2f; }
 .admin-funnel-note { margin-top: 14px; font-size: 0.85rem; color: #5b6b62; max-width: 640px; }
+.module-locked-item { opacity: 0.85; }
+.module-locked-item span { color: #8a6d1f; font-weight: 600; }
+.selection-offer-page .module-video { margin-bottom: 24px; }
+.selection-offer-list { list-style: none; padding: 0; margin: 14px 0 0; }
+.selection-offer-list li { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 9px; }
+.selection-offer-list li svg { flex-shrink: 0; margin-top: 3px; color: #087e5b; }
+.selection-offer-card { border: 2px solid #087e5b; }
+.selection-offer-price { font-size: 1.9rem; font-weight: 800; margin: 6px 0 10px; }
+.selection-offer-price span { font-size: 0.9rem; font-weight: 500; color: #5b6b62; }
+.selection-offer-card .button { margin-top: 16px; }
 .offer-sales-video ~ .offer-sales-testimonials { margin-top: 28px; }
 .offer-sales-closing { margin-top: 60px; text-align: center; }
 .offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin: 0 0 14px; }

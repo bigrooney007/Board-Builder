@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/recruitment-start-here"
-QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "direct_board_recruitment_project"}
+QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "recruitment_campaign_diy_297", "direct_board_recruitment_project"}
+DIY_SOURCES = {"direct_diy_board_recruitment_497", "recruitment_campaign_diy_297"}
 OFFER_LABELS = {
     "direct_diy_board_recruitment_497": "Launch It Yourself — $497",
-    "direct_board_recruitment_project": "Do It With Us — $2,497",
+    "recruitment_campaign_diy_297": "Launch It Yourself — $297",
+    "direct_board_recruitment_project": "Do It With Us — $1,497",
 }
 
 
@@ -211,7 +213,7 @@ def create_board_intake_router(db) -> APIRouter:
             ("Submitted", now),
         ]
         table = "".join(f"<tr><td style='padding:9px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(str(label))}</td><td style='padding:9px;border-bottom:1px solid #dddddd;'>{html.escape(str(value))}</td></tr>" for label, value in rows)
-        next_step = "is starting immediately with the self-guided Recruitment system." if purchase_source == "direct_diy_board_recruitment_497" else "is being sent to your Calendly."
+        next_step = "is starting immediately with the self-guided Recruitment system." if purchase_source in DIY_SOURCES else "is being sent to your Calendly."
         await resend.Emails.send_async({
             "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
             "subject": f"Board Recruitment Intake Submitted — {payload.organization_name} ({offer_label})",
@@ -241,7 +243,7 @@ def create_board_intake_router(db) -> APIRouter:
                 logger.info("Owner intake notification sent for session %s", payload.session_id)
             except Exception:
                 logger.exception("Owner intake notification failed for session %s", payload.session_id)
-        redirect_url = DIY_START_ROUTE if transaction["purchase_source"] == "direct_diy_board_recruitment_497" else CALENDLY_URL
+        redirect_url = DIY_START_ROUTE if transaction["purchase_source"] in DIY_SOURCES else CALENDLY_URL
         return {"status": "submitted", "redirect_url": redirect_url}
 
     return router

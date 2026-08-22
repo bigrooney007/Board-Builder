@@ -23,13 +23,13 @@ const BLOCKS = [
   {
     icon: Rocket,
     title: "Take Action As You Go",
-    lines: ["Do not wait until you finish every module before taking action.", "Complete each step and execute before moving forward."],
+    lines: ["Do not wait until you finish every step before taking action.", "Complete each step and execute before moving forward."],
   },
   {
     icon: HelpCircle,
     title: "Ask For Help Anytime",
     lines: [
-      "Every module includes:",
+      "Every step includes:",
       "Need Help With This Step?",
       "Use it whenever you are stuck, need clarification, want help reviewing something or need support completing the step.",
     ],
@@ -78,7 +78,7 @@ export default function RecruitmentStartHerePage() {
         </section>
 
         <section className="sh-cta" data-testid="start-here-cta-section">
-          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/1" data-testid="start-here-module1-button">{SITE_CONTENT.recruitStartHere.cta}</Link>
+          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/2" data-testid="start-here-module1-button">{SITE_CONTENT.recruitStartHere.cta}</Link>
         </section>
       </main>
     </MemberShell>

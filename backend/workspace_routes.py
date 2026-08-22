@@ -85,6 +85,11 @@ def create_workspace_router(db) -> APIRouter:
         require_entitlement(member, {"recruitment_self_guided"})
         return member
 
+    async def selection_member(request: Request) -> dict:
+        member = await current_member(request)
+        require_entitlement(member, {"recruitment_selection_onboarding"})
+        return member
+
     async def owned_application(user_id: str, application_id: str) -> dict:
         application = await db.opportunity_applications.find_one(
             {"application_id": application_id, "owner_user_id": user_id}, {"_id": 0})
@@ -181,14 +186,16 @@ def create_workspace_router(db) -> APIRouter:
         if payload.type not in GENERATION_TYPES:
             raise HTTPException(status_code=422, detail="Unknown generation type")
         meta = GENERATION_TYPES[payload.type]
+        if meta.get("module", 0) >= 4:
+            require_entitlement(member, {"recruitment_selection_onboarding"})
         profile = await get_profile(db, user_id)
         if not profile.get("confirmed"):
-            raise HTTPException(status_code=409, detail="Complete Module 1 before generating materials")
+            raise HTTPException(status_code=409, detail="Complete your Recruitment Profile before generating materials")
         lead_doc = await get_lead(db, member)
         org_name_check = (lead_doc or {}).get("organization", "") or profile.get("data", {}).get("organization_name", "")
         mission_check = profile.get("data", {}).get("mission", "")
         if not org_name_check or not mission_check:
-            raise HTTPException(status_code=422, detail="Add your organization name and mission statement in Module 1 first. They are required so every recruitment material is finished and organization-specific.")
+            raise HTTPException(status_code=422, detail="Add your organization name and mission statement in your Recruitment Profile first. They are required so every recruitment material is finished and organization-specific.")
         context = await build_org_context(db, user_id, member)
         reference = await reference_context(db, payload.type)
         if reference:
@@ -354,7 +361,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.get("/applications/{application_id}/portfolio-email")
     async def preview_recruitment_portfolio_email(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         application = await db.opportunity_applications.find_one(
             {"application_id": application_id, "owner_user_id": member["user_id"]}, {"_id": 0, "cv_text": 0})
         if not application:
@@ -368,7 +375,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.post("/applications/{application_id}/portfolio-email")
     async def send_recruitment_portfolio_email(application_id: str, payload: RecruitmentPortfolioEmailSend, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         application = await db.opportunity_applications.find_one(
             {"application_id": application_id, "owner_user_id": member["user_id"]}, {"_id": 0, "cv_text": 0})
         if not application:
@@ -397,7 +404,7 @@ def create_workspace_router(db) -> APIRouter:
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
     async def add_external_applicant(request: Request, name: str = Form(...), cv: UploadFile = File(...), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
-        member = await current_member(request)
+        member = await selection_member(request)
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
         if cv is not None and cv.filename:
@@ -646,7 +653,7 @@ def create_workspace_router(db) -> APIRouter:
     # ---------- Module 4: Applicant workspace ----------
     @router.get("/applications")
     async def list_applications(request: Request, status: str = ""):
-        member = await current_member(request)
+        member = await selection_member(request)
         query = {"owner_user_id": member["user_id"]}
         if status:
             query["status"] = status
@@ -655,7 +662,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.get("/applications/{application_id}")
     async def application_detail(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         application = await owned_application(member["user_id"], application_id)
         application.pop("cv_text", None)
         materials = await db.generated_materials.find(
@@ -665,7 +672,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.patch("/applications/{application_id}")
     async def update_application(application_id: str, payload: ApplicationUpdate, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         await owned_application(member["user_id"], application_id)
         updates = {"updated_at": now_iso()}
         if payload.status is not None:
@@ -693,7 +700,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.post("/applications/{application_id}/references", status_code=201)
     async def add_reference(application_id: str, payload: ReferenceRecord, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         await owned_application(member["user_id"], application_id)
         if payload.outcome not in REFERENCE_OUTCOMES:
             raise HTTPException(status_code=422, detail="Invalid reference outcome")
@@ -705,7 +712,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.get("/applications/{application_id}/cv")
     async def download_cv(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         application = await owned_application(member["user_id"], application_id)
         if not application.get("cv_file_id"):
             raise HTTPException(status_code=404, detail="No CV on this application")
@@ -716,7 +723,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.post("/applications/{application_id}/interview-guide/retry")
     async def retry_guide(application_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         await owned_application(member["user_id"], application_id)
         await run_interview_guide(db, application_id)
         application = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 0})
@@ -727,7 +734,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.post("/signatures/prepare", status_code=201)
     async def prepare_signature(payload: SignaturePrepare, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         user_id = member["user_id"]
         if payload.agreement_type not in AGREEMENT_TYPES:
             raise HTTPException(status_code=422, detail="Unknown agreement type")
@@ -738,7 +745,7 @@ def create_workspace_router(db) -> APIRouter:
         if not material or not material["current"]:
             material = await get_current_material(db, user_id, payload.agreement_type, "")
         if not material or not material["current"]:
-            raise HTTPException(status_code=409, detail="Generate and save the agreement in Module 5 before preparing it for signature")
+            raise HTTPException(status_code=409, detail="Generate and save the agreement in the Onboarding step before preparing it for signature")
         ts = now_iso()
         snapshot = application.get("profile_snapshot", {})
         record = {
@@ -760,7 +767,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.post("/signatures/{request_id}/send")
     async def send_signature(request_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         record = await db.signature_requests.find_one({"request_id": request_id, "owner_user_id": member["user_id"]}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Signature request not found")
@@ -778,7 +785,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.get("/signatures")
     async def list_signatures(request: Request, application_id: str = ""):
-        member = await current_member(request)
+        member = await selection_member(request)
         query = {"owner_user_id": member["user_id"]}
         if application_id:
             query["application_id"] = application_id
@@ -787,7 +794,7 @@ def create_workspace_router(db) -> APIRouter:
 
     @router.get("/signatures/{request_id}/download")
     async def download_signed(request_id: str, request: Request):
-        member = await current_member(request)
+        member = await selection_member(request)
         record = await db.signature_requests.find_one({"request_id": request_id, "owner_user_id": member["user_id"]}, {"_id": 0, "token": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Signature request not found")

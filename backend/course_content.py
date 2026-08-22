@@ -112,6 +112,7 @@ SELF_GUIDED_MODULES = [
     {
         "number": 4,
         "title": "Select and Interview Your Applicants",
+        "stage": "selection",
         "future_areas": [
             "Applicant List",
             "Application Answers",
@@ -126,12 +127,14 @@ SELF_GUIDED_MODULES = [
     {
         "number": 5,
         "title": "Complete References and Background Checks",
+        "stage": "selection",
         "disabled_tools": [],
         "background_note": "External background-check resources are available here.",
     },
     {
         "number": 6,
         "title": "Onboard Your New Board Members",
+        "stage": "selection",
         "disabled_tools": [],
     },
 ]

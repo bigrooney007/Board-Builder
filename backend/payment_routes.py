@@ -78,11 +78,15 @@ def resolve_offer_price_id(env_key: str, lookup_key: str, product_name: str, uni
 
 
 def resolve_diy_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIY_BOARD_RECRUITMENT_497_PRICE_ID", "diy_board_recruitment_497", "Recruit Your Board Yourself", 49700)
+    return resolve_offer_price_id("STRIPE_RECRUITMENT_CAMPAIGN_DIY_297_PRICE_ID", "recruitment_campaign_diy_297", "Board Recruitment Campaign Launch — Do It Yourself", 29700)
 
 
 def resolve_direct_project_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_2497_PRICE_ID", "direct_board_recruitment_project_2497", "Board Recruitment Project", 249700)
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_1497_PRICE_ID", "direct_board_recruitment_project_1497", "Board Recruitment Campaign Launch — Do It With Us", 149700)
+
+
+def resolve_selection_onboarding_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_RECRUITMENT_SELECTION_ONBOARDING_297_PRICE_ID", "recruitment_selection_onboarding_297", "Selection, Interview & Onboarding Package", 29700)
 
 
 def resolve_reactivation_diy_price_id() -> str:
@@ -246,7 +250,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_recruitment_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_recruitment_project",
             "offer": "Board Recruitment Project",
-            "amount": 249700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 149700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
@@ -263,9 +267,9 @@ def create_payment_router(db) -> APIRouter:
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/recruit-your-board-yourself"),
             "metadata": {
-                "offer_source": "direct_diy_board_recruitment", "selected_tier": "497",
-                "purchase_source": "direct_diy_board_recruitment_497",
-                "offer": "Do It Yourself Board Recruitment",
+                "offer_source": "direct_diy_board_recruitment", "selected_tier": "297",
+                "purchase_source": "recruitment_campaign_diy_297",
+                "offer": "Board Recruitment Campaign Launch — Do It Yourself",
             },
         }
         try:
@@ -280,9 +284,45 @@ def create_payment_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_diy_board_recruitment",
-            "selected_tier": "497", "purchase_source": "direct_diy_board_recruitment_497",
-            "offer": "Do It Yourself Board Recruitment",
-            "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "selected_tier": "297", "purchase_source": "recruitment_campaign_diy_297",
+            "offer": "Board Recruitment Campaign Launch — Do It Yourself",
+            "amount": 29700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/selection-onboarding-checkout")
+    async def create_selection_onboarding_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_selection_onboarding_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{payload.origin_url}/app/recruitment/selection-offer?checkout=cancelled",
+            "metadata": {
+                "offer_source": "recruitment_selection_onboarding", "selected_tier": "297",
+                "purchase_source": "recruitment_selection_onboarding_297",
+                "offer": "Selection, Interview & Onboarding Package",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "recruitment_selection_onboarding",
+            "selected_tier": "297", "purchase_source": "recruitment_selection_onboarding_297",
+            "offer": "Selection, Interview & Onboarding Package",
+            "amount": 29700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

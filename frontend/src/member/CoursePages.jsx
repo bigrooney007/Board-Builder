@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Circle, FileText, FolderOpen, LifeBuoy, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, FileText, FolderOpen, LifeBuoy, Lock, PlayCircle } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
@@ -134,11 +134,19 @@ export const CourseOverviewPage = ({ productSlug }) => {
         {course && (
           <div className="module-list">
             {course.modules.map((module) => (
-              <Link className="module-list-item" to={`${meta.base}/module/${module.number}`} key={module.number} data-testid={`module-link-${module.number}`}>
-                {module.completed ? <CheckCircle2 className="module-done" size={21} /> : <Circle className="module-todo" size={21} />}
-                <div><span>Step {module.number}</span><h2>{module.title}</h2></div>
-                <ArrowRight size={17} />
-              </Link>
+              module.locked ? (
+                <Link className="module-list-item module-locked-item" to="/app/recruitment/selection-offer" key={module.number} data-testid={`module-locked-${module.number}`}>
+                  <Lock className="module-todo" size={21} />
+                  <div><span>Step {module.position || module.number} · Selection, Interview &amp; Onboarding Package</span><h2>{module.title}</h2></div>
+                  <ArrowRight size={17} />
+                </Link>
+              ) : (
+                <Link className="module-list-item" to={`${meta.base}/module/${module.number}`} key={module.number} data-testid={`module-link-${module.number}`}>
+                  {module.completed ? <CheckCircle2 className="module-done" size={21} /> : <Circle className="module-todo" size={21} />}
+                  <div><span>Step {module.position || module.number}</span><h2>{module.title}</h2></div>
+                  <ArrowRight size={17} />
+                </Link>
+              )
             ))}
           </div>
         )}
@@ -182,14 +190,21 @@ export const CourseModulePage = ({ productSlug }) => {
   const navigate = useNavigate();
   const number = Number(moduleNumber);
   const [marking, setMarking] = useState(false);
-  const module = course?.modules.find((item) => item.number === number);
+  const moduleIndex = course ? course.modules.findIndex((item) => item.number === number) : -1;
+  const module = moduleIndex >= 0 ? course.modules[moduleIndex] : undefined;
+  const prevModule = moduleIndex > 0 ? course.modules[moduleIndex - 1] : undefined;
+  const nextModule = moduleIndex >= 0 ? course.modules[moduleIndex + 1] : undefined;
 
   useEffect(() => {
-    if (module) document.title = `Step ${module.number} | ${module.title} | Nonprofit Board Builder`;
+    if (module?.locked) navigate("/app/recruitment/selection-offer", { replace: true });
+  }, [module, navigate]);
+
+  useEffect(() => {
+    if (module) document.title = `Step ${module.position || module.number} | ${module.title} | Nonprofit Board Builder`;
   }, [module]);
 
   useEffect(() => {
-    if (!course || !module) return;
+    if (!course || !module || module.locked) return;
     memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: "viewed" }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.product, number]);
@@ -198,7 +213,9 @@ export const CourseModulePage = ({ productSlug }) => {
     setMarking(true);
     try {
       if (!module.completed) await memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: "completed" });
-      navigate(number < course.modules.length ? `${meta.base}/module/${number + 1}` : productSlug === "self-guided" ? "/app/recruitment/self-guided/results" : meta.base);
+      if (!nextModule) navigate(productSlug === "self-guided" ? "/app/recruitment/self-guided/results" : meta.base);
+      else if (nextModule.locked) navigate("/app/recruitment/selection-offer");
+      else navigate(`${meta.base}/module/${nextModule.number}`);
     } catch { /* ignore */ }
     setMarking(false);
   };
@@ -209,17 +226,17 @@ export const CourseModulePage = ({ productSlug }) => {
         {forbidden && <ForbiddenCard />}
         {error && <p className="submit-error">{error}</p>}
         {course && !module && <div className="member-card"><h2>Module Not Found</h2><Link className="button" to={meta.base}>Back to Course</Link></div>}
-        {module && (
+        {module && !module.locked && (
           <>
             <header className="member-page-heading">
               <Link className="module-breadcrumb" to={meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {meta.label}</Link>
-              <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
+              <p className="eyebrow">Step {module.position || module.number} of {course.modules.length}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             <div className="module-nav" data-testid="module-navigation">
-              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${meta.base}/module/${number - 1}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
+              <button className="button button-back" disabled={!prevModule} onClick={() => navigate(`${meta.base}/module/${prevModule.number}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />

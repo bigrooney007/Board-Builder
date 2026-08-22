@@ -14,7 +14,7 @@ FUNNELS = [
         "lead_sources": ["recruitment"], "video_offer": "recruitment",
         "diy_sources": ["direct_diy_board_recruitment"],
         "dwy_sources": ["direct_board_recruitment_project"],
-        "other_sources": ["recruitment", "recruit_with_rooney"],
+        "other_sources": ["recruitment", "recruit_with_rooney", "recruitment_selection_onboarding"],
     },
     {
         "key": "reactivation", "label": "Board Reactivation",

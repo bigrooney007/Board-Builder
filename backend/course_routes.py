@@ -71,10 +71,16 @@ class VideoConfig(BaseModel):
 async def merged_course(db, member, product: str, modules: list) -> dict:
     videos = {v["module_number"]: v.get("youtube_url", "") for v in await db.course_videos.find({"product": product}, {"_id": 0}).to_list(20)}
     progress = {p["module_number"]: p for p in await db.course_progress.find({"user_id": member["user_id"], "product": product}, {"_id": 0}).to_list(20)}
+    has_selection = True
+    if product == "recruitment_self_guided":
+        modules = [module for module in modules if module["number"] != 1]
+        has_selection = "recruitment_selection_onboarding" in member.get("entitlements", [])
     output = []
-    for module in modules:
+    for position, module in enumerate(modules, start=1):
         record = progress.get(module["number"], {})
         item = dict(module)
+        item["position"] = position
+        item["locked"] = bool(item.get("stage") == "selection" and not has_selection)
         item["youtube_url"] = CANONICAL_COURSE_VIDEOS.get((product, module["number"])) or videos.get(module["number"], "")
         item["viewed"] = bool(record.get("viewed"))
         item["completed"] = bool(record.get("completed"))
@@ -130,6 +136,9 @@ def create_course_router(db) -> APIRouter:
         else:
             allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
+        if (payload.product == "recruitment_self_guided" and payload.module_number >= 4
+                and "recruitment_selection_onboarding" not in member.get("entitlements", [])):
+            raise HTTPException(status_code=403, detail="This step is included in the Selection, Interview & Onboarding Package")
         if member.get("review_mode"):
             return {"status": "ok", "modules_completed": 0, "percent_complete": 0, "review_mode": True}
         now = datetime.now(timezone.utc).isoformat()
@@ -145,8 +154,16 @@ def create_course_router(db) -> APIRouter:
             {"user_id": member["user_id"], "product": payload.product, "module_number": payload.module_number},
             update, upsert=True,
         )
-        total = 5 if payload.product in {"reactivation_self_guided", "activation_self_guided"} else 6
-        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": {"$lte": total}}, {"_id": 0}).to_list(20)
+        if payload.product == "recruitment_self_guided":
+            total = 5
+            number_filter = {"$gte": 2, "$lte": 6}
+        elif payload.product in {"reactivation_self_guided", "activation_self_guided"}:
+            total = 5
+            number_filter = {"$lte": 5}
+        else:
+            total = 6
+            number_filter = {"$lte": 6}
+        records = await db.course_progress.find({"user_id": member["user_id"], "product": payload.product, "module_number": number_filter}, {"_id": 0}).to_list(20)
         completed = sum(1 for record in records if record.get("completed"))
         return {"status": "ok", "modules_completed": completed, "percent_complete": round(completed / total * 100)}
 
