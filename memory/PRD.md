@@ -399,3 +399,8 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 ## Remaining backlog
 - P1: Regenerate /app/PROMPT_AUDIT.md + run 4-flow AI generation verification (Recruitment, Reactivation, Fundraising Activation, Strategic Planning) — pending from prior session
 - P2: Video watch tracking on sales videos
+
+## Recruitment Form Copy Correction (June 2026) — Complete, verified exact match on rendered page
+- /recruit supporting text restored to approved final copy (with comma after "below", full "commits, helps raise money" phrasing, ending "in just 30 minutes.")
+- Verified via rendered page string comparison: EXACT MATCH true. No other form changes.
+- PENDING (user-selected, not yet built): Abandoned Checkout Nudge (checkout_recovery.py exists behind CHECKOUT_RECOVERY_ENABLED flag), Video Watch Tracking, Funnel Numbers Board
