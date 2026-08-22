@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { CheckCircle, Download, Eye, FileText, LogOut, Pencil, RefreshCw, Search, Sparkles, Users, XCircle } from "lucide-react";
 import { ClientDeliverySection } from "@/admin/ClientDeliverySection";
@@ -140,8 +140,47 @@ const renderBlogBody = (body) => (body || "").split(/\n{2,}|\n(?=## )/).map((blo
   return <p key={index}>{trimmed}</p>;
 });
 
+const TopicScheduleBlock = () => {
+  const [schedule, setSchedule] = useState(null);
+  const [openKey, setOpenKey] = useState("");
+  useEffect(() => { client.get("/admin/blog/topics").then((r) => setSchedule(r.data.schedule)).catch(() => setSchedule([])); }, []);
+  if (!schedule) return <p data-testid="topic-schedule-loading">Loading topic schedule…</p>;
+  return (
+    <div className="topic-schedule" data-testid="topic-schedule">
+      <h2>100-Topic Publishing Schedule</h2>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead><tr>{["Category", "Publish Day", "CTA", "Published", "Next Topic", ""].map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+          <tbody>
+            {schedule.map((row) => (
+              <React.Fragment key={row.category_key}>
+                <tr data-testid={`topic-schedule-row-${row.category_key}`}>
+                  <td>{row.category}</td>
+                  <td>{row.publish_day}</td>
+                  <td>{row.cta_url}</td>
+                  <td>{row.published_count} of {row.topics.length}</td>
+                  <td data-testid={`next-topic-${row.category_key}`}>{row.next_topic_number}. {row.next_topic_title}</td>
+                  <td><button className="table-link" onClick={() => setOpenKey(openKey === row.category_key ? "" : row.category_key)} data-testid={`topic-schedule-toggle-${row.category_key}`}>{openKey === row.category_key ? "Hide Topics" : "All Topics"}</button></td>
+                </tr>
+                {openKey === row.category_key && row.topics.map((topic) => (
+                  <tr key={topic.topic_number} className="topic-detail-row">
+                    <td colSpan="2">{topic.topic_number}. {topic.topic_title}</td>
+                    <td colSpan="2"><span className={`blog-status-badge ${topic.publication_status === "Published" ? "published" : topic.publication_status === "Next" ? "pending" : "generating"}`}>{topic.publication_status}</span></td>
+                    <td colSpan="2">{topic.published_at?.slice(0, 10) || ""}</td>
+                  </tr>
+                ))}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const BlogAdminSection = ({ posts, categories, generating, notice, onGenerate, onRefresh, onOpen }) => (
   <section data-testid="admin-blog-section">
+    <TopicScheduleBlock />
     <div className="admin-filters blog-generate-row">
       {categories.map((category) => (
         <button key={category.key} className="button button-small" disabled={!!generating} onClick={() => onGenerate(category.key)} data-testid={`admin-generate-blog-${category.key}`}>

@@ -161,7 +161,7 @@ export const SITE_CONTENT = {
     "recruitment": {
       "title": "Recruit New Board Members",
       "video": {
-        "youtubeId": "zHgf-9XrLgg",
+        "youtubeId": "DlrABIvk7eY",
         "title": "Launch Your Board Recruitment Campaign in 30 Minutes & Get The Quality Support Your Nonprofit Needs"
       },
       "videoButtons": {

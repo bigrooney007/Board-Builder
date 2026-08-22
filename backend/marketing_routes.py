@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from auth_service import authenticate_admin
-from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, now_tz, regenerate_blog_post, slugify_title
+from board_content_topics import BOARD_CONTENT_TOPICS
+from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, next_topic_for, now_tz, regenerate_blog_post, slugify_title
 
 PUBLIC_FIELDS = {"_id": 0, "blog_post_id": 1, "title": 1, "slug": 1, "category": 1, "category_key": 1, "excerpt": 1, "published_at": 1, "cta_label": 1, "cta_button": 1, "cta_url": 1}
 
@@ -59,6 +60,37 @@ def create_marketing_router(db) -> APIRouter:
         if result.get("skipped"):
             raise HTTPException(status_code=409, detail=result["reason"])
         return result
+
+    @router.get("/admin/blog/topics")
+    async def admin_topic_schedule(request: Request):
+        await authenticate_admin(request, db)
+        schedule = []
+        day_names = {0: "Monday", 2: "Wednesday", 4: "Friday", 5: "Saturday"}
+        for key, config in CATEGORIES.items():
+            published_posts = await db.blog_posts.find(
+                {"category_key": key, "topic_number": {"$gte": 1}, "publication_status": "Published"},
+                {"_id": 0, "topic_number": 1, "topic_title": 1, "published_at": 1, "slug": 1}).sort("published_at", 1).to_list(200)
+            latest = {}
+            for post in published_posts:
+                latest[post["topic_number"]] = post
+            upcoming = await next_topic_for(db, key)
+            topics = []
+            for number, title in enumerate(BOARD_CONTENT_TOPICS[key], start=1):
+                record = latest.get(number)
+                topics.append({
+                    "topic_number": number, "topic_title": title,
+                    "publication_status": "Published" if record else ("Next" if number == upcoming["topic_number"] else "Unpublished"),
+                    "published_at": (record or {}).get("published_at", ""),
+                    "slug": (record or {}).get("slug", ""),
+                })
+            schedule.append({
+                "category_key": key, "category": config["name"],
+                "publish_day": day_names.get(config["day"], ""), "cta_url": config["cta_url"],
+                "published_count": upcoming["published_in_category"],
+                "next_topic_number": upcoming["topic_number"], "next_topic_title": upcoming["topic_title"],
+                "topics": topics,
+            })
+        return {"schedule": schedule}
 
     @router.get("/admin/blog/posts")
     async def admin_list_posts(request: Request):

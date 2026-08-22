@@ -6,7 +6,7 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const VIDEO_ID = "w4-kn3tayRQ";
+const VIDEO_ID = "6mveKNEOl9E";
 
 const EXPLAINS = [
   "Reviewing the applicants your campaign brings in",

@@ -13,6 +13,7 @@ import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 from ai_service import parse_json_response
+from board_content_topics import BOARD_CONTENT_TOPICS
 from resend_service import create_segment_broadcast, upsert_contact
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ CATEGORIES = {
     "recruitment": {"name": "Board Recruitment", "day": 0, "cta_label": "Ready to Recruit Your Board?", "cta_button": "See How We Can Help You Recruit", "cta_url": "/recruit"},
     "reactivation": {"name": "Board Reactivation", "day": 2, "cta_label": "Ready to Reactivate Your Board?", "cta_button": "See How We Can Help You Reactivate", "cta_url": "/reactivate"},
     "fundraising_activation": {"name": "Board Fundraising Activation", "day": 4, "cta_label": "Ready to Activate Your Board Around Fundraising?", "cta_button": "See How We Can Help You Activate Your Board", "cta_url": "/activate"},
+    "transformation": {"name": "Complete Board Transformation", "day": 5, "cta_label": "Ready to Transform Your Board?", "cta_button": "Start Your Complete Board Transformation", "cta_url": "/board-transformation"},
 }
 BANNED_PHRASES = ["in today's fast-paced world", "in the ever-evolving landscape", "it's important to note", "let's dive in", "game changer", "unlock the power", "navigate the complexities", "revolutionize", "game-changer"]
 
@@ -186,12 +188,36 @@ BLOG_SYSTEM = (
 )
 
 
-async def claude_blog(category_key: str, recent_titles: list, correction: str = "", draft: dict = None) -> dict:
+async def next_topic_for(db, category_key: str) -> dict:
+    """Sequential per-category topic progression. Cycles back only after all 25 are published."""
+    topics = BOARD_CONTENT_TOPICS[category_key]
+    published = await db.blog_posts.count_documents(
+        {"category_key": category_key, "topic_number": {"$gte": 1}, "publication_status": "Published"})
+    index = published % len(topics)
+    return {"topic_number": index + 1, "topic_title": topics[index], "published_in_category": published}
+
+
+async def claude_blog(category_key: str, recent_titles: list, correction: str = "", draft: dict = None, topic_title: str = "") -> dict:
     config = CATEGORIES[category_key]
     api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
     chat = LlmChat(api_key=api_key, session_id=f"blog-{uuid.uuid4()}", system_message=BLOG_SYSTEM).with_model("anthropic", os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"))
     if correction and draft:
-        prompt = f"Your previous {config['name']} article draft failed validation.\nFailures:\n{correction}\n\nPrevious draft JSON:\n{json.dumps(draft)}\n\nFix ONLY the validation failures. Keep the same topic unless the failure requires a new topic. Return JSON: {{\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (350-550 words, absolute maximum 650, use lines starting with '## ' as subheadings only if they genuinely help, blank line between paragraphs)}}"
+        prompt = f"Your previous {config['name']} article draft failed validation.\nFailures:\n{correction}\n\nPrevious draft JSON:\n{json.dumps(draft)}\n\nFix ONLY the validation failures. Keep the same topic{' and the exact title: ' + topic_title if topic_title else ' unless the failure requires a new topic'}. Return JSON: {{\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (350-550 words, absolute maximum 650, use lines starting with '## ' as subheadings only if they genuinely help, blank line between paragraphs)}}"
+    elif topic_title:
+        prompt = (
+            f"Write one blog article in the category: {config['name']}.\n"
+            f"The article title MUST be EXACTLY: {topic_title}\n"
+            "Do not change, shorten or rephrase the title.\n\n"
+            "Follow this five-part structure in the body (do not label the parts, write them as flowing sections):\n"
+            "1. THE PROBLEM: open with the specific problem this topic represents so the founder immediately recognizes their situation.\n"
+            "2. WHAT IS REALLY HAPPENING: show the underlying limitation or reason the problem exists.\n"
+            "3. ROONEY'S INSIGHT: give the founder a useful way to understand the problem that demonstrates real board-development expertise. Provide genuine insight, not a sales pitch.\n"
+            "4. WHAT THE FOUNDER CAN DO: give a practical next step connected to the topic so the reader finishes knowing what needs to happen next.\n"
+            "5. Do not write the CTA link or button; the application appends it. End by making the next step clear and moving the reader toward the solution.\n\n"
+            "Use this board terminology consistently where relevant: Powerhouse Board, Board Recruitment, Board Reactivation, Board Fundraising Activation, Complete Board Transformation, board members, fundraising, professional expertise, relationships and networks, organizational capabilities, board responsibility, board accountability, mission, fund, grow and scale. Do not introduce competing terminology.\n\n"
+            "The article must target 350 to 550 words and must never exceed 650 words. Use at most one or two short '## ' subheadings, and only if they genuinely help.\n"
+            "Return JSON: {\"title\": str, \"excerpt\": str (1-2 sentences), \"body\": str (paragraphs separated by blank lines, subheadings as lines starting with '## ')}"
+        )
     else:
         prompt = (
             f"Write one new blog article in the category: {config['name']}.\n"
@@ -245,11 +271,12 @@ def validate_article(article: dict, category_key: str, recent_titles: list, exis
 
 
 async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str, publish_now: bool = False) -> dict:
-    """Generate + validate + schedule one post. Unique key: category + scheduled_date."""
+    """Generate + validate + schedule one post from the canonical topic library. Unique key: category + scheduled_date."""
     config = CATEGORIES[category_key]
     ts = now_tz().isoformat()
+    topic = await next_topic_for(db, category_key)
     try:
-        await db.blog_posts.insert_one({"blog_post_id": str(uuid.uuid4()), "category_key": category_key, "category": config["name"], "scheduled_date": scheduled_date, "publication_status": "Generating", "created_at": ts, "title": "", "slug": ""})
+        await db.blog_posts.insert_one({"blog_post_id": str(uuid.uuid4()), "category_key": category_key, "category": config["name"], "scheduled_date": scheduled_date, "publication_status": "Generating", "created_at": ts, "title": "", "slug": "", "topic_number": topic["topic_number"], "topic_title": topic["topic_title"]})
     except Exception:
         return {"skipped": True, "reason": "A post for this category and scheduled date already exists"}
     query = {"category_key": category_key, "scheduled_date": scheduled_date}
@@ -257,16 +284,20 @@ async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str,
     recent_titles = [post["title"] for post in recent if post.get("title")]
     existing_slugs = {post["slug"] async for post in db.blog_posts.find({"slug": {"$ne": ""}}, {"_id": 0, "slug": 1})}
     try:
-        article = await claude_blog(category_key, recent_titles)
-        errors = validate_article(article, category_key, recent_titles, existing_slugs)
+        article = await claude_blog(category_key, [], topic_title=topic["topic_title"])
+        article["title"] = topic["topic_title"]
+        errors = validate_article(article, category_key, [], set())
         if errors:
-            article = await claude_blog(category_key, recent_titles, correction="\n".join(errors), draft=article)
-            errors = validate_article(article, category_key, recent_titles, existing_slugs)
+            article = await claude_blog(category_key, [], correction="\n".join(errors), draft=article, topic_title=topic["topic_title"])
+            article["title"] = topic["topic_title"]
+            errors = validate_article(article, category_key, [], set())
         if errors:
             await db.blog_posts.update_one(query, {"$set": {"publication_status": "Validation Failed", "generation_status": "Generated", "validation_status": "Failed", "title": article.get("title", ""), "error": "; ".join(errors)}})
-            await send_owner_alert("Nonprofit Board Builder Blog Post Failed Validation", [("Category", config["name"]), ("Intended publication date", scheduled_date), ("Title", article.get("title", "")), ("Validation errors", "; ".join(errors))])
+            await send_owner_alert("Nonprofit Board Builder Blog Post Failed Validation", [("Category", config["name"]), ("Topic", f"{topic['topic_number']}. {topic['topic_title']}"), ("Intended publication date", scheduled_date), ("Validation errors", "; ".join(errors))])
             return {"status": "Validation Failed", "errors": errors}
         slug = slugify_title(article["title"])
+        if slug in existing_slugs:
+            slug = f"{slug}-{scheduled_date}"
         update = {
             "title": article["title"].strip(), "slug": slug, "excerpt": article["excerpt"].strip(),
             "body": article["body"].strip(), "cta_label": config["cta_label"], "cta_button": config["cta_button"],
@@ -294,11 +325,16 @@ async def regenerate_blog_post(db, post: dict) -> dict:
     recent_titles = [item["title"] for item in recent if item.get("title")]
     existing_slugs = {item["slug"] async for item in db.blog_posts.find({"slug": {"$ne": ""}, "blog_post_id": {"$ne": post["blog_post_id"]}}, {"_id": 0, "slug": 1})}
     try:
-        article = await claude_blog(category_key, recent_titles)
-        errors = validate_article(article, category_key, recent_titles, existing_slugs)
+        topic_title = post.get("topic_title", "")
+        article = await claude_blog(category_key, recent_titles, topic_title=topic_title)
+        if topic_title:
+            article["title"] = topic_title
+        errors = validate_article(article, category_key, [] if topic_title else recent_titles, existing_slugs if not topic_title else set())
         if errors:
-            article = await claude_blog(category_key, recent_titles, correction="\n".join(errors), draft=article)
-            errors = validate_article(article, category_key, recent_titles, existing_slugs)
+            article = await claude_blog(category_key, recent_titles, correction="\n".join(errors), draft=article, topic_title=topic_title)
+            if topic_title:
+                article["title"] = topic_title
+            errors = validate_article(article, category_key, [] if topic_title else recent_titles, existing_slugs if not topic_title else set())
         if errors:
             await db.blog_posts.update_one(query, {"$set": {"publication_status": "Validation Failed", "error": "; ".join(errors)}})
             return {"status": "Validation Failed", "errors": errors}
