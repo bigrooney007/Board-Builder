@@ -73,7 +73,6 @@ async def merged_course(db, member, product: str, modules: list) -> dict:
     progress = {p["module_number"]: p for p in await db.course_progress.find({"user_id": member["user_id"], "product": product}, {"_id": 0}).to_list(20)}
     has_selection = True
     if product == "recruitment_self_guided":
-        modules = [module for module in modules if module["number"] != 1]
         has_selection = "recruitment_selection_onboarding" in member.get("entitlements", [])
     output = []
     for position, module in enumerate(modules, start=1):
@@ -154,10 +153,7 @@ def create_course_router(db) -> APIRouter:
             {"user_id": member["user_id"], "product": payload.product, "module_number": payload.module_number},
             update, upsert=True,
         )
-        if payload.product == "recruitment_self_guided":
-            total = 5
-            number_filter = {"$gte": 2, "$lte": 6}
-        elif payload.product in {"reactivation_self_guided", "activation_self_guided"}:
+        if payload.product in {"reactivation_self_guided", "activation_self_guided"}:
             total = 5
             number_filter = {"$lte": 5}
         else:

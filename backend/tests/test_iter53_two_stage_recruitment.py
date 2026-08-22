@@ -173,17 +173,19 @@ class TestCourseGating:
         db.members.update_one({"user_id": uid}, {"$set": {"entitlements": ["recruitment_self_guided"]}})
         return {"user_id": uid, "token": token, "email": email}
 
-    def test_five_modules_no_module_one(self, api, stage1):
+    # iter56: module 1 RESTORED to the customer journey -> 6 modules, positions 1-6
+    def test_six_modules_with_module_one(self, api, stage1):
         r = api.get(f"{BASE_URL}/api/courses/recruitment/self-guided", headers=auth(stage1["token"]))
         assert r.status_code == 200, r.text
         modules = r.json()["modules"]
-        assert [m["number"] for m in modules] == [2, 3, 4, 5, 6]
-        assert [m.get("position") for m in modules] == [1, 2, 3, 4, 5]
+        assert [m["number"] for m in modules] == [1, 2, 3, 4, 5, 6]
+        assert [m.get("position") for m in modules] == [1, 2, 3, 4, 5, 6]
+        assert modules[0]["title"] == "Understanding the Board Recruitment Process"
         locked = {m["number"]: m.get("locked") for m in modules}
-        assert locked == {2: False, 3: False, 4: True, 5: True, 6: True}, locked
+        assert locked == {1: False, 2: False, 3: False, 4: True, 5: True, 6: True}, locked
 
-    def test_progress_allowed_on_2_and_3(self, api, stage1):
-        for n in (2, 3):
+    def test_progress_allowed_on_1_2_and_3(self, api, stage1):
+        for n in (1, 2, 3):
             r = api.post(f"{BASE_URL}/api/courses/progress", headers=auth(stage1["token"]),
                          json={"product": "recruitment_self_guided", "module_number": n, "action": "completed"})
             assert r.status_code == 200, f"module {n}: {r.status_code} {r.text[:200]}"

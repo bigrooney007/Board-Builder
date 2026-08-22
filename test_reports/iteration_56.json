@@ -1,0 +1,44 @@
+{
+  "summary": "ITERATION 56 — RESTORATION VERIFICATION of recruitment Module 1 / Step 1 ('Understanding the Board Recruitment Process'). NO application code modified; only test files added/updated.\n\nBACKEND (53/53 passed)\n1. NEW suite tests/test_iter56_module1_restoration.py -> 16/16 passed:\n   - Fresh $297 journey (Mongo-simulated paid txn, purchase_source recruitment_campaign_diy_297 / 29700): GET /api/board-recruitment-intake/context eligible=true; POST submit 201 with redirect_url '/recruitment-start-here'.\n   - Stage-1-only member course API: numbers [1,2,3,4,5,6], positions [1,2,3,4,5,6], locked {1:F,2:F,3:F,4:T,5:T,6:T}; module 1 title 'Understanding the Board Recruitment Process', youtube_url contains MADZN-LqAvA; module 2/3 titles correct.\n   - POST /api/courses/progress modules 1,2,3 -> 200; totals reverted to 6 (3 completed -> modules_completed 3, percent_complete 50, matching course GET). Module 4 -> 403 with detail naming 'Selection, Interview, Reference Check & Onboarding'. GET /api/workspace/applications -> 403.\n   - Second payment unchanged: POST /api/payments/selection-onboarding-checkout -> Stripe amount_total 29700, metadata.purchase_source recruitment_selection_onboarding_297. After granting recruitment_selection_onboarding all 6 modules unlock, module 4 = 'Select and Interview Your Applicants' at position 4, applications API 200, module-4 progress 200.\n   - Spot checks: bogus session intake context blocked (404); DWY direct-project-checkout 149700 with success_url /board-recruitment-intake?session_id=..., simulated paid DWY intake submit -> Calendly redirect; grandfathered both-entitlement members >= 8; stage1b.tester@example.com still has ONLY recruitment_self_guided.\n   - Read-only other funnels: GET /reactivate 200, GET /activate 200, POST /api/payments/reactivation-project-checkout -> 549700.\n2. Existing suites re-run after updating ONLY the outdated module-1-absent assertions (5 modules / positions 1-5 / module 2 as position 1): iter53 + iter54 + iter55 -> 37/37 passed.\n\nFRONTEND (Playwright, all requested checks PASS)\nA. Throwaway stage-1-only member (TEST_iter56_ui@example.com / TestPass123!): login OK -> /recruitment-start-here CTA [data-testid=start-here-module1-button] href '/app/recruitment/self-guided/module/1' and click navigates there. module/1 renders eyebrow 'STEP 1 OF 6' (CSS-uppercased), h1 'Understanding the Board Recruitment Process', YouTube iframe src https://www.youtube.com/embed/MADZN-LqAvA, and [data-testid=module1-training-card] visible.\nB. NEXT STEP chain: module/1 -> module/2 'STEP 2 OF 6' 'Identifying the People Your Board Needs' -> module/3 'STEP 3 OF 6' 'Launch Your Recruitment Campaign' -> NEXT STEP lands on /app/recruitment/selection-offer. Direct visit to locked /module/4 also redirects to /app/recruitment/selection-offer.\nC. Overview for stage-1-only: 6 step cards STEP 1..STEP 6, steps 4-6 lock-badged with '· SELECTION, INTERVIEW, REFERENCE CHECK & ONBOARDING' suffix; progress reads '50% complete · 3 of 6 steps finished' (consistent with the 3 completions posted by the test).\nD. Both-entitlement member (stage1.tester@example.com): 0 locked cards, STEP 1..STEP 6 all open, progress '17% complete · 1 of 6 steps finished'; /module/4 renders 'STEP 4 OF 6' 'Select and Interview Your Applicants'; /module/1 renders Step 1 of 6 with the training card.\nE. Code inspection confirmed PurchaseSuccessPage claim + fallback -> /app/recruitment/self-guided/module/1, admin ClientDeliverySection recruitment route -> module/1, RecruitCheckoutPage -> module/1.\n\nVERDICT: the restoration is complete and consistent across API, gating, progress totals, Start Here CTA, module pages and both entitlement states. No functional regression found. Two pre-existing minor copy/testid inconsistencies noted below.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/app/recruitment/self-guided/module/1 (training card)", "issues": ["Copy in content/appContent.js recruitmentContent.module1.body still says 'continue to Module 2' while the whole UI was renamed to 'Step' in iter55. Now user-visible again because Step 1 is restored — suggest 'continue to Step 2'. Cosmetic only."]},
+      {"screen": "Workspace Results empty state (/app/recruitment/self-guided/results)", "issues": ["Pre-existing: link labelled 'Go to Your Recruitment Campaign' points to /app/recruitment/self-guided/module/2 ('Identifying the People Your Board Needs'); the campaign step is module/3. Not caused by this change."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter56_module1_restoration.py",
+    "/app/backend/tests/seed_iter56_ui_member.py",
+    "/app/backend/tests/test_iter55_label_rename_regression.py",
+    "/app/backend/tests/test_iter54_recruitment_verification.py",
+    "/app/backend/tests/test_iter53_two_stage_recruitment.py",
+    "/app/test_reports/pytest/iter56_results.xml",
+    "/app/test_reports/pytest/iter56_legacy_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL (cosmetic): update recruitmentContent.module1.body 'continue to Module 2' -> 'continue to Step 2' for consistency with the Step nomenclature.",
+    "OPTIONAL (cosmetic): re-point or relabel the Results empty-state CTA ('Go to Your Recruitment Campaign' currently -> module/2, campaign is module/3).",
+    "OPTIONAL (hygiene): stale data-testids from the old numbering remain — Module1Profile 'continue-to-step-2' link goes to Step 3, WorkspaceModules 'continue-to-step-3' link goes to Step 4. Visible labels are correct; only testids are misleading."
+  ],
+  "critical_code_review_comments": [
+    "merged_course computes percent_complete over len(modules) (6) while track_progress uses a hardcoded total of 6 for recruitment — they agree today, but the two totals are duplicated in two places; deriving both from len(SELF_GUIDED_MODULES) would prevent a future drift like the 5/6 mismatch this restoration had to undo.",
+    "Carry-over from iter53-55 (unchanged, low impact): payment_routes.create_selection_onboarding_checkout still does not persist lead_checkout_context(result_token), so stage-2 purchases carry no funnel-lead attribution."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter56_module1_restoration.py",
+    "/app/backend/tests/seed_iter56_ui_member.py",
+    "/app/backend/tests/test_iter53_two_stage_recruitment.py",
+    "/app/backend/tests/test_iter54_recruitment_verification.py",
+    "/app/backend/tests/test_iter55_label_rename_regression.py"
+  ],
+  "success_rate": {"backend": "100% (53/53: 16 iter56 + 10 iter55 + 15 iter54 + 12 iter53)", "frontend": "100% of requested checks"},
+  "seed_data_creation": "Session-scoped throwaway member TEST_iter56_stage1_<hex>@example.com plus all simulated payment_transactions / intakes created by the iter56 suite are deleted by the fixture teardown. One kept UI member: TEST_iter56_ui@example.com / TestPass123! (entitlement recruitment_self_guided ONLY, steps 1-3 marked complete) — delete with `python /app/backend/tests/seed_iter56_ui_member.py cleanup`. stage1.tester@example.com now has module 4 marked 'viewed' from the UI pass (completions unchanged, 1 of 6). stage1b.tester@example.com untouched (verified: entitlements == ['recruitment_self_guided']).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem; stage1.tester@example.com (both entitlements), stage1b.tester@example.com (stage-1 only, do not mutate), TEST_iter56_ui@example.com (stage-1 only, throwaway) — all TestPass123!",
+  "context_for_next_testing_agent": "Run: cd /app/backend && set -a && source .env && set +a && REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2) python -m pytest tests/test_iter56_module1_restoration.py tests/test_iter55_label_rename_regression.py tests/test_iter54_recruitment_verification.py tests/test_iter53_two_stage_recruitment.py -q -p no:randomly. The current source of truth for recruitment_self_guided is 6 modules, numbers==positions==1..6, locks {1-3:F,4-6:T}, progress totals 6 (so 1 completion == 17%, 3 == 50%). Playwright note: the module eyebrow and locked-card eyebrow are CSS-uppercased — compare case-insensitively.",
+  "rca_of_the_issue": "No defect found. The only failures encountered were in my own assertions: (a) outdated iter53/54/55 expectations that module 1 is absent (intentionally reverted by this restoration, so the test constants were updated), and (b) case-sensitive comparison of the CSS-uppercased 'STEP 1 OF 6' eyebrow."
+}

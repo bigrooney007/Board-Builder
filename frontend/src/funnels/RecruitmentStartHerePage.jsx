@@ -78,7 +78,7 @@ export default function RecruitmentStartHerePage() {
         </section>
 
         <section className="sh-cta" data-testid="start-here-cta-section">
-          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/2" data-testid="start-here-module1-button">{SITE_CONTENT.recruitStartHere.cta}</Link>
+          <Link className="button rwr-cta-button brp-cta-button" to="/app/recruitment/self-guided/module/1" data-testid="start-here-module1-button">{SITE_CONTENT.recruitStartHere.cta}</Link>
         </section>
       </main>
     </MemberShell>

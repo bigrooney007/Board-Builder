@@ -86,8 +86,9 @@ class TestRenameStrings:
         assert course.status_code == 200, course.text
         modules = course.json()["modules"]
         locked = {m["number"]: m.get("locked") for m in modules}
-        assert [m["number"] for m in modules] == [2, 3, 4, 5, 6]
-        assert locked == {2: False, 3: False, 4: True, 5: True, 6: True}
+        # iter56: module 1 restored -> 6 modules
+        assert [m["number"] for m in modules] == [1, 2, 3, 4, 5, 6]
+        assert locked == {1: False, 2: False, 3: False, 4: True, 5: True, 6: True}
         assert api.get(f"{BASE_URL}/api/workspace/applications", headers=auth(throwaway["token"])).status_code == 403
 
 

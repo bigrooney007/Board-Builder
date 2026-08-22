@@ -123,9 +123,13 @@ class TestAStageOneAccess:
         r = api.get(f"{BASE_URL}/api/courses/recruitment/self-guided", headers=auth(member_a["token"]))
         assert r.status_code == 200, r.text
         modules = {m["number"]: m for m in r.json()["modules"]}
-        assert list(modules) == [2, 3, 4, 5, 6], list(modules)
+        # iter56: module 1 restored -> 6 modules, positions 1-6
+        assert list(modules) == [1, 2, 3, 4, 5, 6], list(modules)
+        assert modules[1]["locked"] is False
         assert modules[2]["locked"] is False and modules[3]["locked"] is False
-        assert modules[2]["position"] == 1 and modules[3]["position"] == 2
+        assert modules[1]["position"] == 1
+        assert modules[2]["position"] == 2 and modules[3]["position"] == 3
+        assert modules[1]["title"] == "Understanding the Board Recruitment Process"
         # NOTE: actual product copy is "Identifying the People Your Board Needs"
         # (user's request paraphrased it as "Identify the Board You Need").
         assert "Identifying the People Your Board Needs" == modules[2]["title"], modules[2]["title"]

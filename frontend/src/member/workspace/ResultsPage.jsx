@@ -149,7 +149,7 @@ export default function RecruitmentResultsPage() {
           <section className="workspace-panel" data-testid="results-empty-state">
             <h2>{myBoardText.h_yourRecruitmentResults}</h2>
             <p>{resultsPageText.yourRecruitmentResultsWillAppear}</p>
-            <Link className="button" to="/app/recruitment/self-guided/module/2">{resultsPageText.goToYourRecruitmentCampaign}</Link>
+            <Link className="button" to="/app/recruitment/self-guided/module/3">{resultsPageText.goToYourRecruitmentCampaign}</Link>
           </section>
         )}
         {!error && applications !== null && list.length > 0 && (
