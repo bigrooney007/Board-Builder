@@ -404,3 +404,10 @@ Built per the authoritative reconciled spec (Sections 1-78 + Parts 12-15 + 140-p
 - /recruit supporting text restored to approved final copy (with comma after "below", full "commits, helps raise money" phrasing, ending "in just 30 minutes.")
 - Verified via rendered page string comparison: EXACT MATCH true. No other form changes.
 - PENDING (user-selected, not yet built): Abandoned Checkout Nudge (checkout_recovery.py exists behind CHECKOUT_RECOVERY_ENABLED flag), Video Watch Tracking, Funnel Numbers Board
+
+## Abandoned Checkout Nudge ON + Funnel Numbers Board (June 2026) — Complete, self-verified
+- CHECKOUT_RECOVERY_ENABLED=true in backend/.env; recovery loop live (60-min delay, 5-min cycle, skips paid/already-emailed, re-checks Stripe before sending). Verified end-to-end: seeded 2h-old pending txn → real Resend email sent (id returned) → status recorded → cleaned up. Historical backlog was 0, so no stale email blast.
+- New /app/backend/funnel_stats_routes.py: POST /api/funnel-metrics/video-view (public, validates offer, 400 on unknown) + GET /api/admin/funnel-stats (admin cookie/Bearer auth, 401 unauthenticated). Aggregates funnel_leads submits, funnel_video_views, paid payment_transactions (DIY/DWY/legacy) with revenue per funnel + totals.
+- OfferVideoPage fires one video-view ping per browser session (sessionStorage dedupe verified via reload).
+- AdminPage: new "Funnel Numbers" tab (data-testid admin-funnels-tab) renders FunnelNumbersSection table — verified live with real data (50 submits / 16 purchases / $22,952).
+- New collection: funnel_video_views {offer, viewed_at}.

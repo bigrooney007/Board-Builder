@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -31,6 +31,16 @@ export default function OfferVideoPage({ offer }) {
   const endpoints = CHECKOUT_ENDPOINTS[offer];
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!content.video) return;
+    try {
+      const key = `funnel_video_view_${offer}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch { /* storage is best-effort */ }
+    axios.post(`${API}/funnel-metrics/video-view`, { offer }).catch(() => {});
+  }, [offer, content.video]);
 
   const startCheckout = async (choice) => {
     setBusy(choice);
