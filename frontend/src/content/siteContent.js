@@ -65,15 +65,23 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
+    "boardFixHeadings": [
+      "You can fix your present board,",
+      "recruit new board members,",
+      "and get your board members to start raising money and building your organization with you."
+    ],
     "boardFixIntro": [
-      "You can fix your present board, recruit new board members, and get your board members to start raising money and building your organization with you.",
-      "In fact, the success of your organization will be determined by your ability to build the board your organization needs at each point in time.",
-      "That includes",
+      "In fact, the success of your organization will be determined by your ability to build the board your organization needs at each point in time."
+    ],
+    "boardFixIncludesLead": "That includes:",
+    "boardFixIncludes": [
       "knowing when to help certain board members step down gracefully,",
-      "recruiting board members to complement and strengthen your board and recruiting them the right way",
-      "understanding how to get your board members to step up, take up responsibilities, raise money, and build your organization's fundraising system.",
-      "All you need is to understand the proccess, get access to the tools, materials, resources, and support you need to succeed.",
-      "Thhis is why At Nonprofit Board Builders, LLC, our mission is simple and strategic: to equip you with the wisdom, tools, and support you need to recruit new board members and harness the collective ability, wisdom, and networks of your board for the success of your organization without breaking the bank.",
+      "recruiting board members to complement and strengthen your board, and recruiting them the right way",
+      "understanding how to get your board members to step up, take up responsibilities, raise money, and build your organization's fundraising system."
+    ],
+    "boardFixAfterIncludes": [
+      "All you need is to understand the process, get access to the tools, materials, resources, and support you need to succeed.",
+      "This is why, at Nonprofit Board Builders, LLC, our mission is simple and strategic: to equip you with the wisdom, tools, and support you need to recruit new board members and harness the collective ability, wisdom, and networks of your board for the success of your organization without breaking the bank.",
       "Because we know that when your board is intentionally built- meaning you have the right people in the right places, providing the right kind of support, the struggle ends, and the nonprofit and impact creation journey becomes an exciting adventure once again.",
       "From years of working with nonprofits, we've seen firsthand the level of organizational transformation that can happen when a board is intentionally designed for the success of the organization."
     ],

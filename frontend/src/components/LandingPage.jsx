@@ -37,13 +37,13 @@ export const LandingPage = ({ onJoin }) => (
     </section>
 
     <section className="home-intro" data-testid="home-intro-section">
-      {(home.boardFixIntro || home.introParagraphs).map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
-    </section>
-
-    <section className="home-video-section" data-testid="home-main-video-section">
-      <div className="module-video" data-testid="home-main-video-embed">
-        <iframe src={`https://www.youtube.com/embed/${home.mainVideo.youtubeId}`} title={home.mainVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-      </div>
+      {home.boardFixHeadings.map((heading, index) => <h2 className="home-intro-heading" key={index} data-testid={`home-intro-heading-${index + 1}`}>{heading}</h2>)}
+      {home.boardFixIntro.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p className="home-includes-lead" data-testid="home-includes-lead">{home.boardFixIncludesLead}</p>
+      <ol className="home-includes-list" data-testid="home-includes-list">
+        {home.boardFixIncludes.map((item, index) => <li key={index} data-testid={`home-includes-item-${index + 1}`}>{item}</li>)}
+      </ol>
+      {home.boardFixAfterIncludes.map((paragraph, index) => <p key={index} data-testid={`home-intro-after-paragraph-${index + 1}`}>{paragraph}</p>)}
     </section>
 
     <section className="section home-how" data-testid="home-how-section">

@@ -623,7 +623,7 @@ p { line-height: 1.72; }
 
 /* Member area */
 .member-shell { min-height: 100vh; background: #f7faf8; display: flex; flex-direction: column; }
-.member-nav { background: #fff; }
+.member-nav { background: #fff; width: 100%; }
 .member-nav-right { display: flex; align-items: center; gap: 14px; }
 .member-nav-name { font-weight: 800; color: var(--forest); font-size: 13px; }
 .member-page { width: min(980px, 92vw); margin: 0 auto; padding: 46px 0 90px; }
@@ -1271,42 +1271,58 @@ p { line-height: 1.72; }
 }
 
 
-/* ===== GLOBAL CENTERING AUDIT (site-wide) ===== */
-section,
-.section,
-main,
-article {
+/* ===== PUBLIC PAGE CENTERING (scoped to marketing/funnel pages via body.public-centered) ===== */
+body.public-centered section,
+body.public-centered .section {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
 
-section > :not(a):not(button),
-.section > :not(a):not(button),
-main > :not(a):not(button),
-article > :not(a):not(button) {
+body.public-centered section > :not(a):not(button),
+body.public-centered .section > :not(a):not(button) {
   width: 100%;
 }
 
-body * {
-  text-align: center !important;
-}
-
-input,
-textarea,
-select {
-  text-align: left !important;
-}
-
-img,
-figure,
-video {
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption {
+body.public-centered h1,
+body.public-centered h2,
+body.public-centered h3,
+body.public-centered h4,
+body.public-centered p,
+body.public-centered li {
+  text-align: center;
   margin-left: auto;
   margin-right: auto;
 }
+
+body.public-centered img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.public-centered form,
+body.public-centered form h1,
+body.public-centered form h2,
+body.public-centered form h3,
+body.public-centered form p,
+body.public-centered form li,
+body.public-centered form label,
+body.public-centered .step-fields,
+body.public-centered .step-fields p,
+body.public-centered .step-fields label,
+body.public-centered input,
+body.public-centered textarea,
+body.public-centered select,
+body.public-centered table th,
+body.public-centered table td {
+  text-align: left;
+}
+
+/* Homepage intro: stacked bold headline + numbered includes list */
+.home-intro .home-intro-heading { color: var(--forest); font-weight: 800; font-size: clamp(22px, 2.8vw, 30px); line-height: 1.4; margin: 0; }
+.home-intro .home-intro-heading:last-of-type { margin-bottom: 20px; }
+.home-intro .home-includes-lead { margin-bottom: 10px; font-weight: 700; }
+.home-includes-list { list-style: none; counter-reset: includes; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.home-includes-list li { counter-increment: includes; font-size: 17px; line-height: 1.7; color: #1c1c1c; }
+.home-includes-list li::before { content: counter(includes) ". "; font-weight: 800; color: var(--green); margin-right: 4px; }

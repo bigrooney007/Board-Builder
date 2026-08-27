@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only visual/CSS-scoping verification of the new body.public-centered scope (no funnel/payment/form-submission testing, per user constraint). Verified: homepage centering + content restructure, public funnel pages carry the class, admin/login/member app do NOT, intake page keeps left-aligned form fields, and SPA + direct-load navigation toggles the class correctly. All 6 requested scoping checks PASS. Found 3 styling/content defects on the new homepage intro block plus 1 pre-existing member-shell layout defect.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "LandingPage home-intro headings", "issue": "h2 elements home-intro-heading-1..3 render with computed font-weight 400 (NOT bold). The class .home-intro-heading has no CSS rule anywhere in App.css/index.css, and the global reset flattens heading weight, so the 3 'bold heading lines' requirement is not met visually.", "selector": "[data-testid='home-intro-heading-1']", "priority": "MEDIUM"},
+      {"component": "LandingPage home-includes-list", "issue": "Bulleted list renders with computed list-style-type: none and no indentation - the 3 items look like plain centered sentences, no bullets. Class .home-includes-list has no CSS rule defined. Requirement was a 'fine bullet' list.", "selector": "[data-testid='home-includes-list']", "priority": "MEDIUM"},
+      {"component": "MemberShell nav (/app)", "issue": "PRE-EXISTING (unrelated to centering fix, body class is empty on /app): .site-nav has 'margin: auto' and sits inside .member-shell (display:flex; flex-direction:column), so auto margins shrink the nav to 500px wide and push it 164px down - the member header floats as a small centered pill in the middle of a large blank area above the page content. Needs an override like .member-nav { width: 100%; max-width: 1480px; margin: 0 auto; }", "selector": "[data-testid='member-navigation']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Homepage intro section", "issues": ["Content typo: 'All you need is to understand the proccess' (should be 'process') in siteContent.js home.boardFixAfterIncludes[0]", "The 3 heading lines and the includes list are visually indistinguishable from body paragraphs because the new classes are unstyled (no weight/size/bullet styling)"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add CSS for .home-intro-heading (bold weight / larger size) and .home-includes-list (list-style disc or custom fine bullet, inline-block + centered so bullets read well on a centered layout)",
+    "Fix typo 'proccess' -> 'process' in /app/frontend/src/content/siteContent.js (home.boardFixAfterIncludes[0])",
+    "Fix .member-nav width/margin so the member header spans the page instead of collapsing to 500px with 164px auto vertical margins"
+  ],
+  "critical_code_review_comments": [
+    "PublicCenteringScope uses exact-match path list; sub-paths like /recruit/options or /board-fix/ (trailing slash) will NOT get centered. Confirm this is intentional.",
+    "New markup classes (.home-intro-heading, .home-includes-list) were introduced without any corresponding CSS rules - dead classes."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested", "frontend": "100% of CSS-scoping checks passed; 3 styling/content defects found"},
+  "seed_data_creation": "None. No forms submitted, no data created.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com (worked), member module-tester@example.com / ModuleTest123! (worked)",
+  "context_for_next_testing_agent": "Verified computed styles: / hero h1 = center, home-intro paragraphs = center, body class 'public-centered' present on /, /board-fix, /recruit, /reactivate, /activate, /about-rooney, /board-fix-intake; absent on /login, /app (logged-in member), /admin (pre- and post-login). Admin th computed text-align = left (15 th present), admin h1 = start. /recruit form inputs/selects/labels = left (5 fields). /board-fix-intake shows the 'no completed purchase' gate (expected, no purchase) so its inputs were not rendered - input left-align was instead validated on /recruit which is also public-centered. Homepage: no home-main-video-section, 0 youtube iframes, 3 intro headings, 3 list items, 'This is why, at Nonprofit Board Builders, LLC' present, no 'Thhis' typo. SPA nav / -> /login and direct load both toggle the class off correctly. Board Fix funnel functionality was NOT tested per user constraint.",
+  "rca_of_the_issue": "Centering scope works as designed: PublicCenteringScope toggles body.public-centered only for PUBLIC_CENTERED_PATHS and /offer/*; App.css rules are all prefixed with body.public-centered, with explicit left-align exceptions for form/input/textarea/select/label/th/td, so admin tables and member/app UI keep left alignment. Remaining defects are missing CSS for the new homepage classes (unstyled headings/list), a content typo, and a separate pre-existing margin:auto-in-flex-column bug on the member shell nav."
+}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "@/App.css";
 import { LandingPage } from "@/components/LandingPage";
 import { AssessmentForm } from "@/components/AssessmentForm";
@@ -63,6 +63,17 @@ import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 
+const PUBLIC_CENTERED_PATHS = ["/", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney"];
+
+const PublicCenteringScope = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const centered = PUBLIC_CENTERED_PATHS.includes(pathname) || pathname.startsWith("/offer/");
+    document.body.classList.toggle("public-centered", centered);
+  }, [pathname]);
+  return null;
+};
+
 const HomeExperience = () => {
   usePageMeta(...PAGE_META.home);
   const navigate = useNavigate();
@@ -80,6 +91,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <MemberAuthProvider>
+        <PublicCenteringScope />
         <ReviewProgressTracker />
         <WorkspaceModeBanner />
         <Routes>
