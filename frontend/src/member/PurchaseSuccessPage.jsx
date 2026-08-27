@@ -52,6 +52,8 @@ export const PurchaseSuccessPage = () => {
           navigate(`/board-recruitment-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "recruitment_selection_onboarding_297") {
           navigate("/app/recruitment/self-guided/module/4");
+        } else if (response.data.claimed_source === "board_fix_system_497") {
+          navigate(`/board-fix-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "direct_diy_board_reactivation_497") {
           navigate(`/board-reactivation-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "direct_diy_board_activation_497") {
@@ -85,6 +87,8 @@ export const PurchaseSuccessPage = () => {
         navigate(`/board-recruitment-intake?session_id=${sessionId}`);
       } else if (claimedSource === "recruitment_selection_onboarding_297") {
         navigate("/app/recruitment/self-guided/module/4");
+      } else if (claimedSource === "board_fix_system_497") {
+        navigate(`/board-fix-intake?session_id=${sessionId}`);
       } else if (claimedSource === "direct_diy_board_reactivation_497") {
         navigate(`/board-reactivation-intake?session_id=${sessionId}`);
       } else {

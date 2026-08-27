@@ -32,13 +32,12 @@ export const LandingPage = ({ onJoin }) => (
       <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
         <p className="hero-banner-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
-        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-transformation" data-testid="hero-board-transformation-button">{home.cta}</a></p>
+        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-fix" data-testid="hero-board-transformation-button">{home.cta}</a></p>
       </div>
     </section>
 
     <section className="home-intro" data-testid="home-intro-section">
-      <h2 data-testid="home-intro-heading">{home.introHeading}</h2>
-      {home.introParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+      {(home.boardFixIntro || home.introParagraphs).map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
     </section>
 
     <section className="home-video-section" data-testid="home-main-video-section">
@@ -48,9 +47,9 @@ export const LandingPage = ({ onJoin }) => (
     </section>
 
     <section className="section home-how" data-testid="home-how-section">
-      <h2 data-testid="home-how-heading">{home.howHeading}</h2>
-      {home.howParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
-      <p style={{ marginTop: 18 }}><a className="button" href="/board-transformation" data-testid="home-how-cta-button">{home.cta}</a></p>
+      <h2 data-testid="home-how-heading">{home.boardFixHowHeading || home.howHeading}</h2>
+      {(home.boardFixHowParagraphs || home.howParagraphs).map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-how-cta-button">{home.cta}</a></p>
     </section>
 
     <TestimonialsSection />

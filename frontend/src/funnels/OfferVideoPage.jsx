@@ -10,6 +10,7 @@ const CHECKOUT_ENDPOINTS = {
   recruitment: { diy: "diy-checkout", dwy: "direct-project-checkout" },
   reactivation: { diy: "reactivation-diy-checkout", dwy: "reactivation-project-checkout" },
   activation: { diy: "activation-diy-checkout", dwy: "activation-project-checkout" },
+  "board-fix": { diy: "board-fix-checkout" },
 };
 
 const OfferCard = ({ offer, choice, card, busy, startingLabel, guarantee, onBuy }) => (
@@ -71,12 +72,16 @@ export default function OfferVideoPage({ offer }) {
         {content.video ? (
           <div className="offer-sales-container">
             <div className="module-video offer-sales-video" data-testid={`offer-video-embed-${offer}`}>
-              <iframe src={`https://www.youtube.com/embed/${content.video.youtubeId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              {content.video.youtubeId ? (
+                <iframe src={`https://www.youtube.com/embed/${content.video.youtubeId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              ) : (
+                <div className="offer-video-placeholder" data-testid={`offer-video-placeholder-${offer}`}><p>{content.video.title}</p><span>Video coming soon</span></div>
+              )}
             </div>
             <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
               <div className="offer-choice-grid">
                 <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.videoButtons.diyLabel}</button>
-                <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>
+                {content.videoButtons.dwyLabel && <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>}
               </div>
               <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>{shared.guarantee}</p>
               {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}

@@ -1242,6 +1242,23 @@ p { line-height: 1.72; }
 .blog-linkedin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .blog-linkedin-head h3 { margin: 0; }
 .blog-linkedin-snippet { white-space: pre-wrap; font-family: inherit; font-size: 0.95rem; line-height: 1.6; background: #f7faf8; border: 1px solid #dfe9e3; border-radius: 8px; padding: 16px; margin-top: 12px; }
+.offer-video-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; aspect-ratio: 16 / 9; background: #12261c; color: #fff; border-radius: 12px; }
+.offer-video-placeholder p { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; }
+.offer-video-placeholder span { font-size: 0.9rem; opacity: 0.75; }
+.intake-form .intake-field { display: block; margin-bottom: 14px; font-weight: 600; }
+.intake-form .intake-field input, .intake-form .intake-field textarea { display: block; width: 100%; margin-top: 6px; font-weight: 400; }
+.intake-form .member-card { margin-bottom: 20px; }
+.board-fix-pathways { display: grid; gap: 18px; margin-top: 20px; }
+.board-fix-pathway-status { font-weight: 600; color: #0b6b4f; }
+.board-fix-overview { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.board-fix-stage { border: 1px solid #dfe9e3; border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 96px; }
+.board-fix-stage strong { display: block; font-size: 1.25rem; }
+.board-fix-stage span { font-size: 0.78rem; color: #5b6b62; }
+.board-fix-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 8px 0 14px; }
+.board-fix-kv dt { font-size: 0.75rem; text-transform: capitalize; color: #5b6b62; }
+.board-fix-kv dd { margin: 0; font-size: 0.85rem; white-space: pre-wrap; }
+.board-fix-journey h3 { margin: 14px 0 6px; font-size: 0.95rem; }
+.board-fix-journey-pathway { margin-bottom: 8px; }
 .offer-sales-video ~ .offer-sales-testimonials { margin-top: 28px; }
 .offer-sales-closing { margin-top: 60px; text-align: center; }
 .offer-sales-closing h2 { color: var(--forest); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.18; margin: 0 0 14px; }

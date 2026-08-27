@@ -65,12 +65,29 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
+    "boardFixIntro": [
+      "You can fix your present board, recruit new board members, and get your board members to start raising money and building your organization with you.",
+      "In fact, the success of your organization will be determined by your ability to build the board your organization needs at each point in time.",
+      "That includes",
+      "knowing when to help certain board members step down gracefully,",
+      "recruiting board members to complement and strengthen your board and recruiting them the right way",
+      "understanding how to get your board members to step up, take up responsibilities, raise money, and build your organization's fundraising system.",
+      "All you need is to understand the proccess, get access to the tools, materials, resources, and support you need to succeed.",
+      "Thhis is why At Nonprofit Board Builders, LLC, our mission is simple and strategic: to equip you with the wisdom, tools, and support you need to recruit new board members and harness the collective ability, wisdom, and networks of your board for the success of your organization without breaking the bank.",
+      "Because we know that when your board is intentionally built- meaning you have the right people in the right places, providing the right kind of support, the struggle ends, and the nonprofit and impact creation journey becomes an exciting adventure once again.",
+      "From years of working with nonprofits, we've seen firsthand the level of organizational transformation that can happen when a board is intentionally designed for the success of the organization."
+    ],
+    "boardFixHowHeading": "But This Never Happens By Chance",
+    "boardFixHowParagraphs": [
+      "Rather, it requires intentional orchestration. And as founder or executive director, if you don't understand the processes, you will continue to be a victim of your ignorance and your organization will continue to suffer the brunt.",
+      "If you are ready to fix your board and finally build the powerhouse board your organization needs, use the button below to tell me about your board and what you want to achieve with your board, and I will show you what you need to do to transform your board and build a high-performing board."
+    ],
     "mainVideo": {
       "youtubeId": "lbz713woSB4",
       "title": "Why Your Board Is The Way It Is AND What To Do To Fix It Starting Today"
     },
-    "heroTitle": "Your Nonprofit Deserves The Right Leadership",
-    "heroSubtitle": "Build the powerhouse fundraising board your nonprofit needs",
+    "heroTitle": "Fix Your Board. Transform Your Organization.",
+    "heroSubtitle": "You don't need another consultant to take over or fix your board.",
     "introHeading": "Your Board Is Your Organization's Most Important Asset",
     "introParagraphs": [
       "If you get your board right, raising money, creating impact, and scaling your organization becomes an adventure.",
@@ -155,6 +172,16 @@ export const SITE_CONTENT = {
     }
   },
   "offerSalesPages": {
+    "board-fix": {
+      "title": "Complete Board Fix System",
+      "video": {
+        "youtubeId": "",
+        "title": "Complete Board Fix Sales Video"
+      },
+      "videoButtons": {
+        "diyLabel": "Get the Complete Board Fix System \u2014 $497"
+      }
+    },
     "checkoutError": "We could not start checkout. Please try again in a moment.",
     "startingCheckout": "Starting Checkout…",
     "guarantee": "Your investment is protected by my 100% refund guarantee.",

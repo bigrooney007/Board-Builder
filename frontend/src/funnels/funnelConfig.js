@@ -15,6 +15,27 @@ const accomplishAreas = ["Raise money", "Build corporate partnerships", "Connect
 const strategicOptions = ["Yes", "We have a strategic plan, but the board was not meaningfully involved", "We started but did not complete it", "No", "We do not currently have a strategic plan", "I am not sure"]; // eslint-disable-line no-unused-vars
 
 export const funnelConfigs = {
+  board_fix: {
+    slug: "board-fix", eyebrow: "BOARD FIX",
+    heading: "Tell Us About Your Board",
+    supporting: "Tell us about your board and what you want to achieve with your board and we'll show you what you need to do to transform your board and build a high-performing board.",
+    formHeading: "Tell Us About Your Board",
+    submit: "Show Me How You Can Help",
+    redirectAfterSubmit: "offer-board-fix",
+    steps: [
+      {
+        heading: "Tell Us About You and Your Organization",
+        fields: [
+          { type: "text", name: "name", label: "Your name", scope: "contact" },
+          { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
+          { type: "text", name: "organization", label: "Organization name", scope: "contact" },
+          { type: "text", name: "phone", label: "Phone number", inputType: "tel", scope: "contact" },
+          { type: "textarea", name: "board_situation", label: "Tell us about your board", scope: "answers" },
+          { type: "textarea", name: "board_goals", label: "What do you want to achieve with your board?", scope: "answers" },
+        ],
+      },
+    ],
+  },
   recruitment: {
     slug: "recruit", eyebrow: "Board Recruitment",
     heading: "Start the Process of Recruiting the Board Your Nonprofit Needs",

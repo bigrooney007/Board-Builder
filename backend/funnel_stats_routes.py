@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
 
-VALID_VIDEO_OFFERS = {"recruitment", "reactivation", "activation"}
+VALID_VIDEO_OFFERS = {"recruitment", "reactivation", "activation", "board-fix"}
 
 FUNNELS = [
     {
@@ -29,6 +29,13 @@ FUNNELS = [
         "diy_sources": ["direct_diy_board_activation"],
         "dwy_sources": ["direct_board_activation_project"],
         "other_sources": ["fundraising_activation"],
+    },
+    {
+        "key": "board_fix", "label": "Complete Board Fix",
+        "lead_sources": ["board_fix"], "video_offer": "board-fix",
+        "diy_sources": ["board_fix_system"],
+        "dwy_sources": [],
+        "other_sources": [],
     },
 ]
 

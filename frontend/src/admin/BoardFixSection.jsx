@@ -1,0 +1,87 @@
+import { useCallback, useEffect, useState } from "react";
+import axios from "axios";
+import { RefreshCw } from "lucide-react";
+
+const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
+
+const STAGES = [
+  ["form_submitted", "Initial Form"], ["paid", "Paid"], ["intake_completed", "Intake"], ["onboarding", "Onboarding"],
+  ["recruitment", "Recruitment"], ["reactivation", "Reactivation"], ["activation", "Fundraising Activation"], ["completed", "Completed"],
+];
+
+const KV = ({ data }) => (
+  <dl className="board-fix-kv">
+    {Object.entries(data || {}).map(([key, value]) => (
+      <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{Array.isArray(value) ? value.join(", ") : String(value)}</dd></div>
+    ))}
+  </dl>
+);
+
+export const BoardFixSection = () => {
+  const [payload, setPayload] = useState(null);
+  const [error, setError] = useState("");
+  const [openEmail, setOpenEmail] = useState("");
+  const load = useCallback(async () => {
+    setError("");
+    try { const r = await client.get("/admin/board-fix/customers"); setPayload(r.data); }
+    catch { setError("Could not load Board Fix customers."); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  if (error) return <p className="submit-error" data-testid="board-fix-admin-error">{error}</p>;
+  if (!payload) return <p data-testid="board-fix-admin-loading">Loading…</p>;
+
+  return (
+    <section data-testid="admin-board-fix-section">
+      <div className="admin-funnel-numbers-head">
+        <h2>Complete Board Fix Customers</h2>
+        <button className="button button-small button-back" onClick={load} data-testid="board-fix-refresh-button"><RefreshCw size={15} /> Refresh</button>
+      </div>
+      <div className="board-fix-overview" data-testid="board-fix-overview">
+        {STAGES.map(([key, label]) => (
+          <div className="board-fix-stage" key={key} data-testid={`board-fix-stage-${key}`}><strong>{payload.overview[key] ?? 0}</strong><span>{label}</span></div>
+        ))}
+      </div>
+      <div className="admin-table-wrap">
+        <table className="admin-table" data-testid="board-fix-customers-table">
+          <thead><tr>{["Customer", "Organization", "Status", "Last Activity", ""].map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+          <tbody>
+            {payload.customers.length === 0 && <tr><td colSpan="5" data-testid="board-fix-empty">No Board Fix customers yet.</td></tr>}
+            {payload.customers.map((customer) => (
+              <>
+                <tr key={customer.email} data-testid={`board-fix-row-${customer.email}`}>
+                  <td>{customer.name}<small>{customer.email}</small></td>
+                  <td>{customer.organization}</td>
+                  <td>{customer.status}</td>
+                  <td>{customer.last_activity?.slice(0, 10)}</td>
+                  <td><button className="table-link" onClick={() => setOpenEmail(openEmail === customer.email ? "" : customer.email)} data-testid={`board-fix-open-${customer.email}`}>{openEmail === customer.email ? "Hide Journey" : "View Journey"}</button></td>
+                </tr>
+                {openEmail === customer.email && (
+                  <tr className="topic-detail-row"><td colSpan="5">
+                    <div className="board-fix-journey" data-testid={`board-fix-journey-${customer.email}`}>
+                      <h3>Pre-Purchase</h3>
+                      <p>Initial form: {customer.form ? `Submitted ${customer.form.submitted_at?.slice(0, 16)}` : "Not submitted"}</p>
+                      {customer.form && <KV data={customer.form.answers} />}
+                      <p>Payment: {customer.payment ? `${customer.payment.payment_status} — $${(customer.payment.amount / 100).toFixed(0)} — ${customer.payment.created_at?.slice(0, 16)}` : (customer.paid ? "paid" : "Not started")}</p>
+                      <h3>Post-Purchase</h3>
+                      <p>Detailed intake: {customer.intake ? `Completed ${customer.intake.submitted_at?.slice(0, 16)}` : "Not completed"}</p>
+                      {customer.intake && <KV data={customer.intake.data} />}
+                      <h3>Pathways</h3>
+                      {customer.pathways.length === 0 && <p>No member account linked yet.</p>}
+                      {customer.pathways.map((pathway) => (
+                        <div key={pathway.key} className="board-fix-journey-pathway">
+                          <p><strong>{pathway.label}</strong> — {pathway.started ? `${pathway.percent}% complete` : "Not entered"}{pathway.started && pathway.current_step ? ` — Current: ${pathway.current_step}` : ""}{pathway.done ? " — Completed" : ""}</p>
+                          {pathway.completed_steps.length > 0 && <p>Completed steps: {pathway.completed_steps.join("; ")}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </td></tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+};

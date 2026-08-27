@@ -47,6 +47,8 @@ import { DashboardPage } from "@/member/DashboardPage";
 import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import SelectionOfferPage from "@/member/SelectionOfferPage";
+import BoardFixIntakePage from "@/funnels/BoardFixIntakePage";
+import BoardFixRoadmapPage from "@/member/BoardFixRoadmapPage";
 import RecruitmentResultsPage from "@/member/workspace/ResultsPage";
 import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "@/public/OpportunityPages";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
@@ -86,6 +88,10 @@ export default function App() {
           <Route path="/board-transformation/result/:token" element={<BoardTransformationResultPage />} />
           <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
+          <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
+          <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
+          <Route path="/board-fix-intake" element={<BoardFixIntakePage />} />
+          <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
           <Route path="/recruit/process" element={<RecruitProcessPage />} />
           <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />
           <Route path="/recruit-with-rooney" element={<RecruitWithRooneyPage />} />

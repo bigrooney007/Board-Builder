@@ -82,6 +82,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "recruitment_selection_onboarding" and tier == "297":
         entitlement = "recruitment_selection_onboarding"
         product_name = "Selection, Interview, Reference Check & Onboarding"
+    elif offer_source == "board_fix_system" and tier == "497":
+        entitlement = "board_fix_system"
+        product_name = "Complete Board Fix System"
+        extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided"])
     elif offer_source == "direct_diy_board_reactivation" and tier == "497":
         entitlement = "reactivation_self_guided"
         product_name = "Do It Yourself Board Reactivation"
@@ -133,6 +137,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "recruitment_selection_onboarding_297",
             "offer": "Selection, Interview, Reference Check & Onboarding", "price_paid": 297,
+        })
+    elif offer_source == "board_fix_system":
+        purchase.update({
+            "purchase_source": "board_fix_system_497",
+            "offer": "Complete Board Fix System", "price_paid": 497,
         })
     elif offer_source == "direct_diy_board_reactivation":
         purchase.update({

@@ -17,6 +17,7 @@ REQUIRED_ANSWERS = {
         "present_board", "active_board", "need_recruit", "reactivate_inactive",
         "board_fundraising_now", "want_fundraising",
     },
+    "board_fix": {"board_situation", "board_goals"},
 }
 
 
@@ -137,6 +138,7 @@ async def send_owner_lead_email(lead: Dict[str, Any]) -> str:
         "reactivation": "New Reactivation Lead",
         "fundraising_activation": "New Fundraising Activation Lead",
         "board_transformation": "New Board Transformation Lead",
+        "board_fix": "New Board Fix Lead",
     }
     rows = [
         ("Name", lead["name"]), ("Email", lead["email"]), ("Phone", lead["phone"]),
