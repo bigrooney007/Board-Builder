@@ -71,10 +71,12 @@ def create_funnel_stats_router(db) -> APIRouter:
     async def funnel_stats(request: Request):
         await authenticate_admin(request, db)
         funnels = []
-        totals = {"form_submits": 0, "video_views": 0, "purchases": 0, "revenue_cents": 0}
+        totals = {"form_submits": 0, "video_views": 0, "checkouts": 0, "purchases": 0, "revenue_cents": 0}
         for funnel in FUNNELS:
             form_submits = await db.funnel_leads.count_documents({"offer_source": {"$in": funnel["lead_sources"]}})
             video_views = await db.funnel_video_views.count_documents({"offer": funnel["video_offer"]})
+            all_sources = funnel["diy_sources"] + funnel["dwy_sources"] + funnel["other_sources"]
+            checkouts = await db.payment_transactions.count_documents({"offer_source": {"$in": all_sources}}) if all_sources else 0
             diy = await paid_stats(funnel["diy_sources"])
             dwy = await paid_stats(funnel["dwy_sources"])
             other = await paid_stats(funnel["other_sources"])
@@ -82,13 +84,14 @@ def create_funnel_stats_router(db) -> APIRouter:
             revenue = diy["revenue"] + dwy["revenue"] + other["revenue"]
             funnels.append({
                 "key": funnel["key"], "label": funnel["label"],
-                "form_submits": form_submits, "video_views": video_views,
+                "form_submits": form_submits, "video_views": video_views, "checkouts": checkouts,
                 "purchases_diy": diy["count"], "purchases_dwy": dwy["count"],
                 "purchases_other": other["count"], "purchases": purchases,
                 "revenue_cents": revenue,
             })
             totals["form_submits"] += form_submits
             totals["video_views"] += video_views
+            totals["checkouts"] += checkouts
             totals["purchases"] += purchases
             totals["revenue_cents"] += revenue
         return {"funnels": funnels, "totals": totals,

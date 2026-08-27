@@ -7,17 +7,21 @@ from typing import List
 
 import resend
 import stripe
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from board_fix_master import BOARD_FIX_SOURCE, board_fix_member, get_master_record, master_prefill, synthetic_session, write_back_master
 
 logger = logging.getLogger(__name__)
 
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/activation-start-here"
+BOARD_FIX_COURSE_ROUTE = "/app/activation/self-guided"
 QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497"}
 OFFER_LABELS = {
     "direct_diy_board_activation_497": "Fundraising Activation — Do It Yourself — $497",
     "direct_board_activation_project_2497": "Fundraising Activation — Do It With Rooney — $2,497",
+    BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
 }
 
 INVOLVEMENT_OPTIONS = {
@@ -30,7 +34,7 @@ STATUS_YPNN = {"Yes", "Partially", "No", "Not Sure"}
 
 class ActivationIntakeSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
-    session_id: str = Field(min_length=1)
+    session_id: str = ""
     your_name: str = Field(min_length=1)
     email: EmailStr
     organization_name: str = Field(min_length=1)
@@ -121,12 +125,20 @@ def create_activation_intake_router(db) -> APIRouter:
         return transaction.get("claimed_by_user_id", "") or ""
 
     @router.get("/context")
-    async def intake_context(session_id: str):
-        transaction = await verified_transaction(session_id)
-        existing = await db.board_activation_intakes.find_one({"session_id": session_id}, {"_id": 0, "submitted_at": 1})
+    async def intake_context(request: Request, session_id: str = ""):
+        if session_id:
+            transaction = await verified_transaction(session_id)
+            user_id = await linked_user_id(session_id, transaction)
+            purchase_source = transaction["purchase_source"]
+            existing = await db.board_activation_intakes.find_one({"session_id": session_id}, {"_id": 0, "submitted_at": 1})
+        else:
+            member = await board_fix_member(request, db, "activation_self_guided")
+            user_id = member["user_id"]
+            purchase_source = BOARD_FIX_SOURCE
+            existing = await db.board_activation_intakes.find_one(
+                {"$or": [{"session_id": synthetic_session(user_id)}, {"user_id": user_id}]}, {"_id": 0, "submitted_at": 1})
         prefill = {"name": "", "email": ""}
         organization_prefill = {}
-        user_id = await linked_user_id(session_id, transaction)
         if user_id:
             member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1, "email": 1})
             if member:
@@ -139,7 +151,10 @@ def create_activation_intake_router(db) -> APIRouter:
                 "active_board": str(data.get("active_board", "") or ""),
             }
             organization_prefill = {key: value for key, value in known.items() if value not in ("", [], None)}
-        if not prefill["email"]:
+            master = await get_master_record(db, user_id=user_id, email=prefill["email"])
+            for key, value in master_prefill("activation", (master or {}).get("data", {})).items():
+                organization_prefill.setdefault(key, value)
+        if not prefill["email"] and session_id:
             try:
                 session = stripe.checkout.Session.retrieve(session_id)
                 details = getattr(session, "customer_details", None)
@@ -147,7 +162,7 @@ def create_activation_intake_router(db) -> APIRouter:
                     prefill = {"name": details.get("name") or "", "email": details.get("email") or ""}
             except stripe.StripeError:
                 pass
-        return {"eligible": True, "purchase_source": transaction["purchase_source"],
+        return {"eligible": True, "purchase_source": purchase_source,
                 "submitted": bool(existing), "prefill": prefill,
                 "organization_prefill": organization_prefill, "calendly_url": CALENDLY_URL}
 
@@ -181,7 +196,12 @@ def create_activation_intake_router(db) -> APIRouter:
             ("Submitted", now),
         ]
         table = "".join(f"<tr><td style='padding:9px;border-bottom:1px solid #dddddd;font-weight:bold;vertical-align:top;'>{html.escape(str(label))}</td><td style='padding:9px;border-bottom:1px solid #dddddd;'>{html.escape(str(value))}</td></tr>" for label, value in rows)
-        next_step = "is starting immediately with the self-guided Fundraising Activation system." if purchase_source == "direct_diy_board_activation_497" else "is being sent to your Calendly."
+        if purchase_source == BOARD_FIX_SOURCE:
+            next_step = "is continuing on their Complete Board Fix roadmap into Board Fundraising Activation."
+        elif purchase_source == "direct_diy_board_activation_497":
+            next_step = "is starting immediately with the self-guided Fundraising Activation system."
+        else:
+            next_step = "is being sent to your Calendly."
         await resend.Emails.send_async({
             "from": os.environ["NONPROFIT_SENDER"], "to": [os.environ["OWNER_NOTIFICATION_EMAIL"]],
             "subject": f"Board Activation Intake Submitted — {payload.organization_name} ({offer_label})",
@@ -189,27 +209,39 @@ def create_activation_intake_router(db) -> APIRouter:
         })
 
     @router.post("/submit", status_code=201)
-    async def submit_intake(payload: ActivationIntakeSubmission):
-        transaction = await verified_transaction(payload.session_id)
+    async def submit_intake(request: Request, payload: ActivationIntakeSubmission):
         validate_board_counts(payload.present_board, payload.active_board)
         now = datetime.now(timezone.utc).isoformat()
-        user_id = await linked_user_id(payload.session_id, transaction)
+        if payload.session_id:
+            transaction = await verified_transaction(payload.session_id)
+            user_id = await linked_user_id(payload.session_id, transaction)
+            purchase_source = transaction["purchase_source"]
+            storage_session = payload.session_id
+            redirect_url = DIY_START_ROUTE if purchase_source == "direct_diy_board_activation_497" else CALENDLY_URL
+        else:
+            member = await board_fix_member(request, db, "activation_self_guided")
+            user_id = member["user_id"]
+            purchase_source = BOARD_FIX_SOURCE
+            storage_session = synthetic_session(user_id)
+            redirect_url = BOARD_FIX_COURSE_ROUTE
         record = payload.model_dump()
         record.update({
-            "email": str(payload.email).lower(), "purchase_source": transaction["purchase_source"],
+            "session_id": storage_session,
+            "email": str(payload.email).lower(), "purchase_source": purchase_source,
             "user_id": user_id, "updated_at": now,
         })
         result = await db.board_activation_intakes.update_one(
-            {"session_id": payload.session_id},
+            {"session_id": storage_session},
             {"$set": record, "$setOnInsert": {"intake_id": str(uuid.uuid4()), "submitted_at": now}},
             upsert=True,
         )
+        if user_id:
+            await write_back_master(db, user_id, "activation", record)
         if result.upserted_id is not None:
             try:
-                await notify_owner(payload, transaction["purchase_source"], now)
+                await notify_owner(payload, purchase_source, now)
             except Exception:
-                logger.exception("Owner activation intake notification failed for session %s", payload.session_id)
-        redirect_url = DIY_START_ROUTE if transaction["purchase_source"] == "direct_diy_board_activation_497" else CALENDLY_URL
-        return {"status": "submitted", "redirect_url": redirect_url}
+                logger.exception("Owner activation intake notification failed for session %s", storage_session)
+        return {"status": "submitted", "redirect_url": redirect_url, "session_key": storage_session}
 
     return router

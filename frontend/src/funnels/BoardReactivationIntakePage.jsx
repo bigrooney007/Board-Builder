@@ -61,7 +61,8 @@ export default function BoardReactivationIntakePage() {
   usePageMeta(...PAGE_META.boardReactivationIntake, true);
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
-  const [gate, setGate] = useState(sessionId ? "checking" : "blocked");
+  const boardFixMode = useMemo(() => new URLSearchParams(location.search).get("bf") === "1", [location.search]);
+  const [gate, setGate] = useState(sessionId || boardFixMode ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
   const [purchaseSource, setPurchaseSource] = useState("");
   const [nextUrl, setNextUrl] = useState("");
@@ -73,13 +74,13 @@ export default function BoardReactivationIntakePage() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    if (!sessionId) return undefined;
+    if (!sessionId && !boardFixMode) return undefined;
     let attempts = 0;
     let timer;
     const check = async () => {
       attempts += 1;
       try {
-        const response = await axios.get(`${API}/board-reactivation-intake/context`, { params: { session_id: sessionId } });
+        const response = await axios.get(`${API}/board-reactivation-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true });
         setCalendlyUrl(response.data.calendly_url);
         setPurchaseSource(response.data.purchase_source);
         setForm((current) => {
@@ -94,13 +95,17 @@ export default function BoardReactivationIntakePage() {
         setGate("ready");
         return;
       } catch (error) {
+        if (boardFixMode && error.response?.status === 401) {
+          window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+          return;
+        }
         if (error.response?.status === 402 && attempts < 8) { timer = setTimeout(check, 2500); return; }
         setGate("blocked");
       }
     };
     check();
     return () => clearTimeout(timer);
-  }, [sessionId]);
+  }, [sessionId, boardFixMode]);
 
   const set = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
   const toggle = (name, option) => setForm((current) => ({
@@ -135,13 +140,13 @@ export default function BoardReactivationIntakePage() {
     setBusy(true);
     setSubmitError("");
     try {
-      const response = await axios.post(`${API}/board-reactivation-intake/submit`, { ...form, session_id: sessionId });
+      const response = await axios.post(`${API}/board-reactivation-intake/submit`, { ...form, session_id: sessionId }, { withCredentials: true });
       if (form.has_bylaws === "Yes, I have them" && bylawsFile) {
         try {
           const upload = new FormData();
-          upload.append("session_id", sessionId);
+          upload.append("session_id", response.data.session_key || sessionId);
           upload.append("file", bylawsFile);
-          await axios.post(`${API}/board-reactivation-intake/bylaws`, upload);
+          await axios.post(`${API}/board-reactivation-intake/bylaws`, upload, { withCredentials: true });
         } catch { /* bylaws are optional — never block completion */ }
       }
       setNextUrl(response.data.redirect_url);
@@ -180,7 +185,14 @@ export default function BoardReactivationIntakePage() {
         {gate === "done" && (
           <div className="intake-card" data-testid="rintake-done">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
-            {purchaseSource === "direct_diy_board_reactivation_497" ? (
+            {purchaseSource === "board_fix_system_497" ? (
+              <>
+                <h2>Your Board Reactivation information is saved</h2>
+                <p>Taking you into Board Reactivation…</p>
+                <a className="button" href={nextUrl || "/app/reactivation/self-guided"} data-testid="rintake-board-fix-continue">Begin Board Reactivation</a>
+                <p><Link to="/board-fix-roadmap" data-testid="rintake-board-fix-roadmap-link">Return to My Board Fix Roadmap</Link></p>
+              </>
+            ) : purchaseSource === "direct_diy_board_reactivation_497" ? (
               <>
                 <h2>{reactivationIntakeText.h_youreReadyToStart}</h2>
                 <p>{boardReactivationIntakePageText.takingYouToYourStart}</p>

@@ -54,7 +54,8 @@ export default function BoardRecruitmentIntakePage() {
   usePageMeta(...PAGE_META.boardRecruitmentIntake, true);
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
-  const [gate, setGate] = useState(sessionId ? "checking" : "blocked");
+  const boardFixMode = useMemo(() => new URLSearchParams(location.search).get("bf") === "1", [location.search]);
+  const [gate, setGate] = useState(sessionId || boardFixMode ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
   const [purchaseSource, setPurchaseSource] = useState("");
   const [nextUrl, setNextUrl] = useState("");
@@ -65,13 +66,13 @@ export default function BoardRecruitmentIntakePage() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    if (!sessionId) return undefined;
+    if (!sessionId && !boardFixMode) return undefined;
     let attempts = 0;
     let timer;
     const check = async () => {
       attempts += 1;
       try {
-        const response = await axios.get(`${API}/board-recruitment-intake/context`, { params: { session_id: sessionId } });
+        const response = await axios.get(`${API}/board-recruitment-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true });
         setCalendlyUrl(response.data.calendly_url);
         setPurchaseSource(response.data.purchase_source);
         setForm((current) => {
@@ -89,13 +90,17 @@ export default function BoardRecruitmentIntakePage() {
         setGate("ready");
         return;
       } catch (error) {
+        if (boardFixMode && error.response?.status === 401) {
+          window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+          return;
+        }
         if (error.response?.status === 402 && attempts < 8) { timer = setTimeout(check, 2500); return; }
         setGate("blocked");
       }
     };
     check();
     return () => clearTimeout(timer);
-  }, [sessionId]);
+  }, [sessionId, boardFixMode]);
 
   const set = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
   const setValue = (name) => (value) => setForm((current) => ({ ...current, [name]: value }));
@@ -161,7 +166,7 @@ export default function BoardRecruitmentIntakePage() {
         if (form[`${key === "new_members_count" ? "new_members" : key}_not_sure`]) payload[key] = "Not Sure";
       });
       if (form.max_board_size_unknown) payload.max_board_size = "Not Specified / I Don't Know";
-      const response = await axios.post(`${API}/board-recruitment-intake/submit`, payload);
+      const response = await axios.post(`${API}/board-recruitment-intake/submit`, payload, { withCredentials: true });
       setNextUrl(response.data.redirect_url);
       setGate("done");
       setTimeout(() => window.location.replace(response.data.redirect_url), 1500);
@@ -198,7 +203,14 @@ export default function BoardRecruitmentIntakePage() {
         {gate === "done" && (
           <div className="intake-card" data-testid="intake-done">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
-            {purchaseSource === "direct_diy_board_recruitment_497" ? (
+            {purchaseSource === "board_fix_system_497" ? (
+              <>
+                <h2>Your Board Recruitment information is saved</h2>
+                <p>Taking you into Board Recruitment…</p>
+                <a className="button" href={nextUrl || "/app/recruitment/self-guided"} data-testid="intake-board-fix-continue">Begin Board Recruitment</a>
+                <p><Link to="/board-fix-roadmap" data-testid="intake-board-fix-roadmap-link">Return to My Board Fix Roadmap</Link></p>
+              </>
+            ) : purchaseSource === "direct_diy_board_recruitment_497" ? (
               <>
                 <h2>{recruitIntakeText.h_youreReadyToStart}</h2>
                 <p>{boardRecruitmentIntakePageText.takingYouToYourStart}</p>

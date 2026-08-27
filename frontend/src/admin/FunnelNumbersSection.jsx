@@ -29,7 +29,7 @@ export const FunnelNumbersSection = () => {
           <table className="admin-table" data-testid="funnel-stats-table">
             <thead>
               <tr>
-                <th>Funnel</th><th>Form Submits</th><th>Video Views</th>
+                <th>Funnel</th><th>Form Submits</th><th>Video Views</th><th>Checkouts Started</th>
                 <th>DIY Purchases</th><th>DWY Purchases</th><th>Total Purchases</th><th>Revenue</th>
               </tr>
             </thead>
@@ -39,6 +39,7 @@ export const FunnelNumbersSection = () => {
                   <td>{funnel.label}</td>
                   <td data-testid={`funnel-submits-${funnel.key}`}>{funnel.form_submits}</td>
                   <td data-testid={`funnel-views-${funnel.key}`}>{funnel.video_views}</td>
+                  <td data-testid={`funnel-checkouts-${funnel.key}`}>{funnel.checkouts}</td>
                   <td>{funnel.purchases_diy}</td>
                   <td>{funnel.purchases_dwy}</td>
                   <td data-testid={`funnel-purchases-${funnel.key}`}>{funnel.purchases}</td>
@@ -49,6 +50,7 @@ export const FunnelNumbersSection = () => {
                 <td><strong>All Funnels</strong></td>
                 <td><strong>{stats.totals.form_submits}</strong></td>
                 <td><strong>{stats.totals.video_views}</strong></td>
+                <td><strong>{stats.totals.checkouts}</strong></td>
                 <td colSpan="2" />
                 <td><strong>{stats.totals.purchases}</strong></td>
                 <td><strong>{money(stats.totals.revenue_cents)}</strong></td>
@@ -57,7 +59,7 @@ export const FunnelNumbersSection = () => {
           </table>
         </div>
       )}
-      <p className="admin-funnel-note">Video views count each time a visitor opens an offer sales video page (one per browser session). Purchases and revenue include DIY, DWY and legacy checkout payments marked paid in Stripe.</p>
+      <p className="admin-funnel-note">Video views count each time a visitor opens an offer sales video page (one per browser session). Checkouts Started counts every Stripe checkout created, paid or not. Purchases and revenue include DIY, DWY and legacy checkout payments marked paid in Stripe.</p>
     </section>
   );
 };

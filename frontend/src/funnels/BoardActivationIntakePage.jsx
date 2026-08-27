@@ -62,7 +62,8 @@ export default function BoardActivationIntakePage() {
   usePageMeta(...PAGE_META.boardActivationIntake, true);
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
-  const [gate, setGate] = useState(sessionId ? "checking" : "blocked");
+  const boardFixMode = useMemo(() => new URLSearchParams(location.search).get("bf") === "1", [location.search]);
+  const [gate, setGate] = useState(sessionId || boardFixMode ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
   const [purchaseSource, setPurchaseSource] = useState("");
   const [nextUrl, setNextUrl] = useState("");
@@ -74,13 +75,13 @@ export default function BoardActivationIntakePage() {
   const amountNotSure = form.amount_needed === "Not Sure";
 
   useEffect(() => {
-    if (!sessionId) return undefined;
+    if (!sessionId && !boardFixMode) return undefined;
     let attempts = 0;
     let timer;
     const check = async () => {
       attempts += 1;
       try {
-        const response = await axios.get(`${API}/board-activation-intake/context`, { params: { session_id: sessionId } });
+        const response = await axios.get(`${API}/board-activation-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true });
         setCalendlyUrl(response.data.calendly_url);
         setPurchaseSource(response.data.purchase_source);
         setForm((current) => {
@@ -95,13 +96,17 @@ export default function BoardActivationIntakePage() {
         setGate("ready");
         return;
       } catch (error) {
+        if (boardFixMode && error.response?.status === 401) {
+          window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+          return;
+        }
         if (error.response?.status === 402 && attempts < 8) { timer = setTimeout(check, 2500); return; }
         setGate("blocked");
       }
     };
     check();
     return () => clearTimeout(timer);
-  }, [sessionId]);
+  }, [sessionId, boardFixMode]);
 
   const set = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
   const toggle = (name, option) => setForm((current) => ({
@@ -143,7 +148,7 @@ export default function BoardActivationIntakePage() {
     setBusy(true);
     setSubmitError("");
     try {
-      const response = await axios.post(`${API}/board-activation-intake/submit`, { ...form, session_id: sessionId });
+      const response = await axios.post(`${API}/board-activation-intake/submit`, { ...form, session_id: sessionId }, { withCredentials: true });
       setNextUrl(response.data.redirect_url);
       setGate("done");
       setTimeout(() => window.location.replace(response.data.redirect_url), 1500);
@@ -180,7 +185,14 @@ export default function BoardActivationIntakePage() {
         {gate === "done" && (
           <div className="intake-card" data-testid="aintake-done">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
-            {purchaseSource === "direct_diy_board_activation_497" ? (
+            {purchaseSource === "board_fix_system_497" ? (
+              <>
+                <h2>Your Fundraising Activation information is saved</h2>
+                <p>Taking you into Board Fundraising Activation…</p>
+                <a className="button" href={nextUrl || "/app/activation/self-guided"} data-testid="aintake-board-fix-continue">Begin Board Fundraising Activation</a>
+                <p><Link to="/board-fix-roadmap" data-testid="aintake-board-fix-roadmap-link">Return to My Board Fix Roadmap</Link></p>
+              </>
+            ) : purchaseSource === "direct_diy_board_activation_497" ? (
               <>
                 <h2>{activationIntakeText.h_youreReadyToStart}</h2>
                 <p>{boardActivationIntakePageText.takingYouToYourStart}</p>

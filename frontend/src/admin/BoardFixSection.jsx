@@ -5,8 +5,8 @@ import { RefreshCw } from "lucide-react";
 const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
 
 const STAGES = [
-  ["form_submitted", "Initial Form"], ["paid", "Paid"], ["intake_completed", "Intake"], ["onboarding", "Onboarding"],
-  ["recruitment", "Recruitment"], ["reactivation", "Reactivation"], ["activation", "Fundraising Activation"], ["completed", "Completed"],
+  ["form_submitted", "Initial Form"], ["checkout_started", "Checkout Started"], ["paid", "Paid"], ["intake_completed", "Intake"],
+  ["onboarding", "Onboarding"], ["recruitment", "Recruitment"], ["reactivation", "Reactivation"], ["activation", "Fundraising Activation"], ["completed", "Completed"],
 ];
 
 const KV = ({ data }) => (
@@ -15,6 +15,21 @@ const KV = ({ data }) => (
       <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{Array.isArray(value) ? value.join(", ") : String(value)}</dd></div>
     ))}
   </dl>
+);
+
+const PathwayDetail = ({ pathway }) => (
+  <div className="board-fix-journey-pathway" data-testid={`board-fix-journey-pathway-${pathway.key}`}>
+    <p><strong>{pathway.label}</strong> — {pathway.done ? "Completed" : pathway.started ? `${pathway.percent}% complete` : "Not entered"}</p>
+    <p>Additional intake: {pathway.intake_completed ? `Completed ${pathway.intake_submitted_at?.slice(0, 16) || ""}` : "Required — not completed"}</p>
+    {!pathway.done && pathway.current_step && (
+      <p>Current step: {pathway.current_step}{pathway.next_step ? ` — Next step: ${pathway.next_step}` : ""}</p>
+    )}
+    {pathway.completed_steps.length > 0 && <p>Completed steps: {pathway.completed_steps.join("; ")}</p>}
+    {pathway.status_line && <p>Status: {pathway.status_line}</p>}
+    {(pathway.resources || []).length > 0 && (
+      <p>Generated resources: {pathway.resources.map((r) => `${r.title}${r.status ? ` (${r.status})` : ""}`).join("; ")}</p>
+    )}
+  </div>
 );
 
 export const BoardFixSection = () => {
@@ -59,21 +74,21 @@ export const BoardFixSection = () => {
                 {openEmail === customer.email && (
                   <tr className="topic-detail-row"><td colSpan="5">
                     <div className="board-fix-journey" data-testid={`board-fix-journey-${customer.email}`}>
+                      {customer.next_action && <p className="board-fix-next-action" data-testid={`board-fix-next-action-${customer.email}`}><strong>Next expected action:</strong> {customer.next_action}</p>}
                       <h3>Pre-Purchase</h3>
                       <p>Initial form: {customer.form ? `Submitted ${customer.form.submitted_at?.slice(0, 16)}` : "Not submitted"}</p>
                       {customer.form && <KV data={customer.form.answers} />}
-                      <p>Payment: {customer.payment ? `${customer.payment.payment_status} — $${(customer.payment.amount / 100).toFixed(0)} — ${customer.payment.created_at?.slice(0, 16)}` : (customer.paid ? "paid" : "Not started")}</p>
-                      <h3>Post-Purchase</h3>
+                      <p>Sales page / checkout: {customer.payment ? `Checkout initiated ${customer.payment.created_at?.slice(0, 16)} — ${customer.payment.payment_status} — $${(customer.payment.amount / 100).toFixed(0)}` : (customer.paid ? "paid" : "No checkout started")}</p>
+                      <h3>Purchase</h3>
+                      <p>{customer.purchase ? `${customer.purchase.product} — $${(customer.purchase.amount / 100).toFixed(0)} — purchased ${customer.purchase.purchased_at?.slice(0, 16)}${customer.member_user_id ? ` — account ${customer.member_user_id}` : ""}` : (customer.paid ? "Paid — account not yet created" : "Not purchased")}</p>
+                      <h3>Master Intake</h3>
                       <p>Detailed intake: {customer.intake ? `Completed ${customer.intake.submitted_at?.slice(0, 16)}` : "Not completed"}</p>
                       {customer.intake && <KV data={customer.intake.data} />}
+                      <h3>Onboarding</h3>
+                      <p data-testid={`board-fix-roadmap-access-${customer.email}`}>Roadmap: {customer.roadmap_accessed_at ? `First accessed ${customer.roadmap_accessed_at.slice(0, 16)}` : "Not accessed yet"}</p>
                       <h3>Pathways</h3>
                       {customer.pathways.length === 0 && <p>No member account linked yet.</p>}
-                      {customer.pathways.map((pathway) => (
-                        <div key={pathway.key} className="board-fix-journey-pathway">
-                          <p><strong>{pathway.label}</strong> — {pathway.started ? `${pathway.percent}% complete` : "Not entered"}{pathway.started && pathway.current_step ? ` — Current: ${pathway.current_step}` : ""}{pathway.done ? " — Completed" : ""}</p>
-                          {pathway.completed_steps.length > 0 && <p>Completed steps: {pathway.completed_steps.join("; ")}</p>}
-                        </div>
-                      ))}
+                      {customer.pathways.map((pathway) => <PathwayDetail key={pathway.key} pathway={pathway} />)}
                     </div>
                   </td></tr>
                 )}

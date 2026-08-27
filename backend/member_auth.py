@@ -56,7 +56,7 @@ async def review_mode_member(request: Request, db):
     return {
         "user_id": "owner-review-admin", "email": admin["email"],
         "first_name": "Owner", "last_name": "Review",
-        "entitlements": ["recruitment_basic", "recruitment_self_guided", "recruitment_selection_onboarding", "reactivation_self_guided", "activation_self_guided"],
+        "entitlements": ["recruitment_basic", "recruitment_self_guided", "recruitment_selection_onboarding", "reactivation_self_guided", "activation_self_guided", "board_fix_system"],
         "lead_ids": [], "review_mode": True,
     }
 
