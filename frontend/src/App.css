@@ -1270,3 +1270,43 @@ p { line-height: 1.72; }
   .offer-sales-grid { grid-template-columns: 1fr; }
 }
 
+
+/* ===== GLOBAL CENTERING AUDIT (site-wide) ===== */
+section,
+.section,
+main,
+article {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+section > :not(a):not(button),
+.section > :not(a):not(button),
+main > :not(a):not(button),
+article > :not(a):not(button) {
+  width: 100%;
+}
+
+body * {
+  text-align: center !important;
+}
+
+input,
+textarea,
+select {
+  text-align: left !important;
+}
+
+img,
+figure,
+video {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption {
+  margin-left: auto;
+  margin-right: auto;
+}
