@@ -4,18 +4,28 @@ import { ArrowRight, CheckCircle2, ClipboardList } from "lucide-react";
 import { MemberShell } from "@/member/MemberShell";
 import { memberApi } from "@/member/api";
 
-const PATHWAY_META = {
-  recruitment: {
-    label: "BOARD RECRUITMENT", route: "/app/recruitment/self-guided", intakeRoute: "/board-recruitment-intake?bf=1",
-    text: "The complete process for recruiting the board members the organization needs.",
+const STAGE_META = {
+  orientation: {
+    route: () => "/board-fix-orientation",
+    text: "Watch the welcome video, answer two quick questions, and generate the Board Member Profile & Recommitment Form you will send to your current board members.",
   },
-  reactivation: {
-    label: "BOARD REACTIVATION", route: "/app/reactivation/self-guided", intakeRoute: "/board-reactivation-intake?bf=1",
-    text: "The complete process for getting existing board members to step up, recommit, take responsibility, or transition gracefully.",
+  understand: {
+    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 1}`,
+    text: "Send the Recommitment Form to every current board member, collect their responses, and let the system help you understand what each person — and your board as a whole — is telling you.",
   },
-  activation: {
-    label: "BOARD FUNDRAISING ACTIVATION", route: "/app/activation/self-guided", intakeRoute: "/board-activation-intake?bf=1",
-    text: "The complete process for activating the board around fundraising and helping build the organization's fundraising system.",
+  reactivate: {
+    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 4}`,
+    text: "Have the conversations your board summary points to. Recommit the people ready to step up, move the right people to advisory roles, and let others step off gracefully.",
+  },
+  recruit: {
+    route: () => "/app/recruitment/self-guided",
+    intakeRoute: "/board-recruitment-intake?bf=1",
+    text: "Identify the professionals your board is missing, generate your recruitment materials, launch your campaign, and select, interview and onboard the board members you need.",
+  },
+  activate: {
+    route: () => "/app/activation/self-guided",
+    intakeRoute: "/board-activation-intake?bf=1",
+    text: "Bring your board into the fundraising planning process, build the strategy together, and equip every board member to execute their part.",
   },
 };
 
@@ -28,8 +38,13 @@ export default function BoardFixRoadmapPage() {
   useEffect(() => {
     memberApi.get("/board-fix/roadmap")
       .then((r) => setRoadmap(r.data))
-      .catch((err) => setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not load your roadmap. Please log in and try again."));
+      .catch((err) => {
+        if (err.response?.status === 401) { window.location.replace(`/login?next=${encodeURIComponent("/board-fix-roadmap")}`); return; }
+        setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not load your roadmap. Please log in and try again.");
+      });
   }, []);
+
+  const currentIndex = roadmap ? roadmap.journey.findIndex((stage) => !stage.done) : -1;
 
   return (
     <MemberShell>
@@ -38,48 +53,49 @@ export default function BoardFixRoadmapPage() {
           <p className="eyebrow">Complete Board Fix</p>
           <h1 data-testid="board-fix-roadmap-headline">Your Board Fix Roadmap</h1>
         </header>
-        <div className="module-video" data-testid="board-fix-onboarding-video">
-          <div className="offer-video-placeholder"><p>Complete Board Fix Onboarding Video</p><span>Video coming soon</span></div>
-        </div>
         <section className="member-card" data-testid="board-fix-roadmap-instructions">
           <h2>How the Complete Board Fix System Works</h2>
-          <p>Your Complete Board Fix system contains the three execution pathways below. Each pathway gives you the process, tools, materials and resources for that area of your board.</p>
-          <p><strong>Start with the area that is most pressing for your organization right now.</strong> You do not have to begin with a predetermined step, and you can return to this roadmap at any time to continue another pathway. Your progress is always saved.</p>
+          <p>We fix your board in a specific order: <strong>Orientation → Understand Your Board → Reactivate / Transition Your Current Board → Recruit the Board You Need → Activate Your Board Around Fundraising.</strong></p>
+          <p>Work through the stages below in order. You can leave and come back any time — your progress is always saved, and this roadmap will always show you exactly where you are and what comes next.</p>
         </section>
         {error && <p className="submit-error" data-testid="board-fix-roadmap-error">{error}</p>}
         {!roadmap && !error && <p data-testid="board-fix-roadmap-loading">Loading your roadmap…</p>}
         {roadmap && (
           <div className="board-fix-pathways">
-            {roadmap.pathways.map((pathway) => {
-              const meta = PATHWAY_META[pathway.key];
+            {roadmap.journey.map((stage, index) => {
+              const meta = STAGE_META[stage.key];
+              const isCurrent = index === currentIndex;
+              const target = stage.needs_intake && meta.intakeRoute ? meta.intakeRoute : meta.route(stage);
               return (
-                <section className="member-card board-fix-pathway" key={pathway.key} data-testid={`board-fix-pathway-${pathway.key}`}>
-                  <h2>{meta.label}</h2>
+                <section className="member-card board-fix-pathway" key={stage.key} data-testid={`board-fix-stage-card-${stage.key}`}
+                  style={isCurrent ? { borderLeft: "4px solid #1d3a2f" } : undefined}>
+                  <p className="eyebrow">Stage {index + 1}{stage.done ? " — Completed" : isCurrent ? " — You Are Here" : ""}</p>
+                  <h2>{stage.label}</h2>
                   <p>{meta.text}</p>
-                  <p className="board-fix-pathway-status" data-testid={`board-fix-status-${pathway.key}`}>
-                    {pathway.done ? "Completed" : pathway.started ? `${pathway.percent}% complete` : "Not started yet"}
+                  <p className="board-fix-pathway-status" data-testid={`board-fix-status-${stage.key}`}>
+                    {stage.done ? "Completed" : stage.started ? `${stage.percent}% complete` : "Not started yet"}
                   </p>
-                  {!pathway.done && (
-                    <p data-testid={`board-fix-current-step-${pathway.key}`}>
-                      <strong>Current step:</strong> {pathway.current_step}
-                      {pathway.next_step ? <> — <strong>Next step:</strong> {pathway.next_step}</> : null}
+                  {!stage.done && stage.current_step && (
+                    <p data-testid={`board-fix-current-step-${stage.key}`}>
+                      <strong>Current step:</strong> {stage.current_step}
+                      {stage.next_step ? <> — <strong>Next step:</strong> {stage.next_step}</> : null}
                     </p>
                   )}
-                  {pathway.completed_steps.length > 0 && (
-                    <p className="board-fix-completed-steps" data-testid={`board-fix-completed-${pathway.key}`}>
-                      <CheckCircle2 size={14} /> Completed: {pathway.completed_steps.join("; ")}
+                  {stage.completed_steps.length > 0 && (
+                    <p className="board-fix-completed-steps" data-testid={`board-fix-completed-${stage.key}`}>
+                      <CheckCircle2 size={14} /> Completed: {stage.completed_steps.join("; ")}
                     </p>
                   )}
-                  {pathway.needs_intake ? (
+                  {stage.needs_intake && meta.intakeRoute ? (
                     <>
-                      <p data-testid={`board-fix-intake-note-${pathway.key}`}>This pathway needs a few details your master intake did not cover. Your answers are prefilled — you only complete what is missing.</p>
-                      <Link className="button" to={meta.intakeRoute} data-testid={`board-fix-start-${pathway.key}`}>
+                      <p data-testid={`board-fix-intake-note-${stage.key}`}>This stage needs a few details your master intake did not cover. Your answers are prefilled — you only complete what is missing.</p>
+                      <Link className="button" to={target} data-testid={`board-fix-start-${stage.key}`}>
                         <ClipboardList size={16} /> Complete the Short Intake and Begin
                       </Link>
                     </>
                   ) : (
-                    <Link className="button" to={meta.route} data-testid={`board-fix-start-${pathway.key}`}>
-                      {pathway.done ? "Review" : pathway.started ? "Continue" : "Begin"} <ArrowRight size={16} />
+                    <Link className="button" to={target} data-testid={`board-fix-start-${stage.key}`}>
+                      {stage.done ? "Review" : stage.started ? "Continue" : "Begin"} <ArrowRight size={16} />
                     </Link>
                   )}
                 </section>

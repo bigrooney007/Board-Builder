@@ -22,7 +22,7 @@ const INITIAL = {
   full_name: "", preferred_name: "", email: "", phone: "", city_state: "", linkedin: "", current_position: "", employer: "", industry: "", years_experience: "",
   expertise: [], expertise_other: "", networks: [], why_joined: "", how_recruited: "", original_role_expectation: "", role_clarity: "", clarity_help: "",
   board_experience: "", participation_barriers: "", board_improvement: "", strategic_clarity: "", planning_participation: "", planning_involvement_desire: "",
-  recommitment: "", advisory_openness: "", support_role_openness: "", contribution_interests: [], fundraising_comfort: [], ownership_areas: "",
+  recommitment: "", advisory_openness: "", support_role_openness: "", step_off_openness: "", contribution_interests: [], fundraising_comfort: [], ownership_areas: "",
   leadership_interest: "", support_needed: "", monthly_availability: "", meeting_participation: "", constraints: "", meaningful_service: "", anything_else: "", confirmation: false,
 };
 
@@ -54,6 +54,7 @@ const Multi = ({ legend, name, options, form, toggle, required = true }) => (
 export default function BoardRecommitmentFormPage() {
   usePageMeta("Board Member Profile & Recommitment Form | Nonprofit Board Builder", "Complete your Board Member Profile & Recommitment Form.", true);
   const { token } = useParams();
+  const generalVersion = new URLSearchParams(window.location.search).get("general") === "1";
   const [context, setContext] = useState(null);
   const [gate, setGate] = useState("loading");
   const [form, setForm] = useState(INITIAL);
@@ -173,11 +174,14 @@ export default function BoardRecommitmentFormPage() {
                   ))}
                 </div>
               </fieldset>
-              {context.allow_advisory && (
+              {!generalVersion && context.allow_advisory && (
                 <Select label="If continuing as an active Board Member is not realistic for you, would you be open to supporting the organization in an Advisory Board / Advisory role?" name="advisory_openness" options={["Yes", "Maybe — I would like to discuss it", "No"]} form={form} set={set} required={false} />
               )}
-              {context.allow_support_role && (
+              {!generalVersion && context.allow_support_role && (
                 <Select label="If continuing as an active Board Member is not realistic for you, would you be open to supporting the organization in another volunteer or support role?" name="support_role_openness" options={["Yes", "Maybe — I would like to discuss it", "No"]} form={form} set={set} required={false} />
+              )}
+              {!generalVersion && context.allow_step_off && (
+                <Select label="Thinking honestly about your capacity and interest, do you believe you should remain on the board or transition off the board?" name="step_off_openness" options={["I should remain on the board", "I believe I should transition off the board", "I am not sure — I would like to discuss it"]} form={form} set={set} required={false} />
               )}
 
               <h2 className="intake-step-title">{recommitFormText.h_howYouWantToContribute}</h2>

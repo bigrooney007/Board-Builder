@@ -32,6 +32,19 @@ const PathwayDetail = ({ pathway }) => (
   </div>
 );
 
+const BoardFixStepsBlock = ({ steps }) => (
+  <div data-testid="board-fix-steps-block">
+    <p>Orientation: {steps.orientation_accessed_at ? `Accessed ${steps.orientation_accessed_at.slice(0, 16)}` : "Not accessed yet"}
+      {steps.orientation_selections?.step_off ? ` — Step-off members: ${steps.orientation_selections.step_off}, Advisory candidates: ${steps.orientation_selections.advisory}` : ""}</p>
+    <p>Board Member Profile/Recommitment Form: {steps.recommitment_form_status === "NONE" ? "Not generated" : steps.recommitment_form_status}</p>
+    <p>Board member responses: {steps.responses_received} of {steps.board_members_on_roster} on the roster</p>
+    <p>Individual interpretations generated: {steps.interpretations_generated}</p>
+    <p>Board summary: {steps.board_summary_status === "NONE" ? "Not generated" : steps.board_summary_status}</p>
+    <p>Transition / difficult-conversation scripts: {steps.conversation_scripts}</p>
+    <p>Board members recruited: {steps.board_members_recruited}</p>
+  </div>
+);
+
 export const BoardFixSection = () => {
   const [payload, setPayload] = useState(null);
   const [error, setError] = useState("");
@@ -86,6 +99,7 @@ export const BoardFixSection = () => {
                       {customer.intake && <KV data={customer.intake.data} />}
                       <h3>Onboarding</h3>
                       <p data-testid={`board-fix-roadmap-access-${customer.email}`}>Roadmap: {customer.roadmap_accessed_at ? `First accessed ${customer.roadmap_accessed_at.slice(0, 16)}` : "Not accessed yet"}</p>
+                      {customer.board_fix_steps && <BoardFixStepsBlock steps={customer.board_fix_steps} />}
                       <h3>Pathways</h3>
                       {customer.pathways.length === 0 && <p>No member account linked yet.</p>}
                       {customer.pathways.map((pathway) => <PathwayDetail key={pathway.key} pathway={pathway} />)}

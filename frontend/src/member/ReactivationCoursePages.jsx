@@ -9,6 +9,7 @@ import ReactivationStep2 from "./ReactivationStep2";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
+import { BoardFixContinuation } from "./BoardFixContinuation";
 import { reactivationContent, sharedCourseContent, reactivationCoursePagesText } from "../content/appContent";
 
 const META = {
@@ -140,6 +141,7 @@ export const ReactivationModulePage = () => {
             </header>
             {<VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
             <StepShell moduleNumber={number} />
+            {number === course.modules.length && <BoardFixContinuation label="Continue to Board Recruitment" to="/app/recruitment/self-guided" />}
             <div className="module-nav" data-testid="reactivation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="reactivation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>

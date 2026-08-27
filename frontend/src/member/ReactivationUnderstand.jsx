@@ -119,6 +119,69 @@ const MemberUnderstanding = ({ row, reload }) => {
   );
 };
 
+const BoardSummary = ({ hasResponses }) => {
+  const [summary, setSummary] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try { setSummary((await memberApi.get("/reactivation/board-summary")).data); } catch { /* best effort */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const poll = useCallback(async () => {
+    setBusy(true);
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      try {
+        const res = await memberApi.get("/reactivation/board-summary");
+        if (res.data.status !== "Generating") { setSummary(res.data); break; }
+      } catch { break; }
+    }
+    setBusy(false);
+  }, []);
+
+  useEffect(() => { if (summary?.status === "Generating" && !busy) poll(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary?.status]);
+
+  const generate = async () => {
+    setError("");
+    setBusy(true);
+    try {
+      await memberApi.post("/reactivation/board-summary");
+      await poll();
+    } catch (err) {
+      setError(err.response?.data?.detail || "That did not work. Please try again.");
+      setBusy(false);
+    }
+  };
+
+  const ready = summary && !["NONE", "Generating", "Failed"].includes(summary.status) && !busy;
+  return (
+    <section className="member-card" style={{ borderLeft: "4px solid #1d3a2f" }} data-testid="board-summary-section">
+      <h2>Summary of Your Entire Board</h2>
+      <p>Understanding one board member is useful. Understanding your whole board is where the picture becomes clear. This summary combines everything you told me with everything your board members told you — who is ready to recommit, who needs a conversation, what strengths you already have, what is missing, and who you need to recruit to build a powerhouse board.</p>
+      {error && <p className="submit-error" data-testid="board-summary-error">{error}</p>}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" className="button" onClick={generate} disabled={busy || !hasResponses} data-testid="board-summary-generate">
+          <Brain size={15} /> {busy ? "Analyzing your board…" : ready ? "Regenerate the Summary" : "Summarize My Entire Board"}
+        </button>
+        {ready && <button type="button" className="button button-outline" onClick={() => setViewing(true)} data-testid="board-summary-view"><Eye size={15} /> View the Summary</button>}
+      </div>
+      {!hasResponses && <p style={{ marginTop: 8 }} data-testid="board-summary-waiting">You need at least one completed Recommitment Form before I can summarize your board.</p>}
+      {summary?.status === "Failed" && !busy && <p style={{ marginTop: 8 }} data-testid="board-summary-failed">The summary did not complete. Nothing is lost — generate it again.</p>}
+      {viewing && ready && (
+        <Modal onClose={() => setViewing(false)} testId="board-summary-modal">
+          <h2>Summary of Your Entire Board</h2>
+          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }} data-testid="board-summary-text">{summary.display_text}</div>
+          <Link className="button" style={{ marginTop: 14 }} to="/app/reactivation/self-guided/module/4" data-testid="board-summary-go-conversation">PREPARE THE CONVERSATIONS</Link>
+        </Modal>
+      )}
+    </section>
+  );
+};
+
 export default function ReactivationUnderstand() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -139,6 +202,7 @@ export default function ReactivationUnderstand() {
         {C.intro.map((p) => <p key={p}>{p}</p>)}
         <p className="eyebrow" data-testid="understand-progress">{C.progress(data.progress)}</p>
       </section>
+      <BoardSummary hasResponses={responded.length > 0} />
       {responded.length === 0 && (
         <section className="member-card" data-testid="understand-empty">
           <p>{C.emptyState}</p>

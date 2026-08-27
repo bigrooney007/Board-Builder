@@ -239,6 +239,30 @@ def strategy_display(structured: dict, organization: str) -> str:
     return "\n".join(lines).strip()
 
 
+def parse_plan_ideas(text: str) -> list:
+    """Split a strategy plan's display text into reviewable idea sections (heading + content)."""
+    ideas = []
+    current = None
+    for line in (text or "").splitlines():
+        stripped = line.strip()
+        is_heading = (stripped and stripped == stripped.upper() and any(ch.isalpha() for ch in stripped)
+                      and len(stripped) < 90 and stripped != "FUNDRAISING STRATEGY PLAN")
+        if is_heading:
+            if current and current["content"].strip():
+                ideas.append(current)
+            key = "".join(ch if ch.isalnum() else "-" for ch in stripped.lower()).strip("-")
+            while "--" in key:
+                key = key.replace("--", "-")
+            current = {"key": key, "title": stripped, "content": ""}
+        elif current is not None:
+            current["content"] += line + "\n"
+    if current and current["content"].strip():
+        ideas.append(current)
+    for idea in ideas:
+        idea["content"] = idea["content"].strip()
+    return ideas
+
+
 GUIDE_SECTIONS = [
     ("1. Objective for the Discussion", "objective"), ("2. Before the Discussion", "before_discussion"),
     ("3. Open the Discussion", "open_discussion"), ("4. Reconnect Everyone to What We Are Trying to Accomplish", "reconnect"),

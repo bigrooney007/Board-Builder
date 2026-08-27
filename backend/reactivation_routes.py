@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from auth_service import authenticate_admin
+from board_fix_master import get_master_record, master_prefill
 from member_auth import authenticate_member, require_entitlement
 from ai_service import generate_structured
 from content_templates import (
@@ -83,6 +84,7 @@ class RecommitmentSubmission(BaseModel):
     recommitment: str
     advisory_openness: str = ""
     support_role_openness: str = ""
+    step_off_openness: str = ""
     contribution_interests: List[str] = Field(min_length=1)
     fundraising_comfort: List[str] = Field(min_length=1)
     ownership_areas: str = Field(min_length=1)
@@ -368,7 +370,13 @@ def create_reactivation_router(db) -> APIRouter:
         return outcomes
 
     async def user_intake(user_id: str) -> dict:
-        return await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)]) or {}
+        intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)]) or {}
+        master = await get_master_record(db, user_id=user_id)
+        if master:
+            for field, value in master_prefill("reactivation", master.get("data", {})).items():
+                if not intake.get(field):
+                    intake[field] = value
+        return intake
 
     def script_display(structured: dict) -> str:
         lines = ["DIFFICULT CONVERSATION SCRIPT", "",
@@ -906,6 +914,7 @@ def create_reactivation_router(db) -> APIRouter:
                 "submitted": record["status"] == "COMPLETED",
                 "allow_advisory": ADVISORY_OPTION in context["transition_options"],
                 "allow_support_role": SUPPORT_OPTION in context["transition_options"],
+                "allow_step_off": "Step Down From the Board" in context["transition_options"],
                 "recommitment_options": RECOMMITMENT_OPTIONS,
                 "prefill": {"full_name": record.get("name", ""), "email": record.get("email", ""), "phone": record.get("phone", ""), "role": record.get("role", "")},
             }
@@ -919,6 +928,7 @@ def create_reactivation_router(db) -> APIRouter:
             "submitted": False,
             "allow_advisory": ADVISORY_OPTION in context["transition_options"],
             "allow_support_role": SUPPORT_OPTION in context["transition_options"],
+            "allow_step_off": "Step Down From the Board" in context["transition_options"],
             "recommitment_options": RECOMMITMENT_OPTIONS,
             "prefill": {"full_name": "", "email": "", "phone": "", "role": ""},
         }
@@ -986,8 +996,10 @@ def create_reactivation_router(db) -> APIRouter:
         member = await reactivation_member(request)
         form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         completed = await db.reactivation_board_members.count_documents({"user_id": member["user_id"], "status": "COMPLETED"})
+        context = await founder_context(member["user_id"])
         return {"status": form.get("status", "NONE"), "intro_text": form.get("intro_text", ""),
-                "generic_token": form.get("generic_token", ""), "responses_received": completed}
+                "generic_token": form.get("generic_token", ""), "responses_received": completed,
+                "transition_enabled": bool(set(context["transition_options"]) & {ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"})}
 
     @router.post("/reactivation/recommitment-form/generate")
     async def generate_recommitment_form(request: Request):
@@ -1113,6 +1125,10 @@ def create_reactivation_router(db) -> APIRouter:
         context = ("ORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
                    + "\n\nTHIS BOARD MEMBER'S ACTUAL PROFILE & RECOMMITMENT FORM RESPONSE:\n"
                    + json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str))
+        master = await get_master_record(db, user_id=member["user_id"])
+        if master and master.get("data"):
+            context += ("\n\nCOMPLETE BOARD FIX MASTER INTAKE (the founder's own description of the organization, its board, goals and priorities):\n"
+                        + json.dumps(master["data"], indent=1, default=str)[:6000])
         now = datetime.now(timezone.utc).isoformat()
         if existing:
             material_id = existing["material_id"]
@@ -1137,6 +1153,94 @@ def create_reactivation_router(db) -> APIRouter:
                     "updated_at": datetime.now(timezone.utc).isoformat()}})
 
         asyncio.create_task(run_analysis())
+        return {"material_id": material_id, "status": "Generating"}
+
+    # ---------------- SUMMARY OF YOUR ENTIRE BOARD ----------------
+
+    SUMMARY_TYPE = "reactivation_board_summary"
+    SUMMARY_RECORD_ID = "board-summary"
+
+    def board_summary_display(structured: dict) -> str:
+        def block(title, value):
+            if isinstance(value, list):
+                return [title] + ([f"- {item}" for item in value] if value else ["- None identified from the responses."]) + [""]
+            return [title, value or "", ""]
+        lines = ["SUMMARY OF YOUR ENTIRE BOARD", ""]
+        lines += block("THE OVERALL STATE OF YOUR BOARD", structured.get("overall_state", ""))
+        lines += block("READY TO RECOMMIT", structured.get("ready_to_recommit", []))
+        lines += block("MAY NEED ADDITIONAL ENGAGEMENT", structured.get("need_engagement", []))
+        lines += block("YOU NEED TO HAVE A CONVERSATION WITH", structured.get("need_conversation", []))
+        lines += block("MAY BE BETTER SUITED TO AN ADVISORY ROLE", structured.get("advisory_candidates", []))
+        lines += block("MAY NEED TO STEP OFF THE BOARD", structured.get("step_off_candidates", []))
+        lines += block("THE ROLE EACH MEMBER CAN POTENTIALLY PLAY", structured.get("member_roles", []))
+        lines += block("THE STRENGTHS YOU ALREADY HAVE", structured.get("board_strengths", []))
+        lines += block("THE GAPS THAT REMAIN", structured.get("board_gaps", []))
+        lines += block("WHERE YOU NEED TO RECRUIT", structured.get("recruitment_needs", ""))
+        if structured.get("not_yet_responded"):
+            lines += block("STILL WAITING ON", structured.get("not_yet_responded", ""))
+        return "\n".join(lines).strip()
+
+    @router.get("/reactivation/board-summary")
+    async def get_board_summary(request: Request):
+        member = await reactivation_member(request)
+        material = await db.generated_materials.find_one(
+            {"user_id": member["user_id"], "type": SUMMARY_TYPE, "application_id": SUMMARY_RECORD_ID}, {"_id": 0})
+        if not material:
+            return {"status": "NONE"}
+        return {"material_id": material["material_id"], "status": material["status"],
+                "display_text": current_display(material), "updated_at": material.get("updated_at", "")}
+
+    @router.post("/reactivation/board-summary")
+    async def generate_board_summary(request: Request):
+        member = await reactivation_member(request)
+        user_id = member["user_id"]
+        records = await db.reactivation_board_members.find({"user_id": user_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
+        responded = [r for r in records if r["status"] == "COMPLETED" and r.get("response")]
+        if not responded:
+            raise HTTPException(status_code=409, detail="At least one Board Member needs to complete the Recommitment Form before the board can be summarized.")
+        query = {"user_id": user_id, "type": SUMMARY_TYPE, "application_id": SUMMARY_RECORD_ID}
+        existing = await db.generated_materials.find_one(query, {"_id": 0, "material_id": 1, "status": 1})
+        if existing and existing.get("status") == "Generating":
+            return {"material_id": existing["material_id"], "status": "Generating"}
+        intake = await user_intake(user_id)
+        org_context = {key: intake.get(key, "") for key in [
+            "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
+            "current_skills", "missing_skills", "disengage_reason", "expected_contribution", "actually_happening"]}
+        context = "ORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
+        master = await get_master_record(db, user_id=user_id)
+        if master and master.get("data"):
+            context += ("\n\nCOMPLETE BOARD FIX MASTER INTAKE (the founder's own description of the organization, its board, goals and priorities):\n"
+                        + json.dumps(master["data"], indent=1, default=str)[:8000])
+        context += "\n\nEVERY BOARD MEMBER'S ACTUAL PROFILE & RECOMMITMENT FORM RESPONSE:\n"
+        for record in responded:
+            context += json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str)[:5000] + "\n\n"
+        waiting = [r["name"] for r in records if r["status"] != "COMPLETED"]
+        if waiting:
+            context += "\nBOARD MEMBERS WHO HAVE NOT RESPONDED YET: " + ", ".join(waiting)
+        now = datetime.now(timezone.utc).isoformat()
+        if existing:
+            material_id = existing["material_id"]
+            await db.generated_materials.update_one(query, {"$set": {"status": "Generating", "updated_at": now}})
+        else:
+            material_id = str(uuid.uuid4())
+            await db.generated_materials.insert_one({
+                "material_id": material_id, "user_id": user_id, "type": SUMMARY_TYPE,
+                "application_id": SUMMARY_RECORD_ID, "module": 3, "title": "Summary of Your Entire Board",
+                "versions": [], "current_version": 0, "status": "Generating",
+                "created_at": now, "updated_at": now})
+
+        async def run_summary():
+            try:
+                structured = await generate_structured(SUMMARY_TYPE, context)
+                await save_reactivation_material(user_id, SUMMARY_TYPE, "Summary of Your Entire Board",
+                                                 SUMMARY_RECORD_ID, structured, board_summary_display(structured))
+            except Exception as exc:
+                logger.error("Board summary generation failed for %s: %s", user_id, exc)
+                await db.generated_materials.update_one(query, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_summary())
         return {"material_id": material_id, "status": "Generating"}
 
     @router.put("/reactivation/board-members/{member_record_id}/direction")

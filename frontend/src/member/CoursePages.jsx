@@ -8,6 +8,7 @@ import { Module1Profile } from "./workspace/Module1Profile";
 import { Module3Launch } from "./workspace/WorkspaceModules";
 import { recruitmentContent, sharedCourseContent, coursePagesText } from "../content/appContent";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
+import { BoardFixContinuation } from "./BoardFixContinuation";
 
 const PRODUCT_META = {
   basic: { key: "recruitment_basic", endpoint: "/courses/recruitment/basic", base: "/app/recruitment/basic", label: "Board Recruitment — $97 Program" },
@@ -235,6 +236,7 @@ export const CourseModulePage = ({ productSlug }) => {
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
+            {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Fundraising Activation" to="/app/activation/self-guided" />}
             <div className="module-nav" data-testid="module-navigation">
               <button className="button button-back" disabled={!prevModule} onClick={() => navigate(`${meta.base}/module/${prevModule.number}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="next-step-button">NEXT STEP <ArrowRight size={16} /></button>

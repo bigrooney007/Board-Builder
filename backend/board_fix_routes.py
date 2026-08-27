@@ -25,6 +25,22 @@ INTAKE_COLLECTIONS = {
     "activation": "board_activation_intakes",
 }
 
+ADVISORY_OPTION = "Transition to an Advisory Board / Advisory Role"
+STEP_OFF_OPTION = "Step Down From the Board"
+
+JOURNEY_STAGES = [
+    {"key": "orientation", "label": "Orientation"},
+    {"key": "understand", "label": "Understand Your Board", "pathway": "reactivation", "modules": [1, 2, 3]},
+    {"key": "reactivate", "label": "Reactivate / Transition Your Current Board", "pathway": "reactivation", "modules": [4, 5]},
+    {"key": "recruit", "label": "Recruit the Board You Need", "pathway": "recruitment", "modules": []},
+    {"key": "activate", "label": "Activate Your Board Around Fundraising", "pathway": "activation", "modules": []},
+]
+
+
+class OrientationSelections(BaseModel):
+    step_off: str = Field(pattern="^(Yes|No)$")
+    advisory: str = Field(pattern="^(Yes|No)$")
+
 
 class IntakeSubmit(BaseModel):
     session_id: str = Field(min_length=1)
@@ -104,7 +120,8 @@ def create_board_fix_router(db) -> APIRouter:
         status = {}
         for key, collection in INTAKE_COLLECTIONS.items():
             doc = await db[collection].find_one(
-                {"$or": [{"user_id": user_id}, {"session_id": synthetic_session(user_id)}]},
+                {"$or": [{"user_id": user_id}, {"session_id": synthetic_session(user_id)}],
+                 "submitted_at": {"$exists": True}},
                 {"_id": 0, "submitted_at": 1})
             status[key] = {"completed": bool(doc), "submitted_at": (doc or {}).get("submitted_at", "")}
         return status
@@ -118,11 +135,58 @@ def create_board_fix_router(db) -> APIRouter:
             started = any(r.get("viewed") or r.get("completed") for r in records.values())
             pathways.append({"key": key, "label": label, "started": started,
                              "completed_steps": completed,
+                             "module_states": [{"number": m["number"], "title": m["title"],
+                                                "completed": bool(records.get(m["number"], {}).get("completed")),
+                                                "viewed": bool(records.get(m["number"], {}).get("viewed"))} for m in modules],
                              "current_step": remaining[0] if remaining else "",
                              "next_step": remaining[1] if len(remaining) > 1 else "",
                              "done": bool(completed) and not remaining,
                              "percent": round(len(completed) / len(modules) * 100)})
         return pathways
+
+    async def orientation_state(user_id: str) -> dict:
+        journey = await db.board_fix_journeys.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        form = await db.reactivation_forms.find_one({"user_id": user_id}, {"_id": 0, "status": 1}) or {}
+        return {
+            "accessed": bool(journey.get("orientation_first_accessed_at")),
+            "selections_saved": bool(journey.get("orientation_selections")),
+            "selections": journey.get("orientation_selections", {}),
+            "recommitment_form_status": form.get("status", "NONE"),
+        }
+
+    @router.get("/board-fix/orientation")
+    async def get_orientation(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"board_fix_system"})
+        now = now_iso()
+        await db.board_fix_journeys.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"orientation_last_accessed_at": now, "email": member.get("email", "")},
+             "$min": {"orientation_first_accessed_at": now}}, upsert=True)
+        return await orientation_state(member["user_id"])
+
+    @router.post("/board-fix/orientation")
+    async def save_orientation(payload: OrientationSelections, request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"board_fix_system"})
+        user_id = member["user_id"]
+        now = now_iso()
+        selections = {"step_off": payload.step_off, "advisory": payload.advisory, "saved_at": now}
+        await db.board_fix_journeys.update_one(
+            {"user_id": user_id},
+            {"$set": {"orientation_selections": selections, "email": member.get("email", "")},
+             "$min": {"orientation_first_accessed_at": now}}, upsert=True)
+        transition_options = []
+        if payload.advisory == "Yes":
+            transition_options.append(ADVISORY_OPTION)
+        if payload.step_off == "Yes":
+            transition_options.append(STEP_OFF_OPTION)
+        await db.board_reactivation_intakes.update_one(
+            {"session_id": synthetic_session(user_id)},
+            {"$set": {"transition_options": transition_options, "user_id": user_id, "updated_at": now},
+             "$setOnInsert": {"created_at": now}}, upsert=True)
+        return {"status": "saved", "transition_options": transition_options,
+                "next_url": "/app/reactivation/self-guided/module/2"}
 
     @router.get("/board-fix/roadmap")
     async def board_fix_roadmap(request: Request):
@@ -141,7 +205,34 @@ def create_board_fix_router(db) -> APIRouter:
             status = intake_status[pathway["key"]]
             pathway["intake_completed"] = status["completed"]
             pathway["needs_intake"] = not status["completed"] and not pathway["started"]
-        return {"master_intake_submitted": bool(master and master.get("submitted_at")), "pathways": pathways}
+        by_key = {p["key"]: p for p in pathways}
+        orientation = await orientation_state(user_id)
+        journey = []
+        for stage in JOURNEY_STAGES:
+            if stage["key"] == "orientation":
+                journey.append({"key": "orientation", "label": stage["label"],
+                                "done": orientation["selections_saved"] or orientation["recommitment_form_status"] != "NONE",
+                                "started": orientation["accessed"], "current_step": "", "next_step": "",
+                                "completed_steps": [], "percent": 100 if orientation["selections_saved"] else 0,
+                                "needs_intake": False, "pathway": ""})
+                continue
+            pathway = by_key[stage["pathway"]]
+            states = [m for m in pathway["module_states"] if not stage["modules"] or m["number"] in stage["modules"]]
+            completed = [m for m in states if m["completed"]]
+            remaining = [m for m in states if not m["completed"]]
+            journey.append({
+                "key": stage["key"], "label": stage["label"], "pathway": stage["pathway"],
+                "done": bool(completed) and not remaining,
+                "started": any(m["viewed"] or m["completed"] for m in states),
+                "current_step": remaining[0]["title"] if remaining else "",
+                "current_module": remaining[0]["number"] if remaining else states[-1]["number"],
+                "next_step": remaining[1]["title"] if len(remaining) > 1 else "",
+                "completed_steps": [m["title"] for m in completed],
+                "percent": round(len(completed) / len(states) * 100) if states else 0,
+                "needs_intake": pathway["needs_intake"] if stage["key"] in ("recruit", "activate") else False,
+            })
+        return {"master_intake_submitted": bool(master and master.get("submitted_at")),
+                "orientation": orientation, "journey": journey, "pathways": pathways}
 
     async def pathway_resources(user_id: str) -> dict:
         materials = await db.generated_materials.find(
@@ -197,6 +288,31 @@ def create_board_fix_router(db) -> APIRouter:
             return f"{active['label']}: complete the pathway intake"
         return f"{active['label']}: {active['current_step'] or 'Continue'}"
 
+    async def board_fix_steps(user_id: str) -> dict:
+        journey = await db.board_fix_journeys.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        form = await db.reactivation_forms.find_one({"user_id": user_id}, {"_id": 0, "status": 1, "approved_at": 1}) or {}
+        roster_total = await db.reactivation_board_members.count_documents({"user_id": user_id})
+        responses = await db.reactivation_board_members.count_documents({"user_id": user_id, "status": "COMPLETED"})
+        interpretations = await db.generated_materials.count_documents(
+            {"user_id": user_id, "type": "reactivation_response_analysis", "status": {"$nin": ["Failed"]}})
+        summary = await db.generated_materials.find_one(
+            {"user_id": user_id, "type": "reactivation_board_summary"}, {"_id": 0, "status": 1, "updated_at": 1})
+        conversations = await db.generated_materials.count_documents(
+            {"user_id": user_id, "type": "reactivation_conversation_script"})
+        recruited = await db.opportunity_applications.count_documents(
+            {"owner_user_id": user_id, "$or": [{"final_outcome": "Joined Board"}, {"status": "Selected"}]})
+        return {
+            "orientation_accessed_at": journey.get("orientation_first_accessed_at", ""),
+            "orientation_selections": journey.get("orientation_selections", {}),
+            "recommitment_form_status": form.get("status", "NONE"),
+            "board_members_on_roster": roster_total,
+            "responses_received": responses,
+            "interpretations_generated": interpretations,
+            "board_summary_status": (summary or {}).get("status", "NONE"),
+            "conversation_scripts": conversations,
+            "board_members_recruited": recruited,
+        }
+
     @router.get("/admin/board-fix/customers")
     async def admin_customers(request: Request):
         await authenticate_admin(request, db)
@@ -214,6 +330,7 @@ def create_board_fix_router(db) -> APIRouter:
             return customers.setdefault(email, {"email": email, "name": "", "organization": "", "form": None, "paid": False,
                                                 "payment": None, "intake": None, "member_user_id": "", "pathways": [],
                                                 "purchase": None, "roadmap_accessed_at": "", "next_action": "",
+                                                "board_fix_steps": None,
                                                 "status": "", "last_activity": ""})
 
         for lead in leads:
@@ -265,6 +382,7 @@ def create_board_fix_router(db) -> APIRouter:
                     pathway["status_line"] = status_lines[pathway["key"]]
                 journey = journeys.get(row["member_user_id"], {})
                 row["roadmap_accessed_at"] = journey.get("roadmap_first_accessed_at", "")
+                row["board_fix_steps"] = await board_fix_steps(row["member_user_id"])
             started = [p for p in row["pathways"] if p["started"]]
             if row["form"]:
                 overview["form_submitted"] += 1

@@ -107,7 +107,8 @@ def create_reactivation_intake_router(db) -> APIRouter:
             user_id = member["user_id"]
             purchase_source = BOARD_FIX_SOURCE
             existing = await db.board_reactivation_intakes.find_one(
-                {"$or": [{"session_id": synthetic_session(user_id)}, {"user_id": user_id}]}, {"_id": 0, "submitted_at": 1})
+                {"$or": [{"session_id": synthetic_session(user_id)}, {"user_id": user_id}],
+                 "submitted_at": {"$exists": True}}, {"_id": 0, "submitted_at": 1})
         prefill = {"name": "", "email": ""}
         organization_prefill = {}
         if user_id:

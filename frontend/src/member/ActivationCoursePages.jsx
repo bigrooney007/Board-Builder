@@ -5,6 +5,7 @@ import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { SupportBox, VideoBlock } from "./CoursePages";
+import { BoardFixContinuation } from "./BoardFixContinuation";
 import ActivationModule2 from "./ActivationModule2";
 import ActivationModule3 from "./ActivationModule3";
 import ActivationModule4 from "./ActivationModule4";
@@ -148,6 +149,7 @@ export const ActivationModulePage = () => {
             </header>
             <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
             <ModuleShell moduleNumber={number} />
+            {number === course.modules.length && <BoardFixContinuation label="Continue Your Board Fix Journey" to="/board-fix-roadmap" />}
             <div className="module-nav" data-testid="activation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>

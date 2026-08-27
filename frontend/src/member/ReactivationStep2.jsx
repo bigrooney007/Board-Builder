@@ -38,6 +38,7 @@ export const ResponseView = ({ data, testPrefix = "step2" }) => (
       <p style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0 }}>{data.response.recommitment}</p>
       {data.response.advisory_openness && <p style={{ margin: "8px 0 0" }}>{reactivationStep2Text.openToAnAdvisoryRole}<strong>{data.response.advisory_openness}</strong></p>}
       {data.response.support_role_openness && <p style={{ margin: "8px 0 0" }}>{reactivationStep2Text.openToAnotherSupportRole}<strong>{data.response.support_role_openness}</strong></p>}
+      {data.response.step_off_openness && <p style={{ margin: "8px 0 0" }}>Remain or transition off the board: <strong>{data.response.step_off_openness}</strong></p>}
     </div>
     {RESPONSE_SECTIONS.map(([section, keys]) => {
       const rows = keys.filter((key) => {
@@ -137,6 +138,12 @@ export default function ReactivationStep2() {
           <h2>{reactivationStep2Text.yourRecommitmentFormIsLive}</h2>
           <p>{C.approvedNote}</p>
           <p><strong>{C.formLinkLabel}:</strong> <span style={{ wordBreak: "break-all" }} data-testid="step2-form-link">{link}</span></p>
+          {form.transition_enabled && (
+            <p data-testid="step2-standard-form-link">
+              <strong>Standard version (no transition questions):</strong> <span style={{ wordBreak: "break-all" }}>{`${link}?general=1`}</span>{" "}
+              <button type="button" className="table-link" onClick={() => copy(`${link}?general=1`, "general")} data-testid="step2-copy-standard-link">{copied === "general" ? C.copiedLabel : "Copy Standard Link"}</button>
+            </p>
+          )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="button button-outline" onClick={() => copy(link, "link")} data-testid="step2-copy-link"><Copy size={15} /> {copied === "link" ? C.copiedLabel : C.copyLinkButton}</button>
             {!email && (
