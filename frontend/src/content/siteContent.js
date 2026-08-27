@@ -65,35 +65,19 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
-    "boardFixHeadings": [
-      "You can fix your present board,",
-      "recruit new board members,",
-      "and get your board members to start raising money and building your organization with you."
+    "introSectionHeading": "Introduction",
+    "introSectionParagraphs": [
+      "I'll show you exactly how to determine which board members need to step up, which may need to step down, who you need to recruit, how to recruit them, how to activate your board, and how to get your board working with you to build your organization's fundraising system.",
+      "You'll receive the complete process, tools, templates, resources, and support you need to execute it inside your organization."
     ],
-    "boardFixIntro": [
-      "In fact, the success of your organization will be determined by your ability to build the board your organization needs at each point in time."
+    "builderHeading": "Become a Nonprofit Board Builder",
+    "builderSubheading": "Learn the process. Get the tools. Execute the transformation.",
+    "builderParagraph": "You don't have to waste time handling the process. You don't have to guess through the process. Simply use the tools as instructed and begin to transform your board into the powerhouse board your mission needs.",
+    "builderPillars": [
+      {"label": "RECRUIT", "text": "Recruit the right people to strengthen your board."},
+      {"label": "REACTIVATE", "text": "Get your current board members to step up and take responsibility, or help them transition gracefully when they can no longer continue."},
+      {"label": "ACTIVATE", "text": "Get your board working with you to raise money and build your organization's fundraising system."}
     ],
-    "boardFixIncludesLead": "That includes:",
-    "boardFixIncludes": [
-      "knowing when to help certain board members step down gracefully,",
-      "recruiting board members to complement and strengthen your board, and recruiting them the right way",
-      "understanding how to get your board members to step up, take up responsibilities, raise money, and build your organization's fundraising system."
-    ],
-    "boardFixAfterIncludes": [
-      "All you need is to understand the process, get access to the tools, materials, resources, and support you need to succeed.",
-      "This is why, at Nonprofit Board Builders, LLC, our mission is simple and strategic: to equip you with the wisdom, tools, and support you need to recruit new board members and harness the collective ability, wisdom, and networks of your board for the success of your organization without breaking the bank.",
-      "Because we know that when your board is intentionally built- meaning you have the right people in the right places, providing the right kind of support, the struggle ends, and the nonprofit and impact creation journey becomes an exciting adventure once again.",
-      "From years of working with nonprofits, we've seen firsthand the level of organizational transformation that can happen when a board is intentionally designed for the success of the organization."
-    ],
-    "boardFixHowHeading": "But This Never Happens By Chance",
-    "boardFixHowParagraphs": [
-      "Rather, it requires intentional orchestration. And as founder or executive director, if you don't understand the processes, you will continue to be a victim of your ignorance and your organization will continue to suffer the brunt.",
-      "If you are ready to fix your board and finally build the powerhouse board your organization needs, use the button below to tell me about your board and what you want to achieve with your board, and I will show you what you need to do to transform your board and build a high-performing board."
-    ],
-    "mainVideo": {
-      "youtubeId": "lbz713woSB4",
-      "title": "Why Your Board Is The Way It Is AND What To Do To Fix It Starting Today"
-    },
     "heroTitle": "Fix Your Board. Transform Your Organization.",
     "heroSubtitle": "You don't need another consultant to take over or fix your board.",
     "introHeading": "Your Board Is Your Organization's Most Important Asset",

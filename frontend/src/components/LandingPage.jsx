@@ -37,18 +37,21 @@ export const LandingPage = ({ onJoin }) => (
     </section>
 
     <section className="home-intro" data-testid="home-intro-section">
-      {home.boardFixHeadings.map((heading, index) => <h2 className="home-intro-heading" key={index} data-testid={`home-intro-heading-${index + 1}`}>{heading}</h2>)}
-      {home.boardFixIntro.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
-      <p className="home-includes-lead" data-testid="home-includes-lead">{home.boardFixIncludesLead}</p>
-      <ol className="home-includes-list" data-testid="home-includes-list">
-        {home.boardFixIncludes.map((item, index) => <li key={index} data-testid={`home-includes-item-${index + 1}`}>{item}</li>)}
-      </ol>
-      {home.boardFixAfterIncludes.map((paragraph, index) => <p key={index} data-testid={`home-intro-after-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <h2 data-testid="home-intro-heading">{home.introSectionHeading}</h2>
+      {home.introSectionParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-intro-cta-button">{home.cta}</a></p>
     </section>
 
     <section className="section home-how" data-testid="home-how-section">
-      <h2 data-testid="home-how-heading">{home.boardFixHowHeading || home.howHeading}</h2>
-      {(home.boardFixHowParagraphs || home.howParagraphs).map((paragraph, index) => <p key={index} data-testid={`home-how-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <h2 data-testid="home-how-heading">{home.builderHeading}</h2>
+      <p data-testid="home-how-subheading"><strong>{home.builderSubheading}</strong></p>
+      <p data-testid="home-how-paragraph-1">{home.builderParagraph}</p>
+      {home.builderPillars.map((pillar, index) => (
+        <div key={index} data-testid={`home-pillar-${index + 1}`}>
+          <h3 data-testid={`home-pillar-label-${index + 1}`}>{pillar.label}</h3>
+          <p data-testid={`home-pillar-text-${index + 1}`}>{pillar.text}</p>
+        </div>
+      ))}
       <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-how-cta-button">{home.cta}</a></p>
     </section>
 
