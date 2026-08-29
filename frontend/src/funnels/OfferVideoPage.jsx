@@ -10,7 +10,7 @@ const CHECKOUT_ENDPOINTS = {
   recruitment: { diy: "diy-checkout", dwy: "direct-project-checkout" },
   reactivation: { diy: "reactivation-diy-checkout", dwy: "reactivation-project-checkout" },
   activation: { diy: "activation-diy-checkout", dwy: "activation-project-checkout" },
-  "board-fix": { diy: "board-fix-checkout" },
+  "board-fix": { diy: "board-fix-checkout", dwy: "board-fix-dwm-checkout" },
 };
 
 const OfferCard = ({ offer, choice, card, busy, startingLabel, guarantee, onBuy }) => (
@@ -79,11 +79,31 @@ export default function OfferVideoPage({ offer }) {
               )}
             </div>
             <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
-              <div className="offer-choice-grid">
-                <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.videoButtons.diyLabel}</button>
-                {content.videoButtons.dwyLabel && <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>}
-              </div>
-              <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>{shared.guarantee}</p>
+              {content.options ? (
+                <div className="offer-sales-grid">
+                  {Object.entries(content.options).map(([choice, card]) => (
+                    <section key={choice} className={`offer-sales-card ${choice}`} data-testid={`offer-${choice}-card-${offer}`}>
+                      <h2 data-testid={`offer-${choice}-heading-${offer}`}>{card.heading}</h2>
+                      {card.regularPrice && <p className="offer-regular-price" data-testid={`offer-${choice}-regular-price-${offer}`}>Regular price: <s>{card.regularPrice}</s></p>}
+                      <p className="offer-sales-price" data-testid={`offer-${choice}-price-${offer}`}>{card.price}</p>
+                      {card.discountNote && <p className="offer-discount-note" data-testid={`offer-${choice}-discount-${offer}`}>{card.discountNote}</p>}
+                      {card.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+                      <button type="button" className="button" onClick={() => startCheckout(choice)} disabled={Boolean(busy)} data-testid={`offer-${choice}-button-${offer}`}>
+                        {busy === choice ? shared.startingCheckout : card.buttonLabel}
+                      </button>
+                      <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>{shared.guarantee}</p>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="offer-choice-grid">
+                    <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.videoButtons.diyLabel}</button>
+                    {content.videoButtons.dwyLabel && <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>}
+                  </div>
+                  <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>{shared.guarantee}</p>
+                </>
+              )}
               {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
             </section>
             <div className="offer-sales-testimonials">

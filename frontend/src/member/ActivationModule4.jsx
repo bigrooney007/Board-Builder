@@ -159,24 +159,14 @@ export default function ActivationModule4() {
         <p>{activationM4Text.d_boardReviewParticipants}</p>
         <p data-testid="am4-context-line">Strategy: <strong>{data.strategy.status === "Ready for Board Review" ? `Ready for Board Review · v${data.strategy.review_version}` : data.strategy.status}</strong> · Board reviews received: <strong>{data.reviews.length}</strong></p>
         {!data.reviews.length && <p data-testid="am4-no-reviews">{activationM4Text.n_noReviewsYet}</p>}
-        {data.reviews.map((review) => {
-          const disapproved = (review.idea_reviews || []).filter((idea) => idea.decision === "Disapprove");
-          const approvedCount = (review.idea_reviews || []).filter((idea) => idea.decision === "Approve").length;
-          return (
-            <div key={review.name} style={{ borderLeft: "3px solid #000", paddingLeft: 12, margin: "14px 0" }} data-testid={`am4-review-${review.name.split(" ")[0].toLowerCase()}`}>
-              <p style={{ margin: 0 }}><strong>{review.name}</strong> ({review.role}) — {review.position}</p>
-              {(review.idea_reviews || []).length > 0 && (
-                <p style={{ margin: "4px 0 0" }} data-testid={`am4-idea-counts-${review.name.split(" ")[0].toLowerCase()}`}><strong>{approvedCount}</strong> idea{approvedCount === 1 ? "" : "s"} approved · <strong>{disapproved.length}</strong> disapproved</p>
-              )}
-              {disapproved.map((idea) => (
-                <p key={idea.key} style={{ margin: "4px 0 0" }}>Disapproved — {idea.title}: {idea.reason}</p>
-              ))}
-              {review.discussion_points && <p style={{ margin: "4px 0 0" }}>To discuss: {review.discussion_points}</p>}
-              {review.contribution && <p style={{ margin: "4px 0 0" }}>Contribution interest: {review.contribution}</p>}
-              {review.support_needs && <p style={{ margin: "4px 0 0" }}>Support needs: {review.support_needs}</p>}
-            </div>
-          );
-        })}
+        {data.reviews.map((review) => (
+          <div key={review.name} style={{ borderLeft: "3px solid #000", paddingLeft: 12, margin: "14px 0" }} data-testid={`am4-review-${review.name.split(" ")[0].toLowerCase()}`}>
+            <p style={{ margin: 0 }}><strong>{review.name}</strong> ({review.role}) — {review.position}</p>
+            {review.discussion_points && <p style={{ margin: "4px 0 0" }}>To discuss: {review.discussion_points}</p>}
+            {review.contribution && <p style={{ margin: "4px 0 0" }}>Contribution interest: {review.contribution}</p>}
+            {review.support_needs && <p style={{ margin: "4px 0 0" }}>Support needs: {review.support_needs}</p>}
+          </div>
+        ))}
       </section>
 
       <section className="member-card" data-testid="am4-revised-card">

@@ -541,6 +541,29 @@ const OnboardingSessionPanel = ({ session, setSession }) => {
   );
 };
 
+const ReferenceEmailsPanel = ({ application }) => {
+  const { byType, refresh } = useMaterials(application.application_id);
+  const name = application.profile_snapshot?.full_name || "this candidate";
+  return (
+    <div className="detail-section" data-testid="reference-emails-panel">
+      <h3>Reference Emails & Resources — {name}</h3>
+      <p className="material-description">Generate the emails and resources you need to run the reference process yourself. Copy each email and send it from your own inbox — you stay in control of every conversation.</p>
+      <MaterialCard type="candidate_referee_request" title="Candidate Referee Request Email" buttonLabel="Generate Candidate Referee Request Email"
+        description="An email to your board member candidate asking them to provide their referee information. If their secure Reference Information Form exists, the link is included automatically. Copy the email and send it yourself."
+        applicationId={application.application_id} material={byType.candidate_referee_request} refresh={refresh} />
+      <MaterialCard type="reference_request_email" title="Reference Check Email" buttonLabel="Generate Reference Check Email"
+        description="The email you send to a referee requesting a reference check for this candidate. Copy the email and send it to the referee yourself."
+        applicationId={application.application_id} material={byType.reference_request_email} refresh={refresh} />
+      <MaterialCard type="referee_confirmation_email" title="Referee Confirmation Email" buttonLabel="Generate Referee Confirmation Email"
+        description="A short email confirming the reference process with the referee — thanking them and confirming their reference has been received. Copy it and send it yourself."
+        applicationId={application.application_id} material={byType.referee_confirmation_email} refresh={refresh} />
+      <MaterialCard type="reference_call_script" title="Reference Call Guide" buttonLabel="Generate Reference Call Guide"
+        description="A guide for speaking with this candidate's referees directly — what to ask and what to listen for."
+        applicationId={application.application_id} material={byType.reference_call_script} refresh={refresh} />
+    </div>
+  );
+};
+
 const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profileReady }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   return (
@@ -687,6 +710,7 @@ export const Module5References = () => {
           <div className="candidate-progress" data-testid="candidate-progress">
             <h3>{detail.profile_snapshot?.full_name || detail.applicant_email} — <span data-testid="candidate-progress-status">{detail.status}</span></h3>
             {(movingForward || !notMovingForward) && <ReferenceProcessPanel application={detail} key={`ref-${detail.application_id}`} />}
+            {(movingForward || !notMovingForward) && <ReferenceEmailsPanel application={detail} key={`refmail-${detail.application_id}`} />}
           </div>
         )}
       </section>

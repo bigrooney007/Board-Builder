@@ -12,6 +12,9 @@ from course_content import ACTIVATION_MODULES, REACTIVATION_MODULES, SELF_GUIDED
 from member_auth import authenticate_member, require_entitlement
 
 PURCHASE_SOURCE = "board_fix_system_497"
+DWM_PURCHASE_SOURCE = "board_fix_dwm_5497"
+PURCHASE_SOURCES = [PURCHASE_SOURCE, DWM_PURCHASE_SOURCE]
+CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 
 PATHWAYS = [
     ("recruitment", "Board Recruitment", "recruitment_self_guided", SELF_GUIDED_MODULES),
@@ -30,11 +33,19 @@ STEP_OFF_OPTION = "Step Down From the Board"
 
 JOURNEY_STAGES = [
     {"key": "orientation", "label": "Orientation"},
-    {"key": "understand", "label": "Understand Your Board", "pathway": "reactivation", "modules": [1, 2, 3]},
-    {"key": "reactivate", "label": "Reactivate / Transition Your Current Board", "pathway": "reactivation", "modules": [4, 5]},
-    {"key": "recruit", "label": "Recruit the Board You Need", "pathway": "recruitment", "modules": []},
-    {"key": "activate", "label": "Activate Your Board Around Fundraising", "pathway": "activation", "modules": []},
+    {"key": "rebuild", "label": "Rebuild Your Present Board", "pathway": "reactivation", "modules": []},
+    {"key": "identify", "label": "Identify the Board Members You Need", "pathway": "recruitment", "modules": [1, 2]},
+    {"key": "launch", "label": "Launch Your Board Recruitment Campaign", "pathway": "recruitment", "modules": [3]},
+    {"key": "select", "label": "Select & Interview", "pathway": "recruitment", "modules": [4]},
+    {"key": "references", "label": "References & Background Checks", "pathway": "recruitment", "modules": [5]},
+    {"key": "onboard", "label": "Onboard Your Board Members", "pathway": "recruitment", "modules": [6]},
+    {"key": "fundraising_planning", "label": "Fundraising Planning", "pathway": "activation", "modules": [1, 2]},
+    {"key": "create_strategy", "label": "Create Your Fundraising Strategy", "pathway": "activation", "modules": [3]},
+    {"key": "adopt_strategy", "label": "Adopt Your Fundraising Strategy", "pathway": "activation", "modules": [4]},
+    {"key": "execute_strategy", "label": "Execute Your Fundraising Strategy", "pathway": "activation", "modules": [5]},
 ]
+
+INTAKE_STAGE_KEYS = {"identify": "recruitment", "fundraising_planning": "activation"}
 
 
 class OrientationSelections(BaseModel):
@@ -56,7 +67,7 @@ def create_board_fix_router(db) -> APIRouter:
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
     async def verify_session(session_id: str):
-        txn = await db.payment_transactions.find_one({"session_id": session_id, "purchase_source": PURCHASE_SOURCE}, {"_id": 0})
+        txn = await db.payment_transactions.find_one({"session_id": session_id, "purchase_source": {"$in": PURCHASE_SOURCES}}, {"_id": 0})
         if not txn:
             return None
         if txn.get("payment_status") != "paid":
@@ -85,6 +96,11 @@ def create_board_fix_router(db) -> APIRouter:
             raise HTTPException(status_code=403, detail="A completed Complete Board Fix purchase is required")
         purchase = await db.purchases.find_one({"session_id": payload.session_id}, {"_id": 0, "user_id": 1})
         user_id = (purchase or {}).get("user_id", "")
+        is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
+        if user_id:
+            await db.board_fix_journeys.update_one(
+                {"user_id": user_id},
+                {"$set": {"experience": "do_it_with_me" if is_dwm else "self_guided"}}, upsert=True)
         await db.board_fix_intakes.update_one(
             {"session_id": payload.session_id},
             {"$set": {"data": payload.data, "user_id": user_id, "lead_email": txn.get("lead_email", ""),
@@ -108,7 +124,7 @@ def create_board_fix_router(db) -> APIRouter:
             if seed:
                 seed["updated_at"] = now_iso()
                 await db.recruitment_profiles.update_one({"user_id": user_id}, {"$set": seed, "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
-        return {"status": "submitted", "redirect_url": "/board-fix-roadmap"}
+        return {"status": "submitted", "redirect_url": CALENDLY_URL if is_dwm else "/board-fix-roadmap"}
 
     @router.get("/board-fix/master-intake")
     async def master_intake(request: Request):
@@ -229,7 +245,7 @@ def create_board_fix_router(db) -> APIRouter:
                 "next_step": remaining[1]["title"] if len(remaining) > 1 else "",
                 "completed_steps": [m["title"] for m in completed],
                 "percent": round(len(completed) / len(states) * 100) if states else 0,
-                "needs_intake": pathway["needs_intake"] if stage["key"] in ("recruit", "activate") else False,
+                "needs_intake": pathway["needs_intake"] if INTAKE_STAGE_KEYS.get(stage["key"]) else False,
             })
         return {"master_intake_submitted": bool(master and master.get("submitted_at")),
                 "orientation": orientation, "journey": journey, "pathways": pathways}
@@ -272,7 +288,7 @@ def create_board_fix_router(db) -> APIRouter:
     def compute_next_action(row: dict) -> str:
         if not row["paid"]:
             if row["payment"]:
-                return "Complete the $497 checkout"
+                return "Complete the checkout"
             if row["form"]:
                 return "Visit the sales page and purchase"
             return "Submit the initial form"
@@ -319,7 +335,7 @@ def create_board_fix_router(db) -> APIRouter:
         leads = await db.funnel_leads.find({"offer_source": "board_fix"}, {"_id": 0}).sort("created_at", -1).to_list(300)
         txns = await db.payment_transactions.find({"offer_source": "board_fix_system"}, {"_id": 0}).to_list(300)
         intakes = await db.board_fix_intakes.find({}, {"_id": 0}).to_list(300)
-        purchases = await db.purchases.find({"purchase_source": PURCHASE_SOURCE}, {"_id": 0}).to_list(300)
+        purchases = await db.purchases.find({"purchase_source": {"$in": PURCHASE_SOURCES}}, {"_id": 0}).to_list(300)
         journeys = {j["user_id"]: j for j in await db.board_fix_journeys.find({}, {"_id": 0}).to_list(300)}
         customers = {}
 
@@ -382,6 +398,7 @@ def create_board_fix_router(db) -> APIRouter:
                     pathway["status_line"] = status_lines[pathway["key"]]
                 journey = journeys.get(row["member_user_id"], {})
                 row["roadmap_accessed_at"] = journey.get("roadmap_first_accessed_at", "")
+                row["experience"] = journey.get("experience", "")
                 row["board_fix_steps"] = await board_fix_steps(row["member_user_id"])
             started = [p for p in row["pathways"] if p["started"]]
             if row["form"]:

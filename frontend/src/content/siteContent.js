@@ -65,7 +65,6 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
-    "introSectionHeading": "Introduction",
     "introSectionParagraphs": [
       "I'll show you exactly how to determine which board members need to step up, which may need to step down, who you need to recruit, how to recruit them, how to activate your board, and how to get your board working with you to build your organization's fundraising system.",
       "You'll receive the complete process, tools, templates, resources, and support you need to execute it inside your organization."
@@ -170,8 +169,25 @@ export const SITE_CONTENT = {
         "youtubeId": "",
         "title": "Complete Board Fix Sales Video"
       },
-      "videoButtons": {
-        "diyLabel": "Get the Complete Board Fix System \u2014 $497"
+      "options": {
+        "diy": {
+          "heading": "Complete Board Fix System",
+          "regularPrice": "$997",
+          "price": "$497",
+          "discountNote": "50% OFF — $497 for the next 7 days",
+          "paragraphs": [
+            "Everything you need to fix your board yourself — the complete process, tools, resources and support to rebuild your present board, recruit the board members you need, and get your entire board raising money and building your organization with you."
+          ],
+          "buttonLabel": "Get the Complete Board Fix System — $497"
+        },
+        "dwy": {
+          "heading": "Do It With Me",
+          "price": "$5,497",
+          "paragraphs": [
+            "Everything in the Complete Board Fix System — and I work through the entire process with you. After you complete your intake, you will schedule your first session with me, and we will fix your board together, stage by stage, until your board is working the way your mission needs."
+          ],
+          "buttonLabel": "Do It With Me — $5,497"
+        }
       }
     },
     "checkoutError": "We could not start checkout. Please try again in a moment.",

@@ -37,8 +37,8 @@ export const LandingPage = ({ onJoin }) => (
     </section>
 
     <section className="home-intro" data-testid="home-intro-section">
-      <h2 data-testid="home-intro-heading">{home.introSectionHeading}</h2>
-      {home.introSectionParagraphs.map((paragraph, index) => <p key={index} data-testid={`home-intro-paragraph-${index + 1}`}>{paragraph}</p>)}
+      <p data-testid="home-intro-paragraph-1"><strong>{home.introSectionParagraphs[0]}</strong></p>
+      <p data-testid="home-intro-paragraph-2">{home.introSectionParagraphs[1]}</p>
       <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-intro-cta-button">{home.cta}</a></p>
     </section>
 

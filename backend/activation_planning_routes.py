@@ -1104,15 +1104,9 @@ def create_activation_planning_router(db) -> APIRouter:
             raise HTTPException(status_code=422, detail="Invalid review selection")
         if payload.position != REVIEW_OPTIONS[0] and not payload.discussion_points.strip():
             raise HTTPException(status_code=422, detail="Please share what you would like the Board to discuss before the plan is adopted")
-        for idea in payload.idea_reviews:
-            if idea.decision not in {"Approve", "Disapprove"}:
-                raise HTTPException(status_code=422, detail="Each idea must be approved or disapproved")
-            if idea.decision == "Disapprove" and not idea.reason.strip():
-                raise HTTPException(status_code=422, detail="Please give the reason for each idea you disapprove")
         now = datetime.now(timezone.utc).isoformat()
         review = {"position": payload.position, "discussion_points": payload.discussion_points,
-                  "contribution": payload.contribution, "support_needs": payload.support_needs,
-                  "idea_reviews": [idea.model_dump() for idea in payload.idea_reviews]}
+                  "contribution": payload.contribution, "support_needs": payload.support_needs}
         review_updates = {"review_status": "REVIEWED", "review": review, "review_submitted_at": now}
         if shared_strategy and not record.get("review_version"):
             review_updates["review_version"] = shared_strategy.get("review_version", 0)
@@ -1171,16 +1165,13 @@ def create_activation_planning_router(db) -> APIRouter:
                     "position": (p.get("review") or {}).get("position", ""),
                     "discussion_points": (p.get("review") or {}).get("discussion_points", ""),
                     "contribution": (p.get("review") or {}).get("contribution", ""),
-                    "support_needs": (p.get("review") or {}).get("support_needs", ""),
-                    "idea_reviews": (p.get("review") or {}).get("idea_reviews", [])}
+                    "support_needs": (p.get("review") or {}).get("support_needs", "")}
                    for p in participants if p.get("review_status") == "REVIEWED"]
         reviewed_participants = [{"participant_id": p["participant_id"], "name": p["name"],
                                   "role": p.get("role", "Board Member"), "email": p.get("email", ""),
                                   "planning_submitted_at": p.get("submitted_at", ""),
                                   "review_submitted_at": p.get("review_submitted_at", ""),
-                                  "position": (p.get("review") or {}).get("position", ""),
-                                  "ideas_approved": sum(1 for i in (p.get("review") or {}).get("idea_reviews", []) if i.get("decision") == "Approve"),
-                                  "ideas_disapproved": sum(1 for i in (p.get("review") or {}).get("idea_reviews", []) if i.get("decision") == "Disapprove")}
+                                  "position": (p.get("review") or {}).get("position", "")}
                                  for p in participants if p.get("review_status") == "REVIEWED"]
         members = []
         for p in participants:
@@ -1221,7 +1212,7 @@ def create_activation_planning_router(db) -> APIRouter:
                           "their_review": p.get("review", {})} for p in participants if p.get("review_status") == "REVIEWED"]
         context = ("ORGANIZATION CONTEXT:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
                    + "\n\nTHE FUNDRAISING STRATEGY PLAN THE BOARD REVIEWED:\n" + reviewed_text
-                   + "\n\nEVERY BOARD MEMBER REVIEW — overall position, suggestions, and idea-by-idea approvals/disapprovals with reasons (preserve who said what):\n" + jsonlib.dumps(reviews_block, indent=1, default=str)
+                   + "\n\nEVERY BOARD MEMBER REVIEW — overall position, suggestions and discussion points (preserve who said what):\n" + jsonlib.dumps(reviews_block, indent=1, default=str)
                    + "\n\nORIGINAL BOARD MEMBER PLANNING RESPONSES:\n" + jsonlib.dumps(responses_block, indent=1, default=str)
                    + "\n\nACTIVATION INTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
                        "fundraising_goal", "amount_needed", "money_accomplish", "organization_priorities",
@@ -1477,6 +1468,8 @@ def create_activation_planning_router(db) -> APIRouter:
             "user_id": user_id, "status": "Generating", "generation_error": "", "updated_at": now},
             "$setOnInsert": {"created_at": now}}, upsert=True)
         participants = await db.activation_participants.find({"user_id": user_id}, {"_id": 0}).to_list(300)
+        recommitments = await db.reactivation_board_members.find(
+            {"user_id": user_id, "status": "COMPLETED"}, {"_id": 0, "name": 1, "role": 1, "response": 1}).to_list(100)
         import json as jsonlib
         responsibilities = [{"board_member_name": p["name"], "board_role": p.get("role", ""),
                              "agreed_responsibility": p.get("agreed_responsibility", ""),
@@ -1485,6 +1478,9 @@ def create_activation_planning_router(db) -> APIRouter:
                    + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
                    + "\n\nPLAN ADOPTION CONCLUSION (founder's own words):\n" + adoption.get("conclusion", "")
                    + "\n\nAGREED BOARD MEMBER RESPONSIBILITIES:\n" + jsonlib.dumps(responsibilities, indent=1, default=str)
+                   + ("\n\nBOARD MEMBER PROFILE & RECOMMITMENT RESPONSES (what each member said about how they can serve and contribute — use where relevant):\n"
+                      + jsonlib.dumps([{"name": r.get("name", ""), "board_role": r.get("role", ""), "their_response": r.get("response", {})}
+                                       for r in recommitments], indent=1, default=str) if recommitments else "")
                    + "\n\nINTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
                        "fundraising_goal", "amount_needed", "money_accomplish"]}, indent=1, default=str))
 
@@ -1645,6 +1641,9 @@ def create_activation_planning_router(db) -> APIRouter:
         intake = await activation_intake(user_id)
         now = datetime.now(timezone.utc).isoformat()
         await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {"fp_status": "Generating", "fp_error": ""}})
+        recommitment = await db.reactivation_board_members.find_one(
+            {"user_id": user_id, "email": (record.get("email") or "").lower(), "status": "COMPLETED"},
+            {"_id": 0, "response": 1})
         import json as jsonlib
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
                                                        "direction": intake.get("direction_12_24", "")}, indent=1)
@@ -1653,6 +1652,8 @@ def create_activation_planning_router(db) -> APIRouter:
                    + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
                    + "\n\nPLAN ADOPTION CONCLUSION:\n" + adoption.get("conclusion", "")
                    + "\n\nTHIS MEMBER'S OWN PLANNING RESPONSE:\n" + jsonlib.dumps(record.get("response", {}), indent=1, default=str)
+                   + ("\n\nTHIS MEMBER'S BOARD MEMBER PROFILE & RECOMMITMENT RESPONSE (the role and contribution they agreed to when recommitting to the board):\n"
+                      + jsonlib.dumps((recommitment or {}).get("response", {}), indent=1, default=str) if recommitment else "")
                    + "\n\nTHIS MEMBER'S OWN STRATEGY REVIEW:\n" + jsonlib.dumps(record.get("review", {}), indent=1, default=str)
                    + "\n\nAPPROVED EXECUTION TOOLKIT TOOL TITLES (reference by name only):\n"
                    + "\n".join(f"- {tool.get('title', '')}" for key in ["email_tools", "text_tools", "call_scripts", "stewardship_tools"]

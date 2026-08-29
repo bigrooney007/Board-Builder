@@ -9,23 +9,47 @@ const STAGE_META = {
     route: () => "/board-fix-orientation",
     text: "Watch the welcome video, answer two quick questions, and generate the Board Member Profile & Recommitment Form you will send to your current board members.",
   },
-  understand: {
+  rebuild: {
     route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 1}`,
-    text: "Send the Recommitment Form to every current board member, collect their responses, and let the system help you understand what each person — and your board as a whole — is telling you.",
+    text: "Send the Recommitment Form to every current board member, understand what each person is telling you, and have the conversations that follow — recommit the people ready to step up, move the right people to advisory roles, and let others step down gracefully.",
   },
-  reactivate: {
-    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 4}`,
-    text: "Have the conversations your board summary points to. Recommit the people ready to step up, move the right people to advisory roles, and let others step off gracefully.",
-  },
-  recruit: {
-    route: () => "/app/recruitment/self-guided",
+  identify: {
+    route: (stage) => `/app/recruitment/self-guided/module/${stage.current_module || 1}`,
     intakeRoute: "/board-recruitment-intake?bf=1",
-    text: "Identify the professionals your board is missing, generate your recruitment materials, launch your campaign, and select, interview and onboard the board members you need.",
+    text: "Compare your present board — including you — against the board your mission needs. The gap becomes the board members you need to recruit.",
   },
-  activate: {
-    route: () => "/app/activation/self-guided",
+  launch: {
+    route: () => "/app/recruitment/self-guided/module/3",
+    text: "Generate your recruitment resources, review and approve them, and launch your board recruitment campaign.",
+  },
+  select: {
+    route: () => "/app/recruitment/self-guided/module/4",
+    text: "Review your applicants, invite the strongest to interview, and decide who moves forward. You make every selection decision.",
+  },
+  references: {
+    route: () => "/app/recruitment/self-guided/module/5",
+    text: "Run references and background checks: generate the reference emails, contact referees yourself, and prepare conditional appointments where you choose to move ahead.",
+  },
+  onboard: {
+    route: () => "/app/recruitment/self-guided/module/6",
+    text: "Onboard your new board members with the onboarding guide, agreements and profile forms — and send each one their Final Board Appointment Email.",
+  },
+  fundraising_planning: {
+    route: (stage) => `/app/activation/self-guided/module/${stage.current_module || 1}`,
     intakeRoute: "/board-activation-intake?bf=1",
-    text: "Bring your board into the fundraising planning process, build the strategy together, and equip every board member to execute their part.",
+    text: "Bring your whole board — current and newly recruited — into fundraising planning. Send every member the Fundraising Planning Form and complete your own.",
+  },
+  create_strategy: {
+    route: () => "/app/activation/self-guided/module/3",
+    text: "Build your Fundraising Strategy Plan from every board member's ideas, relationships and capabilities — combined with your own planning response.",
+  },
+  adopt_strategy: {
+    route: () => "/app/activation/self-guided/module/4",
+    text: "Take the completed strategy to your board, work through it together in your board meeting, and adopt the plan you will carry as one board.",
+  },
+  execute_strategy: {
+    route: () => "/app/activation/self-guided/module/5",
+    text: "Equip every board member — including you — with their fundraising portfolio, scripts and resources, and start executing the plan together.",
   },
 };
 
@@ -55,7 +79,7 @@ export default function BoardFixRoadmapPage() {
         </header>
         <section className="member-card" data-testid="board-fix-roadmap-instructions">
           <h2>How the Complete Board Fix System Works</h2>
-          <p>We fix your board in a specific order: <strong>Orientation → Understand Your Board → Reactivate / Transition Your Current Board → Recruit the Board You Need → Activate Your Board Around Fundraising.</strong></p>
+          <p>We fix your board in a specific order: <strong>Rebuild Your Present Board → Identify the Board Members You Need → Launch Your Board Recruitment Campaign → Select & Interview → References & Background Checks → Onboard Your Board Members → Fundraising Planning → Create Your Fundraising Strategy → Adopt Your Fundraising Strategy → Execute Your Fundraising Strategy.</strong></p>
           <p>Work through the stages below in order. You can leave and come back any time — your progress is always saved, and this roadmap will always show you exactly where you are and what comes next.</p>
         </section>
         {error && <p className="submit-error" data-testid="board-fix-roadmap-error">{error}</p>}

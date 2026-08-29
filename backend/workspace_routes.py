@@ -227,7 +227,27 @@ def create_workspace_router(db) -> APIRouter:
                 cv_doc = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 1})
                 if cv_doc and cv_doc.get("cv_text"):
                     context += "\n\nCANDIDATE CV / RESUME (extracted text — use only what is actually present):\n" + cv_doc["cv_text"][:12000]
-        if payload.type == "conditional_offer":
+        if payload.type == "candidate_referee_request":
+            process = await db.reference_processes.find_one(
+                {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "candidate_token": 1, "status": 1})
+            if process and process.get("candidate_token") and process.get("status") not in {"Completed", "References Submitted"}:
+                context += f"\n\nSECURE REFERENCE INFORMATION FORM URL FOR THIS CANDIDATE (include this exact link): {origin}/reference-form/{process['candidate_token']}"
+            else:
+                context += "\n\nNO SECURE REFERENCE FORM LINK EXISTS YET — ask the candidate to reply to this email with their referee details."
+        if payload.type == "powerhouse_board_blueprint":
+            context += ("\n\nPRESENT BOARD COMPOSITION RULE: The founder/executive director is a serving member of the present board. "
+                        "Include the founder — with their actual skills, experience and role — as part of the present board when assessing "
+                        "the current board composition and calculating the gap between the present board and the ideal board.")
+            roster = await db.reactivation_board_members.find(
+                {"user_id": user_id, "status": "COMPLETED"}, {"_id": 0, "name": 1, "role": 1, "response": 1}).to_list(100)
+            if roster:
+                import json as _json
+                context += ("\n\nCURRENT BOARD MEMBER RECOMMITMENT RESPONSES (submitted by the board members themselves through the "
+                            "Board Member Profile & Recommitment Form — use these to understand what the present board actually brings, "
+                            "who is staying, who is transitioning, and what gaps remain):\n"
+                            + _json.dumps([{"name": r.get("name", ""), "board_role": r.get("role", ""), "their_response": r.get("response", {})}
+                                           for r in roster], indent=1, default=str))
+        if payload.type in {"conditional_offer", "formal_appointment_email"}:
             links = []
             overview_token = await ensure_share_token(user_id, "organization_overview")
             manual_token = await ensure_share_token(user_id, "board_manual")

@@ -1326,3 +1326,8 @@ body.public-centered table td {
 .home-includes-list { list-style: none; counter-reset: includes; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
 .home-includes-list li { counter-increment: includes; font-size: 17px; line-height: 1.7; color: #1c1c1c; }
 .home-includes-list li::before { content: counter(includes) ". "; font-weight: 800; color: var(--green); margin-right: 4px; }
+
+/* Offer sales pricing (regular vs discounted) */
+.offer-regular-price { margin: 0; color: #66746c; font-size: 14px; }
+.offer-regular-price s { text-decoration-thickness: 2px; }
+.offer-discount-note { margin: 2px 0 10px; font-weight: 800; color: var(--green); font-size: 14px; letter-spacing: .02em; }

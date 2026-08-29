@@ -85,7 +85,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "board_fix_system" and tier == "497":
         entitlement = "board_fix_system"
         product_name = "Complete Board Fix System"
-        extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided"])
+        extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided", "recruitment_selection_onboarding"])
+    elif offer_source == "board_fix_system" and tier == "dwm_5497":
+        entitlement = "board_fix_system"
+        product_name = "Complete Board Fix — Do It With Me"
+        extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided", "recruitment_selection_onboarding"])
     elif offer_source == "direct_diy_board_reactivation" and tier == "497":
         entitlement = "reactivation_self_guided"
         product_name = "Do It Yourself Board Reactivation"
@@ -139,10 +143,16 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "offer": "Selection, Interview, Reference Check & Onboarding", "price_paid": 297,
         })
     elif offer_source == "board_fix_system":
-        purchase.update({
-            "purchase_source": "board_fix_system_497",
-            "offer": "Complete Board Fix System", "price_paid": 497,
-        })
+        if tier == "dwm_5497":
+            purchase.update({
+                "purchase_source": "board_fix_dwm_5497",
+                "offer": "Complete Board Fix — Do It With Me", "price_paid": 5497,
+            })
+        else:
+            purchase.update({
+                "purchase_source": "board_fix_system_497",
+                "offer": "Complete Board Fix System", "price_paid": 497,
+            })
     elif offer_source == "direct_diy_board_reactivation":
         purchase.update({
             "purchase_source": "direct_diy_board_reactivation_497",

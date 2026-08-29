@@ -64,7 +64,9 @@ export default function BoardFixIntakePage() {
     setBusy(true);
     try {
       const response = await axios.post(`${API}/board-fix-intake/submit`, { session_id: sessionId, data });
-      navigate(response.data.redirect_url || "/board-fix-roadmap");
+      const destination = response.data.redirect_url || "/board-fix-roadmap";
+      if (destination.startsWith("http")) { window.location.href = destination; return; }
+      navigate(destination);
     } catch (err) {
       setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your intake. Please try again.");
       setBusy(false);
@@ -83,7 +85,7 @@ export default function BoardFixIntakePage() {
         {state === "blocked" && (
           <section className="member-card" data-testid="board-fix-intake-blocked">
             <p>We could not find a completed Complete Board Fix purchase. If you just paid, please use the link Stripe returned you to.</p>
-            <a className="button" href="/offer/board-fix" data-testid="board-fix-intake-blocked-link">Get the Complete Board Fix System — $497</a>
+            <a className="button" href="/offer/board-fix" data-testid="board-fix-intake-blocked-link">Get the Complete Board Fix System</a>
           </section>
         )}
         {state === "ready" && (
