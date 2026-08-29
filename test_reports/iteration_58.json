@@ -1,0 +1,26 @@
+{
+  "summary": "Independent backend-only verification of the Stripe webhook implementation in the preview environment (no real checkouts/payments, no funnel, no frontend). Created pytest suite /app/backend/tests/test_stripe_webhook_signature.py (8 tests, 8 passed): (1) self-signed valid checkout.session.completed -> 200 {status: ok}; (2) same body signed with a wrong secret -> 400 detail 'Invalid Stripe signature'; (3) unsigned POST -> 400 same detail; (4) tampered raw body with valid-for-original signature -> 400; (5) idempotency with a seeded payment_transactions doc (session_id cs_wh_test_idem, purchase_source board_fix_system_497) — first delivery flipped it to status=completed/payment_status=paid with stripe_payment_intent_id set, replay returned 200 and left exactly ONE unchanged document (updated_at identical, no duplicate, no overwrite); (6) validly signed checkout.session.expired -> 200; (7) checkout.session.async_payment_failed -> 200; (8) production https://nonprofitboardbuilder.com/api/stripe/webhook responds 400 (not 5xx) to an unsigned POST, confirming the deployed code path is alive and signature verification is executing. Conclusion: the webhook implementation is CORRECT; the production 400s are consistent with a STRIPE_WEBHOOK_SECRET mismatch on the deployed environment, not a crash or code defect. Test docs cleaned up (0 remaining). No secret values printed or logged.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/stripe/webhook", "issue": "checkout.session.expired and checkout.session.async_payment_failed handlers lack the payment_status $ne 'paid' guard used by checkout.session.completed. Verified in preview: after a doc reached status=completed/payment_status=paid, a validly signed late 'checkout.session.expired' event overwrote it to expired/expired, and async_payment_failed overwrote it to failed/failed. Stripe can deliver events out of order / redeliver, so a paid purchase could be regressed to expired/failed and break downstream fulfillment. Recommend adding {\"payment_status\": {\"$ne\": \"paid\"}} to those two update_one filters. Pre-existing, out of the current fix scope."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_stripe_webhook_signature.py", "/app/test_reports/pytest/stripe_webhook_iter58.xml"],
+  "action_items": [
+    "No code fix required for the reported production issue: implementation verified correct — user must supply the live endpoint's whsec_ signing secret for the production STRIPE_WEBHOOK_SECRET (and redeploy) so live deliveries verify.",
+    "Optional hardening: add payment_status $ne 'paid' guard to checkout.session.expired and checkout.session.async_payment_failed handlers in payment_routes.py (~lines 620-627) to prevent out-of-order events from regressing a paid transaction."
+  ],
+  "critical_code_review_comments": [
+    "payment_routes.py stripe_webhook: raw request body is used unmodified for construct_event and errors are narrowed to ValueError/SignatureVerificationError -> correct pattern; STRIPE_WEBHOOK_SECRET read via os.environ[...] (fails fast) -> good.",
+    "expired/async_payment_failed updates are unguarded and can downgrade an already-paid transaction (verified reproducible)."
+  ],
+  "updated_files": ["/app/backend/tests/test_stripe_webhook_signature.py"],
+  "success_rate": {"backend": "100% (8/8 webhook tests passed)", "frontend": "not tested (out of scope)"},
+  "seed_data_creation": "Temporary payment_transactions docs session_id 'cs_wh_test_idem' and 'cs_wh_test_expired_guard' inserted directly in Mongo and deleted afterwards (verified 0 remaining).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reusable webhook suite at /app/backend/tests/test_stripe_webhook_signature.py signs events itself from STRIPE_WEBHOOK_SECRET in /app/backend/.env; run with `cd /app/backend && python -m pytest tests/test_stripe_webhook_signature.py -p xdist -n 0 -v`. It never creates real Stripe checkouts. Known unfixed gap: expired/async_payment_failed handlers can overwrite a paid transaction.",
+  "rca_of_the_issue": "Preview environment webhook returns 200 for correctly signed payloads and 400 'Invalid Stripe signature' only for wrong-secret/unsigned/tampered payloads, and production returns 400 (not 5xx) for unsigned POSTs — so the code path is alive and HMAC verification works. The 19 live delivery failures therefore stem from the deployed STRIPE_WEBHOOK_SECRET not matching the live Stripe endpoint's signing secret. Mitigation: set the live whsec_ value in the production environment and redeploy; Stripe can then resend the failed events."
+}

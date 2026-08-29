@@ -619,11 +619,13 @@ def create_stripe_webhook_router(db) -> APIRouter:
             await _stop_nurture_after_paid(item)
         elif event_type == "checkout.session.async_payment_failed":
             await db.payment_transactions.update_one(
-                {"session_id": item["id"]}, {"$set": {"status": "failed", "payment_status": "failed", "updated_at": now}}
+                {"session_id": item["id"], "payment_status": {"$ne": "paid"}},
+                {"$set": {"status": "failed", "payment_status": "failed", "updated_at": now}}
             )
         elif event_type == "checkout.session.expired":
             await db.payment_transactions.update_one(
-                {"session_id": item["id"]}, {"$set": {"status": "expired", "payment_status": "expired", "updated_at": now}}
+                {"session_id": item["id"], "payment_status": {"$ne": "paid"}},
+                {"$set": {"status": "expired", "payment_status": "expired", "updated_at": now}}
             )
         return {"status": "ok"}
 
