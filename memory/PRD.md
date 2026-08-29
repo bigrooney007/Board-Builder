@@ -6,7 +6,7 @@ SaaS for nonprofit board building (React + FastAPI + MongoDB). Three funnels (Re
 ## Status (June 2026)
 - Complete Board Fix System fully coded, INCLUDING the June structural update below. FULL FUNNEL E2E TESTING STILL PENDING per user's standing "do not test yet" directive.
 - Stripe checkout MOCKED (test mode locally). AI generation via Emergent LLM key. Resend for emails.
-- OPEN ITEM: Live production Stripe webhook. VERIFIED (iteration_58, 8/8 passed): implementation is correct — raw-body stripe.Webhook.construct_event, valid sig=200, invalid=400, idempotent replays, prod endpoint alive (400 not 5xx). Added $ne:"paid" guard to expired/async_payment_failed handlers so Stripe's queued retries cannot regress paid transactions. ROOT CAUSE: production STRIPE_WEBHOOK_SECRET does not match the LIVE endpoint's signing secret. BLOCKED ON USER: needs live whsec from Stripe Dashboard (Developers → Webhooks → nonprofitboardbuilder.com endpoint → Reveal signing secret) set in the deployment's env config, then redeploy and use Stripe "Resend" on failed events. Test suite: /app/backend/tests/test_stripe_webhook_signature.py.
+- Stripe webhook: FIXED locally — live signing secret set in backend/.env (June 2026), backend verified (8/8 webhook tests pass with new secret). AWAITING USER: redeploy to production, then "Resend" the 19 failed events in Stripe Dashboard. Retry-safe guards in place.
 
 ## June 2026 Structural Update (Complete Board Fix flow/pricing) — IMPLEMENTED, UNTESTED
 1. Pricing: /offer/board-fix now shows Option 1 "Complete Board Fix System" regular $997, discounted $497 (50% OFF, 7 days) + Option 2 "Do It With Me" $5,497. All price text lives in siteContent.js offerSalesPages["board-fix"].options (configurable, not hardcoded in components).
