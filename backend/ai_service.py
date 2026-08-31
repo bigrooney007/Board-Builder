@@ -222,7 +222,27 @@ NEVER mention AI."""},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {
         "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual board terminology, e.g. Board Member / Founding Board Member]",
         "body": "string — a candidate-specific conditional appointment email that feels PERSONALLY WRITTEN. Start 'Dear [actual candidate first name],'. OPENING: congratulate them and state clearly that following the interview process the organization is pleased to offer them a Conditional Appointment to the Board. WHY WE WANT YOU TO MOVE FORWARD: 1-2 candidate-specific paragraphs connecting their ACTUAL verified experience to the organization's actual priorities and Module 1 board needs — never invent experience, never generic 'we were impressed with your experience'. CONDITIONS: explain the appointment remains conditional on outstanding final requirements — include ONLY the requirements the supplied status context shows are actually outstanding (e.g. Reference Check, Background Check); if reference checking is complete do not claim it is outstanding; if background checking is not required omit it; explain that once the applicable requirements are completed and the organization confirms appointment they move into formal board service. YOUR NEXT STEP — BOARD ONBOARDING: invite them to the onboarding session and explain appropriate purposes (meet fellow board members and leadership, understand mission/direction, board responsibilities, how the board operates, fundraising/partnership expectations where applicable, how their particular expertise can contribute, ask questions). ONBOARDING DETAILS: use only the actual supplied date, time, timezone, format, meeting link and location — omit anything not supplied, no placeholders. DOCUMENTS AND FORMS: present the actual supplied links, clearly distinguishing items to REVIEW (Board Member Manual, Organizational Overview) from items to COMPLETE/SIGN (Board Member Profile Form, Board Member Agreement, Confidentiality Agreement, Conflict of Interest Disclosure) and ask them to review and complete the applicable forms before onboarding. CLOSING: warm organization-specific closing reinforcing why the organization looks forward to working with them; sign with actual founder/contact details. Use the words 'conditional appointment'; NEVER 'confidential board position'. Never make false statements about legal requirements."}},
-    "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant who was interviewed but will not move forward"}},
+    "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {
+        "subject": "Exactly: Thank You for Meeting With Us",
+        "body": "The complete candidate-specific post-interview rejection email. Clearly and respectfully communicate that the candidate will not move forward, thank them for their application and interview time, preserve the relationship, and never invent or expose a rejection reason.",
+    }, "note": """You are an experienced nonprofit Board recruitment consultant writing a respectful post-interview closure email to ONE Board candidate whom the founder has already decided not to move forward.
+The founder has made the decision. AI must not evaluate or justify the decision.
+Use: candidate's actual first name; actual organization name; actual Board terminology; founder's actual contact information.
+The email must:
+1. Thank the candidate sincerely for both their application AND the time they invested in the interview conversation.
+2. Acknowledge their interest in the organization's mission and their willingness to consider Board service.
+3. State clearly and respectfully that the organization will not be moving their candidacy forward to the next stage.
+4. Where useful, say only at a high level that the organization is making its decisions based on the particular needs of the Board it is building at this stage.
+5. Make clear through tone that this decision is about the organization's current Board needs and should not be presented as a judgment of the person's overall professional value.
+6. Thank them again for engaging with the organization.
+7. End respectfully with the founder's actual supplied signature.
+NEVER invent the reason they were rejected. NEVER state: they lacked experience; they performed poorly; they gave weak answers; they were not committed enough; they were not a culture fit; another candidate scored higher; another candidate was better; another candidate was more qualified; the Interview Guide identified concerns — unless the founder explicitly supplied a candidate-facing reason they want communicated.
+Do not expose: evaluation ratings; founder notes; internal interview concerns; internal Board-gap analysis; candidate comparisons; AI analysis.
+Do not create false hope. Do not automatically promise: future Board consideration; Advisory Board membership; committee service; volunteer opportunities; employment; partnership; that their information will be kept on file. Only include such a future relationship if the founder explicitly instructed that for THIS candidate.
+Do not use cold legalistic language. Do not over-apologize. Do not make the founder sound embarrassed for making a selection decision.
+The candidate should finish the email understanding clearly: "I am not moving forward, but the organization treated my time and interest with respect."
+Approximately 150-225 words. Professional, gracious, clear and relationship-preserving.
+NEVER mention AI."""},
     "onboarding_script": {"module": 6, "title": "Board Member Onboarding Facilitator Guide", "per_application": False, "schema": {
         "session_purpose": "string — 1-2 short paragraphs explaining what the founder should accomplish during the onboarding session",
         "before_you_begin": ["string — short checklist of items that already exist and should be available (e.g. Board Member Manual, Organizational Overview, signed agreements, Board Member Profile status, meeting information) — do not create new resources"],
@@ -233,19 +253,103 @@ NEVER mention AI."""},
                       "discussion_questions": ["string — questions to invite member input where appropriate (e.g. 'Based on what you know so far, where do you believe your experience could make the greatest contribution?'); empty list where not applicable"]}],
     }, "note": "You are an experienced nonprofit board-development consultant preparing a founder to PERSONALLY onboard newly recruited board members. This is a practical FACILITATOR GUIDE the founder follows during the meeting — NOT another Board Member Manual and NOT a generic article. Section 1: suggested time 10-15 minutes where appropriate, and if multiple members attend, invite each to briefly share their background, what interested them in the mission and what they hope to contribute. Section 4: adapt to the ACTUAL board type — never describe an Advisory Board as having governing authority, and never imply board members run day-to-day staff operations unless the working-board structure requires it. Section 6: use actual new-member expertise where supplied; suggest discussion questions, never make final role assignments. Section 7: fundraising can include introductions, opening doors, donor conversations, corporate partnerships, sponsorship, stewardship, events, grant relationships, sharing the mission, professional expertise, personal giving only where applicable — never tell every member they must personally ask for money unless that is actual policy. Section 8: explain what each supplied document is for and what remains outstanding — do not restate the documents. NEVER invent bylaws, committees, officer roles, voting rules, legal obligations, meeting schedules, donation requirements, strategic priorities, programs or statistics; omit or generalize what is unknown."},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
-        "header": {"candidate": "string — actual candidate name", "current_position": "string — actual position if known, else empty", "organization": "string — actual employer if known, else empty", "board_opportunity": "string — actual organization + its actual board terminology", "suggested_duration": "string — ONLY if a standard interview duration exists in the supplied context; otherwise empty string"},
-        "purpose_of_the_interview": {"explanation": "string — a short organization-and-candidate-specific explanation of what the founder should accomplish", "evaluation_questions": ["string — 4 to 6 questions the FOUNDER should be able to answer by the end (e.g. does the candidate demonstrate a genuine connection to this organization's mission; how could their specific background strengthen the board areas being recruited for; do they appear willing to contribute beyond attending meetings; what time and responsibility can they realistically take on; what needs clarification). Adapt to this specific person."]},
-        "candidate_snapshot": "string — 1 to 3 concise paragraphs summarizing the candidate's most relevant VERIFIED background: current/previous professional work, expertise, leadership, nonprofit/board experience where known, relevant networks and their stated reason for applying. No generic praise. No selection recommendation.",
-        "welcome_and_introductions": {"objective": "string", "talking_points": ["string — practical talking points"], "suggested_opening": "string — short natural wording to welcome and thank the candidate and explain how the conversation will flow. Not a long speech."},
-        "introduce_the_organization": {"talking_points": ["string — 3 to 5 concise points from actual organization context: why it exists, mission, current stage, what the board is being built to accomplish"], "transition": "string — a natural transition into candidate questions"},
-        "learn_about_this_candidate": [{"question": "string — personalized question referencing ACTUAL candidate CV/application items", "why_this_question_matters": "string — one concise sentence", "listen_for": ["string — 3 to 6 concise things"], "optional_follow_up": "string — one follow-up question, or empty"}],
-        "mission_alignment": [{"question": "string — connects candidate experience + organization mission + actual needs", "why_this_question_matters": "string", "listen_for": ["string"], "optional_follow_up": "string"}],
-        "contribution_to_the_board": [{"question": "string — explores how this candidate could contribute to the SPECIFIC board needs identified in Module 1 (what they could help lead, expertise, relationships they may open, the responsibility that interests them) — never assign a role automatically", "why_this_question_matters": "string", "listen_for": ["string"], "optional_follow_up": "string"}],
-        "commitment_and_participation": [{"question": "string — realistic time availability, meeting participation, committee/leadership participation, follow-through, use of expertise/networks, fundraising participation only where applicable — never invent a required personal donation", "why_this_question_matters": "string", "listen_for": ["string"], "optional_follow_up": "string"}],
-        "collaboration_and_accountability": [{"question": "string — 1 to 2 questions about working with other board members and leadership: disagreement, accountability, collaborative decisions, feedback, follow-through. No psychological profiling.", "why_this_question_matters": "string", "listen_for": ["string"], "optional_follow_up": "string"}],
-        "candidate_questions": "string — tell the founder to invite the candidate's questions and what to listen for (mission, board role, expectations, direction, contribution). NEVER say that asking about time commitment, meetings or logistics is a negative sign.",
-        "closing": "string — natural closing language: thank the candidate, explain the organization is interviewing/reviewing candidates, make clear no final decision is being announced, explain the organization will follow up on next steps",
-    }, "note": "You are an experienced nonprofit board recruitment consultant preparing a founder to interview ONE SPECIFIC board candidate. This is NOT a generic interview questionnaire — use the applicant's actual application, CV, background and expressed interests together with the organization's actual mission, board type, current needs, Module 1 priority board profiles, stage and goals. learn_about_this_candidate: 2-3 questions DIRECTLY tied to specific items in the candidate's CV or application. mission_alignment: about 2 questions. contribution_to_the_board: 2-3 questions using only supported areas. NEVER invent candidate employment, achievements, qualifications, board experience, motivation, relationships, availability, personality or beliefs. Never infer sensitive personal characteristics. If candidate information is limited, use only what is actually known — no fake specificity. NEVER include an AI score, fit score, hire/do-not-hire, recommended/not-recommended, or pass/fail — the founder makes the final judgment."},
+        "header": {
+            "candidate": "string — actual candidate name",
+            "current_position": "string — actual current professional position where supplied; otherwise empty string",
+            "organization": "string — actual employer/organization where supplied; otherwise empty string",
+            "board_opportunity": "string — actual nonprofit name + actual Board terminology",
+            "priority_profile_being_explored": "string — the actual priority Board expertise/profile associated with this applicant where supplied or reasonably supported by their verified background. Do not state that they have been selected for this role.",
+            "suggested_duration": "string — ONLY when an actual standard interview duration was supplied by the organization; otherwise empty string",
+        },
+        "founder_pre_interview_brief": {
+            "candidate_snapshot": "string — concise verified summary of the candidate's professional background, relevant experience and application information. No praise or recommendation.",
+            "potential_connection_to_board_need": "string — explain which approved priority Board need their verified background may potentially relate to and why this should be explored. Do not declare fit.",
+            "application_points_to_explore": ["string — 2 to 4 specific VERIFIED items from their application/CV worth exploring further"],
+            "important_unknowns": ["string — important things not yet established that should be clarified during the interview"],
+            "interview_objective": "string — concise candidate-specific statement of what the founder should understand by the end of this conversation",
+        },
+        "welcome_and_conversation_setup": {"founder_script": "string — complete natural read-through opening welcoming the candidate, thanking them for applying and explaining how the conversation will work"},
+        "introduce_the_organization": {"founder_script": "string — complete concise read-through introduction explaining the actual organization, mission, community/beneficiaries, relevant work, verified direction and current stage. Strong positioning without hype or invented facts."},
+        "the_board_we_are_building": {"founder_script": "string — complete candidate-facing explanation of the kind of Board the organization is intentionally building, why Board leadership matters at this stage and the meaningful contribution expected from Board Members. Do not expose internal Board gaps or Reactivation information."},
+        "candidate_specific_questions": [{
+            "question": "string — a strong personalized question tied directly to an ACTUAL item in this candidate's application or CV",
+            "why_this_matters": "string — concise founder-only explanation",
+            "listen_for": ["string — evidence the founder should pay attention to, not a predetermined answer"],
+            "follow_up": "string — one useful evidence-seeking follow-up question where appropriate",
+        }],
+        "mission_connection": [{
+            "question": "string — deepens the candidate's actual application response regarding connection to THIS mission rather than simply repeating the application",
+            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
+        }],
+        "priority_expertise_and_board_need": [{
+            "question": "string — explores the candidate's ACTUAL expertise against an approved priority Board capability without presuming fit or assigning responsibility",
+            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
+        }],
+        "potential_board_contribution": [{
+            "question": "string — explores where the candidate believes they could provide meaningful Board-level leadership/support based on verified organization needs and their actual experience",
+            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
+        }],
+        "board_expectations": {
+            "founder_script": "string — complete read-through explanation of the organization's ACTUAL verified Board expectations only",
+            "commitment_question": "string — natural direct question asking whether the candidate is genuinely willing and able to serve at the level just described",
+        },
+        "commitment_capacity_and_follow_through": [{
+            "question": "string — explores realistic availability, ownership, participation and follow-through without asking discriminatory personal questions",
+            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
+        }],
+        "collaboration_and_accountability": [{
+            "question": "string — evidence-based question about shared leadership, disagreement, feedback, accountability or follow-through",
+            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
+        }],
+        "fundraising_expectation": {
+            "applicable": "boolean — true ONLY when fundraising/resource development is a verified expectation of this organization's Board",
+            "founder_script": "string — when applicable, natural explanation that Board fundraising support can take different forms according to strengths, expertise, relationships and capacity; empty string when not applicable",
+            "question": "string — when applicable, ask whether the candidate is willing to participate in fundraising/resource development as part of Board service; empty string when not applicable",
+            "listen_for": ["string — evidence of understanding, willingness, questions or areas requiring clarification. Empty array when not applicable."],
+        },
+        "candidate_questions": {
+            "founder_script": "string — natural wording inviting the candidate to ask questions about the organization, Board, direction and expectations",
+            "founder_guidance": "string — concise reminder to answer accurately, not guess, and not treat reasonable due-diligence/logistics questions as negative signals",
+        },
+        "closing": {"founder_script": "string — complete natural closing thanking the candidate, explaining that interviews/selection are being completed and that the organization will follow up regarding next steps. Never announce a final decision."},
+        "post_interview_evaluation": {
+            "rating_scale": [
+                "1 — Significant concern / evidence does not demonstrate this criterion",
+                "2 — Limited evidence / substantial clarification still needed",
+                "3 — Adequate evidence",
+                "4 — Strong evidence",
+                "5 — Very strong evidence directly relevant to this organization's Board need",
+                "N/A — Not applicable / insufficient information to rate appropriately",
+            ],
+            "criteria": [{
+                "criterion": "string — one approved evaluation criterion",
+                "what_to_evaluate": "string — what the founder should assess from the actual conversation",
+                "evidence_to_consider": ["string — objective evidence from the interview that should inform the founder's rating"],
+                "questions_remaining": "string — any organization/candidate-specific matter the founder may still need to clarify; empty string where none can be identified before the interview",
+            }],
+            "founder_decision_options": [
+                "Move Forward to References / Background Checks",
+                "Further Conversation or Clarification Needed",
+                "Do Not Move Forward",
+            ],
+            "decision_reminder": "string — state clearly that the founder completes the ratings and makes the decision after the interview. AI has not scored or recommended this candidate.",
+        },
+    }, "note": """You are an exceptional nonprofit Board recruitment consultant preparing a founder or executive director to interview ONE SPECIFIC Board candidate.
+Create a COMPLETE, CANDIDATE-SPECIFIC, READ-THROUGH INTERVIEW FACILITATION GUIDE. This is not merely a list of interview questions. The founder should be able to open this resource during the interview and follow it from beginning to end without having to invent: the opening; how to introduce the organization; how to explain the Board being built; questions; transitions; how to explain Board expectations; how to invite candidate questions; or how to close the interview.
+Use only VERIFIED information supplied about: the organization; its mission and direction; its actual Board type; its verified Board expectations; the approved Powerhouse Board Blueprint; the actual priority Board profiles being recruited; the candidate's COMPLETE application; every organization-specific application response; their CV/resume; their professional background; and the Board role/expertise area associated with their application where supplied.
+The interview's purpose is to give the FOUNDER evidence needed to determine whether this person should move forward toward Board appointment. AI never makes that decision.
+STRUCTURE THE INTERVIEW AS: 1. Founder Pre-Interview Brief. 2. Welcome & Conversation Setup. 3. Introduce the Organization. 4. Explain the Board We Are Building. 5. Learn More About This Candidate. 6. Explore Mission Connection. 7. Explore Relevant Expertise Against the Actual Board Need. 8. Explore Potential Board-Level Contribution. 9. Explain Actual Board Expectations. 10. Explore Commitment, Capacity & Follow-Through. 11. Explore Collaboration & Accountability. 12. Discuss Fundraising / Resource Development ONLY where it is a verified Board expectation. 13. Invite the Candidate's Questions. 14. Close the Interview. 15. Founder Post-Interview Evaluation Matrix.
+READ-THROUGH SCRIPT RULE: Wherever the founder needs to speak to the candidate, write the actual natural suggested wording they can say. Do not merely write coaching notes such as "Explain the organization" — actually write the organization introduction using verified organization information. Do not merely write "Explain Board expectations" — actually write the explanation using the organization's verified expectations. Do not invent facts to make the script complete. Where something is unknown, write around it naturally.
+APPLICATION-DEEPENING RULE: Do not mechanically repeat questions the candidate already answered on the application. Use their actual answers as the starting point and ask deeper questions. Quote or paraphrase their application only when accurate. Never fabricate a candidate statement.
+PERSONALIZATION RULE: Create 2-3 questions directly tied to actual candidate application/CV information and 2-4 questions exploring the priority Board capability their background may address. If candidate information is limited, use only what is actually available. Never create fake specificity.
+FAIRNESS RULE: Alongside personalized questions, retain consistent core areas across candidates: mission connection; relevant expertise; Board-level contribution; active participation; commitment/capacity; collaboration/accountability; fundraising willingness where applicable.
+EVIDENCE RULE: Every substantive question should include: why it matters; what the founder should listen for; one useful follow-up where appropriate. "Listen for" must mean evidence, not predetermined correct answers. Encourage concrete examples, clarity about actual responsibility, realistic capacity, consistency and areas requiring clarification.
+BOARD-ROLE RULE: Board Members are not unpaid staff. Explore whether this person's expertise can help the organization create roadmaps, provide strategic leadership, guide important areas, open relationships, strengthen systems, build teams and provide appropriate Board-level leadership according to the actual role. Do not assume they will execute day-to-day operational work.
+FUNDRAISING RULE: Where fundraising/resource development is an actual Board expectation, determine whether the candidate understands and accepts that expectation. Fundraising participation may take different forms based on strengths, expertise, relationships and capacity. Do not assume everyone must personally solicit money. Do not create detailed future fundraising responsibilities during the interview — those are developed later through Fundraising Activation. If fundraising is NOT a verified Board expectation, set applicable to false and omit that content.
+PRIVACY / FAIRNESS: Never use or infer: age, race, ethnicity, sex, pregnancy, disability, medical information, sexual orientation, family status, political affiliation or other protected characteristics. Never infer personal characteristics from names, photographs, addresses, employment gaps or other indirect signals. Never psychologically profile the candidate. Never use "culture fit", charisma, likability, accent, personality similarity or executive presence as evaluation criteria. Do not compare this candidate with any other candidate. Do not ask about protected religious/political beliefs unless the organization is legitimately faith-based and an actual mission/role requirement makes the question appropriate — and even then use only the organization's verified language.
+EVALUATION MATRIX: End with a founder-only evaluation framework using the supplied 1-5 / N/A rating scale. Include criteria for: Mission Connection; Relevant Expertise / Board Gap Contribution; Ability to Contribute at Board Level; Active Board Participation; Commitment & Realistic Capacity; Collaboration & Accountability; Fundraising / Resource Development only where applicable; and at most one genuinely necessary organization/role-specific criterion. AI must NEVER fill in the founder's rating. AI must NEVER calculate a total score. AI must NEVER recommend whether to appoint, reject or move the candidate forward. The founder makes the decision.
+CLOSING: End the candidate-facing interview with natural wording explaining that the organization is completing its interview/selection process and will follow up regarding next steps. Never announce a final decision during the guide. The guide must not instruct the founder to make the appointment decision while the candidate is still on the call.
+Never mention AI."""},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {
         "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
         "body": "The complete candidate-specific interview invitation email following the resource-specific instructions. Use the candidate's actual first name and the founder's actual signature. Use an actual supplied scheduling URL where available; otherwise say the organization will coordinate a convenient time directly.",
@@ -290,8 +394,18 @@ The email should preserve the relationship without becoming vague about the deci
 Approximately 150-225 words. Professional, gracious, direct and human.
 NEVER mention AI."""},
     "after_interview_thank_you": {"module": 4, "title": "After-Interview Thank-You Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Thank You for Meeting With Us",
-        "body": "string — a strictly DECISION-NEUTRAL email sent to a candidate who attended their board interview. Start 'Dear [actual first name],'. Thank them for taking time to meet with the organization about the board opportunity; briefly say the organization appreciated learning more about their professional experience, interest in the mission, perspective and potential contribution — without claiming any decision has been made. Tell them clearly that the organization is completing its interviews/review and will follow up regarding next steps once the process is complete. Close warmly and sign with the actual founder/contact information. 125-200 words. FORBIDDEN words/phrases: 'unfortunately', 'we have decided', 'we are moving forward with other candidates', 'congratulations', 'conditional appointment', 'welcome to the board'."}},
+        "subject": "Exactly: Thank You for Meeting With Us",
+        "body": "The complete candidate-specific, strictly decision-neutral post-interview thank-you email. It must thank the candidate, acknowledge the conversation and explain that the organization will follow up once its interview/review process is complete. No acceptance or rejection signal.",
+    }, "note": """You are writing a professional thank-you email from a nonprofit founder or executive director to ONE Board candidate who has just completed their interview.
+NO FINAL SELECTION DECISION is being communicated in this email.
+The purpose is simply to: thank the candidate for their time; acknowledge the conversation; recognize their interest in the organization's mission and Board opportunity; tell them the organization is completing its interview/review process; explain that the organization will follow up regarding next steps.
+Use: the candidate's actual first name; actual organization name; actual Board terminology; founder's actual contact details.
+Keep the email genuinely decision-neutral. Do NOT imply: that the interview went exceptionally well; that the candidate is likely to be selected; that the candidate is unlikely to be selected; that they are moving to references; that they have been appointed.
+It is appropriate to say that the organization appreciated the opportunity to learn more about their professional experience, interest in the mission and perspective. Do not manufacture specific praise from their application or CV. Never invent interview details from the application/CV and pretend they were discussed.
+Do not say: congratulations; unfortunately; we have decided; we are moving forward with other candidates; conditional appointment; welcome to the Board; next step is references.
+Never expose evaluation ratings, founder notes, internal concerns or comparisons with other candidates.
+End with the founder's actual supplied signature. Approximately 125-180 words. Warm, professional, concise and human.
+NEVER mention AI."""},
     "interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": True, "schema": {
         "message": "A concise candidate-specific interview invitation message using the actual candidate name and organization name. Include the exact supplied scheduling URL where available. A few natural sentences only; no subject line.",
     }, "note": """Write a concise personal interview invitation message for ONE Board applicant whom the founder has already decided to invite to interview.
@@ -305,7 +419,28 @@ NEVER mention AI."""},
     "formal_appointment_email": {"module": 6, "title": "Final Board Appointment Email", "per_application": True, "schema": {
         "subject": "string — exactly: Congratulations! Your Appointment to the Board — [actual organization name]",
         "body": "string — the FINAL board appointment email for a candidate who has completed the reference and background-check stage. Start 'Dear [actual candidate first name],'. OPENING: congratulate them warmly and state clearly that, with the reference and applicable background-check process now complete, the organization is pleased to formally confirm their appointment to the Board. WHY THEY MATTER: 1-2 candidate-specific sentences connecting their ACTUAL verified experience to the organization's actual mission and board priorities — never invent experience. WHAT HAPPENS NEXT: welcome them into board service using the organization's actual board terminology; if onboarding session details are supplied use those exact details, otherwise say the organization will confirm onboarding details with them directly. ONBOARDING MATERIALS: present the actual supplied links, clearly distinguishing items to REVIEW (Board Member Manual, Organization Overview) from items to COMPLETE/SIGN (Board Member Profile Form and any agreements still awaiting signature) — omit already-signed agreements and never invent links. CLOSING: a warm, organization-specific welcome to the board; sign with actual founder/contact details. Never call this appointment conditional — the conditions are complete."}},
-    "after_interview_email": {"module": 4, "title": "After-Interview Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful email matching the chosen result"}},
+    "after_interview_email": {"module": 4, "title": "Move Forward After Interview Email", "per_application": True, "schema": {
+        "subject": "A clear professional subject line communicating that the candidate is moving to the next stage of the Board recruitment process. Do not imply final Board appointment.",
+        "body": "The complete candidate-specific email confirming that the founder has decided to move this candidate forward from interview to References / Background Checks. Thank them, explain the next-stage status clearly, state that separate instructions will follow, and do not imply that Board appointment has already occurred.",
+    }, "note": """You are writing a professional follow-up email from a nonprofit founder or executive director to ONE Board candidate after their interview.
+The FOUNDER has already decided that this candidate should MOVE FORWARD to the References / Background Checks stage. That decision is supplied by the system. Do not make or evaluate the decision yourself.
+The candidate has NOT yet been appointed to the Board.
+The purpose of this email is to:
+1. Thank them for taking the time to interview.
+2. Tell them clearly that following the interview, the organization would like to move them forward to the next stage of the Board recruitment process.
+3. Identify the next stage accurately as References / Background Checks according to the organization's actual process.
+4. Explain briefly that this is part of the organization's Board selection/appointment process.
+5. Tell them that the organization will provide the information or instructions required for that next stage separately.
+6. Thank them for their continued interest in serving the organization.
+7. End with the founder's actual supplied signature.
+IMPORTANT: This is NOT a Board Appointment Email, a Conditional Appointment Email, an offer letter, an onboarding invitation or a welcome-to-the-Board email.
+Never say: you have been appointed; you have been selected as a Board Member; welcome to the Board; congratulations on joining the Board; your Board position is confirmed; we are pleased to offer you the Board role.
+Appropriate language is: "We would like to move you forward to the next stage of our Board recruitment process."
+Do not request referee information inside this email — the dedicated Candidate Referee Request resource handles that separately. Do not duplicate the Reference Request workflow.
+Do not invent: background-check providers; forms; links; deadlines; number of references; legal requirements; process details. Those belong to the actual References & Background Checks resources.
+Do not exaggerate praise. Do not state that the candidate was the strongest applicant. Do not compare them with anyone else. Never expose evaluation ratings, founder notes or internal analysis.
+Approximately 140-220 words. Warm, clear, professional and forward-moving.
+NEVER mention AI."""},
     "reference_request_email": {"module": 5, "title": "Reference Check Email", "per_application": True, "schema": {
         "subject": "string — exactly: Reference Request | [actual candidate full name] — [actual organization name]",
         "body": "string — a finished, professional email the founder sends to a REFEREE requesting a reference for this specific board candidate. Open with a respectful greeting to the referee (use '[Referee Name]' only if no referee name is supplied). Explain that [candidate name] is being considered for appointment to the organization's board, that the candidate named the referee as a professional reference, and that the organization would value their perspective as part of its board appointment process. Ask them to share their assessment of the candidate's professionalism, reliability, character and suitability for board service — either by replying to this email or through a short conversation at a convenient time. Never invent the referee's relationship to the candidate. Close warmly and sign with the actual founder/contact details. 130-220 words."}},
@@ -767,8 +902,125 @@ Your recruitment strategy is ready. The next step is to create the materials you
 CONTINUE TO STEP 3 — CREATE MY RECRUITMENT MATERIALS"""
 
 
+def _interview_questions_block(lines: list, heading: str, items: list) -> None:
+    if not items:
+        return
+    lines.extend([heading, ""])
+    for entry in items:
+        lines.append(f"Q: {entry.get('question', '')}")
+        if entry.get("why_this_matters"):
+            lines.append(f"Why This Matters: {entry['why_this_matters']}")
+        if entry.get("listen_for"):
+            lines.append("What To Listen For:")
+            lines.extend(f"- {item}" for item in entry["listen_for"])
+        if entry.get("follow_up"):
+            lines.append(f"Follow-Up: {entry['follow_up']}")
+        lines.append("")
+
+
+def _interview_guide_display(structured: dict) -> str:
+    header = structured.get("header") or {}
+    brief = structured.get("founder_pre_interview_brief") or {}
+    first_name = (header.get("candidate") or "the candidate").split(" ")[0]
+    lines = ["INTERVIEW GUIDE", ""]
+    for value in [header.get("candidate"), header.get("current_position"), header.get("organization"), header.get("board_opportunity")]:
+        if value:
+            lines.append(value)
+    if header.get("priority_profile_being_explored"):
+        lines.append(f"Priority Profile Being Explored: {header['priority_profile_being_explored']}")
+    if header.get("suggested_duration"):
+        lines.append(f"Suggested Duration: {header['suggested_duration']}")
+    lines.extend(["", "BEFORE THE INTERVIEW", ""])
+    if brief.get("candidate_snapshot"):
+        lines.extend(["Candidate Snapshot", brief["candidate_snapshot"], ""])
+    if brief.get("potential_connection_to_board_need"):
+        lines.extend(["Potential Connection to Board Need", brief["potential_connection_to_board_need"], ""])
+    if brief.get("application_points_to_explore"):
+        lines.append("Application Points to Explore")
+        lines.extend(f"- {item}" for item in brief["application_points_to_explore"])
+        lines.append("")
+    if brief.get("important_unknowns"):
+        lines.append("Important Unknowns")
+        lines.extend(f"- {item}" for item in brief["important_unknowns"])
+        lines.append("")
+    if brief.get("interview_objective"):
+        lines.extend(["Interview Objective", brief["interview_objective"], ""])
+    lines.extend(["----------------------------------------", "THE LIVE INTERVIEW", "----------------------------------------", ""])
+
+    def script_section(heading, section_key):
+        text = (structured.get(section_key) or {}).get("founder_script", "")
+        if text:
+            lines.extend([heading, text, ""])
+
+    script_section("WELCOME & SET THE CONVERSATION", "welcome_and_conversation_setup")
+    script_section("INTRODUCE THE ORGANIZATION", "introduce_the_organization")
+    script_section("THE BOARD WE ARE BUILDING", "the_board_we_are_building")
+    _interview_questions_block(lines, f"LEARN MORE ABOUT {first_name.upper()}", structured.get("candidate_specific_questions", []))
+    _interview_questions_block(lines, "CONNECTION TO OUR MISSION", structured.get("mission_connection", []))
+    _interview_questions_block(lines, "EXPERIENCE & EXPERTISE", structured.get("priority_expertise_and_board_need", []))
+    _interview_questions_block(lines, "HOW YOU COULD CONTRIBUTE", structured.get("potential_board_contribution", []))
+    expectations = structured.get("board_expectations") or {}
+    if expectations.get("founder_script") or expectations.get("commitment_question"):
+        lines.append("WHAT BOARD SERVICE LOOKS LIKE HERE")
+        if expectations.get("founder_script"):
+            lines.append(expectations["founder_script"])
+        if expectations.get("commitment_question"):
+            lines.extend(["", f"Commitment Question: {expectations['commitment_question']}"])
+        lines.append("")
+    _interview_questions_block(lines, "COMMITMENT & CAPACITY", structured.get("commitment_capacity_and_follow_through", []))
+    _interview_questions_block(lines, "COLLABORATION & ACCOUNTABILITY", structured.get("collaboration_and_accountability", []))
+    fundraising = structured.get("fundraising_expectation") or {}
+    if fundraising.get("applicable") and (fundraising.get("founder_script") or fundraising.get("question")):
+        lines.append("FUNDRAISING / RESOURCE DEVELOPMENT")
+        if fundraising.get("founder_script"):
+            lines.append(fundraising["founder_script"])
+        if fundraising.get("question"):
+            lines.extend(["", f"Q: {fundraising['question']}"])
+        if fundraising.get("listen_for"):
+            lines.append("What To Listen For:")
+            lines.extend(f"- {item}" for item in fundraising["listen_for"])
+        lines.append("")
+    questions = structured.get("candidate_questions") or {}
+    if questions.get("founder_script") or questions.get("founder_guidance"):
+        lines.append("YOUR QUESTIONS")
+        if questions.get("founder_script"):
+            lines.append(questions["founder_script"])
+        if questions.get("founder_guidance"):
+            lines.extend(["", f"Founder Guidance: {questions['founder_guidance']}"])
+        lines.append("")
+    script_section("CLOSE THE INTERVIEW", "closing")
+    evaluation = structured.get("post_interview_evaluation") or {}
+    if evaluation:
+        lines.extend(["----------------------------------------", "AFTER THE INTERVIEW — FOUNDER EVALUATION", "----------------------------------------", ""])
+        if evaluation.get("rating_scale"):
+            lines.append("Rating Scale")
+            lines.extend(f"- {item}" for item in evaluation["rating_scale"])
+            lines.append("")
+        for criterion in evaluation.get("criteria", []):
+            lines.append(criterion.get("criterion", ""))
+            if criterion.get("what_to_evaluate"):
+                lines.append(f"What To Evaluate: {criterion['what_to_evaluate']}")
+            if criterion.get("evidence_to_consider"):
+                lines.append("Evidence To Consider:")
+                lines.extend(f"- {item}" for item in criterion["evidence_to_consider"])
+            if criterion.get("questions_remaining"):
+                lines.append(f"Questions Remaining: {criterion['questions_remaining']}")
+            lines.extend(["Founder Rating: ________", "Founder Notes: ________________________________________", ""])
+        lines.append("FOUNDER DECISION")
+        for option in evaluation.get("founder_decision_options") or [
+                "Move Forward to References / Background Checks",
+                "Further Conversation or Clarification Needed",
+                "Do Not Move Forward"]:
+            lines.append(f"[ ] {option}")
+        if evaluation.get("decision_reminder"):
+            lines.extend(["", evaluation["decision_reminder"]])
+    return _flush_left("\n".join(str(line) for line in lines))
+
+
 def structured_to_display(generation_type: str, structured: dict) -> str:
     meta = GENERATION_TYPES[generation_type]
+    if generation_type == "interview_guide":
+        return _interview_guide_display(structured)
     if generation_type == "recruitment_strategy":
         lines = ["BOARD RECRUITMENT STRATEGY", "", "EXECUTIVE SUMMARY", structured.get("executive_summary", ""), "", "1. BOARD MEMBERS WE ARE RECRUITING"]
         for role in structured.get("roles", [])[:5]:
