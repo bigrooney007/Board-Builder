@@ -408,18 +408,99 @@ def guide_display(structured: dict, organization: str) -> str:
 
 
 def toolkit_display(structured: dict, organization: str) -> str:
-    lines = ["BOARD FUNDRAISING EXECUTION TOOLKIT", organization, "", "OVERVIEW", structured.get("overview", ""), ""]
-    for heading, key in [("EMAIL TOOLS", "email_tools"), ("TEXT MESSAGE TOOLS", "text_tools"),
-                         ("CALL SCRIPTS", "call_scripts"), ("FOLLOW-UP AND STEWARDSHIP", "stewardship_tools")]:
+    lines = ["BOARD FUNDRAISING EXECUTION TOOLKIT", organization, ""]
+    _sd_block(lines, "Overview", structured.get("overview", ""))
+    resources = structured.get("how_to_use_your_fundraising_resources") or []
+    if resources:
+        lines.extend(["HOW TO USE YOUR FUNDRAISING RESOURCES", ""])
+        for entry in resources:
+            if entry.get("resource"):
+                lines.append(str(entry["resource"]).upper())
+                lines.extend([str(entry.get("purpose", "")), ""])
+    _sd_block(lines, "Before You Reach Out Checklist", structured.get("before_you_reach_out_checklist") or [])
+    _sd_block(lines, "Prospect / Funder Conversation Preparation Guide", structured.get("conversation_preparation_guide") or {})
+    _sd_block(lines, "Meeting Preparation Checklist", structured.get("meeting_preparation_checklist") or [])
+    _sd_block(lines, "Conversation Notes & Report-Back Template", structured.get("conversation_notes_and_report_back") or {})
+    _sd_block(lines, "Follow-Up Tracker", structured.get("follow_up_tracker") or {})
+    for heading, key in [("STEWARDSHIP TOOLS", "stewardship_tools"), ("STRATEGY-SPECIFIC TOOLS", "strategy_specific_tools")]:
         tools = structured.get(key) or []
         if not tools:
             continue
         lines.extend([heading, ""])
         for tool in tools:
             lines.append(str(tool.get("title", "")).upper())
-            if tool.get("when_to_use"):
-                lines.append(f"When to use this: {tool['when_to_use']}")
+            for label, k in [("Why this tool is needed", "why_this_tool_is_needed"), ("When to use this", "when_to_use"), ("Format", "format")]:
+                if tool.get(k):
+                    lines.append(f"{label}: {tool[k]}")
             lines.extend([str(tool.get("content", "")), ""])
+    return "\n".join(lines).strip()
+
+
+def case_display(structured: dict, organization: str) -> str:
+    lines = ["THE CASE FOR SUPPORT", organization, ""]
+    _sd_block(lines, "Why This Work Matters", structured.get("opening_case", ""))
+    _sd_block(lines, "The Need / Challenge", structured.get("the_need", ""))
+    _sd_block(lines, "Who We Serve", structured.get("who_we_serve", ""))
+    _sd_block(lines, "What We Do", structured.get("what_we_do", ""))
+    _sd_block(lines, "How Our Approach Helps", structured.get("how_our_approach_helps", ""))
+    _sd_block(lines, "The Difference This Work Is Making", structured.get("difference_we_are_making", ""))
+    funding = structured.get("funding_priority") or {}
+    fblock = {}
+    for key, label in [("what_we_are_raising_money_for", "What We Are Raising Money For"), ("amount", "Amount"),
+                       ("when_the_money_is_needed", "When The Money Is Needed"), ("why_now", "Why Now")]:
+        if funding.get(key):
+            fblock[label] = funding[key]
+    _sd_block(lines, "What We Are Raising Money For", fblock)
+    _sd_block(lines, "What Your Support Will Make Possible", structured.get("what_your_support_will_make_possible") or [])
+    _sd_block(lines, "How You Can Help", structured.get("how_you_can_help") or [])
+    next_step = structured.get("next_step") or {}
+    if any(str(v).strip() for v in next_step.values()):
+        lines.extend(["LET'S TALK / NEXT STEP", ""])
+        if next_step.get("invitation"):
+            lines.extend([next_step["invitation"], ""])
+        contact = next_step.get("contact_name", "")
+        if contact and next_step.get("contact_title"):
+            contact = f"{contact} — {next_step['contact_title']}"
+        if contact:
+            lines.append(contact)
+        for key in ["email", "phone", "website", "donation_url"]:
+            if next_step.get(key):
+                lines.append(str(next_step[key]))
+    return "\n".join(lines).strip()
+
+
+COMM_STAGES = [("stage_1_introduce_impact", "STAGE 1 — INTRODUCE IMPACT"),
+               ("stage_2_case_for_support", "STAGE 2 — CASE FOR SUPPORT"),
+               ("stage_3_follow_up_and_ask", "STAGE 3 — FOLLOW UP & ASK")]
+
+
+def comm_display(structured: dict, organization: str) -> str:
+    lines = ["BOARD FUNDRAISING COMMUNICATION SYSTEM", organization, ""]
+    _sd_block(lines, "Overview", structured.get("overview", ""))
+    _sd_block(lines, "How to Use This System", structured.get("how_to_use_this_system") or [])
+    for seq in structured.get("audience_sequences") or []:
+        lines.extend([f"AUDIENCE: {str(seq.get('audience', '')).upper()}", ""])
+        if seq.get("why_this_audience_matters"):
+            lines.extend([str(seq["why_this_audience_matters"]), ""])
+        for stage_key, stage_title in COMM_STAGES:
+            stage = seq.get(stage_key) or {}
+            if not stage:
+                continue
+            lines.extend([stage_title, ""])
+            if stage.get("purpose"):
+                lines.extend([f"Purpose: {stage['purpose']}", ""])
+            if stage.get("email_subject") or stage.get("email_body"):
+                lines.append("EMAIL")
+                if stage.get("email_subject"):
+                    lines.append(f"Subject: {stage['email_subject']}")
+                lines.extend(["", str(stage.get("email_body", "")), ""])
+            script = stage.get("call_script") or {}
+            if any(str(v).strip() for v in script.values()):
+                lines.extend(["CALL SCRIPT", ""])
+                for key, value in script.items():
+                    if value:
+                        lines.extend([key.replace("_", " ").upper(), str(value), ""])
+    _sd_block(lines, "Report Back to the Organization", structured.get("report_back_to_the_organization") or {})
     return "\n".join(lines).strip()
 
 
@@ -1582,7 +1663,9 @@ def create_activation_planning_router(db) -> APIRouter:
         return {"gate_open": module5_ready(adoption), "plan_status": adoption.get("plan_status", ""),
                 "members": members, "responsibility_statuses": RESPONSIBILITY_STATUSES,
                 "toolkit": {"status": toolkit.get("status", "NONE"), "display_text": toolkit.get("display_text", ""),
-                            "generation_error": toolkit.get("generation_error", "")}}
+                            "generation_error": toolkit.get("generation_error", "")},
+                "case": case_summary(await current_case(member["user_id"]), request),
+                "communication_system": comm_summary(await current_comm(member["user_id"]))}
 
     @router.post("/activation/toolkit/generate")
     async def generate_toolkit(request: Request):
@@ -1601,25 +1684,21 @@ def create_activation_planning_router(db) -> APIRouter:
             "user_id": user_id, "status": "Generating", "generation_error": "", "updated_at": now},
             "$setOnInsert": {"created_at": now}}, upsert=True)
         participants = await db.activation_participants.find({"user_id": user_id}, {"_id": 0}).to_list(300)
-        recommitments = await db.reactivation_board_members.find(
-            {"user_id": user_id, "status": "COMPLETED"}, {"_id": 0, "name": 1, "role": 1, "response": 1}).to_list(100)
         import json as jsonlib
-        responsibilities = [{"board_member_name": p["name"], "board_role": p.get("role", ""),
+        responsibilities = [{"board_role": p.get("role", "Board Member"),
                              "agreed_responsibility": p.get("agreed_responsibility", ""),
                              "responsibility_status": p.get("responsibility_status", "")} for p in participants]
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
                    + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
-                   + "\n\nPLAN ADOPTION CONCLUSION (founder's own words):\n" + adoption.get("conclusion", "")
-                   + "\n\nAGREED BOARD MEMBER RESPONSIBILITIES:\n" + jsonlib.dumps(responsibilities, indent=1, default=str)
-                   + ("\n\nBOARD MEMBER PROFILE & RECOMMITMENT RESPONSES (what each member said about how they can serve and contribute — use where relevant):\n"
-                      + jsonlib.dumps([{"name": r.get("name", ""), "board_role": r.get("role", ""), "their_response": r.get("response", {})}
-                                       for r in recommitments], indent=1, default=str) if recommitments else "")
-                   + "\n\nINTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
-                       "fundraising_goal", "amount_needed", "money_accomplish"]}, indent=1, default=str))
+                   + "\n\nPLAN ADOPTION CONCLUSION (founder's recorded Board-level decisions only):\n" + adoption.get("conclusion", "")
+                   + "\n\nACTUAL AGREED FUNDRAISING RESPONSIBILITY CATEGORIES (no names — use only to understand what types of tools the Board needs; never assign or invent responsibilities):\n" + jsonlib.dumps(responsibilities, indent=1, default=str)
+                   + "\n\nVERIFIED FUNDRAISING INFORMATION:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
+                       "fundraising_goal", "amount_needed", "money_accomplish", "money_needed_by"]}, indent=1, default=str))
 
         async def run_generation():
             try:
                 structured = await generate_structured("activation_execution_toolkit", context)
+                structured["strategy_specific_tools"] = (structured.get("strategy_specific_tools") or [])[:3]
                 await db.activation_toolkits.update_one({"user_id": user_id}, {"$set": {
                     "status": "Draft", "structured": structured,
                     "display_text": toolkit_display(structured, context_info["organization"]),
@@ -1663,6 +1742,223 @@ def create_activation_planning_router(db) -> APIRouter:
         issuer = {"issued_by": context["founder_name"], "issuer_title": context["founder_title"],
                   "organization": context["organization"], "issue_date": datetime.now(timezone.utc).strftime("%B %d, %Y")}
         return build_portfolio_pdf("Board Fundraising Execution Toolkit", "", issuer, toolkit["display_text"])
+
+    # ---------------- MODULE 5: CASE FOR SUPPORT ----------------
+
+    async def current_case(user_id: str) -> dict:
+        return await db.activation_cases.find_one({"user_id": user_id}, {"_id": 0}) or {}
+
+    def case_summary(case: dict, request: Request) -> dict:
+        share_link = ""
+        if case.get("case_share_token") and case.get("approved_versions"):
+            share_link = f"{origin_of(request)}/case-for-support/{case['case_share_token']}"
+        return {"status": case.get("status", "NONE"), "display_text": case.get("display_text", ""),
+                "generation_error": case.get("generation_error", ""),
+                "approved_version": case.get("approved_version", 0), "share_link": share_link,
+                "share_is_current": case.get("status") == "Approved" and bool(share_link)}
+
+    @router.post("/activation/case-for-support/generate")
+    async def generate_case(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        adoption = await current_adoption(user_id)
+        if not module5_ready(adoption):
+            raise HTTPException(status_code=409, detail="The Fundraising Strategy Plan must be adopted and finalized before the Case for Support is created")
+        case = await current_case(user_id)
+        if case.get("status") == "Generating":
+            return {"status": "Generating"}
+        intake = await activation_intake(user_id)
+        context_info = await founder_context(user_id)
+        now = datetime.now(timezone.utc).isoformat()
+        await db.activation_cases.update_one({"user_id": user_id}, {"$set": {
+            "user_id": user_id, "status": "Generating", "generation_error": "", "updated_at": now},
+            "$setOnInsert": {"approved_version": 0, "approved_versions": [], "created_at": now}}, upsert=True)
+        profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
+        org_facts = {key: value for key, value in (profile.get("data") or {}).items()
+                     if isinstance(value, str) and value.strip() and key not in {"logo_data"}}
+        overview_material = await db.generated_materials.find_one(
+            {"user_id": user_id, "type": "organization_overview", "application_id": "", "status": "Approved"},
+            {"_id": 0, "current.display_text": 1})
+        overview_text = ((overview_material or {}).get("current") or {}).get("display_text", "")
+        import json as jsonlib
+        contact_block = {
+            "contact_name": context_info["founder_name"], "contact_title": context_info["founder_title"],
+            "email": context_info["founder_email"], "phone": context_info["founder_phone"],
+            "website": org_facts.get("website", ""),
+        }
+        context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
+                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN (primary strategic authority):\n" + adoption.get("adopted_text", "")
+                   + "\n\nVERIFIED ORGANIZATION PROFILE INFORMATION:\n" + jsonlib.dumps(org_facts, indent=1, default=str)
+                   + ("\n\nAPPROVED ORGANIZATION OVERVIEW (verified organizational context):\n" + overview_text[:8000] if overview_text else "")
+                   + "\n\nVERIFIED FOUNDER FUNDRAISING INFORMATION:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
+                       "fundraising_goal", "amount_needed", "money_accomplish", "money_needed_by",
+                       "direction_12_24", "organization_priorities"]}, indent=1, default=str)
+                   + "\n\nACTUAL ORGANIZATION / FUNDRAISING CONTACT INFORMATION (use only what is supplied; never invent a donation URL):\n" + jsonlib.dumps(contact_block, indent=1, default=str))
+
+        async def run_generation():
+            try:
+                structured = await generate_structured("activation_case_for_support", context)
+                await db.activation_cases.update_one({"user_id": user_id}, {"$set": {
+                    "status": "Draft", "structured": structured,
+                    "display_text": case_display(structured, context_info["organization"]),
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+            except Exception as exc:
+                logger.error("Case for Support generation failed for %s: %s", user_id, exc)
+                await db.activation_cases.update_one({"user_id": user_id}, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_generation())
+        return {"status": "Generating"}
+
+    @router.put("/activation/case-for-support")
+    async def edit_case(payload: TextPayload, request: Request):
+        member = await activation_member(request)
+        case = await current_case(member["user_id"])
+        if not case.get("display_text"):
+            raise HTTPException(status_code=409, detail="Generate your Case for Support first")
+        await db.activation_cases.update_one({"user_id": member["user_id"]}, {"$set": {
+            "display_text": payload.text, "status": "Draft", "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Draft"}
+
+    @router.post("/activation/case-for-support/approve")
+    async def approve_case(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        case = await current_case(user_id)
+        if case.get("status") not in {"Draft", "Approved"} or not case.get("display_text"):
+            raise HTTPException(status_code=409, detail="There is no draft Case for Support ready to approve")
+        now = datetime.now(timezone.utc).isoformat()
+        version = case.get("approved_version", 0) + 1
+        updates = {"status": "Approved", "approved_version": version, "approved_at": now, "updated_at": now}
+        if not case.get("case_share_token"):
+            updates["case_share_token"] = secrets.token_urlsafe(32)
+        await db.activation_cases.update_one({"user_id": user_id}, {
+            "$set": updates,
+            "$push": {"approved_versions": {"version": version, "display_text": case["display_text"], "approved_at": now}}})
+        refreshed = await current_case(user_id)
+        return {"status": "Approved", "approved_version": version,
+                "share_link": f"{origin_of(request)}/case-for-support/{refreshed['case_share_token']}"}
+
+    @router.get("/activation/case-for-support/pdf")
+    async def case_pdf(request: Request):
+        member = await activation_member(request)
+        case = await current_case(member["user_id"])
+        if not case.get("display_text"):
+            raise HTTPException(status_code=404, detail="No Case for Support available")
+        context = await founder_context(member["user_id"])
+        issuer = {"issued_by": context["founder_name"], "issuer_title": context["founder_title"],
+                  "organization": context["organization"], "issue_date": datetime.now(timezone.utc).strftime("%B %d, %Y")}
+        return build_portfolio_pdf("The Case for Support", "", issuer, case["display_text"])
+
+    @router.get("/case-for-support/{token}")
+    async def public_case_for_support(token: str):
+        case = await db.activation_cases.find_one({"case_share_token": token}, {"_id": 0})
+        if not case or not case.get("approved_versions"):
+            raise HTTPException(status_code=404, detail="This link is not valid")
+        approved = case["approved_versions"][-1]
+        context = await founder_context(case["user_id"])
+        return {"organization_name": context["organization"], "text": approved["display_text"]}
+
+    @router.get("/case-for-support/{token}/pdf")
+    async def public_case_pdf(token: str):
+        case = await db.activation_cases.find_one({"case_share_token": token}, {"_id": 0})
+        if not case or not case.get("approved_versions"):
+            raise HTTPException(status_code=404, detail="This link is not valid")
+        approved = case["approved_versions"][-1]
+        context = await founder_context(case["user_id"])
+        issuer = {"issued_by": context["founder_name"], "issuer_title": context["founder_title"],
+                  "organization": context["organization"], "issue_date": datetime.now(timezone.utc).strftime("%B %d, %Y")}
+        return build_portfolio_pdf("The Case for Support", "", issuer, approved["display_text"])
+
+    # ---------------- MODULE 5: BOARD FUNDRAISING COMMUNICATION SYSTEM ----------------
+
+    async def current_comm(user_id: str) -> dict:
+        return await db.activation_comm_systems.find_one({"user_id": user_id}, {"_id": 0}) or {}
+
+    def comm_summary(comm: dict) -> dict:
+        return {"status": comm.get("status", "NONE"), "display_text": comm.get("display_text", ""),
+                "generation_error": comm.get("generation_error", "")}
+
+    @router.post("/activation/communication-system/generate")
+    async def generate_comm_system(request: Request):
+        member = await activation_member(request)
+        user_id = member["user_id"]
+        adoption = await current_adoption(user_id)
+        if not module5_ready(adoption):
+            raise HTTPException(status_code=409, detail="The Fundraising Strategy Plan must be adopted and finalized before the Communication System is created")
+        case = await current_case(user_id)
+        if case.get("status") != "Approved" or not case.get("approved_versions") or not case.get("case_share_token"):
+            raise HTTPException(status_code=409, detail="Approve your Case for Support first — the Stage 2 communications must contain the real secure Case for Support link")
+        comm = await current_comm(user_id)
+        if comm.get("status") == "Generating":
+            return {"status": "Generating"}
+        intake = await activation_intake(user_id)
+        context_info = await founder_context(user_id)
+        case_url = f"{origin_of(request)}/case-for-support/{case['case_share_token']}"
+        now = datetime.now(timezone.utc).isoformat()
+        await db.activation_comm_systems.update_one({"user_id": user_id}, {"$set": {
+            "user_id": user_id, "status": "Generating", "generation_error": "", "updated_at": now},
+            "$setOnInsert": {"created_at": now}}, upsert=True)
+        import json as jsonlib
+        context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
+                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
+                   + "\n\nAPPROVED CASE FOR SUPPORT:\n" + case["approved_versions"][-1]["display_text"]
+                   + "\n\nEXACT APPROVED CASE FOR SUPPORT SHARE URL (use exactly this URL in Stage 2 — never invent another link):\n" + case_url
+                   + "\n\nVERIFIED FUNDRAISING INFORMATION:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
+                       "fundraising_goal", "amount_needed", "money_accomplish", "money_needed_by"]}, indent=1, default=str)
+                   + "\n\nORGANIZATION / FUNDRAISING CONTACT (for directing serious conversations back to the organization):\n"
+                   + jsonlib.dumps({"contact_name": context_info["founder_name"], "contact_title": context_info["founder_title"],
+                                    "email": context_info["founder_email"], "phone": context_info["founder_phone"]}, indent=1, default=str))
+
+        async def run_generation():
+            try:
+                structured = await generate_structured("activation_board_communication_system", context)
+                structured["audience_sequences"] = (structured.get("audience_sequences") or [])[:4]
+                await db.activation_comm_systems.update_one({"user_id": user_id}, {"$set": {
+                    "status": "Draft", "structured": structured,
+                    "display_text": comm_display(structured, context_info["organization"]),
+                    "case_version_used": case.get("approved_version", 0),
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+            except Exception as exc:
+                logger.error("Communication system generation failed for %s: %s", user_id, exc)
+                await db.activation_comm_systems.update_one({"user_id": user_id}, {"$set": {
+                    "status": "Failed", "generation_error": str(exc)[:300],
+                    "updated_at": datetime.now(timezone.utc).isoformat()}})
+
+        asyncio.create_task(run_generation())
+        return {"status": "Generating"}
+
+    @router.put("/activation/communication-system")
+    async def edit_comm_system(payload: TextPayload, request: Request):
+        member = await activation_member(request)
+        comm = await current_comm(member["user_id"])
+        if not comm.get("display_text"):
+            raise HTTPException(status_code=409, detail="Generate your Board Fundraising Communication System first")
+        await db.activation_comm_systems.update_one({"user_id": member["user_id"]}, {"$set": {
+            "display_text": payload.text, "status": "Draft", "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Draft"}
+
+    @router.post("/activation/communication-system/approve")
+    async def approve_comm_system(request: Request):
+        member = await activation_member(request)
+        comm = await current_comm(member["user_id"])
+        if comm.get("status") not in {"Draft", "Approved"} or not comm.get("display_text"):
+            raise HTTPException(status_code=409, detail="There is no draft Communication System ready to approve")
+        await db.activation_comm_systems.update_one({"user_id": member["user_id"]}, {"$set": {
+            "status": "Approved", "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Approved"}
+
+    @router.get("/activation/communication-system/pdf")
+    async def comm_system_pdf(request: Request):
+        member = await activation_member(request)
+        comm = await current_comm(member["user_id"])
+        if not comm.get("display_text"):
+            raise HTTPException(status_code=404, detail="No Communication System available")
+        context = await founder_context(member["user_id"])
+        issuer = {"issued_by": context["founder_name"], "issuer_title": context["founder_title"],
+                  "organization": context["organization"], "issue_date": datetime.now(timezone.utc).strftime("%B %d, %Y")}
+        return build_portfolio_pdf("Board Fundraising Communication System", "", issuer, comm["display_text"])
 
     @router.post("/activation/members/{participant_id}/followup-email/generate")
     async def generate_followup_email(participant_id: str, request: Request):
@@ -1848,8 +2144,8 @@ def create_activation_planning_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {"fp_status": "Generating", "fp_error": ""}})
         import json as jsonlib
-        toolkit_titles = "\n".join(f"- {tool.get('title', '')}" for key in ["email_tools", "text_tools", "call_scripts", "stewardship_tools"]
-                                   for tool in (toolkit.get("structured", {}) or {}).get(key, [])) if toolkit.get("status") == "Approved" else ""
+        toolkit_titles = "\n".join(f"- {tool.get('title', '')}" for key in ["email_tools", "text_tools", "call_scripts", "stewardship_tools", "strategy_specific_tools"]
+                                   for tool in (toolkit.get("structured", {}) or {}).get(key, []) if tool.get("title")) if toolkit.get("status") == "Approved" else ""
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
                                                        "direction": intake.get("direction_12_24", "")}, indent=1)
                    + f"\n\nBOARD MEMBER: {record['name']} — Board Role: {record.get('role', 'Board Member')}"

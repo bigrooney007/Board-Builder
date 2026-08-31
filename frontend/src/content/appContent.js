@@ -637,7 +637,7 @@ export const activationModule5Text = {
   generatingFollowUpEmail: "Generating follow-up email\u2026",
   generationFailedPleaseTryAgain: "Generation failed. Please try again.",
   boardFundraisingExecutionToolkit: "Board Fundraising Execution Toolkit",
-  oneOrganizationLevelSetOf: "One organization-level set of practical emails, text messages, call scripts and stewardship tools built from your adopted strategy and the responsibilities your Board actually agreed to carry.",
+  oneOrganizationLevelSetOf: "One organization-level set of practical supporting tools — outreach preparation, conversation and meeting preparation, report-back and follow-up tracking templates, and stewardship tools — built from your adopted strategy and the responsibilities your Board actually agreed to carry. The core outreach emails and call scripts live in your Board Fundraising Communication System.",
   generationFailedPleaseTryAgain2: "Generation failed. Please try again.",
   generatingYourBoardFundraisingExecution: "Generating your Board Fundraising Execution Toolkit\u2026 It will appear here automatically.",
   yourBoardHelpedBuildThe: "Your Board helped build the fundraising plan, reviewed it, adopted the direction and now has practical tools to begin taking action.",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
+import { ExecutionResourceCard } from "./ExecutionResourceCard";
 import { activationM5Text, activationContent, activationModule5Text } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -34,13 +35,13 @@ export default function ActivationModule5() {
   }, []);
   useEffect(load, [load]);
 
-  const anyGenerating = data?.toolkit?.status === "Generating" || (data?.members || []).some((m) => m.followup_status === "Generating");
+  const anyGenerating = data?.toolkit?.status === "Generating" || data?.case?.status === "Generating" || data?.communication_system?.status === "Generating" || (data?.members || []).some((m) => m.followup_status === "Generating");
   useEffect(() => {
     if (anyGenerating && !pollRef.current) {
       pollRef.current = setInterval(async () => {
         try {
           const res = await memberApi.get("/activation/toolkit");
-          const stillGenerating = res.data.toolkit.status === "Generating" || (res.data.members || []).some((m) => m.followup_status === "Generating");
+          const stillGenerating = res.data.toolkit.status === "Generating" || res.data.case?.status === "Generating" || res.data.communication_system?.status === "Generating" || (res.data.members || []).some((m) => m.followup_status === "Generating");
           if (!stillGenerating) {
             clearInterval(pollRef.current); pollRef.current = null;
             setGenerating(false);
@@ -171,6 +172,37 @@ export default function ActivationModule5() {
               );
             })}
           </section>
+
+          <ExecutionResourceCard
+            title="Case for Support"
+            description="Your organization's external fundraising document. It helps a potential supporter understand the need, who you serve, the work, the funding priority, what support makes possible and how to take the next step. Once approved, it has one secure read-only link Board Members can share with potential supporters."
+            resource={data.case}
+            basePath="/activation/case-for-support"
+            testPrefix="am5-case"
+            generateLabel="GENERATE OUR CASE FOR SUPPORT"
+            load={load}
+          >
+            {data.case?.share_link && (
+              <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 14, marginTop: 12 }} data-testid="am5-case-share">
+                <p style={{ margin: 0 }}><strong>Secure share link (approved version):</strong></p>
+                <p style={{ margin: "6px 0", wordBreak: "break-all" }} data-testid="am5-case-share-link">{data.case.share_link}</p>
+                <button type="button" className="button button-outline" onClick={() => copyText(data.case.share_link, "case-share")} data-testid="am5-case-copy-link"><Copy size={15} /> {copied === "case-share" ? "Link Copied" : "COPY SHARE LINK"}</button>
+                {!data.case.share_is_current && <p style={{ marginTop: 8 }} data-testid="am5-case-share-outdated">This link still shows the previously approved version. Approve your edited draft to update what supporters see.</p>}
+              </div>
+            )}
+          </ExecutionResourceCard>
+
+          <ExecutionResourceCard
+            title="Board Fundraising Communication System"
+            description="The Board's reusable three-stage outreach sequence — Introduce Impact → Case for Support → Follow Up & Ask — with a complete email and call script at every stage for each major funding audience in your adopted strategy. This is internal Board execution material, not a prospect-facing document."
+            resource={data.communication_system}
+            basePath="/activation/communication-system"
+            testPrefix="am5-comm"
+            generateLabel="GENERATE OUR COMMUNICATION SYSTEM"
+            load={load}
+            disabled={!(data.case?.status === "Approved" && data.case?.share_link)}
+            disabledNote="Approve your Case for Support first — the Stage 2 communications include its real secure link."
+          />
 
           <section className="member-card" data-testid="am5-toolkit-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>

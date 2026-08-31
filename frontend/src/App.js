@@ -38,6 +38,7 @@ import StrategyReviewPage from "@/funnels/StrategyReviewPage";
 import StrategyPlanPage from "@/funnels/StrategyPlanPage";
 import OfferVideoPage from "@/funnels/OfferVideoPage";
 import FundraisingPortfolioPage from "@/funnels/FundraisingPortfolioPage";
+import CaseForSupportPage from "@/funnels/CaseForSupportPage";
 import MyFundraisingBoardPage from "@/member/MyFundraisingBoardPage";
 import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
 import { ActivationOverviewPage, ActivationModulePage } from "@/member/ActivationCoursePages";
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="/offer/reactivation" element={<OfferVideoPage offer="reactivation" />} />
           <Route path="/offer/activation" element={<OfferVideoPage offer="activation" />} />
           <Route path="/fundraising-portfolio/:token" element={<FundraisingPortfolioPage />} />
+          <Route path="/case-for-support/:token" element={<CaseForSupportPage />} />
           <Route path="/app/activation/self-guided/my-fundraising-board" element={<MyFundraisingBoardPage />} />
           <Route path="/app/activation/self-guided" element={<ActivationOverviewPage />} />
           <Route path="/app/activation/self-guided/module/:moduleNumber" element={<ActivationModulePage />} />

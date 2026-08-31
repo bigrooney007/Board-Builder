@@ -1108,12 +1108,187 @@ ADOPTION: The founder must leave the meeting able to record exactly one status: 
 FINAL OUTCOME: End by reminding the founder to save: Plan Adoption Conclusion; every individual agreed fundraising responsibility; every responsibility status; any support commitments; immediate next steps.
 Never mention AI in Board-facing language."""},
     "activation_execution_toolkit": {"module": 5, "title": "Board Fundraising Execution Toolkit", "per_application": False, "schema": {
-        "overview": "string — short overview connecting the toolkit to the organization's adopted fundraising strategy and the responsibilities the Board actually agreed to carry.",
-        "email_tools": [{"title": "string — e.g. 'Warm Introduction Email'", "when_to_use": "string", "content": "string — the full natural email a real Board Member could send. Limited recipient placeholders like [First Name] or [Company Name] are acceptable; known organization facts must be resolved."}],
-        "text_tools": [{"title": "string", "when_to_use": "string", "content": "string — a concise natural text message."}],
-        "call_scripts": [{"title": "string", "when_to_use": "string", "content": "string — practical structure with these labeled parts: When to Use This / Opening / Why I'm Calling / Brief Mission Connection / What I'm Asking Today / If They Are Interested / If They Are Not Ready / Close. Short and natural — no long speeches."}],
-        "stewardship_tools": [{"title": "string — follow-up / thank-you / stewardship touchpoints", "when_to_use": "string", "content": "string"}],
-    }, "note": "You are an experienced nonprofit fundraising strategist equipping a real volunteer Board. Generate ONLY tools relevant to the ADOPTED strategy and agreed responsibilities supplied — if grants are not part of the strategy do NOT manufacture grant tools; if corporate relationships, individual donors, events or stewardship are the focus, build useful tools for those. Tools must sound like a real Board Member — natural language, not professional fundraisers, staff, grant writers or marketers. Reflect KNOW/LIKE/TRUST/ASK/FOLLOW UP/STEWARD where appropriate. NEVER invent funders, donor names, business relationships, sponsorship amounts, grant opportunities, Board Member relationships, commitments, statistics, impact results, programs or meeting dates. NEVER mention AI. Resolve all known organization facts — no unresolved placeholders except limited recipient placeholders like [First Name]."},
+        "overview": "string — concise Board-facing explanation of the Toolkit's purpose and connection to the adopted strategy",
+        "how_to_use_your_fundraising_resources": [{
+            "resource": "string — Fundraising Portfolio, Case for Support, Board Fundraising Communication System or Execution Toolkit",
+            "purpose": "string — concise explanation of what that resource is for",
+        }],
+        "before_you_reach_out_checklist": ["string — practical strategy-grounded preparation item"],
+        "conversation_preparation_guide": {
+            "purpose": "string",
+            "questions_to_prepare": ["string"],
+            "things_not_to_promise": ["string"],
+            "when_to_involve_the_organization": ["string"],
+        },
+        "meeting_preparation_checklist": ["string"],
+        "conversation_notes_and_report_back": {
+            "instructions": "string",
+            "fields": ["Date", "Prospect / Organization", "Funding Audience", "Board Member", "Communication Stage",
+                       "What Happened", "What They Were Interested In", "Questions They Asked", "Concerns / Hesitations",
+                       "Support Discussed", "Next Step", "Who Owns Next Step", "Follow-Up Date"],
+        },
+        "follow_up_tracker": {
+            "instructions": "string",
+            "fields": ["Prospect", "Funding Audience", "Relationship Owner", "Current Stage", "Last Contact", "Outcome",
+                       "Next Step", "Follow-Up Date", "Organization Follow-Up Needed?", "Status"],
+            "status_options": ["New Relationship", "Learning More", "Case for Support Shared", "Follow-Up Needed",
+                               "Organization Conversation Needed", "Ask Made", "Support Confirmed", "Not Now",
+                               "Closed / No Current Opportunity", "Stewardship"],
+        },
+        "stewardship_tools": [{
+            "title": "string",
+            "when_to_use": "string",
+            "format": "string — Email or Call",
+            "content": "string — complete natural reusable tool; no invented future impact/result",
+        }],
+        "strategy_specific_tools": [{
+            "title": "string — only where genuinely required by the adopted strategy; maximum 3 tools; may be an empty array",
+            "why_this_tool_is_needed": "string",
+            "when_to_use": "string",
+            "content": "string",
+        }],
+    }, "note": """You are an exceptional nonprofit fundraising strategist creating the BOARD FUNDRAISING EXECUTION TOOLKIT for a real volunteer Board executing its FINAL ADOPTED FUNDRAISING STRATEGY PLAN.
+This Toolkit supports the Board's execution.
+It does NOT duplicate: the Fundraising Strategy; individual Fundraising Portfolios; the Case for Support; the three-stage Board Fundraising Communication System.
+The separate Communication System already provides: INTRODUCE IMPACT → CASE FOR SUPPORT → FOLLOW UP & ASK with email and call scripts. Therefore do NOT regenerate those six core scripts here.
+Use only: 1. the FINAL ADOPTED FUNDRAISING STRATEGY PLAN; 2. PLAN ADOPTION CONCLUSION excluding private notes; 3. actual agreed fundraising responsibility categories; 4. verified organization/fundraising information.
+Do NOT use Recommitment responses. Do NOT use obsolete Strategy Review responses. Do NOT expose private Board Member information.
+Create practical supporting resources:
+1. How to Use Your Fundraising Resources
+2. Before You Reach Out Checklist
+3. Prospect / Funder Conversation Preparation Guide
+4. Meeting Preparation Checklist
+5. Conversation Notes & Report-Back Template
+6. Follow-Up Tracker
+7. Stewardship Tools
+8. Maximum three additional strategy-specific tools only where clearly necessary.
+BOARD MEMBERS ARE NOT UNPAID FUNDRAISING STAFF.
+The tools should help them: open and build relationships; prepare for conversations; stay within what they actually agreed to carry; report opportunities back to the organization; support appropriate follow-through; steward supporters.
+Do not assign responsibilities.
+Do not invent: funders; prospect names; relationships; meetings; donations; sponsorships; grants; statistics; results; fundraising targets; deadlines; commitments.
+Do not create automated outreach. Do not create CRM functionality. Do not duplicate the Case for Support or core communication sequence.
+Never mention AI."""},
+    "activation_case_for_support": {"module": 5, "title": "Case for Support", "per_application": False, "schema": {
+        "title": "string — Case for Support | actual organization name",
+        "opening_case": "string — 2-4 strong paragraphs establishing why the mission and current funding opportunity matter",
+        "the_need": "string — actual verified challenge/problem the organization exists to address",
+        "who_we_serve": "string — actual beneficiaries/community/population only",
+        "what_we_do": "string — actual programs/work/approach",
+        "how_our_approach_helps": "string — explain the logic/value of the organization's actual work without invented claims",
+        "difference_we_are_making": "string — verified impact/results/evidence only; empty string where insufficient evidence exists",
+        "funding_priority": {
+            "amount": "string — actual amount where supplied; otherwise empty string",
+            "what_we_are_raising_money_for": "string — verified funding purpose",
+            "when_the_money_is_needed": "string — actual deadline/timeline where supplied; otherwise empty string",
+            "why_now": "string — actual urgency/timing where supported; otherwise empty string",
+        },
+        "what_your_support_will_make_possible": ["string — specific outcomes/capacity supported by verified funding purpose; no invented results"],
+        "how_you_can_help": ["string — only support/partnership pathways consistent with the adopted fundraising strategy"],
+        "next_step": {
+            "invitation": "string — concise invitation to discuss supporting/partnering/learning more",
+            "contact_name": "string — actual supplied organization/fundraising contact; otherwise empty string",
+            "contact_title": "string — actual title; otherwise empty string",
+            "email": "string — actual supplied email; otherwise empty string",
+            "phone": "string — actual supplied phone; otherwise empty string",
+            "website": "string — actual supplied website; otherwise empty string",
+            "donation_url": "string — actual supplied donation URL only; otherwise empty string",
+        },
+    }, "note": """You are an exceptional nonprofit fundraising strategist writing the definitive CASE FOR SUPPORT for this organization.
+This is an externally shareable fundraising document.
+Its purpose is to help a potential supporter understand: why the mission matters; the real need/problem; who the organization serves; what the organization actually does; why its work matters; what funding is currently needed; what that funding will make possible; and how someone can take the next step toward supporting or partnering with the organization.
+Use only: 1. the FINAL ADOPTED FUNDRAISING STRATEGY PLAN; 2. verified organization information; 3. verified founder fundraising information; 4. verified impact/results/examples where actually supplied; 5. actual organization/fundraising contact details.
+This is NOT: the Fundraising Strategy; a Board document; a grant proposal; a sponsorship package; an annual report; a legal document.
+Write for an intelligent potential donor, business partner, corporate sponsor or funder.
+The Case must be persuasive because the facts are meaningful — not because you invented emotional language or unsupported claims.
+STRUCTURE: 1. Why This Work Matters; 2. The Need / Challenge; 3. Who We Serve; 4. What We Do; 5. How Our Approach Helps; 6. The Difference This Work Is Making — only where verified evidence exists; 7. What We Are Raising Money For; 8. What Your Support Will Make Possible; 9. Why Now — only where actual timing/urgency exists; 10. How You Can Help; 11. Let's Talk / Next Step.
+Use the organization's actual fundraising amount and deadline only where supplied. If no exact amount exists, write naturally around the real funding objective without inventing one. If no verified impact statistic exists, do not manufacture one.
+Never invent: programs; beneficiaries; stories; quotes; impact statistics; donors; businesses; grantors; partnerships; funding history; revenue; tax claims; sponsorship levels; donation levels; matching gifts; legal claims; URLs.
+Distinguish CURRENT REALITY from WHAT FUNDING WILL MAKE POSSIBLE. Do not describe future ambition as an existing accomplishment.
+End with the organization's actual next-step contact information.
+Never mention AI.
+Professional, compelling, concrete and human."""},
+    "activation_board_communication_system": {"module": 5, "title": "Board Fundraising Communication System", "per_application": False, "schema": {
+        "overview": "string — concise Board-facing explanation of the Introduce Impact → Case for Support → Follow Up & Ask system and how it fits into the adopted strategy",
+        "how_to_use_this_system": ["string — practical instructions including using only the audience sequence relevant to the Board Member's agreed responsibility and reporting results back to the organization"],
+        "audience_sequences": [{
+            "audience": "string — actual major funding audience from the adopted strategy",
+            "why_this_audience_matters": "string — concise strategy-grounded explanation",
+            "stage_1_introduce_impact": {
+                "purpose": "string",
+                "email_subject": "string",
+                "email_body": "string — complete reusable Board Member email; no funding ask; begins naturally with Hello, and does not include a founder signature",
+                "call_script": {
+                    "opening": "string",
+                    "mission_and_impact_connection": "string",
+                    "why_i_thought_of_you": "string",
+                    "invitation_to_learn_more": "string",
+                    "if_interested": "string",
+                    "if_not_ready_or_not_interested": "string",
+                    "close": "string",
+                },
+            },
+            "stage_2_case_for_support": {
+                "purpose": "string",
+                "email_subject": "string",
+                "email_body": "string — complete reusable email containing the exact approved Case for Support URL supplied in context; not the main funding ask; no founder signature",
+                "call_script": {
+                    "opening": "string",
+                    "introduce_the_case_for_support": "string",
+                    "what_it_will_help_them_understand": "string",
+                    "invite_them_to_review": "string",
+                    "if_they_have_questions": "string",
+                    "next_step": "string",
+                    "close": "string",
+                },
+            },
+            "stage_3_follow_up_and_ask": {
+                "purpose": "string",
+                "email_subject": "string",
+                "email_body": "string — complete audience-appropriate follow-up/ask email; no invented amount/terms; no founder signature",
+                "call_script": {
+                    "opening": "string",
+                    "ask_what_they_thought": "string",
+                    "clarify_or_answer": "string",
+                    "make_the_ask": "string",
+                    "if_interested_or_yes": "string",
+                    "if_they_need_time": "string",
+                    "if_not_now_or_no": "string",
+                    "close": "string",
+                    "report_back_reminder": "string",
+                },
+            },
+        }],
+        "report_back_to_the_organization": {
+            "instructions": "string — short explanation of why the Board Member should report the result",
+            "fields": ["Board Member", "Date", "Prospect / Organization", "Funding Audience", "Stage Reached", "Outcome",
+                       "What They Said", "Support / Partnership Discussed", "Next Step", "Who Needs to Follow Up",
+                       "Follow-Up Date", "Notes"],
+            "outcome_options": ["Interested — Follow-Up Needed", "Interested — Organization Conversation Needed",
+                                "Needs Time", "Not Now", "Not Interested", "Support Confirmed",
+                                "Referred to Another Opportunity / Contact", "Other"],
+        },
+    }, "note": """You are an exceptional nonprofit fundraising strategist creating ONE complete BOARD FUNDRAISING COMMUNICATION SYSTEM for a real volunteer Board executing its FINAL ADOPTED FUNDRAISING STRATEGY.
+This is an organization-level reusable resource.
+Do NOT personalize it to individual Board Members or individual prospects.
+Use: 1. the FINAL ADOPTED FUNDRAISING STRATEGY PLAN; 2. the APPROVED CASE FOR SUPPORT; 3. the exact APPROVED CASE FOR SUPPORT share URL; 4. verified organization facts; 5. actual funding goal/purpose/timeline; 6. actual organization/fundraising contact information.
+Create the system only for the MAJOR funding audience families Board Members genuinely need to communicate with according to the adopted strategy.
+Normally: Individual Donors; Businesses / Corporate Partners; Grantors / Foundations; only where applicable.
+Maximum four audience variants unless the adopted strategy clearly requires another major audience.
+For EACH audience create exactly THREE stages:
+STAGE 1 — INTRODUCE IMPACT. Purpose: Create awareness and interest. NO FUNDING ASK. The Board Member briefly introduces the organization, actual mission/work and a verified impact/result/example where available, explains why the work may be relevant to this type of audience and asks whether the person would be open to learning more. Create: one complete email; one complete call script.
+STAGE 2 — CASE FOR SUPPORT. Purpose: Build understanding and trust. The prospect has shown interest. The Board Member shares the approved Case for Support using the exact supplied URL, invites them to review it and says they will follow up. This is not the primary ask. Create: one complete email; one complete call script.
+STAGE 3 — FOLLOW UP & ASK. Purpose: Move an interested prospect into an appropriate funding or partnership conversation. The Board Member asks what the prospect thought, listens, makes the audience-appropriate ask, establishes the next step and reports the outcome back to the organization. Create: one complete email; one complete call script.
+Adapt the Stage 3 ASK correctly:
+INDIVIDUAL: appropriate financial-support/conversation ask.
+BUSINESS / CORPORATE: appropriate sponsorship/partnership/support conversation.
+GRANTOR / FOUNDATION: appropriate fit/funding-process/next-step conversation — never pretend the Board Member is submitting a grant application by phone.
+BOARD MEMBER VOICE: These scripts must sound natural when used by a real volunteer Board Member. Do not make the Board Member sound like: professional fundraising staff; a salesperson; a grant writer; a telemarketer.
+Do not sign Board Member emails with the founder's name. Do not invent the Board Member's name. Begin reusable emails naturally with 'Hello,' and allow the Board Member's normal email signature to identify them. Never use recipient placeholders.
+NEVER invent: donor names; prospect names; relationships; introduction commitments; funder interest; impact statistics; programs; grants; grant deadlines; sponsorship amounts; sponsorship benefits; giving amounts; meetings; URLs; funding outcomes.
+Use the exact approved Case for Support URL supplied.
+Do not pressure. Do not manufacture urgency. Do not promise funding outcomes.
+After Stage 3, make clear that the Board Member should report the outcome back to the organization.
+Never mention AI."""},
     "activation_fundraising_portfolio": {"module": 6, "title": "Fundraising Portfolio", "per_application": True, "schema": {
         "member_name": "string — actual Board Member full name",
         "board_role": "string — actual Board terminology/role already held by this member; never invent an officer title",
@@ -1328,7 +1503,9 @@ SYSTEM_MESSAGE = (
     "You are the Nonprofit Board Builder recruitment assistant. You work ONLY from the information provided in the prompt: "
     "the nonprofit's submitted information, the confirmed recruitment profile, previously approved recruitment materials, and "
     "applicant application information and CV where provided. Never invent facts, real people, statistics or history that was not provided. "
-    "EMAIL SIGNATURE RULE: every generated EMAIL must end with the founder's actual supplied contact details from the FOUNDER CONTACT context block — name, title, email and phone — presented naturally as the sender's signature. Omit any item that was not supplied. Never write placeholders such as [Your Name] or [Phone]. "
+    "EMAIL SENDER / SIGNATURE RULE: For an email explicitly written FROM the founder, executive director or organization, end with the founder's actual supplied contact details from the FOUNDER CONTACT context block — name, title, email and phone — presented naturally as the sender's signature, omitting any item that was not supplied. "
+    "For an explicitly reusable Board Member fundraising communication script, DO NOT sign it as the founder and DO NOT invent a Board Member name or contact information — write the reusable message so the Board Member can send it using their own normal email signature. "
+    "For all other emails, follow the resource-specific sender instructions. Never invent sender identity or contact details. Never write placeholders such as [Your Name] or [Phone]. "
     "FINISHED CONTENT RULE: generate the finished content for the requested resource only. Never expose internal generation instructions, metadata, schema labels, field names, prompt terminology, version numbers, or renderer/layout instructions in the content. Never write labels such as 'Title:', 'Content:', 'Section:', 'Version 1', 'Generation Type:' or 'Special Requirements:' in the output. The resource-specific requirements remain authoritative for the actual content structure. "
     "LINK RULE: never invent URLs or links of any kind. Where a resource needs a link (form, strategy, review, agreement, application, meeting), use exactly the URL supplied in context, placed where the resource requires it; if no URL was supplied, refer to the link generically without fabricating one. "
     "DESIGN RULE: the application renderer owns all visual design (fonts, sizes, colours, borders, spacing, cover pages, logos, page numbers). Do not produce CSS, layout, typography or visual design instructions. "
