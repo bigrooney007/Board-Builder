@@ -57,6 +57,50 @@ def create_funnel_router(db) -> APIRouter:
                 raise ValueError("Unknown product")
             return value
 
+    DIAGNOSTIC_OPTIONS = {
+        "has_board": {"Yes", "No"},
+        "active_participation": {"Yes", "No", "Some are, some are not", ""},
+        "right_people": {"Yes", "No", "Not sure", ""},
+        "fundraising_working": {"Yes", "No", "Only a little", ""},
+    }
+
+    class DiagnosticPayload(BaseModel):
+        result_token: str = ""
+        has_board: str
+        active_participation: str = ""
+        right_people: str = ""
+        fundraising_working: str = ""
+
+    def diagnose(payload: "DiagnosticPayload") -> str:
+        if payload.has_board == "No":
+            return "recruitment"
+        flags = []
+        if payload.active_participation in {"No", "Some are, some are not"}:
+            flags.append("reactivation")
+        if payload.right_people == "No":
+            flags.append("recruitment")
+        if payload.fundraising_working in {"No", "Only a little"}:
+            flags.append("activation")
+        if len(flags) >= 2:
+            return "complete_transformation"
+        return flags[0] if flags else "activation"
+
+    @router.post("/board-fix/diagnostic")
+    async def board_fix_diagnostic(payload: DiagnosticPayload):
+        for key, allowed in DIAGNOSTIC_OPTIONS.items():
+            if getattr(payload, key) not in allowed:
+                raise HTTPException(status_code=422, detail="Please answer using the options provided")
+        if payload.has_board == "Yes" and not (payload.active_participation and payload.right_people and payload.fundraising_working):
+            raise HTTPException(status_code=422, detail="Please answer all four questions")
+        recommended = diagnose(payload)
+        if payload.result_token:
+            await db.funnel_leads.update_one(
+                {"result_token": payload.result_token, "offer_source": "board_fix"},
+                {"$set": {"diagnostic_answers": {key: getattr(payload, key) for key in DIAGNOSTIC_OPTIONS},
+                          "recommended_pathway": recommended,
+                          "diagnosed_at": datetime.now(timezone.utc).isoformat()}})
+        return {"recommended_pathway": recommended}
+
     @router.post("/board-transformation/select")
     async def select_transformation_product(payload: ProductSelection):
         result = await db.funnel_leads.update_one(

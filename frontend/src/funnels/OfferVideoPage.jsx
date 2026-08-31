@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
+import { BoardFixDiagnostic } from "./BoardFixDiagnostic";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { SITE_CONTENT } from "@/content/siteContent";
 
@@ -78,6 +79,9 @@ export default function OfferVideoPage({ offer }) {
                 <div className="offer-video-placeholder" data-testid={`offer-video-placeholder-${offer}`}><p>{content.video.title}</p><span>Video coming soon</span></div>
               )}
             </div>
+            {offer === "board-fix" ? (
+              <BoardFixDiagnostic />
+            ) : (
             <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
               {content.options ? (
                 <div className="offer-sales-grid">
@@ -106,6 +110,7 @@ export default function OfferVideoPage({ offer }) {
               )}
               {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
             </section>
+            )}
             <div className="offer-sales-testimonials">
               <TestimonialCarousel idPrefix={`offer-${offer}`} />
             </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { enterOperatorMode } from "@/operatorMode";
-import { adminClientDeliveryText, clientDeliverySectionText } from "../content/appContent";
+import { adminClientDeliveryText } from "../content/appContent";
 
 const client = axios.create({ baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`, withCredentials: true });
 const err = (e) => (typeof e.response?.data?.detail === "string" ? e.response.data.detail : "Action failed.");
@@ -11,6 +11,10 @@ const TEST_JOURNEYS = [
   { key: "reactivation", label: "Reactivation", route: "/app/reactivation/self-guided/module/1" },
   { key: "activation", label: "Activation", route: "/app/activation/self-guided/module/1" },
 ];
+
+const ENGAGEMENT_LABELS = { recruitment: "Board Recruitment", reactivation: "Board Reactivation", activation: "Board Fundraising Activation" };
+const ENGAGEMENT_STATUSES = ["Active", "Paused", "Completed"];
+const MEETING_STATUSES = ["Not Booked", "Booking Link Sent", "Booked"];
 
 export const ClientDeliverySection = () => {
   const [clients, setClients] = useState([]);
@@ -30,6 +34,14 @@ export const ClientDeliverySection = () => {
     } catch (e) { setMessage(err(e)); }
   };
 
+  const updateClient = async (row, patch) => {
+    setMessage("");
+    try {
+      await client.patch(`/admin/dwm-clients/${row.session_id}`, patch);
+      setClients((rows) => rows.map((r) => (r.session_id === row.session_id ? { ...r, ...patch } : r)));
+    } catch (e) { setMessage(err(e)); }
+  };
+
   return (
     <section data-testid="admin-client-delivery">
       <h2 className="reference-heading">Test Product Journey</h2>
@@ -39,22 +51,34 @@ export const ClientDeliverySection = () => {
           <a key={j.key} className="button button-small" href={j.route} data-testid={`test-journey-${j.key}`}>Test {j.label} Journey</a>
         ))}
       </div>
-      <h2 className="reference-heading" style={{ marginTop: "28px" }}>{clientDeliverySectionText.doWithYouClients}</h2>
-      <p className="admin-message">{adminClientDeliveryText.m_everyVerifiedDowithyouCustomerAcross}</p>
+      <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Done-For-You Clients</h2>
+      <p className="admin-message">Every verified individual-engagement client. Open a client workspace to operate their Board Ultimate Fix pathway on their behalf.</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}
       <div className="admin-table-wrap">
         <table className="admin-table">
-          <thead><tr>{["Founder", "Organization", "Offer", "Purchase Date", "Intake", "Workspace", ""].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+          <thead><tr>{["Founder", "Organization", "Engagement", "Purchase Date", "Intake", "First Meeting", "Status", "Current Step", ""].map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
           <tbody>
-            {clients.length === 0 && <tr><td colSpan="7" data-testid="dwm-empty">{clientDeliverySectionText.noVerifiedDoWithYou}</td></tr>}
+            {clients.length === 0 && <tr><td colSpan="9" data-testid="dwm-empty">No verified Done-For-You clients yet.</td></tr>}
             {clients.map((row) => (
               <tr key={row.session_id} data-testid={`dwm-row-${row.session_id.slice(-8)}`}>
                 <td>{row.founder_name || row.founder_email}</td>
                 <td>{row.organization_name || "—"}</td>
-                <td>{row.offer}</td>
+                <td>{ENGAGEMENT_LABELS[row.engagement_type] || row.offer}</td>
                 <td>{row.purchase_date?.slice(0, 10)}</td>
-                <td>{row.intake_status}</td>
-                <td>{row.workspace_status}</td>
+                <td data-testid={`dwm-intake-${row.session_id.slice(-8)}`}>{row.intake_status}</td>
+                <td>
+                  <select value={row.first_meeting || "Not Booked"} onChange={(e) => updateClient(row, { first_meeting: e.target.value })} data-testid={`dwm-meeting-${row.session_id.slice(-8)}`}>
+                    {MEETING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select value={row.engagement_status || "Active"} onChange={(e) => updateClient(row, { engagement_status: e.target.value })} data-testid={`dwm-status-${row.session_id.slice(-8)}`}>
+                    {ENGAGEMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <input defaultValue={row.current_step || ""} placeholder={row.workspace_status === "Open" ? "In workspace" : "Not started"} onBlur={(e) => { if (e.target.value !== (row.current_step || "")) updateClient(row, { current_step: e.target.value }); }} style={{ width: 130 }} data-testid={`dwm-step-${row.session_id.slice(-8)}`} />
+                </td>
                 <td><button className="button button-small" onClick={() => openWorkspace(row)} data-testid={`open-workspace-${row.session_id.slice(-8)}`}>Open Client Workspace</button></td>
               </tr>
             ))}

@@ -185,6 +185,13 @@ export default function BoardRecruitmentIntakePage() {
           <i aria-hidden="true" />
         </section>
 
+        {new URLSearchParams(location.search).get("dfy") === "1" && gate !== "done" && (
+          <div className="intake-card" data-testid="intake-dfy-welcome">
+            <h2>You're In. Let's Get Started.</h2>
+            <p>Two quick steps: <strong>1.</strong> Complete the short intake below. <strong>2.</strong> Book your first meeting with Rooney — we'll take you to the calendar as soon as your intake is saved.</p>
+          </div>
+        )}
+
         {gate === "checking" && (
           <div className="intake-card" data-testid="intake-checking"><h2>{recruitIntakeText.h_confirmingYourPayment}</h2><p>{boardRecruitmentIntakePageText.pleaseWaitWhileWeVerify}</p></div>
         )}

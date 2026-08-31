@@ -8,7 +8,7 @@ import { useReviewMode } from "@/reviewMode";
 import { funnelStepText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const emptyContact = { name: "", email: "", phone: "", organization: "", website: "", city: "", state_region: "", country: "" };
+const emptyContact = { name: "", first_name: "", last_name: "", email: "", phone: "", organization: "", website: "", city: "", state_region: "", country: "" };
 
 const emptyAnswers = (config) => {
   const answers = {};
@@ -72,7 +72,8 @@ export const FunnelStepForm = ({ offerSource }) => {
     }
     setSubmitting(true); setSubmitError("");
     try {
-      const response = await axios.post(`${API}/funnel-leads/${offerSource}`, { ...contact, answers });
+      const leadName = contact.name || `${contact.first_name} ${contact.last_name}`.trim();
+      const response = await axios.post(`${API}/funnel-leads/${offerSource}`, { ...contact, name: leadName, answers });
       sessionStorage.setItem("funnelLeadContext", JSON.stringify({ lead_id: response.data.lead_id, result_token: response.data.result_token, offer_source: offerSource, organization: contact.organization, support_preference: answers.support_preference || "" }));
       if (config.redirectAfterSubmit === "options") navigate(`/${config.slug}/options`);
       else if (config.redirectAfterSubmit === "offer-recruitment") navigate("/offer/recruitment");

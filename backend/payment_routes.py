@@ -113,6 +113,38 @@ def resolve_activation_project_price_id() -> str:
     return resolve_offer_price_id("STRIPE_DIRECT_BOARD_ACTIVATION_5497_PRICE_ID", "direct_board_activation_project_5497", "Board Fundraising Activation Project", 549700)
 
 
+def resolve_complete_transformation_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_COMPLETE_TRANSFORMATION_1997_PRICE_ID", "complete_board_transformation_1997", "Complete Board Transformation", 199700)
+
+
+DFY_CHECKOUT_OFFERS = {
+    "reactivation": {
+        "env_key": "STRIPE_BOARD_REACTIVATION_DFY_997_PRICE_ID", "lookup_key": "board_reactivation_dfy_997",
+        "product_name": "Board Reactivation", "amount": 99700,
+        "purchase_source": "board_reactivation_dfy", "offer": "Board Reactivation",
+        "intake_path": "/board-reactivation-intake",
+    },
+    "recruitment": {
+        "env_key": "STRIPE_BOARD_RECRUITMENT_DFY_997_PRICE_ID", "lookup_key": "board_recruitment_dfy_997",
+        "product_name": "Board Recruitment", "amount": 99700,
+        "purchase_source": "board_recruitment_dfy", "offer": "Board Recruitment",
+        "intake_path": "/board-recruitment-intake",
+    },
+    "activation": {
+        "env_key": "STRIPE_BOARD_ACTIVATION_DFY_997_PRICE_ID", "lookup_key": "board_fundraising_activation_dfy_997",
+        "product_name": "Board Fundraising Activation", "amount": 99700,
+        "purchase_source": "board_fundraising_activation_dfy", "offer": "Board Fundraising Activation",
+        "intake_path": "/board-activation-intake",
+    },
+}
+
+
+class DFYCheckoutRequest(BaseModel):
+    origin_url: str = Field(min_length=1)
+    result_token: str = ""
+    pathway: str = Field(min_length=1)
+
+
 def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -547,6 +579,89 @@ def create_payment_router(db) -> APIRouter:
             "selected_tier": "direct_project", "purchase_source": "direct_board_activation_project_2497",
             "offer": "Board Fundraising Activation Project",
             "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/dfy-checkout")
+    async def create_dfy_checkout(payload: DFYCheckoutRequest):
+        meta = DFY_CHECKOUT_OFFERS.get(payload.pathway)
+        if not meta:
+            raise HTTPException(status_code=400, detail="Unknown engagement")
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_offer_price_id(meta["env_key"], meta["lookup_key"], meta["product_name"], meta["amount"]), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}{meta['intake_path']}?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
+            "cancel_url": f"{payload.origin_url}/offer/board-fix?checkout=cancelled",
+            "metadata": {
+                "offer_source": meta["purchase_source"],
+                "purchase_source": meta["purchase_source"],
+                "offer": meta["offer"],
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        lead_context = await lead_checkout_context(db, payload.result_token)
+        lead = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0, "diagnostic_answers": 1, "recommended_pathway": 1}) if payload.result_token else None
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, **lead_context, "origin_url": payload.origin_url,
+            "offer_source": meta["purchase_source"],
+            "selected_tier": "dfy_997", "purchase_source": meta["purchase_source"],
+            "offer": meta["offer"],
+            "diagnostic_answers": (lead or {}).get("diagnostic_answers", {}),
+            "recommended_pathway": (lead or {}).get("recommended_pathway", ""),
+            "amount": meta["amount"], "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/complete-transformation-checkout")
+    async def create_complete_transformation_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_complete_transformation_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": resolve_cancel_url(payload, "/offer/board-fix"),
+            "metadata": {
+                "offer_source": "board_fix_system", "selected_tier": "complete_1997",
+                "purchase_source": "complete_board_transformation_1997",
+                "offer": "Complete Board Transformation",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        lead = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0, "diagnostic_answers": 1, "recommended_pathway": 1}) if payload.result_token else None
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "board_fix_system",
+            "selected_tier": "complete_1997", "purchase_source": "complete_board_transformation_1997",
+            "offer": "Complete Board Transformation",
+            "diagnostic_answers": (lead or {}).get("diagnostic_answers", {}),
+            "recommended_pathway": (lead or {}).get("recommended_pathway", ""),
+            "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

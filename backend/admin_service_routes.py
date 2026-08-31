@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+from typing import Optional
 
 from auth_service import authenticate_admin
 
@@ -25,7 +27,25 @@ DWM_OFFERS = {
         "entitlement": "activation_self_guided", "intake_collection": "board_activation_intakes",
         "entry_route": "/app/activation/self-guided/module/1",
     },
+    "board_reactivation_dfy": {
+        "product": "reactivation", "offer": "Board Reactivation — Done For You ($997)",
+        "entitlement": "reactivation_self_guided", "intake_collection": "board_reactivation_intakes",
+        "entry_route": "/app/reactivation/self-guided/module/1",
+    },
+    "board_recruitment_dfy": {
+        "product": "recruitment", "offer": "Board Recruitment — Done For You ($997)",
+        "entitlement": "recruitment_self_guided", "intake_collection": "board_recruitment_intakes",
+        "entry_route": "/app/recruitment/self-guided/module/1",
+    },
+    "board_fundraising_activation_dfy": {
+        "product": "activation", "offer": "Board Fundraising Activation — Done For You ($997)",
+        "entitlement": "activation_self_guided", "intake_collection": "board_activation_intakes",
+        "entry_route": "/app/activation/self-guided/module/1",
+    },
 }
+
+ENGAGEMENT_STATUSES = {"Active", "Paused", "Completed"}
+MEETING_STATUSES = {"Not Booked", "Booking Link Sent", "Booked"}
 
 
 def create_admin_service_router(db) -> APIRouter:
@@ -52,16 +72,47 @@ def create_admin_service_router(db) -> APIRouter:
                 "session_id": session_id,
                 "product": meta["product"],
                 "offer": meta["offer"],
+                "engagement_type": meta["product"],
                 "purchase_date": tx.get("created_at", ""),
-                "founder_name": intake.get("your_name", "") or intake.get("full_name", ""),
-                "founder_email": intake.get("your_email", "") or intake.get("email", "") or tx.get("email", ""),
-                "organization_name": intake.get("organization_name", ""),
-                "intake_status": "Completed" if intake else "Not Completed",
+                "founder_name": intake.get("your_name", "") or intake.get("full_name", "") or tx.get("lead_name", ""),
+                "founder_email": intake.get("your_email", "") or intake.get("email", "") or tx.get("email", "") or tx.get("lead_email", ""),
+                "organization_name": intake.get("organization_name", "") or tx.get("lead_organization", ""),
+                "intake_status": "Completed" if intake else "Not Started",
+                "engagement_status": tx.get("dfy_engagement_status", "Active"),
+                "first_meeting": tx.get("dfy_first_meeting", "Not Booked"),
+                "current_step": tx.get("dfy_current_step", ""),
                 "workspace_status": "Open" if workspace else "Not Started",
                 "workspace_user_id": (workspace or {}).get("user_id", ""),
                 "entry_route": meta["entry_route"],
             })
         return {"clients": clients}
+
+    class ClientStatusUpdate(BaseModel):
+        engagement_status: str = ""
+        first_meeting: str = ""
+        current_step: Optional[str] = None
+
+    @router.patch("/dwm-clients/{session_id}")
+    async def update_client_status(session_id: str, payload: ClientStatusUpdate, request: Request):
+        await authenticate_admin(request, db)
+        updates = {}
+        if payload.engagement_status:
+            if payload.engagement_status not in ENGAGEMENT_STATUSES:
+                raise HTTPException(status_code=422, detail="Unknown engagement status")
+            updates["dfy_engagement_status"] = payload.engagement_status
+        if payload.first_meeting:
+            if payload.first_meeting not in MEETING_STATUSES:
+                raise HTTPException(status_code=422, detail="Unknown meeting status")
+            updates["dfy_first_meeting"] = payload.first_meeting
+        if payload.current_step is not None:
+            updates["dfy_current_step"] = payload.current_step[:200]
+        if not updates:
+            return {"status": "ok"}
+        result = await db.payment_transactions.update_one(
+            {"session_id": session_id, "purchase_source": {"$in": list(DWM_OFFERS.keys())}}, {"$set": updates})
+        if not result.matched_count:
+            raise HTTPException(status_code=404, detail="Client not found")
+        return {"status": "ok"}
 
     @router.post("/dwm-clients/{session_id}/workspace")
     async def open_workspace(session_id: str, request: Request):

@@ -17,7 +17,7 @@ REQUIRED_ANSWERS = {
         "present_board", "active_board", "need_recruit", "reactivate_inactive",
         "board_fundraising_now", "want_fundraising",
     },
-    "board_fix": {"board_situation", "board_goals"},
+    "board_fix": set(),
 }
 
 

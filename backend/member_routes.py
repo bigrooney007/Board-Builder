@@ -90,6 +90,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         entitlement = "board_fix_system"
         product_name = "Complete Board Fix — Do It With Me"
         extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided", "recruitment_selection_onboarding"])
+    elif offer_source == "board_fix_system" and tier == "complete_1997":
+        entitlement = "board_fix_system"
+        product_name = "Complete Board Transformation"
+        extra_entitlements.extend(["recruitment_self_guided", "reactivation_self_guided", "activation_self_guided", "recruitment_selection_onboarding"])
     elif offer_source == "direct_diy_board_reactivation" and tier == "497":
         entitlement = "reactivation_self_guided"
         product_name = "Do It Yourself Board Reactivation"

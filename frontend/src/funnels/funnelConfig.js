@@ -18,20 +18,20 @@ export const funnelConfigs = {
   board_fix: {
     slug: "board-fix", eyebrow: "BOARD FIX",
     heading: "Tell Us About Your Board",
-    supporting: "Tell us about your board and what you want to achieve with your board and we'll show you what you need to do to transform your board and build a high-performing board.",
-    formHeading: "Tell Us About Your Board",
+    supporting: "Enter your information below, watch the short video, and answer four quick questions — we'll show you exactly where your board needs to start.",
+    formHeading: "Tell Us About You and Your Organization",
     submit: "Show Me How You Can Help",
     redirectAfterSubmit: "offer-board-fix",
     steps: [
       {
         heading: "Tell Us About You and Your Organization",
         fields: [
-          { type: "text", name: "name", label: "Your name", scope: "contact" },
-          { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
+          { type: "text", name: "first_name", label: "First name", scope: "contact" },
+          { type: "text", name: "last_name", label: "Last name", scope: "contact" },
           { type: "text", name: "organization", label: "Organization name", scope: "contact" },
+          { type: "text", name: "email", label: "Email address", inputType: "email", scope: "contact" },
           { type: "text", name: "phone", label: "Phone number", inputType: "tel", scope: "contact" },
-          { type: "textarea", name: "board_situation", label: "Tell us about your board", scope: "answers" },
-          { type: "textarea", name: "board_goals", label: "What do you want to achieve with your board?", scope: "answers" },
+          { type: "text", name: "website", label: "Website (optional)", inputType: "url", required: false, scope: "contact" },
         ],
       },
     ],
