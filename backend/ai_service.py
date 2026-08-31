@@ -220,8 +220,22 @@ No subject line. Keep it to approximately 3-5 natural sentences.
 NEVER mention AI."""},
     "general_rejection_email": {"module": 4, "title": "Application Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant the organization has decided not to invite to interview"}},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual board terminology, e.g. Board Member / Founding Board Member]",
-        "body": "string — a candidate-specific conditional appointment email that feels PERSONALLY WRITTEN. Start 'Dear [actual candidate first name],'. OPENING: congratulate them and state clearly that following the interview process the organization is pleased to offer them a Conditional Appointment to the Board. WHY WE WANT YOU TO MOVE FORWARD: 1-2 candidate-specific paragraphs connecting their ACTUAL verified experience to the organization's actual priorities and Module 1 board needs — never invent experience, never generic 'we were impressed with your experience'. CONDITIONS: explain the appointment remains conditional on outstanding final requirements — include ONLY the requirements the supplied status context shows are actually outstanding (e.g. Reference Check, Background Check); if reference checking is complete do not claim it is outstanding; if background checking is not required omit it; explain that once the applicable requirements are completed and the organization confirms appointment they move into formal board service. YOUR NEXT STEP — BOARD ONBOARDING: invite them to the onboarding session and explain appropriate purposes (meet fellow board members and leadership, understand mission/direction, board responsibilities, how the board operates, fundraising/partnership expectations where applicable, how their particular expertise can contribute, ask questions). ONBOARDING DETAILS: use only the actual supplied date, time, timezone, format, meeting link and location — omit anything not supplied, no placeholders. DOCUMENTS AND FORMS: present the actual supplied links, clearly distinguishing items to REVIEW (Board Member Manual, Organizational Overview) from items to COMPLETE/SIGN (Board Member Profile Form, Board Member Agreement, Confidentiality Agreement, Conflict of Interest Disclosure) and ask them to review and complete the applicable forms before onboarding. CLOSING: warm organization-specific closing reinforcing why the organization looks forward to working with them; sign with actual founder/contact details. Use the words 'conditional appointment'; NEVER 'confidential board position'. Never make false statements about legal requirements."}},
+        "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual Board terminology]",
+        "body": "string — a finished candidate-specific Conditional Board Appointment Email. Clearly state that the founder has selected the candidate for conditional appointment; briefly connect their verified experience to the organization's actual Board need; state ONLY the actual outstanding Reference Check and/or required Background Check conditions supplied by the system; explain that formal appointment and onboarding follow only after applicable conditions are completed and the organization confirms appointment; do not include onboarding documents, profile forms, agreements, signature links or invented requirements.",
+    }, "note": """You are an experienced nonprofit Board recruitment consultant writing a CONDITIONAL BOARD APPOINTMENT EMAIL to ONE candidate whom the founder has already selected for appointment.
+The founder has made the selection decision. AI does not evaluate, score or select the candidate.
+The appointment is CONDITIONAL because one or more actual appointment requirements are still outstanding.
+Use only verified supplied information about: the candidate; their application and CV/resume; the relevant Board expertise/profile; the organization; its mission and direction; the actual Board terminology; the founder/contact information; the actual Reference Check status; the actual Background Check status.
+The email must accomplish five things.
+FIRST — COMMUNICATE THE SELECTION: Congratulate the candidate and clearly state that the organization is pleased to offer them a CONDITIONAL APPOINTMENT to the organization's actual Board type. Make clear that the founder/organization has chosen them. Do not describe this as merely another interview stage.
+SECOND — EXPLAIN WHY THEIR CONTRIBUTION MATTERS: Include one concise, personalized paragraph connecting ACTUAL verified candidate experience to an ACTUAL Board capability or organization priority. Never invent experience. Never manufacture interview praise. Never say "we were impressed" unless actual founder-entered interview information supports that statement. Never compare the candidate with another applicant.
+THIRD — STATE THE ACTUAL CONDITIONS: Identify ONLY the appointment requirements that the supplied status context shows are genuinely outstanding. If the Reference Check is completed, do not list it. If references are submitted but reference checking remains incomplete, state that the organization's reference process remains outstanding. If the organization requires a Background Check and that process is outstanding, state it. If Background Check status is Not Required, blank, unknown or not recorded, do NOT invent a requirement. If the organization supplied the actual name of a specific clearance, use that exact name. Never invent legal requirements. Never expose detailed reference responses or background-check findings. Describe these as outstanding appointment requirements or remaining steps in our appointment process — never as "final onboarding requirements".
+FOURTH — EXPLAIN WHAT CONDITIONAL MEANS: State clearly and naturally that once the applicable outstanding requirements are completed and the organization confirms the appointment, the candidate will receive their formal appointment and onboarding information. This email is not the Formal Appointment. Do not describe the candidate as already being a fully appointed Board Member/Director. Do not use vague wording that could make them think the appointment is final — but do not sound uncertain about whether the organization wants them.
+FIFTH — CLOSE POSITIVELY: Thank them for the time they have invested in the process and reinforce that the organization looks forward to completing the remaining appointment steps with them. Sign with the founder's actual supplied contact details.
+DO NOT include: Board onboarding-session details; Board Manual; Organization Overview; Board Member Profile Form; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement; first Board meeting information; fundraising planning resources; onboarding links; signature links. Those belong after Formal Appointment.
+Do not assign detailed Board responsibilities (no committee chairs, organizational functions, donors, fundraising targets, teams or officer positions unless that exact appointment was formally established and supplied). Do not invent deadlines. Do not invent links. Do not invent legal conditions. Do not expose confidential due-diligence information. Do not ask the candidate to provide references again if the status shows they were already submitted. Do not tell the candidate that a background check is required unless the supplied organization/candidate status establishes that it is.
+Never mention AI.
+Keep the email approximately 225-350 words. Professional, warm, significant and clear."""},
     "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {
         "subject": "Exactly: Thank You for Meeting With Us",
         "body": "The complete candidate-specific post-interview rejection email. Clearly and respectfully communicate that the candidate will not move forward, thank them for their application and interview time, preserve the relationship, and never invent or expose a rejection reason.",
@@ -442,16 +456,122 @@ Do not exaggerate praise. Do not state that the candidate was the strongest appl
 Approximately 140-220 words. Warm, clear, professional and forward-moving.
 NEVER mention AI."""},
     "reference_request_email": {"module": 5, "title": "Reference Check Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Reference Request | [actual candidate full name] — [actual organization name]",
-        "body": "string — a finished, professional email the founder sends to a REFEREE requesting a reference for this specific board candidate. Open with a respectful greeting to the referee (use '[Referee Name]' only if no referee name is supplied). Explain that [candidate name] is being considered for appointment to the organization's board, that the candidate named the referee as a professional reference, and that the organization would value their perspective as part of its board appointment process. Ask them to share their assessment of the candidate's professionalism, reliability, character and suitability for board service — either by replying to this email or through a short conversation at a convenient time. Never invent the referee's relationship to the candidate. Close warmly and sign with the actual founder/contact details. 130-220 words."}},
+        "subject": "Exactly: Reference Request | [actual candidate full name] — [actual organization name]",
+        "body": "The complete professional email to the supplied referee requesting responses to the five standardized reference questions. Make clear the candidate is being considered, not already appointed.",
+    }, "note": """You are writing a professional reference request from a nonprofit founder or executive director to a professional referee supplied by ONE Board candidate.
+The candidate named this person as a professional reference. Use only supplied information.
+The email should:
+1. Address the actual referee by name where supplied. Use [Referee Name] only where the reusable resource genuinely does not have the name.
+2. Introduce the founder/organization briefly.
+3. State that [actual candidate name] is being considered through the organization's Board appointment process and supplied the referee as a professional reference.
+4. Explain that the organization would value the referee's perspective based on their actual experience with the candidate.
+5. Ask the following FIVE substantive questions:
+- In what capacity have you known or worked with [Candidate Name], and approximately how long have you known them?
+- Based on your experience working with [Candidate Name], how would you describe their professionalism, reliability and ability to follow through on responsibilities they accept?
+- What strengths have you observed in [Candidate Name] when working with other people, providing leadership, solving problems or contributing to shared goals?
+- Is there anything relevant to [Candidate Name]'s professional conduct, reliability or ability to carry a position of responsibility that you believe we should understand as we consider their Board application?
+- Based on your direct experience with [Candidate Name], would you be comfortable recommending them for a position of responsibility such as nonprofit Board service? Please briefly explain your answer.
+6. Explain that they may reply directly to the email with their responses OR, where appropriate, arrange a short reference conversation with the founder.
+7. Thank them for their time.
+8. Sign with the founder's actual supplied contact details.
+Do not invent the referee's relationship to the candidate. Do not tell the referee the candidate has already been appointed. Do not reveal private interview information. Do not tell the referee what answer the organization hopes to receive. Do not request protected/private personal information.
+Approximately 250-400 words because the five questions must be included clearly.
+NEVER mention AI."""},
     "referee_confirmation_email": {"module": 5, "title": "Referee Confirmation Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Thank You for Providing a Reference | [actual organization name]",
-        "body": "string — a short, warm email the founder sends to a REFEREE confirming the reference process: thank them for taking the time to provide a reference for [actual candidate name], confirm their reference has been received and will be considered as part of the organization's board appointment process, and note that their input is treated with discretion. Never reveal any appointment decision and never share what other referees said. Close respectfully and sign with the actual founder/contact details. 90-160 words."}},
+        "subject": "Exactly: Thank You for Providing a Reference | [actual organization name]",
+        "body": "A short professional confirmation thanking the referee after their reference has actually been received, without revealing any candidate decision, other referee information or internal evaluation.",
+    }, "note": """Write a short professional thank-you email from the nonprofit founder to ONE referee after their reference for a Board candidate has actually been received/completed.
+Use: actual referee name where supplied; actual candidate name; actual organization name; founder contact information.
+Thank the referee for taking the time to provide their perspective. Confirm that the reference has been received and will be considered as part of the organization's Board appointment process.
+Do not reveal: whether the reference was positive or negative; what another referee said; whether the candidate will be appointed; internal evaluation; background-check information.
+Do not promise confidentiality in absolute legal terms. Where appropriate, say their input will be handled with appropriate discretion as part of the organization's process.
+Keep this 80-140 words. Warm and professional.
+NEVER mention AI."""},
     "candidate_referee_request": {"module": 5, "title": "Candidate Referee Request Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Next Step: Your References | [actual organization name]",
-        "body": "string — a finished email to THIS board member candidate asking them to provide their referee/reference information as the next step in the board appointment process. Start 'Dear [actual candidate first name],'. Thank them for their continued interest, explain the organization completes professional references for every incoming board member as part of its appointment process, and ask them to provide two professional references (name, role/organization, relationship to them, email and phone). If a secure Reference Information Form URL is supplied in the context, ask them to submit their references through that exact link on its own line; if no link is supplied, ask them to reply to this email with the details. Never invent a link. Close warmly and sign with the actual founder/contact details. 130-220 words."}},
-    "reference_call_script": {"module": 5, "title": "Reference Call Guide", "per_application": True, "schema": {"introduction": "string", "questions": ["string"], "closing": "string"}},
-    "reference_evaluation_form": {"module": 5, "title": "Reference Evaluation Form", "per_application": True, "schema": {"sections": [{"title": "string", "items": ["string"]}]}},
+        "subject": "Exactly: Next Step: Your References | [actual organization name]",
+        "body": "The complete candidate-specific email requesting exactly two professional references. Use the exact secure Reference Information Form URL where supplied; otherwise ask the candidate to reply with the referee details. Never imply final Board appointment.",
+    }, "note": """You are writing a professional email from a nonprofit founder or executive director to ONE Board candidate who has successfully moved beyond the interview stage and is now completing the organization's reference process.
+The founder has already decided to move this candidate to this stage. Do not evaluate that decision.
+Use: candidate's actual first name; actual organization name; actual Board terminology; founder's actual supplied contact information; and the exact secure Reference Information Form URL where supplied.
+The email should:
+1. Thank the candidate for continuing through the Board recruitment process.
+2. Explain that the next step is the organization's professional reference process.
+3. Ask the candidate to provide TWO professional references.
+4. Explain briefly that the references should be people who know their professional work/conduct sufficiently well to provide a meaningful reference.
+5. Ask for: referee name; role/organization; relationship to candidate; email; phone.
+6. If the secure Reference Information Form URL is supplied, direct the candidate to submit the information through that exact link.
+7. If no secure form URL exists, ask them to reply to the email with the information.
+8. Close warmly with the founder's actual supplied signature.
+Do not tell the candidate they have already been appointed. Do not describe references as a legal requirement unless that was explicitly supplied. Do not invent deadlines. Do not invent links. Do not request references again if supplied system context indicates References Submitted or Completed.
+Approximately 130-200 words.
+NEVER mention AI."""},
+    "reference_call_script": {"module": 5, "title": "Reference Call Guide", "per_application": True, "schema": {
+        "reference_context": {
+            "candidate_name": "string — actual candidate name",
+            "referee_name": "string — actual referee name where supplied; otherwise empty string",
+            "referee_role_organization": "string — actual supplied role/organization; otherwise empty string",
+            "relationship_to_candidate": "string — actual supplied relationship; otherwise empty string",
+        },
+        "opening_script": "string — complete natural wording the founder can read at the beginning of the reference conversation",
+        "questions": [{
+            "question": "string — one of the five standardized reference questions",
+            "optional_follow_up": "string — one neutral factual follow-up; empty string if none is useful",
+            "notes_prompt": "string — short internal prompt describing what factual information the founder should record",
+        }],
+        "closing_script": "string — complete natural closing thanking the referee without revealing or implying an appointment decision",
+    }, "note": """You are creating a concise read-through professional Reference Call Guide for a nonprofit founder checking ONE Board candidate's professional reference.
+The founder should be able to use this during a live reference conversation without inventing the introduction, questions or closing.
+Use actual supplied: organization name; candidate name; Board terminology; referee name; referee role/organization; referee relationship to candidate where supplied.
+Begin with natural wording that: introduces the founder; thanks the referee; confirms that the candidate supplied them as a professional reference; explains that the organization is considering the candidate through its Board appointment process; explains that the conversation is intended to understand their direct professional experience with the candidate.
+Ask EXACTLY these five standardized reference questions (questions must contain exactly five objects):
+1. In what capacity have you known or worked with [Candidate Name], and approximately how long have you known them?
+2. Based on your experience working with [Candidate Name], how would you describe their professionalism, reliability and ability to follow through on responsibilities they accept?
+3. What strengths have you observed in [Candidate Name] when working with other people, providing leadership, solving problems or contributing to shared goals?
+4. Is there anything relevant to [Candidate Name]'s professional conduct, reliability or ability to carry a position of responsibility that you believe we should understand as we consider their Board application?
+5. Based on your direct experience with [Candidate Name], would you be comfortable recommending them for a position of responsibility such as nonprofit Board service? Please briefly explain your answer.
+Wording may adapt naturally to the actual candidate/organization, but preserve the five substantive areas and do not add a long list of additional questions.
+For each question provide one optional neutral follow-up that helps clarify factual information where appropriate. Follow-ups must not lead the referee toward a preferred answer.
+Do not ask protected-characteristic questions. Do not ask for gossip or unrelated personal information. Do not ask the referee to diagnose personality. Do not ask whether the referee personally likes the candidate, whether they are charismatic or whether they "fit the culture". Do not ask referees to speculate about matters they do not know.
+End with natural wording thanking the referee and explaining that their input will be considered as part of the organization's process. Never reveal the appointment decision.
+NEVER mention AI."""},
+    "reference_evaluation_form": {"module": 5, "title": "Reference Record & Evaluation Form", "per_application": True, "schema": {
+        "candidate_name": "string — actual candidate name",
+        "referee_name": "string — actual referee name where supplied; otherwise empty string",
+        "referee_role_organization": "string — actual supplied referee role/organization; otherwise empty string",
+        "relationship_to_candidate": "string — actual supplied relationship; otherwise empty string",
+        "reference_details_fields": [
+            "Reference Method: Email / Phone / Video Call / Other",
+            "Date Reference Completed",
+            "Founder / Reviewer",
+        ],
+        "reference_questions": [{
+            "question": "string — one of the exact five standardized reference questions",
+            "response_field_label": "Referee Response",
+            "clarification_notes_label": "Notes / Clarification",
+        }],
+        "founder_review": {
+            "strengths_field": "Relevant Strengths Confirmed",
+            "concerns_field": "Relevant Concerns Raised",
+            "clarification_field": "Information Still Needing Clarification",
+            "review_options": [
+                "Reference Completed — No Further Clarification Needed",
+                "Reference Completed — Further Clarification Needed",
+            ],
+        },
+    }, "note": """You are creating an INTERNAL Reference Record & Evaluation Form for a nonprofit founder checking ONE Board candidate's professional reference.
+This is a blank founder-completed working form. AI does NOT evaluate the candidate or the referee.
+Create the form around the same EXACT FIVE standardized reference questions used in the Reference Check Email and Reference Call Guide:
+1. In what capacity have you known or worked with [Candidate Name], and approximately how long have you known them?
+2. Based on your experience working with [Candidate Name], how would you describe their professionalism, reliability and ability to follow through on responsibilities they accept?
+3. What strengths have you observed in [Candidate Name] when working with other people, providing leadership, solving problems or contributing to shared goals?
+4. Is there anything relevant to [Candidate Name]'s professional conduct, reliability or ability to carry a position of responsibility that you believe we should understand as we consider their Board application?
+5. Based on your direct experience with [Candidate Name], would you be comfortable recommending them for a position of responsibility such as nonprofit Board service? Please briefly explain your answer.
+For each question provide: the question; a blank area for the founder to record the referee's response; a blank area for relevant notes/clarification.
+Also provide space to record: candidate name; referee name; referee role/organization; relationship to candidate; reference method (Email / Phone / Video Call / Other); date reference completed; founder/reviewer name.
+End with a founder-only Reference Review section containing: Relevant Strengths Confirmed; Relevant Concerns Raised; Information That Still Needs Clarification; and these manual founder options: Reference Completed — No Further Clarification Needed; Reference Completed — Further Clarification Needed.
+Do NOT include: Pass; Fail; AI recommendation; candidate score; numerical rating; automatic appointment recommendation.
+The founder records exactly what was learned and decides what it means in the wider appointment process. Never pre-fill referee responses. Never invent reference information from the candidate's CV or application.
+NEVER mention AI."""},
     "onboarding_agenda": {"module": 6, "title": "Onboarding Agenda", "per_application": True, "schema": {
         "items": [{"topic": "string — cover welcome; introductions; mission/program overview; organizational priorities; board role; governance expectations; fundraising expectations; committees/responsibilities; important policies; next 90 days; questions; next meeting/action", "details": "string"}],
     }},
@@ -1021,6 +1141,50 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
     meta = GENERATION_TYPES[generation_type]
     if generation_type == "interview_guide":
         return _interview_guide_display(structured)
+    if generation_type == "reference_call_script" and structured.get("opening_script"):
+        context_block = structured.get("reference_context") or {}
+        lines = ["REFERENCE CALL GUIDE", ""]
+        for label, key in [("Candidate", "candidate_name"), ("Referee", "referee_name"),
+                           ("Role / Organization", "referee_role_organization"),
+                           ("Relationship to Candidate", "relationship_to_candidate")]:
+            if context_block.get(key):
+                lines.append(f"{label}: {context_block[key]}")
+        lines.extend(["", "OPENING", structured.get("opening_script", ""), ""])
+        for index, entry in enumerate(structured.get("questions", []), 1):
+            lines.append(f"QUESTION {index}: {entry.get('question', '')}")
+            if entry.get("optional_follow_up"):
+                lines.append(f"Optional Follow-Up: {entry['optional_follow_up']}")
+            if entry.get("notes_prompt"):
+                lines.append(f"Record: {entry['notes_prompt']}")
+            lines.extend(["Notes: ________________________________________", ""])
+        lines.extend(["CLOSING", structured.get("closing_script", "")])
+        return _flush_left("\n".join(lines))
+    if generation_type == "reference_evaluation_form" and structured.get("reference_questions"):
+        lines = ["REFERENCE RECORD & EVALUATION FORM", ""]
+        for label, key in [("Candidate", "candidate_name"), ("Referee", "referee_name"),
+                           ("Referee Role / Organization", "referee_role_organization"),
+                           ("Relationship to Candidate", "relationship_to_candidate")]:
+            value = structured.get(key, "")
+            lines.append(f"{label}: {value if value else '________________________'}")
+        for field in structured.get("reference_details_fields", []):
+            lines.append(f"{field}: ________________________")
+        lines.append("")
+        for index, entry in enumerate(structured.get("reference_questions", []), 1):
+            lines.extend([f"QUESTION {index}: {entry.get('question', '')}",
+                          f"{entry.get('response_field_label', 'Referee Response')}:",
+                          "________________________________________", "",
+                          f"{entry.get('clarification_notes_label', 'Notes / Clarification')}:",
+                          "________________________________________", ""])
+        review = structured.get("founder_review") or {}
+        lines.extend(["FOUNDER REVIEW", "",
+                      f"{review.get('strengths_field', 'Relevant Strengths Confirmed')}:", "________________________________________", "",
+                      f"{review.get('concerns_field', 'Relevant Concerns Raised')}:", "________________________________________", "",
+                      f"{review.get('clarification_field', 'Information Still Needing Clarification')}:", "________________________________________", ""])
+        for option in review.get("review_options", []) or [
+                "Reference Completed — No Further Clarification Needed",
+                "Reference Completed — Further Clarification Needed"]:
+            lines.append(f"[ ] {option}")
+        return _flush_left("\n".join(lines))
     if generation_type == "recruitment_strategy":
         lines = ["BOARD RECRUITMENT STRATEGY", "", "EXECUTIVE SUMMARY", structured.get("executive_summary", ""), "", "1. BOARD MEMBERS WE ARE RECRUITING"]
         for role in structured.get("roles", [])[:5]:

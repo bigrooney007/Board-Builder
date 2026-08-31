@@ -426,6 +426,7 @@ const BackgroundCheckPanel = ({ application }) => {
   return (
     <div className="detail-section" data-testid="background-check-panel">
       <h3>{recruitmentWorkspaceText.h_backgroundCheckRecord}</h3>
+      <p style={{ fontSize: 14, color: "#555" }}>Your organization decides whether a background check or specific clearance is required and carries out its own process. This record simply tracks the status of that process — nothing here performs a check, and no status is ever interpreted as a pass or fail. "References Submitted" means referee details were provided, not that reference checks are complete.</p>
       <p className="workspace-note">{recruitmentWorkspaceText.n_nonprofitBoardBuilderDoesNot}</p>
       <div className="two-col-fields">
         <label className="field"><span>Background check</span><select value={check.status || "Not started"} onChange={(event) => setCheck({ ...check, status: event.target.value })} data-testid="background-status">{["Not Required", "Not started", "Pending", "In progress", "Completed", "Follow-up required"].map((option) => <option key={option}>{option}</option>)}</select></label>
@@ -579,8 +580,11 @@ const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profi
   return (
     <div className="detail-section" data-testid="conditional-panel">
       <h3>Prepare Conditional Appointment — {application.profile_snapshot?.full_name}</h3>
+      {application.reference_check_status === "Completed" && ["Completed", "Not Required"].includes(application.background_check?.status) && (
+        <p style={{ fontSize: 14, color: "#087e5b", fontWeight: 600 }} data-testid="conditional-all-clear-note">All applicable appointment requirements are complete for this candidate. There is no outstanding condition, so the next appropriate step is the Formal Appointment rather than a Conditional Appointment.</p>
+      )}
       <MaterialCard type="conditional_offer" title={applicantModulesText.conditionalBoardAppointmentEmail} buttonLabel="Generate Conditional Board Appointment Email"
-        description="One professional email telling the candidate your organization would like them to join the board (conditional while remaining requirements are completed), inviting them to the Board Onboarding Session, and automatically including their secure candidate-specific links: Organization Overview, Board Manual, the three agreements for signature, their Board Member Profile Form, and the Reference Information Form only if still needed. You never paste links manually."
+        description="One professional email telling the candidate you have selected them for CONDITIONAL Board appointment — conditional only on the actual outstanding appointment requirements (reference process and, where your organization requires one, the background check). It never includes onboarding materials, agreements, profile forms or signature links: those follow the Formal Appointment after the conditions are completed. Generate only after you have decided to select this candidate."
         applicationId={application.application_id} material={byType.conditional_offer} refresh={refresh} approvable
         extraActions={byType.conditional_offer?.status === "Approved" ? (
           <SendMaterialButton type="conditional_offer" applicationId={application.application_id}

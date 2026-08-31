@@ -32,6 +32,7 @@ class GenerateRequest(BaseModel):
     type: str
     application_id: Optional[str] = ""
     instructions: Optional[str] = ""
+    referee_id: Optional[str] = ""
 
 
 class MaterialEdit(BaseModel):
@@ -236,6 +237,25 @@ def create_workspace_router(db) -> APIRouter:
                 context += f"\n\nSECURE REFERENCE INFORMATION FORM URL FOR THIS CANDIDATE (include this exact link): {origin}/reference-form/{process['candidate_token']}"
             else:
                 context += "\n\nNO SECURE REFERENCE FORM LINK EXISTS YET — ask the candidate to reply to this email with their referee details."
+        if payload.type in {"reference_request_email", "reference_call_script", "reference_evaluation_form", "referee_confirmation_email"} and application_id:
+            import json as _json
+            process = await db.reference_processes.find_one(
+                {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "references": 1})
+            referees = (process or {}).get("references", [])
+
+            def _referee_details(record):
+                return {key: record.get(key, "") for key in ["name", "position", "organization", "relationship", "email", "phone"]}
+
+            selected = next((r for r in referees if r.get("reference_id") == (payload.referee_id or "")), None)
+            if not selected and len(referees) == 1:
+                selected = referees[0]
+            if selected:
+                context += ("\n\nTHE SELECTED REFEREE FOR THIS RESOURCE (use ONLY this referee's actual details — never mix in another referee's information):\n"
+                            + _json.dumps(_referee_details(selected), indent=1, default=str))
+            elif referees:
+                context += ("\n\nREFEREES SUPPLIED BY THE CANDIDATE (this resource is produced for ONE referee at a time. Because a single referee has "
+                            "not been indicated, address the referee as [Referee Name] and NEVER merge or mix details from different referees):\n"
+                            + _json.dumps([_referee_details(r) for r in referees], indent=1, default=str))
         if payload.type == "powerhouse_board_blueprint":
             context += ("\n\nPRESENT BOARD COMPOSITION RULE: Where the supplied information shows the founder/executive director is a serving "
                         "member of the governing Board, include the founder — with their actual skills, experience and role — as part of the "
@@ -282,7 +302,22 @@ def create_workspace_router(db) -> APIRouter:
                             "parameters or officer structure where explicitly stated; never invent legal requirements or legal conclusions; "
                             "where sources conflict, use the verified information conservatively):\n"
                             + reactivation_intake["bylaws_text"][:10000])
-        if payload.type in {"conditional_offer", "formal_appointment_email"}:
+        if payload.type == "conditional_offer":
+            process = await db.reference_processes.find_one(
+                {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
+            reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
+            background = (application.get("background_check") or {}).get("status", "")
+            context += ("\n\nAPPOINTMENT REQUIREMENT STATUS (read-only facts — state ONLY genuinely outstanding requirements as conditions; never alter these statuses):"
+                        f"\nREFERENCE CHECK STATUS: {reference_status} — if Completed, do NOT list references as a condition; if submitted but not yet completed, "
+                        "say the organization's reference process remains outstanding; never ask the candidate to provide references again if already submitted."
+                        f"\nBACKGROUND CHECK STATUS: {background or 'Not recorded'} — if 'Not Required', blank, unknown or not recorded, do NOT mention a "
+                        "background check at all; only where the organization actually requires it and it is not Completed, state it as an outstanding requirement.")
+            if application.get("board_role"):
+                context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
+            if reference_status == "Completed" and (background in {"Completed", "Not Required"} or not background):
+                context += ("\nNOTE: No applicable appointment requirement appears to remain outstanding. Do NOT fabricate a condition — the founder "
+                            "should normally use the Formal Appointment instead.")
+        if payload.type == "formal_appointment_email":
             links = []
             overview_token = await ensure_share_token(user_id, "organization_overview")
             manual_token = await ensure_share_token(user_id, "board_manual")

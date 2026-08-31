@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
 REFEREE_QUESTIONS = [
-    ("capacity", "In what capacity do you know {candidate}, and approximately how long have you known or worked with them?"),
-    ("reliability", "Based on your experience with {candidate}, how would you describe their reliability, professionalism and ability to follow through on responsibilities?"),
-    ("strengths", "What strengths, skills or qualities have you observed that you believe could help {candidate} contribute effectively as a nonprofit board member?"),
-    ("teamwork", "How have you seen {candidate} work with other people, handle responsibility or contribute to a team or organization?"),
+    ("capacity", "In what capacity have you known or worked with {candidate}, and approximately how long have you known them?"),
+    ("reliability", "Based on your experience working with {candidate}, how would you describe their professionalism, reliability and ability to follow through on responsibilities they accept?"),
+    ("strengths", "What strengths have you observed in {candidate} when working with other people, providing leadership, solving problems or contributing to shared goals?"),
+    ("teamwork", "Is there anything relevant to {candidate}'s professional conduct, reliability or ability to carry a position of responsibility that you believe we should understand as we consider their Board application?"),
 ]
-RECOMMEND_QUESTION = "Based on your experience, would you feel comfortable recommending {candidate} for board service with {org}? Please explain your response."
+RECOMMEND_QUESTION = "Based on your direct experience with {candidate}, would you be comfortable recommending them for a position of responsibility such as nonprofit Board service with {org}? Please briefly explain your answer."
 REFEREE_IDENTITY_FIELDS = ["name", "position", "organization", "relationship", "duration"]
 RECOMMEND_OPTIONS = ["Yes", "No", "I would need more information to say"]
 
