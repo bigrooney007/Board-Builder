@@ -191,8 +191,33 @@ Write a professional referral email the founder can send to trusted Board Member
 
 CHANNEL BRIEF — REFERRAL REQUEST MESSAGE (short referral DM):
 Write a concise direct-message version of the referral request. Briefly explain that the organization is intentionally strengthening/building its Board around a meaningful next stage. Name only the most important professional expertise being sought. Ask whether the recipient knows one or two strong people who may align with the mission and opportunity. Include the application link so it can be forwarded immediately. Do not ask the recipient themselves to join unless that is explicitly the purpose of the supplied context. Do not sound like mass recruitment spam."""},
-    "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {"subject": "string", "body": "string — general invitation to a board introductory/interview conversation, with [APPLICANT NAME] and scheduling placeholders"}},
-    "general_interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": False, "schema": {"message": "string — a concise direct-message version of the interview invitation for LinkedIn, text message, Facebook Messenger or another messaging channel. Includes [APPLICANT NAME], the organization name, thanks for their interest, the invitation to interview and a scheduling placeholder. NO email subject line. Keep it short — a few sentences, not another email."}},
+    "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {
+        "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
+        "body": "A complete reusable interview invitation beginning Dear [APPLICANT NAME], using the organization's real information and founder signature. Use the exact supplied scheduling URL where available; otherwise say the organization will coordinate a convenient time directly. Do not invent candidate-specific facts.",
+    }, "note": """You are creating the organization's reusable professional Board interview invitation email.
+This is not generated from one candidate's individual application record. Therefore NEVER invent: the applicant's experience; their profession; what impressed the founder; why they were personally selected; specific qualifications; or anything else about them.
+Use [APPLICANT NAME] as the only permitted recipient placeholder.
+Use the organization's actual: name; mission/direction where useful; Board type; founder/contact information; interview scheduling URL where supplied.
+The email should:
+1. Begin: Dear [APPLICANT NAME],
+2. Thank them for their interest in the Board opportunity.
+3. State clearly that the organization would like to invite them to a Board interview/conversation.
+4. Explain briefly that the conversation will allow the organization to learn more about their experience and interest, share more about the organization and Board opportunity, answer their questions and explore mutual alignment.
+5. Use the exact real scheduling URL where supplied.
+6. If no scheduling URL is supplied, say naturally that a convenient interview time will be coordinated directly.
+7. Close with the founder's actual supplied signature/contact details.
+Never use: [Scheduling Link], [Calendly Link], [Organization Name], [Your Name], TBD, or any other placeholder besides [APPLICANT NAME].
+Never imply that being invited to interview means the applicant has been selected for the Board.
+Keep the email approximately 150-225 words. Professional, warm and reusable.
+NEVER mention AI."""},
+    "general_interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": False, "schema": {
+        "message": "A concise reusable Board interview invitation using [APPLICANT NAME] and the actual organization name. Include the exact supplied scheduling URL where available; otherwise state that a convenient time will be coordinated directly. No candidate-specific invented facts and no email subject.",
+    }, "note": """Write the reusable short direct-message version of the organization's Board interview invitation.
+This is not candidate-specific. Use [APPLICANT NAME] as the only permitted placeholder.
+Include: the actual organization name; brief thanks for their interest; a clear invitation to a Board interview/conversation; the exact real scheduling URL where supplied; or a natural statement that the organization will coordinate a convenient time directly.
+Do not invent anything about the applicant's experience, qualifications or application. Do not imply that they have been selected for the Board.
+No subject line. Keep it to approximately 3-5 natural sentences.
+NEVER mention AI."""},
     "general_rejection_email": {"module": 4, "title": "Application Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant the organization has decided not to invite to interview"}},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {
         "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual board terminology, e.g. Board Member / Founding Board Member]",
@@ -222,15 +247,60 @@ Write a concise direct-message version of the referral request. Briefly explain 
         "closing": "string — natural closing language: thank the candidate, explain the organization is interviewing/reviewing candidates, make clear no final decision is being announced, explain the organization will follow up on next steps",
     }, "note": "You are an experienced nonprofit board recruitment consultant preparing a founder to interview ONE SPECIFIC board candidate. This is NOT a generic interview questionnaire — use the applicant's actual application, CV, background and expressed interests together with the organization's actual mission, board type, current needs, Module 1 priority board profiles, stage and goals. learn_about_this_candidate: 2-3 questions DIRECTLY tied to specific items in the candidate's CV or application. mission_alignment: about 2 questions. contribution_to_the_board: 2-3 questions using only supported areas. NEVER invent candidate employment, achievements, qualifications, board experience, motivation, relationships, availability, personality or beliefs. Never infer sensitive personal characteristics. If candidate information is limited, use only what is actually known — no fake specificity. NEVER include an AI score, fit score, hire/do-not-hire, recommended/not-recommended, or pass/fail — the founder makes the final judgment."},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {
-        "subject": "string — exactly: Interview Invitation | Board Member Application — [actual organization name]",
-        "body": "string — a finished email inviting THIS candidate to the interview stage. Start 'Dear [actual candidate first name],'. Thank them for applying; state clearly that after reviewing their application the organization would like to invite them to the interview stage; briefly explain the conversation will allow the organization to learn more about their experience, understand their interest in the mission, explore how their background could contribute, answer their questions and determine whether the opportunity is mutually aligned. If a real interview scheduling link is supplied in the context, include it naturally with a clear scheduling call to action; if none is supplied, state naturally that the organization will coordinate a convenient interview time with them directly — never mention that information is missing and NEVER output [Calendly Link], [Scheduling Link] or TBD. Never invent interview format, length or scheduling URL. Do not tell the candidate they have been selected for the board and do not overstate praise — never 'you are an excellent fit' unless the founder explicitly provided that judgment. Close warmly and sign with the actual founder/contact details. 150-250 words. Professional, warm, concise, respectful."}},
+        "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
+        "body": "The complete candidate-specific interview invitation email following the resource-specific instructions. Use the candidate's actual first name and the founder's actual signature. Use an actual supplied scheduling URL where available; otherwise say the organization will coordinate a convenient time directly.",
+    }, "note": """You are an experienced nonprofit Board recruitment consultant writing a professional interview invitation to ONE applicant whom the founder has already decided to invite to the interview stage.
+The selection decision has already been made by the founder. Do not evaluate, rank or decide whether this candidate deserves an interview. Your only job is to create the finished invitation.
+Use: the actual candidate's name; their application; their CV/resume where supplied; the Board role or expertise area they applied for where supplied; verified information about the organization; the actual Board type; and the actual interview scheduling information where supplied.
+The email must:
+1. Address the candidate by their actual first name.
+2. Thank them for taking the time to apply and for their interest in serving this organization.
+3. State clearly that after reviewing their application, the organization would like to invite them to the interview/conversation stage.
+4. Briefly explain the purpose of the conversation: learn more about their experience; understand their interest in the mission; explore how their background could contribute to the Board; share more about the organization, its direction and the Board being built; answer their questions; determine whether the opportunity is mutually aligned.
+5. Where an actual Board role/expertise area is associated with this application, refer to it naturally if useful. Do not turn that role into an offer or responsibility.
+6. If a real interview scheduling URL is supplied, invite them to choose a convenient time using that exact link.
+7. If no scheduling URL is supplied, state naturally that the organization will coordinate a convenient interview time with them directly — never output [Scheduling Link], [Calendly Link] or TBD.
+8. Close warmly and professionally.
+9. Sign with the founder's actual supplied contact details.
+You may acknowledge something specific from the candidate's application ONLY when it is clearly supported and naturally useful. Do not manufacture praise simply to personalize the email — never 'you are an exceptional candidate', 'you are exactly what we need', 'your outstanding qualifications impressed us' or 'you are an excellent fit' unless the founder explicitly supplied that judgment.
+Never tell the candidate: they have been selected for the Board; they have been appointed; they are definitely a fit; they will receive the role; they have passed the recruitment process. This is an invitation to a mutual conversation, not an appointment.
+Do not over-explain the recruitment process. Do not mention reference checks, background checks or onboarding yet unless the organization explicitly requires that information at this stage.
+Keep the email approximately 150-250 words. Professional, warm, concise and human.
+NEVER mention AI."""},
     "before_interview_rejection": {"module": 4, "title": "Before-Interview Rejection Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Thank You for Your Board Member Application",
-        "body": "string — a finished email professionally closing the application for someone the FOUNDER decided not to invite to interview, while preserving the relationship and respecting the person's willingness to serve. Start 'Dear [actual first name],'. Thank them for their interest, the time invested in applying and their willingness to support the mission. State professionally that the organization has decided to move forward to the interview stage with a smaller group of candidates whose backgrounds most closely align with the board's current needs. Never present this as a judgment of the person's overall professional value. NEVER invent a rejection reason and never say 'you lack experience', 'you are not qualified', 'another candidate is better' or 'you are not a fit'. Do not promise to keep their information for future opportunities. Close respectfully and sign with the actual founder/contact information. 175-275 words. Professional, respectful, relationship-preserving, clear — no false hope, never cold or legalistic."}},
+        "subject": "Thank You for Your Board Member Application",
+        "body": "The complete respectful candidate-specific email closing the application before interview. Use the actual candidate first name and founder signature. Clearly communicate the decision without inventing a rejection reason, comparing applicants or creating false hope.",
+    }, "note": """You are an experienced nonprofit Board recruitment consultant writing a respectful application-closure email to ONE applicant whom the founder has already decided not to invite to interview.
+The decision has already been made by the founder. Do NOT evaluate the applicant. Do NOT create a reason for the decision. Do NOT compare them with another candidate.
+Use: the candidate's actual name; actual organization name; the organization's actual mission/context where useful; founder/contact details.
+The email must:
+1. Address the candidate by their actual first name.
+2. Thank them sincerely for taking the time to apply.
+3. Acknowledge their willingness to consider contributing their time and experience to the organization's mission.
+4. State clearly and respectfully that the organization will not be moving their application forward to the interview stage.
+5. Where useful, explain only at a high level that the organization is moving forward with a smaller group of applicants whose backgrounds most closely align with the Board's current recruitment needs.
+6. Make clear through tone that this is a decision about the organization's current Board needs, not a judgment of the person's overall professional worth.
+7. Thank them again and close the relationship respectfully.
+8. Sign with the founder's actual supplied details.
+NEVER invent a rejection reason. NEVER say: you lack experience; you are not qualified; you are not a fit; another applicant is better; we found someone more qualified; you failed; your application was weak.
+Do not disclose: internal scores; internal analysis; Powerhouse Board gap analysis; comments about other applicants; founder notes; private selection reasoning.
+Do not create false hope. Do not promise: future Board membership; future consideration; that the application will be kept on file; another role; Advisory service; partnership — unless the founder explicitly supplied that direction for this candidate.
+Where the organization is faith-based or uses distinctive mission language, use that language only where it is part of the verified organization context. Never import religious or organizational language from another client.
+The email should preserve the relationship without becoming vague about the decision. The applicant should clearly understand: "I am not progressing to interview, but I was treated with respect."
+Approximately 150-225 words. Professional, gracious, direct and human.
+NEVER mention AI."""},
     "after_interview_thank_you": {"module": 4, "title": "After-Interview Thank-You Email", "per_application": True, "schema": {
         "subject": "string — exactly: Thank You for Meeting With Us",
         "body": "string — a strictly DECISION-NEUTRAL email sent to a candidate who attended their board interview. Start 'Dear [actual first name],'. Thank them for taking time to meet with the organization about the board opportunity; briefly say the organization appreciated learning more about their professional experience, interest in the mission, perspective and potential contribution — without claiming any decision has been made. Tell them clearly that the organization is completing its interviews/review and will follow up regarding next steps once the process is complete. Close warmly and sign with the actual founder/contact information. 125-200 words. FORBIDDEN words/phrases: 'unfortunately', 'we have decided', 'we are moving forward with other candidates', 'congratulations', 'conditional appointment', 'welcome to the board'."}},
-    "interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": True, "schema": {"message": "string — a concise personalized direct-message invitation for LinkedIn, text message or another messaging channel: the candidate's name, the organization name, thanks for their interest, the invitation to interview and scheduling information where supplied. NO email subject line. A few sentences only."}},
+    "interview_invitation_message": {"module": 4, "title": "Interview Invitation — Short Message", "per_application": True, "schema": {
+        "message": "A concise candidate-specific interview invitation message using the actual candidate name and organization name. Include the exact supplied scheduling URL where available. A few natural sentences only; no subject line.",
+    }, "note": """Write a concise personal interview invitation message for ONE Board applicant whom the founder has already decided to invite to interview.
+This message may be used through LinkedIn, text, WhatsApp, Facebook Messenger or another direct-message channel.
+Use: the candidate's actual first name; actual organization name; actual Board type; and real interview scheduling information where supplied.
+The message should: thank them briefly for their application; tell them clearly that the organization would like to invite them to an interview/conversation; state briefly that the conversation will allow both sides to learn more and explore alignment; provide the real scheduling link where supplied; or say the organization will coordinate a convenient time directly if no link exists.
+Do not reproduce the full email. Do not add an email subject. Do not describe them as selected for the Board. Do not exaggerate praise. Do not invent interview details.
+Aim for approximately 3-5 natural sentences.
+NEVER mention AI."""},
     "portfolio_email": {"module": 6, "title": "Board Member Portfolio Email", "per_application": True, "schema": {"subject": "string", "body": "string — a short professional email to the board member sharing their completed Board Member Portfolio"}},
     "formal_appointment_email": {"module": 6, "title": "Final Board Appointment Email", "per_application": True, "schema": {
         "subject": "string — exactly: Congratulations! Your Appointment to the Board — [actual organization name]",

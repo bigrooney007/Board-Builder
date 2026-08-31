@@ -227,6 +227,8 @@ def create_workspace_router(db) -> APIRouter:
                 cv_doc = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 1})
                 if cv_doc and cv_doc.get("cv_text"):
                     context += "\n\nCANDIDATE CV / RESUME (extracted text — use only what is actually present):\n" + cv_doc["cv_text"][:12000]
+        if payload.type in {"interview_invitation", "interview_invitation_message", "before_interview_rejection"} and application and application.get("board_role"):
+            context += f"\n\nBOARD ROLE / EXPERTISE AREA THIS CANDIDATE APPLIED FOR: {application['board_role']}"
         if payload.type == "candidate_referee_request":
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "candidate_token": 1, "status": 1})
