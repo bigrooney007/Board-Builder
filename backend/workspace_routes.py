@@ -4,6 +4,7 @@ All endpoints require member auth + recruitment_self_guided entitlement. Tenant 
 import io
 import os
 import secrets
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import resend
@@ -169,7 +170,8 @@ def create_workspace_router(db) -> APIRouter:
         return value
 
     async def ensure_share_token(user_id: str, material_type: str) -> str:
-        material = await db.generated_materials.find_one({"user_id": user_id, "type": material_type, "application_id": ""}, {"_id": 0, "material_id": 1})
+        material = await db.generated_materials.find_one(
+            {"user_id": user_id, "type": material_type, "application_id": "", "status": "Approved"}, {"_id": 0, "material_id": 1})
         if not material:
             return ""
         existing = await db.share_links.find_one({"material_id": material["material_id"]}, {"_id": 0})
@@ -178,6 +180,32 @@ def create_workspace_router(db) -> APIRouter:
         token = secrets.token_urlsafe(24)
         await db.share_links.insert_one({"share_token": token, "material_id": material["material_id"], "user_id": user_id, "created_at": now_iso()})
         return token
+
+    GOVERNANCE_BYLAWS_TYPES = {"formal_appointment_letter", "formal_appointment_email", "board_manual",
+                               "board_member_agreement", "conflict_of_interest_agreement", "confidentiality_agreement", "onboarding_script"}
+
+    async def bylaws_context(user_id: str) -> str:
+        intake = await db.board_reactivation_intakes.find_one(
+            {"user_id": user_id}, {"_id": 0, "bylaws_text": 1}, sort=[("submitted_at", -1)])
+        if not intake or not intake.get("bylaws_text"):
+            return ""
+        return ("\n\nORGANIZATION BYLAWS EXTRACT (verified governance context ONLY — use for factual governance information such as actual "
+                "Board terminology, Board structure, officer roles, term of service, meeting/voting structure, appointment structure and "
+                "conflict procedures where explicitly stated. Never invent legal conclusions, quorum rules, officer powers, removal procedures, "
+                "voting thresholds, statutory requirements or term lengths. Where an intake assumption conflicts with the verified bylaws on a "
+                "structural governance fact, prefer the verified governing document and avoid unsupported claims):\n"
+                + intake["bylaws_text"][:10000])
+
+    async def onboarding_conclusion_context(application: dict) -> str:
+        conclusion = application.get("onboarding_conclusion") or {}
+        if not conclusion.get("saved_at"):
+            return ""
+        safe = {key: conclusion.get(key, "") for key in [
+            "board_role", "agreed_primary_contribution_area", "agreed_responsibility", "agreed_leadership",
+            "how_their_experience_will_be_used", "organization_support_agreed", "immediate_next_steps"]}
+        import json as _json
+        return ("\n\nONBOARDING CONCLUSION / ROLE AGREEMENT (founder-recorded — AUTHORITATIVE for what was actually agreed during onboarding; "
+                "never contradict or expand beyond it):\n" + _json.dumps(safe, indent=1, default=str))
 
     # ---------- Generation (deliberate button clicks only) ----------
     @router.post("/generate")
@@ -213,21 +241,60 @@ def create_workspace_router(db) -> APIRouter:
                 raise HTTPException(status_code=422, detail="This material is generated for a specific applicant")
             application = await owned_application(user_id, payload.application_id)
             application_id = application["application_id"]
-            if payload.type in {"board_member_portfolio", "board_member_engagement_guide"}:
+            if payload.type in {"formal_appointment_letter", "formal_appointment_email"}:
+                if application.get("status") != "Selected" and application.get("final_outcome") != "Joined Board":
+                    raise HTTPException(status_code=409, detail="Confirm this candidate's Formal Appointment first. The founder confirms the appointment — it is never automatic.")
+            if payload.type in {"ninety_day_plan", "board_member_portfolio"}:
+                profile_done = await db.board_profile_responses.find_one(
+                    {"user_id": user_id, "$or": [{"application_id": application_id}, {"data.email": application.get("applicant_email", "")}]},
+                    {"_id": 0, "response_id": 1})
+                if not profile_done:
+                    raise HTTPException(status_code=409, detail="This member's New Board Member Profile has not been completed yet. It is required before this resource can be generated.")
+                if not (application.get("onboarding_conclusion") or {}).get("saved_at"):
+                    raise HTTPException(status_code=409, detail="Save this member's Onboarding Conclusion / Role Agreement first — it records what was actually agreed during onboarding and is required for this resource.")
+            if payload.type in {"board_member_portfolio", "board_member_engagement_guide", "ninety_day_plan"}:
                 context += "\n\n" + application_context_text({**application, "notes": "", "references": []})
                 profile_response = await db.board_profile_responses.find_one(
-                    {"user_id": user_id, "data.email": application.get("applicant_email", "")}, {"_id": 0, "data": 1})
+                    {"user_id": user_id, "$or": [{"application_id": application_id}, {"data.email": application.get("applicant_email", "")}]},
+                    {"_id": 0, "data": 1})
                 if profile_response:
                     import json as _json
-                    context += "\n\nBOARD MEMBER PROFILE FORM RESPONSE:\n" + _json.dumps(profile_response["data"], indent=1)
+                    context += "\n\nNEW BOARD MEMBER PROFILE FORM RESPONSE (the member's own stated strengths, interests, desired contribution, capacity, leadership interest and networks):\n" + _json.dumps(profile_response["data"], indent=1)
                 if application.get("board_role"):
                     context += f"\n\nBOARD ROLE THEY WERE RECRUITED FOR: {application['board_role']}"
-                context += "\n\nPRIVACY: never include referee responses, internal interview notes or internal evaluation material."
+                if payload.type in {"board_member_portfolio", "ninety_day_plan"}:
+                    context += await onboarding_conclusion_context(application)
+                context += "\n\nPRIVACY: never include referee responses, background-check information, internal interview notes, private founder notes or internal evaluation material."
             else:
                 context += "\n\n" + application_context_text(application)
                 cv_doc = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 1})
                 if cv_doc and cv_doc.get("cv_text"):
                     context += "\n\nCANDIDATE CV / RESUME (extracted text — use only what is actually present):\n" + cv_doc["cv_text"][:12000]
+        if payload.type in GOVERNANCE_BYLAWS_TYPES:
+            context += await bylaws_context(user_id)
+        if payload.type == "portfolio_email":
+            portfolio = await db.generated_materials.find_one(
+                {"user_id": user_id, "type": "board_member_portfolio", "application_id": application_id, "status": "Approved"},
+                {"_id": 0, "share_token": 1})
+            if not portfolio or not portfolio.get("share_token"):
+                raise HTTPException(status_code=409, detail="Approve this member's Board Member Portfolio first — the email delivers the approved Portfolio using its secure link.")
+            snapshot = application.get("profile_snapshot", {}) if application else {}
+            first_name = (snapshot.get("full_name", "") or "there").split(" ")[0]
+            org_doc = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}
+            org_name = org_doc.get("organization_name", "") or org_name_check
+            founder_name = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+            portfolio_url = f"{origin}/portfolio/{portfolio['share_token']}"
+            structured = {
+                "subject": f"Your Board Member Portfolio | {org_name}",
+                "body": (f"Dear {first_name},\n\n"
+                         f"Thank you again for completing your onboarding with {org_name}.\n\n"
+                         "Your Board Member Portfolio brings together the role and areas of responsibility we agreed during your onboarding and provides a practical reference for how you will contribute moving forward.\n\n"
+                         f"You can review your Portfolio using your secure link:\n\n{portfolio_url}\n\n"
+                         "We will continue working with you as you begin putting the responsibilities we agreed into practice.\n\n"
+                         f"Warm regards,\n{founder_name}\n{org_name}"),
+            }
+            material = await save_generation(db, user_id, payload.type, structured, "Deterministic portfolio delivery email — no AI call used.", application_id)
+            return material
         if payload.type in {"interview_invitation", "interview_invitation_message", "before_interview_rejection"} and application and application.get("board_role"):
             context += f"\n\nBOARD ROLE / EXPERTISE AREA THIS CANDIDATE APPLIED FOR: {application['board_role']}"
         if payload.type == "candidate_referee_request":
@@ -317,15 +384,43 @@ def create_workspace_router(db) -> APIRouter:
             if reference_status == "Completed" and (background in {"Completed", "Not Required"} or not background):
                 context += ("\nNOTE: No applicable appointment requirement appears to remain outstanding. Do NOT fabricate a condition — the founder "
                             "should normally use the Formal Appointment instead.")
+        if payload.type in {"formal_appointment_letter", "formal_appointment_email"}:
+            process = await db.reference_processes.find_one(
+                {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
+            reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
+            background = (application.get("background_check") or {}).get("status", "")
+            context += ("\n\nFORMAL APPOINTMENT STATUS (read-only facts):"
+                        "\nThe founder has confirmed this candidate's FORMAL APPOINTMENT. The appointment is no longer conditional."
+                        f"\nREFERENCE PROCESS STATUS: {reference_status} — note: 'References Submitted' only means referee details were submitted, "
+                        "NOT that the reference process is complete; only 'Completed' means the process is complete. Never describe the appointment as subject to references."
+                        f"\nBACKGROUND CHECK STATUS: {background or 'Not recorded'} — 'Not Required' or no recorded requirement means no background check applies; never invent one and never call the appointment subject to background checks.")
+            if application.get("board_role"):
+                context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
+        if payload.type == "formal_appointment_letter":
+            context += f"\n\nFORMAL APPOINTMENT LETTER DATE (backend-supplied — copy exactly into letter_date; never invent a date): {datetime.now(timezone.utc).strftime('%B %d, %Y').replace(' 0', ' ')}"
         if payload.type == "formal_appointment_email":
             links = []
+            letter_material = await db.generated_materials.find_one(
+                {"user_id": user_id, "type": "formal_appointment_letter", "application_id": application_id, "status": "Approved"},
+                {"_id": 0, "material_id": 1})
+            if letter_material:
+                letter_link = await db.share_links.find_one({"material_id": letter_material["material_id"]}, {"_id": 0, "share_token": 1})
+                if not letter_link:
+                    letter_link = {"share_token": secrets.token_urlsafe(24)}
+                    await db.share_links.insert_one({"share_token": letter_link["share_token"], "material_id": letter_material["material_id"], "user_id": user_id, "created_at": now_iso()})
+                links.append(f"Formal Board Appointment Letter (View): {origin}/shared/{letter_link['share_token']}")
             overview_token = await ensure_share_token(user_id, "organization_overview")
             manual_token = await ensure_share_token(user_id, "board_manual")
             if overview_token:
                 links.append(f"Organization Overview (View): {origin}/shared/{overview_token}")
             if manual_token:
                 links.append(f"Board Manual (View): {origin}/shared/{manual_token}")
-            # candidate-specific signature links (idempotent per agreement + candidate)
+            unapproved = []
+            for doc_type in ["organization_overview", "board_manual"]:
+                approved_doc = await db.generated_materials.find_one({"user_id": user_id, "type": doc_type, "application_id": "", "status": "Approved"}, {"_id": 0, "material_id": 1})
+                if not approved_doc:
+                    unapproved.append(GENERATION_TYPES[doc_type]["title"])
+            # candidate-specific signature links — created ONLY from the current APPROVED master version (idempotent per agreement + candidate)
             for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
                 existing_request = await db.signature_requests.find_one(
                     {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}},
@@ -333,6 +428,11 @@ def create_workspace_router(db) -> APIRouter:
                 if existing_request and existing_request.get("status") == "Signed":
                     continue
                 if not existing_request:
+                    approved_master = await db.generated_materials.find_one(
+                        {"user_id": user_id, "type": agreement_type, "application_id": "", "status": "Approved"}, {"_id": 0, "material_id": 1})
+                    if not approved_master:
+                        unapproved.append(GENERATION_TYPES[agreement_type]["title"])
+                        continue
                     agreement_material = await get_current_material(db, user_id, agreement_type, "")
                     token = secrets.token_urlsafe(24)
                     await db.signature_requests.insert_one({
@@ -349,6 +449,9 @@ def create_workspace_router(db) -> APIRouter:
                     })
                     existing_request = {"token": token}
                 links.append(f"{GENERATION_TYPES[agreement_type]['title']} (Review and Sign): {origin}/sign/{existing_request['token']}")
+            if unapproved:
+                context += ("\n\nONBOARDING DOCUMENTS NOT YET APPROVED (omit these from the email entirely — never invent a link; the founder still needs to prepare/approve them): "
+                            + ", ".join(unapproved))
             # candidate-specific profile form link (idempotent)
             profile_link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
             if not profile_link:
@@ -362,13 +465,8 @@ def create_workspace_router(db) -> APIRouter:
                     "status": "Created", "created_at": now_iso(),
                 })
             links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
-            process = await db.reference_processes.find_one({"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "candidate_token": 1, "status": 1})
-            if process and process.get("status") not in {"Completed", "References Submitted", "In Progress"}:
-                links.append(f"Reference Information Form (Provide Your References): {origin}/reference-form/{process['candidate_token']}")
             background = (application.get("background_check") or {}).get("status", "")
             context += f"\n\nBACKGROUND CHECK STATUS FOR THIS CANDIDATE: {background or 'Not recorded'} — never state a background check is required if it is marked Not Required."
-            if process:
-                context += f"\nREFERENCE CHECK STATUS: {process.get('status')} — never ask for references again if they are already submitted or completed."
             session = profile.get("onboarding_session") or {}
             if session:
                 context += "\n\nBOARD ONBOARDING SESSION (invite the candidate to this session using these exact details):\n" + "\n".join(f"{k}: {v}" for k, v in session.items() if v)
@@ -379,23 +477,21 @@ def create_workspace_router(db) -> APIRouter:
             if meeting:
                 context += "\n\nFIRST BOARD MEETING DETAILS (use these exact details; omit anything blank):\n" + "\n".join(f"{k}: {v}" for k, v in meeting.items() if v)
             joined = await db.opportunity_applications.find(
-                {"owner_user_id": user_id, "$or": [{"final_outcome": "Joined Board"}, {"status": "Selected"}]},
+                {"owner_user_id": user_id, "final_outcome": "Joined Board"},
                 {"_id": 0, "application_id": 1, "profile_snapshot": 1, "applicant_email": 1}).to_list(30)
-            incomplete = []
+            incomplete = 0
             for member_app in joined:
                 response_doc = await db.board_profile_responses.find_one({"user_id": user_id, "application_id": member_app["application_id"]}, {"_id": 0, "submitted_at": 1})
                 if not response_doc:
-                    link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": member_app["application_id"]}, {"_id": 0, "token": 1})
-                    incomplete.append((member_app.get("profile_snapshot", {}).get("full_name", ""), link))
+                    incomplete += 1
             names = ", ".join(m.get("profile_snapshot", {}).get("full_name", "") for m in joined)
-            context += f"\n\nNEW BOARD MEMBERS RECEIVING THIS INVITATION: {names or 'the new board members'}"
+            context += f"\n\nFORMALLY APPOINTED BOARD MEMBERS RECEIVING THIS INVITATION (Joined Board only — never invite conditional or merely selected candidates): {names or 'the new board members'}"
             if incomplete:
-                token = next((link["token"] for _, link in incomplete if link), "")
-                context += ("\n\nBOARD MEMBER PROFILE STATUS: the following recipients have NOT completed their Board Member Profile: "
-                            + ", ".join(name for name, _ in incomplete)
-                            + (f". Board Member Profile URL to include: {origin}/board-profile/{token}" if token else ""))
+                context += ("\n\nBOARD MEMBER PROFILE STATUS: one or more recipients have NOT completed their New Board Member Profile. Do NOT name them and do NOT include any "
+                            "candidate-specific secure URL in this group email. Simply include a general reminder along the lines of: 'If you have not yet completed your "
+                            "Board Member Profile, please use the secure link provided in your appointment/onboarding email to complete it before the meeting.'")
             else:
-                context += "\n\nBOARD MEMBER PROFILE STATUS: every recipient has completed their Board Member Profile — OMIT the profile section."
+                context += "\n\nBOARD MEMBER PROFILE STATUS: every recipient has completed their Board Member Profile — OMIT the profile reminder entirely."
         try:
             structured = await generate_structured(payload.type, context, payload.instructions or "")
         except Exception as exc:
@@ -403,6 +499,32 @@ def create_workspace_router(db) -> APIRouter:
         structured = replace_link(structured, apply_url)
         material = await save_generation(db, user_id, payload.type, structured, context[:1500], application_id)
         return material
+
+    ONBOARDING_CONCLUSION_FIELDS = ["board_role", "agreed_primary_contribution_area", "agreed_responsibility", "agreed_leadership",
+                                    "how_their_experience_will_be_used", "organization_support_agreed", "immediate_next_steps", "private_notes"]
+
+    @router.get("/applications/{application_id}/onboarding-conclusion")
+    async def get_onboarding_conclusion(application_id: str, request: Request):
+        member = await selection_member(request)
+        application = await owned_application(member["user_id"], application_id)
+        conclusion = application.get("onboarding_conclusion") or {}
+        return {"board_member": application.get("profile_snapshot", {}).get("full_name", ""),
+                "board_role": conclusion.get("board_role") or application.get("board_role", ""),
+                "conclusion": {key: conclusion.get(key, "") for key in ONBOARDING_CONCLUSION_FIELDS},
+                "saved_at": conclusion.get("saved_at", "")}
+
+    @router.put("/applications/{application_id}/onboarding-conclusion")
+    async def save_onboarding_conclusion(application_id: str, payload: dict, request: Request):
+        member = await selection_member(request)
+        await owned_application(member["user_id"], application_id)
+        conclusion = {key: str(payload.get(key, ""))[:6000] for key in ONBOARDING_CONCLUSION_FIELDS}
+        if not conclusion["agreed_responsibility"].strip() and not conclusion["agreed_primary_contribution_area"].strip():
+            raise HTTPException(status_code=422, detail="Record the agreed contribution area or responsibility before saving the Onboarding Conclusion")
+        conclusion["saved_at"] = now_iso()
+        await db.opportunity_applications.update_one(
+            {"application_id": application_id, "owner_user_id": member["user_id"]},
+            {"$set": {"onboarding_conclusion": conclusion}})
+        return {"status": "saved", "saved_at": conclusion["saved_at"]}
 
     @router.post("/materials/{material_id}/approve")
     async def approve_material(material_id: str, request: Request):

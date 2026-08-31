@@ -32,9 +32,11 @@ export default function PlanningFormPage() {
   const allQuestions = useMemo(() => (context ? context.form.sections.flatMap((s) => s.questions) : []), [context]);
 
   const setAnswer = (id, value) => setAnswers((current) => ({ ...current, [id]: value }));
-  const toggleOption = (id, option) => setAnswers((current) => {
+  const toggleOption = (id, option, max = 0) => setAnswers((current) => {
     const list = current[id] || [];
-    return { ...current, [id]: list.includes(option) ? list.filter((item) => item !== option) : [...list, option] };
+    if (list.includes(option)) return { ...current, [id]: list.filter((item) => item !== option) };
+    if (max && list.length >= max) return current;
+    return { ...current, [id]: [...list, option] };
   });
 
   const validate = () => {
@@ -44,7 +46,7 @@ export default function PlanningFormPage() {
     allQuestions.forEach((question) => {
       if (!question.required) return;
       const value = answers[question.id];
-      if (question.type === "multi" ? !(value || []).length : !String(value || "").trim()) found[question.id] = "This question is required.";
+      if (["multi"].includes(question.type) ? !(value || []).length : !String(value || "").trim()) found[question.id] = "This question is required.";
     });
     if (!confirmation) found.confirmation = "This confirmation is required.";
     setErrors(found);
@@ -83,8 +85,8 @@ export default function PlanningFormPage() {
           <div className="intake-card" data-testid="pf-thank-you">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Response submitted</p>
             <h2>{planningFormText.h_thankYou}</h2>
-            <p data-testid="pf-thank-you-copy">Your fundraising planning response has been submitted to {context.organization_name}.</p>
-            <p>{planningFormPageText.yourIdeasWillBeConsidered}</p>
+            <p data-testid="pf-thank-you-copy">Thank you for contributing your ideas to {context.organization_name}'s fundraising planning process.</p>
+            <p>Your response has been received and will be considered alongside the input of the other Board Members and the organization's fundraising priorities as we build the Fundraising Strategy Plan. The Board will have an opportunity to review the strategy together before it is adopted.</p>
           </div>
         </main>
       </FunnelLayout>
@@ -118,30 +120,41 @@ export default function PlanningFormPage() {
             <div key={section.key} data-testid={`pf-section-${section.key}`}>
               <h2 className="intake-step-title">{section.title}</h2>
               {section.key === "relationships" && <p className="eyebrow" data-testid="pf-relationship-note">{form.relationship_note}</p>}
-              {section.questions.map((question) => (
+              {section.questions.map((question) => {
+                const condition = question.show_if && Object.keys(question.show_if).length ? question.show_if : null;
+                if (condition && !Object.entries(condition).every(([key, expected]) => answers[key] === expected)) return null;
+                const helper = question.helper ? <span style={{ display: "block", fontSize: "0.85rem", color: "#555", marginBottom: 4 }} data-testid={`pf-helper-${question.id}`}>{question.helper}</span> : null;
+                return (
                 <div key={question.id}>
-                  {question.type === "multi" ? (
+                  {question.type === "multi" || question.type === "select" ? (
                     <fieldset className="field choice-field">
-                      <legend>{question.prompt} {question.required && <b>*</b>}</legend>
+                      <legend>{question.prompt} {question.required && <b>*</b>}{question.max_selections ? ` (select up to ${question.max_selections})` : ""}</legend>
+                      {helper}
                       <div className="choice-grid">
-                        {question.options.map((option) => (
-                          <label className={`choice ${(answers[question.id] || []).includes(option) ? "selected" : ""}`} key={option}>
-                            <input type="checkbox" checked={(answers[question.id] || []).includes(option)} onChange={() => toggleOption(question.id, option)} data-testid={`pf-${question.id}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} />
+                        {question.options.map((option) => {
+                          const selected = question.type === "select" ? answers[question.id] === option : (answers[question.id] || []).includes(option);
+                          return (
+                          <label className={`choice ${selected ? "selected" : ""}`} key={option}>
+                            <input type={question.type === "select" ? "radio" : "checkbox"} checked={selected}
+                              onChange={() => question.type === "select" ? setAnswer(question.id, option) : toggleOption(question.id, option, question.max_selections)}
+                              data-testid={`pf-${question.id}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} />
                             <span>{option}</span>
                           </label>
-                        ))}
+                          );
+                        })}
                       </div>
                       {errors[question.id] && <p className="field-error">{errors[question.id]}</p>}
                     </fieldset>
                   ) : (
                     <label className="field"><span>{question.prompt} {question.required ? <b>*</b> : "(optional)"}</span>
-                      {question.id === "ownership" && <span style={{ display: "block", fontSize: "0.85rem", color: "#555", marginBottom: 4 }} data-testid="pf-ownership-examples">{form.ownership_examples}</span>}
+                      {helper}
                       <textarea rows={4} value={answers[question.id] || ""} onChange={(e) => setAnswer(question.id, e.target.value)} data-testid={`pf-${question.id.replace(/_/g, "-")}`} />
                       {errors[question.id] && <p className="field-error">{errors[question.id]}</p>}
                     </label>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           ))}
 

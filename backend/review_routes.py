@@ -102,8 +102,21 @@ def create_review_router(db) -> APIRouter:
             if not link:
                 raise HTTPException(status_code=404, detail="This form is not available")
         user_id = record["user_id"] if record else link["user_id"]
-        allowed = ["full_name", "preferred_name", "email", "phone", "location", "professional_title", "employer", "bio", "linkedin", "skills", "professional_experience", "board_experience", "fundraising_strengths", "relationships", "committees_of_interest", "availability", "areas_to_support", "time_commitment", "why_joined"]
+        allowed = ["full_name", "preferred_name", "email", "phone", "mailing_address", "linkedin",
+                   "professional_title", "employer", "industry", "certifications", "board_experience",
+                   "greater_responsibility", "leadership_interest", "leadership_type",
+                   "additional_strengths", "monthly_hours", "what_would_help", "why_joined", "bio"]
+        list_fields = ["expertise", "contribution_areas", "networks"]
         data = {key: str(payload.get(key, ""))[:4000] for key in allowed}
+        for key in list_fields:
+            value = payload.get(key, [])
+            data[key] = [str(item)[:200] for item in value][:30] if isinstance(value, list) else [str(value)[:200]] if value else []
+        if len(data["contribution_areas"]) > 3:
+            raise HTTPException(status_code=422, detail="Please select up to 3 contribution areas")
+        headshot = str(payload.get("headshot_data", "") or "")
+        if headshot and (len(headshot) > 1500000 or not headshot.startswith("data:image/")):
+            raise HTTPException(status_code=422, detail="The headshot must be an image under 1MB")
+        data["headshot_data"] = headshot
         if not data["full_name"].strip() or not data["email"].strip():
             raise HTTPException(status_code=422, detail="Full name and email are required")
         await db.board_profile_responses.insert_one({

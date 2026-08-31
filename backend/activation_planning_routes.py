@@ -18,52 +18,47 @@ from reactivation_routes import build_portfolio_pdf, email_html, origin_of
 
 logger = logging.getLogger(__name__)
 
-AUDIENCE_OPTIONS = ["Individuals", "Major Donors", "Local Businesses", "Large Corporations", "Foundations", "Government", "Faith Communities", "Community Organizations", "Alumni / Former Participants", "Families / Parents", "Professional Associations", "Other"]
-OPPORTUNITY_OPTIONS = ["Individual Giving", "Major Gifts", "Corporate Sponsorships", "Corporate Partnerships", "Grants / Foundations", "Government Funding", "Events", "Monthly Giving", "Faith Community Support", "Online Campaigns", "Earned Revenue", "Other"]
-NETWORK_OPTIONS = ["Business Owners", "Corporate Executives", "Potential Major Donors", "Foundations / Philanthropic Contacts", "Government Leaders", "Community Leaders", "Faith Leaders", "Schools / Universities", "Healthcare Leaders", "Media", "Professional Associations", "Other", "None"]
-OUTREACH_OPTIONS = ["Personal Introductions", "One-to-One Meetings", "Email Outreach", "Corporate Meetings", "Community Events", "Fundraising Events", "Social Media / Content", "Speaking Engagements", "Partnership Outreach", "Grant Applications", "Direct Mail", "Other"]
-PARTICIPATION_OPTIONS = ["Making Introductions", "Attending Donor Meetings", "Corporate Sponsorship Outreach", "Corporate Partnership Meetings", "Identifying Potential Funders", "Thanking / Stewarding Donors", "Grant / Foundation Research", "Reviewing Proposals", "Fundraising Events", "Speaking About the Mission", "Sharing Fundraising Content", "Hosting / Inviting People to Events", "Personal Giving", "Helping With Fundraising Planning", "Asking for Donations", "I Would Like Training Before Participating", "Other"]
-SUPPORT_OPTIONS = ["Clear Fundraising Plan", "Talking Points", "Email Templates", "Text Message Scripts", "Call Scripts", "Case for Support", "Organization Overview", "Training", "List of Potential Funders", "Clear Personal Responsibilities", "Someone to Attend Meetings With Me", "Other"]
+PRIORITY_OPTIONS = ["Individual Donors", "Major Donors / Philanthropists", "Businesses / Corporate Partnerships & Sponsorships", "Foundations / Grants", "Fundraising Events", "Community / Faith-Based Giving", "Digital / Online Fundraising", "Other"]
+PARTICIPATION_OPTIONS = ["Helping identify potential supporters", "Making introductions where I have an appropriate relationship", "Helping build relationships with potential supporters", "Participating in meetings with prospective supporters", "Supporting business / corporate partnership conversations", "Helping identify foundation or grant opportunities", "Reviewing fundraising proposals, messages or materials", "Sharing the organization's work within my networks", "Speaking about the organization and its mission", "Supporting fundraising events", "Helping thank and steward supporters", "Helping plan or coordinate fundraising activity", "I would like more information or training before deciding", "Other"]
+GREATER_RESPONSIBILITY_OPTIONS = ["Yes", "I would like to discuss this", "Not at this time"]
 
 FORM_SECTIONS = [
-    {"key": "goal", "title": "Our Fundraising Goal", "questions": [
-        {"id": "goal_important", "type": "long", "required": True},
-        {"id": "goal_clarity", "type": "long", "required": False},
+    {"key": "who", "title": "Who Should We Build Fundraising Relationships With?", "questions": [
+        {"id": "individuals_supporters", "type": "long", "required": True},
+        {"id": "business_supporters", "type": "long", "required": True},
+        {"id": "foundation_supporters", "type": "long", "required": True},
     ]},
-    {"key": "audiences", "title": "Who Should Care About This Mission?", "questions": [
-        {"id": "funding_audiences", "type": "multi", "options": AUDIENCE_OPTIONS, "required": True},
-        {"id": "audiences_why", "type": "long", "required": True},
+    {"key": "reach", "title": "Where Can We Find and Reach Them?", "questions": [
+        {"id": "where_to_find", "type": "long", "required": True},
     ]},
-    {"key": "opportunities", "title": "Fundraising Opportunities", "questions": [
-        {"id": "opportunities", "type": "multi", "options": OPPORTUNITY_OPTIONS, "required": True},
-        {"id": "opportunity_priority", "type": "long", "required": True},
+    {"key": "understanding", "title": "What Should They Understand About Our Work?", "questions": [
+        {"id": "what_to_understand", "type": "long", "required": True},
     ]},
-    {"key": "relationships", "title": "Relationships We Already Have", "questions": [
-        {"id": "network_categories", "type": "multi", "options": NETWORK_OPTIONS, "required": True},
-        {"id": "specific_relationships", "type": "long", "required": False},
+    {"key": "attract", "title": "How Should We Attract and Engage Them?", "questions": [
+        {"id": "attract_engage", "type": "long", "required": True},
+        {"id": "build_trust", "type": "long", "required": True},
     ]},
-    {"key": "attracting", "title": "Attracting Funders", "questions": [
-        {"id": "why_support", "type": "long", "required": True},
-        {"id": "talk_about", "type": "long", "required": True},
+    {"key": "existing", "title": "Relationships and Opportunities Already Around You", "questions": [
+        {"id": "existing_relationships", "type": "long", "required": False},
     ]},
-    {"key": "outreach", "title": "Ways to Reach People", "questions": [
-        {"id": "outreach_methods", "type": "multi", "options": OUTREACH_OPTIONS, "required": True},
-        {"id": "outreach_add", "type": "long", "required": False},
+    {"key": "priorities", "title": "Priority Fundraising Opportunities", "questions": [
+        {"id": "priority_opportunities", "type": "multi", "options": PRIORITY_OPTIONS, "required": True, "max_selections": 3},
+        {"id": "priorities_explanation", "type": "long", "required": False},
     ]},
-    {"key": "involvement", "title": "Board Involvement", "questions": [
-        {"id": "participation_activities", "type": "multi", "options": PARTICIPATION_OPTIONS, "required": True},
+    {"key": "participation", "title": "How You May Be Willing to Participate", "questions": [
+        {"id": "participation_willingness", "type": "multi", "options": PARTICIPATION_OPTIONS, "required": True},
     ]},
-    {"key": "ownership", "title": "What You Could Own", "questions": [
-        {"id": "ownership", "type": "long", "required": True},
+    {"key": "greater", "title": "Greater Responsibility — Initial Willingness Only", "questions": [
+        {"id": "greater_responsibility_interest", "type": "select", "options": GREATER_RESPONSIBILITY_OPTIONS, "required": True},
+        {"id": "greater_responsibility_detail", "type": "long", "required": False, "show_if": {"greater_responsibility_interest": "Yes"}},
     ]},
-    {"key": "support", "title": "Support You Need", "questions": [
-        {"id": "support_needed", "type": "multi", "options": SUPPORT_OPTIONS, "required": True},
+    {"key": "support", "title": "Support Needed", "questions": [
+        {"id": "support_needed", "type": "long", "required": True},
     ]},
-    {"key": "ninety", "title": "90-Day Priorities", "questions": [
-        {"id": "ninety_day_priorities", "type": "long", "required": True},
+    {"key": "first", "title": "What Should Happen First?", "questions": [
+        {"id": "first_moves", "type": "long", "required": True},
     ]},
-    {"key": "additional", "title": "Additional Ideas", "questions": [
-        {"id": "fundraising_idea", "type": "long", "required": False},
+    {"key": "final", "title": "Final Optional Input", "questions": [
         {"id": "final_thoughts", "type": "long", "required": False},
     ]},
 ]
@@ -71,47 +66,59 @@ FORM_SECTIONS = [
 QUESTION_META = {q["id"]: q for section in FORM_SECTIONS for q in section["questions"]}
 REQUIRED_QUESTION_IDS = [qid for qid, q in QUESTION_META.items() if q["required"]]
 
-RELATIONSHIP_NOTE = "Selecting a type of relationship does not mean you are committing to making an introduction. It simply helps us understand what may already exist around our Board."
-OWNERSHIP_EXAMPLES = "Examples (only as helpful guidance): corporate relationships, donor stewardship, events, fundraising communications, identifying prospects."
+HELPER_TEXT = {
+    "individuals_supporters": "Think about people whose experiences, professions, interests, values, community connections or personal stories may naturally connect them to our work. You may include specific names if you genuinely know someone we should consider, but names are not required.",
+    "business_supporters": "Think about businesses that serve the same community, benefit when the people we serve succeed, have relevant community or social-impact priorities, or would find genuine value in being connected to this work.",
+    "foundation_supporters": "You may think about the causes they fund, communities they support, locations they serve or types of programs they typically invest in. Include specific names only if you actually know them.",
+    "where_to_find": "Think about professional associations, community groups, events, conferences, faith communities, business networks, online communities, local institutions, partnerships, referrals or other places where these potential supporters already gather or engage.",
+    "what_to_understand": "What would help someone understand why this mission matters and why supporting it is worthwhile?",
+    "attract_engage": "Examples may include useful information, reports, community events, educational resources, volunteer opportunities, webinars, stories, introductions, partnerships, special invitations or other valuable ways of engaging people. These are examples only.",
+    "build_trust": "Think about the steps between someone first hearing about us and becoming ready for a funding conversation.",
+    "existing_relationships": "If yes, tell us who or what they are and, where relevant, whether you know them directly, have an indirect connection, or simply believe they would be a strong prospect. Listing a relationship here does NOT commit you to making an introduction. It simply helps us understand the opportunities and relationships that may already exist around the Board.",
+    "priority_opportunities": "Select up to 3.",
+    "participation_willingness": "This is an expression of current willingness. It is not your final fundraising assignment.",
+}
+
+RELATIONSHIP_NOTE = "Listing a relationship here does NOT commit you to making an introduction. It simply helps us understand the opportunities and relationships that may already exist around the Board."
 CONFIRMATION_TEXT = "I understand that my responses are part of the Board's fundraising planning process and may be combined with ideas from other Board Members to help develop the organization's Fundraising Strategy Plan."
 
 
 def default_prompts(organization: str) -> Dict[str, str]:
     return {
-        "goal_important": "What stands out to you as most important about what we are trying to fund or accomplish?",
-        "goal_clarity": "Is there anything about the fundraising goal or priority that you believe needs greater clarity?",
-        "funding_audiences": "Who do you believe we should be building relationships with to support this mission?",
-        "audiences_why": "Why do you believe these people or organizations may care about our work?",
-        "opportunities": "Which fundraising opportunities do you believe we should explore or strengthen?",
-        "opportunity_priority": "Which of these do you believe represents the greatest opportunity for the organization right now, and why?",
-        "network_categories": "What types of relationships or networks do you already have that may be useful as we build our fundraising relationships?",
-        "specific_relationships": "Are there specific relationships or networks you would be comfortable exploring on behalf of the organization?",
-        "why_support": f"What do you believe would make someone want to support {organization}?",
-        "talk_about": "What stories, results, programs or parts of the mission do you think we should talk about more when building relationships with potential funders?",
-        "outreach_methods": "What do you believe are the best ways for us to reach and build relationships with potential supporters?",
-        "outreach_add": "What would you add or do differently?",
-        "participation_activities": "Which fundraising activities would you personally be comfortable helping with?",
-        "ownership": "Is there a part of the fundraising process you would be willing to take responsibility for or help lead?",
-        "support_needed": "What would help you participate more effectively in fundraising?",
-        "ninety_day_priorities": "If we could accomplish three fundraising things in the next 90 days, what do you think they should be?",
-        "fundraising_idea": "What fundraising idea or opportunity do you believe we should consider that we may not have discussed yet?",
-        "final_thoughts": "Is there anything else you would like the organization to consider as we build this fundraising plan together?",
+        "individuals_supporters": f"Based on what you know about {organization} and the people we serve, what kinds of INDIVIDUALS do you believe would have the strongest reason to care about and financially support our mission?",
+        "business_supporters": f"What kinds of BUSINESSES or companies do you believe would have a strong reason to support or partner with {organization}, and why?",
+        "foundation_supporters": "What kinds of FOUNDATIONS, GRANTMAKERS or philanthropic organizations do you believe may be a strong fit for our work?",
+        "where_to_find": "Where do you believe we can realistically find, meet or become visible to the kinds of individuals, businesses and grantors you identified?",
+        "what_to_understand": f"What do you believe potential supporters most need to understand about {organization}, the people we serve and the difference this work can make?",
+        "attract_engage": f"What could {organization} do or offer that would make potential supporters want to learn more about us and stay connected before we ask them for financial support?",
+        "build_trust": f"Once someone becomes aware of {organization}, what do you believe is the best way for us to build enough relationship and trust with them before making a funding ask?",
+        "existing_relationships": f"Are there any individuals, businesses, foundations, professional groups, community organizations or other relationships you believe {organization} should consider as part of this fundraising strategy?",
+        "priority_opportunities": f"Which fundraising opportunities do you believe {organization} should prioritize first?",
+        "priorities_explanation": "Optional — Is there anything you would like to explain about the priorities you selected?",
+        "participation_willingness": "As we eventually begin executing the fundraising strategy, which kinds of fundraising support would you currently feel most comfortable helping with?",
+        "greater_responsibility_interest": "Is there one area of fundraising or resource development that you would be open to DISCUSSING taking greater responsibility for as the Board begins executing the plan?",
+        "greater_responsibility_detail": "What area would you be interested in discussing, and what kind of contribution do you believe you could realistically make?",
+        "support_needed": f"What information, tools, materials, training or support would help you feel prepared to participate effectively in fundraising for {organization}?",
+        "first_moves": "Once our fundraising strategy is agreed, what do you believe are the first 2-3 things we should focus on to begin moving it forward?",
+        "final_thoughts": f"Is there anything else you believe we should consider as we build the fundraising strategy for {organization}?",
     }
 
 
-def form_payload(content: dict) -> dict:
+def form_payload(content: dict, organization: str = "") -> dict:
     prompts = content.get("question_prompts", {})
+    defaults = default_prompts(organization or "our organization")
     return {
         "title": "Board Fundraising Planning Form",
         "introduction": content.get("introduction", ""),
         "goal_context": content.get("goal_context", ""),
         "relationship_note": RELATIONSHIP_NOTE,
-        "ownership_examples": OWNERSHIP_EXAMPLES,
         "confirmation_text": CONFIRMATION_TEXT,
         "sections": [
             {"key": section["key"], "title": section["title"], "questions": [
                 {"id": q["id"], "type": q["type"], "required": q["required"],
-                 "options": q.get("options", []), "prompt": prompts.get(q["id"], "")}
+                 "options": q.get("options", []), "max_selections": q.get("max_selections", 0),
+                 "show_if": q.get("show_if", {}), "helper": HELPER_TEXT.get(q["id"], ""),
+                 "prompt": prompts.get(q["id"]) or defaults.get(q["id"], "")}
                 for q in section["questions"]
             ]}
             for section in FORM_SECTIONS
@@ -152,51 +159,60 @@ class PlanningSubmission(BaseModel):
     full_name: str = Field(min_length=1)
     email: EmailStr
     role: str = ""
-    goal_important: str = Field(min_length=1)
-    goal_clarity: str = ""
-    funding_audiences: List[str] = Field(min_length=1)
-    audiences_why: str = Field(min_length=1)
-    opportunities: List[str] = Field(min_length=1)
-    opportunity_priority: str = Field(min_length=1)
-    network_categories: List[str] = Field(min_length=1)
-    specific_relationships: str = ""
-    why_support: str = Field(min_length=1)
-    talk_about: str = Field(min_length=1)
-    outreach_methods: List[str] = Field(min_length=1)
-    outreach_add: str = ""
-    participation_activities: List[str] = Field(min_length=1)
-    ownership: str = Field(min_length=1)
-    support_needed: List[str] = Field(min_length=1)
-    ninety_day_priorities: str = Field(min_length=1)
-    fundraising_idea: str = ""
+    individuals_supporters: str = Field(min_length=1)
+    business_supporters: str = Field(min_length=1)
+    foundation_supporters: str = Field(min_length=1)
+    where_to_find: str = Field(min_length=1)
+    what_to_understand: str = Field(min_length=1)
+    attract_engage: str = Field(min_length=1)
+    build_trust: str = Field(min_length=1)
+    existing_relationships: str = ""
+    priority_opportunities: List[str] = Field(min_length=1, max_length=3)
+    priorities_explanation: str = ""
+    participation_willingness: List[str] = Field(min_length=1)
+    greater_responsibility_interest: str = Field(min_length=1)
+    greater_responsibility_detail: str = ""
+    support_needed: str = Field(min_length=1)
+    first_moves: str = Field(min_length=1)
     final_thoughts: str = ""
     confirmation: bool
 
 
-def build_planning_email(kind: str, participant: dict, founder_name: str, founder_title: str, organization: str, form_link: str) -> dict:
-    first = (participant.get("name") or "").split(" ")[0]
+def build_planning_email(kind: str, participant: dict, founder_name: str, founder_title: str, organization: str, form_link: str, goal_line: str = "", deadline: str = "") -> dict:
+    first = (participant.get("name") or "").split(" ")[0] or "Board Member"
     signature = founder_name + (f"\n{founder_title}" if founder_title else "") + f"\n{organization}"
+    deadline_line = f"Please complete the form by {deadline}.\n\n" if deadline else ""
     if kind == "reminder":
-        subject = "Reminder: Help Us Build Our Fundraising Plan"
+        subject = f"Reminder: Your Input on Our Fundraising Plan | {organization}"
         body = (
             f"Dear {first},\n\n"
-            f"I wanted to follow up on the Board Fundraising Planning Form for {organization}.\n\n"
-            "We are using the Board's ideas to build our fundraising strategy, and I would like your perspective included before we move into the next stage.\n\n"
-            "If you have not completed your form yet, please use your link below:\n\n"
+            f"I wanted to follow up on the Board Fundraising Planning Form I sent you for {organization}.\n\n"
+            "We are bringing the Board's ideas together to build our Fundraising Strategy Plan, and I would like to make sure your perspective is included before we move forward.\n\n"
+            "You can complete your form using your secure link below:\n\n"
             "[COMPLETE MY FUNDRAISING PLANNING FORM]\n\n"
-            f"Thank you for helping us build this plan together.\n\n{signature}"
+            + (f"Please complete it by {deadline}.\n\n" if deadline else "")
+            + "The form is simply asking for your ideas, perspective and the ways you may be comfortable supporting the fundraising work. It does not assign you a final fundraising responsibility.\n\n"
+            f"Thank you for taking the time to contribute to the process.\n\n{signature}"
         )
     else:
-        subject = f"Help Us Build Our Fundraising Plan | {organization}"
+        subject = f"Your Input on Our Fundraising Plan | {organization}"
+        goal_paragraph = f"{goal_line}\n\n" if goal_line else ""
         body = (
             f"Dear {first},\n\n"
-            f"We are beginning the process of building the fundraising plan for {organization}, and I want the Board involved in shaping it.\n\n"
+            f"We are beginning the process of building the fundraising strategy for {organization}, and I want the Board involved in shaping it from the beginning.\n\n"
+            f"{goal_paragraph}"
             "Rather than creating the plan and bringing it to the Board after the fact, I want us to build it together.\n\n"
-            "Your ideas, experience, relationships and perspective can help us determine who we should be building relationships with, which fundraising opportunities we should prioritize, and how each of us can contribute.\n\n"
-            "Please complete the short Board Fundraising Planning Form below.\n\n"
+            "I am asking you to complete the short Board Fundraising Planning Form below. Your ideas, experience, relationships and perspective will help us think through:\n\n"
+            "- who we should be building fundraising relationships with;\n"
+            "- where those potential supporters can be found;\n"
+            "- how we can attract and engage them;\n"
+            "- which fundraising opportunities we should prioritize;\n"
+            "- and how the Board may be able to support the work.\n\n"
             "[COMPLETE MY FUNDRAISING PLANNING FORM]\n\n"
-            "Your responses will be combined with the ideas of the other Board Members and our organizational priorities as we build the Fundraising Strategy Plan.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
+            "There are no right or wrong answers. This form is about gathering your thinking before the strategy is built. Your responses do not assign you a final fundraising responsibility.\n\n"
+            "Once the responses are collected, they will be brought together with the organization's fundraising goals and priorities to develop the Fundraising Strategy Plan. The plan will then come back to the Board for us to review together before we adopt it and agree how we will execute it.\n\n"
+            f"{deadline_line}"
+            f"Thank you for taking the time to contribute your ideas and help us build this together.\n\n{signature}"
         )
     return {"subject": subject, "body": body, "button_label": "COMPLETE MY FUNDRAISING PLANNING FORM", "form_link": form_link}
 
@@ -226,16 +242,105 @@ STRATEGY_SECTIONS = [
 ]
 
 
+def execution_horizon(money_needed_by: str) -> str:
+    text = (money_needed_by or "").lower()
+    if not text.strip():
+        return ""
+    for token, horizon in [("30 day", "60 DAYS"), ("45 day", "60 DAYS"), ("60 day", "60 DAYS"), ("1 month", "60 DAYS"),
+                           ("2 month", "60 DAYS"), ("90 day", "90 DAYS"), ("3 month", "90 DAYS"), ("120 day", "120 DAYS"),
+                           ("4 month", "120 DAYS"), ("5 month", "120 DAYS"), ("6 month", "120 DAYS"), ("12 month", "120 DAYS"), ("year", "120 DAYS")]:
+        if token in text:
+            return horizon
+    return ""
+
+
+def _sd_block(lines: list, heading: str, value) -> None:
+    if value is None or value == "" or value == []:
+        return
+    lines.append(heading.upper())
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                for key, sub in item.items():
+                    label = key.replace("_", " ").title()
+                    if isinstance(sub, list):
+                        if sub:
+                            lines.append(f"{label}:")
+                            lines.extend([f"  - {entry}" for entry in sub if entry])
+                    elif sub:
+                        lines.append(f"{label}: {sub}")
+                lines.append("")
+            elif item:
+                lines.append(f"- {item}")
+    elif isinstance(value, dict):
+        for key, sub in value.items():
+            label = key.replace("_", " ").title()
+            if isinstance(sub, list):
+                if sub:
+                    lines.append(f"{label}:")
+                    lines.extend([f"  - {entry}" for entry in sub if entry])
+            elif sub:
+                lines.append(f"{label}:")
+                lines.append(str(sub))
+    else:
+        lines.append(str(value))
+    lines.append("")
+
+
 def strategy_display(structured: dict, organization: str) -> str:
-    lines = ["FUNDRAISING STRATEGY PLAN", organization, ""]
-    for heading, key in STRATEGY_SECTIONS:
-        value = structured.get(key, "")
-        lines.append(heading.upper())
-        if isinstance(value, list):
-            lines.extend([f"- {item}" for item in value])
-        else:
-            lines.append(str(value))
+    if "ideal_funding_audiences" not in structured:
+        lines = ["FUNDRAISING STRATEGY PLAN", organization, ""]
+        for heading, key in STRATEGY_SECTIONS:
+            value = structured.get(key, "")
+            lines.append(heading.upper())
+            if isinstance(value, list):
+                lines.extend([f"- {item}" for item in value])
+            else:
+                lines.append(str(value))
+            lines.append("")
+        return "\n".join(lines).strip()
+    lines = ["FUNDRAISING STRATEGY PLAN", organization, "FOR BOARD REVIEW", ""]
+    _sd_block(lines, "1. Executive Summary", structured.get("executive_summary", ""))
+    goal = structured.get("fundraising_goal") or {}
+    goal_block = {}
+    for key, label in [("amount", "amount_we_need_to_raise"), ("what_the_money_is_for", "what_we_are_raising_it_for"),
+                       ("when_the_money_is_needed", "when_we_need_it"),
+                       ("what_the_funding_will_make_possible", "what_this_funding_will_make_possible"),
+                       ("why_the_timing_matters", "why_the_timing_matters")]:
+        if goal.get(key):
+            goal_block[label] = goal[key]
+    _sd_block(lines, "2. Our Fundraising Goal", goal_block)
+    audiences = structured.get("ideal_funding_audiences") or {}
+    lines.append("3. OUR IDEAL FUNDING AUDIENCES")
+    lines.append("")
+    for key, label in [("individual_donors", "Ideal Individual Donors"),
+                       ("businesses_and_corporate_partners", "Ideal Businesses / Corporate Sponsors & Partners"),
+                       ("grantors_and_foundations", "Ideal Grantors / Foundations"),
+                       ("other_relevant_audiences", "Other Priority Funding Audiences")]:
+        _sd_block(lines, label, audiences.get(key) or [])
+    _sd_block(lines, "4. Where We Will Find Our Funding Audiences", structured.get("where_to_find_each_funding_audience") or [])
+    _sd_block(lines, "5. How We Will Attract & Engage Them", structured.get("attraction_and_visibility_system") or [])
+    process = structured.get("fundraising_process") or []
+    lines.append("6. OUR FUNDRAISING PROCESS")
+    lines.append("")
+    for journey in process:
+        lines.append(str(journey.get("audience", "")).upper())
+        lines.append("KNOW → LIKE → TRUST → ASK → FOLLOW UP → STEWARD")
+        for step in ["know", "like", "trust", "ask", "follow_up", "steward"]:
+            if journey.get(step):
+                lines.append(f"{step.replace('_', ' ').upper()}: {journey[step]}")
         lines.append("")
+    _sd_block(lines, "7. Content & Materials We Need", structured.get("content_and_materials_needed") or {})
+    _sd_block(lines, "8. People & Execution Roles", structured.get("people_and_execution_roles") or {})
+    timeline = structured.get("execution_timeline") or {}
+    horizon = timeline.get("horizon", "").strip() or "EXECUTION"
+    lines.append(f"9. OUR {horizon.replace(' DAYS', '')}-DAY EXECUTION CALENDAR" if "DAY" in horizon.upper() else "9. OUR EXECUTION CALENDAR")
+    lines.append("")
+    if timeline.get("horizon_basis"):
+        lines.extend([timeline["horizon_basis"], ""])
+    _sd_block(lines, "Execution Phases", timeline.get("phases") or [])
+    _sd_block(lines, "10. Budget & Resource Requirements", structured.get("budget_and_resource_requirements") or {})
+    _sd_block(lines, "11. Final Strategic Recommendations", structured.get("final_strategic_recommendations") or {})
     return "\n".join(lines).strip()
 
 
@@ -278,9 +383,27 @@ RESPONSIBILITY_STATUSES = ["Responsibility Agreed", "Follow-Up Needed", "No Fund
 
 
 def guide_display(structured: dict, organization: str) -> str:
-    lines = ["PLAN ADOPTION FACILITATION GUIDE", organization, ""]
-    for heading, key in GUIDE_SECTIONS:
-        lines.extend([heading.upper(), str(structured.get(key, "")), ""])
+    if "meeting_objective" not in structured:
+        lines = ["PLAN ADOPTION FACILITATION GUIDE", organization, ""]
+        for heading, key in GUIDE_SECTIONS:
+            lines.extend([heading.upper(), str(structured.get(key, "")), ""])
+        return "\n".join(lines).strip()
+    lines = ["FUNDRAISING STRATEGY REVIEW & ADOPTION — FACILITATION GUIDE", organization, ""]
+    _sd_block(lines, "Meeting Objective", structured.get("meeting_objective", ""))
+    _sd_block(lines, "1. Before the Meeting", structured.get("before_the_meeting") or [])
+    _sd_block(lines, "2. Welcome & Purpose", structured.get("welcome_and_purpose") or {})
+    _sd_block(lines, "3. How We Built This Plan", structured.get("how_we_built_this_plan") or {})
+    _sd_block(lines, "4. Reconnect to the Fundraising Goal", structured.get("reconnect_to_fundraising_goal") or {})
+    _sd_block(lines, "5. Review the Fundraising Strategy", structured.get("strategy_review") or [])
+    _sd_block(lines, "6. Work Through Board Questions / Changes", structured.get("work_through_changes") or {})
+    _sd_block(lines, "7. Confirm the Fundraising Priorities", structured.get("confirm_fundraising_priorities") or {})
+    _sd_block(lines, "8. Adopt the Strategy as Our Working Fundraising Document", structured.get("adoption_discussion") or {})
+    _sd_block(lines, "9. What the Board Will Help Carry", structured.get("what_the_board_will_help_carry") or {})
+    _sd_block(lines, "10. Individual Board Member Responsibility Discussions", structured.get("individual_responsibility_discussions") or [])
+    _sd_block(lines, "11. Support & Resources Needed", structured.get("support_and_resources") or {})
+    _sd_block(lines, "12. Immediate Execution Priorities", structured.get("immediate_execution_priorities") or {})
+    _sd_block(lines, "13. Record the Plan Adoption Conclusion", structured.get("plan_adoption_conclusion_reminder") or [])
+    _sd_block(lines, "14. Closing", structured.get("closing") or {})
     return "\n".join(lines).strip()
 
 
@@ -418,7 +541,7 @@ def create_activation_planning_router(db) -> APIRouter:
         known_emails = {p["email"] for p in participants}
         suggestions = []
         joined = await db.opportunity_applications.find(
-            {"owner_user_id": user_id, "$or": [{"final_outcome": "Joined Board"}, {"status": "Selected"}]},
+            {"owner_user_id": user_id, "final_outcome": "Joined Board"},
             {"_id": 0, "application_id": 1, "profile_snapshot": 1, "applicant_email": 1},
         ).to_list(100)
         for app in joined:
@@ -429,7 +552,7 @@ def create_activation_planning_router(db) -> APIRouter:
                                     "name": app.get("profile_snapshot", {}).get("full_name", ""), "email": email,
                                     "label": "Joined through Recruitment"})
         reactivation_members = await db.reactivation_board_members.find(
-            {"user_id": user_id, "conversation_outcome": {"$ne": "Stepping Down From the Board"}},
+            {"user_id": user_id, "conversation_outcome": "Continuing as an Active Board Member"},
             {"_id": 0, "member_record_id": 1, "name": 1, "email": 1, "role": 1},
         ).to_list(200)
         for record in reactivation_members:
@@ -478,8 +601,8 @@ def create_activation_planning_router(db) -> APIRouter:
             app = await db.opportunity_applications.find_one(
                 {"owner_user_id": user_id, "application_id": payload.ref_id},
                 {"_id": 0, "profile_snapshot": 1, "applicant_email": 1, "final_outcome": 1, "status": 1})
-            if not app or not (app.get("final_outcome") == "Joined Board" or app.get("status") == "Selected"):
-                raise HTTPException(status_code=404, detail="Board Member not found")
+            if not app or app.get("final_outcome") != "Joined Board":
+                raise HTTPException(status_code=404, detail="Only formally appointed Board Members can be added from Recruitment")
             name = app.get("profile_snapshot", {}).get("full_name", "")
             email = (app.get("applicant_email") or "").lower()
             phone = app.get("profile_snapshot", {}).get("phone", "")
@@ -623,22 +746,20 @@ def create_activation_planning_router(db) -> APIRouter:
         form = await current_form(user_id)
         if form.get("status") != "Approved" or not form.get("approved_version"):
             raise HTTPException(status_code=409, detail="Approve your Board Fundraising Planning Form before generating the email")
-        token = form.get("shared_form_token")
-        if not token:
-            token = secrets.token_urlsafe(32)
-            await db.activation_planning_forms.update_one({"user_id": user_id}, {"$set": {"shared_form_token": token}})
         context = await founder_context(user_id)
-        form_link = f"{origin_of(request)}/planning-form/{token}"
-        email = activation_planning_email(context["organization"], form_link,
-                                          activation_signature(context["founder_name"], context["founder_title"], context["organization"]))
-        return {"subject": email["subject"], "body": email["body"], "form_link": form_link}
+        goal_line = (form.get("content") or {}).get("goal_context", "").strip()
+        email = build_planning_email("initial", {"name": ""}, context["founder_name"], context["founder_title"], context["organization"], "", goal_line)
+        return {"subject": email["subject"], "body": email["body"], "form_link": "",
+                "note": "Each Board Member automatically receives their OWN secure form link when you send their individual email. No shared link is used."}
 
     # ---------------- FOUNDER: SEND / REMIND ----------------
 
     async def send_context(user_id: str, record: dict, request: Request, kind: str) -> dict:
         context = await founder_context(user_id)
+        form = await current_form(user_id)
+        goal_line = (form.get("content") or {}).get("goal_context", "").strip()
         form_link = f"{origin_of(request)}/planning-form/{record['form_token']}"
-        return build_planning_email(kind, record, context["founder_name"], context["founder_title"], context["organization"], form_link) | {
+        return build_planning_email(kind, record, context["founder_name"], context["founder_title"], context["organization"], form_link, goal_line) | {
             "founder_email": context["founder_email"]}
 
     @router.get("/activation/participants/{participant_id}/email-preview")
@@ -759,27 +880,14 @@ def create_activation_planning_router(db) -> APIRouter:
             "organization_name": context["organization"],
             "submitted": record["status"] == "COMPLETED",
             "prefill": {"full_name": record.get("name", ""), "email": record.get("email", ""), "role": record.get("role", "")},
-            "form": form_payload(content),
+            "form": form_payload(content, context["organization"]),
         }
 
     @router.post("/planning-form/{token}", status_code=201)
     async def submit_planning_form(token: str, payload: PlanningSubmission):
         record = await db.activation_participants.find_one({"form_token": token}, {"_id": 0})
         if not record:
-            form = await db.activation_planning_forms.find_one({"shared_form_token": token}, {"_id": 0})
-            if not form:
-                raise HTTPException(status_code=404, detail="This form link is not valid")
-            email = str(payload.email).lower()
-            record = await db.activation_participants.find_one({"user_id": form["user_id"], "email": email}, {"_id": 0})
-            if not record:
-                record = {
-                    "participant_id": str(uuid.uuid4()), "user_id": form["user_id"],
-                    "name": payload.full_name, "email": email, "phone": "", "role": payload.role,
-                    "source": "self_identified", "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
-                    "form_version": form.get("approved_version", 0), "call_notes": "",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }
-                await db.activation_participants.insert_one({**record})
+            raise HTTPException(status_code=404, detail="This form link is not valid")
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         if not payload.confirmation:
@@ -885,11 +993,32 @@ def create_activation_planning_router(db) -> APIRouter:
             "present_grantors", "other_funding_relationships", "individuals_type", "individuals_approach",
             "businesses_type", "businesses_approach", "grantors_type", "grantors_approach"]}
         responses_block = [
-            {"board_member_name": p["name"], "board_role": p.get("role", "Board Member"), "their_response": p.get("response", {})}
+            {"participant_id": p["participant_id"], "board_member_name": p["name"], "board_role": p.get("role", "Board Member"),
+             "form_version_answered": p.get("form_version", 0), "their_response": p.get("response", {})}
             for p in completed]
+        all_participants = await db.activation_participants.find({"user_id": user_id}, {"_id": 0, "name": 1, "status": 1}).to_list(300)
+        status_block = {
+            "board_members_invited": len(all_participants),
+            "responses_received": len(completed),
+            "completed_members": [p["name"] for p in completed],
+            "outstanding_members": [p["name"] for p in all_participants if p.get("status") != "COMPLETED"],
+        }
+        profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
+        org_facts = {key: value for key, value in (profile.get("data") or {}).items()
+                     if isinstance(value, str) and value.strip() and key not in {"logo_data"}}
+        horizon = execution_horizon(str(intake.get("money_needed_by", "")))
+        timeline_block = {
+            "verified_fundraising_deadline_or_timeline": intake.get("money_needed_by", ""),
+            "EXECUTION_HORIZON": horizon or ("Select exactly 60 DAYS, 90 DAYS or 120 DAYS from the verified fundraising deadline/timeline above. "
+                                             "If no fundraising deadline/timeline was supplied, use 90 DAYS as a recommended initial planning cycle and state clearly that it is not an organization-supplied deadline."),
+            "note": "This horizon comes from the organization's actual fundraising deadline/timeline — never from any Planning Form submission deadline.",
+        }
         context = ("ORGANIZATION CONTEXT:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"]}, indent=1)
-                   + "\n\nFOUNDER ACTIVATION INTAKE:\n" + jsonlib.dumps(intake_context, indent=1, default=str)
-                   + "\n\nEVERY COMPLETED BOARD MEMBER PLANNING RESPONSE (preserve who said what):\n" + jsonlib.dumps(responses_block, indent=1, default=str))
+                   + "\n\nVERIFIED ORGANIZATION PROFILE INFORMATION:\n" + jsonlib.dumps(org_facts, indent=1, default=str)
+                   + "\n\nFOUNDER ACTIVATION INTAKE (the founder's authoritative fundraising information):\n" + jsonlib.dumps(intake_context, indent=1, default=str)
+                   + "\n\nEXECUTION TIMELINE SOURCE:\n" + jsonlib.dumps(timeline_block, indent=1, default=str)
+                   + "\n\nPLANNING RESPONSE STATUS (factual — do not describe outstanding members' opinions):\n" + jsonlib.dumps(status_block, indent=1, default=str)
+                   + "\n\nEVERY COMPLETED BOARD MEMBER PLANNING RESPONSE (preserve who said what; ideas are input, not commitments):\n" + jsonlib.dumps(responses_block, indent=1, default=str))
 
         async def run_generation():
             try:
@@ -1180,8 +1309,8 @@ def create_activation_planning_router(db) -> APIRouter:
         for p in participants:
             response = p.get("response") or {}
             members.append({"participant_id": p["participant_id"], "name": p["name"], "role": p.get("role", "Board Member"),
-                            "participation_activities": response.get("participation_activities", []),
-                            "ownership_interest": response.get("ownership", ""),
+                            "participation_activities": response.get("participation_willingness") or response.get("participation_activities", []),
+                            "ownership_interest": response.get("greater_responsibility_detail") or response.get("greater_responsibility_interest") or response.get("ownership", ""),
                             "support_needed": response.get("support_needed", []),
                             "review_contribution": (p.get("review") or {}).get("contribution", ""),
                             "review_support": (p.get("review") or {}).get("support_needs", ""),
@@ -1256,7 +1385,7 @@ def create_activation_planning_router(db) -> APIRouter:
         if not adoption.get("meeting_date") or not adoption.get("meeting_time"):
             raise HTTPException(status_code=409, detail="Save your adoption meeting date and time before generating the invitation email")
         strategy = await current_strategy(user_id)
-        plan_text = adoption.get("revised_text") or ((strategy.get("review_versions") or [{}])[-1].get("display_text", ""))
+        plan_text = ((strategy.get("review_versions") or [{}])[-1].get("display_text", "")) or adoption.get("revised_text")
         if not plan_text:
             raise HTTPException(status_code=409, detail="Generate the Fundraising Strategy Plan before generating the invitation email")
         token = adoption.get("plan_share_token")
@@ -1290,18 +1419,19 @@ def create_activation_planning_router(db) -> APIRouter:
             "$setOnInsert": {"created_at": now}}, upsert=True)
         participants = await db.activation_participants.find({"user_id": user_id}, {"_id": 0}).to_list(300)
         import json as jsonlib
-        reviews = [{"board_member_name": p["name"], "board_role": p.get("role", ""), "review": p.get("review", {})}
-                   for p in participants if p.get("review_status") == "REVIEWED"]
         willingness = [{"board_member_name": p["name"], "board_role": p.get("role", ""),
                         "planning_response": p.get("response", {})} for p in participants if p.get("response")]
+        profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
+        org_facts = {key: value for key, value in (profile.get("data") or {}).items()
+                     if isinstance(value, str) and value.strip() and key not in {"logo_data"}}
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
                                                        "founder_name": context_info["founder_name"]}, indent=1)
-                   + "\n\nCURRENT FUNDRAISING STRATEGY PLAN (revised with the Board's review where applicable):\n" + (adoption.get("revised_text") or reviewed_text)
-                   + "\n\nACTUAL BOARD REVIEWS OF THIS PLAN:\n" + jsonlib.dumps(reviews, indent=1, default=str)
-                   + "\n\nBOARD MEMBER PLANNING RESPONSES (willingness/ownership context):\n" + jsonlib.dumps(willingness, indent=1, default=str)
-                   + "\n\nACTIVATION INTAKE HIGHLIGHTS:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
-                       "fundraising_goal", "amount_needed", "money_accomplish", "organization_priorities",
-                       "desired_change", "success_definition"]}, indent=1, default=str))
+                   + "\n\nVERIFIED ORGANIZATION INFORMATION:\n" + jsonlib.dumps(org_facts, indent=1, default=str)
+                   + "\n\nTHE EXACT FUNDRAISING STRATEGY PLAN VERSION BEING PRESENTED TO THE BOARD:\n" + reviewed_text
+                   + "\n\nEVERY ORIGINAL BOARD MEMBER FUNDRAISING PLANNING RESPONSE (input for discussion — NOT final responsibilities; preserve who said what):\n" + jsonlib.dumps(willingness, indent=1, default=str)
+                   + "\n\nFOUNDER FUNDRAISING INFORMATION:\n" + jsonlib.dumps({key: intake.get(key, "") for key in [
+                       "fundraising_goal", "amount_needed", "money_accomplish", "money_needed_by", "organization_priorities",
+                       "fundraising_carriers", "board_fundraising_involvement", "desired_change", "success_definition"]}, indent=1, default=str))
 
         async def run_generation():
             try:
@@ -1541,35 +1671,53 @@ def create_activation_planning_router(db) -> APIRouter:
         record = await owned_participant(user_id, participant_id)
         adoption = await current_adoption(user_id)
         if not module5_ready(adoption):
-            raise HTTPException(status_code=409, detail="The Fundraising Strategy Plan must be adopted and your Plan Adoption Conclusion recorded before follow-up emails are generated")
-        if record.get("followup_status") == "Generating":
-            return {"status": "Generating"}
+            raise HTTPException(status_code=409, detail="The Fundraising Strategy Plan must be adopted and your Plan Adoption Conclusion recorded before follow-up emails are prepared")
         context_info = await founder_context(user_id)
-        await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {"followup_status": "Generating", "followup_error": ""}})
-        import json as jsonlib
-        context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
-                                                       "founder_name": context_info["founder_name"], "founder_title": context_info["founder_title"]}, indent=1)
-                   + f"\n\nBOARD MEMBER: {record['name']} — Board Role: {record.get('role', 'Board Member')}"
-                   + f"\n\nAGREED FUNDRAISING RESPONSIBILITY / AREA THEY AGREED TO SUPPORT (recorded by the founder; may be empty if still being clarified):\n{record.get('agreed_responsibility', '')}"
-                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
-                   + "\n\nADOPTION MEETING CONCLUSIONS (founder's own record of what happened and was agreed):\n" + adoption.get("conclusion", "")
-                   + "\n\nTHIS MEMBER'S OWN PLANNING RESPONSE:\n" + jsonlib.dumps(record.get("response", {}), indent=1, default=str)
-                   + "\n\nTHIS MEMBER'S OWN STRATEGY REVIEW:\n" + jsonlib.dumps(record.get("review", {}), indent=1, default=str))
-
-        async def run_generation():
-            try:
-                structured = await generate_structured("activation_followup_email", context)
-                await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
-                    "followup_status": "Draft", "followup_subject": str(structured.get("subject", "")).strip(),
-                    "followup_body": str(structured.get("body", "")).strip(),
-                    "followup_updated_at": datetime.now(timezone.utc).isoformat()}})
-            except Exception as exc:
-                logger.error("Follow-up email generation failed for %s: %s", participant_id, exc)
-                await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
-                    "followup_status": "Failed", "followup_error": str(exc)[:300]}})
-
-        asyncio.create_task(run_generation())
-        return {"status": "Generating"}
+        organization = context_info["organization"]
+        first = (record.get("name") or "").split(" ")[0] or "Board Member"
+        signature = context_info["founder_name"] + (f"\n{context_info['founder_title']}" if context_info["founder_title"] else "") + f"\n{organization}"
+        status = record.get("responsibility_status", "No Fundraising Responsibility Agreed Yet")
+        if status == "Responsibility Agreed" and record.get("agreed_responsibility", "").strip():
+            if record.get("fp_status") not in {"Approved", "SENT"} or not record.get("fp_share_token"):
+                raise HTTPException(status_code=409, detail="Approve this member's Fundraising Portfolio first — the delivery email includes only an APPROVED Portfolio link")
+            portfolio_link = f"{origin_of(request)}/fundraising-portfolio/{record['fp_share_token']}"
+            subject = f"Your Fundraising Portfolio | {organization}"
+            body = (
+                f"Dear {first},\n\n"
+                f"Thank you again for helping us build and adopt the Fundraising Strategy Plan for {organization}.\n\n"
+                f"During our discussion, we agreed that you will help us with:\n\n{record['agreed_responsibility'].strip()}\n\n"
+                "I have now brought that agreement together with the Fundraising Strategy we adopted and your own fundraising-planning input into your individual Fundraising Portfolio.\n\n"
+                f"You can review your Portfolio here:\n\n{portfolio_link}\n\n"
+                "Your Portfolio is designed to give you a clear reference for your part of the plan — why your role matters, what you agreed to help carry, your immediate priorities, and how your work connects to the wider fundraising strategy.\n\n"
+                "Thank you for taking ownership of this part of the work. We will continue to work together and make sure you have the information, tools and support needed to move it forward.\n\n"
+                f"{signature}"
+            )
+        elif status == "Follow-Up Needed":
+            support = str((record.get("response") or {}).get("support_needed", "")).strip()
+            support_line = f"You also mentioned that {support[:300]} would help you participate effectively, and we will make sure that is part of the conversation.\n\n" if support else ""
+            subject = f"Following Up on Our Fundraising Plan | {organization}"
+            body = (
+                f"Dear {first},\n\n"
+                f"Thank you again for helping us build and adopt the Fundraising Strategy Plan for {organization}.\n\n"
+                "During our discussion, we agreed that we still need a little more clarity before confirming the specific part of the fundraising plan you will help carry.\n\n"
+                "I would like us to continue that conversation so we can agree on a responsibility that makes sense for the strategy and is realistic for you.\n\n"
+                f"{support_line}"
+                "Once we have agreed the way forward, I will prepare your individual Fundraising Portfolio so you have a clear reference for your role and immediate priorities.\n\n"
+                f"Thank you again for being part of this process.\n\n{signature}"
+            )
+        else:
+            subject = f"Thank You for Helping Shape Our Fundraising Plan | {organization}"
+            body = (
+                f"Dear {first},\n\n"
+                f"Thank you for helping us build and adopt the Fundraising Strategy Plan for {organization}.\n\n"
+                "We have not yet agreed a specific individual fundraising responsibility together, and there is no pressure to do so right now.\n\n"
+                "As the Board begins moving the strategy forward, I would welcome a conversation whenever it would be helpful to explore where your experience and interests could best support the work.\n\n"
+                f"Thank you again for being part of this process.\n\n{signature}"
+            )
+        await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {
+            "followup_status": "Draft", "followup_subject": subject, "followup_body": body,
+            "followup_error": "", "followup_updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "Draft", "subject": subject, "body": body}
 
     @router.put("/activation/members/{participant_id}/followup-email")
     async def edit_followup_email(participant_id: str, payload: FollowupEditPayload, request: Request):
@@ -1593,11 +1741,66 @@ def create_activation_planning_router(db) -> APIRouter:
     ]
 
     def fp_display(structured: dict, member_name: str) -> str:
-        lines = ["FUNDRAISING PORTFOLIO", member_name, ""]
-        for heading, key in FP_SECTIONS:
-            value = str(structured.get(key, "") or "").strip()
-            if value:
-                lines.extend([heading.upper(), value, ""])
+        if "your_execution_timeline" not in structured:
+            lines = ["FUNDRAISING PORTFOLIO", member_name, ""]
+            for heading, key in FP_SECTIONS:
+                value = str(structured.get(key, "") or "").strip()
+                if value:
+                    lines.extend([heading.upper(), value, ""])
+            return "\n".join(lines).strip()
+        lines = [str(structured.get("member_name") or member_name).upper(), "FUNDRAISING PORTFOLIO", ""]
+        if structured.get("board_role"):
+            lines.extend([f"Board Role: {structured['board_role']}", ""])
+        _sd_block(lines, "About This Portfolio", structured.get("fundraising_plan_context", ""))
+        _sd_block(lines, "Your Role in Our Fundraising Plan", structured.get("your_role_in_our_fundraising_plan", ""))
+        _sd_block(lines, "Why Your Role Matters", structured.get("why_your_role_matters", ""))
+        _sd_block(lines, "What You Will Help Us Accomplish", structured.get("what_you_will_help_us_accomplish") or [])
+        _sd_block(lines, "Your Fundraising Responsibilities", structured.get("your_fundraising_responsibilities") or [])
+        _sd_block(lines, "Who You Will Help Us Reach", structured.get("who_you_will_help_us_reach") or [])
+        journeys = structured.get("how_you_will_help_build_relationships") or []
+        if journeys:
+            lines.extend(["HOW YOU WILL HELP BUILD RELATIONSHIPS", ""])
+            for entry in journeys:
+                if entry.get("stage") and entry.get("your_part"):
+                    lines.append(f"{str(entry['stage']).upper()}: {entry['your_part']}")
+            lines.append("")
+        tools = structured.get("tools_you_can_use") or {}
+        if (tools.get("available_now") or tools.get("being_prepared")):
+            lines.append("TOOLS YOU CAN USE")
+            if tools.get("available_now"):
+                lines.append("Available Now:")
+                lines.extend([f"  - {item}" for item in tools["available_now"] if item])
+            if tools.get("being_prepared"):
+                lines.append("Being Prepared:")
+                lines.extend([f"  - {item}" for item in tools["being_prepared"] if item])
+            lines.append("")
+        _sd_block(lines, "Your Immediate Priorities", structured.get("your_immediate_priorities") or [])
+        timeline = structured.get("your_execution_timeline") or {}
+        horizon = str(timeline.get("horizon", "")).strip().upper()
+        heading = f"YOUR FIRST {horizon.replace(' DAYS', '')} DAYS" if "DAY" in horizon else "YOUR EXECUTION TIMELINE"
+        phases = timeline.get("phases") or []
+        if phases:
+            lines.extend([heading, ""])
+            for phase in phases:
+                if phase.get("period"):
+                    lines.append(str(phase["period"]).upper())
+                if phase.get("your_focus"):
+                    lines.append(f"Your Focus: {phase['your_focus']}")
+                if phase.get("how_it_supports_the_plan"):
+                    lines.append(f"How It Supports the Plan: {phase['how_it_supports_the_plan']}")
+                lines.append("")
+        support = structured.get("support_and_resources") or {}
+        if support.get("what_you_said_would_help") or support.get("what_the_organization_will_provide"):
+            lines.append("SUPPORT AND RESOURCES")
+            if support.get("what_you_said_would_help"):
+                lines.append("What You Said Would Help:")
+                lines.extend([f"  - {item}" for item in support["what_you_said_would_help"] if item])
+            if support.get("what_the_organization_will_provide"):
+                lines.append("What the Organization Will Provide:")
+                lines.extend([f"  - {item}" for item in support["what_the_organization_will_provide"] if item])
+            lines.append("")
+        _sd_block(lines, "How We Will Work Together", structured.get("how_we_will_work_together", ""))
+        _sd_block(lines, "Moving the Mission Forward", structured.get("moving_the_mission_forward", ""))
         return "\n".join(lines).strip()
 
     def fp_row(record: dict) -> dict:
@@ -1644,23 +1847,17 @@ def create_activation_planning_router(db) -> APIRouter:
         intake = await activation_intake(user_id)
         now = datetime.now(timezone.utc).isoformat()
         await db.activation_participants.update_one({"participant_id": participant_id}, {"$set": {"fp_status": "Generating", "fp_error": ""}})
-        recommitment = await db.reactivation_board_members.find_one(
-            {"user_id": user_id, "email": (record.get("email") or "").lower(), "status": "COMPLETED"},
-            {"_id": 0, "response": 1})
         import json as jsonlib
+        toolkit_titles = "\n".join(f"- {tool.get('title', '')}" for key in ["email_tools", "text_tools", "call_scripts", "stewardship_tools"]
+                                   for tool in (toolkit.get("structured", {}) or {}).get(key, [])) if toolkit.get("status") == "Approved" else ""
         context = ("ORGANIZATION:\n" + jsonlib.dumps({"organization_name": context_info["organization"], "mission": context_info["mission"],
                                                        "direction": intake.get("direction_12_24", "")}, indent=1)
                    + f"\n\nBOARD MEMBER: {record['name']} — Board Role: {record.get('role', 'Board Member')}"
-                   + f"\n\nEXACT AGREED FUNDRAISING RESPONSIBILITY (highest authority):\n{record['agreed_responsibility']}"
-                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN:\n" + adoption.get("adopted_text", "")
-                   + "\n\nPLAN ADOPTION CONCLUSION:\n" + adoption.get("conclusion", "")
-                   + "\n\nTHIS MEMBER'S OWN PLANNING RESPONSE:\n" + jsonlib.dumps(record.get("response", {}), indent=1, default=str)
-                   + ("\n\nTHIS MEMBER'S BOARD MEMBER PROFILE & RECOMMITMENT RESPONSE (the role and contribution they agreed to when recommitting to the board):\n"
-                      + jsonlib.dumps((recommitment or {}).get("response", {}), indent=1, default=str) if recommitment else "")
-                   + "\n\nTHIS MEMBER'S OWN STRATEGY REVIEW:\n" + jsonlib.dumps(record.get("review", {}), indent=1, default=str)
-                   + "\n\nAPPROVED EXECUTION TOOLKIT TOOL TITLES (reference by name only):\n"
-                   + "\n".join(f"- {tool.get('title', '')}" for key in ["email_tools", "text_tools", "call_scripts", "stewardship_tools"]
-                               for tool in (toolkit.get("structured", {}) or {}).get(key, [])))
+                   + f"\n\nEXACT AGREED FUNDRAISING RESPONSIBILITY (founder-recorded — HIGHEST AUTHORITY; never expand or contradict it):\n{record['agreed_responsibility']}"
+                   + "\n\nFINAL ADOPTED FUNDRAISING STRATEGY PLAN (read its actual 60/90/120-day execution horizon from this document — never assume 90 days):\n" + adoption.get("adopted_text", "")
+                   + "\n\nPLAN ADOPTION CONCLUSION (actual Board-level decisions only):\n" + adoption.get("conclusion", "")
+                   + "\n\nTHIS MEMBER'S OWN ORIGINAL FUNDRAISING PLANNING RESPONSE (supporting context only — never overrides the agreed responsibility):\n" + jsonlib.dumps(record.get("response", {}), indent=1, default=str)
+                   + ("\n\nAPPROVED EXECUTION TOOLKIT TOOL TITLES (optional supplementary context — reference relevant titles by name only; never expand responsibility because a tool exists):\n" + toolkit_titles if toolkit_titles else ""))
 
         async def run_generation():
             try:

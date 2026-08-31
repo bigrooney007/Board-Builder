@@ -149,17 +149,26 @@ def activation_review_email(organization: str, review_link: str, signature: str)
 
 
 def activation_adoption_meeting_email(organization: str, meeting_lines: str, plan_link: str, signature: str) -> dict:
+    meeting_block = f"MEETING DETAILS\n\n{meeting_lines}\n\n" if meeting_lines.strip() else ""
     return {
-        "subject": f"Board Meeting: Adopting Our Fundraising Strategy Plan | {organization}",
+        "subject": f"Board Meeting: Review & Adopt Our Fundraising Strategy Plan | {organization}",
         "body": (
             "Dear Board Members,\n\n"
-            f"Thank you for helping build and review the Fundraising Strategy Plan for {organization}.\n\n"
-            "The next step is to come together, work through the Board's feedback, agree on the direction and adopt the plan we will carry together.\n\n"
-            f"{meeting_lines}\n\n"
-            "Please review the current Fundraising Strategy Plan before the meeting:\n\n"
+            f"Thank you for contributing your ideas and perspective to the fundraising planning process for {organization}.\n\n"
+            "We have now brought together the Board's input, the organization's fundraising goals and priorities, and the information we have about where the organization is going to develop our Fundraising Strategy Plan.\n\n"
+            "The next step is for us to come together as a Board to review the plan, strengthen anything that needs strengthening, agree on the direction we want to take, and adopt the strategy as the working fundraising document for the organization.\n\n"
+            "Please review the Fundraising Strategy Plan before the meeting:\n\n"
             f"{plan_link}\n\n"
-            "During the meeting we will work through the feedback from the Board's review, confirm our priorities and agree on what each of us will help carry.\n\n"
-            f"Thank you for helping us build this together.\n\n{signature}"
+            "You do not need to complete another form. Please simply come to the meeting with any questions, concerns, suggestions or changes you believe we should discuss.\n\n"
+            f"{meeting_block}"
+            "During the meeting we will:\n\n"
+            "- review the major decisions and recommendations in the strategy;\n"
+            "- discuss anything the Board believes should be changed or strengthened;\n"
+            "- confirm the fundraising priorities we want to pursue;\n"
+            "- adopt the strategy as our working fundraising document;\n"
+            "- discuss how the Board will help execute the plan;\n"
+            "- and agree the immediate way forward.\n\n"
+            f"Thank you again for helping us build this together.\n\n{signature}"
         ),
     }
 

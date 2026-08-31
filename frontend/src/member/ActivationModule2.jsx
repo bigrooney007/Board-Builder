@@ -256,7 +256,9 @@ export default function ActivationModule2() {
           <div style={{ marginTop: 14 }} data-testid="am2-email-preview">
             <p><strong>Subject:</strong> <span data-testid="am2-email-subject">{email.subject}</span></p>
             <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 14, borderRadius: 6, maxHeight: 320, overflowY: "auto" }} data-testid="am2-email-body">{email.body}</div>
-            <p style={{ marginTop: 10 }}><strong>Secure Form Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am2-email-link">{email.form_link}</span></p>
+            <p style={{ marginTop: 10 }}>{email.form_link
+              ? (<><strong>Secure Form Link:</strong> <span style={{ wordBreak: "break-all" }} data-testid="am2-email-link">{email.form_link}</span></>)
+              : (<span data-testid="am2-email-link">Each Board Member automatically receives their OWN secure form link in their individual email — no shared link is used.</span>)}</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               <button type="button" className="button" onClick={() => copyText(email.body, "body")} data-testid="am2-copy-email-button"><Copy size={15} /> {copied === "body" ? "Email Copied" : "COPY EMAIL"}</button>
               <button type="button" className="button button-outline" onClick={() => copyText(email.subject, "subject")} data-testid="am2-copy-subject-button"><Copy size={15} /> {copied === "subject" ? "Subject Copied" : "COPY SUBJECT"}</button>

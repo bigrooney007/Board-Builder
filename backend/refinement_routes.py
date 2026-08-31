@@ -423,7 +423,7 @@ def create_refinement_router(db) -> APIRouter:
         sent, failures = [], []
         for application_id in payload.application_ids[:30]:
             application = await db.opportunity_applications.find_one(
-                {"application_id": application_id, "owner_user_id": member["user_id"], "status": "Selected"}, {"_id": 0})
+                {"application_id": application_id, "owner_user_id": member["user_id"], "final_outcome": "Joined Board"}, {"_id": 0})
             if not application:
                 failures.append(application_id)
                 continue
@@ -660,39 +660,6 @@ def create_refinement_router(db) -> APIRouter:
                 "candidate_token": secrets.token_urlsafe(24), "status": "Not Started",
                 "references": [], "created_at": now_iso(), "updated_at": now_iso()})
         prepared["reference_form"] = "Ready"
-        org = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1})
-        for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
-            existing = await db.signature_requests.find_one(
-                {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}}, {"_id": 0, "status": 1})
-            if existing:
-                prepared[agreement_type] = existing["status"]
-                continue
-            agreement = await get_current_material(db, user_id, agreement_type, "")
-            if not agreement or not agreement["current"] or agreement["material"].get("status") != "Approved":
-                prepared[agreement_type] = "Agreement not approved yet"
-                continue
-            await db.signature_requests.insert_one({
-                "request_id": new_id(), "token": secrets.token_urlsafe(24), "owner_user_id": user_id,
-                "application_id": application_id, "agreement_type": agreement_type,
-                "agreement_title": GENERATION_TYPES[agreement_type]["title"],
-                "material_id": agreement["material"]["material_id"],
-                "agreement_version": agreement["current"]["version"],
-                "document_snapshot": agreement["current"]["display_text"],
-                "organization_name": (org or {}).get("organization_name", ""),
-                "board_member_name": application.get("profile_snapshot", {}).get("full_name", ""),
-                "board_member_email": application.get("applicant_email", ""),
-                "status": "Ready for Signature", "created_at": now_iso(), "updated_at": now_iso()})
-            prepared[agreement_type] = "Ready for Signature"
-        profile_link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
-        if not profile_link:
-            snapshot = application.get("profile_snapshot", {})
-            await db.board_profile_links.insert_one({
-                "token": secrets.token_urlsafe(24), "user_id": user_id, "application_id": application_id,
-                "status": "Ready", "created_at": now_iso(),
-                "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
-                            "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
-                            "linkedin": snapshot.get("linkedin", ""), "location": snapshot.get("location", "")}})
-        prepared["board_member_profile"] = "Ready"
         return {"status": "Moving Forward", "prepared": prepared}
 
     # ---------- Owner review progress ----------

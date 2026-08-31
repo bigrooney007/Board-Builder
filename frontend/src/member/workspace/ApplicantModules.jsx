@@ -765,34 +765,55 @@ const MemberReadiness = ({ application, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const [signatures, setSignatures] = useState([]);
   const [profileLink, setProfileLink] = useState(null);
-  const [confirmedReady, setConfirmedReady] = useState(Boolean(application.emails_sent?.formal_appointment_email));
   useEffect(() => {
     memberApi.get("/workspace/signatures", { params: { application_id: application.application_id } }).then((r) => setSignatures(r.data.signatures)).catch(() => {});
     memberApi.get(`/workspace/board-profile-link/${application.application_id}`).then((r) => setProfileLink(r.data)).catch(() => {});
   }, [application.application_id]);
   const signatureStatus = (type) => (signatures.find((s) => s.agreement_type === type) || {}).status || "Not Sent";
   const joined = application.final_outcome === "Joined Board";
+  const confirmed = joined || application.status === "Selected";
+  const refsDone = application.reference_check_status === "Completed";
+  const bgStatus = application.background_check?.status || "";
+  const bgOk = ["Completed", "Not Required", "Not required"].includes(bgStatus) || !bgStatus;
+  const confirmFormal = async () => {
+    if (!window.confirm(`Formally confirm ${application.profile_snapshot?.full_name}'s appointment to the Board? You control this decision — it is never automatic.`)) return;
+    try {
+      await memberApi.patch(`/workspace/applications/${application.application_id}`, { status: "Selected" });
+      if (onChanged) onChanged();
+    } catch { window.alert("The confirmation could not be saved. Please try again."); }
+  };
   return (
     <div className="onboarding-applicant" data-testid={`onboarding-${application.application_id}`}>
-      <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}</h3>
+      <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}{!joined && confirmed && <span className="blog-status-badge published">Formal Appointment Confirmed</span>}</h3>
       <ul className="readiness-list" data-testid="member-readiness">
-        <li className={application.reference_check_status === "Completed" ? "done" : ""}>Reference Check: {application.reference_check_status || "Not Started"}</li>
-        <li className={["Completed", "Not Required"].includes(application.background_check?.status) ? "done" : ""}>Background Check: {application.background_check?.status || "Not recorded"}</li>
+        <li className={refsDone ? "done" : ""}>Reference Process: {application.reference_check_status || "Not Started"}{application.reference_check_status === "References Submitted" ? " (submitted is not completed — finish the reference process)" : ""}</li>
+        <li className={bgOk ? "done" : ""}>Background Check: {bgStatus || "No requirement recorded"}</li>
         {AGREEMENTS.map(([type, title]) => <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>{title}: {signatureStatus(type)}</li>)}
         <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Sent" : "Not Sent"}</li>
       </ul>
-      {!joined && !confirmedReady && (
-        <button className="button" onClick={() => { if (window.confirm(`Confirm that ${application.profile_snapshot?.full_name} is ready for formal appointment? Your organization controls this decision.`)) setConfirmedReady(true); }} data-testid="confirm-ready-button">{applicantModulesText.confirmReadyForFormalAppointment}</button>
+      {!confirmed && (
+        <>
+          <button className="button" disabled={!(refsDone && bgOk)} onClick={confirmFormal} data-testid="confirm-ready-button">Confirm Formal Appointment</button>
+          {!(refsDone && bgOk) && <p className="workspace-note" data-testid="formal-appointment-blocked-note">Formal Appointment becomes available once the reference process is Completed and any required background check is complete.</p>}
+        </>
       )}
-      {(confirmedReady || joined) && (
-        <MaterialCard type="formal_appointment_email" title={applicantModulesText.formalBoardAppointmentEmail} buttonLabel="Generate Formal Board Appointment Email"
-          description="Confirms the appointment is now official, welcomes them to the board using your organization's board type, and covers what happens next. This is different from the Conditional Appointment email."
-          applicationId={application.application_id} material={byType.formal_appointment_email} refresh={refresh} approvable
-          extraActions={byType.formal_appointment_email?.status === "Approved" ? (
-            <SendMaterialButton type="formal_appointment_email" applicationId={application.application_id}
-              label={application.emails_sent?.formal_appointment_email ? "Send Updated" : `Send to ${application.applicant_email || "candidate"}`}
-              sentAt={application.emails_sent?.formal_appointment_email} onSent={onChanged} />
-          ) : null} />
+      {confirmed && (
+        <>
+          <MaterialCard type="formal_appointment_letter" title="Formal Board Appointment Letter" buttonLabel="Generate Formal Appointment Letter"
+            description="The organization's formal written confirmation of this appointment — a professional letter with your organization details, the issue date, the member's details and an authorized signatory block. Approve it and its secure view link is included in the Final Appointment Email."
+            applicationId={application.application_id} material={byType.formal_appointment_letter} refresh={refresh} approvable
+            extraActions={byType.formal_appointment_letter ? (
+              <button className="button button-back" onClick={() => downloadMaterialPdf(byType.formal_appointment_letter)} data-testid={`letter-pdf-${application.application_id}`}><Download size={14} /> Download PDF</button>
+            ) : null} />
+          <MaterialCard type="formal_appointment_email" title={applicantModulesText.formalBoardAppointmentEmail} buttonLabel="Generate Final Board Appointment Email"
+            description="Formally confirms the appointment, welcomes them to the board and delivers the approved onboarding resources — the Formal Appointment Letter link, documents to review and agreements to sign. Only APPROVED documents are linked; unapproved ones are omitted until you approve them."
+            applicationId={application.application_id} material={byType.formal_appointment_email} refresh={refresh} approvable
+            extraActions={byType.formal_appointment_email?.status === "Approved" ? (
+              <SendMaterialButton type="formal_appointment_email" applicationId={application.application_id}
+                label={application.emails_sent?.formal_appointment_email ? "Send Updated" : `Send to ${application.applicant_email || "candidate"}`}
+                sentAt={application.emails_sent?.formal_appointment_email} onSent={onChanged} />
+            ) : null} />
+        </>
       )}
     </div>
   );
@@ -873,15 +894,29 @@ const PreparedResource = ({ type, title, material, branding }) => {
 };
 
 export const Module6Onboarding = () => {
-  const { applications } = useApplications();
+  const { applications, refresh } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
-  const boardMembers = applications.filter((a) => a.final_outcome === "Joined Board" || a.status === "Selected");
+  const boardMembers = applications.filter((a) => a.final_outcome === "Joined Board");
+  const appointmentStage = applications.filter((a) => a.final_outcome === "Joined Board"
+    || ["Moving Forward", "Conditional Appointment", "Selected"].includes(a.status));
   return (
     <div data-testid="module6-workspace">
+      {appointmentStage.length > 0 && (
+        <section className="workspace-panel" data-testid="module6-formal-appointment-section">
+          <h2>Formal Appointment</h2>
+          <p className="material-description">Once the applicable reference process is Completed (submitted referee details are not enough) and any required background check is complete, you — never the system — confirm each candidate's Formal Appointment. That unlocks their Formal Board Appointment Letter and Final Board Appointment Email.</p>
+          {appointmentStage.map((application) => (
+            <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />
+          ))}
+        </section>
+      )}
       <section className="workspace-panel" data-testid="module6-script-section">
         <h2>{recruitmentWorkspaceText.h_prepareForYourBoardOnboarding}</h2>
+        <MaterialCard type="onboarding_agenda" title="Onboarding Agenda" buttonLabel="Generate Onboarding Agenda"
+          description="A participant-facing agenda for your onboarding session — one approved agenda is reused for the whole session/cohort rather than regenerated per member. It moves from welcome through the organization, Board service, expectations, documents and next steps."
+          material={orgMaterials.onboarding_agenda} refresh={refreshOrg} approvable />
         <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate Onboarding Facilitation Guide"
-          description="A practical facilitation guide you can have open during the onboarding session and follow from beginning to end — welcome and introductions, why the organization exists, where it is going, the role of the board, how you will work together, how each member can contribute, fundraising and ambassadorship, the board documents, next steps and closing."
+          description="A complete read-through facilitation guide you can have open during the onboarding session — with the actual words to say for the welcome, the organization story, the role of the Board, the strengths-and-contribution discussion, the documents review and closing, plus after-session actions including recording each member's Onboarding Conclusion / Role Agreement."
           material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />
       </section>
 

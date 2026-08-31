@@ -258,14 +258,35 @@ The candidate should finish the email understanding clearly: "I am not moving fo
 Approximately 150-225 words. Professional, gracious, clear and relationship-preserving.
 NEVER mention AI."""},
     "onboarding_script": {"module": 6, "title": "Board Member Onboarding Facilitator Guide", "per_application": False, "schema": {
-        "session_purpose": "string — 1-2 short paragraphs explaining what the founder should accomplish during the onboarding session",
-        "before_you_begin": ["string — short checklist of items that already exist and should be available (e.g. Board Member Manual, Organizational Overview, signed agreements, Board Member Profile status, meeting information) — do not create new resources"],
-        "sections": [{"title": "string — use these exact section titles in order: 1. Welcome and Introductions; 2. Why This Organization Exists; 3. Where We Are Going; 4. The Role of the Board; 5. How We Will Work Together; 6. How Each Board Member Can Contribute; 7. Fundraising, Relationships and Ambassadorship; 8. Review the Board Documents; 9. Immediate Next Steps; 10. Questions and Discussion; 11. Closing",
-                      "objective": "string — what this section accomplishes",
-                      "talking_points": ["string — practical founder-facing talking points grounded in the actual organization/board context"],
-                      "suggested_language": "string — short natural wording the founder can use (never a long speech); empty string where not useful",
-                      "discussion_questions": ["string — questions to invite member input where appropriate (e.g. 'Based on what you know so far, where do you believe your experience could make the greatest contribution?'); empty list where not applicable"]}],
-    }, "note": "You are an experienced nonprofit board-development consultant preparing a founder to PERSONALLY onboard newly recruited board members. This is a practical FACILITATOR GUIDE the founder follows during the meeting — NOT another Board Member Manual and NOT a generic article. Section 1: suggested time 10-15 minutes where appropriate, and if multiple members attend, invite each to briefly share their background, what interested them in the mission and what they hope to contribute. Section 4: adapt to the ACTUAL board type — never describe an Advisory Board as having governing authority, and never imply board members run day-to-day staff operations unless the working-board structure requires it. Section 6: use actual new-member expertise where supplied; suggest discussion questions, never make final role assignments. Section 7: fundraising can include introductions, opening doors, donor conversations, corporate partnerships, sponsorship, stewardship, events, grant relationships, sharing the mission, professional expertise, personal giving only where applicable — never tell every member they must personally ask for money unless that is actual policy. Section 8: explain what each supplied document is for and what remains outstanding — do not restate the documents. NEVER invent bylaws, committees, officer roles, voting rules, legal obligations, meeting schedules, donation requirements, strategic priorities, programs or statistics; omit or generalize what is unknown."},
+        "session_purpose": "string — concise founder-facing explanation of what this onboarding session must accomplish",
+        "before_you_begin": ["string — practical preparation using resources/details that actually exist"],
+        "sections": [{"title": "string — onboarding section title in the required sequence",
+                      "objective": "string — what this section should accomplish",
+                      "founder_script": "string — complete natural read-through language where the founder needs to speak",
+                      "discussion_questions": ["string — useful questions for the Board Members where appropriate"],
+                      "facilitator_notes": ["string — concise internal guidance helping the founder conduct this part well"]}],
+        "after_the_session": ["string — founder actions after onboarding, including recording an Onboarding Conclusion / Role Agreement for each member"],
+    }, "note": """You are an exceptional nonprofit Board-development consultant preparing a founder/executive director to PERSONALLY onboard newly appointed Board Members.
+Create a COMPLETE READ-THROUGH BOARD MEMBER ONBOARDING FACILITATION GUIDE.
+This is not: another Board Manual; an article; a checklist only; a generic training outline.
+The founder should be able to open this document during the onboarding session and facilitate the meeting from beginning to end. Write actual natural suggested language wherever the founder needs to speak.
+Use only verified information about: the organization; mission; vision/direction; current priorities; actual Board type; actual Board expectations; approved Board documents; relevant verified bylaws; actual onboarding session details; and safe onboarding-relevant information from the new members' Profiles where supplied.
+Follow this sequence:
+1. BEFORE THE SESSION — Founder preparation checklist.
+2. WELCOME & INTRODUCTIONS — Write the actual founder welcome. Where multiple members are attending, invite each person to briefly share: who they are; professional background; what drew them to the mission; what they hope to contribute.
+3. WHY THIS ORGANIZATION EXISTS — Write the actual organization introduction using verified mission/work information.
+4. WHERE WE ARE GOING — Explain the actual verified direction, priorities and future ambition. Clearly distinguish current reality from future goals.
+5. THE ROLE OF THE BOARD — Explain the actual Board type and what service means here. For governing Boards, distinguish Board leadership/governance from day-to-day management. For Advisory Boards, never assign governing/fiduciary authority unless actually supplied.
+6. HOW WE WILL WORK TOGETHER — Explain the organization's actual/intended model of: shared leadership; planning; clear responsibility; communication; accountability; founder/staff support — only where supported.
+7. YOUR STRENGTHS AND HOW YOU CAN CONTRIBUTE — This is a DISCUSSION, not an AI assignment. Give the founder a repeatable conversation structure for each new member: acknowledge verified expertise/interests; ask where they see themselves contributing; discuss where that connects to organizational needs; explore whether they are willing to take greater responsibility in one area; explore leadership interest where appropriate; clarify what support they need; establish an actual agreed way forward. Do not announce responsibilities based solely on the Profile.
+8. FUNDRAISING & RESOURCE DEVELOPMENT — Only where fundraising is an actual Board expectation. Explain at a HIGH LEVEL that Board Members will participate in building and supporting the organization's fundraising system. Explain that detailed fundraising responsibilities will be developed later through the Board Fundraising Planning and Activation process. Do not assign donor calls, introductions, giving, targets or campaigns during onboarding.
+9. REVIEW THE BOARD DOCUMENTS — Explain briefly what each approved document is for: Organization Overview; Board Manual; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement. Do not read the documents aloud or recreate them.
+10. IMMEDIATE NEXT STEPS — Explain: complete any genuinely outstanding onboarding item; founder will document agreed role/responsibility; member will receive their 90-Day Plan / Board Member Portfolio after the agreed role is recorded; first Board Meeting details where known.
+11. QUESTIONS & DISCUSSION — Give the founder wording that invites questions.
+12. CLOSING — Write a strong but natural closing welcoming them into active Board service.
+Never invent: bylaws; committees; officer roles; voting rules; meeting schedules; donation requirements; fundraising targets; programs; impact statistics; responsibilities.
+Board Members are not unpaid staff. Do not expose personal contact information, private support needs or exact capacity aloud to the group.
+Never mention AI."""},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
         "header": {
             "candidate": "string — actual candidate name",
@@ -431,8 +452,75 @@ Aim for approximately 3-5 natural sentences.
 NEVER mention AI."""},
     "portfolio_email": {"module": 6, "title": "Board Member Portfolio Email", "per_application": True, "schema": {"subject": "string", "body": "string — a short professional email to the board member sharing their completed Board Member Portfolio"}},
     "formal_appointment_email": {"module": 6, "title": "Final Board Appointment Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Congratulations! Your Appointment to the Board — [actual organization name]",
-        "body": "string — the FINAL board appointment email for a candidate who has completed the reference and background-check stage. Start 'Dear [actual candidate first name],'. OPENING: congratulate them warmly and state clearly that, with the reference and applicable background-check process now complete, the organization is pleased to formally confirm their appointment to the Board. WHY THEY MATTER: 1-2 candidate-specific sentences connecting their ACTUAL verified experience to the organization's actual mission and board priorities — never invent experience. WHAT HAPPENS NEXT: welcome them into board service using the organization's actual board terminology; if onboarding session details are supplied use those exact details, otherwise say the organization will confirm onboarding details with them directly. ONBOARDING MATERIALS: present the actual supplied links, clearly distinguishing items to REVIEW (Board Member Manual, Organization Overview) from items to COMPLETE/SIGN (Board Member Profile Form and any agreements still awaiting signature) — omit already-signed agreements and never invent links. CLOSING: a warm, organization-specific welcome to the board; sign with actual founder/contact details. Never call this appointment conditional — the conditions are complete."}},
+        "subject": "Exactly: Congratulations! Your Appointment to the Board — [actual organization name]",
+        "body": "The complete candidate-specific Final Board Appointment Email. Clearly confirm the formal appointment, welcome the person to the actual Board, briefly connect their verified experience to the mission/Board need, explain that onboarding now begins, and include only actual supplied Formal Appointment Letter/onboarding-document/session links. Never describe the appointment as conditional.",
+    }, "note": """You are writing the FINAL BOARD APPOINTMENT EMAIL from a nonprofit founder/executive director to ONE person whose Board appointment has now been formally confirmed.
+The appointment decision has already been made by the founder.
+The applicable pre-appointment reference/background steps are complete or not required according to the supplied status.
+Do not evaluate or select the person.
+The email should:
+1. Congratulate the recipient warmly.
+2. Clearly state that the organization is pleased to FORMALLY CONFIRM their appointment to the actual Board.
+3. Include 1-2 concise candidate-specific sentences connecting their VERIFIED experience to the organization's actual mission/Board priorities.
+4. Welcome them into Board service.
+5. Explain that the next step is onboarding.
+6. Provide the actual Formal Appointment Letter link ONLY if an exact secure link is supplied in context.
+7. Provide the approved onboarding-resource links actually supplied in context:
+REVIEW: Organization Overview; Board Member Manual.
+COMPLETE / SIGN: Board Member Profile Form; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement.
+Omit any document that is not applicable or for which no approved/current link exists. Never invent links. Do not ask the recipient to sign an agreement already marked Signed.
+8. If actual onboarding-session details are supplied, include those exact details. If no onboarding session details are supplied, say naturally that the organization will confirm onboarding arrangements separately.
+9. Close with a warm organization-specific welcome and the founder's actual contact details.
+NEVER say: conditional appointment; subject to references; subject to background checks — when those conditions are already complete/not applicable.
+Do not expose reference responses or background-check details. Do not assign detailed individual Board responsibilities in this email. Do not invent term lengths, officer titles, meeting schedules, deadlines or legal requirements.
+Never mention AI.
+Professional, celebratory, clear and human."""},
+    "formal_appointment_letter": {"module": 6, "title": "Formal Board Appointment Letter", "per_application": True, "schema": {
+        "sender": {
+            "organization_name": "string — actual organization name",
+            "address_lines": ["string — actual organization mailing-address line; empty array if no address was supplied"],
+            "contact_line": "string — actual organization website/email/phone where appropriate and supplied; otherwise empty string",
+        },
+        "letter_date": "string — copy the actual FORMAL APPOINTMENT LETTER DATE supplied by the backend. Never invent a date.",
+        "recipient": {
+            "name": "string — actual candidate full name",
+            "address_lines": ["string — actual candidate mailing-address/location line where supplied; empty array where unavailable"],
+        },
+        "subject": "string — Formal Appointment to the [actual organization Board terminology]",
+        "salutation": "string — Dear [actual candidate first name],",
+        "formal_confirmation": "string — formal confirmation that the organization has appointed this person to the actual Board. Never conditional.",
+        "why_your_contribution_matters": "string — one concise candidate-specific paragraph connecting verified experience to the actual mission/Board need without invented praise.",
+        "appointment_details": ["string — only verified appointment details such as Board title, effective date, term or officer position. Never invent. Empty array when no additional formal details are known."],
+        "board_service": "string — concise high-level statement of the organization's actual Board-service expectations, pointing naturally toward the Board Member Agreement/Manual rather than reproducing them.",
+        "what_happens_next": "string — concise explanation that formal onboarding and the organization's onboarding documents/process now follow.",
+        "welcome": "string — short professional welcome to the Board connected to the organization's actual mission.",
+        "signatory": {
+            "name": "string — actual founder/authorized signatory",
+            "title": "string — actual supplied title",
+            "organization": "string — actual organization name",
+        },
+    }, "note": """You are an experienced nonprofit Board-development consultant writing a FORMAL BOARD APPOINTMENT LETTER for ONE candidate whose appointment has already been formally confirmed by the organization's founder/authorized leadership.
+This is a professional organizational letter, not an email, employment offer, legal opinion, Conditional Appointment, Board Member Agreement or generic welcome note.
+Use only verified supplied information.
+The founder/organization has already made the appointment decision. AI does not select or approve the candidate.
+Use the actual: organization name; organization address where supplied; candidate full name; candidate address where supplied; Board terminology; founder/authorized signatory name and title; candidate's verified experience; organization mission/direction; approved Board capability/profile relevant to this candidate; actual appointment effective date where supplied; actual term of service where verified; actual officer title only where formally supplied; relevant verified bylaws/governance information.
+FORMAL LETTER STRUCTURE:
+1. Sender / organization information.
+2. Actual letter issue date supplied by the system.
+3. Recipient name/address using only supplied information.
+4. RE: Formal Appointment to the [actual Board terminology].
+5. Dear [actual candidate first name],
+6. Formal confirmation of appointment.
+7. One concise personalized paragraph explaining why their verified experience can make a meaningful contribution to this organization's mission/Board.
+8. Appointment details only where verified.
+9. Concise high-level statement of Board service expectations.
+10. Explanation that onboarding now follows.
+11. Warm formal welcome.
+12. Authorized signatory block.
+DO NOT invent: addresses; effective dates; term lengths; officer positions; compensation; employment status; legal obligations; bylaws; voting rights; meeting frequency; fundraising minimums; donation requirements; responsibilities not supplied.
+Do not call the appointment conditional. Do not include detailed reference/background-check information. Do not expose interview evaluations. Do not reproduce the Board Member Agreement. Do not include signature blanks for the recipient.
+The founder/authorized organization representative is issuing the letter.
+Never mention AI."""},
     "after_interview_email": {"module": 4, "title": "Move Forward After Interview Email", "per_application": True, "schema": {
         "subject": "A clear professional subject line communicating that the candidate is moving to the next stage of the Board recruitment process. Do not imply final Board appointment.",
         "body": "The complete candidate-specific email confirming that the founder has decided to move this candidate forward from interview to References / Background Checks. Thank them, explain the next-stage status clearly, state that separate instructions will follow, and do not imply that Board appointment has already occurred.",
@@ -572,60 +660,188 @@ End with a founder-only Reference Review section containing: Relevant Strengths 
 Do NOT include: Pass; Fail; AI recommendation; candidate score; numerical rating; automatic appointment recommendation.
 The founder records exactly what was learned and decides what it means in the wider appointment process. Never pre-fill referee responses. Never invent reference information from the candidate's CV or application.
 NEVER mention AI."""},
-    "onboarding_agenda": {"module": 6, "title": "Onboarding Agenda", "per_application": True, "schema": {
-        "items": [{"topic": "string — cover welcome; introductions; mission/program overview; organizational priorities; board role; governance expectations; fundraising expectations; committees/responsibilities; important policies; next 90 days; questions; next meeting/action", "details": "string"}],
-    }},
+    "onboarding_agenda": {"module": 6, "title": "Onboarding Agenda", "per_application": False, "schema": {
+        "title": "string — [actual Board terminology] Onboarding",
+        "organization": "string — actual organization name",
+        "session_details": "string — actual date/time/timezone/format/location only where supplied; empty string where none is available",
+        "duration": "string — actual supplied duration only; otherwise empty string",
+        "items": [{
+            "topic": "string — concise participant-facing agenda topic",
+            "details": "string — one concise explanation of what will be covered",
+            "suggested_time": "string — only where actual total duration was supplied and timing can be allocated; otherwise empty string",
+        }],
+        "preparation": ["string — only actual preparation the new Board Members have been asked to complete before onboarding"],
+    }, "note": """You are an experienced nonprofit Board-development consultant creating a professional participant-facing ONBOARDING AGENDA for newly appointed Board Members of this specific organization.
+This is not the Facilitator Guide. Keep it concise and suitable to send to participants before the session.
+Use the organization's actual: name; mission; Board type; Board expectations; verified direction/priorities; onboarding-session details.
+The agenda should move logically from: welcome → understanding the organization → understanding Board service → understanding how the Board works → discussing strengths/contribution → Board-wide expectations → documents → immediate next steps → questions.
+Cover: Welcome & Introductions; About the organization; Mission, Vision & Current Direction; The Role of the Board; How We Will Work Together; Board Member Strengths & Contribution; Board Expectations; Fundraising / Resource Development Expectations (only at the organization-wide level where applicable); Board Documents & Policies; Immediate Next Steps / First 90 Days; Questions & Discussion.
+Use actual session duration only where supplied. If duration is not supplied, do not invent 60 or 90 minutes.
+Do not invent: committees; officer roles; meeting schedules; governance procedures; fundraising minimums; donation requirements; strategic priorities.
+Do not include individual private Profile information. Do not expose candidate-specific information.
+Never mention AI."""},
     "organization_overview": {"module": 5, "title": "Organization Overview", "per_application": False, "schema": {
         "sections": [{"title": "string", "content": "string"}],
-    }, "note": "You are an experienced nonprofit strategist preparing a professional ORGANIZATIONAL OVERVIEW for new members of a nonprofit board — not a marketing brochure and not a dump of intake answers. It should help a new board member understand what this organization is, why it exists, who it serves, what it does, how it approaches its mission, where it is today, where it is going and what role the board plays. Produce sections in this order, OMITTING any section whose information is genuinely unavailable (never write 'Information not provided' or 'Information to Add'): About [Organization Name] (coherent 2-4 paragraph introduction); Our Mission (actual mission); Our Vision (only if a verified vision is known); The Need We Exist to Address; Our Approach; Our Programs and Work (verified only); Who and Where We Serve (only where known); Our Values (ONLY if actual stored values exist); The Role of Our Board (adapted to the actual board type); Our Current Direction; Looking Ahead (verified priorities only); Contact Information (actual organization, website, founder/contact, email where available). NEVER invent programs, statistics, achievements, founding dates, partnerships, locations, legal/tax status, values, beneficiaries or expansion plans. Professional, substantial, clear — roughly 3-6 finished pages of content depending on available information; never pad to reach length."},
+    }, "note": """You are an experienced nonprofit strategist preparing the definitive ORGANIZATION OVERVIEW that every newly appointed Board Member receives.
+This is an internal onboarding resource designed to help a new Board Member understand the organization quickly and accurately.
+It is NOT: a marketing brochure; recruitment copy; a fundraising Case for Support; a strategic plan; a dump of intake responses.
+Use only verified supplied organization information.
+Help the Board Member understand: what the organization is; why it exists; the need/problem it exists to address; who it serves; what it actually does; how it approaches its mission; where the organization currently is; where it is genuinely trying to go; what role the Board plays in helping move the mission forward.
+Use sections in this order where information exists (omit sections whose information is genuinely unavailable — never write 'Information not provided'):
+About [actual organization name]; Our Mission; Our Vision — only where verified; The Need We Exist to Address; Our Approach; Our Programs and Work; Who and Where We Serve; Our Values — only actual supplied values; Where We Are Today; Our Current Direction; The Role of Our Board; Looking Ahead; Contact Information.
+Distinguish current reality from future ambition. Never present a future plan as an existing achievement.
+Never invent: programs; beneficiaries; locations; statistics; revenue; funding; achievements; partnerships; legal/tax status; history; values; expansion; staff; strategic priorities.
+Adapt the Board section to the actual Board type. For an Advisory Board, do not assign governing/fiduciary authority unless explicitly supplied.
+Professional, substantial and easy for a new Board Member to understand.
+Never mention AI."""},
     "board_manual": {"module": 5, "title": "Board Member Manual", "per_application": False, "schema": {
         "sections": [{"title": "string", "content": "string"}],
-    }, "note": "You are an experienced nonprofit board-development consultant preparing the primary practical handbook that teaches a new board member how to serve effectively in THIS organization — never a generic internet article about nonprofit boards. Produce sections in this order, adapting to the actual board type and omitting unsupported detail: Welcome (what joining this board means); Our Mission and Direction; The Role of Our Board (if governing/working, distinguish board leadership/governance from day-to-day management; if advisory, do NOT assign governing/fiduciary authority); How We Work Together (actual/intended model: strategic planning, shared leadership, areas of ownership, committees, staff support, accountability — only where supported); Responsibilities of Every Board Member (actual expectations); Meetings and Participation (actual meeting information where known); Strategic Leadership; Fundraising and Resource Development (fundraising broadly: introductions, opening doors, donor meetings, corporate partnerships, sponsorship, stewardship, events, grants, expertise, ambassadorship; personal giving ONLY if actually expected — never imply every member must personally solicit money unless that is the organization's policy); Committees and Leadership Responsibilities (known structures only; if committees do not exist yet, explain participation conceptually without inventing names); Confidentiality (high-level, point to the separate agreement); Conflicts of Interest (high-level, point to the separate policy); Professional Conduct and Collaboration (respect, professionalism, constructive disagreement, mission-first decisions, accountability, communication); Accountability; What the Organization Commits to Its Board Members; Getting Started (practical initial actions); Closing (short welcome focused on shared leadership and mission). NEVER invent bylaws, quorum, voting rules, officer powers, statutory requirements, committee names, attendance percentages, donation minimums or term lengths. Roughly 6-12 polished pages depending on actual information."},
+    }, "note": """You are an experienced nonprofit Board-development consultant creating the definitive BOARD MEMBER MANUAL for this organization.
+This is the practical handbook every newly appointed Board Member receives to understand HOW TO SERVE effectively here.
+It is organization-specific, not a generic internet guide to nonprofit Boards.
+Use only verified supplied information. Use relevant verified bylaws/governance information where supplied, but never invent legal requirements.
+Structure: Welcome; Our Mission and Direction; The Role of Our Board; How Board Leadership Differs From Day-to-Day Management; How We Work Together; Responsibilities of Every Board Member; Meetings and Participation; Strategic Leadership; Fundraising and Resource Development — only according to actual Board expectations; Committees and Leadership Responsibilities — only actual structures or carefully stated conceptual participation where structures are not yet established; Confidentiality; Conflicts of Interest; Professional Conduct and Collaboration; Accountability and Follow-Through; What the Organization Commits to Its Board Members; Getting Started; Closing.
+Board Members are not unpaid staff.
+Explain Board contribution around: strategic leadership; planning; oversight where applicable; professional expertise; relationships; introductions; committee leadership; helping develop roadmaps; helping build/guide the teams and structures required for execution — according to the organization's actual model.
+Do not assign every Board Member operational responsibility for an entire organizational function.
+Where fundraising is an actual Board expectation, explain that participation may include appropriate forms such as relationship building, introductions, sponsorship/corporate relationships, donor engagement, stewardship, expertise, advocacy and supporting campaigns according to strengths and agreed responsibilities.
+Never imply every Board Member must personally solicit or personally donate unless that is actual policy.
+Never invent: bylaws; quorum; voting requirements; statutory duties; officer powers; committee names; term lengths; attendance percentages; donation minimums; removal procedures; meeting frequency.
+This manual establishes organization-wide Board expectations. It does NOT assign the individual Board Member's personal Portfolio/responsibility.
+Never mention AI."""},
     "board_member_agreement": {"module": 5, "title": "Board Member Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string", "content": "string"}], "acknowledgement": "string",
-    }, "note": "Prepare ONE clear professional organization-level master Board Member Agreement based on the organization's actual board expectations — a controlled organizational agreement, not unnecessary legal language. Sections in this order (omit genuinely unsupported ones): Purpose / Shared Commitment (defines shared expectations between the organization and Board Member); Mission and Organizational Commitment; Participation and Meetings; Strategic Leadership (where appropriate); Committee Participation (where applicable); Professional Expertise and Relationships; Accountability; Fundraising and Resource Development (only where actually applicable); Professional Conduct; Confidentiality Acknowledgement; Conflict of Interest Acknowledgement; Time Commitment (only from known context); Term of Service (ONLY if known); What the Organization Commits to the Board Member; Acknowledgement. NEVER invent fines, penalties, personal donation requirements, attendance percentages, removal procedures, governing law, legal remedies, term lengths or officer positions. The hosted signing system captures identity, signature, date and version — do not include printed signature blanks."},
+    }, "note": """Prepare ONE clear, professional organization-level BOARD MEMBER AGREEMENT reflecting the actual shared expectations between this organization and its Board Members.
+This is not an employment agreement. It is not the bylaws. It is not a legal opinion.
+It should clearly establish what active Board service means in THIS organization and what the organization commits to provide in return.
+Use only verified supplied expectations and relevant verified bylaws/governance information.
+Sections: Purpose and Shared Commitment; Commitment to the Mission; Participation and Meetings; Strategic Leadership; Committee / Leadership Participation — only where applicable; Use of Professional Expertise and Relationships; Accountability and Follow-Through; Fundraising and Resource Development — only where actually expected; Professional Conduct and Collaboration; Confidentiality Acknowledgement; Conflict of Interest Acknowledgement; Time Commitment — only where actual; Term of Service — only where verified; What the Organization Commits to the Board Member; Acknowledgement.
+Do not turn Board Members into unpaid staff. Do not assign individual job descriptions through this organization-level agreement.
+Never invent: personal donation requirements; fundraising minimums; attendance percentages; term lengths; removal procedures; fines; penalties; governing law; legal remedies; statutory requirements; officer roles.
+The hosted signing system records: signer identity; signature; date; agreement version. Therefore do not add printed signature blanks.
+Never mention AI."""},
     "confidentiality_agreement": {"module": 5, "title": "Confidentiality Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string", "content": "string"}], "acknowledgement": "string",
-    }, "note": "Create a clear Board Member Confidentiality Agreement customized to the actual organization. Sections: Purpose; Confidential Information (appropriate examples such as financial information, donor information, sponsor information, personnel matters, strategic plans, board deliberations, legal matters, contracts, partnerships, proprietary materials, and other information expressly designated confidential); Board Member Responsibilities (keep confidential information secure; use it only to perform board responsibilities; do not disclose without authorization except where required by law; protect electronic and physical information; return/destroy information when appropriately requested); Continuing Confidentiality (obligations may continue after service); Acknowledgement. NEVER invent damages, statutory citations, penalties, criminal consequences or jurisdiction-specific remedies."},
+    }, "note": """Create a clear professional BOARD MEMBER CONFIDENTIALITY AGREEMENT customized to this organization's actual Board context.
+This should protect legitimate confidential organizational information without pretending to be jurisdiction-specific legal drafting.
+Cover:
+Purpose.
+Confidential Information — appropriate examples may include, where relevant: non-public financial information; donor/funder information; sponsor/partner information; personnel matters; Board deliberations; strategic plans; contracts; legal matters; proprietary/internal materials; information expressly identified as confidential.
+Board Member Responsibilities — use confidential information only for appropriate Board responsibilities; protect electronic and physical information; do not disclose confidential information without appropriate authorization except where disclosure is required by applicable law; follow the organization's actual information-handling expectations where supplied; return/destroy information when appropriately requested.
+Continuing Confidentiality — state at a high level that appropriate confidentiality obligations may continue after Board service ends.
+Acknowledgement.
+Never invent: damages; statutory citations; criminal consequences; penalties; governing law; jurisdiction-specific remedies; absolute legal promises about confidentiality.
+Do not classify information as confidential merely because it exists.
+Never mention AI."""},
     "conflict_of_interest_agreement": {"module": 5, "title": "Conflict of Interest Agreement", "per_application": False, "agreement": True, "schema": {
         "title": "string", "sections": [{"title": "string", "content": "string"}], "acknowledgement": "string",
-    }, "note": "Prepare a clear Conflict of Interest Policy and Disclosure Agreement for Board Members. Sections: Purpose; What Is a Conflict of Interest? (plain-language explanation with potential examples: financial interest, employment/consulting relationship, family relationship, vendor relationship, partnership relationship, related organization, personal benefit); Board Member Responsibility to Disclose; Managing a Conflict (reasonable general principles: disclose, do not improperly influence discussion, abstain where appropriate, follow organization/board procedure — never invent legal procedures); Duty to Act in the Organization's Interests; Ethical Conduct; Disclosure Statement (present the choice 'I currently have no actual, potential or perceived conflict to disclose.' OR 'I have the following actual, potential or perceived conflict to disclose:' with an explanation field); Acknowledgement. NEVER invent statutory citations or legal penalties."},
+    }, "note": """Prepare a clear professional CONFLICT OF INTEREST POLICY AND DISCLOSURE AGREEMENT for this organization's Board Members.
+Use verified organization/bylaw information where relevant.
+This document should help Board Members recognize, disclose and appropriately manage actual, potential or perceived conflicts.
+Sections:
+Purpose.
+What Is a Conflict of Interest? — explain in plain language. Potential examples may include: financial interest; employment/consulting relationship; family relationship; vendor relationship; partnership/business relationship; related organization; personal benefit. Make clear that the existence of a relationship does not automatically establish wrongdoing; the purpose is appropriate disclosure and management.
+Board Member Responsibility to Disclose.
+Managing a Conflict — use only actual organization/bylaw procedure where supplied. Otherwise state reasonable high-level principles: disclose the conflict; do not improperly influence the Board's handling of the matter; abstain where appropriate according to the organization's governing process; follow the organization's actual Board procedure. Do not invent voting/removal procedures.
+Duty to Act in the Organization's Interests.
+Ethical Conduct.
+Disclosure Statement — present: 'I currently have no actual, potential or perceived conflict to disclose.' OR 'I have the following actual, potential or perceived conflict to disclose:' with the hosted system's appropriate disclosure field.
+Acknowledgement.
+Never invent: statutory citations; penalties; governing law; legal remedies; mandatory recusal mechanics; voting procedures — unless expressly supplied.
+Never mention AI."""},
     "ninety_day_plan": {"module": 6, "title": "New Board Member 90-Day Plan", "per_application": True, "schema": {
-        "first_30_days": ["string — learn, attend, understand mission, complete onboarding"],
-        "days_31_60": ["string — begin assigned responsibilities and relationship building"],
-        "days_61_90": ["string — take ownership of agreed board/fundraising responsibilities"],
-        "notes": "string — customized to candidate strengths, assigned responsibility, organizational priorities and fundraising expectations",
-    }},
+        "member_name": "string — actual member name",
+        "your_agreed_focus": "string — concise explanation of the responsibility/focus actually agreed during onboarding",
+        "first_30_days": ["string — practical actions grounded in actual onboarding agreement"],
+        "days_31_60": ["string — practical actions building into the agreed Board responsibility"],
+        "days_61_90": ["string — practical actions establishing ownership/working rhythm around the agreed Board-level contribution"],
+        "support_you_can_expect": ["string — support/resources the organization actually agreed to provide"],
+        "what_success_at_90_days_looks_like": "string — realistic qualitative description grounded in the actual agreement; no invented numeric targets",
+        "moving_forward": "string — short closing about continuing the agreed contribution beyond the first 90 days",
+    }, "note": """You are an experienced nonprofit Board-development consultant creating a practical NEW BOARD MEMBER 90-DAY PLAN for ONE newly appointed Board Member.
+The member has completed onboarding. The founder has saved the Onboarding Conclusion / Role Agreement. That saved agreement is authoritative.
+Use: 1. Onboarding Conclusion / Role Agreement; 2. New Board Member Profile; 3. actual application/CV; 4. priority Board profile they were recruited to strengthen; 5. verified organization priorities.
+Never assign responsibilities that were not agreed.
+The 90-Day Plan should help the member move from orientation into meaningful contribution.
+FIRST 30 DAYS: focus on understanding the organization, Board context, agreed contribution area, key information/people/resources and beginning the immediate next steps actually agreed.
+DAYS 31-60: begin taking meaningful action on the agreed responsibility, participating in relevant planning and establishing the relationships/support required to move the work forward.
+DAYS 61-90: begin demonstrating ownership of the agreed Board-level responsibility and establish the working rhythm required to continue contributing effectively.
+Board Members are not unpaid staff. Do not turn the plan into day-to-day operational employment tasks.
+Do not invent: deadlines; weekly meetings; committees; targets; fundraising targets; donor assignments; personal giving; reporting schedules; responsibilities.
+FUNDRAISING: Detailed fundraising responsibilities have NOT yet been established through Fundraising Activation. If fundraising/resource development is a general Board expectation or contribution area, appropriate 90-day language may include: 'Participate in the Board's upcoming fundraising planning process.' Do NOT assign: donor outreach; donor asks; named introductions; fundraising targets; campaigns — unless already separately and explicitly agreed.
+Write directly to the Board Member.
+Never mention AI."""},
     "first_board_meeting_invitation": {"module": 6, "title": "First Board Meeting Invitation Email", "per_application": False, "schema": {
-        "subject": "string — 'First Board Meeting | [actual organization name]' (a natural organization-specific alternative is acceptable — produce ONE subject only)",
-        "body": "string — one finished email to the new Board Members ('Dear Board Members,') inviting them to their first Board Meeting and making clear this meeting is the transition from recruitment/onboarding into ACTIVE board participation — not a generic calendar reminder. OPENING: welcome them and explain why the meeting matters: the Board's first opportunity to come together after recruitment/onboarding, better understand the experience represented around the table, and begin deciding how the Board will work together to move the organization forward. Then a section headed 'DURING THE MEETING, WE WILL:' with a concise organization-specific agenda drawn only from supported items (introductions and professional strengths, current stage and priorities, Board-leadership relationship, individual contribution areas, upcoming strategic planning, committees/leadership portfolios where applicable, fundraising and partnerships, shared responsibilities, immediate next steps). If the supplied context says one or more recipients have NOT completed their Board Member Profile, include a section 'Please Complete Your Board Member Profile' briefly explaining why it matters (expertise, leadership interests, networks, fundraising comfort, availability, where they most want to contribute) with the ACTUAL profile URL supplied; if everyone has completed it, OMIT that section entirely. Then 'Board Meeting Details' listing ONLY the actually supplied details (date, time, timezone, format/location, meeting link, meeting ID, passcode, meeting chat, additional instructions) — omit missing items completely, never output placeholders like [Zoom Link] or [To be confirmed]. CLOSING: meaningful — where consistent with the board type, communicate that the goal is not simply names around a table but members who contribute expertise, ideas, relationships, leadership, fundraising support, partnerships and shared responsibility so the mission does not rest on the founder alone; ask them to confirm attendance where appropriate; sign with actual founder/contact information.",
-    }},
+        "subject": "string — First Board Meeting | [actual organization name], or one natural organization-specific equivalent",
+        "body": "string — complete organization-level invitation to formally appointed Board Members only, using actual meeting details and no candidate-specific secure links",
+    }, "note": """Write one professional FIRST BOARD MEETING INVITATION from the founder to the organization's FORMALLY APPOINTED new Board Members.
+This is the transition from recruitment and onboarding into active Board service.
+Use: actual organization name; actual Board terminology; verified mission/direction; actual first Board meeting details; actual founder signature.
+Open by welcoming the newly appointed Board Members and explaining why this first meeting matters. It should communicate that this is the Board's opportunity to come together, understand the experience around the table and begin working collectively to move the organization forward.
+Include: DURING THE MEETING, WE WILL: — using only supported topics such as: introductions; Board strengths/expertise; organization's current direction/priorities; how the Board and founder/leadership will work together; confirmed areas of contribution; strategic planning ahead; fundraising/resource-development planning ahead; immediate next steps.
+Do not assign new responsibilities through the invitation.
+Use meeting details only when actually supplied: date; time; timezone; format/location; meeting link; meeting ID; passcode; other actual instructions. Never invent missing meeting information.
+If some members have not completed their New Board Member Profile, do NOT identify them and do NOT insert a candidate-specific Profile URL into this group email. Simply remind anyone who still needs to complete it to use the secure link previously sent to them.
+Do not invite candidates whose Formal Appointment is not confirmed.
+Do not use: recruitment language; conditional-appointment language; private candidate information; reference/background information.
+Close by reinforcing that the goal is an active Board whose members contribute expertise, ideas, relationships, leadership and shared responsibility toward the mission.
+Never mention AI."""},
     "board_member_engagement_guide": {"module": 6, "title": "Board Member Engagement Guide", "per_application": True, "schema": {
-        "member": "string — actual member name", "professional_role": "string — actual role/employer where known",
-        "primary_expertise": "string — comma-separated actual expertise areas",
-        "where_they_create_most_value": ["string — 3 to 5 SPECIFIC ways their actual expertise can support current organizational priorities. Be concrete: instead of 'Use their finance skills' write 'Invite them to help strengthen Board financial oversight, review budgeting assumptions and establish a clearer financial reporting rhythm.' Only where supported."],
-        "how_to_engage_them": ["string — practical founder actions grounded in what the member actually said about interests, availability, leadership, networks and fundraising comfort (involve them early in relevant planning; give them ownership of a defined outcome; invite them to open specific relationship types; pair them with the appropriate area; keep responsibilities within their stated available time)"],
-        "strong_early_responsibilities": ["string — 2 to 4 concrete responsibilities/projects the founder could DISCUSS with them (suggestions, never automatic assignments)"],
-        "relationships_partnerships_fundraising": "string — based on their stated networks and fundraising comfort, useful ways they may contribute (donor/corporate/foundation/community/government introductions, professional associations, speaking, strategy, stewardship — only where supported; never force fundraising activities they said they are uncomfortable with)",
-        "leadership_committee_alignment": "string — appropriate areas of board leadership based on expertise and stated interests; never invent an officer title",
-        "first_90_days": ["string — 3 to 5 practical actions to engage this person early"],
-        "keep_in_mind": ["string — ONLY evidence-based operational considerations (e.g. 'Indicated approximately 2-4 hours of monthly availability, so responsibilities should remain focused and clearly defined.'). NEVER personality judgments such as 'they may be difficult', 'they seem introverted', 'they need praise'."],
-    }, "note": "You are an experienced nonprofit board-development consultant advising a founder on how to meaningfully engage ONE specific board member. Create a concise ONE-PAGE INTERNAL guide from verified information only: their application, CV, professional background, board experience, Board Member Profile (expertise, committee/leadership interests, fundraising participation, networks, availability, reason for joining, additional skills), plus organization priorities and Module 1 board needs. NEVER use referee responses, confidential reference data, background-check data, private interview scoring, or protected characteristics (age, race, sex, disability, religion, political belief). No psychological profiling. This guide is internal — never addressed to the member."},
+        "member": "string — actual Board Member name",
+        "professional_role": "string — actual role/employer where supplied",
+        "what_they_bring": ["string — verified expertise, experience, strengths or resources relevant to Board service"],
+        "why_they_joined": "string — concise factual summary of what the member themselves said",
+        "where_they_want_to_contribute": ["string — areas the member themselves selected"],
+        "greater_responsibility_interest": "string — what they expressed interest in taking greater responsibility for; this is NOT yet an assignment",
+        "leadership_interest": "string — their actual response regarding leadership/committee interest",
+        "relationships_they_identified": ["string — broad relationship/network types they said may be available; never assume actual introductions"],
+        "realistic_capacity": "string — actual supplied monthly capacity",
+        "what_will_help_them_contribute": "string — member's own supplied support/engagement needs",
+        "strong_alignment_to_explore": ["string — 2 to 4 evidence-grounded possible alignment areas the founder should DISCUSS, not assign"],
+        "questions_to_discuss_during_onboarding": ["string — 3 to 6 specific questions that help convert interest into an actual agreed way of contributing"],
+        "founder_reminder": "string — concise reminder that the purpose is to agree responsibility with the member, not assign it based only on expertise or profile selections",
+    }, "note": """You are an experienced nonprofit Board-development consultant preparing a founder to meaningfully engage ONE newly appointed Board Member.
+Create a concise INTERNAL founder guide. This is preparation for the Board Member's onboarding and role-alignment conversation.
+It is NOT: the member's Portfolio; a job description; an assignment of responsibility; a performance assessment; a psychological profile.
+Use only verified: original Board application; CV/resume; professional background; approved priority recruitment profile they were recruited to help strengthen; New Board Member Profile response; organization priorities and direction.
+Understand: what expertise they actually bring; why they joined; what areas they want to contribute to; what area they expressed interest in taking greater responsibility for; leadership/committee interest; relevant networks they identified; other strengths/resources; realistic capacity; what they said would help them contribute effectively.
+Then help the founder prepare to DISCUSS the strongest alignment.
+Never turn an interest into a commitment. Never automatically assign a committee. Never automatically assign an officer role. Never automatically assign fundraising activities. Detailed fundraising participation belongs later in Fundraising Activation.
+Board Members are not unpaid staff. Recommend discussion around Board-level leadership, planning, guidance, relationships, strategic support, oversight where applicable, and helping build/guide execution capacity.
+Never use: referee information; background-check information; private interview scoring; protected characteristics. Never psychologically profile.
+The founder should enter onboarding knowing: 'Here is what this person genuinely brings, here is what they said interests them, here is where that may align with our needs, and here are the questions I should discuss before we agree their responsibility.'
+Never mention AI."""},
     "board_member_portfolio": {"module": 6, "title": "Board Member Portfolio", "per_application": True, "schema": {
-        "member": "string — actual Board Member full name",
-        "portfolio_type": "string — copy the PORTFOLIO TYPE supplied in context verbatim (e.g. 'Board Member Portfolio' or 'Advisory Board Member Portfolio')",
-        "your_role_on_the_board": "string — clear explanation of this person's primary role/focus, connecting what was agreed, their expertise and the organization's needs. NEVER invent formal officer titles.",
-        "why_your_role_matters": "string — how this person's particular contribution helps move THIS organization's mission forward. Specific to the organization, never generic.",
-        "what_you_will_help_us_accomplish": ["string — 3 to 5 concise areas where this member will contribute, translated from the organization's verified direction and what was actually discussed/agreed. NO invented quantitative targets."],
-        "your_areas_of_responsibility": ["string — 3 to 7 meaningful, specific, actionable responsibilities grounded ONLY in supplied information. Avoid vague items like 'Support the mission' or 'Attend meetings' unless context genuinely requires them."],
-        "how_your_experience_can_help": "string — connect their actual professional experience, expertise, knowledge, networks and interests to their agreed responsibilities. Never exaggerate their background.",
-        "relationships_and_resources": "string — ONLY where supported: the types of relationships the person indicated they may be comfortable helping the organization access. NEVER name specific people/companies unless supplied. NEVER assume introductions merely because they have a network. Empty string when unsupported.",
-        "your_role_in_fundraising": "string — ONLY where relevant. Use their exact stated fundraising comfort. If they requested training, state that support/training will be provided before expecting that activity. If they said they are not comfortable participating in fundraising, do NOT assign solicitations. Empty string when not relevant.",
-        "how_we_will_work_together": "string — the working relationship between this member, the founder/Executive Director and where appropriate the wider Board. Use actual expectations where known; never invent meeting schedules or reporting requirements.",
-        "your_immediate_priorities": ["string — 2 to 4 concise immediate priorities based on what was agreed. NO fabricated dates or unsupported obligations."],
-        "your_first_90_days": ["string — 3 to 5 practical 90-day directions (getting oriented to agreed responsibility, understanding priorities, taking ownership of agreed work, beginning appropriate introductions, participating in relevant planning, establishing communication with the founder). ONLY actions supported by context. No invented deadlines, amounts, committees or weekly requirements."],
-        "moving_forward_together": "string — short closing statement reinforcing the importance of their contribution, the clarity of responsibility and shared movement toward the mission. No hype.",
-    }, "note": "You are an experienced nonprofit Board-development consultant creating a finished, person-specific responsibility Portfolio for ONE Board Member. It helps them understand where they fit, why their contribution matters, what they will help accomplish, what responsibilities they carry, how their skills and relationships help, and their immediate priorities. This is NOT a generic job description, legal contract, Board manual, governance policy, performance evaluation, AI analysis or personality assessment. ORDER OF AUTHORITY when determining responsibilities: 1) the founder's Conversation Conclusion (what was ACTUALLY agreed), 2) the founder-selected Outcome, 3) the member's own Recommitment/Profile answers, 4) the organization's verified needs and direction, 5) your reasoning about the strongest alignment among those facts. NEVER contradict an actual agreement. NEVER fabricate responsibilities, assign anything explicitly rejected, exceed stated capacity, or invent expertise, programs, revenue, statistics, donors, corporate relationships, titles, committees, officer positions, fundraising targets, hours, deadlines, legal obligations or governance authority. NEVER expose private founder notes, internal concerns, harsh commentary or the phrase 'dead weight' — the Portfolio reflects what was AGREED. Never mention AI, algorithms or generation. Write in the organization's voice so the member feels: 'This clearly explains where I fit and what I am expected to help carry.'"},
+        "member": "string — actual Board Member name",
+        "portfolio_type": "string — actual Board/Advisory terminology (copy the PORTFOLIO TYPE supplied in context verbatim where provided)",
+        "your_role_on_the_board": "string — clear explanation of the person's agreed role/focus without invented officer title",
+        "why_your_role_matters": "string — organization-specific explanation of why their agreed contribution matters",
+        "what_you_will_help_us_accomplish": ["string — meaningful outcomes supported by the actual Onboarding Conclusion and verified organization direction"],
+        "your_areas_of_responsibility": ["string — only responsibilities actually agreed"],
+        "how_your_experience_can_help": "string — connect actual verified expertise/experience to the agreed role",
+        "relationships_and_resources": "string — only broad relationships/resources the person actually identified and which are relevant; never assume introductions",
+        "how_we_will_work_together": "string — actual working relationship supported by organization expectations/onboarding agreement",
+        "support_and_resources": ["string — organizational support actually agreed"],
+        "your_immediate_priorities": ["string — immediate actions actually supported by the Onboarding Conclusion"],
+        "your_first_90_days": ["string — concise directions consistent with the approved New Board Member 90-Day Plan and actual agreement"],
+        "fundraising_and_resource_development": "string — only high-level Board expectation where applicable; detailed personal fundraising responsibility is reserved for Fundraising Activation. Empty string where not applicable.",
+        "moving_forward_together": "string — concise professional closing",
+    }, "note": """You are an experienced nonprofit Board-development consultant creating a finished, person-specific BOARD MEMBER PORTFOLIO for ONE newly appointed Board Member after onboarding.
+This document tells the member: where they fit; why their contribution matters; what they ACTUALLY agreed to help carry; how their experience supports that responsibility; how the organization will support them; and what happens next.
+This is NOT: a generic job description; an employment document; a legal contract; a Board Manual; a performance assessment; an AI analysis; a Fundraising Portfolio.
+AUTHORITY ORDER:
+1. Founder-saved Onboarding Conclusion / Role Agreement — authoritative
+2. New Board Member Profile
+3. candidate's application/CV
+4. approved priority recruitment profile / Board need
+5. verified organization mission, direction and priorities.
+NEVER contradict or expand beyond the actual Onboarding Conclusion. Never convert Profile interest into a responsibility that was not agreed.
+Never invent: officer titles; committees; targets; hours; deadlines; donors; corporate relationships; programs; responsibilities; governance authority.
+Board Members are not unpaid staff. Describe contribution at the appropriate Board level: leadership; strategic direction; planning; guidance; professional expertise; relationships; introductions where agreed; oversight where appropriate; helping build/guide teams and systems.
+FUNDRAISING: This is NOT the member's Fundraising Portfolio. Detailed individual fundraising responsibilities are developed later through Fundraising Activation. If general fundraising/resource development participation is an actual organization-wide expectation, acknowledge it only at that level. Do not assign donor asks, introductions, campaigns, targets or giving commitments here unless separately and explicitly agreed.
+Write in the organization's voice directly to the member.
+The member should finish thinking: 'I understand exactly where I fit, what I agreed to help carry, why it matters and how we will work together.'
+Never mention AI."""},
     "reactivation_engagement_plan": {"module": 0, "title": "Board Reactivation / Engagement Plan", "per_application": False, "schema": {
         "document_title": "string — Use the actual organization name followed naturally by 'Board Reactivation & Engagement Plan' or 'Board Engagement Plan'. No placeholders.",
         "purpose": "string — 2-3 concise Board-facing sentences explaining that this plan brings together the commitments established through the Board Reactivation conversations and provides a clear structure for how the Board will contribute and work together moving forward. Do not discuss private problems or individual disengagement.",
@@ -713,42 +929,184 @@ NEVER mention AI."""},
         "accent_intensity": "string — one of 'subtle', 'standard', 'strong' controlling how prominently the organization's brand color is used. Change ONLY when asked (e.g. 'more formal' -> subtle).",
     }, "note": "You translate a customer's natural-language design instruction into small style adjustments for their published hosted document page. Start from the CURRENT design values supplied and change ONLY what the instruction asks for, keeping every other value exactly as it currently is. The document CONTENT never changes. Output every key with its resulting value."},
     "activation_planning_form": {"module": 2, "title": "Board Fundraising Planning Form", "per_application": False, "schema": {
-        "introduction": "string — 2 to 4 short paragraphs written to this organization's Board Members introducing the Board Fundraising Planning Form. Must explain, using ONLY supplied facts: the organization (real name) is developing its fundraising plan; the Board is being involved in shaping that plan rather than receiving a finished plan; their ideas, experience, relationships and perspective matter; their responses will be considered alongside the responses of other Board Members and organizational priorities. Warm, plain nonprofit language. NEVER mention AI, software, analysis, algorithms or generation. NEVER pressure Board Members into giving money or asking for donations.",
-        "goal_context": "string — 1 short paragraph factually stating the organization's fundraising goal, the amount needed where supplied, and what the funding will help accomplish, using ONLY the supplied facts in the founder's own substance. If the goal or amount is unknown or the founder said Not Sure, simply omit that detail rather than inventing it. Empty string if nothing is known.",
-    }, "note": "You are an experienced nonprofit fundraising strategist facilitating a Board-led fundraising planning process. You are writing the organization-specific introduction and goal context for a finished Board Fundraising Planning Form that helps Board Members contribute useful ideas to the organization's fundraising strategy — who the organization should build relationships with, which fundraising opportunities should be prioritized, what relationships and networks already exist around the Board, how the organization should attract and engage funders, how Board Members are willing to participate, what each may be willing to own, what support they need, and what should happen over the next 90 days. Use the real organization name and reflect the real mission and known fundraising goal. NEVER invent donors, businesses, foundations, programs, impact statistics or Board Member relationships. NEVER mention AI. NEVER make legal or governance claims. NEVER leave organization facts as unresolved placeholders like [ORGANIZATION]."},
+        "introduction": "string — 2 to 4 short Board-facing paragraphs following the developer instructions.",
+        "goal_context": "string — concise factual description of the actual fundraising goal, amount, purpose and deadline ONLY where supplied. Empty string for unavailable details rather than invention.",
+    }, "note": """You are an experienced nonprofit fundraising strategist helping a founder invite their Board into the fundraising planning process.
+You are writing ONLY: 1. the organization-specific introduction; and 2. the fundraising-goal context for the Board Fundraising Planning Form.
+The questions themselves are supplied deterministically by the application.
+Use only verified information about: organization name; mission; what the organization is trying to accomplish; fundraising goal; amount needed where supplied; what the money will help accomplish; when the money is needed where supplied; current direction/priorities.
+The introduction must communicate: the organization is building its fundraising strategy; the Board is being involved BEFORE the strategy is finalized; the founder wants the Board's ideas, experience, relationships and perspective; the responses will be combined with the founder's fundraising information and the responses of the other Board Members; the resulting Fundraising Strategy Plan will later come back to the Board for collective review and adoption; there are no right or wrong answers; this form collects ideas and initial willingness; it does NOT assign final fundraising responsibilities; individual fundraising responsibilities will be discussed and agreed later during Board Review & Adoption.
+The Board Member should understand: 'WE ARE NOT BEING HANDED A FUNDRAISING PLAN. WE ARE HELPING BUILD IT.'
+Do not pressure anyone to: personally donate; personally solicit money; make introductions; accept a fundraising responsibility.
+Never invent: fundraising amounts; deadlines; programs; donors; businesses; grantors; impact statistics; relationships.
+If amount or deadline is unavailable, omit it naturally.
+Never mention AI.
+Warm, direct, professional and collaborative."""},
     "activation_fundraising_strategy": {"module": 3, "title": "Fundraising Strategy Plan", "per_application": False, "schema": {
-        "executive_summary": "string — concise executive summary of this organization's fundraising strategy: what is being funded, the direction, how the Board participated in shaping the plan, and what happens next. Only supplied facts.",
-        "fundraising_goal": "string — Section 1: the organization's actual fundraising goal and the amount needed where supplied. If the amount is unknown or 'Not Sure', describe the goal without inventing a number.",
-        "what_we_are_raising_money_for": "string — Section 2: what the funding will help accomplish, using the founder's actual answers.",
-        "who_we_should_build_relationships_with": "string — Section 3: the priority audiences drawn from the founder's intake and the Board's actual planning responses. Where a specific audience idea came from a Board Member, keep the attribution accurate (e.g. 'Several Board Members pointed to local businesses'). Never assign one member's idea to another.",
-        "priority_fundraising_opportunities": "string — Section 4: which fundraising opportunities should be prioritized and why, grounded in what the Board actually selected and the organization's current methods and capacity.",
-        "what_people_should_understand": "string — Section 5: what potential funders need to understand about the mission, drawn from the Board's actual messaging ideas and the organization's real work. NO invented impact statistics.",
-        "how_we_will_build_relationships": "string — Section 6: how fundraising relationships will be created, using the KNOW, LIKE, TRUST, ASK, FOLLOW UP, STEWARD relationship-building journey where appropriate and the outreach methods the Board actually suggested.",
-        "relationships_around_the_board": "string — Section 7: the types of relationships, networks and experience that actually exist around the Board based on their own responses. Attribute accurately (name the member ONLY as the source of what THEY said). Selecting a network type is NOT a commitment to make introductions — say so where relevant. NEVER invent named contacts.",
-        "how_the_board_can_participate": "string — Section 8: how Board Members can participate based on what members actually said they are comfortable helping with. Do NOT assign final individual responsibilities — that happens during plan adoption. Do NOT pressure personal giving or asking where a member did not offer it.",
-        "founder_staff_responsibilities": "string — Section 9: what the founder/staff will realistically carry, grounded in who currently carries fundraising.",
-        "what_we_need_to_execute": "string — Section 10: materials, tools, training and support needed, drawn from what Board Members actually said would help them and the intake.",
-        "next_90_days": ["string — Section 11: 4 to 7 practical 90-day actions grounded in the Board's actual 90-day priorities and the strategy. No invented dates, amounts or commitments."],
-        "twelve_month_direction": "string — Section 12: the 12-month fundraising direction connecting the goal, priority opportunities and relationship building.",
-        "how_we_know_plan_is_moving": ["string — Section 13: 3 to 5 practical, observable signs the plan is moving. No fabricated metrics or revenue projections."],
-        "items_for_board_review": ["string — Section 14: 3 to 6 specific items the Board should discuss or confirm during review, including any open questions surfaced by the actual responses."],
-        "next_step_review_and_adopt": "string — Section 15: short closing explaining the Board will now review this plan, share suggestions or concerns, and work through adoption together. People who plan together execute together.",
-    }, "note": "You are an experienced nonprofit fundraising strategist. Build ONE coherent, organization-specific FUNDRAISING STRATEGY PLAN from: verified organization context, the founder's Activation intake, and EVERY completed Board Member planning response (each labeled with the member's real name and role). Use everybody's relevant ideas and preserve WHO SAID WHAT — never attribute one member's relationship, willingness, network, idea or support need to another member. Answer Rooney's framework: what we are raising money for; how much where known; what funding accomplishes; who should care; priority audiences; where they can be reached; what they should understand; how relationships will be created (KNOW/LIKE/TRUST/ASK/FOLLOW UP/STEWARD); priority opportunities; what already exists around the Board; who can help carry the work; needed materials; the next 90 days and 12 months. NEVER invent named donors, businesses, foundations, relationships, Board commitments, programs, impact statistics, fundraising results, budgets or deadlines. NEVER force Board Members to give money or ask for donations. NEVER make legal/governance claims. NEVER assign final individual fundraising responsibilities. NEVER mention AI. NO unresolved placeholders. Where the founder's intake states when the money is needed, set the execution timeline to 60, 90 or 120 days accordingly (soonest need = 60 days) and reflect that timeline in the plan's timeline sections, including a realistic estimate of what executing the plan will cost where the context supports one."},
+        "executive_summary": "string — 4-7 substantial paragraphs summarizing the organization, actual funding need, recommended fundraising direction, primary funding audiences, relationship-building system, selected 60/90/120-day execution horizon, Board participation in planning and next Board-review step.",
+        "fundraising_goal": {
+            "amount": "string — actual amount where supplied; otherwise empty string",
+            "what_the_money_is_for": "string — exact verified funding purpose synthesized clearly",
+            "when_the_money_is_needed": "string — actual verified fundraising deadline/timeline; never invent",
+            "what_the_funding_will_make_possible": "string — verified intended outcomes/impact",
+            "why_the_timing_matters": "string — only where supported by verified information",
+        },
+        "ideal_funding_audiences": {
+            "individual_donors": [{"profile": "string — specific ideal individual donor profile, not a named invented person", "why_they_fit": "string", "likely_motivation": "string", "priority": "string — PRIMARY or SECONDARY"}],
+            "businesses_and_corporate_partners": [{"profile": "string — specific business/industry/corporate profile, not an invented named company", "why_they_fit": "string", "partnership_or_funding_angle": "string", "priority": "string — PRIMARY or SECONDARY"}],
+            "grantors_and_foundations": [{"profile": "string — specific grantor/foundation profile, not an invented named funder", "why_they_fit": "string", "appropriate_approach": "string", "priority": "string — PRIMARY or SECONDARY"}],
+            "other_relevant_audiences": [{"profile": "string — only where genuinely justified", "why_they_fit": "string", "priority": "string — PRIMARY or SECONDARY"}],
+        },
+        "where_to_find_each_funding_audience": [{
+            "audience": "string — one priority audience/profile from the strategy",
+            "where_to_find_them": ["string — realistic places/channels/ecosystems where this audience can be reached"],
+            "best_entry_points": ["string — practical ways the organization can enter/build visibility in those spaces"],
+        }],
+        "attraction_and_visibility_system": [{
+            "audience": "string — priority audience/profile",
+            "what_to_put_in_front_of_them": ["string — specific recommended value opportunity/content/experience"],
+            "why_it_would_attract_them": "string",
+            "how_to_promote_or_distribute_it": ["string — realistic channels based on organization/audience context"],
+            "next_relationship_step": "string — what the organization should invite the person/business/funder to do next",
+        }],
+        "fundraising_process": [{
+            "audience": "string — priority funding audience",
+            "know": "string — how this audience first becomes aware of the organization",
+            "like": "string — what creates genuine interest/connection",
+            "trust": "string — what builds credibility and confidence",
+            "ask": "string — appropriate ask process and what should happen before it",
+            "follow_up": "string — process after interest, hesitation, no response or no",
+            "steward": "string — process after support/giving and toward continuing relationship",
+        }],
+        "content_and_materials_needed": {
+            "already_available": ["string — only materials verified as already existing"],
+            "must_create_before_launch": ["string — essential missing resources directly required by the strategy"],
+            "create_during_execution": ["string — useful resources needed as the strategy progresses"],
+            "optional_scale_up": ["string — useful but nonessential resources"],
+        },
+        "people_and_execution_roles": {
+            "current_capacity": ["string — actual people/groups/capacity currently available"],
+            "execution_functions_needed": ["string — functions this strategy genuinely requires"],
+            "board_capacity_and_willingness": ["string — what the Board is potentially positioned/willing to help with based on actual responses; no final assignments"],
+            "capacity_to_build": ["string — genuine missing execution capacity or outside support the strategy will require"],
+            "board_items_to_discuss_at_adoption": ["string — person-specific willingness/interest that should be DISCUSSED during Adoption without assigning it"],
+        },
+        "execution_timeline": {
+            "horizon": "string — exactly 60 DAYS, 90 DAYS or 120 DAYS",
+            "horizon_basis": "string — explain the verified funding timeline that determined the horizon; if no deadline exists, state that 90 days is a recommended initial planning cycle rather than an organization-supplied deadline",
+            "phases": [{
+                "period": "string — e.g. Days 1-15, Days 16-30, Days 31-45, Days 46-60 according to the selected horizon",
+                "strategic_objective": "string",
+                "actions": ["string — specific executable actions"],
+                "funding_audiences": ["string — audiences relevant during this period"],
+                "materials_or_resources_needed": ["string"],
+                "who_needs_to_be_involved": ["string — role/group-level involvement only unless a responsibility is already formally agreed"],
+                "intended_milestones": ["string — controllable execution milestones, never invented fundraising results"],
+            }],
+        },
+        "budget_and_resource_requirements": {
+            "existing_resources": ["string — verified resources already available"],
+            "low_cost_or_internal_execution": ["string — activities/resources that can reasonably be handled internally"],
+            "likely_cash_investments": [{"item": "string", "why_needed": "string", "cost": "string — actual known cost OR clearly labeled planning range; empty string where no useful estimate can responsibly be made"}],
+            "optional_scale_up_investments": [{"item": "string", "why_it_may_help": "string", "cost": "string — actual cost or clearly labeled planning estimate where useful"}],
+            "lean_execution_cost": "string — estimated lean total only where supportable; label as planning estimate when not based on actual quotes",
+            "recommended_execution_cost": "string — recommended practical total only where supportable; label as planning estimate where estimated",
+            "cost_assumptions": ["string — assumptions behind any estimates"],
+        },
+        "final_strategic_recommendations": {
+            "highest_priority_opportunities": ["string"],
+            "what_not_to_focus_on_yet": ["string"],
+            "biggest_execution_risks": ["string — only evidence-grounded risks"],
+            "critical_first_moves": ["string"],
+            "longer_term_direction": ["string"],
+            "what_the_board_needs_to_review": ["string — concrete issues/decisions for Board review before adoption"],
+            "next_step": "string — explain that the Board now reviews the strategy, strengthens it where necessary and then moves into adoption. Use the principle 'People who plan together execute together.' naturally.",
+        },
+    }, "note": """You are an exceptional nonprofit fundraising strategist building ONE complete, organization-specific FUNDRAISING STRATEGY PLAN for Board review.
+This strategy must be built from: 1. the founder's complete verified fundraising information; 2. EVERY completed original Board Fundraising Planning Form response, with accurate Board Member attribution; 3. all relevant verified organization context; 4. Rooney's fundraising strategy framework supplied below.
+Your job is NOT to summarize those inputs. Your job is to turn them into a focused, professional and executable fundraising system.
+PEOPLE WHO PLAN TOGETHER EXECUTE TOGETHER.
+The Board's ideas must materially shape the strategy, but Board suggestions are not automatically final strategy decisions. Use professional fundraising judgment to synthesize, strengthen, prioritize and fill strategic gaps.
+Distinguish: verified organizational facts; ideas supplied by Board Members; professional strategic recommendations. Never present a recommendation as an existing fact.
+Never attribute one Board Member's idea, relationship, willingness, concern or support need to another Board Member.
+Never convert fundraising willingness into a final responsibility. Final individual Board Member fundraising responsibilities are agreed later during Board Review and Adoption.
+BUILD THE STRATEGY IN EXACTLY THIS ORDER: 1. Executive Summary; 2. Fundraising Goal; 3. Ideal Funding Audiences; 4. Where to Find Each Funding Audience; 5. Attraction & Visibility System; 6. Fundraising Process; 7. Content & Materials Needed; 8. People & Execution Roles; 9. Execution Timeline; 10. Budget & Resource Requirements; 11. Final Strategic Recommendations.
+FUNDRAISING PROCESS: For each priority funding audience use the relationship journey KNOW → LIKE → TRUST → ASK → FOLLOW UP → STEWARD. Customize the journey for each audience. Do not use one generic journey for individuals, businesses and grantors.
+IDEAL FUNDING AUDIENCES: Develop specific profiles for Individual Donors; Businesses / Corporate Sponsors & Partners; Grantors / Foundations — and other funding audiences only where justified. Explain who they are, why they fit, why they may care and whether they should be a primary or secondary focus. Prioritize rather than treating every audience as equal. Never invent named donors, businesses, foundations or relationships.
+EXECUTION TIMELINE: Use the supplied EXECUTION HORIZON of 60 DAYS, 90 DAYS or 120 DAYS. The horizon is determined from the organization's verified fundraising deadline/timeline, NOT from the deadline Board Members were given to complete their Planning Form. Build a real execution calendar covering: preparation; fundraising materials; prospect identification; visibility/attraction; relationship building; meetings/engagement; appropriate asks; follow-up; stewardship. Never invent fundraising results.
+BUDGET: Explain what the organization already has, what can be executed internally, what requires financial investment and what is optional. Where exact actual costs exist, use them. Where the strategy requires spending but exact costs are not supplied, you may provide clearly labeled reasonable PLANNING ESTIMATES or ranges. Never present estimates as vendor quotes or existing commitments. Use actual currency only where known.
+BOARD ROLE: Board Members are not unpaid fundraising staff. Use their ideas, experience, relationships and expressed willingness appropriately. Board Members may help with strategic leadership, relationships, introductions where agreed, meetings, expertise, credibility, stewardship, planning, building execution capacity and accountability. Do not assign final individual fundraising responsibilities.
+CONTENT: Identify only the fundraising materials required by this actual strategy. Do not generate all of the materials inside this strategy. The dedicated Case for Support and Board Fundraising Execution Toolkit are generated later.
+QUALITY STANDARD: The finished plan must answer: What are we raising money for? How much do we need? When do we need it? Who are our best funding audiences? Why are they a fit? Where will we find them? How will we attract them? How will we move them through Know → Like → Trust → Ask → Follow Up → Steward? What materials do we need? What people/capacity do we need? What can the Board realistically help carry? What will execution cost? What exactly happens over the next 60, 90 or 120 days? What should the Board review before adopting the strategy?
+Never invent: organization facts; programs; beneficiaries; impact statistics; fundraising history; donors; businesses; grantors; Board relationships; Board commitments; fundraising results; deadlines; legal/governance requirements.
+Never mention AI. Do not write unresolved placeholders. Do not write generic consulting language. Do not produce a wish list.
+Produce a strategy the founder and Board could actually execute."""},
     "activation_facilitation_guide": {"module": 4, "title": "Plan Adoption Facilitation Guide", "per_application": False, "schema": {
-        "objective": "string — Section 1: the objective for this organization's plan-adoption discussion.",
-        "before_discussion": "string — Section 2: practical preparation before the discussion, grounded in the actual reviews received.",
-        "open_discussion": "string — Section 3: how to open the discussion, honoring that the Board helped build the plan.",
-        "reconnect": "string — Section 4: reconnect everyone to what the organization is actually trying to accomplish and fund.",
-        "review_strategy": "string — Section 5: how to walk the Board through the actual strategy's key elements.",
-        "work_through_feedback": "string — Section 6: for each MEANINGFUL actual issue raised in the real Board reviews: what the issue is, what the Board Member(s) actually said (accurate attribution), a useful question to ask, and what clarity or decision is needed. Do NOT manufacture conflict — if reviews were supportive, say so and focus on the actual suggestions.",
-        "confirm_priorities": "string — Section 7: confirming which fundraising priorities the Board is agreeing to pursue.",
-        "confirm_board_carry": "string — Section 8: confirming what the Board as a whole will help carry.",
-        "establish_individual_ownership": "string — Section 9: PERSON-SPECIFIC discussion prompts built from what each member actually said they are willing to help with or own (e.g. 'Alice indicated interest in corporate relationships. Ask what part of that work she would realistically be comfortable taking responsibility for.'). NEVER assign the responsibility — only prompt the conversation. Only reference members and interests that actually appear in the supplied responses/reviews.",
-        "identify_needs": "string — Section 10: identifying what Board Members actually said they need to execute (training, materials, someone to attend meetings, etc.).",
-        "agree_first_90": "string — Section 11: agreeing what happens first, focused especially on the first 90 days of the strategy.",
-        "confirm_way_forward": "string — Section 12: confirming the way forward and how the outcome will be recorded by the founder.",
-        "close_with_ownership": "string — Section 13: closing the discussion with ownership so the founder leaves knowing what direction was accepted, what changed, what remains unresolved, who agreed to what, and what happens next.",
-    }, "note": "You are an experienced nonprofit Board facilitator and fundraising strategist. Create an organization-specific PLAN ADOPTION FACILITATION GUIDE that helps the founder facilitate a real Board discussion around the strategy, the Board's actual feedback, priorities, participation, responsibility, support and immediate action. Use ONLY the supplied strategy, actual Board reviews, actual planning responses, intake and organization facts. NEVER invent bylaws, quorum requirements, voting requirements, parliamentary procedure or legal requirements. NEVER claim the Board formally adopted anything. NEVER make governance decisions — the founder remains the decision-maker and recorder of the outcome. NEVER assign final individual responsibilities. NEVER mention AI. NO unresolved placeholders."},
+        "meeting_objective": "string — concise explanation of exactly what this organization's Review & Adoption Meeting must accomplish.",
+        "before_the_meeting": ["string — practical founder preparation using resources/information that actually exists"],
+        "welcome_and_purpose": {"founder_script": "string — complete natural opening thanking the Board for its planning input and explaining the purpose of this meeting"},
+        "how_we_built_this_plan": {"founder_script": "string — explain naturally that Board ideas + founder fundraising information + organization context were brought together to build the strategy and that the Board is now reviewing it collectively"},
+        "reconnect_to_fundraising_goal": {
+            "founder_script": "string — actual concise explanation of the verified fundraising goal, amount/purpose/timeline/impact where known",
+            "question_to_board": "string — useful opening question confirming shared understanding of the funding objective",
+        },
+        "strategy_review": [{
+            "strategy_section": "string — one of the actual 11 Fundraising Strategy sections",
+            "what_the_plan_is_proposing": "string — concise accurate summary of the relevant strategic proposal",
+            "why_this_matters": "string — concise internal facilitator guidance",
+            "questions_to_put_to_the_board": ["string — 1 to 3 direct discussion questions about the actual strategy"],
+            "decision_or_clarity_needed": "string — what the founder needs to leave this section knowing",
+        }],
+        "work_through_changes": {
+            "founder_script": "string — wording for asking whether any substantive changes are required before adoption",
+            "what_to_record": ["string — exact kinds of agreed changes the founder should record without AI resolving them"],
+        },
+        "confirm_fundraising_priorities": {
+            "founder_script": "string — wording for confirming the actual fundraising priorities the Board is prepared to pursue",
+            "questions": ["string"],
+        },
+        "adoption_discussion": {
+            "founder_script": "string — natural wording asking whether the Board is ready to adopt the strategy as the organization's working fundraising document",
+            "outcome_options": ["Adopted as Presented", "Adopted With Changes", "Further Review Needed"],
+            "if_adopted_as_presented": "string — founder guidance only",
+            "if_adopted_with_changes": "string — founder guidance to record changes, manually apply them and then confirm the final adopted snapshot",
+            "if_further_review_needed": "string — founder guidance to record unresolved issues without falsely adopting the plan",
+        },
+        "what_the_board_will_help_carry": {
+            "founder_script": "string — transition from strategy adoption into Board execution ownership",
+            "questions": ["string — questions grounded in the actual strategy and collective Planning Form willingness"],
+        },
+        "individual_responsibility_discussions": [{
+            "board_member_name": "string — actual participating Board Member",
+            "what_they_originally_indicated": "string — concise factual summary of THIS member's own Planning Form willingness/interests relevant to execution",
+            "discussion_prompt": "string — actual founder question for clarifying what this person would genuinely agree to help carry",
+            "support_to_clarify": "string — any actual support/training/resource need this member identified; empty string where none",
+            "founder_recording_reminder": "string — remind founder to manually record Responsibility Agreed / Follow-Up Needed / No Fundraising Responsibility Agreed Yet and the exact agreed responsibility where applicable",
+        }],
+        "support_and_resources": {
+            "founder_script": "string — wording for confirming what Board Members need in order to execute",
+            "actual_items_to_discuss": ["string — only support/resource needs grounded in actual Planning responses/strategy"],
+        },
+        "immediate_execution_priorities": {
+            "founder_script": "string — wording for agreeing the first actions from the actual 60/90/120-day execution calendar",
+            "questions": ["string"],
+        },
+        "plan_adoption_conclusion_reminder": ["string — exactly what the founder must record after the meeting"],
+        "closing": {"founder_script": "string — natural closing reinforcing collective ownership and the move from planning into execution"},
+    }, "note": """You are an exceptional nonprofit Board facilitator and fundraising strategist preparing a founder/executive director to facilitate ONE real FUNDRAISING STRATEGY REVIEW & ADOPTION MEETING.
+The Board Members have already contributed their fundraising ideas through the Board Fundraising Planning Form. Those original responses were combined with the founder's fundraising information, verified organization context and Rooney's fundraising strategy framework to build the Fundraising Strategy Plan now being presented.
+THERE IS NO SECOND INDIVIDUAL STRATEGY-REVIEW FORM. The Board now reviews the completed strategy TOGETHER in this meeting.
+Your job is to create a COMPLETE READ-THROUGH FACILITATION GUIDE that helps the founder: 1. reconnect the Board to the fundraising goal; 2. remind them how their input helped shape the strategy; 3. review the actual Fundraising Strategy Plan; 4. discuss meaningful questions or changes; 5. confirm the fundraising priorities; 6. decide whether to adopt the strategy as the organization's working fundraising document; 7. discuss how the Board will help execute it; 8. have person-specific conversations about individual fundraising responsibility; 9. identify support/resources needed; 10. confirm immediate execution priorities; 11. record the actual outcome.
+Use only: the exact Fundraising Strategy Plan version being presented; founder fundraising information; every original Board Fundraising Planning response; verified organization information.
+Do NOT use or require individual post-strategy Board review forms. Do NOT regenerate the Fundraising Strategy. Do NOT invent Board disagreement. Do NOT invent consensus. Do NOT invent adoption. Do NOT assign individual fundraising responsibilities. Do NOT create parliamentary procedure, motions, quorum requirements, voting rules or legal governance requirements.
+WRITE THE ACTUAL WORDS THE FOUNDER CAN SAY. Do not merely say 'Explain the fundraising goal.' — write the actual explanation using verified strategy information. Do not merely say 'Review the strategy.' — help the founder walk through the actual strategy's meaningful decisions.
+For each substantive strategy section provide: What the Plan Is Proposing; Why This Matters; Questions to Put to the Board; Decision / Clarity Needed.
+Use Rooney's actual strategy structure: 1. Executive Summary; 2. Fundraising Goal; 3. Ideal Funding Audiences; 4. Where to Find Each Funding Audience; 5. Attraction & Visibility System; 6. Fundraising Process; 7. Content & Materials Needed; 8. People & Execution Roles; 9. Execution Timeline; 10. Budget & Resource Requirements; 11. Final Strategic Recommendations.
+Do not force the Board to wordsmith the document line by line. Focus on strategic decisions.
+PERSON-SPECIFIC RESPONSIBILITY DISCUSSION: For each participating Board Member, use only THEIR OWN Planning Form response. Where they expressed willingness or interest, write a facilitator question that helps the founder move from 'I might be willing to help with this' to 'What part of this would you actually be willing to take responsibility for?'. Never turn willingness into commitment yourself. Where they requested support/training, discuss that support before asking them to take ownership. Where they did not express willingness, do not manufacture it.
+ADOPTION: The founder must leave the meeting able to record exactly one status: Adopted as Presented; Adopted With Changes; Further Review Needed. If Adopted With Changes, identify what the founder needs to record so those changes can be manually applied to the strategy before the final adopted snapshot is confirmed. Do NOT call or recommend an AI Revised Strategy.
+FINAL OUTCOME: End by reminding the founder to save: Plan Adoption Conclusion; every individual agreed fundraising responsibility; every responsibility status; any support commitments; immediate next steps.
+Never mention AI in Board-facing language."""},
     "activation_execution_toolkit": {"module": 5, "title": "Board Fundraising Execution Toolkit", "per_application": False, "schema": {
         "overview": "string — short overview connecting the toolkit to the organization's adopted fundraising strategy and the responsibilities the Board actually agreed to carry.",
         "email_tools": [{"title": "string — e.g. 'Warm Introduction Email'", "when_to_use": "string", "content": "string — the full natural email a real Board Member could send. Limited recipient placeholders like [First Name] or [Company Name] are acceptable; known organization facts must be resolved."}],
@@ -757,19 +1115,57 @@ NEVER mention AI."""},
         "stewardship_tools": [{"title": "string — follow-up / thank-you / stewardship touchpoints", "when_to_use": "string", "content": "string"}],
     }, "note": "You are an experienced nonprofit fundraising strategist equipping a real volunteer Board. Generate ONLY tools relevant to the ADOPTED strategy and agreed responsibilities supplied — if grants are not part of the strategy do NOT manufacture grant tools; if corporate relationships, individual donors, events or stewardship are the focus, build useful tools for those. Tools must sound like a real Board Member — natural language, not professional fundraisers, staff, grant writers or marketers. Reflect KNOW/LIKE/TRUST/ASK/FOLLOW UP/STEWARD where appropriate. NEVER invent funders, donor names, business relationships, sponsorship amounts, grant opportunities, Board Member relationships, commitments, statistics, impact results, programs or meeting dates. NEVER mention AI. Resolve all known organization facts — no unresolved placeholders except limited recipient placeholders like [First Name]."},
     "activation_fundraising_portfolio": {"module": 6, "title": "Fundraising Portfolio", "per_application": True, "schema": {
-        "your_role": "string — Your Role in Our Fundraising Plan: this member's individual place inside the adopted fundraising strategy, anchored on their EXACT agreed fundraising responsibility.",
-        "why_role_matters": "string — Why Your Role Matters: connect their agreed responsibility to the adopted strategy and mission.",
-        "what_you_accomplish": "string — What You Will Help Us Accomplish: grounded in the adopted strategy's actual goal and priorities.",
-        "your_responsibilities": "string — Your Fundraising Responsibilities: restate and organize the EXACT agreed responsibility. NEVER add responsibilities beyond what was agreed.",
-        "who_you_reach": "string — Who You Will Help Us Reach: ONLY where supported by their agreed responsibility and own responses; empty string when not supported.",
-        "build_relationships": "string — How You Will Help Build Relationships: use only relevant stages of KNOW, LIKE, TRUST, ASK, FOLLOW UP, STEWARD — do not force every stage.",
-        "tools_you_can_use": "string — Tools You Can Use: reference the appropriate tools already in the approved Board Fundraising Execution Toolkit by name. Do NOT regenerate the toolkit content.",
-        "immediate_priorities": "string — Your Immediate Priorities: 2-4 realistic first actions inside their agreed responsibility.",
-        "first_90_days": "string — Your First 90 Days: practical focus aligned with the strategy's 90-day actions relevant to their responsibility.",
-        "support_resources": "string — Support and Resources: what support they asked for and what is available. Only what was actually said or exists.",
-        "work_together": "string — How We Will Work Together: how the founder and this member will stay connected on the work.",
-        "moving_mission": "string — Moving the Mission Forward: brief closing tying their contribution to the mission.",
-    }, "note": "You are an experienced nonprofit fundraising strategist writing an individual FUNDRAISING PORTFOLIO for one Board Member. Authority order: 1) the EXACT agreed fundraising responsibility recorded by the founder, 2) the final adopted Fundraising Strategy Plan, 3) the Plan Adoption Conclusion, 4) this member's OWN planning response and strategy review, 5) their verified skills/experience/networks, 6) organize within those verified facts only. NEVER contradict or exceed what was actually agreed. NEVER invent a responsibility, donor ask, personal giving commitment, introduction commitment, corporate contact, meeting, fundraising target, deadline, relationship, event or grant activity. NEVER use another member's private answers. Warm, professional, second person ('you'). NEVER mention AI. NO unresolved placeholders."},
+        "member_name": "string — actual Board Member full name",
+        "board_role": "string — actual Board terminology/role already held by this member; never invent an officer title",
+        "fundraising_plan_context": "string — 2-4 concise sentences explaining the actual adopted fundraising goal/direction and that this Portfolio sets out this member's agreed part of the plan",
+        "your_role_in_our_fundraising_plan": "string — clear explanation of this person's place in the adopted Fundraising Strategy anchored entirely on their exact agreed fundraising responsibility",
+        "why_your_role_matters": "string — connect the exact agreed responsibility to the adopted strategy, fundraising goal and mission",
+        "what_you_will_help_us_accomplish": ["string — 2 to 5 meaningful outcomes/contributions supported by the agreed responsibility and adopted strategy; never invent numeric fundraising results"],
+        "your_fundraising_responsibilities": ["string — break the EXACT founder-recorded agreed responsibility into clear understandable components without expanding it"],
+        "who_you_will_help_us_reach": ["string — only audiences/prospects genuinely relevant to the agreed responsibility. Use named relationships only when this member actually identified them and never imply an introduction commitment unless one was agreed."],
+        "how_you_will_help_build_relationships": [{
+            "stage": "string — only a relevant stage from KNOW, LIKE, TRUST, ASK, FOLLOW UP, STEWARD",
+            "your_part": "string — what this person can do at this stage based strictly on their agreed responsibility",
+        }],
+        "tools_you_can_use": {
+            "available_now": ["string — actual approved/available relevant resources or approved Toolkit titles; empty array if none are verified"],
+            "being_prepared": ["string — only resources the adopted strategy says must be created/provided; empty array if none"],
+        },
+        "your_immediate_priorities": ["string — 2 to 4 realistic first actions directly supported by the exact responsibility, Adoption Conclusion and adopted strategy"],
+        "your_execution_timeline": {
+            "horizon": "string — copy exactly 60 DAYS, 90 DAYS or 120 DAYS from the final adopted strategy",
+            "phases": [{
+                "period": "string — exact/relevant period from the adopted strategy",
+                "your_focus": "string — this member's relevant focus during this phase",
+                "how_it_supports_the_plan": "string — concise connection to the wider adopted strategy",
+            }],
+        },
+        "support_and_resources": {
+            "what_you_said_would_help": ["string — support/training/resources this member themselves requested in their Planning Form; empty array where none"],
+            "what_the_organization_will_provide": ["string — only support/resources actually agreed or verified; distinguish anything still to be created"],
+        },
+        "how_we_will_work_together": "string — practical description of how the founder/organization and this Board Member will work together based on actual agreement and strategy; never invent meeting frequency or reporting requirements",
+        "moving_the_mission_forward": "string — concise closing tying this member's agreed contribution to the fundraising goal and mission",
+    }, "note": """You are an exceptional nonprofit fundraising strategist creating a finished INDIVIDUAL FUNDRAISING PORTFOLIO for ONE Board Member after the Board has adopted its Fundraising Strategy Plan and the founder has manually recorded this person's exact agreed fundraising responsibility.
+This document translates the organization's adopted fundraising strategy into THIS PERSON'S agreed part of the plan.
+It should leave the Board Member thinking: 'I know exactly what I agreed to help carry, why it matters, how it fits into our Fundraising Strategy and what I should do next.'
+AUTHORITY ORDER:
+1. EXACT AGREED FUNDRAISING RESPONSIBILITY recorded by the founder — HIGHEST AUTHORITY.
+2. FINAL ADOPTED FUNDRAISING STRATEGY PLAN.
+3. PLAN ADOPTION CONCLUSION — only actual Board decisions, priorities, Board-wide commitments, support/resources and immediate priorities. Never use private founder notes.
+4. THIS MEMBER'S OWN ORIGINAL BOARD FUNDRAISING PLANNING FORM RESPONSE.
+Do NOT use: another Board Member's Planning response; individual Strategy Review forms; obsolete review_status data; Reactivation/Recommitment responses as Fundraising Portfolio authority; referee information; background checks; interview evaluations; private founder notes.
+NEVER convert interest into responsibility. NEVER convert willingness into commitment. NEVER convert a relationship into an introduction commitment.
+The founder's recorded agreed responsibility controls. If the member previously expressed broader willingness than what was eventually agreed, use only the actual agreement as their responsibility.
+BOARD MEMBERS ARE NOT UNPAID FUNDRAISING STAFF. Translate the agreed responsibility into appropriate Board-level execution such as strategic leadership, relationship building, introductions where agreed, meetings where agreed, professional expertise, credibility, stewardship, guidance, helping build execution capacity and accountability. Do not invent operational employment responsibilities.
+Use the adopted fundraising relationship process KNOW → LIKE → TRUST → ASK → FOLLOW UP → STEWARD ONLY for stages relevant to this member's agreed responsibility. Do not force all stages into every Portfolio.
+Use only named relationships/prospects THIS member actually identified. Never state that they agreed to approach or introduce a relationship unless that commitment was actually recorded.
+EXECUTION TIMELINE: Read the actual execution horizon from the final adopted strategy. It may be 60 DAYS, 90 DAYS or 120 DAYS. Build this person's timeline INSIDE that exact adopted organizational timeline. Never automatically use 90 days. Never invent a new execution horizon.
+TOOLS: If an approved Board Fundraising Execution Toolkit is supplied, reference only relevant tool TITLES and only where they support the responsibility already agreed. Do not reproduce the tools. Do not expand responsibility because a tool exists. If no approved toolkit is supplied, the Portfolio must still be complete and useful. Never invent tool names.
+SUPPORT: Use only support/resources this member actually requested, the Board/founder actually agreed, the organization actually has, or the adopted strategy explicitly says must be created. Clearly distinguish existing resources from resources still to be created/provided.
+NEVER invent: responsibilities; donor asks; personal giving commitments; introductions; relationships; meetings; fundraising targets; deadlines; events; grant activity; corporate contacts; programs; impact statistics; resources; support commitments.
+Write directly to the Board Member in second person: 'you'. Warm, clear, professional and execution-focused.
+Do not mention AI."""},
     "reactivation_response_analysis": {"module": 3, "title": "Understanding Their Response", "per_application": True, "schema": {
         "recommitment_position": "State the exact YES, NO or NOT SURE response selected by this Board Member and explain briefly what that means for the upcoming conversation without adding assumptions.",
         "what_they_are_communicating": "3-5 sentences explaining what this Board Member appears to be communicating through the complete response appropriate to their pathway. Clearly distinguish fact from interpretation.",
@@ -1139,6 +1535,42 @@ def _interview_guide_display(structured: dict) -> str:
 
 def structured_to_display(generation_type: str, structured: dict) -> str:
     meta = GENERATION_TYPES[generation_type]
+    if generation_type == "formal_appointment_letter":
+        sender = structured.get("sender") or {}
+        recipient = structured.get("recipient") or {}
+        signatory = structured.get("signatory") or {}
+        lines = []
+        if sender.get("organization_name"):
+            lines.append(sender["organization_name"])
+        lines.extend([line for line in (sender.get("address_lines") or []) if line])
+        if sender.get("contact_line"):
+            lines.append(sender["contact_line"])
+        if structured.get("letter_date"):
+            lines.extend(["", structured["letter_date"]])
+        recipient_block = [recipient.get("name", "")] + [line for line in (recipient.get("address_lines") or []) if line]
+        recipient_block = [line for line in recipient_block if line]
+        if recipient_block:
+            lines.append("")
+            lines.extend(recipient_block)
+        if structured.get("subject"):
+            lines.extend(["", f"RE: {structured['subject']}"])
+        if structured.get("salutation"):
+            lines.extend(["", structured["salutation"]])
+        for key in ["formal_confirmation", "why_your_contribution_matters"]:
+            if structured.get(key):
+                lines.extend(["", structured[key]])
+        details = [item for item in (structured.get("appointment_details") or []) if item]
+        if details:
+            lines.append("")
+            lines.extend([f"- {item}" for item in details])
+        for key in ["board_service", "what_happens_next", "welcome"]:
+            if structured.get(key):
+                lines.extend(["", structured[key]])
+        closing = [line for line in [signatory.get("name", ""), signatory.get("title", ""), signatory.get("organization", "")] if line]
+        if closing:
+            lines.extend(["", "Sincerely,", ""])
+            lines.extend(closing)
+        return _flush_left("\n".join(lines).strip())
     if generation_type == "interview_guide":
         return _interview_guide_display(structured)
     if generation_type == "reference_call_script" and structured.get("opening_script"):
