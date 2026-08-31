@@ -161,7 +161,7 @@ const BoardSummary = ({ hasResponses }) => {
   return (
     <section className="member-card" style={{ borderLeft: "4px solid #1d3a2f" }} data-testid="board-summary-section">
       <h2>Summary of Your Entire Board</h2>
-      <p>Understanding one board member is useful. Understanding your whole board is where the picture becomes clear. This summary combines everything you told me with everything your board members told you — who is ready to recommit, who needs a conversation, what strengths you already have, what is missing, and who you need to recruit to build a powerhouse board.</p>
+      <p>Understanding one board member is useful. Understanding your whole board is where the picture becomes clear. Once your conversations are complete, this summary shows the Board you actually have now — who has confirmed their recommitment and what they agreed to carry, who has transitioned to Advisory or stepped down, who is still to be resolved, the strengths your confirmed Board now holds, what it can help carry, how you need to support it, and the areas not yet covered.</p>
       {error && <p className="submit-error" data-testid="board-summary-error">{error}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="button" onClick={generate} disabled={busy || !hasResponses} data-testid="board-summary-generate">

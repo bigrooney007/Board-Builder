@@ -25,12 +25,11 @@ from content_templates import (
 logger = logging.getLogger(__name__)
 
 RECOMMITMENT_OPTIONS = [
-    "Yes — I am ready to continue serving actively.",
-    "Yes — but I need greater clarity about my role and responsibilities.",
-    "Yes — but my current time/capacity is limited and I need a role that reflects that.",
-    "I am unsure and would like to discuss what continued Board service would involve.",
-    "No — I am no longer able to continue serving actively in my current Board role.",
+    "Yes, I am ready to recommit and continue serving.",
+    "No, I am not able to recommit to serving on the Board.",
+    "I am not sure yet. I need more information or would like to discuss my role before deciding.",
 ]
+RECOMMIT_YES, RECOMMIT_NO, RECOMMIT_UNSURE = RECOMMITMENT_OPTIONS
 ADVISORY_OPTION = "Transition to an Advisory Board / Advisory Role"
 SUPPORT_OPTION = "Transition to Another Volunteer/Support Role"
 
@@ -58,44 +57,24 @@ class CallNotes(BaseModel):
 class RecommitmentSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
     full_name: str = Field(min_length=1)
-    preferred_name: str = ""
     email: EmailStr
     phone: str = ""
-    city_state: str = ""
-    linkedin: str = ""
-    current_position: str = ""
-    employer: str = ""
-    industry: str = ""
-    years_experience: str = ""
-    expertise: List[str] = Field(min_length=1)
-    expertise_other: str = ""
-    networks: List[str] = Field(min_length=1)
-    why_joined: str = Field(min_length=1)
-    how_recruited: str = Field(min_length=1)
-    original_role_expectation: str = Field(min_length=1)
-    role_clarity: str = Field(min_length=1)
-    clarity_help: str = ""
-    board_experience: str = Field(min_length=1)
-    participation_barriers: str = Field(min_length=1)
-    board_improvement: str = Field(min_length=1)
-    strategic_clarity: str = Field(min_length=1)
-    planning_participation: str = Field(min_length=1)
-    planning_involvement_desire: str = ""
     recommitment: str
+    why_joined: str = ""
+    expertise: List[str] = []
+    expertise_other: str = ""
+    participation_barriers: str = ""
+    contribution_interests: List[str] = []
+    ownership_area: str = ""
+    leadership_interest: str = ""
+    leadership_area: str = ""
+    strengths_resources: str = ""
+    monthly_availability: str = ""
+    experience_improvement: str = ""
+    decision_reason: str = ""
     advisory_openness: str = ""
-    support_role_openness: str = ""
-    step_off_openness: str = ""
-    contribution_interests: List[str] = Field(min_length=1)
-    fundraising_comfort: List[str] = Field(min_length=1)
-    ownership_areas: str = Field(min_length=1)
-    leadership_interest: str = Field(min_length=1)
-    support_needed: str = Field(min_length=1)
-    monthly_availability: str = Field(min_length=1)
-    meeting_participation: str = Field(min_length=1)
-    constraints: str = ""
-    meaningful_service: str = Field(min_length=1)
+    decision_support: str = ""
     anything_else: str = ""
-    confirmation: bool
 
 
 def origin_of(request: Request) -> str:
@@ -406,10 +385,8 @@ def create_reactivation_router(db) -> APIRouter:
                           f"WHY THIS MATTERS: {entry.get('why_this_matters', '')}"])
         lines.extend(["", "5. MOVE FROM INTEREST TO RESPONSIBILITY"])
         lines.extend([f"- {item}" for item in structured.get("move_from_interest_to_responsibility", [])])
-        if structured.get("fundraising_and_relationships"):
-            lines.extend(["", "6. CLARIFY FUNDRAISING AND RELATIONSHIP EXPECTATIONS", structured["fundraising_and_relationships"]])
-        lines.extend(["", "7. CLARIFY THE WAY FORWARD", structured.get("clarify_the_way_forward", ""), "",
-                      "8. CLOSE WITH CLEAR NEXT STEPS", structured.get("close_with_clear_next_steps", "")])
+        lines.extend(["", "6. CLARIFY THE WAY FORWARD", structured.get("clarify_the_way_forward", ""), "",
+                      "7. CLOSE WITH CLEAR NEXT STEPS", structured.get("close_with_clear_next_steps", "")])
         return "\n".join(lines)
 
     async def save_reactivation_material(user_id: str, material_type: str, title: str, member_record_id: str, structured: dict, display_text: str) -> dict:
@@ -450,6 +427,11 @@ def create_reactivation_router(db) -> APIRouter:
             {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1},
         ).to_list(300)
         material_by_member = {m["application_id"]: m for m in materials}
+        analyses = await db.generated_materials.find(
+            {"user_id": user_id, "type": "reactivation_response_analysis"},
+            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1},
+        ).to_list(300)
+        analysis_by_member = {m["application_id"]: m for m in analyses}
         rows = []
         completed_conversations = follow_up = waiting = 0
         for record in records:
@@ -467,6 +449,7 @@ def create_reactivation_router(db) -> APIRouter:
                          "conversation_conclusion": conclusion, "conversation_outcome": outcome,
                          "conversation_direction": record.get("conversation_direction", ""),
                          "conversation_complete": done,
+                         "analysis": material_summary(analysis_by_member.get(record["member_record_id"])),
                          "script": material_summary(material_by_member.get(record["member_record_id"]))})
         return {
             "members": rows,
@@ -501,8 +484,11 @@ def create_reactivation_router(db) -> APIRouter:
         analysis_material = await db.generated_materials.find_one(
             {"user_id": member["user_id"], "type": "reactivation_response_analysis", "application_id": member_record_id,
              "status": {"$nin": ["Generating", "Failed"]}}, {"_id": 0})
-        if analysis_material:
-            context += "\n\nUNDERSTANDING OF THEIR RESPONSE (interpretation already reviewed by the founder):\n" + current_display(analysis_material)[:8000]
+        if not analysis_material:
+            raise HTTPException(status_code=409, detail="Generate Understanding Their Response for this Board Member first — the conversation script is built from that understanding.")
+        context += "\n\nUNDERSTANDING THEIR RESPONSE (preparation for the conversation — NOT the final agreement):\n" + current_display(analysis_material)[:8000]
+        if intake.get("bylaws_text"):
+            context += "\n\nORGANIZATION BYLAWS EXTRACT (verified Board/governance context ONLY — never invent procedures or requirements):\n" + intake["bylaws_text"][:10000]
         if record.get("call_notes"):
             context += "\n\nFOUNDER'S PREVIOUS NOTES ABOUT THIS BOARD MEMBER:\n" + record["call_notes"]
         direction = record.get("conversation_direction", "")
@@ -691,7 +677,7 @@ def create_reactivation_router(db) -> APIRouter:
             {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "share_token": 1, "sent_at": 1, "updated_at": 1, "sent_version": 1, "current_version": 1}).to_list(300)
         by_member = {m["application_id"]: m for m in materials}
         email_materials = await db.generated_materials.find(
-            {"user_id": user_id, "type": {"$in": ["reactivation_stepped_down_followup", "reactivation_advisory_confirmation"]}},
+            {"user_id": user_id, "type": {"$in": ["reactivation_stepped_down_followup", "reactivation_advisory_confirmation", "reactivation_recommitment_confirmation"]}},
             {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1}).to_list(300)
         emails_by_member = {m["application_id"]: m for m in email_materials}
         analyses = await db.generated_materials.find(
@@ -910,6 +896,8 @@ def create_reactivation_router(db) -> APIRouter:
             form = await db.reactivation_forms.find_one({"user_id": record["user_id"]}, {"_id": 0, "intro_text": 1, "status": 1})
             return {
                 "organization_name": context["organization"],
+                "founder_name": context["founder_name"],
+                "founder_title": context["founder_title"],
                 "introduction": (form or {}).get("intro_text", "") if (form or {}).get("status") == "Approved" else "",
                 "submitted": record["status"] == "COMPLETED",
                 "allow_advisory": ADVISORY_OPTION in context["transition_options"],
@@ -924,6 +912,8 @@ def create_reactivation_router(db) -> APIRouter:
         context = await founder_context(form["user_id"])
         return {
             "organization_name": context["organization"],
+            "founder_name": context["founder_name"],
+            "founder_title": context["founder_title"],
             "introduction": form.get("intro_text", ""),
             "submitted": False,
             "allow_advisory": ADVISORY_OPTION in context["transition_options"],
@@ -952,10 +942,22 @@ def create_reactivation_router(db) -> APIRouter:
                 await db.reactivation_board_members.insert_one({**record})
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
-        if not payload.confirmation:
-            raise HTTPException(status_code=422, detail="The confirmation is required")
         if payload.recommitment not in RECOMMITMENT_OPTIONS:
             raise HTTPException(status_code=422, detail="Invalid recommitment selection")
+        if payload.recommitment == RECOMMIT_YES:
+            required = [payload.why_joined, payload.participation_barriers, payload.ownership_area,
+                        payload.strengths_resources, payload.monthly_availability, payload.experience_improvement]
+            if any(not value.strip() for value in required) or not payload.expertise or not (1 <= len(payload.contribution_interests) <= 3):
+                raise HTTPException(status_code=422, detail="Please answer every required question")
+            if payload.leadership_interest not in {"Yes", "I would like to discuss this"}:
+                raise HTTPException(status_code=422, detail="Please answer every required question")
+            if payload.leadership_interest == "Yes" and not payload.leadership_area.strip():
+                raise HTTPException(status_code=422, detail="Please tell us the area or responsibility you would be interested in leading")
+        elif payload.recommitment == RECOMMIT_NO:
+            if not payload.decision_reason.strip():
+                raise HTTPException(status_code=422, detail="Please answer every required question")
+        elif not payload.decision_support.strip():
+            raise HTTPException(status_code=422, detail="Please answer every required question")
         now = datetime.now(timezone.utc).isoformat()
         response = payload.model_dump()
         response["email"] = str(payload.email).lower()
@@ -1064,21 +1066,27 @@ def create_reactivation_router(db) -> APIRouter:
 
     def analysis_display(structured: dict, name: str) -> str:
         first = name.split(" ")[0].upper() if name else "THIS BOARD MEMBER"
-        lines = [f"UNDERSTANDING {first}'S RESPONSE", "",
-                 "WHAT THEY APPEAR TO BE COMMUNICATING", structured.get("what_they_are_communicating", ""), "",
-                 "APPARENT LEVEL OF COMMITMENT", structured.get("commitment_level", ""), "",
-                 "CONCERNS OR RESERVATIONS"]
-        concerns = structured.get("concerns_or_reservations", [])
-        lines.extend([f"- {c}" for c in concerns] if concerns else ["- None expressed in their responses"])
-        lines.extend(["", "WILLINGNESS TO CONTINUE", structured.get("willingness_to_continue", ""), "",
-                      "WILLINGNESS TO TAKE GREATER RESPONSIBILITY", structured.get("willingness_for_greater_responsibility", ""), "",
-                      "ARE THEY CONSIDERING STEPPING DOWN?", structured.get("considering_stepping_down", ""), "",
-                      "IS AN ADVISORY ROLE APPROPRIATE?", structured.get("advisory_role_appropriate", ""), "",
-                      "IMPORTANT TO UNDERSTAND BEFORE THE CONVERSATION"])
-        lines.extend(f"- {item}" for item in structured.get("important_issues_before_conversation", []))
-        lines.extend(["", "RECOMMENDED NEXT COURSE OF ACTION", structured.get("recommended_next_action", ""), "",
-                      "RECOMMENDED DIRECTION FOR THE CONVERSATION", structured.get("recommended_conversation_direction", "")])
-        return "\n".join(lines)
+
+        def block(title, value, empty="None identified from their response"):
+            if isinstance(value, list):
+                return [title] + ([f"- {item}" for item in value] if value else [f"- {empty}"]) + [""]
+            return [title, value or "", ""]
+
+        lines = [f"UNDERSTANDING {first}'S RESPONSE", ""]
+        lines += block("RECOMMITMENT POSITION", structured.get("recommitment_position", ""))
+        lines += block("WHAT THEY APPEAR TO BE COMMUNICATING", structured.get("what_they_are_communicating", ""))
+        lines += block("WHAT WE KNOW ABOUT THIS PERSON", structured.get("what_we_know_about_this_person", []))
+        lines += block("WHAT MAY BE AFFECTING THEIR PARTICIPATION", structured.get("what_may_be_affecting_their_participation", []), "None supplied in their response")
+        lines += block("WHAT THEY WANT MOVING FORWARD", structured.get("what_they_want_moving_forward", ""))
+        if structured.get("realistic_capacity"):
+            lines += block("REALISTIC CAPACITY", structured["realistic_capacity"])
+        lines += block("WHAT THE ORGANIZATION SHOULD PAY ATTENTION TO", structured.get("what_the_organization_should_pay_attention_to", []))
+        if structured.get("potential_fit_with_organization_needs"):
+            lines += block("POTENTIAL FIT WITH ORGANIZATION NEEDS", structured["potential_fit_with_organization_needs"])
+        lines += block("WHAT STILL NEEDS TO BE CLARIFIED IN THE CONVERSATION", structured.get("what_still_needs_to_be_clarified", []))
+        lines += block("CONVERSATION OBJECTIVE", structured.get("conversation_objective", ""))
+        lines += block("BOTTOM LINE FOR THE FOUNDER", structured.get("founder_bottom_line", ""))
+        return "\n".join(lines).strip()
 
     @router.get("/reactivation/understand")
     async def understand_step(request: Request):
@@ -1129,6 +1137,8 @@ def create_reactivation_router(db) -> APIRouter:
         if master and master.get("data"):
             context += ("\n\nCOMPLETE BOARD FIX MASTER INTAKE (the founder's own description of the organization, its board, goals and priorities):\n"
                         + json.dumps(master["data"], indent=1, default=str)[:6000])
+        if intake.get("bylaws_text"):
+            context += "\n\nORGANIZATION BYLAWS EXTRACT (verified Board/governance context ONLY — never invent legal requirements or procedures):\n" + intake["bylaws_text"][:10000]
         now = datetime.now(timezone.utc).isoformat()
         if existing:
             material_id = existing["material_id"]
@@ -1163,21 +1173,58 @@ def create_reactivation_router(db) -> APIRouter:
     def board_summary_display(structured: dict) -> str:
         def block(title, value):
             if isinstance(value, list):
-                return [title] + ([f"- {item}" for item in value] if value else ["- None identified from the responses."]) + [""]
+                return [title] + ([f"- {item}" for item in value] if value else ["- None identified."]) + [""]
             return [title, value or "", ""]
         lines = ["SUMMARY OF YOUR ENTIRE BOARD", ""]
-        lines += block("THE OVERALL STATE OF YOUR BOARD", structured.get("overall_state", ""))
-        lines += block("READY TO RECOMMIT", structured.get("ready_to_recommit", []))
-        lines += block("MAY NEED ADDITIONAL ENGAGEMENT", structured.get("need_engagement", []))
-        lines += block("YOU NEED TO HAVE A CONVERSATION WITH", structured.get("need_conversation", []))
-        lines += block("MAY BE BETTER SUITED TO AN ADVISORY ROLE", structured.get("advisory_candidates", []))
-        lines += block("MAY NEED TO STEP OFF THE BOARD", structured.get("step_off_candidates", []))
-        lines += block("THE ROLE EACH MEMBER CAN POTENTIALLY PLAY", structured.get("member_roles", []))
-        lines += block("THE STRENGTHS YOU ALREADY HAVE", structured.get("board_strengths", []))
-        lines += block("THE GAPS THAT REMAIN", structured.get("board_gaps", []))
-        lines += block("WHERE YOU NEED TO RECRUIT", structured.get("recruitment_needs", ""))
-        if structured.get("not_yet_responded"):
-            lines += block("STILL WAITING ON", structured.get("not_yet_responded", ""))
+        if (structured.get("summary_status") or "").strip():
+            lines += block("BOARD SUMMARY STATUS", structured["summary_status"])
+        lines += block("YOUR BOARD AT A GLANCE", structured.get("board_at_a_glance", ""))
+        lines.append("YOUR CONFIRMED ACTIVE BOARD")
+        active = structured.get("confirmed_active_board", []) or []
+        if not active:
+            lines.append("- No Board Members have a confirmed recommitment recorded yet.")
+        for entry in active:
+            lines.append("")
+            lines.append(entry.get("member_name", ""))
+            if entry.get("current_board_role"):
+                lines.append(f"Current Board Role: {entry['current_board_role']}")
+            if entry.get("what_they_bring"):
+                lines.append(f"What They Bring: {entry['what_they_bring']}")
+            if entry.get("agreed_contribution"):
+                lines.append(f"Agreed Contribution: {entry['agreed_contribution']}")
+            if entry.get("agreed_responsibility"):
+                lines.append(f"Agreed Responsibility: {entry['agreed_responsibility']}")
+            if entry.get("realistic_capacity"):
+                lines.append(f"Realistic Capacity: {entry['realistic_capacity']}")
+            if entry.get("organization_support_agreed"):
+                lines.append(f"Support the Organization Agreed to Provide: {entry['organization_support_agreed']}")
+        lines.append("")
+        if structured.get("advisory_transitions"):
+            lines.append("ADVISORY TRANSITIONS")
+            for entry in structured["advisory_transitions"]:
+                line = f"- {entry.get('member_name', '')}"
+                if entry.get("agreed_advisory_direction"):
+                    line += f" — {entry['agreed_advisory_direction']}"
+                lines.append(line)
+            lines.append("")
+        if structured.get("stepped_down"):
+            lines.append("BOARD MEMBERS WHO HAVE STEPPED DOWN")
+            for entry in structured["stepped_down"]:
+                line = f"- {entry.get('member_name', '')} — Stepping Down"
+                if entry.get("agreed_transition_next_step"):
+                    line += f". Next step: {entry['agreed_transition_next_step']}"
+                lines.append(line)
+            lines.append("")
+        if structured.get("still_to_be_resolved"):
+            lines.append("STILL TO BE RESOLVED")
+            for entry in structured["still_to_be_resolved"]:
+                lines.append(f"- {entry.get('member_name', '')} — {entry.get('current_status', '')}")
+            lines.append("")
+        lines += block("THE STRENGTHS YOUR BOARD NOW HAS", structured.get("strengths_of_your_confirmed_board", []))
+        lines += block("WHAT YOUR BOARD CAN HELP CARRY NOW", structured.get("what_your_board_can_help_carry_now", []))
+        lines += block("HOW YOU NEED TO SUPPORT THIS BOARD", structured.get("support_you_need_to_provide_your_board", []))
+        lines += block("AREAS NOT YET COVERED", structured.get("areas_not_yet_covered", []))
+        lines += block("WHAT THIS MEANS FOR YOUR NEXT STEP", structured.get("what_this_means_for_the_next_step", ""))
         return "\n".join(lines).strip()
 
     @router.get("/reactivation/board-summary")
@@ -1206,17 +1253,43 @@ def create_reactivation_router(db) -> APIRouter:
         org_context = {key: intake.get(key, "") for key in [
             "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
             "current_skills", "missing_skills", "disengage_reason", "expected_contribution", "actually_happening"]}
-        context = "ORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
+
+        def roster_entry(record: dict) -> dict:
+            response = record.get("response") or {}
+            outcome = record.get("conversation_outcome", "")
+            conclusion = (record.get("conversation_conclusion") or "").strip()
+            resolved = bool(conclusion) and outcome in {OUTCOME_ACTIVE, OUTCOME_ADVISORY, OUTCOME_SUPPORT, OUTCOME_STEP_DOWN}
+            entry = {
+                "name": record["name"], "current_board_role": record.get("role", ""),
+                "form_status": "Completed" if record["status"] == "COMPLETED" else "Form not completed yet",
+                "recommitment_answer": response.get("recommitment", ""),
+                "conversation_status": "Conversation completed" if conclusion else "Conversation not completed yet",
+                "final_recorded_outcome": outcome or "No final outcome recorded yet",
+                "resolution": "RESOLVED" if resolved else "UNRESOLVED",
+            }
+            if conclusion:
+                entry["conversation_conclusion_authoritative"] = conclusion[:2500]
+            if resolved and outcome == OUTCOME_ACTIVE:
+                entry["original_form_background_only"] = {key: response.get(key, "") for key in [
+                    "why_joined", "expertise", "expertise_other", "participation_barriers", "contribution_interests",
+                    "ownership_area", "leadership_interest", "leadership_area", "strengths_resources",
+                    "monthly_availability", "experience_improvement"]}
+            return entry
+
+        roster = [roster_entry(record) for record in records]
+        status_flag = "COMPLETE" if roster and all(entry["resolution"] == "RESOLVED" for entry in roster) else "INCOMPLETE"
+        context = f"BOARD SUMMARY STATUS: {status_flag}\n\nORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
         master = await get_master_record(db, user_id=user_id)
         if master and master.get("data"):
             context += ("\n\nCOMPLETE BOARD FIX MASTER INTAKE (the founder's own description of the organization, its board, goals and priorities):\n"
                         + json.dumps(master["data"], indent=1, default=str)[:8000])
-        context += "\n\nEVERY BOARD MEMBER'S ACTUAL PROFILE & RECOMMITMENT FORM RESPONSE:\n"
-        for record in responded:
-            context += json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str)[:5000] + "\n\n"
-        waiting = [r["name"] for r in records if r["status"] != "COMPLETED"]
-        if waiting:
-            context += "\nBOARD MEMBERS WHO HAVE NOT RESPONDED YET: " + ", ".join(waiting)
+        if intake.get("bylaws_text"):
+            context += "\n\nORGANIZATION BYLAWS EXTRACT (verified Board/governance context ONLY — never invent legal requirements):\n" + intake["bylaws_text"][:10000]
+        context += ("\n\nCOMPLETE CURRENT BOARD ROSTER — the saved Conversation Conclusion and final recorded outcome are the AUTHORITATIVE "
+                    "source of each member's Board status and agreed contribution; original form responses are supporting background only; "
+                    "UNRESOLVED members belong under Still To Be Resolved and are neither confirmed nor departed:\n\n")
+        for entry in roster:
+            context += json.dumps(entry, indent=1, default=str)[:6000] + "\n\n"
         now = datetime.now(timezone.utc).isoformat()
         if existing:
             material_id = existing["material_id"]
@@ -1257,6 +1330,7 @@ def create_reactivation_router(db) -> APIRouter:
     # ---------------- DASHBOARD OUTCOME EMAILS ----------------
 
     OUTCOME_EMAIL_TYPES = {
+        "Continuing as an Active Board Member": ("reactivation_recommitment_confirmation", "Board Member Recommitment Confirmation Email"),
         "Stepping Down From the Board": ("reactivation_stepped_down_followup", "Stepped-Down Follow-Up Email"),
         "Transitioning to an Advisory Role": ("reactivation_advisory_confirmation", "Advisory Board Confirmation Email"),
     }
@@ -1267,7 +1341,9 @@ def create_reactivation_router(db) -> APIRouter:
         record = await owned_board_member(member["user_id"], member_record_id)
         outcome = record.get("conversation_outcome", "")
         if outcome not in OUTCOME_EMAIL_TYPES:
-            raise HTTPException(status_code=409, detail="Record the final outcome (Stepping Down or Advisory) before generating this email.")
+            raise HTTPException(status_code=409, detail="Record the final outcome (Recommitting, Advisory or Stepping Down) before generating this email.")
+        if not (record.get("conversation_conclusion") or "").strip():
+            raise HTTPException(status_code=409, detail="Save the Conversation Conclusion — what you and this Board Member actually agreed — before generating this email.")
         material_type, title = OUTCOME_EMAIL_TYPES[outcome]
         intake = await user_intake(member["user_id"])
         context_data = await founder_context(member["user_id"])
@@ -1275,10 +1351,19 @@ def create_reactivation_router(db) -> APIRouter:
                    + (f" ({context_data['founder_title']})" if context_data.get("founder_title") else "")
                    + f"\n\nBOARD MEMBER: {record['name']} — current role: {record.get('role', 'Board Member')}"
                    + f"\n\nRECORDED FINAL OUTCOME: {outcome}"
-                   + "\n\nFOUNDER'S POST-CALL NOTES (what actually happened and was agreed — highest authority):\n"
-                   + (record.get("conversation_conclusion") or "No notes recorded.")
-                   + "\n\nTHE BOARD MEMBER'S OWN FORM RESPONSES (for accurate acknowledgement of their service):\n"
+                   + "\n\nFOUNDER'S SAVED CONVERSATION CONCLUSION (the AUTHORITATIVE record of what was ACTUALLY agreed):\n"
+                   + record["conversation_conclusion"]
+                   + "\n\nTHE BOARD MEMBER'S OWN FORM RESPONSES (background only — never turn a form selection into an agreed responsibility unless the Conversation Conclusion confirms it):\n"
                    + json.dumps(record.get("response") or {}, indent=1, default=str)[:6000])
+        if material_type == "reactivation_recommitment_confirmation":
+            contact = ", ".join(filter(None, [context_data.get("founder_email", ""), context_data.get("founder_phone", "")]))
+            if contact:
+                context += f"\n\nFOUNDER CONTACT DETAILS FOR THE SIGN-OFF: {contact}"
+            analysis_material = await db.generated_materials.find_one(
+                {"user_id": member["user_id"], "type": "reactivation_response_analysis", "application_id": member_record_id,
+                 "status": {"$nin": ["Generating", "Failed"]}}, {"_id": 0})
+            if analysis_material:
+                context += "\n\nBACKGROUND ONLY — UNDERSTANDING THEIR RESPONSE (NOT authoritative; the Conversation Conclusion overrides it):\n" + current_display(analysis_material)[:4000]
         if outcome == "Stepping Down From the Board":
             if intake.get("bylaws_text"):
                 context += "\n\nORGANIZATION BYLAWS EXTRACT (use ONLY procedures actually stated here):\n" + intake["bylaws_text"][:15000]

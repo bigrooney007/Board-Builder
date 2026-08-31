@@ -309,7 +309,8 @@ export default function ReactivationStep5() {
       {groups.active.length > 0 && (
         <section data-testid="myboard-active-section">
           <h2 style={{ margin: "24px 0 10px" }}>Active Board Members</h2>
-          {groups.active.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ACTIVE — RECOMMITTED" />)}
+          {groups.active.map((row) => <MemberCard key={row.member_record_id} row={row} withPortfolio reload={load} badge="ACTIVE — RECOMMITTED"
+            extra={<OutcomeEmailWorkflow row={row} label={D.recommitmentEmailButton} reload={load} />} />)}
         </section>
       )}
       {groups.advisory.length > 0 && (

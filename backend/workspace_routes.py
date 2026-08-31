@@ -235,18 +235,51 @@ def create_workspace_router(db) -> APIRouter:
             else:
                 context += "\n\nNO SECURE REFERENCE FORM LINK EXISTS YET — ask the candidate to reply to this email with their referee details."
         if payload.type == "powerhouse_board_blueprint":
-            context += ("\n\nPRESENT BOARD COMPOSITION RULE: The founder/executive director is a serving member of the present board. "
-                        "Include the founder — with their actual skills, experience and role — as part of the present board when assessing "
-                        "the current board composition and calculating the gap between the present board and the ideal board.")
+            context += ("\n\nPRESENT BOARD COMPOSITION RULE: Where the supplied information shows the founder/executive director is a serving "
+                        "member of the governing Board, include the founder — with their actual skills, experience and role — as part of the "
+                        "confirmed present Board when assessing current composition and calculating the gap. Do not automatically count an "
+                        "executive director as a Board Member if the supplied information explicitly says they are not serving on the governing Board.")
+            summary_material = await get_current_material(db, user_id, "reactivation_board_summary")
+            if summary_material and summary_material["current"]:
+                context += ("\n\nSUMMARY OF YOUR ENTIRE BOARD (consolidated post-Reactivation picture: confirmed active Board, strengths, what "
+                            "it can help carry, presently uncovered areas and unresolved status — where the underlying member records below are "
+                            "also supplied, those verified records remain authoritative):\n"
+                            + summary_material["current"]["display_text"][:10000])
             roster = await db.reactivation_board_members.find(
-                {"user_id": user_id, "status": "COMPLETED"}, {"_id": 0, "name": 1, "role": 1, "response": 1}).to_list(100)
+                {"user_id": user_id},
+                {"_id": 0, "name": 1, "role": 1, "response": 1, "status": 1,
+                 "conversation_outcome": 1, "conversation_conclusion": 1}).to_list(100)
             if roster:
                 import json as _json
-                context += ("\n\nCURRENT BOARD MEMBER RECOMMITMENT RESPONSES (submitted by the board members themselves through the "
-                            "Board Member Profile & Recommitment Form — use these to understand what the present board actually brings, "
-                            "who is staying, who is transitioning, and what gaps remain):\n"
-                            + _json.dumps([{"name": r.get("name", ""), "board_role": r.get("role", ""), "their_response": r.get("response", {})}
-                                           for r in roster], indent=1, default=str))
+                final_outcomes = {"Continuing as an Active Board Member", "Transitioning to an Advisory Role",
+                                  "Transitioning to Another Support Role", "Stepping Down From the Board"}
+
+                def _roster_entry(record):
+                    outcome = record.get("conversation_outcome", "")
+                    resolved = bool((record.get("conversation_conclusion") or "").strip()) and outcome in final_outcomes
+                    entry = {"name": record.get("name", ""), "board_role": record.get("role", ""),
+                             "final_recorded_outcome": outcome or "No final outcome recorded yet",
+                             "resolution": "RESOLVED" if resolved else "UNRESOLVED"}
+                    if resolved and outcome == "Continuing as an Active Board Member":
+                        response = record.get("response") or {}
+                        entry["confirmed_member_expertise"] = {key: response.get(key, "") for key in [
+                            "expertise", "expertise_other", "strengths_resources", "contribution_interests",
+                            "ownership_area", "leadership_interest", "leadership_area", "monthly_availability"]}
+                    return entry
+
+                context += ("\n\nCURRENT BOARD ROSTER AFTER REACTIVATION (the saved final Reactivation outcome — not the Recommitment Form — "
+                            "determines who is actually on the confirmed present Board. Count ONLY members whose final outcome is Continuing as "
+                            "an Active Board Member. Never count stepped-down members. Never count Advisory members as governing Board members "
+                            "(Advisory capability may be acknowledged separately but is not governing Board capability). Never count UNRESOLVED "
+                            "members as confirmed active Board members):\n"
+                            + _json.dumps([_roster_entry(record) for record in roster], indent=1, default=str)[:14000])
+            reactivation_intake = await db.board_reactivation_intakes.find_one(
+                {"user_id": user_id}, {"_id": 0, "bylaws_text": 1}, sort=[("submitted_at", -1)])
+            if reactivation_intake and reactivation_intake.get("bylaws_text"):
+                context += ("\n\nORGANIZATION BYLAWS EXTRACT (verified Board/governance context ONLY — use for Board structure, Board-size "
+                            "parameters or officer structure where explicitly stated; never invent legal requirements or legal conclusions; "
+                            "where sources conflict, use the verified information conservatively):\n"
+                            + reactivation_intake["bylaws_text"][:10000])
         if payload.type in {"conditional_offer", "formal_appointment_email"}:
             links = []
             overview_token = await ensure_share_token(user_id, "organization_overview")

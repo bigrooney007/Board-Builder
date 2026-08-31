@@ -33,6 +33,7 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
   const [draftText, setDraftText] = useState("");
   const [viewing, setViewing] = useState(false);
   const [response, setResponse] = useState(null);
+  const [understanding, setUnderstanding] = useState(null);
   const [conclusion, setConclusion] = useState(row.conversation_conclusion || "");
   const [conclusionSaved, setConclusionSaved] = useState(false);
   const [outcome, setOutcome] = useState(row.conversation_outcome || "");
@@ -73,7 +74,10 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
     try {
       const res = await memberApi.post(`/reactivation/board-members/${id}/conversation-script`);
       await pollForScript(res.data.material_id);
-    } catch { setBusy(""); }
+    } catch (err) {
+      window.alert(err.response?.data?.detail || "Generation failed. Please try again.");
+      setBusy("");
+    }
   };
 
   useEffect(() => {
@@ -115,6 +119,12 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
   const openResponse = async () => {
     const res = await memberApi.get(`/reactivation/board-members/${id}/response`);
     setResponse(res.data);
+  };
+
+  const openUnderstanding = async () => {
+    if (!row.analysis) return;
+    const res = await memberApi.get(`/reactivation/materials/${row.analysis.material_id}`);
+    setUnderstanding(res.data);
   };
 
   const saveConclusion = async () => {
@@ -167,6 +177,9 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="button button-outline" onClick={openResponse} data-testid={`step3-view-response-${id}`}>VIEW RECOMMITMENT RESPONSE</button>
+        {row.analysis && !["Generating", "Failed"].includes(row.analysis.status) && (
+          <button type="button" className="button button-outline" onClick={openUnderstanding} data-testid={`step3-view-understanding-${id}`}>VIEW UNDERSTANDING</button>
+        )}
         <button type="button" className="button" onClick={generate} disabled={busy === "generate" || !direction} title={!direction ? C.directionPlaceholder : ""} data-testid={`step3-generate-${id}`}>
           {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> {C.regenerateScript}</> : <><FileText size={15} /> {C.generateScript}</>}
         </button>
@@ -217,6 +230,12 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
         <Modal onClose={() => setResponse(null)} testId={`step3-response-modal-${id}`} wide>
           <h2>{row.name} — Recommitment Response</h2>
           <ResponseView data={response} testPrefix="step3" />
+        </Modal>
+      )}
+      {understanding && (
+        <Modal onClose={() => setUnderstanding(null)} testId={`step3-understanding-modal-${id}`} wide>
+          <h2>Understanding {row.name}'s Response</h2>
+          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }} data-testid={`step3-understanding-text-${id}`}>{understanding.display_text}</div>
         </Modal>
       )}
     </article>

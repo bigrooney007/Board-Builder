@@ -10,20 +10,17 @@ import { boardRecommitmentFormPageText } from "../content/siteContent";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const EXPERTISE = ["Fundraising", "Major Gifts", "Grant Writing", "Finance / Accounting", "Legal", "Human Resources", "Marketing / Communications", "Public Relations", "Strategic Planning", "Organizational Development", "Nonprofit Leadership", "Corporate Partnerships", "Government Relations", "Education", "Youth Development", "Healthcare", "Mental Health", "Technology / AI", "Program Development", "Operations", "Project Management", "Community Engagement", "Volunteer Management", "Events", "Advocacy", "Other"];
-const NETWORKS = ["Business Leaders", "Corporate Executives", "Donors / Philanthropists", "Foundations", "Community Leaders", "Government", "Schools / Universities", "Faith Communities", "Healthcare Organizations", "Technology Sector", "Media", "Professional Associations", "Other", "I am not currently comfortable making introductions"];
-const HOW_RECRUITED = ["Invited by the Founder / Executive Director", "Invited by another Board Member", "Friend / Family / Personal Relationship", "Professional Relationship", "Volunteer / Supporter of the Organization", "Public Board Recruitment", "Founding Member", "Other"];
-const CLARITY = ["Very Clear", "Somewhat Clear", "Not Very Clear", "Not Clear at All"];
-const CONTRIBUTIONS = ["Fundraising", "Donor Introductions", "Corporate Partnerships / Sponsorship", "Grants / Foundations", "Finance", "Governance", "Strategic Planning", "Marketing / Communications", "Public Relations", "Programs", "Operations", "Human Resources", "Technology", "Community Engagement", "Government / Advocacy", "Events", "Volunteer Development", "Board Recruitment", "Leadership / Committee Service", "Other"];
-const FUNDRAISING = ["Making introductions to potential donors", "Meeting with prospective donors", "Corporate sponsorship outreach", "Foundation / grant opportunities", "Donor stewardship", "Fundraising events", "Speaking about the organization", "Reviewing fundraising strategy", "Personal financial contribution", "I would like training before participating", "I am not currently comfortable participating in fundraising"];
-const AVAILABILITY = ["Less than 2 hours", "2–4 hours", "5–8 hours", "9–12 hours", "More than 12 hours", "Varies significantly month to month"];
-const MEETINGS = ["Yes", "Usually", "Sometimes", "No", "I need to discuss the meeting schedule"];
+const CONTRIBUTIONS = ["Fundraising / Resource Development", "Marketing & Communications", "Programs & Impact", "Partnerships", "Finance", "Governance / Board Development", "Strategic Planning", "Technology", "Volunteer Development", "Community Engagement", "Operations", "Board Recruitment", "Other"];
+const AVAILABILITY = ["Less than 2 hours", "2–4 hours", "5–8 hours", "9–12 hours", "12+ hours"];
+const YES = "Yes, I am ready to recommit and continue serving.";
+const NO = "No, I am not able to recommit to serving on the Board.";
+const UNSURE = "I am not sure yet. I need more information or would like to discuss my role before deciding.";
 
 const INITIAL = {
-  full_name: "", preferred_name: "", email: "", phone: "", city_state: "", linkedin: "", current_position: "", employer: "", industry: "", years_experience: "",
-  expertise: [], expertise_other: "", networks: [], why_joined: "", how_recruited: "", original_role_expectation: "", role_clarity: "", clarity_help: "",
-  board_experience: "", participation_barriers: "", board_improvement: "", strategic_clarity: "", planning_participation: "", planning_involvement_desire: "",
-  recommitment: "", advisory_openness: "", support_role_openness: "", step_off_openness: "", contribution_interests: [], fundraising_comfort: [], ownership_areas: "",
-  leadership_interest: "", support_needed: "", monthly_availability: "", meeting_participation: "", constraints: "", meaningful_service: "", anything_else: "", confirmation: false,
+  full_name: "", email: "", phone: "", recommitment: "",
+  why_joined: "", expertise: [], expertise_other: "", participation_barriers: "", contribution_interests: [],
+  ownership_area: "", leadership_interest: "", leadership_area: "", strengths_resources: "", monthly_availability: "",
+  experience_improvement: "", decision_reason: "", advisory_openness: "", decision_support: "", anything_else: "",
 };
 
 const tid = (name) => `recommit-${name.replace(/_/g, "-")}`;
@@ -44,6 +41,19 @@ const Multi = ({ legend, name, options, form, toggle, required = true }) => (
       {options.map((option) => (
         <label className={`choice ${form[name].includes(option) ? "selected" : ""}`} key={option}>
           <input type="checkbox" checked={form[name].includes(option)} onChange={() => toggle(name, option)} data-testid={`${tid(name)}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} />
+          <span>{option}</span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+);
+const Radios = ({ legend, name, options, form, setValue, testPrefix }) => (
+  <fieldset className="field choice-field" data-testid={`${testPrefix}-options`}>
+    <legend>{legend} <b>*</b></legend>
+    <div>
+      {options.map((option, index) => (
+        <label className={`choice ${form[name] === option ? "selected" : ""}`} key={option} style={{ display: "flex", marginBottom: 8 }}>
+          <input type="radio" name={name} checked={form[name] === option} onChange={() => setValue(name, option)} data-testid={`${testPrefix}-option-${index + 1}`} />
           <span>{option}</span>
         </label>
       ))}
@@ -72,15 +82,26 @@ export default function BoardRecommitmentFormPage() {
   }, [token]);
 
   const set = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
-  const toggle = (name, option) => setForm((current) => ({
-    ...current, [name]: current[name].includes(option) ? current[name].filter((item) => item !== option) : [...current[name], option],
-  }));
+  const setValue = (name, value) => setForm((current) => ({ ...current, [name]: value }));
+  const toggle = (name, option) => setForm((current) => {
+    if (current[name].includes(option)) return { ...current, [name]: current[name].filter((item) => item !== option) };
+    if (name === "contribution_interests" && current[name].length >= 3) return current;
+    return { ...current, [name]: [...current[name], option] };
+  });
 
   const submit = async () => {
-    const required = ["full_name", "email", "current_position", "why_joined", "how_recruited", "original_role_expectation", "role_clarity", "board_experience", "participation_barriers", "board_improvement", "strategic_clarity", "planning_participation", "recommitment", "ownership_areas", "leadership_interest", "support_needed", "monthly_availability", "meeting_participation", "meaningful_service"];
-    const missing = required.some((name) => !String(form[name]).trim()) || !form.expertise.length || !form.networks.length || !form.contribution_interests.length || !form.fundraising_comfort.length;
+    let missing = !form.full_name.trim() || !form.email.trim() || !form.recommitment;
+    if (form.recommitment === YES) {
+      missing = missing
+        || ["why_joined", "participation_barriers", "ownership_area", "strengths_resources", "monthly_availability", "experience_improvement"].some((name) => !form[name].trim())
+        || !form.expertise.length || !form.contribution_interests.length || !form.leadership_interest
+        || (form.leadership_interest === "Yes" && !form.leadership_area.trim());
+    } else if (form.recommitment === NO) {
+      missing = missing || !form.decision_reason.trim();
+    } else if (form.recommitment === UNSURE) {
+      missing = missing || !form.decision_support.trim();
+    }
     if (missing) { setErrorText("Please answer every required question before submitting."); window.scrollTo(0, 0); return; }
-    if (!form.confirmation) { setErrorText("Please check the confirmation box before submitting."); return; }
     setBusy(true);
     setErrorText("");
     try {
@@ -94,6 +115,14 @@ export default function BoardRecommitmentFormPage() {
   };
 
   const org = context?.organization_name || "the organization";
+  const reviewerLine = () => {
+    const name = context?.founder_name || "";
+    const title = context?.founder_title || "";
+    if (name && title) return `${name}, ${title},`;
+    if (name) return name;
+    return `The leadership of ${org}`;
+  };
+  const prefilled = Boolean(context?.prefill?.full_name && context?.prefill?.email);
 
   return (
     <FunnelLayout restrained>
@@ -106,110 +135,86 @@ export default function BoardRecommitmentFormPage() {
           <div className="intake-card" data-testid="recommit-thankyou">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Submitted</p>
             <h2>{recommitFormText.h_thankYou}</h2>
-            <p>{boardRecommitmentFormPageText.yourBoardMemberProfileAmp}<strong>{org}</strong>.</p>
-            <p>{boardRecommitmentFormPageText.theOrganizationWillReviewYour}</p>
+            <p>Thank you for completing your Board Member Profile & Recommitment Form for <strong>{org}</strong>.</p>
+            <p data-testid="recommit-thankyou-reviewer">{reviewerLine()} will review your response and will be reaching out to you based on what you shared so you can discuss the way forward together.</p>
+            <p>Thank you for taking the time to provide your response.</p>
           </div>
         )}
         {gate === "ready" && (
           <>
             <section className="funnel-hero-banner brp-hero intake-hero" data-testid="recommit-hero">
-              <h1>{recommitFormText.h_boardMemberProfileAmpRecommitment}</h1>
-              <p className="funnel-hero-banner-supporting" data-testid="recommit-supporting">{org} is taking time to strengthen how the Board works together and make sure every Board Member has clarity about their role, capacity and areas of contribution.</p>
-              <p className="funnel-hero-banner-secondary">{recommitFormText.s_pleaseCompleteThisFormHonestly}</p>
+              <h1>Board Member Profile & Recommitment Form</h1>
               <i aria-hidden="true" />
             </section>
             <section className="intake-shell" data-testid="recommit-form">
-              {context?.introduction && (
-                <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 16, borderRadius: 8, marginBottom: 18 }} data-testid="recommit-introduction">{context.introduction}</div>
-              )}
+              <div data-testid="recommit-introduction">
+                <p>As we strengthen the Board of <strong>{org}</strong> and prepare for the next phase of the organization, we are asking every current Board Member to confirm their commitment and help us understand how they would like to contribute moving forward.</p>
+                <p>Your responses will help us engage you in areas that fit your strengths, interests and capacity and prepare for a short conversation about your role moving forward.</p>
+                <p>Please answer honestly based on where you are today.</p>
+              </div>
               {errorText && <p className="submit-error" data-testid="recommit-error">{errorText}</p>}
 
-              <h2 className="intake-step-title">{recommitFormText.h_aboutYou}</h2>
-              <div className="two-col-fields">
-                <Text label="Full Name" name="full_name" form={form} set={set} required />
-                <Text label="Preferred Name" name="preferred_name" form={form} set={set} />
-              </div>
-              <div className="two-col-fields">
-                <Text label="Email Address" name="email" type="email" form={form} set={set} required />
-                <Text label="Phone Number" name="phone" type="tel" form={form} set={set} />
-              </div>
-              <div className="two-col-fields">
-                <Text label="City / State / Region" name="city_state" form={form} set={set} />
-                <Text label="LinkedIn Profile (optional)" name="linkedin" form={form} set={set} />
-              </div>
-              <div className="two-col-fields">
-                <Text label="Current Professional Position" name="current_position" form={form} set={set} required />
-                <Text label="Organization / Employer" name="employer" form={form} set={set} />
-              </div>
-              <div className="two-col-fields">
-                <Text label="Industry / Professional Field" name="industry" form={form} set={set} />
-                <Text label="Years of Professional Experience (optional)" name="years_experience" form={form} set={set} />
-              </div>
-              <Multi legend="What professional skills, experience or expertise do you bring that could support the organization?" name="expertise" options={EXPERTISE} form={form} toggle={toggle} />
-              {form.expertise.includes("Other") && <Text label="Other expertise" name="expertise_other" form={form} set={set} />}
-              <Multi legend="Which types of relationships or professional networks could you potentially help the organization connect with?" name="networks" options={NETWORKS} form={form} toggle={toggle} />
-
-              <h2 className="intake-step-title">{recommitFormText.h_yourExperienceOnTheBoard}</h2>
-              <Area label={`What originally interested you in serving on the Board of ${org}?`} name="why_joined" form={form} set={set} />
-              <Select label="How did you originally become involved with the Board?" name="how_recruited" options={HOW_RECRUITED} form={form} set={set} />
-              <Area label="When you joined the Board, what did you understand your role and responsibilities to be?" name="original_role_expectation" form={form} set={set} />
-              <Select label="How clear are you today about what is expected of you as a Board Member?" name="role_clarity" options={CLARITY} form={form} set={set} />
-              <Area label="What would help give you greater clarity about your role? (optional)" name="clarity_help" required={false} rows={3} form={form} set={set} />
-              <Area label="How would you describe your experience serving on the Board so far?" name="board_experience" form={form} set={set} />
-              <Area label="What, if anything, has made it difficult for you to participate as actively as you would like?" name="participation_barriers" form={form} set={set} />
-              <Area label="What do you believe would help the Board work more effectively?" name="board_improvement" form={form} set={set} />
-              <Select label="How clear are you about where the organization is heading over the next 12–24 months?" name="strategic_clarity" options={CLARITY} form={form} set={set} />
-              <Select label="Have you had an opportunity to contribute to the organization's strategic direction or planning?" name="planning_participation" options={["Yes", "Somewhat", "No", "Not Sure"]} form={form} set={set} />
-              <Area label="If you would like greater involvement in planning or strategic decisions, tell us how. (optional)" name="planning_involvement_desire" required={false} rows={3} form={form} set={set} />
-
-              <h2 className="intake-step-title">{recommitFormText.h_recommitment}</h2>
-              <fieldset className="field choice-field" data-testid="recommit-recommitment-options">
-                <legend>{boardRecommitmentFormPageText.lookingAheadAreYouWilling}<b>*</b></legend>
-                <div>
-                  {(context.recommitment_options || []).map((option) => (
-                    <label className={`choice ${form.recommitment === option ? "selected" : ""}`} key={option} style={{ display: "flex", marginBottom: 8 }}>
-                      <input type="radio" name="recommitment" checked={form.recommitment === option} onChange={() => setForm((current) => ({ ...current, recommitment: option }))} data-testid={`recommit-option-${(context.recommitment_options || []).indexOf(option) + 1}`} />
-                      <span>{option}</span>
-                    </label>
-                  ))}
+              {prefilled ? (
+                <div className="intake-card" style={{ marginBottom: 18 }} data-testid="recommit-identity">
+                  <p style={{ margin: 0 }}><strong>{context.prefill.full_name}</strong></p>
+                  <p style={{ margin: "4px 0 0" }}>{context.prefill.email}</p>
+                  {context.prefill.role && <p style={{ margin: "4px 0 0" }}>{context.prefill.role}</p>}
                 </div>
-              </fieldset>
-              {!generalVersion && context.allow_advisory && (
-                <Select label="If continuing as an active Board Member is not realistic for you, would you be open to supporting the organization in an Advisory Board / Advisory role?" name="advisory_openness" options={["Yes", "Maybe — I would like to discuss it", "No"]} form={form} set={set} required={false} />
-              )}
-              {!generalVersion && context.allow_support_role && (
-                <Select label="If continuing as an active Board Member is not realistic for you, would you be open to supporting the organization in another volunteer or support role?" name="support_role_openness" options={["Yes", "Maybe — I would like to discuss it", "No"]} form={form} set={set} required={false} />
-              )}
-              {!generalVersion && context.allow_step_off && (
-                <Select label="Thinking honestly about your capacity and interest, do you believe you should remain on the board or transition off the board?" name="step_off_openness" options={["I should remain on the board", "I believe I should transition off the board", "I am not sure — I would like to discuss it"]} form={form} set={set} required={false} />
+              ) : (
+                <div className="two-col-fields">
+                  <Text label="Full Name" name="full_name" form={form} set={set} required />
+                  <Text label="Email Address" name="email" type="email" form={form} set={set} required />
+                </div>
               )}
 
-              <h2 className="intake-step-title">{recommitFormText.h_howYouWantToContribute}</h2>
-              <Multi legend="If you continue serving, where would you most like to contribute?" name="contribution_interests" options={CONTRIBUTIONS} form={form} toggle={toggle} />
-              <Multi legend="Which fundraising activities would you be comfortable helping with?" name="fundraising_comfort" options={FUNDRAISING} form={form} toggle={toggle} />
-              <Area label="What areas of responsibility would you be willing to take greater ownership of over the next 6–12 months?" name="ownership_areas" form={form} set={set} />
-              <Area label="Are there any areas where you would be interested in taking a leadership role?" name="leadership_interest" form={form} set={set} />
-              <Area label="What support, information or resources would help you contribute more effectively?" name="support_needed" form={form} set={set} />
+              <Radios
+                legend={`Are you ready to recommit and continue serving as an active Board Member of ${org}?`}
+                name="recommitment" options={context.recommitment_options || [YES, NO, UNSURE]} form={form} setValue={setValue} testPrefix="recommit"
+              />
 
-              <h2 className="intake-step-title">{recommitFormText.h_yourCapacity}</h2>
-              <Select label="Realistically, how much time can you commit to Board responsibilities each month?" name="monthly_availability" options={AVAILABILITY} form={form} set={set} />
-              <Select label="Are you able to participate consistently in the organization's current Board meeting schedule?" name="meeting_participation" options={MEETINGS} form={form} set={set} />
-              <Area label="Is there anything about your current availability or circumstances that the organization should understand when discussing your Board responsibilities? (optional)" name="constraints" required={false} rows={3} form={form} set={set} />
+              {form.recommitment === YES && (
+                <div data-testid="recommit-yes-path">
+                  <Area label={`Why did you choose to join the Board of ${org}?`} name="why_joined" rows={3} form={form} set={set} />
+                  <Multi legend="What professional skills, experience or expertise do you bring that could help strengthen the organization?" name="expertise" options={EXPERTISE} form={form} toggle={toggle} />
+                  {form.expertise.includes("Other") && <Text label="Other expertise" name="expertise_other" form={form} set={set} />}
+                  <Area label="What, if anything, has made it difficult for you to participate or contribute as actively as you would like?" name="participation_barriers" form={form} set={set} />
+                  <Multi legend="How would you most like to contribute to the organization moving forward? (Select up to 3)" name="contribution_interests" options={CONTRIBUTIONS} form={form} toggle={toggle} />
+                  <Area label="Of the areas you selected, is there one area you would be willing to take greater responsibility for helping the Board move forward?" name="ownership_area" form={form} set={set} />
+                  <Radios legend="Are there any leadership or committee responsibilities you would be interested in taking on?" name="leadership_interest" options={["Yes", "I would like to discuss this"]} form={form} setValue={setValue} testPrefix="recommit-leadership" />
+                  {form.leadership_interest === "Yes" && (
+                    <Area label="Please tell us the area or responsibility you would be interested in leading." name="leadership_area" rows={3} form={form} set={set} />
+                  )}
+                  <Area label="Are there any skills, resources or other strengths you have that you would like the Board to know about?" name="strengths_resources" form={form} set={set} />
+                  <Select label="Approximately how many hours per month are you realistically able to dedicate to Board service?" name="monthly_availability" options={AVAILABILITY} form={form} set={set} />
+                  <Area label="What can we do to make your Board experience more enjoyable and help you contribute effectively?" name="experience_improvement" form={form} set={set} />
+                  <Area label="Is there anything else you would like the Founder or Board leadership to know as we move forward together? (optional)" name="anything_else" required={false} rows={3} form={form} set={set} />
+                </div>
+              )}
 
-              <h2 className="intake-step-title">{recommitFormText.h_finalQuestions}</h2>
-              <Area label="If you continue serving, what would make your Board service meaningful and worthwhile to you?" name="meaningful_service" form={form} set={set} />
-              <Area label="Is there anything else you would like the Founder or Board leadership to understand before you discuss your future role on the Board? (optional)" name="anything_else" required={false} rows={3} form={form} set={set} />
+              {form.recommitment === NO && (
+                <div data-testid="recommit-no-path">
+                  <Area label="Please briefly tell us what has led to your decision not to continue serving on the Board." name="decision_reason" form={form} set={set} />
+                  {!generalVersion && context.allow_advisory && (
+                    <Radios legend={`Would you be open to continuing to support ${org} in an Advisory Board role rather than serving as an active Board Member?`} name="advisory_openness" options={["Yes", "No", "I would like to discuss it"]} form={form} setValue={setValue} testPrefix="recommit-advisory" />
+                  )}
+                </div>
+              )}
 
-              <h2 className="intake-step-title">{recommitFormText.h_confirmation}</h2>
-              <label className="choice" style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <input type="checkbox" checked={form.confirmation} onChange={() => setForm((current) => ({ ...current, confirmation: !current.confirmation }))} data-testid="recommit-confirmation" />
-                <span>{boardRecommitmentFormPageText.iConfirmThatTheInformation}<b>*</b></span>
-              </label>
+              {form.recommitment === UNSURE && (
+                <div data-testid="recommit-unsure-path">
+                  <Area label="What information, clarity or support would help you decide whether you are ready to recommit to serving on the Board?" name="decision_support" form={form} set={set} />
+                  <Area label="Is there anything else you would like the Founder or Board leadership to understand before discussing your Board role with you? (optional)" name="anything_else" required={false} rows={3} form={form} set={set} />
+                </div>
+              )}
 
-              {errorText && <p className="submit-error">{errorText}</p>}
-              <div className="intake-nav" style={{ justifyContent: "center" }}>
-                <button type="button" className="button rwr-cta-button" onClick={submit} disabled={busy} data-testid="recommit-submit">{busy ? "Submitting…" : "SUBMIT MY RESPONSE"}</button>
-              </div>
+              {form.recommitment && (
+                <>
+                  {errorText && <p className="submit-error">{errorText}</p>}
+                  <div className="intake-nav" style={{ justifyContent: "center" }}>
+                    <button type="button" className="button rwr-cta-button" onClick={submit} disabled={busy} data-testid="recommit-submit">{busy ? "Submitting…" : "SUBMIT MY RESPONSE"}</button>
+                  </div>
+                </>
+              )}
             </section>
           </>
         )}
