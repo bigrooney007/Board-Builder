@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "@/App.css";
 import { LandingPage } from "@/components/LandingPage";
@@ -75,6 +76,9 @@ const PublicCenteringScope = () => {
 };
 
 const HomeExperience = () => {
+  useEffect(() => {
+    axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/funnel-metrics/page-view`, { page: "homepage" }).catch(() => {});
+  }, []);
   usePageMeta(...PAGE_META.home);
   const navigate = useNavigate();
   return <LandingPage onJoin={() => navigate("/join-a-board")} />;
@@ -105,6 +109,7 @@ export default function App() {
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
           <Route path="/board-fix-intake" element={<BoardFixIntakePage />} />
           <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
+          <Route path="/board-fix-dashboard" element={<BoardFixRoadmapPage />} />
           <Route path="/board-fix-orientation" element={<BoardFixOrientationPage />} />
           <Route path="/recruit/process" element={<RecruitProcessPage />} />
           <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />

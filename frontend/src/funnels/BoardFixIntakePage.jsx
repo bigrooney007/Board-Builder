@@ -17,6 +17,7 @@ const SECTIONS = [
     { name: "board_size", label: "How many board members do you currently have?", type: "text" },
     { name: "board_members", label: "List your current board members and their roles", type: "textarea" },
     { name: "board_structure", label: "Describe your board structure (officers, committees, terms)", type: "textarea", required: false },
+    { name: "bylaws_text", label: "Paste your organization's bylaws here (optional) — this helps us understand your board's structure, authority, roles, appointment and transition provisions", type: "textarea", required: false },
     { name: "board_responsibilities", label: "What responsibilities does your board currently hold?", type: "textarea", required: false },
     { name: "board_engagement", label: "Describe your board members' current engagement", type: "textarea" },
     { name: "board_problems", label: "What are the current problems with your board?", type: "textarea" },

@@ -44,6 +44,13 @@ class VideoViewPayload(BaseModel):
     offer: str = Field(min_length=1)
 
 
+VALID_PAGES = {"homepage", "board_transformation_form"}
+
+
+class PageViewPayload(BaseModel):
+    page: str = Field(min_length=1)
+
+
 def create_funnel_stats_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -53,6 +60,16 @@ def create_funnel_stats_router(db) -> APIRouter:
             raise HTTPException(status_code=400, detail="Unknown offer")
         await db.funnel_video_views.insert_one({
             "offer": payload.offer,
+            "viewed_at": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"status": "recorded"}
+
+    @router.post("/funnel-metrics/page-view", status_code=201)
+    async def record_page_view(payload: PageViewPayload):
+        if payload.page not in VALID_PAGES:
+            raise HTTPException(status_code=400, detail="Unknown page")
+        await db.funnel_page_views.insert_one({
+            "page": payload.page,
             "viewed_at": datetime.now(timezone.utc).isoformat(),
         })
         return {"status": "recorded"}

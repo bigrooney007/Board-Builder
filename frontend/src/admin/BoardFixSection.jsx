@@ -70,6 +70,23 @@ export const BoardFixSection = () => {
           <div className="board-fix-stage" key={key} data-testid={`board-fix-stage-${key}`}><strong>{payload.overview[key] ?? 0}</strong><span>{label}</span></div>
         ))}
       </div>
+      {payload.funnel_report && (
+        <>
+          <h3 style={{ marginTop: 24 }}>Public Funnel Report</h3>
+          <div className="board-fix-overview" data-testid="board-fix-funnel-report">
+            {[["homepage_visits", "Homepage Visitors"], ["form_submits", "Board Transformation Form"], ["video_views", "Video Page Reached"],
+              ["paid", "Paid"], ["journey_started", "Journey Started"],
+              ["purchases_homepage_funnel", "Paid via Homepage Funnel"], ["purchases_direct_or_unattributed", "Paid Direct / Unattributed"]].map(([key, label]) => (
+              <div className="board-fix-stage" key={key} data-testid={`board-fix-funnel-${key}`}><strong>{payload.funnel_report[key] ?? 0}</strong><span>{label}</span></div>
+            ))}
+          </div>
+        </>
+      )}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "18px 0" }} data-testid="board-fix-experience-links">
+        <a className="button button-small" href="/board-fix-intake" target="_blank" rel="noreferrer" data-testid="board-fix-experience-intake">Experience: Intake Form</a>
+        <a className="button button-small" href="/board-fix-orientation" target="_blank" rel="noreferrer" data-testid="board-fix-experience-orientation">Experience: Welcome to Board Fix</a>
+        <a className="button button-small" href="/board-fix-roadmap" target="_blank" rel="noreferrer" data-testid="board-fix-experience-dashboard">Experience: Board Fix Dashboard</a>
+      </div>
       <div className="admin-table-wrap">
         <table className="admin-table" data-testid="board-fix-customers-table">
           <thead><tr>{["Customer", "Organization", "Status", "Last Activity", ""].map((h, i) => <th key={i}>{h}</th>)}</tr></thead>

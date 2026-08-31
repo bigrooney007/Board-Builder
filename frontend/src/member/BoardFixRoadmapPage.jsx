@@ -7,16 +7,19 @@ import { memberApi } from "@/member/api";
 const STAGE_META = {
   orientation: {
     route: () => "/board-fix-orientation",
-    text: "Watch the welcome video, answer two quick questions, and generate the Board Member Profile & Recommitment Form you will send to your current board members.",
+    text: "Watch the welcome video, answer two quick questions, and generate the Board Member Profile & Recommitment Form and the email you will send to your current board members.",
+  },
+  understand: {
+    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 1}`,
+    text: "Your board members' responses appear here as they come in. Understand each person's situation, generate the conversation script you need for each one, and get the summary of your entire board — strengths, gaps, and the direction for recruitment.",
   },
   rebuild: {
-    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 1}`,
-    text: "Send the Recommitment Form to every current board member, understand what each person is telling you, and have the conversations that follow — recommit the people ready to step up, move the right people to advisory roles, and let others step down gracefully.",
+    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 4}`,
+    text: "Have the conversations your board summary points to — recommit the people ready to step up, move the right people to advisory roles, and let others step down gracefully.",
   },
   identify: {
     route: (stage) => `/app/recruitment/self-guided/module/${stage.current_module || 1}`,
-    intakeRoute: "/board-recruitment-intake?bf=1",
-    text: "Compare your present board — including you — against the board your mission needs. The gap becomes the board members you need to recruit.",
+    text: "No new intake here — we already have what we need. Compare your present board, including you, against the board your mission needs. The gap becomes the board members you need to recruit.",
   },
   launch: {
     route: () => "/app/recruitment/self-guided/module/3",
@@ -24,7 +27,7 @@ const STAGE_META = {
   },
   select: {
     route: () => "/app/recruitment/self-guided/module/4",
-    text: "Review your applicants, invite the strongest to interview, and decide who moves forward. You make every selection decision.",
+    text: "Applicants appear here automatically as they apply. Review them, invite the strongest to interview, and decide who moves forward. You make every selection decision.",
   },
   references: {
     route: () => "/app/recruitment/self-guided/module/5",
@@ -32,7 +35,7 @@ const STAGE_META = {
   },
   onboard: {
     route: () => "/app/recruitment/self-guided/module/6",
-    text: "Onboard your new board members with the onboarding guide, agreements and profile forms — and send each one their Final Board Appointment Email.",
+    text: "Onboard your new and existing board members with the onboarding guide, agreements and profile forms — and send each new member their Final Board Appointment Email.",
   },
   fundraising_planning: {
     route: (stage) => `/app/activation/self-guided/module/${stage.current_module || 1}`,
@@ -41,7 +44,7 @@ const STAGE_META = {
   },
   create_strategy: {
     route: () => "/app/activation/self-guided/module/3",
-    text: "Build your Fundraising Strategy Plan from every board member's ideas, relationships and capabilities — combined with your own planning response.",
+    text: "Build your Fundraising Strategy Plan from everyone's ideas, relationships and capabilities — combined with your own planning response.",
   },
   adopt_strategy: {
     route: () => "/app/activation/self-guided/module/4",
@@ -74,12 +77,12 @@ export default function BoardFixRoadmapPage() {
     <MemberShell>
       <main className="member-page board-fix-roadmap" data-testid="board-fix-roadmap-page">
         <header className="member-page-heading">
-          <p className="eyebrow">Complete Board Fix</p>
-          <h1 data-testid="board-fix-roadmap-headline">Your Board Fix Roadmap</h1>
+          <p className="eyebrow">Board Ultimate Fix Framework</p>
+          <h1 data-testid="board-fix-roadmap-headline">Your Board Fix Dashboard</h1>
         </header>
         <section className="member-card" data-testid="board-fix-roadmap-instructions">
-          <h2>How the Complete Board Fix System Works</h2>
-          <p>We fix your board in a specific order: <strong>Rebuild Your Present Board → Identify the Board Members You Need → Launch Your Board Recruitment Campaign → Select & Interview → References & Background Checks → Onboard Your Board Members → Fundraising Planning → Create Your Fundraising Strategy → Adopt Your Fundraising Strategy → Execute Your Fundraising Strategy.</strong></p>
+          <h2>How the Board Ultimate Fix Framework Works</h2>
+          <p>The BUF Framework fixes your board in a specific order: <strong>Welcome to Board Fix → Understand Your Board → Rebuild Your Present Board → Identify the Board Members You Need → Launch Your Board Recruitment Campaign → Select and Interview Board Candidates → Reference and Background Checks → Onboard Your New and Existing Board Members → Plan Your Board Fundraising → Create Your Fundraising Strategy → Adopt Your Fundraising Strategy → Equip Your Board to Execute.</strong></p>
           <p>Work through the stages below in order. You can leave and come back any time — your progress is always saved, and this roadmap will always show you exactly where you are and what comes next.</p>
         </section>
         {error && <p className="submit-error" data-testid="board-fix-roadmap-error">{error}</p>}

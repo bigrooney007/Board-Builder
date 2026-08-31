@@ -149,7 +149,7 @@ export const ActivationModulePage = () => {
             </header>
             <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
             <ModuleShell moduleNumber={number} />
-            {number === course.modules.length && <BoardFixContinuation label="Continue Your Board Fix Journey" to="/board-fix-roadmap" />}
+            {number === course.modules.length && <BoardFixContinuation label="Go to Your Board Fix Dashboard" to="/board-fix-roadmap" />}
             <div className="module-nav" data-testid="activation-module-navigation">
               <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>

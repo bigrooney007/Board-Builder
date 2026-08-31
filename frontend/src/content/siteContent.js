@@ -4,6 +4,9 @@
 // Module titles live in backend/course_content.py; customer email templates live in
 // backend/marketing_service.py, backend/accountability_service.py and the *_routes.py email builders.
 export const SITE_CONTENT = {
+  "memberVideos": {
+    "boardFixOrientation": "bzAzMihfGQY"
+  },
   "shared": {
     "guaranteeHeading": "100% Money-Back Guarantee",
     "guaranteeSentence": "Your investment is protected by our 100% money-back guarantee.",

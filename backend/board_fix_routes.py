@@ -1,5 +1,6 @@
 """Complete Board Fix: post-payment intake, master customer record, roadmap, admin journey view."""
 import os
+import uuid
 from datetime import datetime, timezone
 
 import stripe
@@ -7,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
-from board_fix_master import get_master_record, synthetic_session
+from board_fix_master import BOARD_FIX_SOURCE, get_master_record, master_prefill, synthetic_session
 from course_content import ACTIVATION_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES
 from member_auth import authenticate_member, require_entitlement
 
@@ -32,20 +33,21 @@ ADVISORY_OPTION = "Transition to an Advisory Board / Advisory Role"
 STEP_OFF_OPTION = "Step Down From the Board"
 
 JOURNEY_STAGES = [
-    {"key": "orientation", "label": "Orientation"},
-    {"key": "rebuild", "label": "Rebuild Your Present Board", "pathway": "reactivation", "modules": []},
+    {"key": "orientation", "label": "Welcome to Board Fix"},
+    {"key": "understand", "label": "Understand Your Board", "pathway": "reactivation", "modules": [1, 2, 3]},
+    {"key": "rebuild", "label": "Rebuild Your Present Board", "pathway": "reactivation", "modules": [4, 5]},
     {"key": "identify", "label": "Identify the Board Members You Need", "pathway": "recruitment", "modules": [1, 2]},
     {"key": "launch", "label": "Launch Your Board Recruitment Campaign", "pathway": "recruitment", "modules": [3]},
-    {"key": "select", "label": "Select & Interview", "pathway": "recruitment", "modules": [4]},
-    {"key": "references", "label": "References & Background Checks", "pathway": "recruitment", "modules": [5]},
-    {"key": "onboard", "label": "Onboard Your Board Members", "pathway": "recruitment", "modules": [6]},
-    {"key": "fundraising_planning", "label": "Fundraising Planning", "pathway": "activation", "modules": [1, 2]},
+    {"key": "select", "label": "Select and Interview Board Candidates", "pathway": "recruitment", "modules": [4]},
+    {"key": "references", "label": "Reference and Background Checks", "pathway": "recruitment", "modules": [5]},
+    {"key": "onboard", "label": "Onboard Your New and Existing Board Members", "pathway": "recruitment", "modules": [6]},
+    {"key": "fundraising_planning", "label": "Plan Your Board Fundraising", "pathway": "activation", "modules": [1, 2]},
     {"key": "create_strategy", "label": "Create Your Fundraising Strategy", "pathway": "activation", "modules": [3]},
     {"key": "adopt_strategy", "label": "Adopt Your Fundraising Strategy", "pathway": "activation", "modules": [4]},
-    {"key": "execute_strategy", "label": "Execute Your Fundraising Strategy", "pathway": "activation", "modules": [5]},
+    {"key": "execute_strategy", "label": "Equip Your Board to Execute", "pathway": "activation", "modules": [5]},
 ]
 
-INTAKE_STAGE_KEYS = {"identify": "recruitment", "fundraising_planning": "activation"}
+INTAKE_STAGE_KEYS = {"fundraising_planning": "activation"}
 
 
 class OrientationSelections(BaseModel):
@@ -204,6 +206,41 @@ def create_board_fix_router(db) -> APIRouter:
         return {"status": "saved", "transition_options": transition_options,
                 "next_url": "/app/reactivation/self-guided/module/2"}
 
+    async def ensure_recruitment_seed(user_id: str, member: dict) -> None:
+        """BUF customers do not complete a second recruitment intake — seed it from the master intake."""
+        existing_intake = await db.board_recruitment_intakes.find_one({"user_id": user_id}, {"_id": 0, "session_id": 1})
+        if existing_intake:
+            return
+        master = await get_master_record(db, user_id=user_id, email=member.get("email", ""))
+        if not master:
+            return
+        mapped = master_prefill("recruitment", master.get("data", {}) or {})
+        if not mapped.get("organization_name"):
+            return
+        now = now_iso()
+        contact_name = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+        await db.board_recruitment_intakes.update_one(
+            {"session_id": synthetic_session(user_id)},
+            {"$set": {**mapped, "session_id": synthetic_session(user_id), "user_id": user_id,
+                      "your_name": contact_name, "email": member.get("email", ""),
+                      "purchase_source": BOARD_FIX_SOURCE, "auto_seeded_from_master": True, "updated_at": now},
+             "$setOnInsert": {"intake_id": str(uuid.uuid4()), "submitted_at": now}}, upsert=True)
+        profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
+        merged = {**(profile.get("data", {}) or {})}
+        for key, value in {
+            "organization_name": mapped.get("organization_name", ""), "website": mapped.get("website", ""),
+            "mission": mapped.get("mission", ""), "present_board": mapped.get("present_board", ""),
+            "current_board_strengths": mapped.get("current_board_strengths", ""),
+            "board_challenges": mapped.get("board_challenges", ""), "priorities": mapped.get("accomplish", ""),
+            "specific_wants": mapped.get("specific_wants", ""),
+            "contact_name": contact_name, "contact_email": member.get("email", ""),
+        }.items():
+            if value and not merged.get(key):
+                merged[key] = value
+        await db.recruitment_profiles.update_one(
+            {"user_id": user_id},
+            {"$set": {"data": merged, "updated_at": now}, "$setOnInsert": {"created_at": now}}, upsert=True)
+
     @router.get("/board-fix/roadmap")
     async def board_fix_roadmap(request: Request):
         member = await authenticate_member(request, db)
@@ -215,6 +252,8 @@ def create_board_fix_router(db) -> APIRouter:
             {"$set": {"roadmap_last_accessed_at": now, "email": member.get("email", "")},
              "$min": {"roadmap_first_accessed_at": now}}, upsert=True)
         master = await get_master_record(db, user_id=user_id, email=member.get("email", ""))
+        if master:
+            await ensure_recruitment_seed(user_id, member)
         intake_status = await pathway_intake_status(user_id)
         pathways = await pathway_progress(user_id)
         for pathway in pathways:
@@ -429,6 +468,23 @@ def create_board_fix_router(db) -> APIRouter:
                 row["status"] = "Form Submitted"
             row["next_action"] = compute_next_action(row)
         rows = sorted(customers.values(), key=lambda r: r["last_activity"], reverse=True)
-        return {"customers": rows, "overview": overview}
+        homepage_visits = await db.funnel_page_views.count_documents({"page": "homepage"})
+        video_views = await db.funnel_video_views.count_documents({"offer": "board-fix"})
+        paid_txns = [t for t in txns if t.get("payment_status") == "paid"]
+        purchases_homepage = sum(1 for t in paid_txns if t.get("lead_id"))
+        purchases_direct = len(paid_txns) - purchases_homepage
+        journey_started = await db.board_fix_journeys.count_documents(
+            {"$or": [{"roadmap_first_accessed_at": {"$exists": True, "$ne": ""}},
+                     {"orientation_first_accessed_at": {"$exists": True, "$ne": ""}}]})
+        funnel_report = {
+            "homepage_visits": homepage_visits,
+            "form_submits": len(leads),
+            "video_views": video_views,
+            "paid": overview["paid"],
+            "journey_started": journey_started,
+            "purchases_homepage_funnel": purchases_homepage,
+            "purchases_direct_or_unattributed": purchases_direct,
+        }
+        return {"customers": rows, "overview": overview, "funnel_report": funnel_report}
 
     return router

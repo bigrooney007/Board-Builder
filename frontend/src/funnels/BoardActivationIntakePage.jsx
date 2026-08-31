@@ -19,6 +19,10 @@ const INITIAL = {
   your_name: "", email: "", organization_name: "", direction_12_24: "", organization_priorities: "",
   fundraising_goal: "", amount_needed: "", money_accomplish: "", current_methods: [], current_methods_other: "",
   written_strategy: "", fundraising_calendar: "",
+  money_needed_by: "", present_donors: "", present_business_sponsors: "", present_corporate_relationships: "",
+  present_grantors: "", other_funding_relationships: "",
+  individuals_type: "", individuals_approach: "", businesses_type: "", businesses_approach: "",
+  grantors_type: "", grantors_approach: "",
   fundraising_carriers: [], fundraising_carriers_detail: "", present_board: "", active_board: "",
   board_fundraising_involvement: "", board_fundraising_activities: [], board_fundraising_activities_other: "",
   perceived_barriers: "", board_skills_relationships: "",
@@ -117,7 +121,9 @@ export default function BoardActivationIntakePage() {
 
   const REQUIRED_BY_STEP = [
     ["your_name", "email", "organization_name", "direction_12_24", "organization_priorities"],
-    ["fundraising_goal", "amount_needed", "money_accomplish", "current_methods", "written_strategy", "fundraising_calendar"],
+    ["fundraising_goal", "amount_needed", "money_accomplish", "current_methods", "written_strategy", "fundraising_calendar",
+     "money_needed_by", "present_donors", "present_business_sponsors", "present_grantors",
+     "individuals_type", "individuals_approach", "businesses_type", "businesses_approach", "grantors_type", "grantors_approach"],
     ["fundraising_carriers", "present_board", "active_board"],
     ["board_fundraising_involvement", "board_fundraising_activities", "perceived_barriers", "board_skills_relationships"],
     ["previous_fundraising_planning", "broader_strategic_planning", "desired_change", "success_definition"],
@@ -242,6 +248,23 @@ export default function BoardActivationIntakePage() {
                 )}
                 <SelectField label="Does Your Organization Currently Have a Written Fundraising Strategy?" name="written_strategy" options={["Yes", "Partially", "No"]} form={form} set={set} errors={errors} />
                 <SelectField label="Does Your Organization Currently Have a Fundraising Calendar or Clear Execution Plan That Tells People What Fundraising Activity Should Happen and When?" name="fundraising_calendar" options={["Yes", "Partially", "No", "Not Sure"]} form={form} set={set} errors={errors} />
+                <TextField label="When Does Your Organization Need This Money?" name="money_needed_by" form={form} set={set} errors={errors} />
+                <AreaField label="Describe Your Present Donor Audience" name="present_donors" form={form} set={set} errors={errors} />
+                <AreaField label="Describe Your Present Business Sponsors" name="present_business_sponsors" form={form} set={set} errors={errors} />
+                <AreaField label="Describe Your Present Corporate Relationships" name="present_corporate_relationships" required={false} form={form} set={set} errors={errors} />
+                <AreaField label="Describe Your Present Grantors" name="present_grantors" form={form} set={set} errors={errors} />
+                <AreaField label="Any Other Relevant Existing Funding Relationships?" name="other_funding_relationships" required={false} form={form} set={set} errors={errors} />
+                <h2 className="intake-step-title" style={{ marginTop: 24 }}>Your Funding Audiences</h2>
+                <p>Answer these two questions for each funding category.</p>
+                <h3>Individuals</h3>
+                <AreaField label="Can you name the type of people meant to fund your mission?" name="individuals_type" form={form} set={set} errors={errors} />
+                <AreaField label="How do you think you can approach to raise money from them in a way that they will give?" name="individuals_approach" form={form} set={set} errors={errors} />
+                <h3>Businesses</h3>
+                <AreaField label="Can you name the type of businesses meant to fund your mission?" name="businesses_type" form={form} set={set} errors={errors} />
+                <AreaField label="How do you think you can approach to raise money from them in a way that they will give?" name="businesses_approach" form={form} set={set} errors={errors} />
+                <h3>Grantors</h3>
+                <AreaField label="Can you name the type of grantors meant to fund your mission?" name="grantors_type" form={form} set={set} errors={errors} />
+                <AreaField label="How do you think you can approach to raise money from them in a way that they will give?" name="grantors_approach" form={form} set={set} errors={errors} />
               </div>
             )}
 

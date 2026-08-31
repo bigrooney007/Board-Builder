@@ -880,7 +880,10 @@ def create_activation_planning_router(db) -> APIRouter:
             "current_methods", "written_strategy", "fundraising_calendar", "fundraising_carriers",
             "present_board", "active_board", "board_fundraising_involvement", "board_fundraising_activities",
             "perceived_barriers", "board_skills_relationships", "direction_12_24", "organization_priorities",
-            "previous_fundraising_planning", "broader_strategic_planning", "desired_change", "success_definition", "anything_else"]}
+            "previous_fundraising_planning", "broader_strategic_planning", "desired_change", "success_definition", "anything_else",
+            "money_needed_by", "present_donors", "present_business_sponsors", "present_corporate_relationships",
+            "present_grantors", "other_funding_relationships", "individuals_type", "individuals_approach",
+            "businesses_type", "businesses_approach", "grantors_type", "grantors_approach"]}
         responses_block = [
             {"board_member_name": p["name"], "board_role": p.get("role", "Board Member"), "their_response": p.get("response", {})}
             for p in completed]

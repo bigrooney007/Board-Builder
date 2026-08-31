@@ -236,7 +236,7 @@ export const CourseModulePage = ({ productSlug }) => {
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
-            {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Fundraising Planning" to="/app/activation/self-guided" />}
+            {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Plan Your Board Fundraising" to="/app/activation/self-guided" />}
             <div className="module-nav" data-testid="module-navigation">
               <button className="button button-back" disabled={!prevModule} onClick={() => navigate(`${meta.base}/module/${prevModule.number}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="next-step-button">NEXT STEP <ArrowRight size={16} /></button>

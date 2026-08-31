@@ -18,7 +18,7 @@ export const MemberShell = ({ children }) => {
         <div className="nav-links">
           <Link to="/app" data-testid="member-dashboard-link">{memberShellText.t_myBoardBuilder}</Link>
           {member?.entitlements?.includes("board_fix_system") && (
-            <Link to="/board-fix-roadmap" data-testid="member-board-fix-roadmap-link">Board Fix Roadmap</Link>
+            <Link to="/board-fix-roadmap" data-testid="member-board-fix-roadmap-link">Board Fix</Link>
           )}
         </div>
         {member ? (

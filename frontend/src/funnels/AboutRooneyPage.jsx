@@ -36,23 +36,13 @@ export default function AboutRooneyPage() {
         <TestimonialCarousel idPrefix="about-rooney" />
 
         <section className="ar-offers" data-testid="about-rooney-offers-section">
-          <h2 data-testid="about-rooney-offers-heading">{aboutRooneyPageText.threeWaysICanHelp}</h2>
-          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">{aboutRooneyPageText.chooseThePartOfThe}</p>
-          <div className="ar-offer-grid">
-            <article className="ar-offer-card" data-testid="about-rooney-recruit-card">
-              <h3 data-testid="about-rooney-recruit-heading">{SITE_CONTENT.aboutRooney.offers.recruit.heading}</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-recruit-copy">{SITE_CONTENT.aboutRooney.offers.recruit.copy}</p>
-              <Link className="button" to="/recruit-with-rooney" data-testid="about-rooney-recruit-button">RECRUIT MY BOARD</Link>
-            </article>
-            <article className="ar-offer-card" data-testid="about-rooney-reactivate-card">
-              <h3 data-testid="about-rooney-reactivate-heading">{SITE_CONTENT.aboutRooney.offers.reactivate.heading}</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-reactivate-copy">{SITE_CONTENT.aboutRooney.offers.reactivate.copy}</p>
-              <Link className="button" to="/reactivate-with-rooney" data-testid="about-rooney-reactivate-button">REACTIVATE MY BOARD</Link>
-            </article>
-            <article className="ar-offer-card" data-testid="about-rooney-activate-card">
-              <h3 data-testid="about-rooney-activate-heading">{SITE_CONTENT.aboutRooney.offers.activate.heading}</h3>
-              <p className="ar-offer-copy" data-testid="about-rooney-activate-copy">{SITE_CONTENT.aboutRooney.offers.activate.copy}</p>
-              <Link className="button" to="/activate-with-rooney" data-testid="about-rooney-activate-button">ACTIVATE MY BOARD</Link>
+          <h2 data-testid="about-rooney-offers-heading">Ready to Fix Your Board?</h2>
+          <p className="ar-offers-supporting" data-testid="about-rooney-offers-supporting">Tell us about your board and what you want to achieve with your board and we'll show you what you need to do to transform your board and build a high-performing board.</p>
+          <div className="ar-offer-grid" style={{ gridTemplateColumns: "1fr", maxWidth: 560, margin: "0 auto" }}>
+            <article className="ar-offer-card" data-testid="about-rooney-transformation-card">
+              <h3 data-testid="about-rooney-transformation-heading">Transform Your Board</h3>
+              <p className="ar-offer-copy" data-testid="about-rooney-transformation-copy">Fix your present board, recruit the board members you need, and get your board raising money and building your organization with you — one complete process.</p>
+              <Link className="button" to="/board-transformation" data-testid="about-rooney-transformation-button">TELL US ABOUT YOUR BOARD</Link>
             </article>
           </div>
         </section>

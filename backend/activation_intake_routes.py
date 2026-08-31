@@ -61,6 +61,18 @@ class ActivationIntakeSubmission(BaseModel):
     desired_change: str = Field(min_length=1)
     success_definition: str = Field(min_length=1)
     anything_else: str = ""
+    money_needed_by: str = ""
+    present_donors: str = ""
+    present_business_sponsors: str = ""
+    present_corporate_relationships: str = ""
+    present_grantors: str = ""
+    other_funding_relationships: str = ""
+    individuals_type: str = ""
+    individuals_approach: str = ""
+    businesses_type: str = ""
+    businesses_approach: str = ""
+    grantors_type: str = ""
+    grantors_approach: str = ""
 
     @field_validator("written_strategy")
     @classmethod
