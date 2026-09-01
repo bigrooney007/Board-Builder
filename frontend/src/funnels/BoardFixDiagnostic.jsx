@@ -41,6 +41,15 @@ const resultToken = () => {
   try { return JSON.parse(sessionStorage.getItem("funnelLeadContext") || "{}").result_token || ""; } catch { return ""; }
 };
 
+export const startOfferCheckout = async (recommendation, leadToken = "") => {
+  const endpoint = recommendation === "complete_transformation" ? "complete-transformation-checkout" : "dfy-checkout";
+  const body = { origin_url: window.location.origin, result_token: leadToken };
+  if (recommendation !== "complete_transformation") body.pathway = recommendation;
+  else body.cancel_path = "/offer/board-fix";
+  const response = await axios.post(`${API}/payments/${endpoint}`, body);
+  window.location.href = response.data.checkout_url;
+};
+
 export const OfferPurchaseBlock = ({ recommendation, showDiagnosis = false, leadToken = "" }) => {
   const result = RESULTS[recommendation];
   const [checkingOut, setCheckingOut] = useState(false);
@@ -49,12 +58,7 @@ export const OfferPurchaseBlock = ({ recommendation, showDiagnosis = false, lead
   const buy = async () => {
     setCheckingOut(true); setError("");
     try {
-      const endpoint = recommendation === "complete_transformation" ? "complete-transformation-checkout" : "dfy-checkout";
-      const body = { origin_url: window.location.origin, result_token: leadToken };
-      if (recommendation !== "complete_transformation") body.pathway = recommendation;
-      else body.cancel_path = "/offer/board-fix";
-      const response = await axios.post(`${API}/payments/${endpoint}`, body);
-      window.location.href = response.data.checkout_url;
+      await startOfferCheckout(recommendation, leadToken);
     } catch {
       setError("We could not start your checkout. Please try again.");
       setCheckingOut(false);
