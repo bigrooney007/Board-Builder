@@ -46,8 +46,6 @@ JOURNEY_STAGES = [
     {"key": "execute_strategy", "label": "Equip Your Board to Execute", "pathway": "activation", "modules": [5]},
 ]
 
-PREVIEW_PREFIX = "admin-preview-"
-PREVIEW_SOURCE = "board_fix_admin_preview"
 PREVIEW_ENTITLEMENTS = ["board_fix_system", "recruitment_self_guided", "reactivation_self_guided",
                         "activation_self_guided", "recruitment_selection_onboarding"]
 
@@ -73,13 +71,6 @@ def create_board_fix_router(db) -> APIRouter:
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
     async def verify_session(session_id: str):
-        if session_id.startswith(PREVIEW_PREFIX):
-            preview = await db.board_fix_admin_previews.find_one({"session_id": session_id}, {"_id": 0})
-            if not preview:
-                return None
-            return {"payment_status": "paid", "purchase_source": PREVIEW_SOURCE, "internal_preview": True,
-                    "lead_name": "", "lead_organization": "", "lead_email": preview.get("email", ""),
-                    "preview_user_id": preview.get("user_id", "")}
         txn = await db.payment_transactions.find_one({"session_id": session_id, "purchase_source": {"$in": PURCHASE_SOURCES}}, {"_id": 0})
         if not txn:
             return None
@@ -94,7 +85,16 @@ def create_board_fix_router(db) -> APIRouter:
         return txn if txn.get("payment_status") == "paid" else None
 
     @router.get("/board-fix-intake/context")
-    async def intake_context(session_id: str = ""):
+    async def intake_context(request: Request, session_id: str = ""):
+        if not session_id:
+            member = await authenticate_member(request, db)
+            require_entitlement(member, {"board_fix_system"})
+            existing = await db.board_fix_intakes.find_one({"user_id": member["user_id"]}, {"_id": 0})
+            return {"eligible": True,
+                    "lead_name": f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
+                    "lead_organization": "",
+                    "submitted": bool(existing and existing.get("submitted_at")),
+                    "data": (existing or {}).get("data", {})}
         txn = await verify_session(session_id)
         if not txn:
             return {"eligible": False}
@@ -103,24 +103,35 @@ def create_board_fix_router(db) -> APIRouter:
                 "submitted": bool(existing and existing.get("submitted_at")), "data": (existing or {}).get("data", {})}
 
     @router.post("/board-fix-intake/submit")
-    async def intake_submit(payload: IntakeSubmit):
-        txn = await verify_session(payload.session_id)
-        if not txn:
-            raise HTTPException(status_code=403, detail="A completed Complete Board Fix purchase is required")
-        if txn.get("internal_preview"):
-            user_id = txn.get("preview_user_id", "")
+    async def intake_submit(request: Request, payload: IntakeSubmit):
+        if not payload.session_id:
+            member = await authenticate_member(request, db)
+            require_entitlement(member, {"board_fix_system"})
+            user_id = member["user_id"]
+            internal = bool(member.get("internal_admin_entitlement"))
+            lead_email = member.get("email", "")
+            is_dwm = False
+            existing = await db.board_fix_intakes.find_one({"user_id": user_id}, {"_id": 0, "session_id": 1})
+            storage_session = (existing or {}).get("session_id") or f"member-intake-{user_id}"
         else:
+            txn = await verify_session(payload.session_id)
+            if not txn:
+                raise HTTPException(status_code=403, detail="A completed Complete Board Fix purchase is required")
             purchase = await db.purchases.find_one({"session_id": payload.session_id}, {"_id": 0, "user_id": 1})
             user_id = (purchase or {}).get("user_id", "")
-        is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
+            internal = False
+            lead_email = txn.get("lead_email", "")
+            is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
+            storage_session = payload.session_id
         if user_id:
-            await db.board_fix_journeys.update_one(
-                {"user_id": user_id},
-                {"$set": {"experience": "do_it_with_me" if is_dwm else "self_guided"}}, upsert=True)
+            journey_set = {"experience": "do_it_with_me" if is_dwm else "self_guided"}
+            if internal:
+                journey_set["internal_preview"] = True
+            await db.board_fix_journeys.update_one({"user_id": user_id}, {"$set": journey_set}, upsert=True)
         await db.board_fix_intakes.update_one(
-            {"session_id": payload.session_id},
-            {"$set": {"data": payload.data, "user_id": user_id, "lead_email": txn.get("lead_email", ""),
-                      "internal_preview": bool(txn.get("internal_preview")),
+            {"session_id": storage_session},
+            {"$set": {"data": payload.data, "user_id": user_id, "lead_email": lead_email,
+                      "internal_preview": internal,
                       "submitted_at": now_iso(), "updated_at": now_iso()},
              "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
         if user_id:
@@ -385,7 +396,7 @@ def create_board_fix_router(db) -> APIRouter:
 
     @router.post("/admin/board-fix/preview-access")
     async def admin_preview_access(request: Request):
-        """Super-Admin-only: walk the real Complete Board Transformation journey without Stripe."""
+        """Super-Admin-only: grant the admin's own member account the normal Complete entitlement (no Stripe)."""
         admin = await authenticate_admin(request, db)
         email = (admin.get("email") or "").lower()
         member = await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1})
@@ -395,16 +406,12 @@ def create_board_fix_router(db) -> APIRouter:
         now = now_iso()
         await db.members.update_one(
             {"user_id": user_id},
-            {"$addToSet": {"entitlements": {"$each": PREVIEW_ENTITLEMENTS}}, "$set": {"updated_at": now}})
-        session_id = f"{PREVIEW_PREFIX}{user_id}"
-        await db.board_fix_admin_previews.update_one(
-            {"session_id": session_id},
-            {"$set": {"user_id": user_id, "email": email, "internal_preview": True, "updated_at": now},
-             "$setOnInsert": {"created_at": now}}, upsert=True)
+            {"$addToSet": {"entitlements": {"$each": PREVIEW_ENTITLEMENTS}},
+             "$set": {"internal_admin_entitlement": True, "updated_at": now}})
         await db.board_fix_journeys.update_one(
             {"user_id": user_id},
-            {"$set": {"internal_preview": True, "experience": "self_guided", "email": email}}, upsert=True)
-        return {"intake_url": f"/board-fix-intake?session_id={session_id}", "member_email": email}
+            {"$set": {"internal_preview": True, "email": email}}, upsert=True)
+        return {"intake_url": "/board-fix-intake", "member_email": email}
 
     @router.get("/admin/board-fix/customers")
     async def admin_customers(request: Request):

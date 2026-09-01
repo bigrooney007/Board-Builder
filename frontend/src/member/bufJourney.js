@@ -30,5 +30,7 @@ export const bufStep = (member, pathway, moduleNumber) => {
   return {
     next: index + 1 < BUF_SEQUENCE.length ? route(BUF_SEQUENCE[index + 1]) : "/board-fix-roadmap",
     prev: index > 0 ? route(BUF_SEQUENCE[index - 1]) : "/board-fix-orientation",
+    stepNumber: index + 2,
+    totalSteps: BUF_SEQUENCE.length + 1,
   };
 };

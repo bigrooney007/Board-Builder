@@ -138,6 +138,10 @@ export default function ActivationModule2() {
   }, [data, searchParams, setSearchParams, openResponse]);
 
   const generate = async () => {
+    if (!data?.has_intake) {
+      window.location.href = "/board-activation-intake?bf=1";
+      return;
+    }
     const form = data?.form;
     if (form?.content && form.edited_since_generation) {
       const ok = window.confirm("You have manually edited this form. Regenerating will replace your edited content with a newly generated version. Do you want to continue?");
@@ -210,6 +214,13 @@ export default function ActivationModule2() {
 
   return (
     <div data-testid="activation-module2">
+      {!data.has_intake && (
+        <section className="member-card" data-testid="am2-intake-prerequisite">
+          <h2>Complete Your Fundraising Information First</h2>
+          <p><strong>Before we can build your Board Fundraising Planning Form, we need some information about your organization's fundraising goals and priorities.</strong></p>
+          <a className="button" href="/board-activation-intake?bf=1" data-testid="am2-complete-intake-button">COMPLETE MY FUNDRAISING INFORMATION</a>
+        </section>
+      )}
       <section className="member-card" data-testid="am2-intro">
         <h2>{activationM2Text.h_buildThePlanWithYour}</h2>
         <p>{activationModule2Text.doNotCreateAFundraising}</p>

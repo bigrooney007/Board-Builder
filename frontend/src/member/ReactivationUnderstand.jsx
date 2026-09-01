@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Brain, Eye, X } from "lucide-react";
 import { memberApi } from "./api";
+import { useMemberAuth } from "./MemberAuthContext";
 import { ResponseView } from "./ReactivationStep2";
 import { reactivationContent, reactivationUnderstandText } from "../content/appContent";
 
@@ -183,6 +184,8 @@ const BoardSummary = ({ hasResponses }) => {
 };
 
 export default function ReactivationUnderstand() {
+  const { member } = useMemberAuth();
+  const isBuf = Boolean(member?.entitlements?.includes("board_fix_system"));
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const load = useCallback(() => {
@@ -205,8 +208,14 @@ export default function ReactivationUnderstand() {
       <BoardSummary hasResponses={responded.length > 0} />
       {responded.length === 0 && (
         <section className="member-card" data-testid="understand-empty">
-          <p>{C.emptyState}</p>
-          <Link className="button button-outline" to="/app/reactivation/self-guided/module/2">{reactivationUnderstandText.goToStep2}</Link>
+          {isBuf ? (
+            <p><strong>No Board Member responses have been received yet.</strong></p>
+          ) : (
+            <>
+              <p>{C.emptyState}</p>
+              <Link className="button button-outline" to="/app/reactivation/self-guided/module/2">{reactivationUnderstandText.goToStep2}</Link>
+            </>
+          )}
         </section>
       )}
       {responded.map((row) => <MemberUnderstanding key={row.member_record_id} row={row} reload={load} />)}

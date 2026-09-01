@@ -147,7 +147,7 @@ export const ActivationModulePage = () => {
           <>
             <header className="member-page-heading">
               <Link className="module-breadcrumb" to={buf ? "/board-fix-roadmap" : META.base} data-testid="activation-module-back"><ArrowLeft size={15} /> {buf ? "Your Board Fix Journey" : META.label}</Link>
-              <p className="eyebrow">Module {module.number} of {course.modules.length}</p>
+              <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Module ${module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="activation-module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />

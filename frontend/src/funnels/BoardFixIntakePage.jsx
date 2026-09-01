@@ -52,9 +52,15 @@ export default function BoardFixIntakePage() {
   useEffect(() => { document.title = "Complete Board Fix Intake | Nonprofit Board Builder"; }, []);
 
   useEffect(() => {
-    axios.get(`${API}/board-fix-intake/context`, { params: { session_id: sessionId } })
+    axios.get(`${API}/board-fix-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true })
       .then((r) => { setState(r.data.eligible ? "ready" : "blocked"); setData(r.data.data || {}); })
-      .catch(() => setState("blocked"));
+      .catch((err) => {
+        if (!sessionId && err.response?.status === 401) {
+          window.location.replace(`/login?next=${encodeURIComponent("/board-fix-intake")}`);
+          return;
+        }
+        setState("blocked");
+      });
   }, [sessionId]);
 
   const submit = async (event) => {
@@ -64,7 +70,7 @@ export default function BoardFixIntakePage() {
     if (missing.length) { setError(`Please complete: ${missing.map((f) => f.label).join("; ")}`); return; }
     setBusy(true);
     try {
-      const response = await axios.post(`${API}/board-fix-intake/submit`, { session_id: sessionId, data });
+      const response = await axios.post(`${API}/board-fix-intake/submit`, { session_id: sessionId, data }, { withCredentials: true });
       const destination = response.data.redirect_url || "/board-fix-roadmap";
       if (destination.startsWith("http")) { window.location.href = destination; return; }
       navigate(destination);
@@ -82,7 +88,7 @@ export default function BoardFixIntakePage() {
           <h1 data-testid="board-fix-intake-headline">Tell Us Everything About Your Board</h1>
           <p>This information personalizes your entire Complete Board Fix experience. You will not have to enter it again.</p>
         </header>
-        {state === "loading" && <p data-testid="board-fix-intake-loading">Please wait while we verify your payment with Stripe.</p>}
+        {state === "loading" && <p data-testid="board-fix-intake-loading">{sessionId ? "Please wait while we verify your payment with Stripe." : "Please wait while we verify your Complete Board Fix access."}</p>}
         {state === "blocked" && (
           <section className="member-card" data-testid="board-fix-intake-blocked">
             <p>We could not find a completed Complete Board Fix purchase. If you just paid, please use the link Stripe returned you to.</p>

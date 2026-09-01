@@ -235,7 +235,7 @@ export const CourseModulePage = ({ productSlug }) => {
           <>
             <header className="member-page-heading">
               <Link className="module-breadcrumb" to={buf ? "/board-fix-roadmap" : meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {buf ? "Your Board Fix Journey" : meta.label}</Link>
-              <p className="eyebrow">Step {module.position || module.number} of {course.modules.length}</p>
+              <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Step ${module.position || module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
