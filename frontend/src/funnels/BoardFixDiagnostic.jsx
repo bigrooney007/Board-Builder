@@ -10,7 +10,7 @@ const QUESTIONS = [
   { key: "fundraising_working", label: "Is your Board currently working with you to raise money and build the organization's fundraising system?", options: ["Yes", "No", "Only a little"] },
 ];
 
-const RESULTS = {
+export const RESULTS = {
   recruitment: {
     heading: "Your Immediate Priority: Build Your Board",
     explanation: "You have already built the organization. Your immediate limitation is that you do not have the Board Members around you that the organization now needs. Your next step is to build the right Board around your mission.",
@@ -41,11 +41,53 @@ const resultToken = () => {
   try { return JSON.parse(sessionStorage.getItem("funnelLeadContext") || "{}").result_token || ""; } catch { return ""; }
 };
 
+export const OfferPurchaseBlock = ({ recommendation, showDiagnosis = false, leadToken = "" }) => {
+  const result = RESULTS[recommendation];
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [error, setError] = useState("");
+
+  const buy = async () => {
+    setCheckingOut(true); setError("");
+    try {
+      const endpoint = recommendation === "complete_transformation" ? "complete-transformation-checkout" : "dfy-checkout";
+      const body = { origin_url: window.location.origin, result_token: leadToken };
+      if (recommendation !== "complete_transformation") body.pathway = recommendation;
+      else body.cancel_path = "/offer/board-fix";
+      const response = await axios.post(`${API}/payments/${endpoint}`, body);
+      window.location.href = response.data.checkout_url;
+    } catch {
+      setError("We could not start your checkout. Please try again.");
+      setCheckingOut(false);
+    }
+  };
+
+  return (
+    <section className="offer-sales-offers" data-testid={showDiagnosis ? "bfd-result" : `direct-offer-${recommendation}`}>
+      <div className="offer-sales-grid" style={{ gridTemplateColumns: "1fr" }}>
+        <section className="offer-sales-card" data-testid={`bfd-result-${recommendation}`}>
+          {showDiagnosis && (
+            <>
+              <h2 data-testid="bfd-result-heading">{result.heading}</h2>
+              <p data-testid="bfd-result-explanation">{result.explanation}</p>
+            </>
+          )}
+          <h3 style={{ marginBottom: 0 }} data-testid="bfd-result-offer-name">{result.offerName}</h3>
+          <p className="offer-regular-price" data-testid="bfd-regular-price">Regular Investment: <s>{result.regular}</s></p>
+          <p className="offer-sales-price" data-testid="bfd-price">Get Started Now: {result.price}</p>
+          <p className="offer-discount-note" data-testid="bfd-discount-note">50% Immediate-Action Discount</p>
+          <p data-testid="bfd-what">{result.what}</p>
+          <button type="button" className="button" onClick={buy} disabled={checkingOut} data-testid="bfd-buy-button">{checkingOut ? "Starting secure checkout…" : result.cta}</button>
+          {error && <p className="submit-error" data-testid="bfd-checkout-error">{error}</p>}
+        </section>
+      </div>
+    </section>
+  );
+};
+
 export const BoardFixDiagnostic = () => {
   const [answers, setAnswers] = useState({ has_board: "", active_participation: "", right_people: "", fundraising_working: "" });
   const [recommendation, setRecommendation] = useState("");
   const [busy, setBusy] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState("");
 
   const visible = QUESTIONS.filter((q) => q.always || answers.has_board === "Yes");
@@ -63,40 +105,8 @@ export const BoardFixDiagnostic = () => {
     setBusy(false);
   };
 
-  const buy = async () => {
-    setCheckingOut(true); setError("");
-    try {
-      const endpoint = recommendation === "complete_transformation" ? "complete-transformation-checkout" : "dfy-checkout";
-      const body = { origin_url: window.location.origin, result_token: resultToken() };
-      if (recommendation !== "complete_transformation") body.pathway = recommendation;
-      else body.cancel_path = "/offer/board-fix";
-      const response = await axios.post(`${API}/payments/${endpoint}`, body);
-      window.location.href = response.data.checkout_url;
-    } catch {
-      setError("We could not start your checkout. Please try again.");
-      setCheckingOut(false);
-    }
-  };
-
   if (recommendation) {
-    const result = RESULTS[recommendation];
-    return (
-      <section className="offer-sales-offers" data-testid="bfd-result">
-        <div className="offer-sales-grid" style={{ gridTemplateColumns: "1fr" }}>
-          <section className="offer-sales-card" data-testid={`bfd-result-${recommendation}`}>
-            <h2 data-testid="bfd-result-heading">{result.heading}</h2>
-            <p data-testid="bfd-result-explanation">{result.explanation}</p>
-            <h3 style={{ marginBottom: 0 }} data-testid="bfd-result-offer-name">{result.offerName}</h3>
-            <p className="offer-regular-price" data-testid="bfd-regular-price">Regular Investment: <s>{result.regular}</s></p>
-            <p className="offer-sales-price" data-testid="bfd-price">Get Started Now: {result.price}</p>
-            <p className="offer-discount-note" data-testid="bfd-discount-note">50% Immediate-Action Discount</p>
-            <p data-testid="bfd-what">{result.what}</p>
-            <button type="button" className="button" onClick={buy} disabled={checkingOut} data-testid="bfd-buy-button">{checkingOut ? "Starting secure checkout…" : result.cta}</button>
-            {error && <p className="submit-error" data-testid="bfd-checkout-error">{error}</p>}
-          </section>
-        </div>
-      </section>
-    );
+    return <OfferPurchaseBlock recommendation={recommendation} showDiagnosis leadToken={resultToken()} />;
   }
 
   return (

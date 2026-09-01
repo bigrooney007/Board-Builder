@@ -10,6 +10,7 @@ import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
 import { BoardFixContinuation } from "./BoardFixContinuation";
+import { bufStep } from "./bufJourney";
 import { reactivationContent, sharedCourseContent, reactivationCoursePagesText } from "../content/appContent";
 
 const META = {
@@ -101,11 +102,13 @@ const StepShell = ({ moduleNumber }) => {
 
 export const ReactivationModulePage = () => {
   const { course, error, forbidden, reload } = useReactivationCourse();
+  const { member } = useMemberAuth();
   const { moduleNumber } = useParams();
   const navigate = useNavigate();
   const number = Number(moduleNumber);
   const [marking, setMarking] = useState(false);
   const module = course?.modules.find((item) => item.number === number);
+  const buf = bufStep(member, "reactivation", number);
 
   useEffect(() => {
     if (module) document.title = `Step ${module.number} | ${module.title} | Nonprofit Board Builder`;
@@ -121,7 +124,7 @@ export const ReactivationModulePage = () => {
     setMarking(true);
     try {
       if (!module.completed) await memberApi.post("/courses/progress", { product: META.key, module_number: number, action: "completed" });
-      navigate(number < course.modules.length ? `${META.base}/module/${number + 1}` : META.base);
+      navigate(buf ? buf.next : (number < course.modules.length ? `${META.base}/module/${number + 1}` : META.base));
     } catch { /* ignore */ }
     setMarking(false);
   };
@@ -135,15 +138,15 @@ export const ReactivationModulePage = () => {
         {module && (
           <>
             <header className="member-page-heading">
-              <Link className="module-breadcrumb" to={META.base} data-testid="reactivation-module-back"><ArrowLeft size={15} /> {META.label}</Link>
+              <Link className="module-breadcrumb" to={buf ? "/board-fix-roadmap" : META.base} data-testid="reactivation-module-back"><ArrowLeft size={15} /> {buf ? "Your Board Fix Journey" : META.label}</Link>
               <p className="eyebrow">Step {module.number} of {course.modules.length}</p>
               <h1 data-testid="reactivation-module-title">{module.title}</h1>
             </header>
             {<VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
             <StepShell moduleNumber={number} />
-            {number === course.modules.length && <BoardFixContinuation label="Continue to Identify the Board Members You Need" to="/app/recruitment/self-guided" />}
+            {number === course.modules.length && <BoardFixContinuation label="Continue to Identify the Board Members You Need" to="/app/recruitment/self-guided/module/2" />}
             <div className="module-nav" data-testid="reactivation-module-navigation">
-              <button className="button button-back" disabled={number <= 1} onClick={() => navigate(`${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
+              <button className="button button-back" disabled={buf ? false : number <= 1} onClick={() => navigate(buf ? buf.prev : `${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="reactivation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={META.key} moduleNumber={number} supportTypes={course.support_types} />

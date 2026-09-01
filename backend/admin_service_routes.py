@@ -42,6 +42,12 @@ DWM_OFFERS = {
         "entitlement": "activation_self_guided", "intake_collection": "board_activation_intakes",
         "entry_route": "/app/activation/self-guided/module/1",
     },
+    "recruitment_campaign_launch_697": {
+        "product": "recruitment", "engagement_type": "recruitment_campaign_launch",
+        "offer": "Recruitment Campaign Launch ($697)",
+        "entitlement": "recruitment_self_guided", "intake_collection": "board_recruitment_intakes",
+        "entry_route": "/app/recruitment/self-guided/module/2",
+    },
 }
 
 ENGAGEMENT_STATUSES = {"Active", "Paused", "Completed"}
@@ -72,7 +78,7 @@ def create_admin_service_router(db) -> APIRouter:
                 "session_id": session_id,
                 "product": meta["product"],
                 "offer": meta["offer"],
-                "engagement_type": meta["product"],
+                "engagement_type": meta.get("engagement_type", meta["product"]),
                 "purchase_date": tx.get("created_at", ""),
                 "founder_name": intake.get("your_name", "") or intake.get("full_name", "") or tx.get("lead_name", ""),
                 "founder_email": intake.get("your_email", "") or intake.get("email", "") or tx.get("email", "") or tx.get("lead_email", ""),

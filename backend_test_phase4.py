@@ -13,7 +13,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 load_dotenv("/app/backend/.env")
 
 # Base URL from frontend/.env
-BASE_URL = "https://board-journey-test.preview.emergentagent.com/api"
+BASE_URL = "https://buf-preview.preview.emergentagent.com/api"
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = "test_database"
 

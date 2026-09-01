@@ -14,6 +14,40 @@ const CHECKOUT_ENDPOINTS = {
   "board-fix": { diy: "board-fix-checkout", dwy: "board-fix-dwm-checkout" },
 };
 
+const CampaignLaunchOffer = ({ content, shared }) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const buy = async () => {
+    setBusy(true); setError("");
+    try {
+      const response = await axios.post(`${API}/payments/campaign-launch-checkout`, { origin_url: window.location.origin, cancel_path: "/offer/recruitment" });
+      window.location.href = response.data.checkout_url;
+    } catch {
+      setError(shared.checkoutError);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="offer-sales-offers" data-testid="campaign-launch-offer">
+      <div className="offer-sales-grid" style={{ gridTemplateColumns: "1fr" }}>
+        <section className="offer-sales-card" data-testid="campaign-launch-card">
+          <h2 data-testid="campaign-launch-outcome-heading">{content.outcomeHeading}</h2>
+          <p data-testid="campaign-launch-outcome-body">Within <strong>48 to 72 hours after your campaign is launched</strong>, you should begin receiving applicants you can review, select and invite into conversations about joining your board.</p>
+          <h2 data-testid="campaign-launch-guarantee-heading">{content.guaranteeHeading}</h2>
+          <p data-testid="campaign-launch-guarantee-body">{content.guaranteeBody}</p>
+          <p className="offer-sales-price" data-testid="campaign-launch-price">{content.price}</p>
+          <button type="button" className="button" onClick={buy} disabled={busy} data-testid="campaign-launch-buy-button">
+            {busy ? shared.startingCheckout : content.buttonLabel}
+          </button>
+          {error && <p className="submit-error" data-testid="campaign-launch-error">{error}</p>}
+        </section>
+      </div>
+    </section>
+  );
+};
+
 const OfferCard = ({ offer, choice, card, busy, startingLabel, guarantee, onBuy }) => (
   <section className={`offer-sales-card ${choice}`} data-testid={`offer-${choice}-card-${offer}`}>
     <h2 data-testid={`offer-${choice}-heading-${offer}`}>{card.heading}</h2>
@@ -81,6 +115,8 @@ export default function OfferVideoPage({ offer }) {
             </div>
             {offer === "board-fix" ? (
               <BoardFixDiagnostic />
+            ) : offer === "recruitment" ? (
+              <CampaignLaunchOffer content={content.campaignLaunch} shared={shared} />
             ) : (
             <section className="offer-sales-offers" data-testid={`offer-payment-choices-${offer}`}>
               {content.options ? (

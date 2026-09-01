@@ -18,10 +18,11 @@ logger = logging.getLogger(__name__)
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/reactivation-start-here"
 BOARD_FIX_COURSE_ROUTE = "/app/reactivation/self-guided"
-QUALIFYING_SOURCES = {"direct_diy_board_reactivation_497", "direct_board_reactivation_project"}
+QUALIFYING_SOURCES = {"direct_diy_board_reactivation_497", "direct_board_reactivation_project", "board_reactivation_dfy"}
 OFFER_LABELS = {
     "direct_diy_board_reactivation_497": "Reactivation — Do It Yourself — $497",
     "direct_board_reactivation_project": "Reactivation — Do It With Me — $1,997",
+    "board_reactivation_dfy": "Board Reactivation — Done For You — $997",
     BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
 }
 

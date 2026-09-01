@@ -17,10 +17,11 @@ logger = logging.getLogger(__name__)
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/activation-start-here"
 BOARD_FIX_COURSE_ROUTE = "/app/activation/self-guided"
-QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497"}
+QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497", "board_fundraising_activation_dfy"}
 OFFER_LABELS = {
     "direct_diy_board_activation_497": "Fundraising Activation — Do It Yourself — $497",
     "direct_board_activation_project_2497": "Fundraising Activation — Do It With Rooney — $2,497",
+    "board_fundraising_activation_dfy": "Board Fundraising Activation — Done For You — $997",
     BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
 }
 

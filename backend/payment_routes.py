@@ -117,6 +117,10 @@ def resolve_complete_transformation_price_id() -> str:
     return resolve_offer_price_id("STRIPE_COMPLETE_TRANSFORMATION_1997_PRICE_ID", "complete_board_transformation_1997", "Complete Board Transformation", 199700)
 
 
+def resolve_campaign_launch_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_RECRUITMENT_CAMPAIGN_LAUNCH_697_PRICE_ID", "recruitment_campaign_launch_697", "Recruitment Campaign Launch", 69700)
+
+
 DFY_CHECKOUT_OFFERS = {
     "reactivation": {
         "env_key": "STRIPE_BOARD_REACTIVATION_DFY_997_PRICE_ID", "lookup_key": "board_reactivation_dfy_997",
@@ -623,6 +627,43 @@ def create_payment_router(db) -> APIRouter:
             "diagnostic_answers": (lead or {}).get("diagnostic_answers", {}),
             "recommended_pathway": (lead or {}).get("recommended_pathway", ""),
             "amount": meta["amount"], "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/campaign-launch-checkout")
+    async def create_campaign_launch_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_campaign_launch_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
+            "cancel_url": f"{payload.origin_url}/offer/recruitment?checkout=cancelled",
+            "metadata": {
+                "offer_source": "recruitment_campaign_launch", "selected_tier": "697",
+                "purchase_source": "recruitment_campaign_launch_697",
+                "offer": "Recruitment Campaign Launch",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url,
+            "offer_source": "recruitment_campaign_launch",
+            "selected_tier": "697", "purchase_source": "recruitment_campaign_launch_697",
+            "offer": "Recruitment Campaign Launch",
+            "amount": 69700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

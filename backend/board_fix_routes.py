@@ -34,18 +34,22 @@ STEP_OFF_OPTION = "Step Down From the Board"
 
 JOURNEY_STAGES = [
     {"key": "orientation", "label": "Welcome to Board Fix"},
-    {"key": "understand", "label": "Understand Your Board", "pathway": "reactivation", "modules": [1, 2, 3]},
-    {"key": "rebuild", "label": "Rebuild Your Present Board", "pathway": "reactivation", "modules": [4, 5]},
-    {"key": "identify", "label": "Identify the Board Members You Need", "pathway": "recruitment", "modules": [1, 2]},
-    {"key": "launch", "label": "Launch Your Board Recruitment Campaign", "pathway": "recruitment", "modules": [3]},
-    {"key": "select", "label": "Select and Interview Board Candidates", "pathway": "recruitment", "modules": [4]},
-    {"key": "references", "label": "Reference and Background Checks", "pathway": "recruitment", "modules": [5]},
-    {"key": "onboard", "label": "Onboard Your New and Existing Board Members", "pathway": "recruitment", "modules": [6]},
-    {"key": "fundraising_planning", "label": "Plan Your Board Fundraising", "pathway": "activation", "modules": [1, 2]},
-    {"key": "create_strategy", "label": "Create Your Fundraising Strategy", "pathway": "activation", "modules": [3]},
-    {"key": "adopt_strategy", "label": "Adopt Your Fundraising Strategy", "pathway": "activation", "modules": [4]},
+    {"key": "understand", "label": "Understand the Situation", "pathway": "reactivation", "modules": [3, 4, 5]},
+    {"key": "identify", "label": "Identify the Board Members You Need", "pathway": "recruitment", "modules": [2]},
+    {"key": "launch", "label": "Launch Your Recruitment Campaign", "pathway": "recruitment", "modules": [3]},
+    {"key": "select", "label": "Select and Interview Your Applicants", "pathway": "recruitment", "modules": [4]},
+    {"key": "references", "label": "Complete References and Background Checks", "pathway": "recruitment", "modules": [5]},
+    {"key": "onboard", "label": "Onboard Your New Board Members", "pathway": "recruitment", "modules": [6]},
+    {"key": "fundraising_planning", "label": "Build the Fundraising Plan With Your Board", "pathway": "activation", "modules": [2]},
+    {"key": "create_strategy", "label": "Build Your Fundraising Strategy", "pathway": "activation", "modules": [3]},
+    {"key": "adopt_strategy", "label": "Review and Adopt the Fundraising Strategy", "pathway": "activation", "modules": [4]},
     {"key": "execute_strategy", "label": "Equip Your Board to Execute", "pathway": "activation", "modules": [5]},
 ]
+
+PREVIEW_PREFIX = "admin-preview-"
+PREVIEW_SOURCE = "board_fix_admin_preview"
+PREVIEW_ENTITLEMENTS = ["board_fix_system", "recruitment_self_guided", "reactivation_self_guided",
+                        "activation_self_guided", "recruitment_selection_onboarding"]
 
 INTAKE_STAGE_KEYS = {"fundraising_planning": "activation"}
 
@@ -69,6 +73,13 @@ def create_board_fix_router(db) -> APIRouter:
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
     async def verify_session(session_id: str):
+        if session_id.startswith(PREVIEW_PREFIX):
+            preview = await db.board_fix_admin_previews.find_one({"session_id": session_id}, {"_id": 0})
+            if not preview:
+                return None
+            return {"payment_status": "paid", "purchase_source": PREVIEW_SOURCE, "internal_preview": True,
+                    "lead_name": "", "lead_organization": "", "lead_email": preview.get("email", ""),
+                    "preview_user_id": preview.get("user_id", "")}
         txn = await db.payment_transactions.find_one({"session_id": session_id, "purchase_source": {"$in": PURCHASE_SOURCES}}, {"_id": 0})
         if not txn:
             return None
@@ -96,8 +107,11 @@ def create_board_fix_router(db) -> APIRouter:
         txn = await verify_session(payload.session_id)
         if not txn:
             raise HTTPException(status_code=403, detail="A completed Complete Board Fix purchase is required")
-        purchase = await db.purchases.find_one({"session_id": payload.session_id}, {"_id": 0, "user_id": 1})
-        user_id = (purchase or {}).get("user_id", "")
+        if txn.get("internal_preview"):
+            user_id = txn.get("preview_user_id", "")
+        else:
+            purchase = await db.purchases.find_one({"session_id": payload.session_id}, {"_id": 0, "user_id": 1})
+            user_id = (purchase or {}).get("user_id", "")
         is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
         if user_id:
             await db.board_fix_journeys.update_one(
@@ -106,6 +120,7 @@ def create_board_fix_router(db) -> APIRouter:
         await db.board_fix_intakes.update_one(
             {"session_id": payload.session_id},
             {"$set": {"data": payload.data, "user_id": user_id, "lead_email": txn.get("lead_email", ""),
+                      "internal_preview": bool(txn.get("internal_preview")),
                       "submitted_at": now_iso(), "updated_at": now_iso()},
              "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
         if user_id:
@@ -204,7 +219,7 @@ def create_board_fix_router(db) -> APIRouter:
             {"$set": {"transition_options": transition_options, "user_id": user_id, "updated_at": now},
              "$setOnInsert": {"created_at": now}}, upsert=True)
         return {"status": "saved", "transition_options": transition_options,
-                "next_url": "/app/reactivation/self-guided/module/2"}
+                "next_url": "/app/reactivation/self-guided/module/3"}
 
     async def ensure_recruitment_seed(user_id: str, member: dict) -> None:
         """BUF customers do not complete a second recruitment intake — seed it from the master intake."""
@@ -368,12 +383,35 @@ def create_board_fix_router(db) -> APIRouter:
             "board_members_recruited": recruited,
         }
 
+    @router.post("/admin/board-fix/preview-access")
+    async def admin_preview_access(request: Request):
+        """Super-Admin-only: walk the real Complete Board Transformation journey without Stripe."""
+        admin = await authenticate_admin(request, db)
+        email = (admin.get("email") or "").lower()
+        member = await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1})
+        if not member:
+            raise HTTPException(status_code=409, detail=f"No member account exists for {email}. Create one first at /login (Create Account) using this exact email, then click this button again.")
+        user_id = member["user_id"]
+        now = now_iso()
+        await db.members.update_one(
+            {"user_id": user_id},
+            {"$addToSet": {"entitlements": {"$each": PREVIEW_ENTITLEMENTS}}, "$set": {"updated_at": now}})
+        session_id = f"{PREVIEW_PREFIX}{user_id}"
+        await db.board_fix_admin_previews.update_one(
+            {"session_id": session_id},
+            {"$set": {"user_id": user_id, "email": email, "internal_preview": True, "updated_at": now},
+             "$setOnInsert": {"created_at": now}}, upsert=True)
+        await db.board_fix_journeys.update_one(
+            {"user_id": user_id},
+            {"$set": {"internal_preview": True, "experience": "self_guided", "email": email}}, upsert=True)
+        return {"intake_url": f"/board-fix-intake?session_id={session_id}", "member_email": email}
+
     @router.get("/admin/board-fix/customers")
     async def admin_customers(request: Request):
         await authenticate_admin(request, db)
         leads = await db.funnel_leads.find({"offer_source": "board_fix"}, {"_id": 0}).sort("created_at", -1).to_list(300)
         txns = await db.payment_transactions.find({"offer_source": "board_fix_system"}, {"_id": 0}).to_list(300)
-        intakes = await db.board_fix_intakes.find({}, {"_id": 0}).to_list(300)
+        intakes = await db.board_fix_intakes.find({"internal_preview": {"$ne": True}}, {"_id": 0}).to_list(300)
         purchases = await db.purchases.find({"purchase_source": {"$in": PURCHASE_SOURCES}}, {"_id": 0}).to_list(300)
         journeys = {j["user_id"]: j for j in await db.board_fix_journeys.find({}, {"_id": 0}).to_list(300)}
         customers = {}
@@ -474,7 +512,8 @@ def create_board_fix_router(db) -> APIRouter:
         purchases_homepage = sum(1 for t in paid_txns if t.get("lead_id"))
         purchases_direct = len(paid_txns) - purchases_homepage
         journey_started = await db.board_fix_journeys.count_documents(
-            {"$or": [{"roadmap_first_accessed_at": {"$exists": True, "$ne": ""}},
+            {"internal_preview": {"$ne": True},
+             "$or": [{"roadmap_first_accessed_at": {"$exists": True, "$ne": ""}},
                      {"orientation_first_accessed_at": {"$exists": True, "$ne": ""}}]})
         funnel_report = {
             "homepage_visits": homepage_visits,

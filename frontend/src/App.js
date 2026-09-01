@@ -37,6 +37,7 @@ import PlanningFormPage from "@/funnels/PlanningFormPage";
 import StrategyReviewPage from "@/funnels/StrategyReviewPage";
 import StrategyPlanPage from "@/funnels/StrategyPlanPage";
 import OfferVideoPage from "@/funnels/OfferVideoPage";
+import DirectOfferPage from "@/funnels/DirectOfferPage";
 import FundraisingPortfolioPage from "@/funnels/FundraisingPortfolioPage";
 import CaseForSupportPage from "@/funnels/CaseForSupportPage";
 import MyFundraisingBoardPage from "@/member/MyFundraisingBoardPage";
@@ -65,7 +66,7 @@ import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 
-const PUBLIC_CENTERED_PATHS = ["/", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney"];
+const PUBLIC_CENTERED_PATHS = ["/", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
 const PublicCenteringScope = () => {
   const { pathname } = useLocation();
@@ -108,6 +109,10 @@ export default function App() {
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
+          <Route path="/board-reactivation" element={<DirectOfferPage pathway="reactivation" />} />
+          <Route path="/board-recruitment" element={<DirectOfferPage pathway="recruitment" />} />
+          <Route path="/board-fundraising-activation" element={<DirectOfferPage pathway="activation" />} />
+          <Route path="/complete-board-transformation" element={<DirectOfferPage pathway="complete_transformation" />} />
           <Route path="/board-fix-intake" element={<BoardFixIntakePage />} />
           <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
           <Route path="/board-fix-dashboard" element={<BoardFixRoadmapPage />} />

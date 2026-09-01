@@ -12,7 +12,7 @@ const TEST_JOURNEYS = [
   { key: "activation", label: "Activation", route: "/app/activation/self-guided/module/1" },
 ];
 
-const ENGAGEMENT_LABELS = { recruitment: "Board Recruitment", reactivation: "Board Reactivation", activation: "Board Fundraising Activation" };
+const ENGAGEMENT_LABELS = { recruitment: "Board Recruitment", reactivation: "Board Reactivation", activation: "Board Fundraising Activation", recruitment_campaign_launch: "Recruitment Campaign Launch" };
 const ENGAGEMENT_STATUSES = ["Active", "Paused", "Completed"];
 const MEETING_STATUSES = ["Not Booked", "Booking Link Sent", "Booked"];
 
@@ -42,6 +42,14 @@ export const ClientDeliverySection = () => {
     } catch (e) { setMessage(err(e)); }
   };
 
+  const testCompleteTransformation = async () => {
+    setMessage("");
+    try {
+      const r = await client.post("/admin/board-fix/preview-access");
+      window.location.href = r.data.intake_url;
+    } catch (e) { setMessage(err(e)); }
+  };
+
   return (
     <section data-testid="admin-client-delivery">
       <h2 className="reference-heading">Test Product Journey</h2>
@@ -50,7 +58,9 @@ export const ClientDeliverySection = () => {
         {TEST_JOURNEYS.map((j) => (
           <a key={j.key} className="button button-small" href={j.route} data-testid={`test-journey-${j.key}`}>Test {j.label} Journey</a>
         ))}
+        <button className="button button-small" onClick={testCompleteTransformation} data-testid="test-journey-complete-transformation">Test Complete Board Transformation</button>
       </div>
+      <p className="admin-message">The Complete Board Transformation test opens the real intake and the full 11-step journey on your own member account (same email as this admin login) — no Stripe payment is created and it is excluded from customer reporting. Make sure you are also logged in as a member with this email.</p>
       <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Done-For-You Clients</h2>
       <p className="admin-message">Every verified individual-engagement client. Open a client workspace to operate their Board Ultimate Fix pathway on their behalf.</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}

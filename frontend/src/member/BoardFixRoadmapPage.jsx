@@ -7,18 +7,14 @@ import { memberApi } from "@/member/api";
 const STAGE_META = {
   orientation: {
     route: () => "/board-fix-orientation",
-    text: "Watch the welcome video, answer two quick questions, and generate the Board Member Profile & Recommitment Form and the email you will send to your current board members.",
+    text: "Watch the welcome video, generate the Board Member Profile & Recommitment Form and the email you will send, then send the form to your current board members and track their responses as they come in.",
   },
   understand: {
-    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 1}`,
-    text: "Your board members' responses appear here as they come in. Understand each person's situation, generate the conversation script you need for each one, and get the summary of your entire board — strengths, gaps, and the direction for recruitment.",
-  },
-  rebuild: {
-    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 4}`,
-    text: "Have the conversations your board summary points to — recommit the people ready to step up, move the right people to advisory roles, and let others step down gracefully.",
+    route: (stage) => `/app/reactivation/self-guided/module/${stage.current_module || 3}`,
+    text: "Every board member who completes the Recommitment Form appears here. Understand each person's situation, generate the conversation script you need, have the conversation and record the outcome, send the right follow-up communication, and get the summary of your entire board.",
   },
   identify: {
-    route: (stage) => `/app/recruitment/self-guided/module/${stage.current_module || 1}`,
+    route: (stage) => `/app/recruitment/self-guided/module/${stage.current_module || 2}`,
     text: "No new intake here — we already have what we need. Compare your present board, including you, against the board your mission needs. The gap becomes the board members you need to recruit.",
   },
   launch: {
@@ -35,10 +31,10 @@ const STAGE_META = {
   },
   onboard: {
     route: () => "/app/recruitment/self-guided/module/6",
-    text: "Onboard your new and existing board members with the onboarding guide, agreements and profile forms — and send each new member their Final Board Appointment Email.",
+    text: "Onboard your new board members with the onboarding guide, agreements and profile forms — and send each new member their Final Board Appointment Email.",
   },
   fundraising_planning: {
-    route: (stage) => `/app/activation/self-guided/module/${stage.current_module || 1}`,
+    route: (stage) => `/app/activation/self-guided/module/${stage.current_module || 2}`,
     intakeRoute: "/board-activation-intake?bf=1",
     text: "Bring your whole board — current and newly recruited — into fundraising planning. Send every member the Fundraising Planning Form and complete your own.",
   },
@@ -82,7 +78,7 @@ export default function BoardFixRoadmapPage() {
         </header>
         <section className="member-card" data-testid="board-fix-roadmap-instructions">
           <h2>How the Board Ultimate Fix Framework Works</h2>
-          <p>The BUF Framework fixes your board in a specific order: <strong>Welcome to Board Fix → Understand Your Board → Rebuild Your Present Board → Identify the Board Members You Need → Launch Your Board Recruitment Campaign → Select and Interview Board Candidates → Reference and Background Checks → Onboard Your New and Existing Board Members → Plan Your Board Fundraising → Create Your Fundraising Strategy → Adopt Your Fundraising Strategy → Equip Your Board to Execute.</strong></p>
+          <p>The BUF Framework fixes your board in a specific order: <strong>Welcome to Board Fix → Understand the Situation → Identify the Board Members You Need → Launch Your Recruitment Campaign → Select and Interview Your Applicants → Complete References and Background Checks → Onboard Your New Board Members → Build the Fundraising Plan With Your Board → Build Your Fundraising Strategy → Review and Adopt the Fundraising Strategy → Equip Your Board to Execute.</strong></p>
           <p>Work through the stages below in order. You can leave and come back any time — your progress is always saved, and this roadmap will always show you exactly where you are and what comes next.</p>
         </section>
         {error && <p className="submit-error" data-testid="board-fix-roadmap-error">{error}</p>}

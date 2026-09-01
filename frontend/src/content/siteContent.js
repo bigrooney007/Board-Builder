@@ -205,9 +205,13 @@ export const SITE_CONTENT = {
         "youtubeId": "DlrABIvk7eY",
         "title": "Launch Your Board Recruitment Campaign in 30 Minutes & Get The Quality Support Your Nonprofit Needs"
       },
-      "videoButtons": {
-        "diyLabel": "Launch It Yourself — $297",
-        "dwyLabel": "Do It With Us — $1,497"
+      "campaignLaunch": {
+        "offerName": "Recruitment Campaign Launch",
+        "outcomeHeading": "Your Outcome",
+        "guaranteeHeading": "100% Guarantee",
+        "guaranteeBody": "We guarantee that if you don't get the kind of applicants you need, you get a 100% refund.",
+        "price": "$697",
+        "buttonLabel": "LAUNCH MY BOARD RECRUITMENT CAMPAIGN — $697"
       },
       "lead": "How you recruit your board members is as important as the quality of board members you recruit.",
       "opening": [

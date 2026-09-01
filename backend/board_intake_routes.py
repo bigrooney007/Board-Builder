@@ -17,12 +17,15 @@ logger = logging.getLogger(__name__)
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 DIY_START_ROUTE = "/recruitment-start-here"
 BOARD_FIX_COURSE_ROUTE = "/app/recruitment/self-guided"
-QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "recruitment_campaign_diy_297", "direct_board_recruitment_project"}
+QUALIFYING_SOURCES = {"direct_diy_board_recruitment_497", "recruitment_campaign_diy_297", "direct_board_recruitment_project",
+                      "board_recruitment_dfy", "recruitment_campaign_launch_697"}
 DIY_SOURCES = {"direct_diy_board_recruitment_497", "recruitment_campaign_diy_297"}
 OFFER_LABELS = {
     "direct_diy_board_recruitment_497": "Launch It Yourself — $497",
     "recruitment_campaign_diy_297": "Launch It Yourself — $297",
     "direct_board_recruitment_project": "Do It With Us — $1,497",
+    "board_recruitment_dfy": "Board Recruitment — Done For You — $997",
+    "recruitment_campaign_launch_697": "Recruitment Campaign Launch — $697",
     BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
 }
 

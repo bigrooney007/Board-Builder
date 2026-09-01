@@ -9,6 +9,7 @@ import { Module3Launch } from "./workspace/WorkspaceModules";
 import { recruitmentContent, sharedCourseContent, coursePagesText } from "../content/appContent";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 import { BoardFixContinuation } from "./BoardFixContinuation";
+import { bufStep } from "./bufJourney";
 
 const PRODUCT_META = {
   basic: { key: "recruitment_basic", endpoint: "/courses/recruitment/basic", base: "/app/recruitment/basic", label: "Board Recruitment — $97 Program" },
@@ -187,6 +188,7 @@ const SelfGuidedWorkspace = ({ moduleNumber }) => {
 
 export const CourseModulePage = ({ productSlug }) => {
   const { meta, course, error, forbidden, reload } = useCourse(productSlug);
+  const { member } = useMemberAuth();
   const { moduleNumber } = useParams();
   const navigate = useNavigate();
   const number = Number(moduleNumber);
@@ -195,6 +197,7 @@ export const CourseModulePage = ({ productSlug }) => {
   const module = moduleIndex >= 0 ? course.modules[moduleIndex] : undefined;
   const prevModule = moduleIndex > 0 ? course.modules[moduleIndex - 1] : undefined;
   const nextModule = moduleIndex >= 0 ? course.modules[moduleIndex + 1] : undefined;
+  const buf = productSlug === "self-guided" ? bufStep(member, "recruitment", number) : null;
 
   useEffect(() => {
     if (module?.locked) navigate("/app/recruitment/selection-offer", { replace: true });
@@ -214,7 +217,8 @@ export const CourseModulePage = ({ productSlug }) => {
     setMarking(true);
     try {
       if (!module.completed) await memberApi.post("/courses/progress", { product: meta.key, module_number: number, action: "completed" });
-      if (!nextModule) navigate(productSlug === "self-guided" ? "/app/recruitment/self-guided/results" : meta.base);
+      if (buf) navigate(buf.next);
+      else if (!nextModule) navigate(productSlug === "self-guided" ? "/app/recruitment/self-guided/results" : meta.base);
       else if (nextModule.locked) navigate("/app/recruitment/selection-offer");
       else navigate(`${meta.base}/module/${nextModule.number}`);
     } catch { /* ignore */ }
@@ -230,15 +234,15 @@ export const CourseModulePage = ({ productSlug }) => {
         {module && !module.locked && (
           <>
             <header className="member-page-heading">
-              <Link className="module-breadcrumb" to={meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {meta.label}</Link>
+              <Link className="module-breadcrumb" to={buf ? "/board-fix-roadmap" : meta.base} data-testid="module-back-to-course"><ArrowLeft size={15} /> {buf ? "Your Board Fix Journey" : meta.label}</Link>
               <p className="eyebrow">Step {module.position || module.number} of {course.modules.length}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
             <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
-            {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Plan Your Board Fundraising" to="/app/activation/self-guided" />}
+            {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Plan Your Board Fundraising" to="/app/activation/self-guided/module/2" />}
             <div className="module-nav" data-testid="module-navigation">
-              <button className="button button-back" disabled={!prevModule} onClick={() => navigate(`${meta.base}/module/${prevModule.number}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
+              <button className="button button-back" disabled={buf ? false : !prevModule} onClick={() => navigate(buf ? buf.prev : `${meta.base}/module/${prevModule.number}`)} data-testid="previous-module-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="next-step-button">NEXT STEP <ArrowRight size={16} /></button>
             </div>
             <SupportBox productKey={meta.key} moduleNumber={number} supportTypes={course.support_types} />
