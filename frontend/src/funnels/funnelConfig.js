@@ -20,7 +20,7 @@ export const funnelConfigs = {
     heading: "Tell Us About Your Board",
     supporting: "Enter your information below, and we will show you the three mistakes you are making with your board that are limiting your organization's ability to raise money exponentially and grow.",
     formHeading: "Tell Us About You and Your Organization",
-    submit: "Show Me How You Can Help",
+    submit: "Show Me The 3 Mistakes",
     redirectAfterSubmit: "offer-board-fix",
     steps: [
       {
