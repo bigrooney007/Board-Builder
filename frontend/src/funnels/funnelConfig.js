@@ -18,7 +18,7 @@ export const funnelConfigs = {
   board_fix: {
     slug: "board-fix", eyebrow: "BOARD FIX",
     heading: "Tell Us About Your Board",
-    supporting: "Enter your information below, watch the short video, and answer four quick questions — we'll show you exactly where your board needs to start.",
+    supporting: "Enter your information below, and we will show you the three mistakes you are making with your board that are limiting your organization's ability to raise money exponentially and grow.",
     formHeading: "Tell Us About You and Your Organization",
     submit: "Show Me How You Can Help",
     redirectAfterSubmit: "offer-board-fix",

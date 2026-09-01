@@ -68,9 +68,12 @@ export const SITE_CONTENT = {
   },
   "home": {
     "cta": "Tell Us About Your Board",
+    "heroCta": "I Am Ready To Fix My Board",
+    "introCta": "Get Started",
     "introSectionParagraphs": [
-      "I'll show you exactly how to determine which board members need to step up, which may need to step down, who you need to recruit, how to recruit them, how to activate your board, and how to get your board working with you to build your organization's fundraising system.",
-      "You'll receive the complete process, tools, templates, resources, and support you need to execute it inside your organization."
+      "Building the right board doesn't happen by chance. It is Intentionally Orchestrated.",
+      "This is why our mission as nonprofit board builders is to empower founders and executive directors like you with the framework, tools, and support you need to build the right board for your nonprofit.",
+      "We will work with you to get your present board to recommit and step up to their responsibilities, recruit new board members to complement and strengthen your present board, and activate both your current and new board members to start raising money and building your organization's fundraising system."
     ],
     "builderHeading": "Become a Nonprofit Board Builder",
     "builderSubheading": "Learn the process. Get the tools. Execute the transformation.",
@@ -80,8 +83,8 @@ export const SITE_CONTENT = {
       {"label": "REACTIVATE", "text": "Get your current board members to step up and take responsibility, or help them transition gracefully when they can no longer continue."},
       {"label": "ACTIVATE", "text": "Get your board working with you to raise money and build your organization's fundraising system."}
     ],
-    "heroTitle": "Fix Your Board. Transform Your Organization.",
-    "heroSubtitle": "You don't need another consultant to take over or fix your board.",
+    "heroTitle": "Are You Ready To Build The Board Your Nonprofit Needs?",
+    "heroSubtitle": "Let's Work With You To Fix Your Board, So You Can Work With Your Board To Raise Money And Build Your Organization.",
     "introHeading": "Your Board Is Your Organization's Most Important Asset",
     "introParagraphs": [
       "If you get your board right, raising money, creating impact, and scaling your organization becomes an adventure.",

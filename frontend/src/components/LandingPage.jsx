@@ -32,18 +32,18 @@ export const LandingPage = ({ onJoin }) => (
       <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
         <p className="hero-banner-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
-        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-fix" data-testid="hero-board-transformation-button">{home.cta}</a></p>
+        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-fix" data-testid="hero-board-transformation-button">{home.heroCta}</a></p>
       </div>
     </section>
 
     <section className="home-intro" data-testid="home-intro-section">
       <p data-testid="home-intro-paragraph-1"><strong>{home.introSectionParagraphs[0]}</strong></p>
       <p data-testid="home-intro-paragraph-2">{home.introSectionParagraphs[1]}</p>
-      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-intro-cta-button">{home.cta}</a></p>
+      <p data-testid="home-intro-paragraph-3">{home.introSectionParagraphs[2]}</p>
+      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-intro-cta-button">{home.introCta}</a></p>
     </section>
 
     <section className="section home-how" data-testid="home-how-section">
-      <h2 data-testid="home-how-heading">{home.builderHeading}</h2>
       <p data-testid="home-how-subheading"><strong>{home.builderSubheading}</strong></p>
       <p data-testid="home-how-paragraph-1">{home.builderParagraph}</p>
       {home.builderPillars.map((pillar, index) => (
