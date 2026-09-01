@@ -172,7 +172,7 @@ export const SITE_CONTENT = {
     "board-fix": {
       "title": "Complete Board Fix System",
       "video": {
-        "youtubeId": "",
+        "youtubeId": "KDCnKeJoPRc",
         "title": "Complete Board Fix Sales Video"
       },
       "options": {

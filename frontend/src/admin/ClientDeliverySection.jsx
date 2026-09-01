@@ -60,7 +60,7 @@ export const ClientDeliverySection = () => {
         ))}
         <button className="button button-small" onClick={testCompleteTransformation} data-testid="test-journey-complete-transformation">Test Complete Board Transformation</button>
       </div>
-      <p className="admin-message">The Complete Board Transformation test grants your own member account (same email as this admin login) the normal Complete customer entitlement — no Stripe payment is created and it is excluded from revenue and customer reporting. It opens the real customer intake at /board-fix-intake; if you are logged out as a member, you will be asked to log in and returned to the intake. Your previous test progress is never erased.</p>
+      <p className="admin-message">The Complete Board Transformation test automatically provisions your member identity from this admin login (same email and password — no separate account to create), grants the normal Complete customer entitlement, logs you in as a member, and opens the real customer intake at /board-fix-intake. No Stripe payment is created and it is excluded from revenue and customer reporting. Your previous test progress is never erased.</p>
       <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Done-For-You Clients</h2>
       <p className="admin-message">Every verified individual-engagement client. Open a client workspace to operate their Board Ultimate Fix pathway on their behalf.</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}

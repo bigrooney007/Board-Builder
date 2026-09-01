@@ -4,13 +4,13 @@ import uuid
 from datetime import datetime, timezone
 
 import stripe
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
 from board_fix_master import BOARD_FIX_SOURCE, get_master_record, master_prefill, synthetic_session
 from course_content import ACTIVATION_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES
-from member_auth import authenticate_member, require_entitlement
+from member_auth import authenticate_member, create_member_token, require_entitlement, set_member_cookie
 
 PURCHASE_SOURCE = "board_fix_system_497"
 DWM_PURCHASE_SOURCE = "board_fix_dwm_5497"
@@ -88,6 +88,8 @@ def create_board_fix_router(db) -> APIRouter:
     async def intake_context(request: Request, session_id: str = ""):
         if not session_id:
             member = await authenticate_member(request, db)
+            if member.get("review_mode"):
+                raise HTTPException(status_code=401, detail="Please log in to your member account to open the Complete Board Fix intake")
             require_entitlement(member, {"board_fix_system"})
             existing = await db.board_fix_intakes.find_one({"user_id": member["user_id"]}, {"_id": 0})
             return {"eligible": True,
@@ -106,6 +108,8 @@ def create_board_fix_router(db) -> APIRouter:
     async def intake_submit(request: Request, payload: IntakeSubmit):
         if not payload.session_id:
             member = await authenticate_member(request, db)
+            if member.get("review_mode"):
+                raise HTTPException(status_code=401, detail="Please log in to your member account to submit the Complete Board Fix intake")
             require_entitlement(member, {"board_fix_system"})
             user_id = member["user_id"]
             internal = bool(member.get("internal_admin_entitlement"))
@@ -395,15 +399,27 @@ def create_board_fix_router(db) -> APIRouter:
         }
 
     @router.post("/admin/board-fix/preview-access")
-    async def admin_preview_access(request: Request):
-        """Super-Admin-only: grant the admin's own member account the normal Complete entitlement (no Stripe)."""
+    async def admin_preview_access(request: Request, response: Response):
+        """Super-Admin-only: auto-provision the admin's member identity with the normal Complete entitlement (no Stripe)."""
         admin = await authenticate_admin(request, db)
         email = (admin.get("email") or "").lower()
-        member = await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1})
-        if not member:
-            raise HTTPException(status_code=409, detail=f"No member account exists for {email}. Create one first at /login (Create Account) using this exact email, then click this button again.")
-        user_id = member["user_id"]
         now = now_iso()
+        member = await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1})
+        if member:
+            user_id = member["user_id"]
+        else:
+            admin_user = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 1})
+            if not admin_user or not admin_user.get("password_hash"):
+                raise HTTPException(status_code=500, detail="Your admin account record could not be loaded to provision member access. Please try again.")
+            user_id = str(uuid.uuid4())
+            first_name = (email.split("@")[0] or "Member").split(".")[0].capitalize()
+            await db.members.insert_one({
+                "user_id": user_id, "email": email,
+                "password_hash": admin_user["password_hash"],
+                "first_name": first_name, "last_name": "",
+                "entitlements": [], "lead_ids": [], "stripe_customer_id": "",
+                "created_at": now, "updated_at": now,
+            })
         await db.members.update_one(
             {"user_id": user_id},
             {"$addToSet": {"entitlements": {"$each": PREVIEW_ENTITLEMENTS}},
@@ -411,6 +427,7 @@ def create_board_fix_router(db) -> APIRouter:
         await db.board_fix_journeys.update_one(
             {"user_id": user_id},
             {"$set": {"internal_preview": True, "email": email}}, upsert=True)
+        set_member_cookie(response, create_member_token(user_id, email))
         return {"intake_url": "/board-fix-intake", "member_email": email}
 
     @router.get("/admin/board-fix/customers")

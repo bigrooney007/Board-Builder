@@ -1,0 +1,32 @@
+{
+  "summary": "Narrow backend-only verification of the admin 'Test Complete Board Transformation' bug fix (POST /api/admin/board-fix/preview-access auto-provisioning). Created /app/backend/tests/test_iter59_board_fix_preview_access.py (10 pytest tests) covering: admin login cookie, preview-access 200 + intake_url + member_email + Set-Cookie member_access_token (HttpOnly/Secure/SameSite=None/Partitioned), Mongo verification of db.members provisioning (all 5 entitlements, internal_admin_entitlement true, bcrypt $2b$ hash copied verbatim from db.users), db.board_fix_journeys internal_preview true, one-identity member login with the same admin credentials, session-less GET /api/board-fix-intake/context returning eligible:true, idempotency on a second preview-access call (single members doc, same user_id, no duplicate entitlements), and security gates (401 no-auth context, 401 preview-access without admin, 403 for module-tester@example.com without board_fix_system), plus regression GET /api/admin/board-fix/customers 200 with no internal_preview row for the admin email. 10/10 passed. No intake submit, no AI, no email, no Stripe calls were made per the product-owner constraints.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter59_board_fix_preview_access.py",
+    "/app/test_reports/pytest/iter59_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "member_auth.authenticate_member() falls back to review_mode_member() whenever member auth fails and OWNER_RECRUITMENT_REVIEW_MODE=true, returning a synthetic member (user_id 'owner-review-admin') that already carries board_fix_system. This means an admin cookie alone can pass the new session-less intake mode and would write board_fix_intakes/journeys under 'owner-review-admin' instead of the real provisioned member user_id — pre-existing behavior, not introduced by this fix, but it can fragment preview data across two user_ids. Consider ordering member-cookie auth ahead of review mode or excluding board-fix intake from review mode.",
+    "admin_preview_access has no explicit super-admin/role check beyond authenticate_admin(); if additional non-owner admin accounts ever exist they would also self-provision full preview entitlements.",
+    "board_fix_routes.py is 550 lines and mixes payment/intake/admin concerns; still under the 700-line threshold but trending toward a split."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter59_board_fix_preview_access.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "No new test data created beyond the intended production behavior: db.members record for rooney@nonprofitboardbuilder.com (user_id fd254688-2955-46ba-8d05-290a7c296137) with preview entitlements + internal_admin_entitlement, and its board_fix_journeys doc with internal_preview:true. Nothing deleted or modified.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Admin rooney@nonprofitboardbuilder.com / PC8JX97y7YjPUel9-gM5gAem (works for BOTH /api/auth/login and /api/members/login after the fix); module-tester@example.com / ModuleTest123! used for the 403 entitlement gate.",
+  "context_for_next_testing_agent": "Preview-access fix is verified and green. Re-run with: cd /app/backend && python -m pytest tests/test_iter59_board_fix_preview_access.py -v. The admin now permanently has a member record with 5 entitlements — keep this in mind when testing member-realm access control (the admin email is entitled to everything). POST /api/board-fix-intake/submit was intentionally NOT exercised (product-owner constraint), so the session-less submit path remains unverified.",
+  "rca_of_the_issue": "Original 409 came from preview-access requiring a pre-existing member account with no public signup path. Fix now creates the db.members record on demand, copying the admin's bcrypt hash from db.users so a single email+password works in both realms, grants the preview entitlements idempotently via $addToSet, and issues the member cookie in the same response. Verified end-to-end against the public REACT_APP_BACKEND_URL."
+}
