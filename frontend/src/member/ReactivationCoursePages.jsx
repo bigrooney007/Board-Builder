@@ -144,7 +144,7 @@ export const ReactivationModulePage = () => {
             </header>
             {<VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
             <StepShell moduleNumber={number} />
-            {number === course.modules.length && <BoardFixContinuation label="Continue to Identify the Board Members You Need" to="/app/recruitment/self-guided/module/2" />}
+            {number === 3 && <BoardFixContinuation label="Continue to Identify the Board Members You Need" to="/app/recruitment/self-guided/module/2" />}
             <div className="module-nav" data-testid="reactivation-module-navigation">
               <button className="button button-back" disabled={buf ? false : number <= 1} onClick={() => navigate(buf ? buf.prev : `${META.base}/module/${number - 1}`)} data-testid="reactivation-previous-button"><ArrowLeft size={16} /> Previous Step</button>
               <button className="button" disabled={marking} onClick={nextStep} data-testid="reactivation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>

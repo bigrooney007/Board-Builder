@@ -11,8 +11,6 @@ const ROUTES = {
 
 export const BUF_SEQUENCE = [
   { pathway: "reactivation", module: 3 },
-  { pathway: "reactivation", module: 4 },
-  { pathway: "reactivation", module: 5 },
   { pathway: "recruitment", module: 2 },
   { pathway: "recruitment", module: 3 },
   { pathway: "recruitment", module: 4 },

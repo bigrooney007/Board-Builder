@@ -34,7 +34,7 @@ STEP_OFF_OPTION = "Step Down From the Board"
 
 JOURNEY_STAGES = [
     {"key": "orientation", "label": "Welcome to Board Fix"},
-    {"key": "understand", "label": "Understand the Situation", "pathway": "reactivation", "modules": [3, 4, 5]},
+    {"key": "understand", "label": "Understand the Situation", "pathway": "reactivation", "modules": [3]},
     {"key": "identify", "label": "Identify the Board Members You Need", "pathway": "recruitment", "modules": [2]},
     {"key": "launch", "label": "Launch Your Recruitment Campaign", "pathway": "recruitment", "modules": [3]},
     {"key": "select", "label": "Select and Interview Your Applicants", "pathway": "recruitment", "modules": [4]},
