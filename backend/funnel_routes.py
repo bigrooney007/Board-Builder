@@ -1,4 +1,7 @@
 import secrets
+import asyncio
+
+from recommendation_email_service import send_recommendation_email
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
@@ -73,6 +76,8 @@ def create_funnel_router(db) -> APIRouter:
         name: str = ""
         email: str = ""
         organization: str = ""
+        board_count: str = ""
+        board_situation: str = ""
 
     def diagnose(payload: "DiagnosticPayload") -> str:
         if payload.has_board == "No":
@@ -106,6 +111,10 @@ def create_funnel_router(db) -> APIRouter:
             contact["email"] = payload.email.strip().lower()
         if payload.organization.strip():
             contact["organization"] = payload.organization.strip()
+        if payload.board_count.strip():
+            contact["board_count"] = payload.board_count.strip()
+        if payload.board_situation.strip():
+            contact["board_situation"] = payload.board_situation.strip()[:5000]
         if token:
             await db.funnel_leads.update_one(
                 {"result_token": token, "offer_source": "board_fix"},
@@ -117,6 +126,12 @@ def create_funnel_router(db) -> APIRouter:
                 "lead_id": create_lead_id(now), "result_token": token, "offer_source": "board_fix",
                 **contact, "diagnostic_answers": answers, "recommended_pathway": recommended,
                 "diagnosed_at": now, "created_at": now, "updated_at": now})
+        if token and contact.get("email"):
+            claimed = await db.funnel_leads.update_one(
+                {"result_token": token, "recommendation_email_status": {"$exists": False}},
+                {"$set": {"recommendation_email_status": "queued", "recommendation_email_queued_at": now}})
+            if claimed.modified_count == 1:
+                asyncio.create_task(send_recommendation_email(db, token))
         return {"recommended_pathway": recommended, "result_token": token}
 
     @router.post("/board-transformation/select")

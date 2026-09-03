@@ -28,7 +28,7 @@ export const BoardFixDiagnostic = () => {
   const navigate = useNavigate();
   const [answers, setAnswers] = useState({ has_board: "", active_participation: "", right_people: "", fundraising_working: "" });
   const [showContact, setShowContact] = useState(false);
-  const [contact, setContact] = useState({ name: "", email: "", organization: "" });
+  const [contact, setContact] = useState({ name: "", email: "", organization: "", board_count: "", board_situation: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [contactError, setContactError] = useState("");
@@ -43,8 +43,8 @@ export const BoardFixDiagnostic = () => {
   };
 
   const seeRecommendation = async () => {
-    if (!contact.name.trim() || !contact.email.trim() || !contact.organization.trim()) {
-      setContactError("Please enter your name, email and organization name.");
+    if (!contact.name.trim() || !contact.email.trim() || !contact.organization.trim() || !contact.board_count.trim() || !contact.board_situation.trim()) {
+      setContactError("Please complete every field so we can tailor and send your recommendation.");
       return;
     }
     setBusy(true); setContactError("");
@@ -52,6 +52,7 @@ export const BoardFixDiagnostic = () => {
       const response = await axios.post(`${API}/funnel-leads/board-fix/diagnostic`, {
         result_token: storedToken(), ...answers,
         name: contact.name, email: contact.email, organization: contact.organization,
+        board_count: contact.board_count, board_situation: contact.board_situation,
       });
       if (response.data.result_token) {
         try { sessionStorage.setItem("funnelLeadContext", JSON.stringify({ result_token: response.data.result_token })); } catch { /* best-effort */ }
@@ -86,16 +87,29 @@ export const BoardFixDiagnostic = () => {
       </div>
       {showContact && (
         <div style={overlayStyle} data-testid="bfd-contact-modal">
-          <div style={{ background: "#fff", maxWidth: 460, width: "100%", padding: 28, borderRadius: 10 }}>
+          <div style={{ background: "#fff", maxWidth: 500, width: "100%", padding: 28, borderRadius: 10, border: "1px solid #ddd", boxShadow: "0 12px 40px rgba(0,0,0,0.25)", maxHeight: "90vh", overflowY: "auto" }}>
             <h2 style={{ marginTop: 0, fontWeight: 800 }} data-testid="bfd-contact-title">See My Recommendation</h2>
-            <label className="intake-field">Name
-              <input value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} data-testid="bfd-contact-name" />
-            </label>
-            <label className="intake-field">Email
-              <input type="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} data-testid="bfd-contact-email" />
-            </label>
-            <label className="intake-field">Organization Name
-              <input value={contact.organization} onChange={(e) => setContact({ ...contact, organization: e.target.value })} data-testid="bfd-contact-organization" />
+            <p style={{ marginTop: 0, fontWeight: 700 }} data-testid="bfd-contact-intro">To help us further tailor our recommendation and have it sent to you. Enter:</p>
+            {[
+              { key: "name", label: "Your name", type: "text" },
+              { key: "organization", label: "Organization", type: "text" },
+              { key: "email", label: "Email", type: "email" },
+              { key: "board_count", label: "How many board members do you currently have?", type: "number" },
+            ].map((field) => (
+              <label key={field.key} style={{ display: "block", marginBottom: 14, fontWeight: 600 }}>
+                {field.label}
+                <input type={field.type} min={field.type === "number" ? 0 : undefined} value={contact[field.key]}
+                  onChange={(e) => setContact({ ...contact, [field.key]: e.target.value })}
+                  style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "10px 12px", border: "1.5px solid #b9b9b9", borderRadius: 6, fontSize: 15, fontWeight: 400 }}
+                  data-testid={`bfd-contact-${field.key.replace("_", "-")}`} />
+              </label>
+            ))}
+            <label style={{ display: "block", marginBottom: 14, fontWeight: 600 }}>
+              What's happening with your board?
+              <textarea rows={5} value={contact.board_situation}
+                onChange={(e) => setContact({ ...contact, board_situation: e.target.value })}
+                style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "10px 12px", border: "1.5px solid #b9b9b9", borderRadius: 6, fontSize: 15, fontWeight: 400, resize: "vertical" }}
+                data-testid="bfd-contact-board-situation" />
             </label>
             {contactError && <p className="submit-error" data-testid="bfd-contact-error">{contactError}</p>}
             <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
