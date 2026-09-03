@@ -179,11 +179,10 @@ export const SITE_CONTENT = {
   },
   "offerSalesPages": {
     "board-fix": {
-      "title": "Complete Board Fix System",
-      "video": {
-        "youtubeId": "KDCnKeJoPRc",
-        "title": "Complete Board Fix Sales Video"
-      },
+      "title": "IS YOUR BOARD BUILT TO HELP YOUR ORGANIZATION WIN?",
+      "lead": "Answer four questions about your board and we'll show you the exact steps you can start taking today to fix and strengthen it.",
+      "sectionHeading": "Your Board is The Foundation Of Your Nonprofit's Success.",
+      "sectionText": "If Your Board Isn't Meeting Up, It's Your Responsibility To Fix Your Board So They Can Work With You To Raise Money and Scale Your Organization.",
       "options": {
         "diy": {
           "heading": "Complete Board Fix System",

@@ -12,7 +12,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const OFFERS = {
   reactivation: {
     title: "Your Current Board Needs to Be Reactivated",
-    videoId: "vXRlCDpPd1o", videoTitle: "Board Reactivation Video",
+    videoId: "GOqG6wDJukM", videoTitle: "Board Reactivation Video",
     recommendation: "Based on your answers, your first priority should be getting your existing board members to step up, recommit, and take responsibility, while creating an appropriate path for those who are no longer able or willing to serve effectively to transition from the board.",
     why: "This is important because carrying inactive or disengaged board members prevents you from knowing the true strength of your board and can leave important responsibilities sitting with people who are no longer prepared to carry them.",
     how: "Watch the video below. I will show you the process I recommend for reactivating your board, how we help board members recommit and take responsibility, and the tools and materials you will receive to execute the process inside your organization.",
@@ -22,7 +22,7 @@ const OFFERS = {
   },
   recruitment: {
     title: "Your Board Needs Strengthening Through Recruitment",
-    videoId: "4aLqppruUvs", videoTitle: "Board Recruitment Video",
+    videoId: "L-DNAurf4X8", videoTitle: "Board Recruitment Video",
     recommendation: "Based on your answers, you need to strengthen your board by recruiting the right people with the expertise, experience, connections, and willingness to take responsibility for helping your organization move forward.",
     why: "Getting the right people into the right board positions is important because the strength of the people around your mission directly affects your organization's ability to raise money, build the right structures, make stronger decisions, and grow.",
     how: "Watch the video below. I will show you the process I recommend for strengthening your board, how we recruit the right people, and the tools and materials you will receive to execute the process inside your organization.",
@@ -32,7 +32,7 @@ const OFFERS = {
   },
   activation: {
     title: "Your Board Needs to Be Activated for Fundraising",
-    videoId: "Aw751ZtIIks", videoTitle: "Board Fundraising Activation Video",
+    videoId: "OqRoUzAREg4", videoTitle: "Board Fundraising Activation Video",
     recommendation: "Based on your answers, your board may exist and even participate in the organization, but it has not yet been organized around a clear fundraising strategy and clear ways for Board Members to help raise money and build the organization's fundraising system.",
     why: "This is important because fundraising cannot continue sitting primarily with the founder or executive director when a capable board can help build the fundraising strategy, take ownership of the plan, and work with you to execute it.",
     how: "Watch the video below. I will show you the process I recommend for activating your board for fundraising, how we work with Board Members to build and adopt the fundraising strategy together, and the tools and resources you will receive to begin executing the plan.",
@@ -42,7 +42,7 @@ const OFFERS = {
   },
   complete_transformation: {
     title: "Your Board Needs a Complete Transformation",
-    videoId: "fJ5WDRMIC-w", videoTitle: "Complete Board Transformation Video",
+    videoId: "hFHc1O_tz3o", videoTitle: "Complete Board Transformation Video",
     recommendation: "Based on your answers, the problem cannot be solved by recruitment, reactivation, or fundraising activation alone. Your board needs to be strengthened across the complete Reactivate → Recruit → Activate process.",
     why: "This is important because fixing only one part of your board can leave the underlying weaknesses in the other areas untouched.",
     how: "Watch the video below. I will show you how the Complete Board Transformation Process works, how we reactivate the people already on your Board, recruit the people you are missing, and activate the complete Board to raise money and work with you to build your organization.",

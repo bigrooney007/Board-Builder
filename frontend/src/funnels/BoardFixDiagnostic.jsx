@@ -66,7 +66,7 @@ export const BoardFixDiagnostic = () => {
 
   return (
     <section className="offer-sales-offers" data-testid="bfd-diagnostic">
-      <h2 style={{ textAlign: "center", fontWeight: 800, fontSize: "1.8rem" }} data-testid="bfd-heading">Tell Us What Is Happening With Your Board</h2>
+      <h2 style={{ textAlign: "center", fontWeight: 800, fontSize: "1.8rem" }} data-testid="bfd-heading">Tell Us About Your Board</h2>
       <p style={{ textAlign: "center" }} data-testid="bfd-supporting"><strong>Answer the four questions below about your board. Based on your answers, I'll show you where I believe you should begin and exactly how to fix it.</strong></p>
       {visible.map((question) => (
         <div key={question.key} style={{ margin: "18px 0" }} data-testid={`bfd-question-${question.key}`}>
@@ -83,7 +83,7 @@ export const BoardFixDiagnostic = () => {
       ))}
       {error && <p className="submit-error" data-testid="bfd-error">{error}</p>}
       <div style={{ textAlign: "center", marginTop: 14 }}>
-        <button type="button" className="button" onClick={openContact} data-testid="bfd-submit-button">SHOW ME WHERE MY BOARD NEEDS TO START</button>
+        <button type="button" className="button" onClick={openContact} data-testid="bfd-submit-button">Show Me How to Fix My Board</button>
       </div>
       {showContact && (
         <div style={overlayStyle} data-testid="bfd-contact-modal">

@@ -1,5 +1,6 @@
 """Personalized recommendation email: ONE AI call per submitted lead. Deterministic prices/URLs/guarantee."""
 import asyncio
+import html as html_lib
 import json
 import logging
 import os
@@ -14,30 +15,37 @@ logger = logging.getLogger(__name__)
 
 GUARANTEE = "Your investment is protected by our 100% money-back guarantee."
 
+SIGNATURE = (
+    "Rooney Akpesiri\n"
+    "Founder and Managing Partner\n"
+    "Nonprofit Board Builders, LLC\n"
+    "(719) 428-5598 | rooney@nonprofitboardbuilder.com"
+)
+
 OFFER_FACTS = {
     "reactivation": {
         "offer": "Board Reactivation",
         "url": "https://nonprofitboardbuilder.com/board-reactivation",
         "scope": "Rooney will work with them to determine who on their current Board is ready to step up, who may need to step down, and how to rebuild an active Board around the people who are ready to serve.",
-        "options": "Option 1 — Become Your Organization's Board Builder (self-guided Complete Board Transformation system): Regular Price $997, Your 7-Day Discount Price $497. Option 2 — Work directly with Rooney on Board Reactivation: $2,997.",
+        "options": "Option 1: Become Your Organization's Board Builder (self-guided Complete Board Transformation system). Regular Price $997, Your 7-Day Discount Price $497. Option 2: Work directly with Rooney on Board Reactivation, $2,997.",
     },
     "recruitment": {
         "offer": "Board Recruitment",
         "url": "https://nonprofitboardbuilder.com/board-recruitment",
         "scope": "Rooney will work with them to identify the Board Members their organization needs, launch the recruitment campaign, interview and select the right candidates, and move them through appointment and onboarding.",
-        "options": "Option 1 — Become Your Organization's Board Builder (self-guided Complete Board Transformation system): Regular Price $997, Your 7-Day Discount Price $497. Option 2 — Work directly with Rooney on Board Recruitment: $3,997.",
+        "options": "Option 1: Become Your Organization's Board Builder (self-guided Complete Board Transformation system). Regular Price $997, Your 7-Day Discount Price $497. Option 2: Work directly with Rooney on Board Recruitment, $3,997.",
     },
     "activation": {
         "offer": "Board Fundraising Activation",
         "url": "https://nonprofitboardbuilder.com/board-fundraising-activation",
         "scope": "Rooney will work with them and their Board to build the Fundraising Strategy, adopt it together, agree how each Board Member will participate, and equip the Board to begin executing the plan.",
-        "options": "Option 1 — Become Your Organization's Board Builder (self-guided Complete Board Transformation system): Regular Price $997, Your 7-Day Discount Price $497. Option 2 — Work directly with Rooney on Board Fundraising Activation: $4,997.",
+        "options": "Option 1: Become Your Organization's Board Builder (self-guided Complete Board Transformation system). Regular Price $997, Your 7-Day Discount Price $497. Option 2: Work directly with Rooney on Board Fundraising Activation, $4,997.",
     },
     "complete_transformation": {
         "offer": "Complete Board Transformation",
         "url": "https://nonprofitboardbuilder.com/complete-board-transformation",
         "scope": "The process will reactivate the present Board, recruit the people the organization is missing, and activate the complete Board to raise money and work with the organization to build its fundraising system.",
-        "options": "Option 1 — Become Your Organization's Board Builder (self-guided Complete Board Transformation system): Regular Price $997, Your 7-Day Discount Price $497. Option 2 — Work directly with Rooney on the Complete Board Transformation: $5,997.",
+        "options": "Option 1: Become Your Organization's Board Builder (self-guided Complete Board Transformation system). Regular Price $997, Your 7-Day Discount Price $497. Option 2: Work directly with Rooney on the Complete Board Transformation, $5,997.",
     },
 }
 
@@ -47,8 +55,10 @@ PROMPT_RULES = (
     "Voice: direct, warm, experienced, confident, practical, personal. No emojis, no consultant jargon, no generic AI language, "
     "no exaggerated praise, no excessive bullets or headings, do not repeatedly say 'based on your responses'.\n"
     "HARD RULES:\n"
+    "- Never use the em dash character anywhere in the subject or body. Use commas, full stops, colons or semicolons instead.\n"
+    "- Never describe this email, the recipient or their submission as a test, testing or preview.\n"
     "- Use ONLY the facts in the context. Never invent Board problems, motivations, finances, deadlines, scarcity or expiration dates.\n"
-    "- Reflect their actual situation (their Board count and what they wrote) at its actual strength — never exaggerate.\n"
+    "- Reflect their actual situation (their Board count and what they wrote) at its actual strength, never exaggerate.\n"
     "- The prescribed recommendation is FINAL. Sell ONLY the prescribed offer. No alternative service, no secondary recommendation, no cross-sell.\n"
     "- Include this exact sentence verbatim on its own line: 'Your investment is protected by our 100% money-back guarantee.'\n"
     "- Include the exact PAYMENT URL from the context after the line 'You can get started here:'. Never invent or alter URLs.\n"
@@ -56,7 +66,7 @@ PROMPT_RULES = (
     "- Structure: greeting with their first name (or 'Hello,' if none) -> brief thanks referencing their organization -> 1-2 short paragraphs "
     "reflecting what they told us -> a line stating: Based on what you've told us, my recommendation is [prescribed offer]. -> why it is the "
     "immediate priority -> what Rooney will work with them to accomplish (from OFFER SCOPE) -> the offer options -> guarantee line -> "
-    "'You can get started here:' with the URL -> short closing tied to their stated Board problem -> sign 'Rooney Akpesiri' newline 'Nonprofit Board Builder'.\n"
+    "'You can get started here:' with the URL -> short closing tied to their stated Board problem. Do NOT add any sign-off, name or signature; the application appends Rooney's signature automatically.\n"
     "- Subject: clearly communicate the recommendation, may use the organization name, no clickbait, no manufactured urgency.\n"
     "Respond with ONE JSON object only: {\"subject\": \"...\", \"body\": \"...\"} (body is plain text with newlines)."
 )
@@ -79,8 +89,13 @@ def build_context(lead: dict) -> str:
     )
 
 
+def strip_em_dashes(text: str) -> str:
+    text = re.sub(r"\s*—\s*", ", ", text)
+    return re.sub(r",\s*,", ", ", text)
+
+
 async def generate_recommendation_email(lead: dict) -> dict:
-    """Exactly one AI call. Returns {subject, body} with deterministic guarantee/URL enforcement."""
+    """Exactly one AI call. Returns {subject, body} with deterministic guarantee/URL/signature enforcement."""
     api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
     model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
     chat = LlmChat(api_key=api_key, session_id=f"nbb-rec-email-{uuid.uuid4()}",
@@ -88,27 +103,44 @@ async def generate_recommendation_email(lead: dict) -> dict:
     raw = await chat.send_message(UserMessage(text=f"{PROMPT_RULES}\n\nCONTEXT (the only information you may use):\n{build_context(lead)}"))
     text = re.sub(r"^```(?:json)?|```$", "", str(raw).strip(), flags=re.MULTILINE).strip()
     parsed = json.loads(text[text.index("{"):text.rindex("}") + 1])
-    subject = str(parsed.get("subject", "")).strip()
-    body = str(parsed.get("body", "")).strip()
+    subject = strip_em_dashes(str(parsed.get("subject", "")).strip())
+    body = strip_em_dashes(str(parsed.get("body", "")).strip())
     facts = OFFER_FACTS[lead["recommended_pathway"]]
     if GUARANTEE not in body:
         body += f"\n\n{GUARANTEE}"
     if facts["url"] not in body:
         body += f"\n\nYou can get started here:\n{facts['url']}"
+    if "Founder and Managing Partner" not in body:
+        body = re.sub(r"\n+(Warm regards,|Best regards,|Sincerely,|Best,|Regards,)?\s*\n*Rooney Akpesiri\s*(\nNonprofit Board Builder.*)?\s*$", "", body)
+        body = f"{body.rstrip()}\n\n{SIGNATURE}"
     if not subject:
         subject = f"Your Board Recommendation | {lead.get('organization', 'Your Organization')}"
     return {"subject": subject, "body": body}
 
 
+URL_PATTERN = re.compile(r"(https?://[^\s<>\"']+)")
+EMAIL_PATTERN = re.compile(r"(?<!/)\b([\w.+-]+@[\w-]+\.[\w.-]+\w)\b")
+
+
+def linkify(line: str) -> str:
+    escaped = html_lib.escape(line)
+    escaped = URL_PATTERN.sub(r"<a href='\1' style='color:#087e5b;'>\1</a>", escaped)
+    parts = re.split(r"(<a [^>]*>[^<]*</a>)", escaped)
+    return "".join(part if part.startswith("<a ") else EMAIL_PATTERN.sub(r"<a href='mailto:\1' style='color:#087e5b;'>\1</a>", part) for part in parts)
+
+
 def deliver_email(to_email: str, subject: str, body: str):
     resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
-    html = "".join(f"<p style='margin:0 0 14px 0;'>{line}</p>" for line in body.split("\n\n"))
+    paragraphs = []
+    for block in body.split("\n\n"):
+        lines = "<br/>".join(linkify(line) for line in block.split("\n"))
+        paragraphs.append(f"<p style='margin:0 0 14px 0;'>{lines}</p>")
     resend.Emails.send({
         "from": os.environ["NONPROFIT_SENDER"].strip('"'),
         "to": [to_email],
         "reply_to": [os.environ["ADMIN_EMAIL"].strip('"')],
         "subject": subject,
-        "html": f"<div style='font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;'>{html.replace(chr(10), '<br/>')}</div>",
+        "html": f"<div style='font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;'>{''.join(paragraphs)}</div>",
         "text": body,
     })
 

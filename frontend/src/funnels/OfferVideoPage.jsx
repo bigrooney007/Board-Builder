@@ -104,8 +104,9 @@ export default function OfferVideoPage({ offer }) {
           <i aria-hidden="true" />
         </header>
 
-        {content.video ? (
+        {content.video || offer === "board-fix" ? (
           <div className="offer-sales-container">
+            {content.video && (
             <div className="module-video offer-sales-video" data-testid={`offer-video-embed-${offer}`}>
               {content.video.youtubeId ? (
                 <iframe src={`https://www.youtube.com/embed/${content.video.youtubeId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
@@ -113,8 +114,15 @@ export default function OfferVideoPage({ offer }) {
                 <div className="offer-video-placeholder" data-testid={`offer-video-placeholder-${offer}`}><p>{content.video.title}</p><span>Video coming soon</span></div>
               )}
             </div>
+            )}
             {offer === "board-fix" ? (
-              <BoardFixDiagnostic />
+              <>
+                <section className="offer-sales-body" data-testid="board-fix-foundation-section">
+                  <h2 data-testid="board-fix-foundation-heading">{content.sectionHeading}</h2>
+                  <p data-testid="board-fix-foundation-text"><strong>{content.sectionText}</strong></p>
+                </section>
+                <BoardFixDiagnostic />
+              </>
             ) : offer === "recruitment" ? (
               <CampaignLaunchOffer content={content.campaignLaunch} shared={shared} />
             ) : (
