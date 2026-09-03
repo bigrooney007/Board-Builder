@@ -70,6 +70,9 @@ def create_funnel_router(db) -> APIRouter:
         active_participation: str = ""
         right_people: str = ""
         fundraising_working: str = ""
+        name: str = ""
+        email: str = ""
+        organization: str = ""
 
     def diagnose(payload: "DiagnosticPayload") -> str:
         if payload.has_board == "No":
@@ -93,13 +96,28 @@ def create_funnel_router(db) -> APIRouter:
         if payload.has_board == "Yes" and not (payload.active_participation and payload.right_people and payload.fundraising_working):
             raise HTTPException(status_code=422, detail="Please answer all four questions")
         recommended = diagnose(payload)
-        if payload.result_token:
+        now = datetime.now(timezone.utc).isoformat()
+        answers = {key: getattr(payload, key) for key in DIAGNOSTIC_OPTIONS}
+        token = payload.result_token
+        contact = {}
+        if payload.name.strip():
+            contact["name"] = payload.name.strip()
+        if payload.email.strip():
+            contact["email"] = payload.email.strip().lower()
+        if payload.organization.strip():
+            contact["organization"] = payload.organization.strip()
+        if token:
             await db.funnel_leads.update_one(
-                {"result_token": payload.result_token, "offer_source": "board_fix"},
-                {"$set": {"diagnostic_answers": {key: getattr(payload, key) for key in DIAGNOSTIC_OPTIONS},
-                          "recommended_pathway": recommended,
-                          "diagnosed_at": datetime.now(timezone.utc).isoformat()}})
-        return {"recommended_pathway": recommended}
+                {"result_token": token, "offer_source": "board_fix"},
+                {"$set": {"diagnostic_answers": answers, "recommended_pathway": recommended,
+                          "diagnosed_at": now, **contact}})
+        elif contact.get("email"):
+            token = secrets.token_urlsafe(32)
+            await db.funnel_leads.insert_one({
+                "lead_id": create_lead_id(now), "result_token": token, "offer_source": "board_fix",
+                **contact, "diagnostic_answers": answers, "recommended_pathway": recommended,
+                "diagnosed_at": now, "created_at": now, "updated_at": now})
+        return {"recommended_pathway": recommended, "result_token": token}
 
     @router.post("/board-transformation/select")
     async def select_transformation_product(payload: ProductSelection):

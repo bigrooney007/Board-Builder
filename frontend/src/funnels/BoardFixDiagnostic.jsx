@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -10,113 +11,62 @@ const QUESTIONS = [
   { key: "fundraising_working", label: "Is your Board currently working with you to raise money and build the organization's fundraising system?", options: ["Yes", "No", "Only a little"] },
 ];
 
-export const RESULTS = {
-  recruitment: {
-    heading: "Your Immediate Priority: Build Your Board",
-    explanation: "You have already built the organization. Your immediate limitation is that you do not have the Board Members around you that the organization now needs. Your next step is to build the right Board around your mission.",
-    offerName: "Board Recruitment", regular: "$1,997", price: "$997", cta: "BUILD MY BOARD",
-    what: "I will work with you to identify the Board Members your organization needs, launch your recruitment campaign, interview and select the right candidates, and move them through appointment and onboarding.",
-  },
-  reactivation: {
-    heading: "Your Immediate Priority: Reactivate Your Board",
-    explanation: "You already have Board Members, but some are inactive, disengaged or not carrying meaningful responsibility. Your first priority is to get the people already on your Board to step up or step down before doing anything else.",
-    offerName: "Board Reactivation", regular: "$1,997", price: "$997", cta: "REACTIVATE MY BOARD",
-    what: "I will work with you to determine who on your current Board is ready to step up, who may need to step down, and how to rebuild an active Board around the people who are ready to serve.",
-  },
-  activation: {
-    heading: "Your Immediate Priority: Activate Your Board for Fundraising",
-    explanation: "You already have a reasonably active Board. Your immediate opportunity is to work with them to build your fundraising strategy, determine how each Board Member can participate in fundraising, and build the fundraising system your organization needs.",
-    offerName: "Board Fundraising Activation", regular: "$1,997", price: "$997", cta: "ACTIVATE MY BOARD",
-    what: "I will work with you and your Board to build your Fundraising Strategy, adopt it together, agree how each Board Member will participate, and equip your Board to begin executing the plan.",
-  },
-  complete_transformation: {
-    heading: "Your Board Needs a Complete Transformation",
-    explanation: "Your Board is dealing with more than one significant problem. Fixing only one part will leave the others unresolved. Your Board needs the complete Reactivate → Recruit → Activate process.",
-    offerName: "Complete Board Transformation", regular: "$3,997", price: "$1,997", cta: "TRANSFORM MY BOARD",
-    what: "We will reactivate your present Board, recruit the people you are missing, and activate the complete Board to raise money and work with you to build your organization's fundraising system.",
-  },
+const PATHWAY_ROUTES = {
+  reactivation: "/board-reactivation",
+  recruitment: "/board-recruitment",
+  activation: "/board-fundraising-activation",
+  complete_transformation: "/complete-board-transformation",
 };
 
-const resultToken = () => {
+const storedToken = () => {
   try { return JSON.parse(sessionStorage.getItem("funnelLeadContext") || "{}").result_token || ""; } catch { return ""; }
 };
 
-export const startOfferCheckout = async (recommendation, leadToken = "") => {
-  const endpoint = recommendation === "complete_transformation" ? "complete-transformation-checkout" : "dfy-checkout";
-  const body = { origin_url: window.location.origin, result_token: leadToken };
-  if (recommendation !== "complete_transformation") body.pathway = recommendation;
-  else body.cancel_path = "/offer/board-fix";
-  const response = await axios.post(`${API}/payments/${endpoint}`, body);
-  window.location.href = response.data.checkout_url;
-};
-
-export const OfferPurchaseBlock = ({ recommendation, showDiagnosis = false, leadToken = "" }) => {
-  const result = RESULTS[recommendation];
-  const [checkingOut, setCheckingOut] = useState(false);
-  const [error, setError] = useState("");
-
-  const buy = async () => {
-    setCheckingOut(true); setError("");
-    try {
-      await startOfferCheckout(recommendation, leadToken);
-    } catch {
-      setError("We could not start your checkout. Please try again.");
-      setCheckingOut(false);
-    }
-  };
-
-  return (
-    <section className="offer-sales-offers" data-testid={showDiagnosis ? "bfd-result" : `direct-offer-${recommendation}`}>
-      <div className="offer-sales-grid" style={{ gridTemplateColumns: "1fr" }}>
-        <section className="offer-sales-card" data-testid={`bfd-result-${recommendation}`}>
-          {showDiagnosis && (
-            <>
-              <h2 data-testid="bfd-result-heading">{result.heading}</h2>
-              <p data-testid="bfd-result-explanation">{result.explanation}</p>
-            </>
-          )}
-          <h3 style={{ marginBottom: 0 }} data-testid="bfd-result-offer-name">{result.offerName}</h3>
-          <p className="offer-regular-price" data-testid="bfd-regular-price">Regular Investment: <s>{result.regular}</s></p>
-          <p className="offer-sales-price" data-testid="bfd-price">Get Started Now: {result.price}</p>
-          <p className="offer-discount-note" data-testid="bfd-discount-note">50% Immediate-Action Discount</p>
-          <p data-testid="bfd-what">{result.what}</p>
-          <button type="button" className="button" onClick={buy} disabled={checkingOut} data-testid="bfd-buy-button">{checkingOut ? "Starting secure checkout…" : result.cta}</button>
-          {error && <p className="submit-error" data-testid="bfd-checkout-error">{error}</p>}
-        </section>
-      </div>
-    </section>
-  );
-};
+const overlayStyle = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px" };
 
 export const BoardFixDiagnostic = () => {
+  const navigate = useNavigate();
   const [answers, setAnswers] = useState({ has_board: "", active_participation: "", right_people: "", fundraising_working: "" });
-  const [recommendation, setRecommendation] = useState("");
+  const [showContact, setShowContact] = useState(false);
+  const [contact, setContact] = useState({ name: "", email: "", organization: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [contactError, setContactError] = useState("");
 
   const visible = QUESTIONS.filter((q) => q.always || answers.has_board === "Yes");
   const complete = visible.every((q) => answers[q.key]);
 
-  const diagnose = async () => {
+  const openContact = () => {
     if (!complete) { setError("Please answer every question so we can show you where to start."); return; }
-    setBusy(true); setError("");
-    try {
-      const response = await axios.post(`${API}/funnel-leads/board-fix/diagnostic`, { result_token: resultToken(), ...answers });
-      setRecommendation(response.data.recommended_pathway);
-    } catch (err) {
-      setError(err.response?.data?.detail || "We could not process your answers. Please try again.");
-    }
-    setBusy(false);
+    setError("");
+    setShowContact(true);
   };
 
-  if (recommendation) {
-    return <OfferPurchaseBlock recommendation={recommendation} showDiagnosis leadToken={resultToken()} />;
-  }
+  const seeRecommendation = async () => {
+    if (!contact.name.trim() || !contact.email.trim() || !contact.organization.trim()) {
+      setContactError("Please enter your name, email and organization name.");
+      return;
+    }
+    setBusy(true); setContactError("");
+    try {
+      const response = await axios.post(`${API}/funnel-leads/board-fix/diagnostic`, {
+        result_token: storedToken(), ...answers,
+        name: contact.name, email: contact.email, organization: contact.organization,
+      });
+      if (response.data.result_token) {
+        try { sessionStorage.setItem("funnelLeadContext", JSON.stringify({ result_token: response.data.result_token })); } catch { /* best-effort */ }
+      }
+      navigate(PATHWAY_ROUTES[response.data.recommended_pathway] || "/complete-board-transformation");
+    } catch (err) {
+      setContactError(err.response?.data?.detail || "We could not process your answers. Please try again.");
+      setBusy(false);
+    }
+  };
 
   return (
     <section className="offer-sales-offers" data-testid="bfd-diagnostic">
       <h2 style={{ textAlign: "center", fontWeight: 800, fontSize: "1.8rem" }} data-testid="bfd-heading">Tell Us What Is Happening With Your Board</h2>
-      <p style={{ textAlign: "center" }} data-testid="bfd-supporting"><strong>Answer four short questions and we will show you where your Board needs to start.</strong></p>
+      <p style={{ textAlign: "center" }} data-testid="bfd-supporting"><strong>Answer the four questions below about your board. Based on your answers, I'll show you where I believe you should begin and exactly how to fix it.</strong></p>
       {visible.map((question) => (
         <div key={question.key} style={{ margin: "18px 0" }} data-testid={`bfd-question-${question.key}`}>
           <p style={{ fontWeight: 700, marginBottom: 8 }}>{question.label}</p>
@@ -132,8 +82,29 @@ export const BoardFixDiagnostic = () => {
       ))}
       {error && <p className="submit-error" data-testid="bfd-error">{error}</p>}
       <div style={{ textAlign: "center", marginTop: 14 }}>
-        <button type="button" className="button" onClick={diagnose} disabled={busy} data-testid="bfd-submit-button">{busy ? "One moment…" : "SHOW ME WHERE MY BOARD NEEDS TO START"}</button>
+        <button type="button" className="button" onClick={openContact} data-testid="bfd-submit-button">SHOW ME WHERE MY BOARD NEEDS TO START</button>
       </div>
+      {showContact && (
+        <div style={overlayStyle} data-testid="bfd-contact-modal">
+          <div style={{ background: "#fff", maxWidth: 460, width: "100%", padding: 28, borderRadius: 10 }}>
+            <h2 style={{ marginTop: 0, fontWeight: 800 }} data-testid="bfd-contact-title">See My Recommendation</h2>
+            <label className="intake-field">Name
+              <input value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} data-testid="bfd-contact-name" />
+            </label>
+            <label className="intake-field">Email
+              <input type="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} data-testid="bfd-contact-email" />
+            </label>
+            <label className="intake-field">Organization Name
+              <input value={contact.organization} onChange={(e) => setContact({ ...contact, organization: e.target.value })} data-testid="bfd-contact-organization" />
+            </label>
+            {contactError && <p className="submit-error" data-testid="bfd-contact-error">{contactError}</p>}
+            <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+              <button type="button" className="button" onClick={seeRecommendation} disabled={busy} data-testid="bfd-contact-submit">{busy ? "One moment…" : "See My Recommendation"}</button>
+              <button type="button" className="button button-outline" onClick={() => setShowContact(false)} disabled={busy} data-testid="bfd-contact-cancel">Back</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

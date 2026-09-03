@@ -67,9 +67,9 @@ export const SITE_CONTENT = {
     }
   },
   "home": {
-    "cta": "Tell Us About Your Board",
-    "heroCta": "I Am Ready To Fix My Board",
-    "introCta": "Get Started",
+    "cta": "Show Me How to Fix My Board",
+    "heroCta": "I'm Ready",
+    "introCta": "Show Me How to Fix My Board",
     "introSectionParagraphs": [
       "Building the right board doesn't happen by chance. It is Intentionally Orchestrated.",
       "This is why our mission as nonprofit board builders is to empower founders and executive directors like you with the framework, tools, and support you need to build the right board for your nonprofit.",
@@ -83,12 +83,21 @@ export const SITE_CONTENT = {
       {"label": "REACTIVATE", "text": "Get your current board members to step up and take responsibility, or help them transition gracefully when they can no longer continue."},
       {"label": "ACTIVATE", "text": "Get your board working with you to raise money and build your organization's fundraising system."}
     ],
-    "heroTitle": "Are You Ready To Build The Board Your Nonprofit Needs?",
-    "heroSubtitle": "Let's Work With You To Fix Your Board, So You Can Work With Your Board To Raise Money And Build Your Organization.",
-    "introHeading": "Your Board Is Your Organization's Most Important Asset",
+    "heroTitle": "Are You Ready to Build the Board Your Nonprofit Needs?",
+    "heroSubtitle": "Let us equip you to fix your board instead of paying someone thousands of dollars to fix it for you.",
+    "introHeading": "Your board is one of your organization's strongest assets.",
     "introParagraphs": [
-      "If you get your board right, raising money, creating impact, and scaling your organization becomes an adventure.",
-      "But if you get it wrong, the nonprofit work can be isolating, frustrating and feel like swimming upstream.",
+      "When you have a great board, the nonprofit journey becomes an adventure. You raise money, build strong organizational structures, create greater impact, and grow steadily because you have the right people in the right positions providing the kind of support your organization needs.",
+      "But when you have the wrong board, the nonprofit journey becomes a ride uphill.",
+      "Your board may be passive or disengaged. You may have the wrong people occupying important seats. Your board may have become a bottleneck to growth, or you may barely have a functioning board at all.",
+      "You may even have an active board that attends meetings and cares deeply about the mission, but still does not provide the kind of support you need to raise money and move the organization forward.",
+      "When this continues, funding becomes harder. Growth becomes harder. The founder or executive director carries responsibilities that should be shared across the organization, and eventually the mission itself begins to suffer.",
+      "This is why we built Nonprofit Board Builder.",
+      "Our mission is to empower nonprofit founders and executive directors like you with the system, tools, resources, and support you need to build a strong board that works with you to move your organization forward.",
+      "We have spent years developing and using the processes, tools, templates, scripts, and frameworks required to transform nonprofit boards.",
+      "Now, we want to hand the complete process to you and support you as you execute it inside your own organization.",
+      "If you are ready to strengthen your board, answer four important questions about where your board is today.",
+      "Based on your answers, I will show you where I believe you should begin, the exact steps you can start taking to fix your board, and how to build the kind of board your mission needs.",
       "This is why at Nonprofit Board Builders, we are dedicated to supporting nonprofit founders and executive directors to build strong fundraising boards that can help their organization succeed."
     ],
     "howHeading": "Here's How We Can Help You",

@@ -32,7 +32,7 @@ export const LandingPage = ({ onJoin }) => (
       <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
         <p className="hero-banner-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
-        <p style={{ marginTop: 22 }}><a className="button button-light" href="/board-fix" data-testid="hero-board-transformation-button">{home.heroCta}</a></p>
+        <p style={{ marginTop: 22 }}><a className="button button-light" href="/offer/board-fix" data-testid="hero-board-transformation-button">{home.heroCta}</a></p>
       </div>
     </section>
 
@@ -40,7 +40,7 @@ export const LandingPage = ({ onJoin }) => (
       <p data-testid="home-intro-paragraph-1"><strong>{home.introSectionParagraphs[0]}</strong></p>
       <p data-testid="home-intro-paragraph-2">{home.introSectionParagraphs[1]}</p>
       <p data-testid="home-intro-paragraph-3">{home.introSectionParagraphs[2]}</p>
-      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-intro-cta-button">{home.introCta}</a></p>
+      <p style={{ marginTop: 18 }}><a className="button" href="/offer/board-fix" data-testid="home-intro-cta-button">{home.introCta}</a></p>
     </section>
 
     <section className="section home-how" data-testid="home-how-section">
@@ -52,7 +52,7 @@ export const LandingPage = ({ onJoin }) => (
           <p data-testid={`home-pillar-text-${index + 1}`}>{pillar.text}</p>
         </div>
       ))}
-      <p style={{ marginTop: 18 }}><a className="button" href="/board-fix" data-testid="home-how-cta-button">{home.cta}</a></p>
+      <p style={{ marginTop: 18 }}><a className="button" href="/offer/board-fix" data-testid="home-how-cta-button">{home.cta}</a></p>
     </section>
 
     <TestimonialsSection />

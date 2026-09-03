@@ -90,7 +90,7 @@ def resolve_board_fix_price_id() -> str:
 
 
 def resolve_board_fix_dwm_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_BOARD_FIX_DWM_5497_PRICE_ID", "board_fix_dwm_5497", "Complete Board Fix — Do It With Me", 549700)
+    return resolve_offer_price_id("STRIPE_BOARD_FIX_DWM_5997_PRICE_ID", "board_fix_dwm_5997", "Complete Board Transformation — Done With You", 599700)
 
 
 def resolve_selection_onboarding_price_id() -> str:
@@ -123,20 +123,20 @@ def resolve_campaign_launch_price_id() -> str:
 
 DFY_CHECKOUT_OFFERS = {
     "reactivation": {
-        "env_key": "STRIPE_BOARD_REACTIVATION_DFY_997_PRICE_ID", "lookup_key": "board_reactivation_dfy_997",
-        "product_name": "Board Reactivation", "amount": 99700,
+        "env_key": "STRIPE_BOARD_REACTIVATION_DFY_2997_PRICE_ID", "lookup_key": "board_reactivation_dfy_2997",
+        "product_name": "Board Reactivation", "amount": 299700,
         "purchase_source": "board_reactivation_dfy", "offer": "Board Reactivation",
         "intake_path": "/board-reactivation-intake",
     },
     "recruitment": {
-        "env_key": "STRIPE_BOARD_RECRUITMENT_DFY_997_PRICE_ID", "lookup_key": "board_recruitment_dfy_997",
-        "product_name": "Board Recruitment", "amount": 99700,
+        "env_key": "STRIPE_BOARD_RECRUITMENT_DFY_3997_PRICE_ID", "lookup_key": "board_recruitment_dfy_3997",
+        "product_name": "Board Recruitment", "amount": 399700,
         "purchase_source": "board_recruitment_dfy", "offer": "Board Recruitment",
         "intake_path": "/board-recruitment-intake",
     },
     "activation": {
-        "env_key": "STRIPE_BOARD_ACTIVATION_DFY_997_PRICE_ID", "lookup_key": "board_fundraising_activation_dfy_997",
-        "product_name": "Board Fundraising Activation", "amount": 99700,
+        "env_key": "STRIPE_BOARD_ACTIVATION_DFY_4997_PRICE_ID", "lookup_key": "board_fundraising_activation_dfy_4997",
+        "product_name": "Board Fundraising Activation", "amount": 499700,
         "purchase_source": "board_fundraising_activation_dfy", "offer": "Board Fundraising Activation",
         "intake_path": "/board-activation-intake",
     },
@@ -383,7 +383,7 @@ def create_payment_router(db) -> APIRouter:
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/offer/board-fix"),
             "metadata": {
-                "offer_source": "board_fix_system", "selected_tier": "dwm_5497",
+                "offer_source": "board_fix_system", "selected_tier": "dwm_5997",
                 "purchase_source": "board_fix_dwm_5497",
                 "offer": "Complete Board Fix — Do It With Me",
             },
@@ -400,9 +400,9 @@ def create_payment_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "board_fix_system",
-            "selected_tier": "dwm_5497", "purchase_source": "board_fix_dwm_5497",
+            "selected_tier": "dwm_5997", "purchase_source": "board_fix_dwm_5497",
             "offer": "Complete Board Fix — Do It With Me",
-            "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 599700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
