@@ -1,0 +1,30 @@
+{
+  "summary": "Narrow backend verification of the Complete Board Fix member-mode intake bug fix. Created a fresh dedicated member (bufintake-tester-<ts>@example.com / BufTest123!) via POST /api/members/register and granted board_fix_system directly in Mongo. 13/13 pytest tests passed: (1) POST /api/board-fix-intake/submit with session_id:'' now returns 200 (NO 422) with redirect_url '/board-fix-orientation' on first submission and succeeds with no bylaws uploaded; (2) GET /api/board-fix-intake/context (no session_id, cookie auth) returns eligible:true, submitted:true, saved answers, lead_name and bylaws_filename; (3) edited re-submit returns 200 with redirect_url '/board-fix-roadmap' and Mongo holds exactly ONE board_fix_intakes doc (session_id member-intake-<user_id>, no duplicates); Bearer-token submit also works; (4) bylaws upload: PDF multipart with session_id='' -> 201 {status:uploaded, filename}, context + Mongo show bylaws_filename/bylaws_uploaded_at and data.bylaws_text with extracted text, .txt -> 400, no auth -> 401, bogus session_id -> 403; (5) security gates: submit no auth -> 401, module-tester@example.com (no entitlement) -> 403, bogus stripe session cs_test_bogus123 -> 403; (6) regression: GET context?session_id=cs_test_bogus123 -> 200 {eligible:false} (not 500). No AI calls, no emails, no Stripe checkouts. rooney@nonprofitboardbuilder.com records untouched. All test-created member/intake/journey/profile docs deleted in teardown.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter60_board_fix_intake_member.py",
+    "/app/test_reports/pytest/iter60.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor (non-blocking): upload_board_fix_bylaws in member mode does two lookups on board_fix_intakes (existing by user_id, then intake by session_id) — the second check is redundant and could be collapsed.",
+    "Minor: bylaws text is truncated to 120000 chars at write time but extract_cv_text already caps at 20000, so the 120k slice is dead code."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter60_board_fix_intake_member.py"
+  ],
+  "success_rate": {"backend": "100% (13/13)", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "One throwaway member per run (bufintake-tester-<timestamp>-<worker>@example.com / BufTest123!) with entitlement board_fix_system granted in Mongo; fully deleted in session teardown (members, board_fix_intakes, board_fix_journeys, recruitment_profiles). No residual data — verified via Mongo query after the run.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_iter60_board_fix_intake_member.py is self-contained and re-runnable (registers a unique member each run, per-xdist-worker email, cleans up after itself). It does NOT touch rooney's data. Frontend BoardFixIntakePage.jsx was intentionally not tested per request.",
+  "rca_of_the_issue": "Original defect: IntakeSubmit.session_id had Field(min_length=1) so the frontend's session_id:'' was rejected by pydantic with 422 before the member-auth branch could run, surfacing as 'We could not save your intake'. Fix (session_id: str = '') verified working; the new logger.exception wrapper produced no entries during testing, confirming no residual 500 path."
+}

@@ -17,7 +17,6 @@ const SECTIONS = [
     { name: "board_size", label: "How many board members do you currently have?", type: "text" },
     { name: "board_members", label: "List your current board members and their roles", type: "textarea" },
     { name: "board_structure", label: "Describe your board structure (officers, committees, terms)", type: "textarea", required: false },
-    { name: "bylaws_text", label: "Paste your organization's bylaws here (optional) — this helps us understand your board's structure, authority, roles, appointment and transition provisions", type: "textarea", required: false },
     { name: "board_responsibilities", label: "What responsibilities does your board currently hold?", type: "textarea", required: false },
     { name: "board_engagement", label: "Describe your board members' current engagement", type: "textarea" },
     { name: "board_problems", label: "What are the current problems with your board?", type: "textarea" },
@@ -48,12 +47,14 @@ export default function BoardFixIntakePage() {
   const [data, setData] = useState({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bylawsFile, setBylawsFile] = useState(null);
+  const [existingBylaws, setExistingBylaws] = useState("");
 
   useEffect(() => { document.title = "Complete Board Fix Intake | Nonprofit Board Builder"; }, []);
 
   useEffect(() => {
     axios.get(`${API}/board-fix-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true })
-      .then((r) => { setState(r.data.eligible ? "ready" : "blocked"); setData(r.data.data || {}); })
+      .then((r) => { setState(r.data.eligible ? "ready" : "blocked"); setData(r.data.data || {}); setExistingBylaws(r.data.bylaws_filename || ""); })
       .catch((err) => {
         if (!sessionId && err.response?.status === 401) {
           window.location.replace(`/login?next=${encodeURIComponent("/board-fix-intake")}`);
@@ -71,11 +72,23 @@ export default function BoardFixIntakePage() {
     setBusy(true);
     try {
       const response = await axios.post(`${API}/board-fix-intake/submit`, { session_id: sessionId, data }, { withCredentials: true });
+      if (bylawsFile) {
+        try {
+          const upload = new FormData();
+          upload.append("session_id", sessionId);
+          upload.append("file", bylawsFile);
+          await axios.post(`${API}/board-fix-intake/bylaws`, upload, { withCredentials: true });
+        } catch { /* bylaws are optional — never block completion */ }
+      }
       const destination = response.data.redirect_url || "/board-fix-roadmap";
       if (destination.startsWith("http")) { window.location.href = destination; return; }
       navigate(destination);
     } catch (err) {
-      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your intake. Please try again.");
+      const detail = err.response?.data?.detail;
+      const message = typeof detail === "string"
+        ? detail
+        : Array.isArray(detail) ? detail.map((item) => item?.msg || "").filter(Boolean).join(" ") : "";
+      setError(message || "We could not save your intake. Please try again.");
       setBusy(false);
     }
   };
@@ -110,6 +123,20 @@ export default function BoardFixIntakePage() {
                 ))}
               </section>
             ))}
+            <section className="member-card" data-testid="board-fix-bylaws-section">
+              <h2>Upload Your Organization's Bylaws (Optional)</h2>
+              <p><strong>If you have a copy of your organization's bylaws, you can upload it here. This is optional.</strong></p>
+              {existingBylaws && !bylawsFile && (
+                <p data-testid="board-fix-bylaws-existing">Currently on file: <strong>{existingBylaws}</strong> — choose a new file below to replace it.</p>
+              )}
+              <input key={bylawsFile ? "chosen" : "empty"} type="file" accept=".pdf,.doc,.docx"
+                onChange={(e) => setBylawsFile(e.target.files?.[0] || null)} data-testid="board-fix-bylaws-input" />
+              {bylawsFile && (
+                <p data-testid="board-fix-bylaws-selected">Selected: <strong>{bylawsFile.name}</strong>{" "}
+                  <button type="button" className="button button-outline" onClick={() => setBylawsFile(null)} data-testid="board-fix-bylaws-clear">Remove</button>
+                </p>
+              )}
+            </section>
             {error && <p className="submit-error" data-testid="board-fix-intake-error">{error}</p>}
             <button className="button" type="submit" disabled={busy} data-testid="board-fix-intake-submit">{busy ? "Saving…" : "Save and Continue to My Board Fix Roadmap"}</button>
           </form>

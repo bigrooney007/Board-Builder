@@ -1,12 +1,14 @@
 """Complete Board Fix: post-payment intake, master customer record, roadmap, admin journey view."""
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 
 import stripe
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
+from ai_service import extract_cv_text
 from auth_service import authenticate_admin
 from board_fix_master import BOARD_FIX_SOURCE, get_master_record, master_prefill, synthetic_session
 from course_content import ACTIVATION_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES
@@ -58,8 +60,11 @@ class OrientationSelections(BaseModel):
 
 
 class IntakeSubmit(BaseModel):
-    session_id: str = Field(min_length=1)
+    session_id: str = ""
     data: dict
+
+
+logger = logging.getLogger(__name__)
 
 
 def now_iso() -> str:
@@ -96,16 +101,28 @@ def create_board_fix_router(db) -> APIRouter:
                     "lead_name": f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
                     "lead_organization": "",
                     "submitted": bool(existing and existing.get("submitted_at")),
+                    "bylaws_filename": (existing or {}).get("bylaws_filename", ""),
                     "data": (existing or {}).get("data", {})}
         txn = await verify_session(session_id)
         if not txn:
             return {"eligible": False}
         existing = await db.board_fix_intakes.find_one({"session_id": session_id}, {"_id": 0})
         return {"eligible": True, "lead_name": txn.get("lead_name", ""), "lead_organization": txn.get("lead_organization", ""),
-                "submitted": bool(existing and existing.get("submitted_at")), "data": (existing or {}).get("data", {})}
+                "submitted": bool(existing and existing.get("submitted_at")),
+                "bylaws_filename": (existing or {}).get("bylaws_filename", ""),
+                "data": (existing or {}).get("data", {})}
 
     @router.post("/board-fix-intake/submit")
     async def intake_submit(request: Request, payload: IntakeSubmit):
+        try:
+            return await save_intake(request, payload)
+        except HTTPException:
+            raise
+        except Exception:
+            logger.exception("Complete Board Fix intake save failed (mode=%s)", "session" if payload.session_id else "member")
+            raise HTTPException(status_code=500, detail="We could not save your intake. Please try again.")
+
+    async def save_intake(request: Request, payload: IntakeSubmit):
         if not payload.session_id:
             member = await authenticate_member(request, db)
             if member.get("review_mode"):
@@ -132,6 +149,8 @@ def create_board_fix_router(db) -> APIRouter:
             if internal:
                 journey_set["internal_preview"] = True
             await db.board_fix_journeys.update_one({"user_id": user_id}, {"$set": journey_set}, upsert=True)
+        prior = await db.board_fix_intakes.find_one({"session_id": storage_session}, {"_id": 0, "submitted_at": 1})
+        first_time = not (prior and prior.get("submitted_at"))
         await db.board_fix_intakes.update_one(
             {"session_id": storage_session},
             {"$set": {"data": payload.data, "user_id": user_id, "lead_email": lead_email,
@@ -156,7 +175,46 @@ def create_board_fix_router(db) -> APIRouter:
             if seed:
                 seed["updated_at"] = now_iso()
                 await db.recruitment_profiles.update_one({"user_id": user_id}, {"$set": seed, "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
-        return {"status": "submitted", "redirect_url": CALENDLY_URL if is_dwm else "/board-fix-roadmap"}
+        return {"status": "submitted",
+                "redirect_url": CALENDLY_URL if is_dwm else ("/board-fix-orientation" if first_time else "/board-fix-roadmap")}
+
+    @router.post("/board-fix-intake/bylaws", status_code=201)
+    async def upload_board_fix_bylaws(request: Request, session_id: str = Form(""), file: UploadFile = File(...)):
+        """Optional bylaws document; stored against the intake. No AI/OCR runs — deterministic text extraction only."""
+        if session_id:
+            txn = await verify_session(session_id)
+            if not txn:
+                raise HTTPException(status_code=403, detail="A completed Complete Board Fix purchase is required")
+            storage_session = session_id
+        else:
+            member = await authenticate_member(request, db)
+            if member.get("review_mode"):
+                raise HTTPException(status_code=401, detail="Please log in to your member account to upload your bylaws")
+            require_entitlement(member, {"board_fix_system"})
+            existing = await db.board_fix_intakes.find_one({"user_id": member["user_id"]}, {"_id": 0, "session_id": 1})
+            if not existing:
+                raise HTTPException(status_code=404, detail="Submit the intake form before uploading your bylaws")
+            storage_session = existing["session_id"]
+        name = file.filename or "bylaws"
+        extension = os.path.splitext(name)[1].lower()
+        if extension not in {".pdf", ".doc", ".docx"}:
+            raise HTTPException(status_code=400, detail="Bylaws must be a PDF, DOC or DOCX file")
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Bylaws file is too large (10MB maximum)")
+        intake = await db.board_fix_intakes.find_one({"session_id": storage_session}, {"_id": 0, "session_id": 1})
+        if not intake:
+            raise HTTPException(status_code=404, detail="Submit the intake form before uploading your bylaws")
+        try:
+            text = extract_cv_text(content, name)
+        except Exception:
+            logger.exception("Bylaws text extraction failed for %s", name)
+            text = ""
+        await db.board_fix_intakes.update_one(
+            {"session_id": storage_session},
+            {"$set": {"bylaws_filename": name, "bylaws_uploaded_at": now_iso(),
+                      "data.bylaws_text": text[:120000], "updated_at": now_iso()}})
+        return {"status": "uploaded", "filename": name}
 
     @router.get("/board-fix/master-intake")
     async def master_intake(request: Request):
