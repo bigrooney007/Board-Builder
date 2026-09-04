@@ -5,9 +5,10 @@ import asyncio
 import resend
 
 from recommendation_email_service import linkify, send_recommendation_email
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, field_validator
 
 from funnel_models import FunnelLeadCreate, FunnelLeadResponse, LeadResultResponse, OFFER_SOURCES
@@ -88,15 +89,39 @@ def create_funnel_router(db) -> APIRouter:
             raise HTTPException(status_code=422, detail="Choose one of the timeline options")
         route = "/board-recruitment" if payload.priority == "recruitment" else "/board-fundraising-activation"
         if payload.token:
+            now = datetime.now(timezone.utc)
             await db.funnel_leads.update_one({"result_token": payload.token}, {"$set": {
                 "qualifier_priority": payload.priority,
                 "qualifier_board_count": str(payload.board_count)[:20],
                 "qualifier_timeline": payload.timeline,
                 "recommendation": payload.priority,
                 "recommended_pathway": payload.priority,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": now.isoformat(),
             }})
+            lead = await db.funnel_leads.find_one({"result_token": payload.token}, {"_id": 0, "email": 1, "reco_nurture": 1})
+            if lead and lead.get("email"):
+                state = lead.get("reco_nurture") or {}
+                if state.get("sequence") != payload.priority or state.get("status") not in {"active", "completed"}:
+                    await db.funnel_leads.update_one({"result_token": payload.token}, {"$set": {"reco_nurture": {
+                        "sequence": payload.priority, "next_email": 1, "status": "active",
+                        "first_scheduled_at": (now + timedelta(hours=24)).isoformat(),
+                        "next_send_at": (now + timedelta(hours=24)).isoformat(),
+                        "last_sent_at": "",
+                    }}})
         return {"recommendation": payload.priority, "route": route}
+
+    @router.get("/unsubscribe/{token}")
+    async def reco_unsubscribe(token: str):
+        lead = await db.funnel_leads.find_one({"result_token": token}, {"_id": 0, "email": 1})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Unknown link")
+        now = datetime.now(timezone.utc).isoformat()
+        await db.funnel_leads.update_one({"result_token": token}, {"$set": {
+            "reco_nurture.status": "stopped", "reco_nurture.stopped_reason": "unsubscribed", "reco_nurture.updated_at": now}})
+        await db.nurture_contacts.update_one(
+            {"email": (lead.get("email") or "").lower()},
+            {"$set": {"nurture_status": "unsubscribed", "updated_at": now}}, upsert=True)
+        return HTMLResponse("<div style='font-family:Arial,Helvetica,sans-serif;padding:48px;text-align:center;'><h2>You have been unsubscribed.</h2><p>You will not receive further emails from this sequence.</p></div>")
 
     @router.post("/{offer_source}", response_model=FunnelLeadResponse, status_code=201)
     async def create_lead(offer_source: str, payload: FunnelLeadCreate):

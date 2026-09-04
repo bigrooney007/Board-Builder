@@ -58,6 +58,15 @@ export const ClientDeliverySection = () => {
     } catch (e) { setMessage(err(e)); }
   };
 
+  const [intakeView, setIntakeView] = useState(null);
+  const viewIntake = async (row) => {
+    setMessage("");
+    try {
+      const r = await client.get(`/admin/dwm-clients/${row.session_id}/intake`);
+      setIntakeView({ row, offer: r.data.offer, intake: r.data.intake });
+    } catch (e) { setMessage(err(e)); }
+  };
+
   return (
     <section data-testid="admin-client-delivery">
       <h2 className="reference-heading">Test Product Journey</h2>
@@ -99,12 +108,35 @@ export const ClientDeliverySection = () => {
                 <td>
                   <input defaultValue={row.current_step || ""} placeholder={row.workspace_status === "Open" ? "In workspace" : "Not started"} onBlur={(e) => { if (e.target.value !== (row.current_step || "")) updateClient(row, { current_step: e.target.value }); }} style={{ width: 130 }} data-testid={`dwm-step-${row.session_id.slice(-8)}`} />
                 </td>
-                <td><button className="button button-small" onClick={() => openWorkspace(row)} data-testid={`open-workspace-${row.session_id.slice(-8)}`}>Open Client Workspace</button></td>
+                <td style={{ whiteSpace: "nowrap" }}>
+                  <button className="button button-small" onClick={() => openWorkspace(row)} data-testid={`open-workspace-${row.session_id.slice(-8)}`}>Open Client Workspace</button>{" "}
+                  {row.intake_status === "Completed" && (
+                    <button className="button button-small button-outline" onClick={() => viewIntake(row)} data-testid={`view-intake-${row.session_id.slice(-8)}`}>View Client Intake</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {intakeView && (
+        <section className="admin-table-wrap" style={{ marginTop: 18 }} data-testid="dwm-intake-view">
+          <h3 data-testid="dwm-intake-view-heading">Client Intake — {intakeView.row.founder_name || intakeView.row.founder_email} ({intakeView.offer})</h3>
+          <button className="button button-small button-outline" onClick={() => setIntakeView(null)} data-testid="dwm-intake-close">Close</button>
+          <table className="admin-table" style={{ marginTop: 10 }}>
+            <tbody>
+              {Object.entries({ ...(intakeView.intake.data || {}), ...intakeView.intake })
+                .filter(([key, value]) => !["data", "session_id", "intake_id", "user_id"].includes(key) && value !== "" && value !== null && (typeof value !== "object" || Array.isArray(value)))
+                .map(([key, value]) => (
+                  <tr key={key}>
+                    <td style={{ fontWeight: 700, textTransform: "capitalize", verticalAlign: "top", width: 260 }}>{key.replaceAll("_", " ")}</td>
+                    <td style={{ whiteSpace: "pre-wrap" }}>{Array.isArray(value) ? value.join(", ") : String(value)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </section>
   );
 };

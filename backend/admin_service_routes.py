@@ -1,8 +1,10 @@
 """Admin service-delivery routes: DWM client directory + operator workspaces."""
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 
+import stripe
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
@@ -68,6 +70,20 @@ def create_admin_service_router(db) -> APIRouter:
     @router.get("/dwm-clients")
     async def dwm_clients(request: Request):
         await authenticate_admin(request, db)
+        pending = await db.payment_transactions.find(
+            {"purchase_source": {"$in": list(DWM_OFFERS.keys())}, "payment_status": {"$ne": "paid"}},
+            {"_id": 0, "session_id": 1}).sort("created_at", -1).to_list(15)
+        if pending:
+            stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
+            for row in pending:
+                try:
+                    session = stripe.checkout.Session.retrieve(row["session_id"])
+                    if session.payment_status == "paid" or session.status == "complete":
+                        await db.payment_transactions.update_one(
+                            {"session_id": row["session_id"], "payment_status": {"$ne": "paid"}},
+                            {"$set": {"payment_status": "paid", "status": "completed", "updated_at": datetime.now(timezone.utc).isoformat()}})
+                except Exception:
+                    continue
         transactions = await db.payment_transactions.find(
             {"purchase_source": {"$in": list(DWM_OFFERS.keys())}, "payment_status": "paid"},
             {"_id": 0}).sort("created_at", -1).to_list(500)
@@ -97,6 +113,18 @@ def create_admin_service_router(db) -> APIRouter:
                 "entry_route": meta["entry_route"],
             })
         return {"clients": clients}
+
+    @router.get("/dwm-clients/{session_id}/intake")
+    async def dwm_client_intake(session_id: str, request: Request):
+        await authenticate_admin(request, db)
+        tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0, "purchase_source": 1})
+        if not tx or tx.get("purchase_source") not in DWM_OFFERS:
+            raise HTTPException(status_code=404, detail="Client not found")
+        meta = DWM_OFFERS[tx["purchase_source"]]
+        intake = await db[meta["intake_collection"]].find_one({"session_id": session_id}, {"_id": 0})
+        if not intake:
+            raise HTTPException(status_code=404, detail="This client has not completed their intake yet")
+        return {"offer": meta["offer"], "intake_collection": meta["intake_collection"], "intake": intake}
 
     class ClientStatusUpdate(BaseModel):
         engagement_status: str = ""

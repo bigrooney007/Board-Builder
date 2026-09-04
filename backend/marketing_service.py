@@ -13,7 +13,7 @@ import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 from ai_service import parse_json_response
-from board_content_topics import BOARD_CONTENT_TOPICS
+from board_content_topics import BOARD_CONTENT_TOPICS, WEEKLY_BOARD_TOPICS
 from resend_service import create_segment_broadcast, upsert_contact
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,7 @@ CATEGORIES = {
     "reactivation": {"name": "Board Reactivation", "day": 2, "cta_label": "Ready to Reactivate Your Board?", "cta_button": "See How We Can Help You Reactivate", "cta_url": "/reactivate"},
     "fundraising_activation": {"name": "Board Fundraising Activation", "day": 4, "cta_label": "Ready to Activate Your Board Around Fundraising?", "cta_button": "See How We Can Help You Activate Your Board", "cta_url": "/activate"},
     "transformation": {"name": "Complete Board Transformation", "day": 5, "cta_label": "Ready to Transform Your Board?", "cta_button": "Start Your Complete Board Transformation", "cta_url": "/board-transformation"},
+    "weekly": {"name": "Nonprofit Board Leadership", "day": 0, "cta_label": "", "cta_button": "SHOW ME THE 3 BOARD MISTAKES", "cta_url": "/"},
 }
 BANNED_PHRASES = ["in today's fast-paced world", "in the ever-evolving landscape", "it's important to note", "let's dive in", "game changer", "unlock the power", "navigate the complexities", "revolutionize", "game-changer"]
 
@@ -190,6 +191,12 @@ BLOG_SYSTEM = (
 
 async def next_topic_for(db, category_key: str) -> dict:
     """Sequential per-category topic progression. Cycles back only after all 25 are published."""
+    if category_key == "weekly":
+        published = await db.blog_posts.count_documents(
+            {"category_key": "weekly", "topic_number": {"$gte": 1}, "publication_status": "Published"})
+        if published >= len(WEEKLY_BOARD_TOPICS):
+            return None
+        return {"topic_number": published + 1, "topic_title": WEEKLY_BOARD_TOPICS[published], "published_in_category": published}
     topics = BOARD_CONTENT_TOPICS[category_key]
     published = await db.blog_posts.count_documents(
         {"category_key": category_key, "topic_number": {"$gte": 1}, "publication_status": "Published"})
@@ -303,6 +310,12 @@ async def create_scheduled_blog_post(db, category_key: str, scheduled_date: str,
     config = CATEGORIES[category_key]
     ts = now_tz().isoformat()
     topic = await next_topic_for(db, category_key)
+    if topic is None:
+        already = await db.marketing_settings.find_one({"key": "weekly_topics_exhausted"}, {"_id": 0})
+        if not already:
+            await db.marketing_settings.update_one({"key": "weekly_topics_exhausted"}, {"$set": {"at": ts}}, upsert=True)
+            await send_owner_alert("Weekly Blog Topic List Completed", [("Status", "All 60 supplied weekly blog topics have now been published. Weekly publishing is paused until you supply a new topic list.")])
+        return {"status": "Topics Exhausted"}
     try:
         await db.blog_posts.insert_one({"blog_post_id": str(uuid.uuid4()), "category_key": category_key, "category": config["name"], "scheduled_date": scheduled_date, "publication_status": "Generating", "created_at": ts, "title": "", "slug": "", "topic_number": topic["topic_number"], "topic_title": topic["topic_title"]})
     except Exception:
@@ -565,6 +578,161 @@ async def run_weekly_nurture(db, origin: str, test_only: bool, test_email: str =
     return results
 
 
+# ---------------- RECOMMENDATION NURTURE DRIP (deterministic, zero AI) ----------------
+RECO_STOP_STATUSES = {"customer", "unsubscribed"}
+
+RECO_NURTURE = {
+    "recruitment": {
+        "url": "/board-recruitment",
+        "stop_sources": {"recruitment_campaign_launch_697", "direct_board_recruitment_project", "direct_diy_board_recruitment_497", "board_recruitment_dfy", "board_fix_system_497", "board_fix_dwm_5497"},
+        "emails": [
+            {"subject": "The Board Your Nonprofit Needs Will Not Build Itself",
+             "cta": "BUILD THE BOARD MY NONPROFIT NEEDS",
+             "paragraphs": [
+                 "Based on what you shared with us, your immediate priority is to build the right Board around your organization.",
+                 "A Board seat is too valuable to fill casually.",
+                 "The goal is not simply to find more people. It is to identify the skills, experience, expertise and relationships your organization needs, then recruit people who can strengthen what you already have.",
+                 "How you recruit your Board Members is as important as the quality of Board Members you recruit.",
+                 "Tony Barnes, Founder of Another Blessed Ministry, shared this after working through the process with us:",
+                 "\u201cI was running on fumes, trying to fundraise, manage a full-time job, and build a board all by myself. Rooney's fundraising system changed everything. Not only did we successfully recruit our new board, but we now have volunteers focused on specific areas, from social media to direct fundraising. I stopped drowning and started leading.\u201d",
+                 "Your next step is still waiting for you.",
+             ]},
+            {"subject": "Stop Asking \u201cWho Do I Know That Can Join My Board?\u201d",
+             "cta": "CONTINUE MY BOARD RECRUITMENT",
+             "paragraphs": [
+                 "One of the biggest mistakes founders make when recruiting a Board is starting with:",
+                 "\u201cWho do I know?\u201d",
+                 "The better question is:",
+                 "What does my organization need?",
+                 "Then:",
+                 "What does my current Board already have? What is missing? And what kind of person would fill that gap?",
+                 "That changes Board recruitment completely.",
+                 "Devona Boone of Natalie\u2019s Place Transitional Housing said after working with us:",
+                 "\u201cMr Rooney did an outstanding job! The Board Leadership training gave me principles and resources to apply to recruiting board members and how to properly keep them engaged. I feel like I have the tools I need to be a great Board Leader and lead my team to executing plans we set out to reach.\u201d",
+                 "You do not have to guess your way through building your Board.",
+                 "Return to your recommended Board Recruitment path below.",
+             ]},
+            {"subject": "You Don't Need a Big Network to Recruit the Right Board",
+             "cta": "LET'S GET MY BOARD RECRUITED",
+             "paragraphs": [
+                 "You do not need to already know all the people your nonprofit needs on its Board.",
+                 "What you need is the right recruitment process.",
+                 "Identify the Board Members the organization needs. Build the right recruitment campaign. Get that opportunity in front of the right people. Allow people to apply. Talk to the strongest candidates. Then move the right people through a professional appointment and onboarding process.",
+                 "Donna Kargel of Community Thrive shared:",
+                 "\u201cI waisted 6 months not knowing what I don't know before I hired him as a consultant. We accomplished in 4 months a board, a volunteer program currently staffed with & volunteers, a strategic plan for funding and too much to share.\u201d",
+                 "You already identified Recruitment as your immediate Board priority.",
+                 "When you are ready, continue from where you left off.",
+             ]},
+        ],
+    },
+    "fundraising_activation": {
+        "url": "/board-fundraising-activation",
+        "stop_sources": {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997", "direct_board_activation_project_2497", "board_fundraising_activation_dfy", "board_fix_system_497", "board_fix_dwm_5497"},
+        "emails": [
+            {"subject": "Your Board Does Not Need Another Fundraising Lecture",
+             "cta": "ACTIVATE MY BOARD FOR FUNDRAISING",
+             "paragraphs": [
+                 "Based on what you shared with us, your Board is already reasonably active.",
+                 "The opportunity now is to get them working with you to raise money and build your organization's fundraising system.",
+                 "That does not mean turning every Board Member into a professional fundraiser.",
+                 "It means bringing the Board into the fundraising process, building the strategy together, identifying where each person can contribute, and giving everyone the tools they need to move the plan forward.",
+                 "Laura Anthony of Zero Waste San Diego shared:",
+                 "\u201cRooney really knows his stuff. He has helped my board rethink how we fundraise and even changed how we value ourselves and our services. He provides quick and well-thought-out fundraising plans that are easy to follow, giving us the tools and confidence to implement.\u201d",
+                 "Your Fundraising Activation path is still waiting for you.",
+             ]},
+            {"subject": "Those That Plan Together Execute Together",
+             "cta": "CONTINUE MY FUNDRAISING ACTIVATION",
+             "paragraphs": [
+                 "One reason Board fundraising efforts fail is simple:",
+                 "The founder builds the fundraising plan and then brings it to the Board expecting everyone to execute it.",
+                 "But people are more likely to take ownership of something they helped build.",
+                 "That is why our process begins by bringing your Board into the fundraising planning process.",
+                 "Their ideas are collected. Those ideas are brought together with your organization's fundraising goals and priorities. A complete Fundraising Strategy is built. Then the Board reviews it together, adopts the direction and agrees how everyone will participate.",
+                 "Martina Jones of Bless It Solutions shared:",
+                 "\u201cWorking with Rooney has inspired myself and my board members to continue going forward with the mission. Each member understands the overall mission and how they play a critical role in going forward. Rooney was able to strategically help Bless It Solutions map out a plan where each board members are able to take charge in their area of expertise.\u201d",
+                 "If you want your Board to execute the fundraising plan, begin by getting them involved in building it.",
+             ]},
+            {"subject": "Your Fundraising Strategy Shouldn't Live in Your Head",
+             "cta": "BUILD OUR FUNDRAISING SYSTEM",
+             "paragraphs": [
+                 "If fundraising depends entirely on what you know, who you know, what you remember to follow up on and what you personally have time to do, the organization does not yet have a fundraising system.",
+                 "Your Board can help change that.",
+                 "Together, you can determine: who your organization should be building fundraising relationships with; where those people, businesses and funders can be found; how to attract and build relationships with them; how the fundraising process should work; and what each person can realistically help carry.",
+                 "Linda Floyd of Battle Buddies of Central Oregon shared:",
+                 "\u201cWe were unsure as to raising money in these modern times for our nonprofit organization focused on preventing veteran suicide through canine companionship. Rooney gave us valuable fundraising insight and created a simple and organized fundraising plan I and my team can follow to raise money for our mission.\u201d",
+                 "You have already identified Fundraising Activation as the next priority for your Board.",
+                 "Come back and begin the process.",
+             ]},
+        ],
+    },
+}
+
+
+def reco_email_html(template: dict, url: str, first_name: str, origin: str, unsubscribe_url: str) -> str:
+    parts = ["<div style='background:#ffffff;padding:26px;font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;'>"]
+    parts.append(f"<p style='font-size:18px;line-height:1.6;color:#000;margin:0 0 16px;'>Hi {html.escape(first_name) if first_name else 'there'},</p>")
+    parts.append("".join(f"<p style='font-size:18px;line-height:1.6;color:#000;margin:0 0 16px;'>{html.escape(p)}</p>" for p in template["paragraphs"]))
+    parts.append(f"<p><a href='{origin}{url}' style='display:inline-block;background:#087e5b;color:#ffffff;padding:14px 24px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:17px;'>{html.escape(template['cta'])}</a></p>")
+    parts.append("<p style='font-size:18px;line-height:1.6;color:#000;margin:24px 0 0;'>Rooney Akpesiri<br/>Nonprofit Board Builder</p>")
+    parts.append(
+        f"<p style='font-size:12px;color:#667;margin-top:30px;'>Nonprofit Board Builder — {html.escape(os.environ.get('POSTAL_ADDRESS', ''))}<br/>"
+        f"<a href='{unsubscribe_url}'>Unsubscribe</a></p></div>")
+    return "".join(parts)
+
+
+async def run_reco_nurture_drip(db, origin: str) -> None:
+    """Day 1 / Day 3 / Day 5 deterministic recommendation drip. Exactly three emails, then completed."""
+    if os.environ.get("DB_NAME") == "test_database":
+        return
+    if os.environ.get("RECO_NURTURE_ENABLED", "true").lower() != "true":
+        return
+    now = now_tz("LEAD_NURTURE_TIMEZONE")
+    leads = await db.funnel_leads.find(
+        {"reco_nurture.status": "active", "reco_nurture.next_send_at": {"$lte": now.isoformat()}},
+        {"_id": 0, "lead_id": 1, "name": 1, "email": 1, "result_token": 1, "reco_nurture": 1}).to_list(50)
+    for lead in leads:
+        state = lead.get("reco_nurture") or {}
+        sequence = RECO_NURTURE.get(state.get("sequence"))
+        email = (lead.get("email") or "").lower()
+        key = {"lead_id": lead["lead_id"]}
+        if not sequence or not email:
+            await db.funnel_leads.update_one(key, {"$set": {"reco_nurture.status": "stopped", "reco_nurture.stopped_reason": "invalid"}})
+            continue
+        contact = await db.nurture_contacts.find_one({"email": email}, {"_id": 0, "nurture_status": 1})
+        purchased = await db.payment_transactions.find_one(
+            {"payment_status": "paid", "purchase_source": {"$in": list(sequence["stop_sources"])},
+             "$or": [{"lead_email": email}, {"customer_email": email}, {"email": email}]},
+            {"_id": 0, "session_id": 1})
+        if purchased or (contact and contact.get("nurture_status") in RECO_STOP_STATUSES):
+            reason = "purchased" if purchased else contact.get("nurture_status")
+            await db.funnel_leads.update_one(key, {"$set": {"reco_nurture.status": "stopped", "reco_nurture.stopped_reason": reason}})
+            continue
+        number = max(1, min(3, int(state.get("next_email", 1))))
+        template = sequence["emails"][number - 1]
+        first_name = (lead.get("name") or "").split(" ")[0]
+        unsubscribe_url = f"{origin}/api/funnel-leads/unsubscribe/{lead.get('result_token', '')}"
+        try:
+            resend.api_key = os.environ["RESEND_API_KEY"]
+            await resend.Emails.send_async({
+                "from": nurture_sender(state["sequence"]), "to": [email],
+                "subject": template["subject"],
+                "html": reco_email_html(template, sequence["url"], first_name, origin, unsubscribe_url)})
+        except Exception as exc:
+            logger.warning("Reco nurture send failed for %s: %s", email, exc)
+            await db.funnel_leads.update_one(key, {"$set": {
+                "reco_nurture.last_error": str(exc)[:300],
+                "reco_nurture.next_send_at": (now + timedelta(hours=6)).isoformat()}})
+            continue
+        updates = {"reco_nurture.last_sent_at": now.isoformat(), "reco_nurture.last_error": ""}
+        if number >= 3:
+            updates["reco_nurture.status"] = "completed"
+            updates["reco_nurture.next_email"] = 3
+        else:
+            updates["reco_nurture.next_email"] = number + 1
+            updates["reco_nurture.next_send_at"] = (now + timedelta(days=2)).isoformat()
+        await db.funnel_leads.update_one(key, {"$set": updates})
+
+
 # ---------------- SCHEDULER ----------------
 async def marketing_loop(db) -> None:
     origin = os.environ.get("PUBLIC_ORIGIN", "https://nonprofitboardbuilder.com")
@@ -573,15 +741,16 @@ async def marketing_loop(db) -> None:
             if os.environ.get("BLOG_AUTOMATION_ENABLED", "false").lower() == "true":
                 now = now_tz("BLOG_TIMEZONE")
                 publish_time = os.environ.get("BLOG_PUBLISH_TIME", "08:00")
-                for key, config in CATEGORIES.items():
-                    if now.weekday() == config["day"] and now.strftime("%H:%M") >= publish_time:
-                        await create_scheduled_blog_post(db, key, now.strftime("%Y-%m-%d"), publish_now=True)
+                publish_day = int(os.environ.get("BLOG_PUBLISH_WEEKDAY", "0"))
+                if now.weekday() == publish_day and now.strftime("%H:%M") >= publish_time:
+                    await create_scheduled_blog_post(db, "weekly", now.strftime("%Y-%m-%d"), publish_now=True)
             if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true" or enabled_nurture_sources():
                 now = now_tz("LEAD_NURTURE_TIMEZONE")
                 day_name = os.environ.get("LEAD_NURTURE_DAY", "Tuesday")
                 send_time = os.environ.get("LEAD_NURTURE_TIME", "07:00")
                 if now.strftime("%A") == day_name and now.strftime("%H:%M") >= send_time:
                     await run_weekly_nurture(db, origin, test_only=False)
+            await run_reco_nurture_drip(db, origin)
         except Exception as exc:
             logger.error("Marketing loop error: %s", exc)
         await asyncio.sleep(300)
