@@ -1,7 +1,10 @@
+import os
 import secrets
 import asyncio
 
-from recommendation_email_service import send_recommendation_email
+import resend
+
+from recommendation_email_service import linkify, send_recommendation_email
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
@@ -13,6 +16,87 @@ from funnel_service import build_result, create_lead_id, send_owner_lead_email, 
 
 def create_funnel_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/funnel-leads")
+
+    class LeadMagnetPayload(BaseModel):
+        name: str = Field(min_length=1, max_length=120)
+        email: str = Field(min_length=3, max_length=200)
+        origin_url: str = ""
+
+    @router.post("/lead-magnet", status_code=201)
+    async def lead_magnet(payload: LeadMagnetPayload):
+        """Homepage lead magnet: save Name + Email, email the Three Mistakes video link. ZERO AI."""
+        email = payload.email.strip().lower()
+        if "@" not in email or "." not in email.split("@")[-1]:
+            raise HTTPException(status_code=422, detail="Enter a valid email address")
+        name = payload.name.strip()
+        now = datetime.now(timezone.utc)
+        existing = await db.funnel_leads.find_one({"email": email, "offer_source": "board_fix"}, {"_id": 0, "lead_id": 1, "result_token": 1})
+        if existing:
+            token = existing["result_token"]
+            await db.funnel_leads.update_one({"lead_id": existing["lead_id"]}, {"$set": {"name": name, "updated_at": now.isoformat()}})
+        else:
+            token = secrets.token_urlsafe(32)
+            await db.funnel_leads.insert_one({
+                "lead_id": create_lead_id(now), "result_token": token, "offer_source": "board_fix",
+                "name": name, "email": email, "organization": "", "answers": {},
+                "lead_source": "homepage_lead_magnet",
+                "created_at": now.isoformat(), "updated_at": now.isoformat(),
+                "owner_email_status": "Pending", "selected_tier": "",
+            })
+        origin = payload.origin_url.rstrip("/") if payload.origin_url.startswith("http") else "https://nonprofitboardbuilder.com"
+        link = f"{origin}/offer/board-fix?t={token}"
+        first = name.split(" ")[0] if name else "there"
+        body = (
+            f"Hi {first},\n\n"
+            "Here is the Board training I promised you.\n\n"
+            "In this video, I will show you the three mistakes nonprofit founders and executive directors make with their Board "
+            "that can limit their organization's ability to raise money and grow, and what to do differently.\n\n"
+            f"{link}\n\n"
+            "Rooney Akpesiri\nNonprofit Board Builder")
+        status = "Sent"
+        try:
+            resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+            paragraphs = "".join(
+                f"<p style='margin:0 0 14px 0;'>{'<br/>'.join(linkify(line) for line in block.split(chr(10)))}</p>"
+                for block in body.split("\n\n"))
+            resend.Emails.send({
+                "from": os.environ["NONPROFIT_SENDER"].strip('"'), "to": [email],
+                "reply_to": [os.environ["ADMIN_EMAIL"].strip('"')],
+                "subject": "Your Board Training: The 3 Mistakes",
+                "html": f"<div style='font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;'>{paragraphs}</div>",
+                "text": body,
+            })
+        except Exception:
+            status = "Failed"
+        await db.funnel_leads.update_one({"result_token": token}, {"$set": {"lead_magnet_email_status": status}})
+        return {"token": token, "redirect_url": f"/offer/board-fix?t={token}"}
+
+    QUALIFY_TIMELINES = {"As soon as possible", "Within 30 days", "Within 60 days", "Within 90 days", "I am not sure yet"}
+
+    class QualifyPayload(BaseModel):
+        token: str = ""
+        priority: str
+        board_count: str = ""
+        timeline: str = ""
+
+    @router.post("/qualify")
+    async def qualify(payload: QualifyPayload):
+        """Deterministic two-way routing: recruitment or fundraising_activation. ZERO AI."""
+        if payload.priority not in {"recruitment", "fundraising_activation"}:
+            raise HTTPException(status_code=422, detail="Choose what your Board needs most right now")
+        if payload.timeline and payload.timeline not in QUALIFY_TIMELINES:
+            raise HTTPException(status_code=422, detail="Choose one of the timeline options")
+        route = "/board-recruitment" if payload.priority == "recruitment" else "/board-fundraising-activation"
+        if payload.token:
+            await db.funnel_leads.update_one({"result_token": payload.token}, {"$set": {
+                "qualifier_priority": payload.priority,
+                "qualifier_board_count": str(payload.board_count)[:20],
+                "qualifier_timeline": payload.timeline,
+                "recommendation": payload.priority,
+                "recommended_pathway": payload.priority,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }})
+        return {"recommendation": payload.priority, "route": route}
 
     @router.post("/{offer_source}", response_model=FunnelLeadResponse, status_code=201)
     async def create_lead(offer_source: str, payload: FunnelLeadCreate):

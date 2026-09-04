@@ -5,7 +5,7 @@ import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { SupportBox, VideoBlock } from "./CoursePages";
-import { BoardFixContinuation } from "./BoardFixContinuation";
+import { BoardFixContinuation } from "./BoardFixContinuation"; // eslint-disable-line no-unused-vars
 import { StepInstructions } from "./StepInstructions";
 import { bufStep } from "./bufJourney";
 import ActivationModule2 from "./ActivationModule2";
@@ -151,16 +151,16 @@ export const ActivationModulePage = () => {
               <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Module ${module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="activation-module-title">{module.title}</h1>
             </header>
-            {number >= 2 ? (
-              <StepInstructions stepKey={`activation-${number}`} />
-            ) : (
-              <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
-            )}
+            <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
+            {number >= 2 && <StepInstructions stepKey={`activation-${number}`} />}
             <ModuleShell moduleNumber={number} />
-            {number === course.modules.length && <BoardFixContinuation label="Go to Your Board Fix Dashboard" to="/board-fix-roadmap" />}
             <div className="module-nav" data-testid="activation-module-navigation">
               <button className="button button-back" disabled={buf ? false : number <= 1} onClick={() => navigate(buf ? buf.prev : `${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
-              <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
+              {(buf || number < course.modules.length) ? (
+                <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
+              ) : (
+                <p style={{ margin: 0, fontWeight: 700 }} data-testid="activation-completion-message">Your Board Fundraising Activation System is ready to execute.</p>
+              )}
             </div>
             <SupportBox productKey={META.key} moduleNumber={number} supportTypes={course.support_types} />
           </>

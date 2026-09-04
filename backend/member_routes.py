@@ -99,7 +99,7 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         product_name = "Do It Yourself Board Reactivation"
     elif offer_source == "direct_diy_board_activation" and tier == "497":
         entitlement = "activation_self_guided"
-        product_name = "Do It Yourself Board Fundraising Activation"
+        product_name = "Guided Board Fundraising Activation"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]

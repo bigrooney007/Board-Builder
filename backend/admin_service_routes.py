@@ -48,6 +48,11 @@ DWM_OFFERS = {
         "entitlement": "recruitment_self_guided", "intake_collection": "board_recruitment_intakes",
         "entry_route": "/app/recruitment/self-guided/module/2",
     },
+    "activate_my_board_with_rooney_2997": {
+        "product": "activation", "offer": "Activate My Board With Rooney ($2,997)",
+        "entitlement": "activation_self_guided", "intake_collection": "board_activation_intakes",
+        "entry_route": "/app/activation/self-guided/module/1",
+    },
 }
 
 ENGAGEMENT_STATUSES = {"Active", "Paused", "Completed"}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
-import { BoardFixDiagnostic } from "./BoardFixDiagnostic";
+import { BoardFixQualifier } from "./BoardFixQualifier";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { SITE_CONTENT } from "@/content/siteContent";
 
@@ -100,7 +100,7 @@ export default function OfferVideoPage({ offer }) {
       <main className="offer-sales-page" data-testid={`offer-sales-page-${offer}`}>
         <header className="funnel-hero-banner offer-sales-banner" data-testid={`offer-hero-${offer}`}>
           <h1 data-testid={`offer-headline-${offer}`}>{content.title}</h1>
-          {!content.video && <p className="offer-sales-lead" data-testid={`offer-lead-${offer}`}>{content.lead}</p>}
+          {(!content.video || offer === "board-fix") && <p className="offer-sales-lead" data-testid={`offer-lead-${offer}`}><strong>{content.lead}</strong></p>}
           <i aria-hidden="true" />
         </header>
 
@@ -116,13 +116,7 @@ export default function OfferVideoPage({ offer }) {
             </div>
             )}
             {offer === "board-fix" ? (
-              <>
-                <section className="offer-sales-body" data-testid="board-fix-foundation-section">
-                  <h2 data-testid="board-fix-foundation-heading">{content.sectionHeading}</h2>
-                  <p data-testid="board-fix-foundation-text"><strong>{content.sectionText}</strong></p>
-                </section>
-                <BoardFixDiagnostic />
-              </>
+              <BoardFixQualifier />
             ) : offer === "recruitment" ? (
               <CampaignLaunchOffer content={content.campaignLaunch} shared={shared} />
             ) : (

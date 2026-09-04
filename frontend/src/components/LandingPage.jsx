@@ -1,3 +1,5 @@
+import { useState } from "react";
+import axios from "axios";
 import { ArrowRight } from "lucide-react";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FounderStorySection } from "@/components/FounderStorySection";
@@ -5,16 +7,40 @@ import { BlogSlider } from "@/pages/BlogPages";
 import { SITE_CONTENT, landingPageText } from "@/content/siteContent";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const home = SITE_CONTENT.home;
 
-const OfferChoices = ({ location }) => (
-  <div className={`offer-choices ${location}`} data-testid={`${location}-offer-choices`}>
-    <a className="button" href="/reactivate" data-testid={`${location}-reactivate-button`}>{home.finalCta.reactivateButton}</a>
-    <a className="button" href="/recruit" data-testid={`${location}-recruit-button`}>{home.finalCta.recruitButton}</a>
-    <a className="button" href="/activate" data-testid={`${location}-activate-button`}>{home.finalCta.activateButton}</a>
-  </div>
-);
+const LeadMagnetForm = ({ location }) => {
+  const [form, setForm] = useState({ name: "", email: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+    if (!form.name.trim() || !form.email.trim()) { setError("Enter your name and email to get instant access."); return; }
+    setBusy(true);
+    try {
+      const response = await axios.post(`${API}/funnel-leads/lead-magnet`, { ...form, origin_url: window.location.origin });
+      try { sessionStorage.setItem("funnelLeadContext", JSON.stringify({ result_token: response.data.token })); } catch { /* best effort */ }
+      window.location.href = response.data.redirect_url;
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your details. Please try again.");
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="lead-magnet-form" onSubmit={submit} data-testid={`${location}-lead-magnet-form`} style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 12, maxWidth: 460 }}>
+      <p style={{ margin: 0 }}><strong>{home.leadFormPrompt}</strong></p>
+      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" aria-label="Name" data-testid={`${location}-lead-name-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem" }} />
+      <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" aria-label="Email" data-testid={`${location}-lead-email-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem" }} />
+      <button type="submit" className="button button-light" disabled={busy} data-testid={`${location}-lead-submit-button`}>
+        {busy ? "One moment…" : home.leadFormCta} <ArrowRight size={16} />
+      </button>
+      {error && <p className="submit-error" data-testid={`${location}-lead-error`}>{error}</p>}
+    </form>
+  );
+};
 
 export const LandingPage = ({ onJoin }) => (
   <main data-testid="landing-page">
@@ -25,41 +51,26 @@ export const LandingPage = ({ onJoin }) => (
         <a href="#my-story" data-testid="my-story-link">{home.nav.myStory}</a>
         <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">{home.nav.joinABoard}</button>
       </div>
-      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/reactivate">{home.nav.reactivate}</a><a href="/recruit">{home.nav.recruit}</a><a href="/activate">{home.nav.activate}</a><a href="/login" data-testid="nav-login-link">{home.nav.logIn}</a></div>
+      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/login" data-testid="nav-login-link">{home.nav.logIn}</a></div>
     </nav>
 
     <section id="top" className="hero-banner" data-testid="hero-section">
       <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
-        <p className="hero-banner-lead" data-testid="hero-supporting-text">{home.heroSubtitle}</p>
-        <p style={{ marginTop: 22 }}><a className="button button-light" href="/offer/board-fix" data-testid="hero-board-transformation-button">{home.heroCta}</a></p>
+        <p className="hero-banner-lead" data-testid="hero-supporting-text"><strong>{home.heroSubtitle}</strong></p>
+        <LeadMagnetForm location="hero" />
       </div>
-    </section>
-
-    <section className="home-intro" data-testid="home-intro-section">
-      <p data-testid="home-intro-paragraph-1"><strong>{home.introSectionParagraphs[0]}</strong></p>
-      <p data-testid="home-intro-paragraph-2">{home.introSectionParagraphs[1]}</p>
-      <p data-testid="home-intro-paragraph-3">{home.introSectionParagraphs[2]}</p>
-      <p style={{ marginTop: 18 }}><a className="button" href="/offer/board-fix" data-testid="home-intro-cta-button">{home.introCta}</a></p>
-    </section>
-
-    <section className="section home-how" data-testid="home-how-section">
-      <p data-testid="home-how-subheading"><strong>{home.builderSubheading}</strong></p>
-      <p data-testid="home-how-paragraph-1">{home.builderParagraph}</p>
-      {home.builderPillars.map((pillar, index) => (
-        <div key={index} data-testid={`home-pillar-${index + 1}`}>
-          <h3 data-testid={`home-pillar-label-${index + 1}`}>{pillar.label}</h3>
-          <p data-testid={`home-pillar-text-${index + 1}`}>{pillar.text}</p>
-        </div>
-      ))}
-      <p style={{ marginTop: 18 }}><a className="button" href="/offer/board-fix" data-testid="home-how-cta-button">{home.cta}</a></p>
     </section>
 
     <TestimonialsSection />
 
     <FounderStorySection />
 
-    <section className="final-cta" data-testid="final-call-to-action"><p className="eyebrow" data-testid="final-cta-eyebrow">{home.finalCta.eyebrow}</p><h2 data-testid="final-cta-heading">{home.finalCta.heading}</h2><OfferChoices location="final" /></section>
+    <section className="final-cta" data-testid="final-call-to-action">
+      <p className="eyebrow" data-testid="final-cta-eyebrow">{home.finalCta.eyebrow}</p>
+      <h2 data-testid="final-cta-heading">{home.heroSubtitle}</h2>
+      <p style={{ marginTop: 16 }}><a className="button" href="#top" data-testid="final-cta-lead-button">{home.leadFormCta}</a></p>
+    </section>
 
     <BlogSlider />
 

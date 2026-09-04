@@ -83,8 +83,10 @@ export const SITE_CONTENT = {
       {"label": "REACTIVATE", "text": "Get your current board members to step up and take responsibility, or help them transition gracefully when they can no longer continue."},
       {"label": "ACTIVATE", "text": "Get your board working with you to raise money and build your organization's fundraising system."}
     ],
-    "heroTitle": "Are You Ready to Build the Board Your Nonprofit Needs?",
-    "heroSubtitle": "Let us equip you to fix your board instead of paying someone thousands of dollars to fix it for you.",
+    "heroTitle": "There Are 3 Mistakes You're Making With Your Board That Are Limiting Your Organization's Ability to Raise Money Exponentially.",
+    "heroSubtitle": "I will show you the three mistakes and how to fix them.",
+    "leadFormPrompt": "Enter your details below to get instant access and have it emailed to you.",
+    "leadFormCta": "GET INSTANT ACCESS",
     "introHeading": "Your board is one of your organization's strongest assets.",
     "introParagraphs": [
       "When you have a great board, the nonprofit journey becomes an adventure. You raise money, build strong organizational structures, create greater impact, and grow steadily because you have the right people in the right positions providing the kind of support your organization needs.",
@@ -179,10 +181,12 @@ export const SITE_CONTENT = {
   },
   "offerSalesPages": {
     "board-fix": {
-      "title": "IS YOUR BOARD BUILT TO HELP YOUR ORGANIZATION WIN?",
-      "lead": "Answer four questions about your board and we'll show you the exact steps you can start taking today to fix and strengthen it.",
-      "sectionHeading": "Your Board is The Foundation Of Your Nonprofit's Success.",
-      "sectionText": "If Your Board Isn't Meeting Up, It's Your Responsibility To Fix Your Board So They Can Work With You To Raise Money and Scale Your Organization.",
+      "title": "Your Board Training: The 3 Mistakes",
+      "lead": "Watch this short video to discover the three board mistakes I see nonprofit founders and executive directors make and what you can begin doing differently.",
+      "video": {
+        "youtubeId": "KDCnKeJoPRc",
+        "title": "The 3 Board Mistakes Training"
+      },
       "options": {
         "diy": {
           "heading": "Complete Board Fix System",

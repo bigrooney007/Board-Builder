@@ -109,10 +109,10 @@ export default function App() {
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
-          <Route path="/board-reactivation" element={<DirectOfferPage pathway="reactivation" />} />
+          <Route path="/board-reactivation" element={<Navigate to="/" replace />} />
           <Route path="/board-recruitment" element={<DirectOfferPage pathway="recruitment" />} />
           <Route path="/board-fundraising-activation" element={<DirectOfferPage pathway="activation" />} />
-          <Route path="/complete-board-transformation" element={<DirectOfferPage pathway="complete_transformation" />} />
+          <Route path="/complete-board-transformation" element={<Navigate to="/" replace />} />
           <Route path="/board-fix-intake" element={<BoardFixIntakePage />} />
           <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
           <Route path="/board-fix-dashboard" element={<BoardFixRoadmapPage />} />
@@ -144,7 +144,7 @@ export default function App() {
           <Route path="/planning-form/:token" element={<PlanningFormPage />} />
           <Route path="/strategy-review/:token" element={<StrategyReviewPage />} />
           <Route path="/strategy-plan/:token" element={<StrategyPlanPage />} />
-          <Route path="/offer/recruitment" element={<OfferVideoPage offer="recruitment" />} />
+          <Route path="/offer/recruitment" element={<Navigate to="/board-recruitment" replace />} />
           <Route path="/offer/reactivation" element={<OfferVideoPage offer="reactivation" />} />
           <Route path="/offer/activation" element={<OfferVideoPage offer="activation" />} />
           <Route path="/fundraising-portfolio/:token" element={<FundraisingPortfolioPage />} />

@@ -82,7 +82,7 @@ def resolve_diy_price_id() -> str:
 
 
 def resolve_direct_project_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_1497_PRICE_ID", "direct_board_recruitment_project_1497", "Board Recruitment Campaign Launch — Do It With Us", 149700)
+    return resolve_offer_price_id("STRIPE_DIRECT_BOARD_RECRUITMENT_1997_PRICE_ID", "direct_board_recruitment_project_1997", "Recruit My Board With Rooney", 199700)
 
 
 def resolve_board_fix_price_id() -> str:
@@ -107,6 +107,10 @@ def resolve_reactivation_project_price_id() -> str:
 
 def resolve_activation_diy_price_id() -> str:
     return resolve_offer_price_id("STRIPE_DIY_BOARD_ACTIVATION_497_PRICE_ID", "diy_board_activation_497", "Activate Your Board Yourself", 49700)
+
+
+def resolve_activate_with_rooney_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_ACTIVATE_MY_BOARD_WITH_ROONEY_2997_PRICE_ID", "activate_my_board_with_rooney_2997", "Activate My Board With Rooney", 299700)
 
 
 def resolve_activation_project_price_id() -> str:
@@ -272,12 +276,12 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": resolve_direct_project_price_id(), "quantity": 1}],
             "mode": "payment",
-            "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": resolve_cancel_url(payload, "/board-recruitment-proposal"),
+            "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
+            "cancel_url": resolve_cancel_url(payload, "/board-recruitment"),
             "metadata": {
                 "offer_source": "direct_board_recruitment_project",
                 "purchase_source": "direct_board_recruitment_project",
-                "offer": "Board Recruitment Project",
+                "offer": "Recruit My Board With Rooney",
             },
         }
         try:
@@ -293,8 +297,8 @@ def create_payment_router(db) -> APIRouter:
         await db.payment_transactions.insert_one({
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "direct_board_recruitment_project",
             "selected_tier": "direct_project", "purchase_source": "direct_board_recruitment_project",
-            "offer": "Board Recruitment Project",
-            "amount": 149700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "offer": "Recruit My Board With Rooney",
+            "amount": 199700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
@@ -583,6 +587,43 @@ def create_payment_router(db) -> APIRouter:
             "selected_tier": "direct_project", "purchase_source": "direct_board_activation_project_2497",
             "offer": "Board Fundraising Activation Project",
             "amount": 549700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/activate-rooney-checkout")
+    async def create_activate_rooney_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_activate_with_rooney_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/board-activation-intake?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
+            "cancel_url": resolve_cancel_url(payload, "/board-fundraising-activation"),
+            "metadata": {
+                "offer_source": "activate_my_board_with_rooney_2997",
+                "purchase_source": "activate_my_board_with_rooney_2997",
+                "offer": "Activate My Board With Rooney",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url,
+            "offer_source": "activate_my_board_with_rooney_2997",
+            "selected_tier": "direct_project", "purchase_source": "activate_my_board_with_rooney_2997",
+            "offer": "Activate My Board With Rooney",
+            "amount": 299700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
