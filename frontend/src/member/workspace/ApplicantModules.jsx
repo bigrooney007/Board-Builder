@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, FileText, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
-import { MaterialCard, SendMaterialButton, currentVersion, printBranded } from "./MaterialCard";
+import { MaterialCard, SendMaterialButton, currentVersion, downloadMaterialPdf, printBranded } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { recruitmentWorkspaceText, applicantModulesText } from "../../content/appContent";
 

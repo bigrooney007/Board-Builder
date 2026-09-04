@@ -41,6 +41,8 @@ import DirectOfferPage from "@/funnels/DirectOfferPage";
 import FundraisingPortfolioPage from "@/funnels/FundraisingPortfolioPage";
 import CaseForSupportPage from "@/funnels/CaseForSupportPage";
 import MyFundraisingBoardPage from "@/member/MyFundraisingBoardPage";
+import ActivationStartPage from "@/member/ActivationStartPage";
+import ActivationResourcesPage from "@/member/ActivationResourcesPage";
 import { ReactivationOverviewPage, ReactivationModulePage } from "@/member/ReactivationCoursePages";
 import { ActivationOverviewPage, ActivationModulePage } from "@/member/ActivationCoursePages";
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
@@ -150,6 +152,8 @@ export default function App() {
           <Route path="/fundraising-portfolio/:token" element={<FundraisingPortfolioPage />} />
           <Route path="/case-for-support/:token" element={<CaseForSupportPage />} />
           <Route path="/app/activation/self-guided/my-fundraising-board" element={<MyFundraisingBoardPage />} />
+          <Route path="/app/activation/start" element={<ActivationStartPage />} />
+          <Route path="/app/activation/resources" element={<ActivationResourcesPage />} />
           <Route path="/app/activation/self-guided" element={<ActivationOverviewPage />} />
           <Route path="/app/activation/self-guided/module/:moduleNumber" element={<ActivationModulePage />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />

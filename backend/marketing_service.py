@@ -751,6 +751,8 @@ async def marketing_loop(db) -> None:
                 if now.strftime("%A") == day_name and now.strftime("%H:%M") >= send_time:
                     await run_weekly_nurture(db, origin, test_only=False)
             await run_reco_nurture_drip(db, origin)
+            from activation_delivery import run_activation_delivery_checks
+            await run_activation_delivery_checks(db)
         except Exception as exc:
             logger.error("Marketing loop error: %s", exc)
         await asyncio.sleep(300)

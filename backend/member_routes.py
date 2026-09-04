@@ -100,6 +100,9 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "direct_diy_board_activation" and tier == "497":
         entitlement = "activation_self_guided"
         product_name = "Guided Board Fundraising Activation"
+    elif offer_source == "activate_my_board_with_rooney_2997":
+        entitlement = "activation_self_guided"
+        product_name = "Activate My Board With Rooney"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -166,6 +169,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "direct_diy_board_activation_497",
             "offer": "Do It Yourself Board Fundraising Activation", "price_paid": 497,
+        })
+    elif offer_source == "activate_my_board_with_rooney_2997":
+        purchase.update({
+            "purchase_source": "activate_my_board_with_rooney_2997",
+            "offer": "Activate My Board With Rooney", "price_paid": 2997,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
@@ -284,11 +292,13 @@ def create_member_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         entitlements = member.get("entitlements", [])
         products = []
+        activation_route = "/app/activation/self-guided" if "board_fix_system" in entitlements else "/app/activation/start"
+        activation_name = "Board Fundraising Activation — Self-Guided System" if "board_fix_system" in entitlements else "Board Fundraising Activation"
         for entitlement, name, route in [
             ("recruitment_basic", "Board Recruitment — Basic", "/app/recruitment/basic"),
             ("recruitment_self_guided", "Board Recruitment — Self-Guided System", "/app/recruitment/self-guided"),
             ("reactivation_self_guided", "Board Reactivation — Self-Guided System", "/app/reactivation/self-guided"),
-            ("activation_self_guided", "Board Fundraising Activation — Self-Guided System", "/app/activation/self-guided"),
+            ("activation_self_guided", activation_name, activation_route),
         ]:
             if entitlement not in entitlements:
                 continue

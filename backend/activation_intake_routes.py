@@ -15,11 +15,13 @@ from board_fix_master import BOARD_FIX_SOURCE, board_fix_member, get_master_reco
 logger = logging.getLogger(__name__)
 
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
-DIY_START_ROUTE = "/app/activation/self-guided/module/1"
+ACTIVATION_START_ROUTE = "/app/activation/start"
 BOARD_FIX_COURSE_ROUTE = "/app/activation/self-guided/module/2"
-QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497", "board_fundraising_activation_dfy"}
+START_PAGE_SOURCES = {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997"}
+QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997", "direct_board_activation_project_2497", "board_fundraising_activation_dfy"}
 OFFER_LABELS = {
     "direct_diy_board_activation_497": "Fundraising Activation — Do It Yourself — $497",
+    "activate_my_board_with_rooney_2997": "Fundraising Activation — Done With Rooney — $2,997",
     "direct_board_activation_project_2497": "Fundraising Activation — Do It With Rooney — $2,497",
     "board_fundraising_activation_dfy": "Board Fundraising Activation — Done For You — $997",
     BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
@@ -212,7 +214,9 @@ def create_activation_intake_router(db) -> APIRouter:
         if purchase_source == BOARD_FIX_SOURCE:
             next_step = "is continuing on their Complete Board Fix roadmap into Board Fundraising Activation."
         elif purchase_source == "direct_diy_board_activation_497":
-            next_step = "is starting immediately with the self-guided Fundraising Activation system."
+            next_step = "is starting their Board Fundraising Planning setup (Do It Yourself — email-led delivery)."
+        elif purchase_source == "activate_my_board_with_rooney_2997":
+            next_step = "is starting their Board Fundraising Planning setup (Done With Rooney — email-led delivery)."
         else:
             next_step = "is being sent to your Calendly."
         await resend.Emails.send_async({
@@ -230,7 +234,7 @@ def create_activation_intake_router(db) -> APIRouter:
             user_id = await linked_user_id(payload.session_id, transaction)
             purchase_source = transaction["purchase_source"]
             storage_session = payload.session_id
-            redirect_url = DIY_START_ROUTE if purchase_source == "direct_diy_board_activation_497" else CALENDLY_URL
+            redirect_url = ACTIVATION_START_ROUTE if purchase_source in START_PAGE_SOURCES else CALENDLY_URL
         else:
             member = await board_fix_member(request, db, "activation_self_guided")
             user_id = member["user_id"]
@@ -239,7 +243,7 @@ def create_activation_intake_router(db) -> APIRouter:
                 redirect_url = BOARD_FIX_COURSE_ROUTE
             else:
                 purchase_source = "direct_diy_board_activation_497"
-                redirect_url = DIY_START_ROUTE
+                redirect_url = ACTIVATION_START_ROUTE
             storage_session = synthetic_session(user_id)
         record = payload.model_dump()
         record.update({

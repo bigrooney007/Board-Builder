@@ -52,7 +52,12 @@ const ForbiddenCard = () => (
 
 export const ActivationOverviewPage = () => {
   const { course, error, forbidden } = useActivationCourse();
+  const { member } = useMemberAuth();
+  const navigate = useNavigate();
   useEffect(() => { document.title = "Board Fundraising Activation | Nonprofit Board Builder"; }, []);
+  useEffect(() => {
+    if (member && !(member.entitlements || []).includes("board_fix_system")) navigate("/app/activation/start", { replace: true });
+  }, [member, navigate]);
   return (
     <MemberShell>
       <main className="member-page" data-testid="activation-overview">

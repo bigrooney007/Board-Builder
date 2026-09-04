@@ -67,6 +67,22 @@ export const ClientDeliverySection = () => {
     } catch (e) { setMessage(err(e)); }
   };
 
+  const [leadDays, setLeadDays] = useState("");
+  const [leadDaysMessage, setLeadDaysMessage] = useState("");
+  useEffect(() => {
+    client.get("/admin/activation-delivery-settings")
+      .then((r) => setLeadDays(r.data.meeting_readiness_lead_days === null ? "" : String(r.data.meeting_readiness_lead_days)))
+      .catch(() => {});
+  }, []);
+  const saveLeadDays = async () => {
+    setLeadDaysMessage("");
+    try {
+      const value = leadDays === "" ? null : Number(leadDays);
+      await client.put("/admin/activation-delivery-settings", { meeting_readiness_lead_days: value });
+      setLeadDaysMessage(value === null ? "Saved — the meeting-readiness check is OFF until you set a number of days." : `Saved — readiness check runs ${value} day${value === 1 ? "" : "s"} before each client's Board meeting.`);
+    } catch (e) { setLeadDaysMessage(err(e)); }
+  };
+
   return (
     <section data-testid="admin-client-delivery">
       <h2 className="reference-heading">Test Product Journey</h2>
@@ -80,6 +96,13 @@ export const ClientDeliverySection = () => {
       </div>
       <p className="admin-message">The Complete Board Transformation test automatically provisions your member identity from this admin login (same email and password — no separate account to create), grants the normal Complete customer entitlement, logs you in as a member, and opens the real customer intake at /board-fix-intake. No Stripe payment is created and it is excluded from revenue and customer reporting. Your previous test progress is never erased.</p>
       <p className="admin-message" data-testid="test-activation-explainer">The Fundraising Activation test grants your member identity ONLY the Fundraising Activation entitlement (temporarily replacing other test entitlements so you see exactly what a $497 customer sees), logs you in as a member, and opens the real customer intake at /board-activation-intake. No Stripe payment is created. Run the Complete Board Transformation test again any time to restore that access.</p>
+      <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="activation-delivery-settings-heading">Email-Led Activation Settings</h2>
+      <p className="admin-message">How many days BEFORE a Fundraising Activation client's Board meeting should the readiness check run? When it runs and responses are still outstanding, the client is emailed and asked whether to proceed with the responses received so far. Leave the field empty to keep this check off (the separate 3-day outstanding-response reminder always runs).</p>
+      <div className="admin-filters" style={{ alignItems: "center" }}>
+        <input type="number" min="0" max="60" value={leadDays} onChange={(e) => setLeadDays(e.target.value)} placeholder="days" style={{ width: 90 }} data-testid="activation-lead-days-input" />
+        <button className="button button-small" onClick={saveLeadDays} data-testid="activation-lead-days-save">Save</button>
+        {leadDaysMessage && <span className="admin-message" data-testid="activation-lead-days-message">{leadDaysMessage}</span>}
+      </div>
       <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Done-For-You Clients</h2>
       <p className="admin-message">Every verified individual-engagement client. Open a client workspace to operate their Board Ultimate Fix pathway on their behalf.</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}

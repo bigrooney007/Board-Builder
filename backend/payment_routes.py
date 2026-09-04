@@ -600,7 +600,7 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": resolve_activate_with_rooney_price_id(), "quantity": 1}],
             "mode": "payment",
-            "success_url": f"{payload.origin_url}/board-activation-intake?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/board-fundraising-activation"),
             "metadata": {
                 "offer_source": "activate_my_board_with_rooney_2997",

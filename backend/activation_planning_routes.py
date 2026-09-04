@@ -1058,9 +1058,19 @@ def create_activation_planning_router(db) -> APIRouter:
         context_info = await founder_context(user_id)
         completed = await db.activation_participants.find({"user_id": user_id, "status": "COMPLETED"}, {"_id": 0}).to_list(300)
         now = datetime.now(timezone.utc).isoformat()
+        delivery = await db.activation_delivery.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        planning_snapshot = {
+            "expected_responses": delivery.get("expected_planning_responses", 0),
+            "responses_included": len(completed),
+            "participant_ids": [p["participant_id"] for p in completed],
+            "proceed_authorized_with_available": delivery.get("proceed_decision", "") == "yes",
+            "ready_reason": delivery.get("ready_reason", ""),
+            "frozen_at": now,
+        }
         await db.activation_strategies.update_one(
             {"user_id": user_id},
-            {"$set": {"user_id": user_id, "status": "Generating", "generation_error": "", "updated_at": now},
+            {"$set": {"user_id": user_id, "status": "Generating", "generation_error": "",
+                      "planning_snapshot": planning_snapshot, "updated_at": now},
              "$setOnInsert": {"review_version": 0, "review_versions": [], "created_at": now}},
             upsert=True)
         import json as jsonlib

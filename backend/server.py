@@ -216,6 +216,8 @@ from activation_intake_routes import create_activation_intake_router
 app.include_router(create_activation_intake_router(db))
 from activation_planning_routes import create_activation_planning_router
 app.include_router(create_activation_planning_router(db))
+from activation_delivery import create_activation_delivery_router
+app.include_router(create_activation_delivery_router(db))
 from reactivation_routes import create_reactivation_router
 app.include_router(create_reactivation_router(db))
 from admin_service_routes import create_admin_service_router

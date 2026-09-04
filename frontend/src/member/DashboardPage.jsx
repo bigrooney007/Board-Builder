@@ -45,16 +45,23 @@ export const DashboardPage = () => {
         )}
         {data && data.products.map((product) => {
           const productLabel = product.entitlement === "reactivation_self_guided" ? "Board Reactivation" : product.entitlement === "activation_self_guided" ? "Board Fundraising Activation" : "Board Recruitment";
+          const emailLed = product.route === "/app/activation/start";
           return (
           <section className="member-card dashboard-product" key={product.entitlement} data-testid={`dashboard-product-${product.entitlement}`}>
             <p className="eyebrow">{productLabel}</p>
             <h2>{product.name}</h2>
-            <div className="dashboard-product-stats">
-              <div><span>Purchased tier</span><strong data-testid={`dashboard-tier-${product.entitlement}`}>{product.entitlement === "recruitment_basic" ? "$97 Basic" : "Self-Guided System"}</strong></div>
-              <div><span>Course progress</span><strong data-testid={`dashboard-progress-${product.entitlement}`}>{product.percent_complete}% · {product.modules_completed} of {product.modules_total} modules</strong></div>
-              <div><span>Last module visited</span><strong data-testid={`dashboard-last-module-${product.entitlement}`}>{product.last_module ? `Module ${product.last_module.number}: ${product.last_module.title}` : "Not started yet"}</strong></div>
-            </div>
-            <div className="dashboard-progress-bar"><i style={{ width: `${product.percent_complete}%` }} /></div>
+            {emailLed ? (
+              <p data-testid="dashboard-activation-email-led">Set up your Board Fundraising Planning process once — after that, we track your Board's responses and keep you updated by email.</p>
+            ) : (
+              <>
+                <div className="dashboard-product-stats">
+                  <div><span>Purchased tier</span><strong data-testid={`dashboard-tier-${product.entitlement}`}>{product.entitlement === "recruitment_basic" ? "$97 Basic" : "Self-Guided System"}</strong></div>
+                  <div><span>Course progress</span><strong data-testid={`dashboard-progress-${product.entitlement}`}>{product.percent_complete}% · {product.modules_completed} of {product.modules_total} modules</strong></div>
+                  <div><span>Last module visited</span><strong data-testid={`dashboard-last-module-${product.entitlement}`}>{product.last_module ? `Module ${product.last_module.number}: ${product.last_module.title}` : "Not started yet"}</strong></div>
+                </div>
+                <div className="dashboard-progress-bar"><i style={{ width: `${product.percent_complete}%` }} /></div>
+              </>
+            )}
             <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-continue-${product.entitlement}`}>Continue {productLabel} <ArrowRight size={16} /></button>
           </section>
           );

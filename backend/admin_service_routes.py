@@ -53,12 +53,16 @@ DWM_OFFERS = {
     "activate_my_board_with_rooney_2997": {
         "product": "activation", "offer": "Activate My Board With Rooney ($2,997)",
         "entitlement": "activation_self_guided", "intake_collection": "board_activation_intakes",
-        "entry_route": "/app/activation/self-guided/module/1",
+        "entry_route": "/app/activation/start",
     },
 }
 
 ENGAGEMENT_STATUSES = {"Active", "Paused", "Completed"}
 MEETING_STATUSES = {"Not Booked", "Booking Link Sent", "Booked"}
+
+
+class ActivationDeliverySettings(BaseModel):
+    meeting_readiness_lead_days: Optional[int] = None
 
 
 def create_admin_service_router(db) -> APIRouter:
@@ -153,6 +157,26 @@ def create_admin_service_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Client not found")
         return {"status": "ok"}
 
+    @router.get("/activation-delivery-settings")
+    async def get_activation_delivery_settings(request: Request):
+        await authenticate_admin(request, db)
+        doc = await db.marketing_settings.find_one({"key": "activation_delivery"}, {"_id": 0}) or {}
+        value = doc.get("meeting_readiness_lead_days")
+        return {"meeting_readiness_lead_days": value if isinstance(value, int) else None}
+
+    @router.put("/activation-delivery-settings")
+    async def put_activation_delivery_settings(payload: ActivationDeliverySettings, request: Request):
+        await authenticate_admin(request, db)
+        value = payload.meeting_readiness_lead_days
+        if value is not None and not (0 <= value <= 60):
+            raise HTTPException(status_code=422, detail="Enter a number of days between 0 and 60, or clear the field to keep the check off")
+        await db.marketing_settings.update_one(
+            {"key": "activation_delivery"},
+            {"$set": {"meeting_readiness_lead_days": value,
+                      "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True)
+        return {"status": "saved", "meeting_readiness_lead_days": value}
+
     @router.post("/dwm-clients/{session_id}/workspace")
     async def open_workspace(session_id: str, request: Request):
         await authenticate_admin(request, db)
@@ -162,6 +186,19 @@ def create_admin_service_router(db) -> APIRouter:
         if not tx:
             raise HTTPException(status_code=404, detail="No verified Do-With-You purchase found for this client")
         meta = DWM_OFFERS[tx["purchase_source"]]
+        claimed_uid = tx.get("claimed_by_user_id", "")
+        if claimed_uid:
+            real = await db.members.find_one({"user_id": claimed_uid}, {"_id": 0, "password_hash": 0})
+            if real:
+                intake = await intake_for(session_id, meta["intake_collection"])
+                if not real.get("operator_workspace"):
+                    await db.members.update_one(
+                        {"user_id": claimed_uid},
+                        {"$set": {"operator_workspace": True, "workspace_session_id": session_id,
+                                  "workspace_product": meta["product"],
+                                  "organization_name": real.get("organization_name", "") or intake.get("organization_name", "")}})
+                    real["organization_name"] = real.get("organization_name", "") or intake.get("organization_name", "")
+                return {"status": "exists", "workspace": _workspace_view(real, meta)}
         existing = await db.members.find_one(
             {"operator_workspace": True, "workspace_session_id": session_id}, {"_id": 0, "password_hash": 0})
         if existing:
