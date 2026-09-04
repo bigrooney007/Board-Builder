@@ -30,11 +30,11 @@ const LeadMagnetForm = ({ location }) => {
     }
   };
   return (
-    <form className="lead-magnet-form" onSubmit={submit} data-testid={`${location}-lead-magnet-form`} style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 12, maxWidth: 460 }}>
-      <p style={{ margin: 0 }}><strong>{home.leadFormPrompt}</strong></p>
-      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" aria-label="Name" data-testid={`${location}-lead-name-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem" }} />
-      <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" aria-label="Email" data-testid={`${location}-lead-email-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem" }} />
-      <button type="submit" className="button button-light" disabled={busy} data-testid={`${location}-lead-submit-button`}>
+    <form className="lead-magnet-form" onSubmit={submit} data-testid={`${location}-lead-magnet-form`} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 460, margin: "0 auto", textAlign: "center" }}>
+      <p style={{ margin: 0, fontSize: "1.05rem", textAlign: "center" }}><strong>{home.leadFormPrompt}</strong></p>
+      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" aria-label="Name" data-testid={`${location}-lead-name-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem", textAlign: "center" }} />
+      <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" aria-label="Email" data-testid={`${location}-lead-email-input`} style={{ padding: "12px 14px", borderRadius: 6, border: "1px solid #cfd6d2", fontSize: "1rem", textAlign: "center" }} />
+      <button type="submit" className="button" disabled={busy} data-testid={`${location}-lead-submit-button`} style={{ justifyContent: "center" }}>
         {busy ? "One moment…" : home.leadFormCta} <ArrowRight size={16} />
       </button>
       {error && <p className="submit-error" data-testid={`${location}-lead-error`}>{error}</p>}
@@ -58,8 +58,11 @@ export const LandingPage = ({ onJoin }) => (
       <div className="hero-banner-inner">
         <h1 data-testid="hero-headline">{home.heroTitle}</h1>
         <p className="hero-banner-lead" data-testid="hero-supporting-text"><strong>{home.heroSubtitle}</strong></p>
-        <LeadMagnetForm location="hero" />
       </div>
+    </section>
+
+    <section className="lead-magnet-section" data-testid="lead-magnet-section" style={{ padding: "56px 24px", display: "flex", justifyContent: "center", textAlign: "center" }}>
+      <LeadMagnetForm location="hero" />
     </section>
 
     <TestimonialsSection />
