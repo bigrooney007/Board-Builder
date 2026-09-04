@@ -78,9 +78,10 @@ export const BlogPostPage = () => {
             </header>
             <article className="blog-article-body" data-testid="article-body">{renderBody(post.body)}</article>
             <section className="blog-cta" data-testid="article-cta">
-              <h2>Tell us about your board and what you want to achieve with your board</h2>
-              <p>We'll show you what you need to do to transform your board and build a high-performing board.</p>
-              <a className="button" href="/board-transformation" data-testid="article-cta-button">TELL US ABOUT YOUR BOARD <ArrowRight size={16} /></a>
+              <h2>Fix Your Board Yourself</h2>
+              <p><strong>You don't have to pay thousands of dollars to a consultant to fix your board.</strong></p>
+              <p>Answer four short questions about your Board and we will show you what your Board needs and the process you can use to fix it yourself.</p>
+              <a className="button" href="/offer/board-fix" data-testid="article-cta-button">TELL ME WHAT MY BOARD NEEDS <ArrowRight size={16} /></a>
             </section>
             <p><Link to="/blog" className="blog-read-link">Read All Articles</Link></p>
           </>

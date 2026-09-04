@@ -571,6 +571,9 @@ const ReferenceEmailsPanel = ({ application }) => {
       <MaterialCard type="reference_call_script" title="Reference Call Guide" buttonLabel="Generate Reference Call Guide"
         description="A guide for speaking with this candidate's referees directly — what to ask and what to listen for."
         applicationId={application.application_id} material={byType.reference_call_script} refresh={refresh} />
+      <MaterialCard type="reference_evaluation_form" title="Reference Record & Evaluation Form" buttonLabel="Generate Reference Record & Evaluation Form"
+        description="A consistent internal form for recording what each referee actually said. You review the evidence and decide how to proceed — nothing here passes or fails a candidate for you."
+        applicationId={application.application_id} material={byType.reference_evaluation_form} refresh={refresh} />
     </div>
   );
 };
@@ -912,9 +915,6 @@ export const Module6Onboarding = () => {
       )}
       <section className="workspace-panel" data-testid="module6-script-section">
         <h2>{recruitmentWorkspaceText.h_prepareForYourBoardOnboarding}</h2>
-        <MaterialCard type="onboarding_agenda" title="Onboarding Agenda" buttonLabel="Generate Onboarding Agenda"
-          description="A participant-facing agenda for your onboarding session — one approved agenda is reused for the whole session/cohort rather than regenerated per member. It moves from welcome through the organization, Board service, expectations, documents and next steps."
-          material={orgMaterials.onboarding_agenda} refresh={refreshOrg} approvable />
         <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate Onboarding Facilitation Guide"
           description="A complete read-through facilitation guide you can have open during the onboarding session — with the actual words to say for the welcome, the organization story, the role of the Board, the strengths-and-contribution discussion, the documents review and closing, plus after-session actions including recording each member's Onboarding Conclusion / Role Agreement."
           material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />

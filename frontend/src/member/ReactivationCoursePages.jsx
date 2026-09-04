@@ -10,6 +10,7 @@ import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
 import { BoardFixContinuation } from "./BoardFixContinuation";
+import { StepInstructions } from "./StepInstructions";
 import { bufStep } from "./bufJourney";
 import { reactivationContent, sharedCourseContent, reactivationCoursePagesText } from "../content/appContent";
 
@@ -142,7 +143,7 @@ export const ReactivationModulePage = () => {
               <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Step ${module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="reactivation-module-title">{module.title}</h1>
             </header>
-            {<VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
+            {number === 3 ? <StepInstructions stepKey="reactivation-3" /> : <VideoBlock module={module} testPrefix={`reactivation-module-${module.number}`} />}
             <StepShell moduleNumber={number} />
             {number === 3 && <BoardFixContinuation label="Continue to Identify the Board Members You Need" to="/app/recruitment/self-guided/module/2" />}
             <div className="module-nav" data-testid="reactivation-module-navigation">

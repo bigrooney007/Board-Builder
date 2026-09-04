@@ -6,6 +6,7 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { SupportBox, VideoBlock } from "./CoursePages";
 import { BoardFixContinuation } from "./BoardFixContinuation";
+import { StepInstructions } from "./StepInstructions";
 import { bufStep } from "./bufJourney";
 import ActivationModule2 from "./ActivationModule2";
 import ActivationModule3 from "./ActivationModule3";
@@ -150,7 +151,11 @@ export const ActivationModulePage = () => {
               <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Module ${module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="activation-module-title">{module.title}</h1>
             </header>
-            <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
+            {number >= 2 ? (
+              <StepInstructions stepKey={`activation-${number}`} />
+            ) : (
+              <VideoBlock module={module} testPrefix={`activation-module-${module.number}`} placeholderTitle={activationContent.videoPlaceholder} />
+            )}
             <ModuleShell moduleNumber={number} />
             {number === course.modules.length && <BoardFixContinuation label="Go to Your Board Fix Dashboard" to="/board-fix-roadmap" />}
             <div className="module-nav" data-testid="activation-module-navigation">

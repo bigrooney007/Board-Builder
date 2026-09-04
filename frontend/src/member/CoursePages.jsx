@@ -9,6 +9,7 @@ import { Module3Launch } from "./workspace/WorkspaceModules";
 import { recruitmentContent, sharedCourseContent, coursePagesText } from "../content/appContent";
 import { Module4Applicants, Module5References, Module6Onboarding } from "./workspace/ApplicantModules";
 import { BoardFixContinuation } from "./BoardFixContinuation";
+import { StepInstructions } from "./StepInstructions";
 import { bufStep } from "./bufJourney";
 
 const PRODUCT_META = {
@@ -238,7 +239,11 @@ export const CourseModulePage = ({ productSlug }) => {
               <p className="eyebrow">{buf ? `Complete Board Fix — Step ${buf.stepNumber} of ${buf.totalSteps}` : `Step ${module.position || module.number} of ${course.modules.length}`}</p>
               <h1 data-testid="module-title">{module.title}</h1>
             </header>
-            <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
+            {productSlug === "self-guided" && number >= 2 ? (
+              <StepInstructions stepKey={`recruitment-${number}`} />
+            ) : (
+              <VideoBlock module={module} testPrefix={`module-${module.number}`} placeholderTitle={module.number === 1 ? "Board Recruitment Training Video Coming Soon" : undefined} />
+            )}
             {productSlug === "basic" ? <BasicResources module={module} /> : <SelfGuidedWorkspace moduleNumber={number} />}
             {number === course.modules[course.modules.length - 1]?.number && <BoardFixContinuation label="Continue to Plan Your Board Fundraising" to="/app/activation/self-guided/module/2" />}
             <div className="module-nav" data-testid="module-navigation">
