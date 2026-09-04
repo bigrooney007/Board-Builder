@@ -488,6 +488,34 @@ def create_board_fix_router(db) -> APIRouter:
         set_member_cookie(response, create_member_token(user_id, email))
         return {"intake_url": "/board-fix-intake", "member_email": email}
 
+    @router.post("/admin/board-fix/activation-preview-access")
+    async def admin_activation_preview_access(request: Request, response: Response):
+        """Super-Admin-only: provision the admin's member identity with ONLY the Fundraising Activation entitlement (no Stripe)."""
+        admin = await authenticate_admin(request, db)
+        email = (admin.get("email") or "").lower()
+        now = now_iso()
+        member = await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1})
+        if member:
+            user_id = member["user_id"]
+        else:
+            admin_user = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 1})
+            if not admin_user or not admin_user.get("password_hash"):
+                raise HTTPException(status_code=500, detail="Your admin account record could not be loaded to provision member access. Please try again.")
+            user_id = str(uuid.uuid4())
+            first_name = (email.split("@")[0] or "Member").split(".")[0].capitalize()
+            await db.members.insert_one({
+                "user_id": user_id, "email": email,
+                "password_hash": admin_user["password_hash"],
+                "first_name": first_name, "last_name": "",
+                "entitlements": [], "lead_ids": [], "stripe_customer_id": "",
+                "created_at": now, "updated_at": now,
+            })
+        await db.members.update_one(
+            {"user_id": user_id},
+            {"$set": {"entitlements": ["activation_self_guided"], "internal_admin_entitlement": True, "updated_at": now}})
+        set_member_cookie(response, create_member_token(user_id, email))
+        return {"intake_url": "/board-activation-intake?bf=1", "member_email": email}
+
     @router.get("/admin/board-fix/customers")
     async def admin_customers(request: Request):
         await authenticate_admin(request, db)

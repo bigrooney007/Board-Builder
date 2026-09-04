@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Download, Mail, X } from "lucide-react";
 import { memberApi } from "./api";
 import { MemberShell } from "./MemberShell";
+import { useMemberAuth } from "./MemberAuthContext";
 import { myFundraisingBoardText, myFundraisingBoardPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -19,6 +20,7 @@ const Modal = ({ children, onClose, testId }) => (
 );
 
 export default function MyFundraisingBoardPage() {
+  const { member } = useMemberAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [viewDoc, setViewDoc] = useState(null);
@@ -64,6 +66,7 @@ export default function MyFundraisingBoardPage() {
   };
 
   if (error) return <MemberShell><main className="member-page"><p className="submit-error" data-testid="mfb-error">{error}</p></main></MemberShell>;
+  if (member && !(member.entitlements || []).includes("board_fix_system")) return <Navigate to="/app/activation/self-guided/module/5" replace />;
   if (!data) return <MemberShell><main className="member-page"><p className="sh-loading">{myFundraisingBoardPageText.loadingMyFundraisingBoard}</p></main></MemberShell>;
 
   return (

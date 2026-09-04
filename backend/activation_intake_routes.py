@@ -15,7 +15,7 @@ from board_fix_master import BOARD_FIX_SOURCE, board_fix_member, get_master_reco
 logger = logging.getLogger(__name__)
 
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
-DIY_START_ROUTE = "/activation-start-here"
+DIY_START_ROUTE = "/app/activation/self-guided/module/1"
 BOARD_FIX_COURSE_ROUTE = "/app/activation/self-guided/module/2"
 QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "direct_board_activation_project_2497", "board_fundraising_activation_dfy"}
 OFFER_LABELS = {
@@ -147,7 +147,7 @@ def create_activation_intake_router(db) -> APIRouter:
         else:
             member = await board_fix_member(request, db, "activation_self_guided")
             user_id = member["user_id"]
-            purchase_source = BOARD_FIX_SOURCE
+            purchase_source = BOARD_FIX_SOURCE if "board_fix_system" in (member.get("entitlements") or []) else "direct_diy_board_activation_497"
             existing = await db.board_activation_intakes.find_one(
                 {"$or": [{"session_id": synthetic_session(user_id)}, {"user_id": user_id}]}, {"_id": 0, "submitted_at": 1})
         prefill = {"name": "", "email": ""}
@@ -234,9 +234,13 @@ def create_activation_intake_router(db) -> APIRouter:
         else:
             member = await board_fix_member(request, db, "activation_self_guided")
             user_id = member["user_id"]
-            purchase_source = BOARD_FIX_SOURCE
+            if "board_fix_system" in (member.get("entitlements") or []):
+                purchase_source = BOARD_FIX_SOURCE
+                redirect_url = BOARD_FIX_COURSE_ROUTE
+            else:
+                purchase_source = "direct_diy_board_activation_497"
+                redirect_url = DIY_START_ROUTE
             storage_session = synthetic_session(user_id)
-            redirect_url = BOARD_FIX_COURSE_ROUTE
         record = payload.model_dump()
         record.update({
             "session_id": storage_session,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Circle, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
@@ -75,12 +75,6 @@ export const ActivationOverviewPage = () => {
                 </Link>
               ))}
             </div>
-            <section className="member-card" style={{ marginTop: 18 }} data-testid="activation-my-fundraising-board-preview">
-              <p className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}><LayoutDashboard size={15} aria-hidden="true" /> {activationContent.overview.previewEyebrow}</p>
-              <h2 style={{ margin: "6px 0" }}>{activationContent.overview.previewHeading}</h2>
-              <p style={{ margin: 0 }}>{activationContent.overview.previewBody}</p>
-              <Link className="button" style={{ marginTop: 12 }} to="/app/activation/self-guided/my-fundraising-board" data-testid="activation-open-my-fundraising-board">{activationContent.overview.previewButton}</Link>
-            </section>
           </>
         )}
       </main>
@@ -155,7 +149,9 @@ export const ActivationModulePage = () => {
             {number >= 2 && <StepInstructions stepKey={`activation-${number}`} />}
             <ModuleShell moduleNumber={number} />
             <div className="module-nav" data-testid="activation-module-navigation">
-              <button className="button button-back" disabled={buf ? false : number <= 1} onClick={() => navigate(buf ? buf.prev : `${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
+              {(buf || number > 1) ? (
+                <button className="button button-back" onClick={() => navigate(buf ? buf.prev : `${META.base}/module/${number - 1}`)} data-testid="activation-previous-button"><ArrowLeft size={16} /> Previous Module</button>
+              ) : <span />}
               {(buf || number < course.modules.length) ? (
                 <button className="button" disabled={marking} onClick={nextStep} data-testid="activation-next-step-button">NEXT STEP <ArrowRight size={16} /></button>
               ) : (

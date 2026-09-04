@@ -57,7 +57,7 @@ export const PurchaseSuccessPage = () => {
         } else if (response.data.claimed_source === "direct_diy_board_reactivation_497") {
           navigate(`/board-reactivation-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "direct_diy_board_activation_497") {
-          navigate("/app/activation/self-guided/module/1");
+          navigate(`/board-activation-intake?session_id=${sessionId}`);
         }
       } catch (err) { setError(err.response?.data?.detail || "We could not link this purchase to your account."); }
     };
@@ -92,7 +92,7 @@ export const PurchaseSuccessPage = () => {
       } else if (claimedSource === "direct_diy_board_reactivation_497") {
         navigate(`/board-reactivation-intake?session_id=${sessionId}`);
       } else if (claimedSource === "direct_diy_board_activation_497") {
-        navigate("/app/activation/self-guided/module/1");
+        navigate(`/board-activation-intake?session_id=${sessionId}`);
       } else {
         navigate(claimedNow === "recruitment_self_guided" ? "/app/recruitment/self-guided/module/1" : claimedNow === "recruitment_basic" ? "/app/recruitment/basic/module/1" : "/app");
       }

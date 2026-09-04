@@ -209,7 +209,7 @@ export default function BoardActivationIntakePage() {
               <>
                 <h2>{activationIntakeText.h_youreReadyToStart}</h2>
                 <p>{boardActivationIntakePageText.takingYouToYourStart}</p>
-                <a className="button" href={nextUrl || "/activation-start-here"} data-testid="aintake-start-here-link">{boardActivationIntakePageText.openMyStartPage}</a>
+                <a className="button" href={nextUrl || "/app/activation/self-guided/module/1"} data-testid="aintake-start-here-link">{boardActivationIntakePageText.openMyStartPage}</a>
               </>
             ) : (
               <>

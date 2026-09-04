@@ -240,10 +240,6 @@ export default function ActivationModule5() {
         </>
       )}
 
-      <section style={{ textAlign: "center", margin: "26px 0" }} data-testid="am5-dashboard-nav">
-        <Link className="button rwr-cta-button" to="/app/activation/self-guided/my-fundraising-board" data-testid="am5-dashboard-button">{activationContent.overview.previewButton}</Link>
-      </section>
-
       {showEdit && (
         <Modal onClose={() => setShowEdit(false)} testId="am5-edit-modal">
           <h2>{activationM5Text.h_editExecutionToolkit}</h2>
