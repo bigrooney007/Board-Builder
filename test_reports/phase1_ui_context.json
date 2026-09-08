@@ -1,23 +1,23 @@
 {
   "tag": "20260808234139",
-  "base_url": "https://buf-preview.preview.emergentagent.com",
+  "base_url": "https://board-drip.preview.emergentagent.com",
   "leads": {
     "recruitment": {
-      "result_url": "https://buf-preview.preview.emergentagent.com/recruit/result/hzRb9xgt0WeDDR1b7Hn7cpvmvlewGaJORgkdtBGwS10",
+      "result_url": "https://board-drip.preview.emergentagent.com/recruit/result/hzRb9xgt0WeDDR1b7Hn7cpvmvlewGaJORgkdtBGwS10",
       "token": "hzRb9xgt0WeDDR1b7Hn7cpvmvlewGaJORgkdtBGwS10",
       "lead_id": "NBB-L-20260808-6E0611DF",
       "offer_source": "recruitment",
       "organization": "QA Recruit Org"
     },
     "reactivation": {
-      "result_url": "https://buf-preview.preview.emergentagent.com/reactivate/result/cL-L1BOfxJcH6KqfMztD0x5V2Q5itAOZalSSTDkV5OQ",
+      "result_url": "https://board-drip.preview.emergentagent.com/reactivate/result/cL-L1BOfxJcH6KqfMztD0x5V2Q5itAOZalSSTDkV5OQ",
       "token": "cL-L1BOfxJcH6KqfMztD0x5V2Q5itAOZalSSTDkV5OQ",
       "lead_id": "NBB-L-20260808-38647D47",
       "offer_source": "reactivation",
       "organization": "QA React Org"
     },
     "fundraising_activation": {
-      "result_url": "https://buf-preview.preview.emergentagent.com/activate/result/15xb58Jbay-dJZg1-iKFB0Tv7B5XVTJr2KPAFkemdik",
+      "result_url": "https://board-drip.preview.emergentagent.com/activate/result/15xb58Jbay-dJZg1-iKFB0Tv7B5XVTJr2KPAFkemdik",
       "token": "15xb58Jbay-dJZg1-iKFB0Tv7B5XVTJr2KPAFkemdik",
       "lead_id": "NBB-L-20260808-689611C6",
       "offer_source": "fundraising_activation",

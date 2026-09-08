@@ -49,12 +49,21 @@ export default function BoardFixIntakePage() {
   const [busy, setBusy] = useState(false);
   const [bylawsFile, setBylawsFile] = useState(null);
   const [existingBylaws, setExistingBylaws] = useState("");
+  const [purchaseSource, setPurchaseSource] = useState("");
+  const [contact, setContact] = useState({ name: "", email: "" });
+  const isFbb = purchaseSource === "fundraising_board_builder_497";
 
   useEffect(() => { document.title = "Complete Board Fix Intake | Nonprofit Board Builder"; }, []);
 
   useEffect(() => {
     axios.get(`${API}/board-fix-intake/context`, { params: sessionId ? { session_id: sessionId } : {}, withCredentials: true })
-      .then((r) => { setState(r.data.eligible ? "ready" : "blocked"); setData(r.data.data || {}); setExistingBylaws(r.data.bylaws_filename || ""); })
+      .then((r) => {
+        setState(r.data.eligible ? "ready" : "blocked");
+        setData(r.data.data || {});
+        setExistingBylaws(r.data.bylaws_filename || "");
+        setPurchaseSource(r.data.purchase_source || "");
+        if (r.data.contact_prefill) setContact({ name: r.data.contact_prefill.name || "", email: r.data.contact_prefill.email || "" });
+      })
       .catch((err) => {
         if (!sessionId && err.response?.status === 401) {
           window.location.replace(`/login?next=${encodeURIComponent("/board-fix-intake")}`);
@@ -69,9 +78,13 @@ export default function BoardFixIntakePage() {
     setError("");
     const missing = SECTIONS.flatMap((s) => s.fields).filter((f) => f.required !== false && !(data[f.name] || "").trim());
     if (missing.length) { setError(`Please complete: ${missing.map((f) => f.label).join("; ")}`); return; }
+    if (isFbb && (!contact.name.trim() || !contact.email.trim())) { setError("Enter your name and email so we can create your customer account."); return; }
     setBusy(true);
     try {
-      const response = await axios.post(`${API}/board-fix-intake/submit`, { session_id: sessionId, data }, { withCredentials: true });
+      const response = await axios.post(`${API}/board-fix-intake/submit`, {
+        session_id: sessionId, data,
+        contact_name: contact.name, contact_email: contact.email, origin_url: window.location.origin,
+      }, { withCredentials: true });
       if (bylawsFile) {
         try {
           const upload = new FormData();
@@ -81,6 +94,7 @@ export default function BoardFixIntakePage() {
         } catch { /* bylaws are optional — never block completion */ }
       }
       const destination = response.data.redirect_url || "/board-fix-roadmap";
+      if (destination === "/app") { window.location.href = "/app"; return; }
       if (destination.startsWith("http")) { window.location.href = destination; return; }
       navigate(destination);
     } catch (err) {
@@ -97,9 +111,9 @@ export default function BoardFixIntakePage() {
     <FunnelLayout restrained>
       <main className="funnel-page" data-testid="board-fix-intake-page">
         <header className="funnel-hero-banner">
-          <p className="eyebrow">Complete Board Fix</p>
-          <h1 data-testid="board-fix-intake-headline">Tell Us Everything About Your Board</h1>
-          <p>This information personalizes your entire Complete Board Fix experience. You will not have to enter it again.</p>
+          <p className="eyebrow">{isFbb ? "Fundraising Board Builder" : "Complete Board Fix"}</p>
+          <h1 data-testid="board-fix-intake-headline">{isFbb ? "Tell Us About Your Organization" : "Tell Us Everything About Your Board"}</h1>
+          <p>{isFbb ? "This information personalizes the tools, documents and materials you will use throughout the process. You will not have to enter it again." : "This information personalizes your entire Complete Board Fix experience. You will not have to enter it again."}</p>
         </header>
         {state === "loading" && <p data-testid="board-fix-intake-loading">{sessionId ? "Please wait while we verify your payment with Stripe." : "Please wait while we verify your Complete Board Fix access."}</p>}
         {state === "blocked" && (
@@ -110,6 +124,18 @@ export default function BoardFixIntakePage() {
         )}
         {state === "ready" && (
           <form className="intake-form" onSubmit={submit} data-testid="board-fix-intake-form">
+            {isFbb && (
+              <section className="member-card" data-testid="fbb-contact-section">
+                <h2>Your Contact Information</h2>
+                <p>We will use this to create your customer account and email you your login details.</p>
+                <label className="intake-field">Your name
+                  <input value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} data-testid="fbb-contact-name" />
+                </label>
+                <label className="intake-field">Email address
+                  <input type="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} data-testid="fbb-contact-email" />
+                </label>
+              </section>
+            )}
             {SECTIONS.map((section) => (
               <section className="member-card" key={section.heading}>
                 <h2>{section.heading}</h2>
@@ -138,7 +164,7 @@ export default function BoardFixIntakePage() {
               )}
             </section>
             {error && <p className="submit-error" data-testid="board-fix-intake-error">{error}</p>}
-            <button className="button" type="submit" disabled={busy} data-testid="board-fix-intake-submit">{busy ? "Saving…" : "Save and Continue to My Board Fix Roadmap"}</button>
+            <button className="button" type="submit" disabled={busy} data-testid="board-fix-intake-submit">{busy ? "Saving…" : isFbb ? "Complete My Intake" : "Save and Continue to My Board Fix Roadmap"}</button>
           </form>
         )}
       </main>

@@ -18,6 +18,7 @@ export const DashboardPage = () => {
     if (!member) { navigate("/login"); return; }
     memberApi.get("/members/dashboard").then((response) => {
       setData(response.data);
+      if (response.data.fbb) return;
       const hasRecruitment = response.data.products.some((p) => !p.entitlement.startsWith("reactivation_") && !p.entitlement.startsWith("activation_"));
       if (hasRecruitment) {
         memberApi.get("/workspace/applications").then((r) => {
@@ -43,7 +44,15 @@ export const DashboardPage = () => {
             <p>{dashboardPageText.yourAccountDoesNotInclude}</p>
           </div>
         )}
-        {data && data.products.map((product) => {
+        {data && data.fbb && data.products.map((product) => (
+          <section className="member-card dashboard-product" key={product.entitlement} data-testid={`dashboard-product-${product.entitlement}`}>
+            <p className="eyebrow">Fundraising Board Builder</p>
+            <h2>{product.name}</h2>
+            <p>{product.description}</p>
+            <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-open-${product.entitlement}`}>Open {product.name} <ArrowRight size={16} /></button>
+          </section>
+        ))}
+        {data && !data.fbb && data.products.map((product) => {
           const productLabel = product.entitlement === "reactivation_self_guided" ? "Board Reactivation" : product.entitlement === "activation_self_guided" ? "Board Fundraising Activation" : "Board Recruitment";
           const emailLed = product.route === "/app/activation/start";
           return (

@@ -53,6 +53,10 @@ import { CourseOverviewPage, CourseModulePage } from "@/member/CoursePages";
 import { MaterialsLibraryPage } from "@/member/workspace/MaterialsLibrary";
 import SelectionOfferPage from "@/member/SelectionOfferPage";
 import BoardFixIntakePage from "@/funnels/BoardFixIntakePage";
+import FundraisingBoardBuilderOfferPage from "@/funnels/FundraisingBoardBuilderOfferPage";
+import WelcomePage from "@/member/WelcomePage";
+import FundraisingActivationPage from "@/member/FundraisingActivationPage";
+import BoardRecruitmentPage from "@/member/BoardRecruitmentPage";
 import BoardFixRoadmapPage from "@/member/BoardFixRoadmapPage";
 import BoardFixOrientationPage from "@/member/BoardFixOrientationPage";
 import RecruitmentResultsPage from "@/member/workspace/ResultsPage";
@@ -111,6 +115,8 @@ export default function App() {
           <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
+          <Route path="/offer/fundraising-board-builder" element={<FundraisingBoardBuilderOfferPage />} />
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/board-reactivation" element={<Navigate to="/" replace />} />
           <Route path="/board-recruitment" element={<DirectOfferPage pathway="recruitment" />} />
           <Route path="/board-fundraising-activation" element={<DirectOfferPage pathway="activation" />} />
@@ -166,6 +172,8 @@ export default function App() {
           <Route path="/terms" element={<LegalPage type="terms" />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
+          <Route path="/app/fundraising-activation" element={<FundraisingActivationPage />} />
+          <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

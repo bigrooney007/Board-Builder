@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FunnelLayout } from "./FunnelLayout";
-import { BoardFixQualifier } from "./BoardFixQualifier";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { SITE_CONTENT } from "@/content/siteContent";
 
@@ -67,6 +66,17 @@ export default function OfferVideoPage({ offer }) {
   const endpoints = CHECKOUT_ENDPOINTS[offer];
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
+  const [flowVideoId, setFlowVideoId] = useState("");
+
+  useEffect(() => {
+    if (offer !== "board-fix") return;
+    axios.get(`${API}/flow-videos`).then((r) => {
+      const flow = (r.data.videos || []).find((v) => v.key === "three_mistakes");
+      if (flow?.youtube_id) setFlowVideoId(flow.youtube_id);
+    }).catch(() => {});
+  }, [offer]);
+
+  const videoId = offer === "board-fix" && flowVideoId ? flowVideoId : content.video?.youtubeId;
 
   useEffect(() => {
     if (!content.video) return;
@@ -108,15 +118,17 @@ export default function OfferVideoPage({ offer }) {
           <div className="offer-sales-container">
             {content.video && (
             <div className="module-video offer-sales-video" data-testid={`offer-video-embed-${offer}`}>
-              {content.video.youtubeId ? (
-                <iframe src={`https://www.youtube.com/embed/${content.video.youtubeId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              {videoId ? (
+                <iframe src={`https://www.youtube.com/embed/${videoId}`} title={content.video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
               ) : (
                 <div className="offer-video-placeholder" data-testid={`offer-video-placeholder-${offer}`}><p>{content.video.title}</p><span>Video coming soon</span></div>
               )}
             </div>
             )}
             {offer === "board-fix" ? (
-              <BoardFixQualifier />
+              <section className="offer-sales-offers" data-testid="see-the-offer-cta" style={{ textAlign: "center" }}>
+                <a className="button" href="/offer/fundraising-board-builder" data-testid="see-offer-button" style={{ fontSize: "1.15rem", padding: "16px 34px", display: "inline-flex", justifyContent: "center" }}>50% OFF: SEE THE OFFER</a>
+              </section>
             ) : offer === "recruitment" ? (
               <CampaignLaunchOffer content={content.campaignLaunch} shared={shared} />
             ) : (

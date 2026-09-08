@@ -3,7 +3,7 @@
   "blocking_defect_502_fix": {
     "fixed": true,
     "evidence": {
-      "public_url": "https://buf-preview.preview.emergentagent.com",
+      "public_url": "https://board-drip.preview.emergentagent.com",
       "post_response_time_seconds": 0.10,
       "post_response_body": {"material_id": "61a5ccbe-ffea-48fb-a314-36a4d55407a4", "status": "Generating"},
       "duplicate_post_returns_same_material_id": true,

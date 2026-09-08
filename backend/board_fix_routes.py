@@ -1,9 +1,12 @@
 """Complete Board Fix: post-payment intake, master customer record, roadmap, admin journey view."""
+import html
 import logging
 import os
+import secrets
 import uuid
 from datetime import datetime, timezone
 
+import resend
 import stripe
 from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
@@ -12,11 +15,12 @@ from ai_service import extract_cv_text
 from auth_service import authenticate_admin
 from board_fix_master import BOARD_FIX_SOURCE, get_master_record, master_prefill, synthetic_session
 from course_content import ACTIVATION_MODULES, REACTIVATION_MODULES, SELF_GUIDED_MODULES
-from member_auth import authenticate_member, create_member_token, require_entitlement, set_member_cookie
+from member_auth import authenticate_member, create_member_token, hash_member_password, new_uuid, require_entitlement, set_member_cookie
 
 PURCHASE_SOURCE = "board_fix_system_497"
 DWM_PURCHASE_SOURCE = "board_fix_dwm_5497"
-PURCHASE_SOURCES = [PURCHASE_SOURCE, DWM_PURCHASE_SOURCE]
+FBB_PURCHASE_SOURCE = "fundraising_board_builder_497"
+PURCHASE_SOURCES = [PURCHASE_SOURCE, DWM_PURCHASE_SOURCE, FBB_PURCHASE_SOURCE]
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 
 PATHWAYS = [
@@ -62,6 +66,9 @@ class OrientationSelections(BaseModel):
 class IntakeSubmit(BaseModel):
     session_id: str = ""
     data: dict
+    contact_name: str = ""
+    contact_email: str = ""
+    origin_url: str = ""
 
 
 logger = logging.getLogger(__name__)
@@ -107,22 +114,89 @@ def create_board_fix_router(db) -> APIRouter:
         if not txn:
             return {"eligible": False}
         existing = await db.board_fix_intakes.find_one({"session_id": session_id}, {"_id": 0})
-        return {"eligible": True, "lead_name": txn.get("lead_name", ""), "lead_organization": txn.get("lead_organization", ""),
-                "submitted": bool(existing and existing.get("submitted_at")),
-                "bylaws_filename": (existing or {}).get("bylaws_filename", ""),
-                "data": (existing or {}).get("data", {})}
+        result = {"eligible": True, "lead_name": txn.get("lead_name", ""), "lead_organization": txn.get("lead_organization", ""),
+                  "submitted": bool(existing and existing.get("submitted_at")),
+                  "bylaws_filename": (existing or {}).get("bylaws_filename", ""),
+                  "data": (existing or {}).get("data", {}),
+                  "purchase_source": txn.get("purchase_source", "")}
+        if txn.get("purchase_source") == FBB_PURCHASE_SOURCE:
+            contact = {"name": txn.get("lead_name", ""), "email": txn.get("lead_email", "")}
+            if not contact["email"]:
+                try:
+                    session = stripe.checkout.Session.retrieve(session_id)
+                    details = getattr(session, "customer_details", None)
+                    if details:
+                        contact = {"name": details.get("name") or "", "email": details.get("email") or ""}
+                except stripe.StripeError:
+                    pass
+            result["contact_prefill"] = contact
+            result["account_linked"] = bool(txn.get("claimed_by_user_id"))
+        return result
 
     @router.post("/board-fix-intake/submit")
-    async def intake_submit(request: Request, payload: IntakeSubmit):
+    async def intake_submit(request: Request, payload: IntakeSubmit, response: Response):
         try:
-            return await save_intake(request, payload)
+            return await save_intake(request, payload, response)
         except HTTPException:
             raise
         except Exception:
             logger.exception("Complete Board Fix intake save failed (mode=%s)", "session" if payload.session_id else "member")
             raise HTTPException(status_code=500, detail="We could not save your intake. Please try again.")
 
-    async def save_intake(request: Request, payload: IntakeSubmit):
+    async def send_login_details(email: str, first_name: str, temp_password: str, origin: str):
+        resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+        login_link = f"{origin}/login"
+        await resend.Emails.send_async({
+            "from": os.environ["NONPROFIT_SENDER"], "to": [email],
+            "subject": "Your Fundraising Board Builder Login Details",
+            "html": (
+                "<div style='max-width:560px;margin:auto;font-family:Arial,sans-serif;color:#000;line-height:1.6;'>"
+                "<h2>Welcome to the Fundraising Board Builder</h2>"
+                f"<p>Hi {html.escape(first_name)},</p>"
+                "<p>Your customer account is ready. Use the details below to log in anytime:</p>"
+                f"<p><strong>Login page:</strong> <a href='{login_link}'>{login_link}</a><br/>"
+                f"<strong>Email:</strong> {html.escape(email)}<br/>"
+                f"<strong>Temporary password:</strong> {html.escape(temp_password)}</p>"
+                "<p>You can change your password anytime using the Forgot Password link on the login page.</p>"
+                "<p>Rooney Akpesiri<br/>Nonprofit Board Builder</p></div>"),
+        })
+
+    async def ensure_fbb_account(payload: IntakeSubmit, response: Response):
+        """Create or link the customer account for a Fundraising Board Builder purchase at intake submission."""
+        email = payload.contact_email.strip().lower()
+        name = payload.contact_name.strip()
+        if not name or "@" not in email:
+            raise HTTPException(status_code=422, detail="Enter your name and email so we can set up your customer account")
+        from member_routes import claim_recruitment_purchase
+        member = await db.members.find_one({"email": email})
+        created = False
+        temp_password = ""
+        if not member:
+            created = True
+            temp_password = secrets.token_urlsafe(9)
+            first, _, last = name.partition(" ")
+            member = {
+                "user_id": new_uuid(), "email": email,
+                "first_name": first, "last_name": last.strip(),
+                "password_hash": hash_member_password(temp_password),
+                "entitlements": [], "lead_ids": [], "stripe_customer_id": "",
+                "created_at": now_iso(), "updated_at": now_iso(),
+            }
+            await db.members.insert_one(member.copy())
+        await claim_recruitment_purchase(db, member, payload.session_id)
+        origin = payload.origin_url.rstrip("/") if payload.origin_url.startswith("http") else "https://nonprofitboardbuilder.com"
+        if created:
+            token = create_member_token(member["user_id"], email)
+            set_member_cookie(response, token)
+            try:
+                await send_login_details(email, member["first_name"], temp_password, origin)
+            except Exception:
+                logger.exception("FBB login details email failed for %s", email)
+        return ("created" if created else "existing"), member
+
+    async def save_intake(request: Request, payload: IntakeSubmit, response: Response):
+        is_fbb = False
+        account_state = ""
         if not payload.session_id:
             member = await authenticate_member(request, db)
             if member.get("review_mode"):
@@ -143,7 +217,12 @@ def create_board_fix_router(db) -> APIRouter:
             internal = False
             lead_email = txn.get("lead_email", "")
             is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
+            is_fbb = txn.get("purchase_source") == FBB_PURCHASE_SOURCE
             storage_session = payload.session_id
+            if is_fbb and not user_id:
+                account_state, fbb_member = await ensure_fbb_account(payload, response)
+                user_id = fbb_member["user_id"]
+                lead_email = fbb_member["email"]
         if user_id:
             journey_set = {"experience": "do_it_with_me" if is_dwm else "self_guided"}
             if internal:
@@ -175,8 +254,13 @@ def create_board_fix_router(db) -> APIRouter:
             if seed:
                 seed["updated_at"] = now_iso()
                 await db.recruitment_profiles.update_one({"user_id": user_id}, {"$set": seed, "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
-        return {"status": "submitted",
-                "redirect_url": CALENDLY_URL if is_dwm else ("/board-fix-orientation" if first_time else "/board-fix-roadmap")}
+        if is_fbb:
+            redirect = "/login?next=/app" if account_state == "existing" else "/app"
+        elif is_dwm:
+            redirect = CALENDLY_URL
+        else:
+            redirect = "/board-fix-orientation" if first_time else "/board-fix-roadmap"
+        return {"status": "submitted", "redirect_url": redirect, "account_state": account_state}
 
     @router.post("/board-fix-intake/bylaws", status_code=201)
     async def upload_board_fix_bylaws(request: Request, session_id: str = Form(""), file: UploadFile = File(...)):

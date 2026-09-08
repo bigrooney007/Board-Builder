@@ -85,7 +85,7 @@ const PortfolioActions = ({ application, portfolio, refresh }) => {
   );
 };
 
-const BoardMemberResultCard = ({ application, branding, onChanged }) => {
+export const BoardMemberResultCard = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const snapshot = application.profile_snapshot || {};
   const portfolio = byType.board_member_portfolio;

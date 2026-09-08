@@ -36,7 +36,7 @@ from marketing_service import (  # noqa: E402
     stop_recruitment_nurture_for_purchase,
 )
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://buf-preview.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://board-drip.preview.emergentagent.com").rstrip("/")
 ADMIN_EMAIL = "rooney@nonprofitboardbuilder.com"
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")

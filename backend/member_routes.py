@@ -103,6 +103,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "activate_my_board_with_rooney_2997":
         entitlement = "activation_self_guided"
         product_name = "Activate My Board With Rooney"
+    elif offer_source == "fundraising_board_builder":
+        entitlement = "fundraising_board_builder"
+        product_name = "Fundraising Board Builder"
+        extra_entitlements.extend(["activation_self_guided", "recruitment_self_guided", "recruitment_selection_onboarding"])
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -174,6 +178,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "activate_my_board_with_rooney_2997",
             "offer": "Activate My Board With Rooney", "price_paid": 2997,
+        })
+    elif offer_source == "fundraising_board_builder":
+        purchase.update({
+            "purchase_source": "fundraising_board_builder_497",
+            "offer": "Fundraising Board Builder", "price_paid": 497,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
@@ -291,6 +300,15 @@ def create_member_router(db) -> APIRouter:
     async def dashboard(request: Request):
         member = await authenticate_member(request, db)
         entitlements = member.get("entitlements", [])
+        if "fundraising_board_builder" in entitlements:
+            return {"member": public_member(member), "fbb": True, "products": [
+                {"entitlement": "fbb_activation", "name": "Board Fundraising Activation",
+                 "route": "/app/fundraising-activation",
+                 "description": "Activate your present board members to start raising money and work with you to build your organization's fundraising system."},
+                {"entitlement": "fbb_recruitment", "name": "Board Recruitment",
+                 "route": "/app/board-recruitment",
+                 "description": "Identify and recruit the professional board members your organization needs, including people with fundraising experience."},
+            ]}
         products = []
         activation_route = "/app/activation/self-guided" if "board_fix_system" in entitlements else "/app/activation/start"
         activation_name = "Board Fundraising Activation — Self-Guided System" if "board_fix_system" in entitlements else "Board Fundraising Activation"
