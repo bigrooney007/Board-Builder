@@ -4,6 +4,7 @@ import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
+import { getAdminPreview } from "@/adminPreview";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -17,6 +18,7 @@ export default function WelcomePage() {
   useEffect(() => { document.title = "Welcome | Fundraising Board Builder"; }, []);
 
   useEffect(() => {
+    if (getAdminPreview()) { setPaymentState("paid"); return undefined; }
     if (!sessionId) { setPaymentState("missing"); return undefined; }
     let attempts = 0;
     let timer;
@@ -75,7 +77,7 @@ export default function WelcomePage() {
               <section className="member-card" data-testid="fbb-welcome-cta-card" style={{ textAlign: "center", marginTop: 28 }}>
                 <h2>LET'S GET STARTED</h2>
                 <p>Before we begin, tell us a little about your organization so we can personalize the tools and resources you will use throughout the process.</p>
-                <button className="button" onClick={() => navigate(`/board-fix-intake?session_id=${sessionId}`)} data-testid="fbb-welcome-intake-button" style={{ justifyContent: "center" }}>
+                <button className="button" onClick={() => navigate(sessionId ? `/board-fix-intake?session_id=${sessionId}` : "/board-fix-intake")} data-testid="fbb-welcome-intake-button" style={{ justifyContent: "center" }}>
                   COMPLETE YOUR INTAKE FORM
                 </button>
               </section>

@@ -56,7 +56,7 @@ async def review_mode_member(request: Request, db):
     return {
         "user_id": "owner-review-admin", "email": admin["email"],
         "first_name": "Owner", "last_name": "Review",
-        "entitlements": ["recruitment_basic", "recruitment_self_guided", "recruitment_selection_onboarding", "reactivation_self_guided", "activation_self_guided", "board_fix_system"],
+        "entitlements": ["fundraising_board_builder", "recruitment_basic", "recruitment_self_guided", "recruitment_selection_onboarding", "reactivation_self_guided", "activation_self_guided", "board_fix_system"],
         "lead_ids": [], "review_mode": True,
     }
 
@@ -78,7 +78,32 @@ async def operator_member(request: Request, db):
     return {**member, "operator_mode": True}
 
 
+async def admin_preview_member(request: Request, db):
+    """Admin previewing the real customer pages: fresh synthetic view or a read-only view of an existing member."""
+    target = request.headers.get("X-Admin-Preview-Member", "").strip()
+    fresh = request.headers.get("X-Admin-Preview", "").strip().lower() == "fresh"
+    if not target and not fresh:
+        return None
+    from auth_service import authenticate_admin
+    try:
+        await authenticate_admin(request, db)
+    except HTTPException:
+        return None
+    if target:
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            raise HTTPException(status_code=403, detail="Admin preview of a real customer is read-only")
+        member = await db.members.find_one({"user_id": target}, {"_id": 0, "password_hash": 0})
+        if member:
+            return {**member, "preview_mode": True}
+        return None
+    reviewer = await review_mode_member(request, db)
+    return {**reviewer, "preview_mode": True} if reviewer else None
+
+
 async def authenticate_member(request: Request, db) -> dict:
+    preview = await admin_preview_member(request, db)
+    if preview:
+        return preview
     try:
         token = request.cookies.get(MEMBER_COOKIE)
         if not token:

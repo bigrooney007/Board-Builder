@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { getAdminPreview } from "./adminPreview";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 let cached = null;
@@ -22,6 +23,7 @@ export const useReviewMode = () => {
 
 export const ReviewModeBanner = () => {
   const active = useReviewMode();
+  if (getAdminPreview()) return null;
   if (!active) return null;
   return (
     <div className="review-mode-banner" data-testid="owner-review-banner">

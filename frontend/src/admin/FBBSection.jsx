@@ -1,7 +1,79 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { setAdminPreview } from "../adminPreview";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const PREVIEW_PAGES = [
+  { key: "three-mistakes", label: "1. Three Mistakes Video Page", path: "/offer/board-fix" },
+  { key: "offer", label: "2. 50% Off Offer Page ($497 Checkout)", path: "/offer/fundraising-board-builder" },
+  { key: "welcome", label: "3. Welcome Video Page", path: "/welcome" },
+  { key: "intake", label: "4. Organization Intake", path: "/board-fix-intake" },
+  { key: "dashboard", label: "5. Customer Dashboard", path: "/app" },
+  { key: "activation", label: "5a. Board Fundraising Activation", path: "/app/fundraising-activation" },
+  { key: "recruitment", label: "5b. Board Recruitment", path: "/app/board-recruitment" },
+];
+
+const ReviewCustomerFlow = () => {
+  const [mode, setMode] = useState("fresh");
+  const [memberId, setMemberId] = useState("");
+  const [customers, setCustomers] = useState([]);
+  useEffect(() => {
+    axios.get(`${API}/admin/fbb/customers`, { withCredentials: true })
+      .then((r) => setCustomers(r.data.customers || [])).catch(() => {});
+  }, []);
+  const accounts = customers.filter((c) => c.account_created && c.user_id);
+
+  const open = (path) => {
+    if (mode === "customer") {
+      const selected = accounts.find((c) => c.user_id === memberId);
+      if (!selected) return;
+      setAdminPreview({ mode: "customer", memberId, name: selected.name || selected.email });
+    } else {
+      setAdminPreview({ mode: "fresh" });
+    }
+    window.location.assign(path);
+  };
+
+  return (
+    <section className="member-card" data-testid="admin-review-customer-flow" style={{ marginBottom: 26 }}>
+      <h2>Review Customer Flow</h2>
+      <p>Open the actual customer-facing pages exactly as a customer sees them. Payment and login walls are bypassed for your admin session. Use the EXIT PREVIEW button in the banner to return here.</p>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center", margin: "10px 0 6px" }}>
+        <strong>Preview Mode:</strong>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+          <input type="radio" name="fbb-preview-mode" checked={mode === "fresh"} onChange={() => setMode("fresh")} data-testid="preview-mode-fresh" />
+          Fresh Customer
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+          <input type="radio" name="fbb-preview-mode" checked={mode === "customer"} onChange={() => setMode("customer")} data-testid="preview-mode-customer" />
+          Existing Customer
+        </label>
+        {mode === "customer" && (
+          <select value={memberId} onChange={(e) => setMemberId(e.target.value)} data-testid="preview-customer-select"
+            style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #cfd6d2", minWidth: 240 }}>
+            <option value="">Select Organization / Customer…</option>
+            {accounts.map((c) => (
+              <option key={c.user_id} value={c.user_id}>{c.organization ? `${c.organization} — ` : ""}{c.name || c.email}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {mode === "customer" && accounts.length === 0 && <p><em data-testid="preview-no-accounts">No customers with accounts yet — use Fresh Customer mode.</em></p>}
+      {mode === "customer" && <p style={{ fontSize: "0.88rem", margin: "0 0 6px" }}>Existing-customer preview is read-only: you see their real data but nothing you click will change it.</p>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+        {PREVIEW_PAGES.map((page) => (
+          <div key={page.key} style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "1px solid #e3e8e4", paddingTop: 8 }}>
+            <span style={{ flex: 1, fontWeight: 600 }}>{page.label}</span>
+            <button className="button button-small" onClick={() => open(page.path)}
+              disabled={mode === "customer" && !memberId}
+              data-testid={`preview-open-${page.key}`}>OPEN PAGE</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 const FlowVideosManager = () => {
   const [videos, setVideos] = useState([]);
@@ -117,6 +189,7 @@ const JourneyTable = () => {
 
 export const FBBSection = () => (
   <section data-testid="admin-fbb-section">
+    <ReviewCustomerFlow />
     <FlowVideosManager />
     <JourneyTable />
   </section>

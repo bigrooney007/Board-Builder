@@ -100,7 +100,7 @@ def create_board_fix_router(db) -> APIRouter:
     async def intake_context(request: Request, session_id: str = ""):
         if not session_id:
             member = await authenticate_member(request, db)
-            if member.get("review_mode"):
+            if member.get("review_mode") and not member.get("preview_mode"):
                 raise HTTPException(status_code=401, detail="Please log in to your member account to open the Complete Board Fix intake")
             require_entitlement(member, {"board_fix_system"})
             existing = await db.board_fix_intakes.find_one({"user_id": member["user_id"]}, {"_id": 0})
@@ -199,7 +199,7 @@ def create_board_fix_router(db) -> APIRouter:
         account_state = ""
         if not payload.session_id:
             member = await authenticate_member(request, db)
-            if member.get("review_mode"):
+            if member.get("review_mode") and not member.get("preview_mode"):
                 raise HTTPException(status_code=401, detail="Please log in to your member account to submit the Complete Board Fix intake")
             require_entitlement(member, {"board_fix_system"})
             user_id = member["user_id"]
@@ -272,7 +272,7 @@ def create_board_fix_router(db) -> APIRouter:
             storage_session = session_id
         else:
             member = await authenticate_member(request, db)
-            if member.get("review_mode"):
+            if member.get("review_mode") and not member.get("preview_mode"):
                 raise HTTPException(status_code=401, detail="Please log in to your member account to upload your bylaws")
             require_entitlement(member, {"board_fix_system"})
             existing = await db.board_fix_intakes.find_one({"user_id": member["user_id"]}, {"_id": 0, "session_id": 1})
