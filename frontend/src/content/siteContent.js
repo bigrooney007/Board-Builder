@@ -83,10 +83,10 @@ export const SITE_CONTENT = {
       {"label": "REACTIVATE", "text": "Get your current board members to step up and take responsibility, or help them transition gracefully when they can no longer continue."},
       {"label": "ACTIVATE", "text": "Get your board working with you to raise money and build your organization's fundraising system."}
     ],
-    "heroTitle": "There Are 3 Mistakes You're Making With Your Board That Are Limiting Your Organization's Ability to Raise Money Exponentially.",
-    "heroSubtitle": "I will show you the three mistakes and how to fix them.",
+    "heroTitle": "Are These 3 Board Mistakes Costing Your Nonprofit Funding?",
+    "heroSubtitle": "Discover the three mistakes that could be limiting your organization's ability to raise money consistently and exponentially, and what to do about them.",
     "leadFormPrompt": "Enter your details below to get instant access and have it emailed to you.",
-    "leadFormCta": "GET INSTANT ACCESS",
+    "leadFormCta": "SHOW ME THE 3 MISTAKES",
     "introHeading": "Your board is one of your organization's strongest assets.",
     "introParagraphs": [
       "When you have a great board, the nonprofit journey becomes an adventure. You raise money, build strong organizational structures, create greater impact, and grow steadily because you have the right people in the right positions providing the kind of support your organization needs.",
@@ -143,17 +143,25 @@ export const SITE_CONTENT = {
     "heading": "Nonprofit Leaders We Have Helped Build Stronger Boards and Fundraising Systems"
   },
   "founderStory": {
-    "eyebrow": "The story behind the process",
-    "heading": "I Built This Process From Experience",
+    "eyebrow": "The Story Behind the Process",
+    "heading": "I Didn't Learn This From a Book. I Built It From Experience.",
     "name": "Rooney Akpesiri, CNC, CDE, CNE",
     "title": "The Nonprofit Board Builder",
     "photoCaption": "Rooney Akpesiri",
     "paragraphs": [
-      "I\u2019m Rooney. Known to many as the Nonprofit Board Builder.",
-      "I started as a nonprofit founder many years ago, where I built my first board.",
-      "I made mistakes, damaged relationships, learned from the experience, rebuilt my board, and eventually developed a process that worked.",
-      "Since then, I have served on nonprofit boards, worked as a fundraising consultant, served as Vice President of a fundraising consulting firm working with nonprofits across the United States, trained hundreds of nonprofit founders and fundraisers, helped nonprofits strengthen their boards, and contributed to raising more than $5 million.",
-      "Today, I teach, coach, and work directly with founders and executive directors so they do not make the mistakes I made, damage their relationships, or waste their time."
+      "I'm Rooney. Known to many as the Nonprofit Board Builder.",
+      "My journey started many years ago as a nonprofit founder. I built my first board, made mistakes, damaged relationships, learned some difficult lessons, rebuilt my board, and eventually developed a process that worked.",
+      "Since then, I have experienced nonprofit leadership from almost every side.",
+      "I have founded and led a nonprofit. I have served on nonprofit boards. I have worked directly with founders and executive directors as a fundraising consultant. I served as Vice President of Client Acquisition and later Vice President of Client Services for a fundraising consulting firm working with nonprofits across the United States.",
+      "I have trained hundreds of nonprofit founders and fundraisers, worked with organizations across the country to strengthen their boards and fundraising systems, and contributed to fundraising efforts that have generated more than $5 million.",
+      "But one lesson has remained consistent throughout all of that experience:",
+      "Everything rises and falls on leadership.",
+      "I have watched founders struggle because they were trying to build, fund and carry their organizations almost entirely by themselves.",
+      "And I have watched what happens when the right board is built around a leader, understands where the organization is going, and has the skills, experience and structure to help get it there.",
+      "That is why I became the Nonprofit Board Builder.",
+      "Today, I help founders and executive directors build the right board and work with their board to build the fundraising capacity and systems their organizations need to raise money, grow and achieve their mission.",
+      "You don't have to figure this out by yourself or repeat the mistakes I made.",
+      "I built the process. Now I can show you how to use it."
     ],
     "bookCallButton": "Book a Call With Rooney",
     "credibility": [

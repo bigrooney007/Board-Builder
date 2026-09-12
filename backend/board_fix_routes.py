@@ -20,7 +20,8 @@ from member_auth import authenticate_member, create_member_token, hash_member_pa
 PURCHASE_SOURCE = "board_fix_system_497"
 DWM_PURCHASE_SOURCE = "board_fix_dwm_5497"
 FBB_PURCHASE_SOURCE = "fundraising_board_builder_497"
-PURCHASE_SOURCES = [PURCHASE_SOURCE, DWM_PURCHASE_SOURCE, FBB_PURCHASE_SOURCE]
+FBB_PURCHASE_SOURCES = {"fundraising_board_builder_497", "board_recruitment_497", "board_fundraising_activation_497"}
+PURCHASE_SOURCES = [PURCHASE_SOURCE, DWM_PURCHASE_SOURCE, *FBB_PURCHASE_SOURCES]
 CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 
 PATHWAYS = [
@@ -119,7 +120,7 @@ def create_board_fix_router(db) -> APIRouter:
                   "bylaws_filename": (existing or {}).get("bylaws_filename", ""),
                   "data": (existing or {}).get("data", {}),
                   "purchase_source": txn.get("purchase_source", "")}
-        if txn.get("purchase_source") == FBB_PURCHASE_SOURCE:
+        if txn.get("purchase_source") in FBB_PURCHASE_SOURCES:
             contact = {"name": txn.get("lead_name", ""), "email": txn.get("lead_email", "")}
             if not contact["email"]:
                 try:
@@ -217,7 +218,7 @@ def create_board_fix_router(db) -> APIRouter:
             internal = False
             lead_email = txn.get("lead_email", "")
             is_dwm = txn.get("purchase_source") == DWM_PURCHASE_SOURCE
-            is_fbb = txn.get("purchase_source") == FBB_PURCHASE_SOURCE
+            is_fbb = txn.get("purchase_source") in FBB_PURCHASE_SOURCES
             storage_session = payload.session_id
             if is_fbb and not user_id:
                 account_state, fbb_member = await ensure_fbb_account(payload, response)

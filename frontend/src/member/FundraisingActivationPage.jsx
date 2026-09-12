@@ -4,6 +4,7 @@ import { Download, Eye, X } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 
@@ -123,7 +124,7 @@ export default function FundraisingActivationPage() {
     return () => clearTimeout(pollRef.current);
   }, [loading, member, navigate, load]);
 
-  const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "activation_self_guided"].includes(e));
+  const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "fbb_activation", "activation_self_guided"].includes(e));
   const respondents = (planning?.participants || []).filter((p) => p.status === "COMPLETED");
   const boardMembers = (board?.members || []).filter((m) => m.status === "COMPLETED");
   const formStatus = planning?.form?.status || "NONE";
@@ -159,7 +160,10 @@ export default function FundraisingActivationPage() {
           <p><strong>Activate your present board members to start raising money and work with you to build your organization's fundraising system.</strong></p>
         </header>
         {member && !allowed && (
-          <section className="member-card" data-testid="fbb-activation-forbidden"><p>Your account does not include access to this process.</p></section>
+          <section className="member-card" data-testid="fbb-activation-forbidden">
+            <p><strong>Board Fundraising Activation is not included in your purchase yet. Unlock it to get started.</strong></p>
+            <UnlockPurchaseButton product="activation" label="UNLOCK BOARD FUNDRAISING ACTIVATION — $497" testId="fbb-activation-unlock-button" />
+          </section>
         )}
         {allowed && (
           <>

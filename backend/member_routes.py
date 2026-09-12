@@ -107,6 +107,14 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         entitlement = "fundraising_board_builder"
         product_name = "Fundraising Board Builder"
         extra_entitlements.extend(["activation_self_guided", "recruitment_self_guided", "recruitment_selection_onboarding"])
+    elif offer_source == "fbb_recruitment":
+        entitlement = "fbb_recruitment"
+        product_name = "Board Recruitment"
+        extra_entitlements.extend(["recruitment_self_guided", "recruitment_selection_onboarding"])
+    elif offer_source == "fbb_activation":
+        entitlement = "fbb_activation"
+        product_name = "Board Fundraising Activation"
+        extra_entitlements.append("activation_self_guided")
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -183,6 +191,16 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "fundraising_board_builder_497",
             "offer": "Fundraising Board Builder", "price_paid": 497,
+        })
+    elif offer_source == "fbb_recruitment":
+        purchase.update({
+            "purchase_source": "board_recruitment_497",
+            "offer": "Board Recruitment", "price_paid": 497,
+        })
+    elif offer_source == "fbb_activation":
+        purchase.update({
+            "purchase_source": "board_fundraising_activation_497",
+            "offer": "Board Fundraising Activation", "price_paid": 497,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
@@ -300,13 +318,16 @@ def create_member_router(db) -> APIRouter:
     async def dashboard(request: Request):
         member = await authenticate_member(request, db)
         entitlements = member.get("entitlements", [])
-        if "fundraising_board_builder" in entitlements:
+        fbb_all = "fundraising_board_builder" in entitlements
+        has_activation = fbb_all or "fbb_activation" in entitlements
+        has_recruitment = fbb_all or "fbb_recruitment" in entitlements
+        if has_activation or has_recruitment:
             return {"member": public_member(member), "fbb": True, "products": [
                 {"entitlement": "fbb_activation", "name": "Board Fundraising Activation",
-                 "route": "/app/fundraising-activation",
+                 "route": "/app/fundraising-activation", "locked": not has_activation, "product": "activation",
                  "description": "Activate your present board members to start raising money and work with you to build your organization's fundraising system."},
                 {"entitlement": "fbb_recruitment", "name": "Board Recruitment",
-                 "route": "/app/board-recruitment",
+                 "route": "/app/board-recruitment", "locked": not has_recruitment, "product": "recruitment",
                  "description": "Identify and recruit the professional board members your organization needs, including people with fundraising experience."},
             ]}
         products = []

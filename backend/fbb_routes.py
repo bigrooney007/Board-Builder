@@ -8,12 +8,15 @@ from pydantic import BaseModel, Field
 from auth_service import authenticate_admin
 
 FBB_PURCHASE_SOURCE = "fundraising_board_builder_497"
+FBB_PURCHASE_SOURCES = ["fundraising_board_builder_497", "board_recruitment_497", "board_fundraising_activation_497"]
 
 FLOW_VIDEO_DEFS = [
     {"key": "three_mistakes", "name": "Three Mistakes Video Page", "default_url": "https://www.youtube.com/watch?v=KDCnKeJoPRc"},
     {"key": "post_payment_welcome", "name": "Post-Payment Welcome Page", "default_url": ""},
     {"key": "fundraising_activation", "name": "Board Fundraising Activation Page", "default_url": "https://www.youtube.com/watch?v=Aw751ZtIIks"},
     {"key": "board_recruitment", "name": "Board Recruitment Page", "default_url": "https://www.youtube.com/watch?v=4aLqppruUvs"},
+    {"key": "board_recruitment_offer", "name": "Board Recruitment Sales Page Video", "default_url": "https://www.youtube.com/watch?v=4aLqppruUvs"},
+    {"key": "fundraising_activation_offer", "name": "Board Fundraising Activation Sales Page Video", "default_url": "https://www.youtube.com/watch?v=Aw751ZtIIks"},
 ]
 FLOW_VIDEO_KEYS = {item["key"] for item in FLOW_VIDEO_DEFS}
 
@@ -40,6 +43,14 @@ def youtube_id(url: str) -> str:
 
 class FlowVideoUpdate(BaseModel):
     url: str = Field(max_length=500)
+
+
+class RecruitWithRooneyApplication(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=200)
+    phone: str = Field(min_length=1, max_length=60)
+    organization: str = Field(min_length=1, max_length=300)
+    website: str = Field(default="", max_length=300)
 
 
 def create_fbb_router(db) -> APIRouter:
@@ -81,7 +92,7 @@ def create_fbb_router(db) -> APIRouter:
         rows = []
         paid_emails = set()
         txns = await db.payment_transactions.find(
-            {"purchase_source": FBB_PURCHASE_SOURCE},
+            {"purchase_source": {"$in": FBB_PURCHASE_SOURCES}},
             {"_id": 0, "session_id": 1, "payment_status": 1, "lead_name": 1, "lead_email": 1,
              "claimed_by_user_id": 1, "created_at": 1},
         ).sort("created_at", -1).to_list(300)
@@ -133,5 +144,17 @@ def create_fbb_router(db) -> APIRouter:
             for lead in leads if (lead.get("email") or "").lower() not in paid_emails
         ]
         return {"customers": rows, "leads": lead_rows}
+
+    @router.post("/recruit-with-rooney/apply")
+    async def recruit_with_rooney_apply(payload: RecruitWithRooneyApplication):
+        await db.funnel_leads.insert_one({
+            "name": payload.name.strip(), "email": payload.email.strip().lower(),
+            "phone": payload.phone.strip(), "organization": payload.organization.strip(),
+            "website": payload.website.strip(),
+            "offer_source": "recruitment", "lead_source": "recruit_with_rooney_application",
+            "stage": "Applied — Recruit My Board With Rooney ($4,497)",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"status": "ok"}
 
     return router

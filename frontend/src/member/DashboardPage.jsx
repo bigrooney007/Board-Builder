@@ -6,6 +6,22 @@ import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
 import { dashboardText, dashboardPageText } from "../content/appContent";
 
+export const UnlockPurchaseButton = ({ product, label, testId }) => {
+  const [busy, setBusy] = useState(false);
+  const buy = async () => {
+    setBusy(true);
+    try {
+      const response = await memberApi.post("/payments/fundraising-board-builder-checkout", { origin_url: window.location.origin, product });
+      window.location.href = response.data.checkout_url;
+    } catch { setBusy(false); }
+  };
+  return (
+    <button className="button" onClick={buy} disabled={busy} data-testid={testId}>
+      {busy ? "Starting checkout…" : label}
+    </button>
+  );
+};
+
 export const DashboardPage = () => {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
@@ -49,7 +65,18 @@ export const DashboardPage = () => {
             <p className="eyebrow">Fundraising Board Builder</p>
             <h2>{product.name}</h2>
             <p>{product.description}</p>
-            <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-open-${product.entitlement}`}>Open {product.name} <ArrowRight size={16} /></button>
+            {product.locked ? (
+              <>
+                <p data-testid={`dashboard-locked-${product.entitlement}`}><strong>{product.name} is not included in your purchase yet. Unlock it to get started.</strong></p>
+                <p className="offer-sales-price" style={{ margin: "4px 0 10px" }}>
+                  <span style={{ textDecoration: "line-through", opacity: 0.7, marginRight: 10 }}>Regular Price: $997</span>
+                  <strong>50% OFF FOR THE NEXT 7 DAYS: $497</strong>
+                </p>
+                <UnlockPurchaseButton product={product.product} label={`UNLOCK ${product.name.toUpperCase()} — $497`} testId={`dashboard-unlock-${product.entitlement}`} />
+              </>
+            ) : (
+              <button className="button" onClick={() => navigate(product.route)} data-testid={`dashboard-open-${product.entitlement}`}>Open {product.name} <ArrowRight size={16} /></button>
+            )}
           </section>
         ))}
         {data && !data.fbb && data.products.map((product) => {

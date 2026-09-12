@@ -6,7 +6,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const PREVIEW_PAGES = [
   { key: "three-mistakes", label: "1. Three Mistakes Video Page", path: "/offer/board-fix" },
-  { key: "offer", label: "2. 50% Off Offer Page ($497 Checkout)", path: "/offer/fundraising-board-builder" },
+  { key: "recruitment-offer", label: "2a. Board Recruitment Sales Page", path: "/board-recruitment" },
+  { key: "activation-offer", label: "2b. Board Fundraising Activation Sales Page", path: "/board-fundraising-activation" },
   { key: "welcome", label: "3. Welcome Video Page", path: "/welcome" },
   { key: "intake", label: "4. Organization Intake", path: "/board-fix-intake" },
   { key: "dashboard", label: "5. Customer Dashboard", path: "/app" },

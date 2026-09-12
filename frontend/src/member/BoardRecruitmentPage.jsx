@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { Module3Launch } from "./workspace/WorkspaceModules";
@@ -40,7 +41,7 @@ export default function BoardRecruitmentPage() {
     if (!member) { navigate("/login?next=/app/board-recruitment"); return; }
   }, [loading, member, navigate]);
 
-  const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "recruitment_self_guided"].includes(e));
+  const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "fbb_recruitment", "recruitment_self_guided"].includes(e));
 
   return (
     <MemberShell>
@@ -51,7 +52,10 @@ export default function BoardRecruitmentPage() {
           <p><strong>Identify and recruit the professional board members your organization needs to strengthen your board and your ability to raise money.</strong></p>
         </header>
         {member && !allowed && (
-          <section className="member-card" data-testid="fbb-recruitment-forbidden"><p>Your account does not include access to this process.</p></section>
+          <section className="member-card" data-testid="fbb-recruitment-forbidden">
+            <p><strong>Board Recruitment is not included in your purchase yet. Unlock it to get started.</strong></p>
+            <UnlockPurchaseButton product="recruitment" label="UNLOCK BOARD RECRUITMENT — $497" testId="fbb-recruitment-unlock-button" />
+          </section>
         )}
         {allowed && (
           <>

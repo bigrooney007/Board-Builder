@@ -36,9 +36,10 @@ class DIYCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
     result_token: str = ""
     cancel_path: str = ""
+    product: str = ""
 
 
-ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder"}
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation"}
 
 
 def resolve_cancel_url(payload, default_path: str) -> str:
@@ -111,6 +112,14 @@ def resolve_activation_diy_price_id() -> str:
 
 def resolve_fundraising_board_builder_price_id() -> str:
     return resolve_offer_price_id("STRIPE_FUNDRAISING_BOARD_BUILDER_497_PRICE_ID", "fundraising_board_builder_497", "Fundraising Board Builder", 49700)
+
+
+def resolve_fbb_recruitment_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_FBB_RECRUITMENT_497_PRICE_ID", "board_recruitment_497", "Board Recruitment", 49700)
+
+
+def resolve_fbb_activation_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_FBB_ACTIVATION_497_PRICE_ID", "board_fundraising_activation_497", "Board Fundraising Activation", 49700)
 
 
 def resolve_activate_with_rooney_price_id() -> str:
@@ -524,20 +533,38 @@ def create_payment_router(db) -> APIRouter:
         })
         return {"checkout_url": session.url, "session_id": session.id}
 
+    FBB_PRODUCTS = {
+        "recruitment": {
+            "price": resolve_fbb_recruitment_price_id, "offer_source": "fbb_recruitment",
+            "purchase_source": "board_recruitment_497", "offer": "Board Recruitment",
+            "cancel_default": "/board-recruitment",
+        },
+        "activation": {
+            "price": resolve_fbb_activation_price_id, "offer_source": "fbb_activation",
+            "purchase_source": "board_fundraising_activation_497", "offer": "Board Fundraising Activation",
+            "cancel_default": "/board-fundraising-activation",
+        },
+    }
+
     @router.post("/fundraising-board-builder-checkout")
     async def create_fundraising_board_builder_checkout(payload: DIYCheckoutRequest):
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
+        spec = FBB_PRODUCTS.get(payload.product, {
+            "price": resolve_fundraising_board_builder_price_id, "offer_source": "fundraising_board_builder",
+            "purchase_source": "fundraising_board_builder_497", "offer": "Fundraising Board Builder",
+            "cancel_default": "/offer/fundraising-board-builder",
+        })
         kwargs = {
-            "line_items": [{"price": resolve_fundraising_board_builder_price_id(), "quantity": 1}],
+            "line_items": [{"price": spec["price"](), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/welcome?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": resolve_cancel_url(payload, "/offer/fundraising-board-builder"),
+            "cancel_url": resolve_cancel_url(payload, spec["cancel_default"]),
             "metadata": {
-                "offer_source": "fundraising_board_builder", "selected_tier": "497",
-                "purchase_source": "fundraising_board_builder_497",
-                "offer": "Fundraising Board Builder",
+                "offer_source": spec["offer_source"], "selected_tier": "497",
+                "purchase_source": spec["purchase_source"],
+                "offer": spec["offer"],
             },
         }
         try:
@@ -551,9 +578,9 @@ def create_payment_router(db) -> APIRouter:
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
-            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": "fundraising_board_builder",
-            "selected_tier": "497", "purchase_source": "fundraising_board_builder_497",
-            "offer": "Fundraising Board Builder",
+            "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": spec["offer_source"],
+            "selected_tier": "497", "purchase_source": spec["purchase_source"],
+            "offer": spec["offer"],
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,

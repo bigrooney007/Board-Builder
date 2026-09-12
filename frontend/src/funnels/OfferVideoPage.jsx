@@ -126,8 +126,13 @@ export default function OfferVideoPage({ offer }) {
             </div>
             )}
             {offer === "board-fix" ? (
-              <section className="offer-sales-offers" data-testid="see-the-offer-cta" style={{ textAlign: "center" }}>
-                <a className="button" href="/offer/fundraising-board-builder" data-testid="see-offer-button" style={{ fontSize: "1.15rem", padding: "16px 34px", display: "inline-flex", justifyContent: "center" }}>50% OFF: SEE THE OFFER</a>
+              <section className="offer-sales-offers" data-testid="board-need-chooser" style={{ textAlign: "center" }}>
+                <h2 data-testid="board-need-heading">What Does Your Board Need Right Now?</h2>
+                <p data-testid="board-need-text"><strong>Choose the area you need to address first.</strong></p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center", marginTop: 18 }}>
+                  <a className="button" href="/board-recruitment" data-testid="need-recruitment-button" style={{ fontSize: "1.05rem", padding: "15px 30px", display: "inline-flex", justifyContent: "center" }}>I NEED TO RECRUIT THE RIGHT BOARD MEMBERS</a>
+                  <a className="button" href="/board-fundraising-activation" data-testid="need-activation-button" style={{ fontSize: "1.05rem", padding: "15px 30px", display: "inline-flex", justifyContent: "center" }}>I'M READY TO BUILD OUR FUNDRAISING SYSTEM WITH MY BOARD</a>
+                </div>
               </section>
             ) : offer === "recruitment" ? (
               <CampaignLaunchOffer content={content.campaignLaunch} shared={shared} />
