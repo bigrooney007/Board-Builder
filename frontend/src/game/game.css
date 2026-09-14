@@ -366,6 +366,50 @@
 .bfg-gr-option:hover { border-color: rgba(99, 102, 241, 0.6); }
 .bfg-gr-option.selected { border-color: var(--bfg-indigo); background: rgba(99, 102, 241, 0.12); }
 .bfg-doc-type.final { background: rgba(52, 211, 153, 0.14); color: #34d399; }
+
+/* Phase 6: Board Fundraising Portfolios & Execution Materials */
+.bfg-pe-fields { display: flex; gap: 14px; flex-wrap: wrap; }
+.bfg-pe-fields label, .bfg-pe-wide { display: block; font-size: 13px; color: #94a3b8; margin-top: 10px; }
+.bfg-pe-fields select, .bfg-pe-fields input, .bfg-pe-wide input, .bfg-pe-add select, .bfg-pe-add input { display: block; margin-top: 5px; background: #0b1120; border: 1px solid var(--bfg-border); border-radius: 10px; color: var(--bfg-text); font-family: "Inter"; font-size: 14px; padding: 9px 12px; }
+.bfg-pe-wide input { width: 100%; }
+.bfg-pe-add { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.bfg-pe-add select, .bfg-pe-add input { margin-top: 0; }
+.bfg-pe-badge { display: inline-block; margin-left: 10px; padding: 2px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: rgba(250, 204, 21, 0.14); color: #b45309; }
+.bfg-panel .bfg-pe-badge { color: #facc15; }
+.bfg-pf-page { min-height: 100vh; background: #eef1f8; padding: 26px 14px 70px; font-family: "Inter", sans-serif; }
+.bfg-pf-page .bfg-pf-doc { max-width: 880px; margin: 0 auto; border: 1px solid #e2e8f0; }
+.bfg-pf-doc { background: #ffffff; color: #1e293b; border-radius: 18px; padding: clamp(24px, 4vw, 44px); text-align: left; }
+.bfg-pf-doc h1 { color: #0f172a; font-size: clamp(24px, 4vw, 34px); }
+.bfg-pf-doc h2 { color: #0f172a; font-size: clamp(18px, 2.6vw, 22px); }
+.bfg-pf-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #4f46e5; margin-bottom: 10px; }
+.bfg-pf-sub { color: #475569; font-size: 14.5px; margin-top: 6px; line-height: 1.6; }
+.bfg-pf-header { border-bottom: 2px solid #e2e8f0; padding-bottom: 18px; }
+.bfg-pf-section { margin-top: 30px; }
+.bfg-pf-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-top: 12px; font-size: 14.5px; color: #334155; }
+.bfg-pf-item strong { color: #0f172a; }
+.bfg-pf-note { font-size: 13.5px; color: #64748b; margin-top: 6px; }
+.bfg-pf-summary { font-size: 15px; color: #334155; background: #f1f5f9; border-radius: 12px; padding: 14px 18px; margin-top: 8px; line-height: 1.6; }
+.bfg-pf-pack { margin-top: 30px; }
+.bfg-pf-pack h2 { border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+.bfg-pf-material { border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-top: 14px; background: #fff; }
+.bfg-pf-material h3 { color: #0f172a; font-size: 16px; }
+.bfg-pf-material-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.bfg-pf-material-content { margin-top: 10px; white-space: pre-line; font-size: 14px; color: #334155; line-height: 1.65; }
+.bfg-pf-btn { border: none; cursor: pointer; border-radius: 999px; padding: 10px 20px; font-family: "Inter"; font-size: 14px; font-weight: 700; background: #4f46e5; color: #fff; text-decoration: none; display: inline-block; transition: background-color 0.15s ease; }
+.bfg-pf-btn:hover { background: #4338ca; }
+.bfg-pf-btn.ghost { background: #fff; color: #4f46e5; border: 1px solid #c7d2fe; }
+.bfg-pf-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.bfg-pf-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.bfg-pf-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: grid; place-items: center; z-index: 80; padding: 20px; }
+.bfg-pf-modal { background: #fff; color: #1e293b; border-radius: 16px; padding: 28px; max-width: 520px; width: 100%; }
+.bfg-pf-modal h2 { color: #0f172a; }
+.bfg-pf-textarea { width: 100%; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; font-family: "Inter"; font-size: 14.5px; color: #1e293b; min-height: 110px; }
+@media print {
+  .bfg-no-print, .bfg-nav, .bfg-footer { display: none !important; }
+  body, .bfg-pf-page, .bfg, .bfg-dash { background: #fff !important; padding: 0 !important; }
+  .bfg-pf-page .bfg-pf-doc, .bfg-pf-doc { border: none !important; border-radius: 0 !important; padding: 0 !important; max-width: 100% !important; box-shadow: none !important; }
+  .bfg-pf-item, .bfg-pf-material { break-inside: avoid; }
+}
 .bfg-gg-dots span.done { background: #10b981; }
 .bfg-gg-dots span.current { background: #4f46e5; }
 .bfg-gg-rule { margin-top: 14px; font-weight: 700; color: #0f172a; }

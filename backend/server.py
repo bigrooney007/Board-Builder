@@ -238,6 +238,8 @@ from strategy_routes import create_strategy_router
 app.include_router(create_strategy_router(db))
 from meeting_review_routes import create_meeting_review_router
 app.include_router(create_meeting_review_router(db))
+from portfolio_routes import create_portfolio_router
+app.include_router(create_portfolio_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router

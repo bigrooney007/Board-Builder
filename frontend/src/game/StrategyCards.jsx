@@ -85,9 +85,14 @@ export const WorkingStrategyCard = () => {
 export const AdoptedStrategyCard = ({ goalDisplay }) => {
   const navigate = useNavigate();
   const [adopted, setAdopted] = useState(null);
+  const [portfolioSummary, setPortfolioSummary] = useState(null);
   useEffect(() => {
     memberApi.get("/game/strategies").then((r) => {
-      setAdopted((r.data.strategies || []).find((row) => row.status === "adopted") || false);
+      const row = (r.data.strategies || []).find((item) => item.status === "adopted") || false;
+      setAdopted(row);
+      if (row) {
+        memberApi.get("/game/portfolios").then((res) => setPortfolioSummary(res.data)).catch(() => {});
+      }
     }).catch(() => setAdopted(false));
   }, []);
   if (!adopted) return null;
@@ -107,10 +112,32 @@ export const AdoptedStrategyCard = ({ goalDisplay }) => {
           View Adopted Strategy
         </button>
       </div>
+      {portfolioSummary?.execution_ready && (
+        <div style={{ marginTop: 16 }} data-testid="bfg-execution-ready">
+          <p className="bfg-eyebrow" style={{ marginBottom: 6 }}>Your Board Fundraising Game — Strategy Adopted</p>
+          <p style={{ fontWeight: 700, color: "#34d399" }}>Execution Ready</p>
+          <p className="bfg-note">
+            Your fundraising strategy has been adopted, board roles are being confirmed and approved board members can now access the resources they need to execute.
+          </p>
+        </div>
+      )}
       <div style={{ marginTop: 16 }}>
         <p className="bfg-eyebrow" style={{ marginBottom: 6 }}>Next Step</p>
-        <p style={{ fontWeight: 700, color: "#f8fafc" }}>Create Board Fundraising Portfolios</p>
-        <p className="bfg-note">Coming soon — turn your adopted strategy into clear roles and resources for every board member.</p>
+        <p style={{ fontWeight: 700, color: "#f8fafc" }}>
+          {portfolioSummary && portfolioSummary.total > 0 ? "Board Fundraising Portfolios" : "Create Board Fundraising Portfolios"}
+        </p>
+        <p className="bfg-note">
+          Turn your board's participation choices and Game Night commitments into a clear fundraising role for every board member.
+        </p>
+        {portfolioSummary && portfolioSummary.total > 0 && (
+          <p className="bfg-note" data-testid="bfg-dash-portfolio-counts">
+            {portfolioSummary.approved_count} of {portfolioSummary.total} portfolios approved · {portfolioSummary.toolkit_ready_count} of {portfolioSummary.total} execution toolkits ready
+          </p>
+        )}
+        <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }}
+          onClick={() => navigate("/game/portfolios")} data-testid="bfg-create-portfolios-link">
+          {portfolioSummary && portfolioSummary.total > 0 ? "Open Board Fundraising Portfolios" : "Create Board Fundraising Portfolios"}
+        </button>
       </div>
     </section>
   );

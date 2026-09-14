@@ -87,6 +87,10 @@ import GroupPlayPage from "@/game/GroupPlayPage";
 import MeetingReviewPage from "@/game/MeetingReviewPage";
 import MeetingDecisionsPage from "@/game/MeetingDecisionsPage";
 import FinalStrategyPage from "@/game/FinalStrategyPage";
+import PortfoliosPage from "@/game/PortfoliosPage";
+import PortfolioEditPage from "@/game/PortfolioEditPage";
+import PortfolioToolkitPage from "@/game/PortfolioToolkitPage";
+import BoardPortfolioPage from "@/game/BoardPortfolioPage";
 
 const PUBLIC_CENTERED_PATHS = ["/fundraising-system", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
@@ -145,6 +149,10 @@ export default function App() {
           <Route path="/game/meeting-review" element={<MeetingReviewPage />} />
           <Route path="/game/meeting-review/decisions" element={<MeetingDecisionsPage />} />
           <Route path="/game/meeting-review/final" element={<FinalStrategyPage />} />
+          <Route path="/game/portfolios" element={<PortfoliosPage />} />
+          <Route path="/game/portfolios/:portfolioId" element={<PortfolioEditPage />} />
+          <Route path="/game/portfolios/:portfolioId/toolkit" element={<PortfolioToolkitPage />} />
+          <Route path="/board-portfolio/:token" element={<BoardPortfolioPage />} />
           <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/board-transformation" element={<BoardTransformationPage />} />
