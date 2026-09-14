@@ -81,6 +81,8 @@ class SectionSave(BaseModel):
     final_response: list = Field(default_factory=list)
     preferences: list = Field(default_factory=list)
     do_not_want: list = Field(default_factory=list)
+    group_game_ideas: list = Field(default_factory=list)
+    extras: dict = Field(default_factory=dict)
     first_move_locked: bool = False
 
 
@@ -449,6 +451,20 @@ def create_game_night_router(db) -> APIRouter:
         record = await playing_member(token)
         profile = await get_profile(record["user_id"])
         night = await get_night(record["user_id"])
+        situation = (await db.game_situations.find_one(
+            {"user_id": record["user_id"]}, {"_id": 0}) or {}).get("sections") or {}
+
+        def context_lines(section_key: str, fields: list) -> list:
+            data = situation.get(section_key) or {}
+            lines = []
+            for field in fields:
+                value = data.get(field)
+                if isinstance(value, list):
+                    lines.extend(str(v).strip() for v in value if str(v).strip())
+                elif isinstance(value, str) and value.strip():
+                    lines.append(value.strip())
+            return lines[:15]
+
         responses = await db.game_section_responses.find(
             {"board_member_id": record["member_id"]},
             {"_id": 0, "section_id": 1, "completed": 1, "first_move_locked": 1}).to_list(20)
@@ -465,6 +481,11 @@ def create_game_night_router(db) -> APIRouter:
                 "note": night.get("note", ""),
             } if night else None,
             "sections": await get_sections_content(),
+            "situation_context": {
+                "technology": context_lines("technology", ["tools", "tech_working"]),
+                "team": context_lines("team", ["who_handles", "board_involvement"]),
+                "materials": context_lines("materials", ["materials"]),
+            },
             "progress": {str(response["section_id"]): {"completed": bool(response.get("completed")), "first_move_locked": bool(response.get("first_move_locked"))} for response in responses},
         }
 
@@ -492,6 +513,9 @@ def create_game_night_router(db) -> APIRouter:
                  "involvement": str(pref.get("involvement", ""))[:80]}
                 for pref in (payload.preferences or [])[:40] if isinstance(pref, dict) and str(pref.get("option", "")).strip()],
             "do_not_want": clean_list(payload.do_not_want),
+            "group_game_ideas": clean_list(payload.group_game_ideas),
+            "extras": payload.extras if isinstance(payload.extras, dict) else {},
+            "game_version": 2,
             "updated_at": now,
         }
         if not existing.get("first_move_locked"):

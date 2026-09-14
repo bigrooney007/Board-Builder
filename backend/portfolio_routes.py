@@ -64,7 +64,9 @@ DIRECT_ACTIVITIES = [
 ]
 
 SYSTEM_ROLE_BY_OPTION = {option: (key, label) for key, option, label in SYSTEM_ROLES}
+SYSTEM_ROLE_BY_OPTION.update({label: (key, label) for key, _, label in SYSTEM_ROLES})
 DIRECT_BY_OPTION = {option: (key, label) for key, option, label in DIRECT_ACTIVITIES}
+DIRECT_BY_OPTION.update({label: (key, label) for key, _, label in DIRECT_ACTIVITIES})
 SYSTEM_KEYS = {key for key, _, _ in SYSTEM_ROLES}
 DIRECT_KEYS = {key for key, _, _ in DIRECT_ACTIVITIES}
 

@@ -68,7 +68,11 @@ def contributor_names(names: list) -> str:
 
 
 def extract_ideas(response: dict, section_key: str) -> list:
-    """Return individual idea strings from an Individual Game response document."""
+    """Return individual idea strings from an Individual Game response document.
+    V2 responses carry a deterministic flat group_game_ideas list; use it when present."""
+    v2_ideas = [str(item).strip() for item in (response.get("group_game_ideas") or []) if str(item).strip()]
+    if v2_ideas:
+        return v2_ideas
     ideas = []
     final = [item for item in (response.get("final_response") or []) if str(item).strip()]
     ideas.extend(final)

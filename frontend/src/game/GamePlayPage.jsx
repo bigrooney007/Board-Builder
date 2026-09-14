@@ -6,430 +6,581 @@ import "./game.css";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const TOTAL = 10;
 
-const IdeaList = ({ ideas, setIdeas, placeholder, testId }) => {
-  const [draft, setDraft] = useState("");
-  const add = () => { const value = draft.trim(); if (!value) return; setIdeas([...(ideas || []), value]); setDraft(""); };
-  return (
-    <div>
-      <div className="bfg-idea-list">
-        {(ideas || []).map((idea, index) => (
-          <div className="bfg-idea" key={`${idea}-${index}`}>
-            <span>{idea}</span>
-            <button type="button" aria-label="Remove idea" onClick={() => setIdeas(ideas.filter((_, i) => i !== index))}>×</button>
-          </div>
-        ))}
-      </div>
-      <div className="bfg-idea-add">
-        <input value={draft} placeholder={placeholder || "Add an idea…"} onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} data-testid={testId} />
-        <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={add} data-testid={`${testId}-add`}>Add Idea</button>
-      </div>
-    </div>
-  );
-};
-
-const fillText = (text, context) => {
-  let out = String(text || "")
-    .replaceAll("{organisation}", context.organization_name || "your organisation")
-    .replaceAll("{organization}", context.organization_name || "your organisation")
-    .replaceAll("{goal}", context.goal_display || "its fundraising goal");
-  if (context.deadline_display) out = out.replaceAll("{deadline}", context.deadline_display);
-  else out = out.replaceAll(" by {deadline}", "").replaceAll("{deadline}", "");
+const norm = (t) => String(t).toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+const dedupe = (items) => {
+  const seen = new Set(); const out = [];
+  items.forEach((item) => { const k = norm(item); if (k && !seen.has(k)) { seen.add(k); out.push(String(item).trim()); } });
   return out;
 };
 
-const SectionPlayer = ({ section, context, token, onCompleted }) => {
-  const fill = (text) => fillText(text, context);
-  const [loaded, setLoaded] = useState(false);
-  const [revealed, setRevealed] = useState(false);
-  const [firstLocked, setFirstLocked] = useState(false);
-  const [firstResponse, setFirstResponse] = useState([]);
-  const [firstText, setFirstText] = useState("");
-  const [finalResponse, setFinalResponse] = useState([]);
-  const [selections, setSelections] = useState({});
-  const [additional, setAdditional] = useState({});
-  const [stageResponses, setStageResponses] = useState({});
-  const [prefs, setPrefs] = useState([]);
-  const [doNotWant, setDoNotWant] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    setLoaded(false); setRevealed(false); setFirstLocked(false); setError("");
-    setFirstResponse([]); setFirstText(""); setFinalResponse([]); setSelections({}); setAdditional({}); setStageResponses({}); setPrefs([]); setDoNotWant([]);
-    axios.get(`${API}/game/play/${token}/section/${section.id}`).then((r) => {
-      const response = r.data.response || {};
-      setFirstResponse(response.first_response || []);
-      setFirstText((response.first_response || [])[0] || "");
-      setFinalResponse(response.final_response || []);
-      setSelections(response.guided_selections || {});
-      setAdditional(response.additional_ideas || {});
-      setStageResponses(response.stage_responses || {});
-      setPrefs(response.preferences || []);
-      setDoNotWant(response.do_not_want || []);
-      const locked = !!response.first_move_locked;
-      setFirstLocked(locked);
-      setRevealed(locked || section.type === "preferences");
-      setLoaded(true);
-    }).catch(() => setLoaded(true));
-  }, [section.id, token, section.type]);
-
-  const payload = useCallback(() => ({
-    first_response: section.type === "journey" ? (firstText.trim() ? [firstText.trim()] : []) : firstResponse,
-    guided_selections: selections,
-    additional_ideas: additional,
-    stage_responses: stageResponses,
-    final_response: finalResponse,
-    preferences: prefs,
-    do_not_want: doNotWant,
-  }), [section.type, firstText, firstResponse, selections, additional, stageResponses, finalResponse, prefs, doNotWant]);
-
-  const reveal = async () => {
-    setBusy(true); setError("");
-    try {
-      await axios.put(`${API}/game/play/${token}/section/${section.id}`, { ...payload(), first_move_locked: true });
-      setFirstLocked(true);
-      if (section.type === "standard" && finalResponse.length === 0) setFinalResponse(firstResponse);
-      setRevealed(true);
-      window.scrollTo({ top: 0 });
-    } catch { setError("We could not save your answer. Please try again."); }
-    setBusy(false);
-  };
-
-  const complete = async () => {
-    setBusy(true); setError("");
-    try {
-      const response = await axios.post(`${API}/game/play/${token}/section/${section.id}/complete`, payload());
-      onCompleted(response.data.sections_completed);
-    } catch { setError("We could not save this section. Please try again."); setBusy(false); }
-  };
-
-  const toggleSelection = (groupKey, text) => setSelections((current) => {
-    const list = current[groupKey] || [];
-    return { ...current, [groupKey]: list.includes(text) ? list.filter((item) => item !== text) : [...list, text] };
-  });
-
-  const togglePref = (option) => setPrefs((current) => (
-    current.some((pref) => pref.option === option)
-      ? current.filter((pref) => pref.option !== option)
-      : [...current, { option, note: "", involvement: "" }]
-  ));
-  const setPrefField = (option, field) => (value) => setPrefs((current) => current.map((pref) => pref.option === option ? { ...pref, [field]: value } : pref));
-
-  if (!loaded) return <div className="bfg-card"><p>Loading…</p></div>;
-
+const AddList = ({ items, setItems, placeholder, addLabel, testId }) => {
+  const [text, setText] = useState("");
+  const add = () => { if (text.trim()) { setItems([...items, text.trim()]); setText(""); } };
   return (
-    <div className="bfg-card" data-testid={`bfg-play-section-${section.id}`}>
-      <p className="bfg-eyebrow">Section {section.id} of {TOTAL}</p>
-      <h2>{fill(section.title)}</h2>
-      <div className="bfg-scenario" data-testid="bfg-play-scenario">{fill(section.scenario)}</div>
-
-      {section.type === "preferences" ? (
-        <>
-          <h3 style={{ fontSize: 19, marginTop: 8 }}>{fill(section.first_move_question)}</h3>
-          <p style={{ fontSize: 14, marginTop: 6 }}>{fill(section.first_move_support)}</p>
-          {section.options.map((option) => {
-            const selected = prefs.find((pref) => pref.option === option);
-            return (
-              <div className={`bfg-pref-option ${selected ? "selected" : ""}`} key={option}>
-                <button type="button" onClick={() => togglePref(option)} data-testid={`bfg-pref-${section.id}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
-                  <span>{option}</span><span className="bfg-tick">{selected ? "✓" : ""}</span>
-                </button>
-                {selected && (
-                  <div className="bfg-pref-detail">
-                    <input placeholder={fill(section.note_question)} value={selected.note}
-                      onChange={(event) => setPrefField(option, "note")(event.target.value)} />
-                    {section.involvement_options && (
-                      <select value={selected.involvement} onChange={(event) => setPrefField(option, "involvement")(event.target.value)}>
-                        <option value="">{fill(section.involvement_question)}</option>
-                        {section.involvement_options.map((level) => <option key={level} value={level}>{level}</option>)}
-                      </select>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {section.do_not_want_question && (
-            <>
-              <h3 style={{ fontSize: 18, marginTop: 28 }}>{fill(section.do_not_want_question)}</h3>
-              <p style={{ fontSize: 14, marginTop: 6 }}>Select anything you would prefer not to do.</p>
-              {section.options.filter((option) => option !== "Other").map((option) => {
-                const selected = doNotWant.includes(option);
-                return (
-                  <div className={`bfg-pref-option ${selected ? "selected" : ""}`} key={`dnw-${option}`}>
-                    <button type="button" onClick={() => setDoNotWant(selected ? doNotWant.filter((item) => item !== option) : [...doNotWant, option])}>
-                      <span>{option}</span><span className="bfg-tick">{selected ? "✓" : ""}</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <p className="bfg-eyebrow" style={{ marginTop: 8 }}>Your First Move</p>
-          <h3 style={{ fontSize: 19 }}>{fill(section.first_move_question)}</h3>
-          {section.first_move_support && <p style={{ fontSize: 14, marginTop: 6 }}>{fill(section.first_move_support)}</p>}
-          {section.type === "journey" ? (
-            <label className="bfg-field"><span className="sr-only">Your answer</span>
-              <textarea rows={4} value={firstText} readOnly={firstLocked} placeholder={section.first_move_placeholder}
-                onChange={(event) => setFirstText(event.target.value)} data-testid="bfg-first-move-text" />
-            </label>
-          ) : firstLocked && revealed ? (
-            <div className="bfg-idea-list" style={{ marginTop: 12 }}>
-              {firstResponse.map((idea) => <div className="bfg-idea" key={idea}><span>{idea}</span></div>)}
-              {firstResponse.length === 0 && <p className="bfg-note">No first ideas were added.</p>}
-            </div>
-          ) : (
-            <IdeaList ideas={firstResponse} setIdeas={setFirstResponse} placeholder={section.first_move_placeholder} testId="bfg-first-move-input" />
-          )}
-
-          {!revealed && (
-            <div className="bfg-form-actions">
-              <span />
-              <button className="bfg-btn bfg-btn-primary" onClick={reveal} disabled={busy} data-testid="bfg-reveal-btn">
-                {busy ? "Saving…" : section.reveal_label || "Show Me What To Consider"}
-              </button>
-            </div>
-          )}
-
-          {revealed && (
-            <>
-              {section.wisdom && (
-                <div className="bfg-wisdom" data-testid="bfg-play-wisdom">
-                  <h4>Fundraising Wisdom</h4>
-                  <p>{fill(section.wisdom)}</p>
-                </div>
-              )}
-              {(section.groups || []).map((group) => (
-                <div key={group.key} style={{ marginTop: 24 }}>
-                  <h3 style={{ fontSize: 19 }}>{group.heading}</h3>
-                  {group.support && <p style={{ fontSize: 14, marginTop: 6 }}>{group.support}</p>}
-                  {group.items.map((item) => {
-                    const selected = (selections[group.key] || []).includes(item.text);
-                    return (
-                      <button type="button" key={item.text} className={`bfg-prompt-card ${selected ? "selected" : ""}`}
-                        onClick={() => toggleSelection(group.key, item.text)}
-                        data-testid={`bfg-prompt-${group.key}-${group.items.indexOf(item)}`}>
-                        <span className="bfg-tick">{selected ? "✓" : ""}</span>
-                        {item.text}
-                        {item.hint && <small>{item.hint}</small>}
-                      </button>
-                    );
-                  })}
-                  {group.followup_question && (
-                    <div style={{ marginTop: 16 }}>
-                      <h4 style={{ fontSize: 15.5, color: "#cbd5e1" }}>{fill(group.followup_question)}</h4>
-                      <IdeaList ideas={additional[group.key] || []} setIdeas={(ideas) => setAdditional({ ...additional, [group.key]: ideas })}
-                        placeholder="Add an idea…" testId={`bfg-additional-${group.key}`} />
-                    </div>
-                  )}
-                </div>
-              ))}
-              {(section.stages || []).length > 0 && (
-                <div style={{ marginTop: 24 }}>
-                  <h3 style={{ fontSize: 19 }}>{fill(section.stages_question)}</h3>
-                  {section.stages.map((stage) => (
-                    <div className="bfg-stage-block" key={stage.key}>
-                      <h4>{stage.label}</h4>
-                      <p>{stage.description}</p>
-                      {section.type === "stages" ? (
-                        <IdeaList ideas={Array.isArray(stageResponses[stage.key]) ? stageResponses[stage.key] : []}
-                          setIdeas={(ideas) => setStageResponses({ ...stageResponses, [stage.key]: ideas })}
-                          placeholder="Add an action…" testId={`bfg-stage-${stage.key}`} />
-                      ) : (
-                        <textarea value={typeof stageResponses[stage.key] === "string" ? stageResponses[stage.key] : ""}
-                          onChange={(event) => setStageResponses({ ...stageResponses, [stage.key]: event.target.value })}
-                          data-testid={`bfg-stage-${stage.key}`} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {section.type === "standard" && (
-                <div style={{ marginTop: 26 }}>
-                  <p className="bfg-eyebrow">Your Final Ideas</p>
-                  {section.final_question && <h3 style={{ fontSize: 18 }}>{fill(section.final_question)}</h3>}
-                  <p style={{ fontSize: 14, marginTop: 6 }}>Add or change your ideas now that you have seen what to consider.</p>
-                  <IdeaList ideas={finalResponse} setIdeas={setFinalResponse} placeholder="Add an idea…" testId="bfg-final-input" />
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-
-      {error && <p className="bfg-error">{error}</p>}
-      {(revealed || section.type === "preferences") && (
-        <div className="bfg-form-actions">
-          <span />
-          <button className="bfg-btn bfg-btn-primary" onClick={complete} disabled={busy} data-testid="bfg-complete-section-btn">
-            {busy ? "Saving…" : section.complete_label}
-          </button>
-        </div>
-      )}
+    <div className="bfg-ig-add" data-testid={testId}>
+      <div className="bfg-ig-row">
+        <input value={text} placeholder={placeholder || ""} onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} data-testid={`${testId}-input`} />
+        <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={add} data-testid={`${testId}-btn`}>{addLabel || "Add Idea"}</button>
+      </div>
+      <div className="bfg-ig-chips">
+        {items.map((item, i) => (
+          <span className="bfg-ig-chip" key={i}>{item}
+            <button type="button" onClick={() => setItems(items.filter((_, x) => x !== i))} aria-label="Remove">×</button>
+          </span>
+        ))}
+      </div>
     </div>
   );
 };
 
+const Cards = ({ items, numbered }) => (
+  <div className="bfg-ig-cards">
+    {(items || []).map((card, i) => (
+      <div className="bfg-ig-card" key={i}>
+        <strong>{numbered ? `${i + 1}. ` : ""}{card.text}</strong>
+        {card.hint && <p>{card.hint}</p>}
+      </div>
+    ))}
+  </div>
+);
+
 export default function GamePlayPage() {
   const { token } = useParams();
-  const [context, setContext] = useState(null);
+  const [ctx, setCtx] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [view, setView] = useState("welcome");
   const [sectionId, setSectionId] = useState(1);
-  const [completedCount, setCompletedCount] = useState(0);
+  const [step, setStep] = useState(0);
+  const [resp, setResp] = useState(null);
+  const [audiences, setAudiences] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [firstText, setFirstText] = useState("");
+
+  useEffect(() => { document.title = "Board Fundraising Game"; }, []);
 
   const load = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API}/game/play/${token}`);
-      setContext(response.data);
-      const progress = response.data.progress || {};
-      setCompletedCount(Object.values(progress).filter((item) => item.completed).length);
-    } catch { setNotFound(true); }
+    try { setCtx((await axios.get(`${API}/game/play/${token}`)).data); } catch { setNotFound(true); }
   }, [token]);
+  useEffect(() => { load(); }, [load]);
 
-  useEffect(() => { document.title = "Board Fundraising Game"; load(); }, [load]);
+  const sections = ctx?.sections || [];
+  const progress = ctx?.progress || {};
+  const completedCount = Object.values(progress).filter((p) => p.completed).length;
+  const fill = useCallback((text) => String(text || "")
+    .replaceAll("{organisation}", ctx?.organization_name || "your organisation")
+    .replaceAll("{goal}", ctx?.goal_display || "its fundraising goal")
+    .replaceAll("{deadline}", ctx?.deadline_display || "its deadline"), [ctx]);
 
-  const firstIncomplete = useMemo(() => {
-    if (!context) return 1;
-    for (let id = 1; id <= TOTAL; id += 1) {
-      if (!context.progress?.[String(id)]?.completed) return id;
+  const section = sections.find((s) => s.id === sectionId);
+
+  const openSection = async (id) => {
+    setError("");
+    try {
+      const data = (await axios.get(`${API}/game/play/${token}/section/${id}`)).data.response || {};
+      const sec = sections.find((s) => s.id === id);
+      const stageState = {};
+      (sec.stages || []).forEach((st) => { const v = data.stage_responses?.[st.key]; stageState[st.key] = Array.isArray(v) ? v : v ? [v] : []; });
+      setResp({
+        first: data.first_response || [], locked: Boolean(data.first_move_locked),
+        guided: data.guided_selections || {}, final: data.final_response || [],
+        stages: stageState, prefs: data.preferences || [], doNotWant: data.do_not_want || [],
+        extras: data.extras || {},
+      });
+      setFirstText((data.first_response || [])[0] || "");
+      if (id === 2 || id === 3) {
+        const s1 = (await axios.get(`${API}/game/play/${token}/section/1`)).data.response || {};
+        setAudiences(s1.group_game_ideas || []);
+      }
+      setSectionId(id); setStep(0); setView("section");
+      window.scrollTo({ top: 0 });
+    } catch { setError("We could not load this section. Please try again."); }
+  };
+
+  const buildPayload = (r, sec) => {
+    let gg = [];
+    if (sec.type === "discover") gg = dedupe([...(r.first || []), ...Object.values(r.guided).flat(), ...(r.final || [])]);
+    if (sec.type === "journey" || sec.type === "stages") {
+      gg = [];
+      (sec.stages || []).forEach((st) => (r.stages[st.key] || []).forEach((a) => gg.push(`${st.label}: ${a}`)));
+      gg = dedupe(gg);
     }
-    return TOTAL;
-  }, [context]);
+    return {
+      first_response: r.first, first_move_locked: r.locked,
+      guided_selections: r.guided, additional_ideas: {}, stage_responses: r.stages,
+      final_response: r.final, preferences: r.prefs, do_not_want: r.doNotWant,
+      group_game_ideas: gg, extras: r.extras,
+    };
+  };
 
-  if (notFound) {
+  const save = async (r, complete) => {
+    setSaving(true); setError("");
+    try {
+      const url = `${API}/game/play/${token}/section/${sectionId}${complete ? "/complete" : ""}`;
+      await axios[complete ? "post" : "put"](url, buildPayload(r, section));
+      if (complete) { await load(); setView("done"); window.scrollTo({ top: 0 }); }
+      setSaving(false);
+      return true;
+    } catch { setError("We could not save. Please try again."); setSaving(false); return false; }
+  };
+
+  if (notFound) return <div className="bfg" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}><div className="bfg-card"><h2>This game link is not valid</h2><p style={{ marginTop: 10 }}>Please ask your organisation to resend your invitation.</p></div></div>;
+  if (!ctx) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+
+  const Header = () => (
+    <header className="bfg-ig-head" data-testid="bfg-ig-header">
+      <p className="bfg-eyebrow" style={{ margin: 0 }}>Board Fundraising Game</p>
+      <strong>{ctx.organization_name}</strong>
+      {view === "section" && (
+        <>
+          <span className="bfg-ig-count">Section {sectionId} of {TOTAL}</span>
+          <div className="bfg-ig-bar"><span style={{ width: `${(completedCount / TOTAL) * 100}%` }} /></div>
+        </>
+      )}
+    </header>
+  );
+
+  // ---------- Welcome / Progress / Done ----------
+  if (view === "welcome") {
+    const started = completedCount > 0 || Object.values(progress).some((p) => p.first_move_locked);
     return (
-      <div className="bfg" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
-        <div className="bfg-card" style={{ maxWidth: 420, textAlign: "center" }} data-testid="bfg-play-invalid">
-          <h2>This Game Link Is Not Valid</h2>
-          <p style={{ marginTop: 10 }}>Please use the link from your invitation email, or ask your organisation to send it again.</p>
-        </div>
+      <div className="bfg bfg-ig"><Header />
+        <main className="bfg-flow" data-testid="bfg-ig-welcome">
+          <div className="bfg-card">
+            <h1>Welcome To Your Board Fundraising Game</h1>
+            <p style={{ marginTop: 14 }}>{ctx.organization_name} wants to raise {ctx.goal_display}{ctx.deadline_display ? ` by ${ctx.deadline_display}` : ""}.</p>
+            <p style={{ marginTop: 10 }}>Before your board meets for Game Night, you are going to build your own version of the fundraising strategy you believe can help your organisation reach that goal.</p>
+            <h2 style={{ marginTop: 22 }}>You Do Not Need To Be A Fundraising Expert</h2>
+            <p style={{ marginTop: 10 }}>The game will teach you how a complete fundraising strategy is built while helping you contribute the knowledge, relationships and ideas you already have.</p>
+            <p style={{ marginTop: 10 }}>In each section, we will ask what you think first. Then we will show you how fundraisers think about that part of the strategy and give you another opportunity to add to your ideas.</p>
+            <p style={{ marginTop: 10 }}>Your board will bring everyone's ideas together during Game Night and decide what should become part of the organisation's fundraising strategy.</p>
+            <div className="bfg-ig-card" style={{ marginTop: 18 }}>
+              <strong>10 Strategy Sections</strong>
+              <p>Complete one section at a time. Your progress is saved after every completed section.</p>
+            </div>
+            <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20, width: "100%" }}
+              onClick={() => started ? setView("progress") : openSection(1)} data-testid="bfg-ig-start-btn">
+              {started ? "Continue My Game" : "Start My Game"}
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
-  if (!context) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
-  const section = context.sections.find((item) => item.id === sectionId);
-  const completedSections = context.sections.filter((item) => context.progress?.[String(item.id)]?.completed);
-  const night = context.game_night;
-
-  const onCompleted = async (count) => {
-    setCompletedCount(count);
-    await load();
-    setView(count >= TOTAL && sectionId === TOTAL ? "finished" : "section-done");
-    window.scrollTo({ top: 0 });
-  };
-
-  const startSection = (id) => { setSectionId(id); setView("section"); window.scrollTo({ top: 0 }); };
-
-  return (
-    <div className="bfg" style={{ minHeight: "100vh" }}>
-      <header className="bfg-nav">
-        <span className="bfg-logo">
-          <span className="bfg-logo-mark">BG</span>
-          <span><strong>Nonprofit Board Builder</strong><em>Board Fundraising Game</em></span>
-        </span>
-      </header>
-      <main className="bfg-play" data-testid="bfg-play-page">
-        {view !== "welcome" && view !== "finished" && (
-          <>
-            <div className="bfg-play-progressbar"><span style={{ width: `${(completedCount / TOTAL) * 100}%` }} /></div>
-            <p className="bfg-play-progress-label" data-testid="bfg-play-progress">{completedCount} of {TOTAL} Strategy Sections Completed</p>
-          </>
-        )}
-
-        {view === "welcome" && (
-          <div className="bfg-card" data-testid="bfg-play-welcome">
-            <p className="bfg-eyebrow">Board Fundraising Game</p>
-            <h1>Welcome, {context.first_name}</h1>
-            <p style={{ marginTop: 14 }}>
-              {context.organization_name} is working to raise {context.goal_display}{context.deadline_display ? ` by ${context.deadline_display}` : ""}.
-              {" "}Before your board meets for Game Night, you are going to help build the fundraising strategy that can make that goal possible.
-            </p>
-            <p style={{ marginTop: 14 }}>
-              You do not need to be a fundraising expert.
-              {" "}The game will walk you through how a complete fundraising strategy is built, one section at a time. You will share what you already know, learn how to think about each part of the strategy and then add any new ideas that come to mind.
-            </p>
-            <p style={{ marginTop: 14 }}>
-              Complete one section before leaving the game. Once a section is finished, your progress will be saved and you can return through this same link at any time.
-            </p>
-            <div className="bfg-play-progressbar"><span style={{ width: `${(completedCount / TOTAL) * 100}%` }} /></div>
-            <p className="bfg-play-progress-label" data-testid="bfg-welcome-progress">{completedCount} of {TOTAL} Strategy Sections Completed</p>
-            <div style={{ marginTop: 22 }}>
-              <button className="bfg-btn bfg-btn-primary" style={{ width: "100%" }} onClick={() => startSection(firstIncomplete)} data-testid="bfg-start-game-btn">
-                {completedCount > 0 ? "Continue My Game" : "Start My Game"}
-              </button>
+  if (view === "progress" || view === "done") {
+    const allDone = completedCount >= TOTAL;
+    const nextId = sections.find((s) => !progress[String(s.id)]?.completed)?.id;
+    return (
+      <div className="bfg bfg-ig"><Header />
+        <main className="bfg-flow" data-testid={view === "done" ? "bfg-ig-section-done" : "bfg-ig-progress"}>
+          <div className="bfg-card">
+            {view === "done" && !allDone && (<><h1>Section Complete</h1><p style={{ marginTop: 8 }}>{completedCount} of {TOTAL} sections completed</p></>)}
+            {view === "done" && allDone && (
+              <div data-testid="bfg-ig-game-complete">
+                <h1>You're Ready For Game Night</h1>
+                <p style={{ marginTop: 12 }}>Thank you, {ctx.first_name}.</p>
+                <p style={{ marginTop: 8 }}>You have now built your own view of how {ctx.organization_name} can work toward its {ctx.goal_display} fundraising goal.</p>
+                <p style={{ marginTop: 8 }}>You identified who could fund the mission, where to find them, how to attract them, the process required to raise money, the technology, team and materials needed to execute, and what the execution timeline could look like.</p>
+                <p style={{ marginTop: 8 }}>You also told us how you want to help build the fundraising system and how you want to participate in raising money.</p>
+                <h2 style={{ marginTop: 18 }}>What Happens Next?</h2>
+                <p style={{ marginTop: 8 }}>During Game Night, your board will see the ideas contributed by everyone, prioritise the strongest ones and use those decisions to build the organisation's fundraising strategy.</p>
+                <p style={{ marginTop: 12, fontWeight: 700 }}>10 of 10 Sections Completed</p>
+                {ctx.game_night?.date_display && <p style={{ marginTop: 8 }}>Game Night: {ctx.game_night.date_display}{ctx.game_night.time_display ? ` · Time: ${ctx.game_night.time_display}` : ""}</p>}
+                <p style={{ marginTop: 8 }}>Come ready to think, decide and build the strategy together.</p>
+              </div>
+            )}
+            {view === "progress" && (<><h1>Your Game Progress</h1><p style={{ marginTop: 8 }}>{completedCount} of {TOTAL} Sections Completed</p></>)}
+            <div style={{ marginTop: 18 }}>
+              {sections.map((s) => {
+                const done = progress[String(s.id)]?.completed;
+                return (
+                  <div className="bfg-ig-progressrow" key={s.id} data-testid={`bfg-ig-prow-${s.id}`}>
+                    <span>{done ? "✓" : `${s.id}.`} {fill(s.title)}</span>
+                    {done ? (
+                      <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => openSection(s.id)} data-testid={`bfg-ig-review-${s.id}`}>Review</button>
+                    ) : s.id === nextId ? (
+                      <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => openSection(s.id)} data-testid={`bfg-ig-continue-${s.id}`}>Continue</button>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
-            {completedSections.length > 0 && completedCount < TOTAL && (
-              <div style={{ marginTop: 22 }}>
-                <p className="bfg-eyebrow">Review My Previous Sections</p>
-                <div className="bfg-review-list">
-                  {completedSections.map((item) => (
-                    <button key={item.id} onClick={() => startSection(item.id)} data-testid={`bfg-review-section-${item.id}`}>
-                      <span>{item.id}. {fillText(item.title, context)}</span><span>✓</span>
-                    </button>
-                  ))}
+            {view === "done" && !allDone && nextId && (
+              <div className="bfg-form-actions">
+                <button className="bfg-btn bfg-btn-ghost" onClick={() => setView("progress")} data-testid="bfg-ig-save-exit-btn">Save & Exit</button>
+                <button className="bfg-btn bfg-btn-primary" onClick={() => openSection(nextId)} data-testid="bfg-ig-next-section-btn">Continue To Next Section</button>
+              </div>
+            )}
+            {error && <p className="bfg-error">{error}</p>}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ---------- Section player ----------
+  if (!section || !resp) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+
+  const steps = (() => {
+    if (section.type === "preferences") return section.key === "direct_fundraising"
+      ? ["situation", "choose", "details", "exclude", "review"] : ["situation", "choose", "details", "review"];
+    const base = ["situation", "first", "wisdom"];
+    if (section.stages?.length) return [...base, ...section.stages.map((s) => `stage:${s.key}`), "final"];
+    const mid = section.groups.map((g) => `group:${g.key}`);
+    if (section.extra === "connect_audiences") mid.push("connect");
+    if (section.extra === "material_status") mid.push("status");
+    return [...base, ...mid, "final"];
+  })();
+  const stepKey = steps[step];
+  const next = () => { setStep(Math.min(step + 1, steps.length - 1)); window.scrollTo({ top: 0 }); };
+  const setR = (patch) => setResp((r) => ({ ...r, ...patch }));
+  const setExtra = (key, value) => setR({ extras: { ...resp.extras, [key]: value } });
+  const context = ctx.situation_context?.[section.situation_context] || [];
+
+  const complete = async () => { await save(resp, true); };
+  const saveExit = async () => { const ok = await save(resp, false); if (ok) setView("progress"); };
+
+  const body = () => {
+    if (stepKey === "situation") return (
+      <>
+        <h1>{fill(section.title)}</h1>
+        <p style={{ marginTop: 14, whiteSpace: "pre-line" }}>{fill(section.scenario)}</p>
+        <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-situation-next">
+          {section.type === "preferences" ? section.situation_button : "Make My First Move"}
+        </button>
+      </>
+    );
+    if (stepKey === "first") {
+      const textMode = section.first_mode === "text";
+      return (
+        <>
+          <p className="bfg-eyebrow">Your First Move</p>
+          <h1>{fill(section.first_move_heading || section.first_move_question)}</h1>
+          {section.first_move_heading && <p style={{ marginTop: 10 }}>{fill(section.first_move_question)}</p>}
+          {section.first_move_support && <p className="bfg-note" style={{ marginTop: 8 }}>{fill(section.first_move_support)}</p>}
+          {context.length > 0 && (
+            <div className="bfg-ig-card" style={{ marginTop: 14 }} data-testid="bfg-ig-context">
+              <strong>{section.context_heading}</strong>
+              {context.map((line, i) => <p key={i}>{line}</p>)}
+            </div>
+          )}
+          {textMode ? (
+            <label className="bfg-field"><span> </span>
+              <textarea rows={6} value={firstText} disabled={resp.locked} onChange={(e) => setFirstText(e.target.value)} data-testid="bfg-ig-first-text" />
+            </label>
+          ) : (
+            resp.locked
+              ? <div className="bfg-ig-chips" style={{ marginTop: 14 }}>{resp.first.map((t, i) => <span className="bfg-ig-chip locked" key={i}>{t}</span>)}</div>
+              : <AddList items={resp.first} setItems={(v) => setR({ first: v })} placeholder={section.first_placeholder} addLabel={section.first_add_label} testId="bfg-ig-first" />
+          )}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" data-testid="bfg-ig-lock-btn"
+            onClick={() => {
+              if (!resp.locked) setResp((r) => ({ ...r, first: textMode ? (firstText.trim() ? [firstText.trim()] : []) : r.first, locked: true }));
+              next();
+            }}>
+            {resp.locked ? "Continue" : section.first_lock_label || "Lock In My First Ideas"}
+          </button>
+        </>
+      );
+    }
+    if (stepKey === "wisdom") return (
+      <>
+        <p className="bfg-eyebrow">Fundraising Wisdom</p>
+        <h1>Fundraising Wisdom</h1>
+        <p style={{ marginTop: 14, whiteSpace: "pre-line" }}>{fill(section.wisdom)}</p>
+        <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-wisdom-next">{section.wisdom_button || "Think Deeper"}</button>
+      </>
+    );
+    if (stepKey.startsWith("group:")) {
+      const group = section.groups.find((g) => `group:${g.key}` === stepKey);
+      const items = resp.guided[group.key] || [];
+      const setItems = (v) => setR({ guided: { ...resp.guided, [group.key]: v } });
+      return (
+        <>
+          <h1>{fill(group.heading)}</h1>
+          {group.support && <p className="bfg-note" style={{ marginTop: 8 }}>{group.support}</p>}
+          {group.kind === "select" ? (
+            <div className="bfg-ig-cards">
+              {group.items.map((card, i) => {
+                const on = items.includes(card.text);
+                return (
+                  <button type="button" key={i} className={`bfg-ig-card selectable ${on ? "on" : ""}`}
+                    onClick={() => setItems(on ? items.filter((t) => t !== card.text) : [...items, card.text])}
+                    data-testid={`bfg-ig-select-${i}`}>
+                    <strong>{card.text}</strong>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <Cards items={group.items} numbered={section.id === 1} />
+          )}
+          <h2 style={{ marginTop: 24 }}>{fill(group.ask)}</h2>
+          {group.ask_support && <p className="bfg-note" style={{ marginTop: 6 }}>{group.ask_support}</p>}
+          <AddList items={group.kind === "select" ? items.filter((t) => !group.items.some((c) => c.text === t)) : items}
+            setItems={(v) => group.kind === "select" ? setItems([...items.filter((t) => group.items.some((c) => c.text === t)), ...v]) : setItems(v)}
+            placeholder={group.placeholder} addLabel={group.add_label} testId={`bfg-ig-group-${group.key}`} />
+          {section.extra === "audience_tags" && items.length > 0 && audiences.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <p className="bfg-note">Optionally tag which audiences an idea would work especially well for:</p>
+              {items.map((idea) => (
+                <div className="bfg-ig-card" key={idea}>
+                  <strong>{idea}</strong>
+                  <div className="bfg-ig-chips">
+                    {audiences.map((aud) => {
+                      const tags = resp.extras.idea_audiences?.[idea] || [];
+                      const on = tags.includes(aud);
+                      return <button type="button" key={aud} className={`bfg-ig-tag ${on ? "on" : ""}`}
+                        onClick={() => setExtra("idea_audiences", { ...(resp.extras.idea_audiences || {}), [idea]: on ? tags.filter((t) => t !== aud) : [...tags, aud] })}>{aud}</button>;
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {section.extra === "role_fillers" && items.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              {items.map((role) => (
+                <div className="bfg-ig-progressrow" key={role}>
+                  <span>{role}</span>
+                  <select value={resp.extras.role_fillers?.[role] || ""}
+                    onChange={(e) => setExtra("role_fillers", { ...(resp.extras.role_fillers || {}), [role]: e.target.value })}>
+                    <option value="">{section.filler_question}</option>
+                    {section.filler_options.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-group-next">{group.next_label || "Continue"}</button>
+        </>
+      );
+    }
+    if (stepKey === "connect") {
+      const places = dedupe([...(resp.first || []), ...(resp.guided.places || [])]);
+      return (
+        <>
+          <h1>{section.connect_heading}</h1>
+          <p className="bfg-note" style={{ marginTop: 8 }}>{section.connect_support}</p>
+          {audiences.map((aud) => {
+            const chosen = resp.extras.audience_places?.[aud] || [];
+            return (
+              <div className="bfg-ig-card" key={aud}>
+                <strong>{aud}</strong>
+                <div className="bfg-ig-chips">
+                  {places.map((place) => {
+                    const on = chosen.includes(place);
+                    return <button type="button" key={place} className={`bfg-ig-tag ${on ? "on" : ""}`}
+                      onClick={() => setExtra("audience_places", { ...(resp.extras.audience_places || {}), [aud]: on ? chosen.filter((p) => p !== place) : [...chosen, place] })}>{place}</button>;
+                  })}
                 </div>
               </div>
-            )}
-            {completedCount >= TOTAL && (
-              <button className="bfg-btn bfg-btn-ghost" style={{ width: "100%", marginTop: 12 }} onClick={() => setView("finished")} data-testid="bfg-view-completion-btn">
-                View My Completion Summary
-              </button>
-            )}
+            );
+          })}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-connect-next">Continue</button>
+        </>
+      );
+    }
+    if (stepKey === "status") {
+      const all = dedupe([...(resp.first || []), ...(resp.guided.materials || []), ...(resp.final || [])]);
+      const existing = context.map((line) => norm(line));
+      return (
+        <>
+          <h1>{section.status_heading}</h1>
+          {all.map((mat) => (
+            <div className="bfg-ig-progressrow" key={mat}>
+              <span>{mat}</span>
+              <select value={resp.extras.material_status?.[mat] || (existing.some((e) => e.includes(norm(mat)) || norm(mat).includes(e)) ? "" : "Need To Create")}
+                onChange={(e) => setExtra("material_status", { ...(resp.extras.material_status || {}), [mat]: e.target.value })}>
+                <option value="">Choose…</option>
+                {section.status_options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          ))}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-status-next">Continue</button>
+        </>
+      );
+    }
+    if (stepKey.startsWith("stage:")) {
+      const stage = section.stages.find((s) => `stage:${s.key}` === stepKey);
+      const items = resp.stages[stage.key] || [];
+      const timed = Boolean(section.timing_options);
+      return (
+        <>
+          <p className="bfg-eyebrow">{stage.number}. {stage.label}</p>
+          <h1>{stage.label}</h1>
+          <p style={{ marginTop: 10 }}>{fill(stage.description)}</p>
+          <h2 style={{ marginTop: 16 }}>{fill(stage.ask)}</h2>
+          {stage.prompt && <p className="bfg-note" style={{ marginTop: 6 }}>{fill(stage.prompt)}</p>}
+          <AddList items={items} setItems={(v) => setR({ stages: { ...resp.stages, [stage.key]: v } })}
+            placeholder="Add an action" addLabel="Add Action" testId={`bfg-ig-stage-${stage.key}`} />
+          {timed && items.length > 0 && items.map((action) => (
+            <div className="bfg-ig-progressrow" key={action}>
+              <span>{action}</span>
+              <select value={resp.extras.action_timing?.[`${stage.key}|${action}`] || ""}
+                onChange={(e) => setExtra("action_timing", { ...(resp.extras.action_timing || {}), [`${stage.key}|${action}`]: e.target.value })}>
+                <option value="">{section.timing_question}</option>
+                {section.timing_options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          ))}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-stage-next">Continue</button>
+        </>
+      );
+    }
+    if (stepKey === "final") {
+      if (section.stages?.length) return (
+        <>
+          <h1>{section.final_heading}</h1>
+          {section.stages.map((stage) => (
+            <div className="bfg-ig-card" key={stage.key}>
+              <strong>{stage.label}</strong>
+              <AddList items={resp.stages[stage.key] || []} setItems={(v) => setR({ stages: { ...resp.stages, [stage.key]: v } })}
+                placeholder="Add an action" addLabel="Add" testId={`bfg-ig-final-${stage.key}`} />
+            </div>
+          ))}
+          {error && <p className="bfg-error">{error}</p>}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" disabled={saving} onClick={complete} data-testid="bfg-ig-complete-btn">{section.complete_label}</button>
+        </>
+      );
+      return (
+        <>
+          <h1>Your Final Ideas</h1>
+          <div className="bfg-ig-card"><strong>You First Thought Of</strong>
+            <div className="bfg-ig-chips">{resp.first.map((t, i) => <span className="bfg-ig-chip locked" key={i}>{t}</span>)}</div>
           </div>
-        )}
-
-        {view === "section" && section && (
-          <SectionPlayer section={section} context={context} token={token} onCompleted={onCompleted} />
-        )}
-
-        {view === "section-done" && (
-          <div className="bfg-card bfg-section-done" data-testid="bfg-section-complete">
-            <h2>Section Complete</h2>
-            <p style={{ marginTop: 12 }}>{completedCount} of {TOTAL} Strategy Sections Completed</p>
-            <div style={{ marginTop: 22, display: "grid", gap: 10 }}>
-              <button className="bfg-btn bfg-btn-primary" onClick={() => startSection(firstIncomplete)} data-testid="bfg-next-section-btn">
-                Continue To Next Section
-              </button>
-              <button className="bfg-btn bfg-btn-ghost" onClick={() => { setView("welcome"); window.scrollTo({ top: 0 }); }} data-testid="bfg-back-to-welcome-btn">
-                Save & Return Later
-              </button>
+          {section.groups.map((group) => (resp.guided[group.key] || []).length > 0 && (
+            <div className="bfg-ig-card" key={group.key}><strong>After Thinking Deeper — {group.heading}</strong>
+              <div className="bfg-ig-chips">{resp.guided[group.key].map((t, i) => <span className="bfg-ig-chip" key={i}>{t}</span>)}</div>
+            </div>
+          ))}
+          {section.final_question && (
+            <>
+              <h2 style={{ marginTop: 20 }}>{section.final_heading || "Anything Else?"}</h2>
+              <p style={{ marginTop: 6 }}>{fill(section.final_question)}</p>
+            </>
+          )}
+          <AddList items={resp.final} setItems={(v) => setR({ final: v })} placeholder="Add another idea" addLabel="Add Idea" testId="bfg-ig-final" />
+          {error && <p className="bfg-error">{error}</p>}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" disabled={saving} onClick={complete} data-testid="bfg-ig-complete-btn">{section.complete_label}</button>
+        </>
+      );
+    }
+    // preferences steps
+    const selected = resp.prefs.map((p) => p.option);
+    const allOptions = section.groups.flatMap((g) => g.items.map((c) => c.text));
+    if (stepKey === "choose") return (
+      <>
+        <h1>{section.choose_heading}</h1>
+        <p className="bfg-note" style={{ marginTop: 8 }}>{section.choose_support}</p>
+        {section.groups.map((group) => (
+          <div key={group.key} style={{ marginTop: 18 }}>
+            <p className="bfg-eyebrow">{group.heading}</p>
+            <div className="bfg-ig-cards">
+              {group.items.map((card) => {
+                const on = selected.includes(card.text);
+                return <button type="button" key={card.text} className={`bfg-ig-card selectable ${on ? "on" : ""}`}
+                  onClick={() => setR({ prefs: on ? resp.prefs.filter((p) => p.option !== card.text) : [...resp.prefs, { option: card.text, note: "", involvement: "" }] })}
+                  data-testid={`bfg-ig-pref-${norm(card.text).replace(/ /g, "-")}`}>
+                  <strong>{card.text}</strong>
+                </button>;
+              })}
             </div>
           </div>
-        )}
-
-        {view === "finished" && (
-          <div className="bfg-card" data-testid="bfg-play-finished">
-            <p className="bfg-eyebrow">Individual Game Complete</p>
-            <h1>You're Ready For Game Night</h1>
-            <p style={{ marginTop: 14 }}>Thank you, {context.first_name}.</p>
-            <p style={{ marginTop: 12 }}>
-              You have helped {context.organization_name} think through who can fund the mission, where to find them, how to attract them, the process required to raise money, the technology, team and materials needed to execute, and the role you would personally like to play.
-            </p>
-            <p style={{ marginTop: 12 }}>
-              Your ideas will now become part of the Board Fundraising Game your board plays together during your next meeting.
-            </p>
-            <div className="bfg-play-progressbar"><span style={{ width: "100%" }} /></div>
-            <p className="bfg-play-progress-label">{TOTAL} of {TOTAL} Strategy Sections Completed</p>
-            {night && (night.date_display || night.time_display) && (
-              <div className="bfg-night-summary" style={{ marginTop: 18 }}>
-                {night.date_display && <div className="bfg-summary-row"><span>Game Night</span><strong>{night.date_display}</strong></div>}
-                {night.time_display && <div className="bfg-summary-row"><span>Time</span><strong>{night.time_display}</strong></div>}
-              </div>
+        ))}
+        <button className="bfg-btn bfg-btn-primary bfg-ig-cta" disabled={resp.prefs.length === 0} onClick={next} data-testid="bfg-ig-choose-next">Continue</button>
+      </>
+    );
+    if (stepKey === "details") return (
+      <>
+        <h1>{section.involvement_question ? "How Do You Want To Participate?" : "Tell Us More"}</h1>
+        {resp.prefs.map((pref, i) => (
+          <div className="bfg-ig-card" key={pref.option}>
+            <strong>{pref.option}</strong>
+            {section.involvement_options && (
+              <select value={pref.involvement} style={{ marginTop: 10 }}
+                onChange={(e) => setR({ prefs: resp.prefs.map((p, x) => x === i ? { ...p, involvement: e.target.value } : p) })}>
+                <option value="">{section.involvement_question}</option>
+                {section.involvement_options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
             )}
-            <p style={{ marginTop: 18 }}>
-              Come ready to review the ideas contributed by your board, identify your strongest fundraising priorities and build your organisation's fundraising strategy together.
-            </p>
-            <button className="bfg-btn bfg-btn-ghost" style={{ marginTop: 18 }} onClick={() => setView("welcome")} data-testid="bfg-finished-review-btn">
-              Review My Previous Sections
-            </button>
+            <textarea rows={2} placeholder={section.note_question} value={pref.note} style={{ marginTop: 10 }}
+              onChange={(e) => setR({ prefs: resp.prefs.map((p, x) => x === i ? { ...p, note: e.target.value } : p) })} />
           </div>
-        )}
+        ))}
+        <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-details-next">Continue</button>
+      </>
+    );
+    if (stepKey === "exclude") {
+      const noneLabel = section.do_not_want_none;
+      const toggle = (label) => {
+        if (label === noneLabel) { setR({ doNotWant: resp.doNotWant.includes(noneLabel) ? [] : [noneLabel] }); return; }
+        const cleared = resp.doNotWant.filter((t) => t !== noneLabel);
+        setR({ doNotWant: cleared.includes(label) ? cleared.filter((t) => t !== label) : [...cleared, label] });
+      };
+      return (
+        <>
+          <h1>{section.do_not_want_heading}</h1>
+          <p className="bfg-note" style={{ marginTop: 8 }}>{section.do_not_want_support}</p>
+          <div className="bfg-ig-cards">
+            {[...allOptions.filter((o) => o !== "Other"), noneLabel].map((label) => {
+              const on = resp.doNotWant.includes(label);
+              return <button type="button" key={label} className={`bfg-ig-card selectable ${on ? "on" : ""}`} onClick={() => toggle(label)}
+                data-testid={`bfg-ig-dnw-${norm(label).replace(/ /g, "-")}`}><strong>{label}</strong></button>;
+            })}
+          </div>
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" onClick={next} data-testid="bfg-ig-exclude-next">Continue</button>
+        </>
+      );
+    }
+    if (stepKey === "review") {
+      const exclusions = resp.doNotWant.filter((t) => t !== section.do_not_want_none);
+      return (
+        <>
+          <h1>{section.review_heading}</h1>
+          {resp.prefs.map((pref, i) => (
+            <div className="bfg-ig-card" key={pref.option}>
+              <div className="bfg-panel-head"><strong>{pref.option}</strong>
+                <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm"
+                  onClick={() => setR({ prefs: resp.prefs.filter((_, x) => x !== i) })}>Remove</button>
+              </div>
+              {pref.involvement && <p>{pref.involvement}</p>}
+              {pref.note && <p className="bfg-note">{pref.note}</p>}
+            </div>
+          ))}
+          {section.custom_question && (
+            <>
+              <h2 style={{ marginTop: 18 }}>{section.custom_question}</h2>
+              <AddList items={resp.prefs.filter((p) => !allOptions.includes(p.option)).map((p) => p.option)}
+                setItems={(v) => setR({ prefs: [...resp.prefs.filter((p) => allOptions.includes(p.option)), ...v.map((t) => ({ option: t, note: "", involvement: "" }))] })}
+                placeholder="Another way you would like to help" addLabel="Add" testId="bfg-ig-custom" />
+            </>
+          )}
+          {exclusions.length > 0 && (
+            <div className="bfg-ig-card"><strong>Activities You Prefer Not To Do</strong>
+              <div className="bfg-ig-chips">{exclusions.map((t) => <span className="bfg-ig-chip" key={t}>{t}</span>)}</div>
+            </div>
+          )}
+          {error && <p className="bfg-error">{error}</p>}
+          <button className="bfg-btn bfg-btn-primary bfg-ig-cta" disabled={saving} onClick={complete} data-testid="bfg-ig-complete-btn">{section.complete_label}</button>
+        </>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bfg bfg-ig"><Header />
+      <main className="bfg-flow" data-testid="bfg-ig-section">
+        <div className="bfg-card">
+          {body()}
+          <div className="bfg-form-actions">
+            {step > 0 && <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0 }); }} data-testid="bfg-ig-back-btn">Back</button>}
+            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={saving} onClick={saveExit} data-testid="bfg-ig-exit-btn">Save & Exit</button>
+          </div>
+        </div>
       </main>
     </div>
   );
