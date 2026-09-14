@@ -33,7 +33,7 @@ export default function GameHomePage() {
     ) : (
       <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/signup?mode=login")} data-testid="bfg-nav-login-btn">Log In</button>
     )}>
-      <main data-testid="bfg-homepage">
+      <main data-testid="bfg-homepage" className="bfg-home">
         <section className="bfg-hero">
           <div className="bfg-hero-inner">
             <span className="bfg-badge" data-testid="bfg-hero-badge"><Sparkles size={13} /> {content.hero_badge}</span>
@@ -58,11 +58,11 @@ export default function GameHomePage() {
                 ))}
               </div>
               <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-hero-cta">{content.cta_label}</button>
-              <p className="bfg-hero-note">One-time payment of {content.price_display}. Your entire board plays.</p>
             </div>
           </div>
         </section>
 
+        <div className="bfg-light">
         {content.video_enabled && (
           <section className="bfg-section bfg-video-section" data-testid="bfg-video-section">
             <div className="bfg-section-head">
@@ -104,15 +104,6 @@ export default function GameHomePage() {
 
         <TestimonialCarousel heading={content.testimonials_heading} idPrefix="bfg" />
 
-        <section className="bfg-section" data-testid="bfg-pricing-section">
-          <div className="bfg-price-card">
-            <p className="bfg-eyebrow">Pricing</p>
-            <h2>{content.pricing_heading}</h2>
-            <p className="bfg-price-amount" data-testid="bfg-price-display">{content.price_display}<small>{content.price_note}</small></p>
-            <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-pricing-cta">{content.cta_label}</button>
-          </div>
-        </section>
-
         <section className="bfg-section" data-testid="bfg-faq-section">
           <div className="bfg-section-head">
             <p className="bfg-eyebrow">Questions</p>
@@ -127,6 +118,12 @@ export default function GameHomePage() {
             ))}
           </div>
         </section>
+
+        <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
+          <h2>Ready to Bring Your Board Together?</h2>
+          <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-closing-cta">{content.cta_label}</button>
+        </section>
+        </div>
       </main>
     </BfgShell>
   );
