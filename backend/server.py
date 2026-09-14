@@ -232,6 +232,8 @@ from game_routes import create_game_router
 app.include_router(create_game_router(db))
 from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
+from group_game_routes import create_group_game_router
+app.include_router(create_group_game_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router

@@ -16,6 +16,48 @@ const SUPPORT_TYPES = [
   "I would like someone to help me complete this step",
 ];
 
+const GroupGameCard = () => {
+  const navigate = useNavigate();
+  const [overview, setOverview] = useState(null);
+  useEffect(() => {
+    memberApi.get("/game/group/overview").then((r) => setOverview(r.data)).catch(() => {});
+  }, []);
+  if (!overview) return null;
+  const session = overview.session;
+  const completed = session?.status === "completed";
+  return (
+    <section className="bfg-panel" data-testid="bfg-group-game-card">
+      <div className="bfg-panel-head">
+        <div>
+          <h2>Group Review Game</h2>
+          <p className="bfg-panel-sub">
+            {completed
+              ? "Completed — 8 of 8 rounds completed"
+              : session?.status === "in_progress"
+                ? "In progress — continue running Game Night with your board."
+                : session
+                  ? "Ready — your Group Game link is prepared and waiting."
+                  : "Bring your board together to review and rank the ideas contributed before Game Night."}
+          </p>
+          {completed && <p className="bfg-note">{session.participants_joined} board members participated</p>}
+        </div>
+        <div className="bfg-bm-actions" style={{ marginTop: 0 }}>
+          {completed ? (
+            <>
+              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/group?results=1")} data-testid="bfg-view-group-results-btn">View Group Game Results</button>
+              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/group")} data-testid="bfg-open-group-game-btn">Open Group Game</button>
+            </>
+          ) : (
+            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate("/game/group")} data-testid="bfg-start-group-game-btn">
+              {session ? "Open Group Game" : "Start Group Game"}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export default function GameDashboardPage() {
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
@@ -105,6 +147,7 @@ export default function GameDashboardPage() {
 
         <GameNightSection />
         <BoardMembersSection />
+        <GroupGameCard />
 
         <p className="bfg-eyebrow" style={{ marginTop: 30 }}>Your Game Areas</p>
         <div className="bfg-areas">

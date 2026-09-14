@@ -328,3 +328,57 @@
 .bfg-responses-view { margin-top: 14px; border-top: 1px solid var(--bfg-border); padding-top: 14px; }
 .bfg-responses-view h4 { color: var(--bfg-indigo-soft); font-size: 14px; margin-top: 14px; }
 .bfg-responses-view ul { margin: 6px 0 0; padding-left: 18px; color: #cbd5e1; font-size: 14px; display: grid; gap: 4px; }
+
+/* ---------- Group Review Game (light, mobile-first) ---------- */
+.bfg-gg { background: #f1f5f9; color: #0f172a; }
+.bfg-gg h1, .bfg-gg h2, .bfg-gg h3 { color: #0f172a; }
+.bfg-gg p { color: #334155; }
+.bfg-gg-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #0f172a; color: #f8fafc; font-size: 13.5px; position: sticky; top: 0; z-index: 30; }
+.bfg-gg-nav strong { font-family: "Outfit"; }
+.bfg-gg-me { padding: 4px 12px; border-radius: 999px; background: rgba(99, 102, 241, 0.3); font-weight: 700; }
+.bfg-gg-main { max-width: 640px; margin: 0 auto; padding: 22px 16px 70px; }
+.bfg-gg-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px; padding: clamp(20px, 4vw, 34px); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07); margin-top: 16px; }
+.bfg-gg-card h1 { font-size: clamp(23px, 4.6vw, 32px); }
+.bfg-gg-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #4f46e5; margin: 0 0 10px; }
+.bfg-gg-goal { font-family: "Outfit"; font-weight: 700; font-size: 18px; color: #059669; }
+.bfg-gg-names { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+.bfg-gg-name { padding: 16px 12px; border-radius: 14px; border: 2px solid #e2e8f0; background: #ffffff; color: #0f172a; font-family: "Outfit"; font-weight: 700; font-size: 16px; cursor: pointer; transition: border-color 0.15s ease; }
+.bfg-gg-name.selected { border-color: #4f46e5; background: #eef2ff; }
+.bfg-gg-name.joined { opacity: 0.55; cursor: not-allowed; }
+.bfg-gg-name small { display: block; font-family: "Inter"; font-weight: 600; font-size: 11px; color: #059669; margin-top: 4px; }
+.bfg-gg-round-progress { margin-top: 16px; }
+.bfg-gg-round-label { font-family: "Outfit"; font-weight: 800; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #4f46e5; }
+.bfg .bfg-gg-round-label { color: #a5b4fc; }
+.bfg-gg-dots { display: flex; gap: 6px; margin-top: 8px; }
+.bfg-gg-dots span { flex: 1; height: 6px; border-radius: 999px; background: #e2e8f0; }
+.bfg .bfg-panel .bfg-gg-dots span { background: #223049; }
+.bfg-gg-dots span.done { background: #10b981; }
+.bfg-gg-dots span.current { background: #4f46e5; }
+.bfg-gg-rule { margin-top: 14px; font-weight: 700; color: #0f172a; }
+.bfg-gg-ideas { display: grid; gap: 10px; margin-top: 16px; }
+.bfg-gg-idea { position: relative; text-align: left; width: 100%; padding: 16px; border-radius: 14px; border: 2px solid #e2e8f0; background: #ffffff; cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease; }
+.bfg-gg-idea .bfg-gg-idea-text { display: block; font-family: "Outfit"; font-weight: 600; font-size: 16px; color: #0f172a; padding-right: 46px; }
+.bfg-gg-idea small { display: block; margin-top: 6px; font-size: 12.5px; color: #64748b; }
+.bfg-gg-idea.ranked { border-color: #4f46e5; background: #eef2ff; }
+.bfg-gg-pos { display: inline-grid; place-items: center; min-width: 34px; height: 34px; padding: 0 6px; border-radius: 999px; background: #4f46e5; color: #ffffff; font-family: "Outfit"; font-weight: 800; font-size: 14px; }
+.bfg-gg-idea .bfg-gg-pos { position: absolute; top: 14px; right: 14px; }
+.bfg-gg-myranking { margin-top: 16px; padding: 14px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; display: grid; gap: 8px; }
+.bfg-gg-ranked { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: #0f172a; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.bfg-gg-remove { margin-left: auto; font-size: 12px; color: #dc2626; font-weight: 700; }
+.bfg-gg-results { display: grid; gap: 10px; margin-top: 16px; }
+.bfg-gg-result { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; }
+.bfg .bfg-panel .bfg-gg-result { background: #0b1120; border-color: rgba(255,255,255,0.09); }
+.bfg .bfg-panel .bfg-gg-result strong { color: #f8fafc; }
+.bfg-gg-result.prioritised { border-color: #a7f3d0; background: #f0fdf9; }
+.bfg .bfg-panel .bfg-gg-result.prioritised { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.35); }
+.bfg-gg-result strong { display: block; font-family: "Outfit"; font-size: 15.5px; color: #0f172a; }
+.bfg-gg-result small { display: block; font-size: 12px; color: #64748b; margin-top: 3px; }
+.bfg-gg-result-rank { display: grid; place-items: center; min-width: 32px; height: 32px; border-radius: 999px; background: #10b981; color: #ffffff; font-family: "Outfit"; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.bfg-gg-result-rank.muted { background: #cbd5e1; color: #334155; }
+.bfg-gg-score { margin-left: auto; font-size: 12px; color: #64748b; white-space: nowrap; }
+.bfg .bfg-panel .bfg-gg-score { color: #94a3b8; }
+.bfg-gg-additional-label { font-size: 12.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 12px 0 0; }
+.bfg-gg-linkbox { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; padding: 12px; border-radius: 12px; background: #0b1120; border: 1px solid var(--bfg-border); }
+.bfg-gg-linkbox code { flex: 1; min-width: 200px; word-break: break-all; color: #a5b4fc; font-size: 13px; }
+.bfg-gg-playerlist { display: grid; gap: 8px; margin-top: 12px; }
+.bfg-gg-additional-list { margin: 8px 0 0; padding-left: 20px; color: #cbd5e1; display: grid; gap: 5px; font-size: 14px; }
