@@ -5,6 +5,8 @@ import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
+import { GameNightSection } from "./GameNightSection";
+import { BoardMembersSection } from "./BoardMembersSection";
 import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
 
 const SUPPORT_TYPES = [
@@ -100,6 +102,9 @@ export default function GameDashboardPage() {
         </div>
 
         {showTutorial && <div style={{ marginBottom: 24 }}><GameVideo video={video} testId="bfg-dashboard-tutorial-video" /></div>}
+
+        <GameNightSection />
+        <BoardMembersSection />
 
         <p className="bfg-eyebrow" style={{ marginTop: 30 }}>Your Game Areas</p>
         <div className="bfg-areas">

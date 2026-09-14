@@ -16,10 +16,10 @@ GAME_ENTITLEMENT = "board_fundraising_game"
 DEFAULT_CONTENT = {
     "hero_badge": "THE BOARD FUNDRAISING GAME",
     "headline": "Bring Your Board Together to Build the Fundraising Strategy Your Organisation Needs",
-    "subheadline": "The Board Fundraising Game unites your nonprofit board around one goal — building, adopting and preparing to execute the fundraising strategy required to raise it.",
+    "subheadline": "The Board Fundraising Game unites your nonprofit board around one goal: creating and adopting the fundraising strategy your organization needs to raise money exponentially.",
     "goal_label": "How Much Does Your Organisation Want To Raise?",
     "goal_placeholder": "500,000",
-    "cta_label": "Build Your Board Fundraising Game",
+    "cta_label": "Start Your Board Fundraising Game",
     "video_enabled": True,
     "video_heading": "See How the Board Fundraising Game Works",
     "video_text": "What board members do before Game Night, what happens during Game Night, and how your board leaves with a fundraising strategy and clear execution roles.",
@@ -74,8 +74,6 @@ USER_FIELDS = ["full_name", "job_title", "email"]
 SITUATION_SECTIONS = ["financial", "activities", "team", "donors", "corporate", "grantors", "technology", "materials", "reflections"]
 
 GAME_AREAS = [
-    {"key": "board_members", "name": "Board Members", "description": "Add your board members and send them their game invitations."},
-    {"key": "individual_game", "name": "Individual Game Progress", "description": "Track each board member's preparation before Game Night."},
     {"key": "group_game", "name": "Start Group Game", "description": "Run Game Night with your board and prioritise the board's ideas together."},
     {"key": "working_strategy", "name": "Working Fundraising Strategy", "description": "The strategy built from your board's collective thinking."},
     {"key": "final_strategy", "name": "Final Fundraising Strategy", "description": "The strategy your board reviews, refines and adopts."},

@@ -83,6 +83,94 @@ const CustomersTable = () => {
   );
 };
 
+const IndividualGameContent = () => {
+  const [sections, setSections] = useState([]);
+  const [openId, setOpenId] = useState(0);
+  const [drafts, setDrafts] = useState({});
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    client.get("/game/individual-content").then((r) => setSections(r.data.sections || [])).catch(() => {});
+  }, []);
+
+  const openSection = (section) => {
+    if (openId === section.id) { setOpenId(0); return; }
+    setDrafts({
+      title: section.title, scenario: section.scenario,
+      first_move_question: section.first_move_question, first_move_support: section.first_move_support || "",
+      wisdom: section.wisdom || "", final_question: section.final_question || "",
+      complete_label: section.complete_label,
+      group_items: Object.fromEntries((section.groups || []).map((group) => [
+        group.key, group.items.map((item) => item.hint ? `${item.text} | ${item.hint}` : item.text).join("\n"),
+      ])),
+    });
+    setOpenId(section.id);
+    setMessage("");
+  };
+
+  const save = async (section) => {
+    setBusy(true); setMessage("");
+    try {
+      const payload = { ...drafts };
+      payload.group_items = Object.fromEntries(Object.entries(drafts.group_items || {}).map(([key, lines]) => [
+        key,
+        String(lines).split("\n").filter((line) => line.trim()).map((line) => {
+          const [text, ...rest] = line.split("|");
+          return { text: text.trim(), hint: rest.join("|").trim() };
+        }),
+      ]));
+      const response = await client.put(`/admin/game/individual-content/${section.id}`, payload);
+      setSections(response.data.sections || []);
+      setMessage(`Section ${section.id} saved.`);
+    } catch (err) {
+      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save this section.");
+    }
+    setBusy(false);
+  };
+
+  const setDraft = (key) => (value) => setDrafts((current) => ({ ...current, [key]: value }));
+  const setGroupDraft = (key) => (value) => setDrafts((current) => ({ ...current, group_items: { ...current.group_items, [key]: value } }));
+
+  return (
+    <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-individual-content-panel">
+      <h3>Individual Game Content</h3>
+      <p style={{ color: "#555" }}>The 10 strategy sections board members play before Game Night. Defaults load automatically — edit only what you want to change.</p>
+      {sections.map((section) => (
+        <div key={section.id} style={{ marginTop: 10, border: "1px solid #ddd", borderRadius: 8, padding: "10px 14px" }}>
+          <button className="button button-small" onClick={() => openSection(section)} data-testid={`game-ig-toggle-${section.id}`}>
+            {openId === section.id ? "Close" : "Edit"} — Section {section.id}: {section.title}
+          </button>
+          {openId === section.id && (
+            <div style={{ marginTop: 8 }}>
+              <TextField label="Section title" value={drafts.title} onChange={setDraft("title")} testId={`game-ig-title-${section.id}`} />
+              <TextField label="Scenario text" value={drafts.scenario} onChange={setDraft("scenario")} testId={`game-ig-scenario-${section.id}`} textarea
+                hint="Placeholders available: {organisation}, {goal}, {deadline}" />
+              <TextField label="First Move question" value={drafts.first_move_question} onChange={setDraft("first_move_question")} testId={`game-ig-firstmove-${section.id}`} textarea />
+              <TextField label="First Move supporting text" value={drafts.first_move_support} onChange={setDraft("first_move_support")} testId={`game-ig-firstsupport-${section.id}`} textarea />
+              <TextField label="Fundraising Wisdom text" value={drafts.wisdom} onChange={setDraft("wisdom")} testId={`game-ig-wisdom-${section.id}`} textarea />
+              {(section.groups || []).map((group) => (
+                <TextField key={group.key} label={`Guided prompts — ${group.heading} (one per line, format: Prompt | Optional hint)`}
+                  value={drafts.group_items?.[group.key] || ""} onChange={setGroupDraft(group.key)} testId={`game-ig-group-${section.id}-${group.key}`} textarea />
+              ))}
+              {section.final_question !== undefined && section.type === "standard" && (
+                <TextField label="Final question" value={drafts.final_question} onChange={setDraft("final_question")} testId={`game-ig-final-${section.id}`} textarea />
+              )}
+              <TextField label="Completion button wording" value={drafts.complete_label} onChange={setDraft("complete_label")} testId={`game-ig-complete-${section.id}`} />
+              <div style={{ marginTop: 12 }}>
+                <button className="button" onClick={() => save(section)} disabled={busy} data-testid={`game-ig-save-${section.id}`}>
+                  {busy ? "Saving…" : `Save Section ${section.id}`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {message && <p style={{ marginTop: 10 }} data-testid="game-ig-message">{message}</p>}
+    </div>
+  );
+};
+
 export const GameSection = () => {
   const [content, setContent] = useState(null);
   const [message, setMessage] = useState("");
@@ -151,6 +239,7 @@ export const GameSection = () => {
         </div>
       </div>
       <VideosManager />
+      <IndividualGameContent />
       <CustomersTable />
     </section>
   );

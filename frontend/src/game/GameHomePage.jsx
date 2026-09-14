@@ -25,6 +25,13 @@ export default function GameHomePage() {
     navigate(member ? "/game/start" : "/game/signup");
   };
 
+  const launchFromStages = () => {
+    const digits = String(goal).replace(/[^0-9]/g, "");
+    if (digits || sessionStorage.getItem("bfgGoal")) { startGame(); return; }
+    document.getElementById("bfg-goal")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => document.getElementById("bfg-goal")?.focus({ preventScroll: true }), 500);
+  };
+
   const setAmount = (value) => setGoal(Number(String(value).replace(/[^0-9]/g, "") || 0) ? Number(String(value).replace(/[^0-9]/g, "")).toLocaleString("en-US") : "");
 
   return (
@@ -87,6 +94,9 @@ export default function GameHomePage() {
                 <ul>{stage.items.map((item) => <li key={item}>{item}</li>)}</ul>
               </article>
             ))}
+          </div>
+          <div className="bfg-stages-cta">
+            <button className="bfg-btn bfg-btn-primary" onClick={launchFromStages} data-testid="bfg-stages-cta">Launch Your Board Fundraising Game</button>
           </div>
         </section>
 

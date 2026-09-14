@@ -204,3 +204,18 @@ New parallel product; existing app untouched and verified working.
 - ADMIN: new "Fundraising Game" tab (admin/GameSection.jsx): website content editor (headline/sub/CTA/video toggle+heading+text/stages/benefits/pricing display/FAQs/testimonials heading via PUT /api/admin/game/content), game video manager (flow keys game_homepage + game_welcome — ROONEY MUST PASTE URLs, currently empty placeholders), customers table GET /api/admin/game/customers.
 - Files new: backend/game_routes.py; frontend/src/game/* (7 pages + gameShared + game.css); admin/GameSection.jsx. Edited: payment_routes, member_routes, fbb_routes, course_routes, course_content, server.py, App.js, AdminPage.jsx, BlogPages.jsx, marketing_service.py.
 - NOT BUILT YET (future phases per user): Individual Board Game, Group Game, Strategy Generation, Board Portfolios, Execution Materials, board member invitations.
+
+## 2026-06 — Phase 1 corrections + PHASE 2: Board Members, Invitations & Individual Game (NOT TESTED — user mandated no testing; user will test)
+Homepage (Part A): new hero subheadline (exact copy, white), white goal input box, CTA "Start Your Board Fundraising Game" (default + stored content updated in Mongo), "Launch Your Board Fundraising Game" CTA after stages (scrolls/focuses goal input if empty), stage/benefit card content centered (homepage only).
+Phase 2 backend (game_night_routes.py + game_content.py, registered in server.py):
+- db.game_nights (name/date/time/timezone/format/link/location/note) GET+PUT /api/game/night
+- db.game_board_members (secure token secrets.token_urlsafe(24), soft remove) CRUD /api/game/board-members
+- Invitations + reminders via Resend, sender env GAME_EMAIL_SENDER="Board Fundraising Game <fundraisinggames@nonprofitboardbuilder.com>" (added to backend/.env), Reply-To = org user email, EXACT email copy per spec; invite-all (not-invited only); 48h reminder throttle BACKEND-enforced (429 w/ remaining), remind-all skips completed/throttled
+- Individual game: 10 sections default content in game_content.py (exact spec copy, placeholders {organisation}/{goal}/{deadline}); admin overrides in marketing_settings key game_individual_content via PUT /api/admin/game/individual-content/{id}; public GET /api/game/individual-content
+- Public play (NO account): GET /api/game/play/{token} (context+progress), GET/PUT section, POST complete. db.game_section_responses stores first_response (locked at reveal, never overwritten), guided_selections, additional_ideas, stage_responses, final_response, preferences (option+note+involvement, sec9=system building, sec10=direct fundraising), do_not_want (sec10, stored separately), completed/completed_at/updated_at
+- Org view: GET /api/game/board-members/{id}/responses. GAME_AREAS locked list trimmed to 5 (group game, strategies, portfolios, execution materials)
+Phase 2 frontend:
+- /play/:token → game/GamePlayPage.jsx (mobile-first, welcome per exact Part H copy, section player: standard/journey/stages/preferences types, Section Complete screen, Part J completion screen w/ Game Night details, Review My Previous Sections reopen+edit)
+- Dashboard: game/GameNightSection.jsx (Prepare For Game Night form/summary/edit, format-conditional fields) + game/BoardMembersSection.jsx (add/edit/remove w/ started-game confirm copy, statuses Not Invited/Invited/Game Started/In Progress/Completed, X of 10 progress, Send Invitation/Send Invitations To All/Send Reminder w/ countdown/Remind Everyone/Copy Game Link/View Responses)
+- Admin → Fundraising Game → Individual Game Content editor (per-section title/scenario/first move/wisdom/prompt lines/final question/complete label)
+NOT BUILT (future): Group Game, strategy generation, portfolios, execution materials.
