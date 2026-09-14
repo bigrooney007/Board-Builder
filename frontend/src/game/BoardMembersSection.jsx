@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { memberApi } from "@/member/api";
 
 const statusClass = (status) => {
@@ -212,6 +213,8 @@ export const BoardMembersSection = () => {
                         data-testid={`bfg-remind-btn-${member.member_id}`}>Send Reminder</button>
                     )
                   )}
+                  <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to={`/game/host/call-script?member=${member.member_id}`}
+                    data-testid={`bfg-call-script-${member.member_id}`}>Call Script</Link>
                   <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => copyLink(member)} data-testid={`bfg-copy-link-${member.member_id}`}>
                     {copiedId === member.member_id ? "Link Copied" : "Copy Game Link"}
                   </button>

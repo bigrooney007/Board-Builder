@@ -171,6 +171,133 @@ const IndividualGameContent = () => {
   );
 };
 
+const HostToolsContent = () => {
+  const [content, setContent] = useState(null);
+  const [openPanel, setOpenPanel] = useState("");
+  const [openSection, setOpenSection] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    client.get("/admin/game/host-tools-content").then((r) => setContent(r.data.content)).catch(() => {});
+  }, []);
+  if (!content) return null;
+
+  const togglePanel = (key) => { setOpenPanel(openPanel === key ? "" : key); setOpenSection(""); };
+  const setCall = (patch) => setContent({ ...content, call_script: { ...content.call_script, ...patch } });
+  const setCallSection = (index, field, value) => setCall({
+    sections: content.call_script.sections.map((section, i) => i === index ? { ...section, [field]: value } : section),
+  });
+  const setGuide = (patch) => setContent({ ...content, facilitation: { ...content.facilitation, ...patch } });
+  const setGuideSection = (index, patch) => setGuide({
+    sections: content.facilitation.sections.map((section, i) => i === index ? { ...section, ...patch } : section),
+  });
+  const setBlock = (sectionIndex, blockIndex, patch) => setGuideSection(sectionIndex, {
+    blocks: content.facilitation.sections[sectionIndex].blocks.map((block, i) => i === blockIndex ? { ...block, ...patch } : block),
+  });
+  const setChecklist = (patch) => setContent({ ...content, checklist: { ...content.checklist, ...patch } });
+  const setGroup = (index, patch) => setChecklist({
+    groups: content.checklist.groups.map((group, i) => i === index ? { ...group, ...patch } : group),
+  });
+
+  const save = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const response = await client.put("/admin/game/host-tools-content", content);
+      setContent(response.data.content);
+      setMessage("Host tools content saved.");
+    } catch (err) {
+      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save host tools content.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-host-tools-panel">
+      <h3>Host Tools Content</h3>
+      <p style={{ color: "#555" }}>The Invitation Call Script, Facilitation Guide and Game Night Checklist shown to organisation users. Defaults load automatically — edit only what you want to change. Placeholders available: [Organisation Name], [Fundraising Goal], [Fundraising Deadline], [Board Member First Name].</p>
+
+      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 8, padding: "10px 14px" }}>
+        <button className="button button-small" onClick={() => togglePanel("call")} data-testid="game-ht-toggle-call">
+          {openPanel === "call" ? "Close" : "Edit"} — Invitation Call Script
+        </button>
+        {openPanel === "call" && (
+          <div style={{ marginTop: 8 }}>
+            <TextField label="Page title" value={content.call_script.page_title} onChange={(v) => setCall({ page_title: v })} testId="game-ht-call-title" />
+            <TextField label="Intro text" value={content.call_script.intro} onChange={(v) => setCall({ intro: v })} testId="game-ht-call-intro" textarea />
+            {content.call_script.sections.map((section, index) => (
+              <div key={section.key} style={{ marginTop: 14, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+                <TextField label={`Section heading (${section.key})`} value={section.heading} onChange={(v) => setCallSection(index, "heading", v)} testId={`game-ht-call-heading-${section.key}`} />
+                <TextField label="Section script" value={section.body} onChange={(v) => setCallSection(index, "body", v)} testId={`game-ht-call-body-${section.key}`} textarea />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 8, padding: "10px 14px" }}>
+        <button className="button button-small" onClick={() => togglePanel("guide")} data-testid="game-ht-toggle-guide">
+          {openPanel === "guide" ? "Close" : "Edit"} — Facilitation Guide
+        </button>
+        {openPanel === "guide" && (
+          <div style={{ marginTop: 8 }}>
+            <TextField label="Page title" value={content.facilitation.page_title} onChange={(v) => setGuide({ page_title: v })} testId="game-ht-guide-title" />
+            {content.facilitation.sections.map((section, sectionIndex) => (
+              <div key={section.key} style={{ marginTop: 10, border: "1px solid #eee", borderRadius: 8, padding: "8px 12px" }}>
+                <button className="button button-small" onClick={() => setOpenSection(openSection === section.key ? "" : section.key)} data-testid={`game-ht-guide-toggle-${section.key}`}>
+                  {openSection === section.key ? "Close" : "Edit"} — {section.heading}
+                </button>
+                {openSection === section.key && (
+                  <div style={{ marginTop: 8 }}>
+                    <TextField label="Section heading" value={section.heading} onChange={(v) => setGuideSection(sectionIndex, { heading: v })} testId={`game-ht-guide-heading-${section.key}`} />
+                    {section.blocks.map((block, blockIndex) => block.kind === "group_link" ? (
+                      <p key={blockIndex} style={{ color: "#666", marginTop: 10 }}>Copy Group Game Link button (built-in, not editable).</p>
+                    ) : (
+                      <div key={blockIndex}>
+                        {block.label !== undefined && (
+                          <TextField label={`Block ${blockIndex + 1} label`} value={block.label} onChange={(v) => setBlock(sectionIndex, blockIndex, { label: v })} testId={`game-ht-guide-label-${section.key}-${blockIndex}`} />
+                        )}
+                        <TextField
+                          label={`Block ${blockIndex + 1} — ${block.kind}${block.items ? " (one item per line)" : ""}`}
+                          value={block.items ? block.items.join("\n") : block.text}
+                          onChange={(v) => setBlock(sectionIndex, blockIndex, block.items ? { items: v.split("\n") } : { text: v })}
+                          testId={`game-ht-guide-block-${section.key}-${blockIndex}`} textarea />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 8, padding: "10px 14px" }}>
+        <button className="button button-small" onClick={() => togglePanel("checklist")} data-testid="game-ht-toggle-checklist">
+          {openPanel === "checklist" ? "Close" : "Edit"} — Game Night Checklist
+        </button>
+        {openPanel === "checklist" && (
+          <div style={{ marginTop: 8 }}>
+            <TextField label="Page title" value={content.checklist.page_title} onChange={(v) => setChecklist({ page_title: v })} testId="game-ht-checklist-title" />
+            <TextField label="Intro text" value={content.checklist.intro} onChange={(v) => setChecklist({ intro: v })} testId="game-ht-checklist-intro" textarea />
+            {content.checklist.groups.map((group, index) => (
+              <div key={group.key} style={{ marginTop: 14, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+                <TextField label={`Group heading (${group.key})`} value={group.heading} onChange={(v) => setGroup(index, { heading: v })} testId={`game-ht-checklist-heading-${group.key}`} />
+                <TextField label="Checklist items (one per line)" value={group.items.join("\n")} onChange={(v) => setGroup(index, { items: v.split("\n") })} testId={`game-ht-checklist-items-${group.key}`} textarea />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <button className="button" onClick={save} disabled={busy} data-testid="game-ht-save">{busy ? "Saving…" : "Save Host Tools Content"}</button>
+        {message && <span style={{ marginLeft: 12 }} data-testid="game-ht-message">{message}</span>}
+      </div>
+    </div>
+  );
+};
+
 export const GameSection = () => {
   const [content, setContent] = useState(null);
   const [message, setMessage] = useState("");
@@ -240,6 +367,7 @@ export const GameSection = () => {
       </div>
       <VideosManager />
       <IndividualGameContent />
+      <HostToolsContent />
       <CustomersTable />
     </section>
   );

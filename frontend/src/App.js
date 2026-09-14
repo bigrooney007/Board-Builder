@@ -91,6 +91,9 @@ import PortfoliosPage from "@/game/PortfoliosPage";
 import PortfolioEditPage from "@/game/PortfolioEditPage";
 import PortfolioToolkitPage from "@/game/PortfolioToolkitPage";
 import BoardPortfolioPage from "@/game/BoardPortfolioPage";
+import HostCallScriptPage from "@/game/HostCallScriptPage";
+import HostFacilitationPage from "@/game/HostFacilitationPage";
+import HostChecklistPage from "@/game/HostChecklistPage";
 
 const PUBLIC_CENTERED_PATHS = ["/fundraising-system", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
@@ -153,6 +156,9 @@ export default function App() {
           <Route path="/game/portfolios/:portfolioId" element={<PortfolioEditPage />} />
           <Route path="/game/portfolios/:portfolioId/toolkit" element={<PortfolioToolkitPage />} />
           <Route path="/board-portfolio/:token" element={<BoardPortfolioPage />} />
+          <Route path="/game/host/call-script" element={<HostCallScriptPage />} />
+          <Route path="/game/host/facilitation" element={<HostFacilitationPage />} />
+          <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/board-transformation" element={<BoardTransformationPage />} />

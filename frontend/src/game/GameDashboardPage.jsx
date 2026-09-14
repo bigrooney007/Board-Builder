@@ -6,6 +6,7 @@ import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
 import { GameNightSection } from "./GameNightSection";
+import { HostToolsSection } from "./HostToolsSection";
 import { BoardMembersSection } from "./BoardMembersSection";
 import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
 import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
@@ -149,6 +150,7 @@ export default function GameDashboardPage() {
         {showTutorial && <div style={{ marginBottom: 24 }}><GameVideo video={video} testId="bfg-dashboard-tutorial-video" /></div>}
 
         <GameNightSection />
+        <HostToolsSection />
         <BoardMembersSection />
         <GroupGameCard />
         <WorkingStrategyCard />

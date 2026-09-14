@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { memberApi } from "@/member/api";
 
 const TIMEZONES = ["Eastern Time (ET)", "Central Time (CT)", "Mountain Time (MT)", "Pacific Time (PT)", "Alaska Time (AKT)", "Hawaii Time (HT)", "UTC"];
@@ -77,6 +78,12 @@ export const GameNightSection = () => {
         {saved && !editing && (
           <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={startEdit} data-testid="bfg-edit-game-night-btn">Edit Game Night</button>
         )}
+      </div>
+
+      <div className="bfg-bm-actions" style={{ marginTop: 12 }} data-testid="bfg-night-quick-tools">
+        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/call-script" data-testid="bfg-quick-call-script">Call Script</Link>
+        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/facilitation" data-testid="bfg-quick-facilitation">Facilitation Guide</Link>
+        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/checklist" data-testid="bfg-quick-checklist">Game Night Checklist</Link>
       </div>
 
       {!saved && !editing && (
