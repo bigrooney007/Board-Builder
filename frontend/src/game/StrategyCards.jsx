@@ -82,6 +82,40 @@ export const WorkingStrategyCard = () => {
   );
 };
 
+export const AdoptedStrategyCard = ({ goalDisplay }) => {
+  const navigate = useNavigate();
+  const [adopted, setAdopted] = useState(null);
+  useEffect(() => {
+    memberApi.get("/game/strategies").then((r) => {
+      setAdopted((r.data.strategies || []).find((row) => row.status === "adopted") || false);
+    }).catch(() => setAdopted(false));
+  }, []);
+  if (!adopted) return null;
+  return (
+    <section className="bfg-panel" data-testid="bfg-adopted-strategy-card">
+      <div className="bfg-panel-head">
+        <div>
+          <h2>Fundraising Strategy</h2>
+          <p className="bfg-panel-sub">
+            Status: <strong style={{ color: "#34d399" }}>Adopted</strong>
+            {goalDisplay && <> · Goal: {goalDisplay}</>}
+            {adopted.adopted_at && <> · Adopted: {new Date(adopted.adopted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</>}
+          </p>
+        </div>
+        <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 0 }}
+          onClick={() => navigate(`/game/strategy/view/${adopted.strategy_id}`)} data-testid="bfg-view-adopted-strategy-btn">
+          View Adopted Strategy
+        </button>
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <p className="bfg-eyebrow" style={{ marginBottom: 6 }}>Next Step</p>
+        <p style={{ fontWeight: 700, color: "#f8fafc" }}>Create Board Fundraising Portfolios</p>
+        <p className="bfg-note">Coming soon — turn your adopted strategy into clear roles and resources for every board member.</p>
+      </div>
+    </section>
+  );
+};
+
 export const StrategiesHistoryCard = () => {
   const navigate = useNavigate();
   const [strategies, setStrategies] = useState(null);

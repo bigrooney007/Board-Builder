@@ -15,7 +15,9 @@ export const STRATEGY_SECTIONS = [
   { key: "next_step", title: "Next Step" },
 ];
 
-export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritised Draft" };
+export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritised Draft", final: "Final Fundraising Strategy" };
+
+export const STATUS_LABELS = { final_draft: "Final Draft", adopted: "Adopted" };
 
 const IDEA_AREA_LABELS = {
   fundraising_audiences: "Potential Fundraising Audiences", where_to_find: "Places To Find Funders",
@@ -153,14 +155,15 @@ export const StrategyDocument = ({ strategy }) => {
     <div className="bfg-doc" data-testid="bfg-strategy-document">
       <header className="bfg-doc-header">
         <p className="bfg-doc-org">{strategy.organization_name}</p>
-        <h1>Fundraising Strategy</h1>
+        <h1>{strategy.mode === "final" && strategy.status !== "adopted" ? "Final Fundraising Strategy" : "Fundraising Strategy"}</h1>
         <p className="bfg-doc-meta">
           {data.fundraising_goal?.amount && <>Fundraising Goal: <strong>{data.fundraising_goal.amount}</strong></>}
           {data.fundraising_goal?.deadline && <> · Deadline: <strong>{data.fundraising_goal.deadline}</strong></>}
         </p>
         <p className="bfg-doc-meta">
-          <span className={`bfg-doc-type ${strategy.mode}`}>{MODE_LABELS[strategy.mode] || strategy.mode}</span>
+          <span className={`bfg-doc-type ${strategy.mode}`}>{STATUS_LABELS[strategy.status] || MODE_LABELS[strategy.mode] || strategy.mode}</span>
           {" "}· Version {strategy.version} · Generated: {strategy.generated_at ? new Date(strategy.generated_at).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" }) : ""}
+          {strategy.adopted_at && <> · Adopted on {new Date(strategy.adopted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</>}
         </p>
       </header>
       <nav className="bfg-doc-toc" data-testid="bfg-strategy-toc">

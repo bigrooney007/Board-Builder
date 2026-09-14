@@ -352,6 +352,20 @@
 .bfg-gg-dots { display: flex; gap: 6px; margin-top: 8px; }
 .bfg-gg-dots span { flex: 1; height: 6px; border-radius: 999px; background: #e2e8f0; }
 .bfg .bfg-panel .bfg-gg-dots span { background: #223049; }
+
+/* Phase 5: Meeting Review */
+.bfg-modal-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.78); display: grid; place-items: center; z-index: 80; padding: 20px; }
+.bfg-modal { background: var(--bfg-surface); border: 1px solid var(--bfg-border); border-radius: 16px; padding: 28px; max-width: 540px; width: 100%; text-align: left; }
+.bfg-mr-counts { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px; font-size: 14px; color: #94a3b8; }
+.bfg-mr-counts strong { color: var(--bfg-text); font-size: 18px; margin-right: 6px; }
+.bfg-mr-segment { width: 100%; background: #0b1120; border: 1px solid var(--bfg-border); border-radius: 10px; color: var(--bfg-text); font-family: "Inter"; font-size: 14px; padding: 10px 12px; resize: vertical; }
+.bfg-mr-decision { margin-top: 14px; padding: 16px 18px; border: 1px solid var(--bfg-border); border-radius: 12px; background: #0b1120; font-size: 14.5px; color: #cbd5e1; }
+.bfg-mr-block { margin-bottom: 12px; }
+.bfg-gr-options { display: grid; gap: 10px; margin-top: 12px; }
+.bfg-gr-option { padding: 14px 16px; border: 1px solid var(--bfg-border); border-radius: 12px; background: #0b1120; color: var(--bfg-text); font-family: "Inter"; font-size: 15px; font-weight: 600; cursor: pointer; text-align: left; transition: border-color 0.15s ease, background-color 0.15s ease; }
+.bfg-gr-option:hover { border-color: rgba(99, 102, 241, 0.6); }
+.bfg-gr-option.selected { border-color: var(--bfg-indigo); background: rgba(99, 102, 241, 0.12); }
+.bfg-doc-type.final { background: rgba(52, 211, 153, 0.14); color: #34d399; }
 .bfg-gg-dots span.done { background: #10b981; }
 .bfg-gg-dots span.current { background: #4f46e5; }
 .bfg-gg-rule { margin-top: 14px; font-weight: 700; color: #0f172a; }

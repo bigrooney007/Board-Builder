@@ -292,7 +292,7 @@ def create_strategy_router(db) -> APIRouter:
         member = await game_member(request)
         rows = await db.game_strategies.find(
             {"user_id": member["user_id"]},
-            {"_id": 0, "strategy_id": 1, "mode": 1, "status": 1, "version": 1, "generated_at": 1, "share_token": 1}
+            {"_id": 0, "strategy_id": 1, "mode": 1, "status": 1, "version": 1, "generated_at": 1, "share_token": 1, "adopted_at": 1}
         ).sort("generated_at", -1).to_list(100)
         return {"strategies": rows}
 
@@ -312,6 +312,10 @@ def create_strategy_router(db) -> APIRouter:
         member = await game_member(request)
         if payload.section_key not in EDITABLE_SECTION_KEYS:
             raise HTTPException(status_code=422, detail="Unknown strategy section")
+        existing = await db.game_strategies.find_one(
+            {"strategy_id": strategy_id, "user_id": member["user_id"]}, {"_id": 0, "status": 1})
+        if existing and existing.get("status") == "adopted":
+            raise HTTPException(status_code=409, detail="An adopted strategy is read-only")
         result = await db.game_strategies.update_one(
             {"strategy_id": strategy_id, "user_id": member["user_id"]},
             {"$set": {f"section_edits.{payload.section_key}": payload.text,

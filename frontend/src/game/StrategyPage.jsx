@@ -18,6 +18,7 @@ export default function StrategyPage() {
   const [draft, setDraft] = useState("");
   const [saveState, setSaveState] = useState("");
   const [reviewDone, setReviewDone] = useState(false);
+  const [startingReview, setStartingReview] = useState(false);
 
   useEffect(() => { document.title = "Fundraising Strategy | Board Fundraising Game"; }, []);
 
@@ -50,6 +51,14 @@ export default function StrategyPage() {
     setCopied(true); setTimeout(() => setCopied(false), 2500);
   };
 
+  const startBoardReview = async () => {
+    setStartingReview(true);
+    try {
+      await memberApi.post("/game/meeting-review/start", { strategy_id: strategy.strategy_id });
+      navigate("/game/meeting-review");
+    } catch { setStartingReview(false); }
+  };
+
   const saveSection = async () => {
     setSaveState("saving");
     try {
@@ -76,12 +85,19 @@ export default function StrategyPage() {
               <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={copyLink} data-testid="bfg-copy-strategy-link-btn">
                 {copied ? "Link Copied" : "Copy Strategy Link"}
               </button>
-              {strategy.mode === "board_prioritized" && (
-                <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => setSearchParams({ review: "1" })} data-testid="bfg-review-strategy-btn">
-                  Review Strategy
-                </button>
-              )}
             </div>
+            {strategy.mode === "board_prioritized" && strategy.status !== "adopted" && (
+              <section className="bfg-panel" data-testid="bfg-review-with-board-panel">
+                <h2>Review With Your Board</h2>
+                <p className="bfg-panel-sub" style={{ marginTop: 6 }}>
+                  Review your Board-Prioritised Fundraising Strategy together during Game Night, capture the decisions your board makes and turn those decisions into your Final Fundraising Strategy.
+                </p>
+                <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} disabled={startingReview}
+                  onClick={startBoardReview} data-testid="bfg-start-board-review-btn">
+                  {startingReview ? "Opening…" : "Start Board Strategy Review"}
+                </button>
+              </section>
+            )}
             <StrategyDocument strategy={strategy} />
           </>
         )}

@@ -7,7 +7,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
 import { GameNightSection } from "./GameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
-import { WorkingStrategyCard, StrategiesHistoryCard } from "./StrategyCards";
+import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
 import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
 
 const SUPPORT_TYPES = [
@@ -110,6 +110,8 @@ export default function GameDashboardPage() {
           </div>
           <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/start?edit=1" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
         </div>
+
+        <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
 
         <div className="bfg-dash-grid">
           <div className="bfg-dash-card" data-testid="bfg-dashboard-goal-card">

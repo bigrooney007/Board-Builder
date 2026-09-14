@@ -84,6 +84,9 @@ import StrategyPage from "@/game/StrategyPage";
 import SharedStrategyPage from "@/game/SharedStrategyPage";
 import PriorityReviewPage from "@/game/PriorityReviewPage";
 import GroupPlayPage from "@/game/GroupPlayPage";
+import MeetingReviewPage from "@/game/MeetingReviewPage";
+import MeetingDecisionsPage from "@/game/MeetingDecisionsPage";
+import FinalStrategyPage from "@/game/FinalStrategyPage";
 
 const PUBLIC_CENTERED_PATHS = ["/fundraising-system", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
@@ -139,6 +142,9 @@ export default function App() {
           <Route path="/group-game/:token" element={<GroupPlayPage />} />
           <Route path="/game/strategy/priorities" element={<PriorityReviewPage />} />
           <Route path="/game/strategy/view/:strategyId" element={<StrategyPage />} />
+          <Route path="/game/meeting-review" element={<MeetingReviewPage />} />
+          <Route path="/game/meeting-review/decisions" element={<MeetingDecisionsPage />} />
+          <Route path="/game/meeting-review/final" element={<FinalStrategyPage />} />
           <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/board-transformation" element={<BoardTransformationPage />} />
