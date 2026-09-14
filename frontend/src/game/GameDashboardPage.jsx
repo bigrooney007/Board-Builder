@@ -7,6 +7,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
 import { GameNightSection } from "./GameNightSection";
 import { HostToolsSection } from "./HostToolsSection";
+import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
 import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
 import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
@@ -65,6 +66,7 @@ export default function GameDashboardPage() {
   const { member, loading, logout } = useMemberAuth();
   const video = useFlowVideo("game_welcome");
   const [data, setData] = useState(null);
+  const [postgame, setPostgame] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [denied, setDenied] = useState(false);
 
@@ -79,6 +81,7 @@ export default function GameDashboardPage() {
         if (err.response?.status === 403) setDenied(true);
         else navigate("/game/start", { replace: true });
       });
+    memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
   }, [loading, member, navigate]);
 
   if (loading || (!data && !denied)) return <div className="bfg" style={{ minHeight: "100vh" }} />;
@@ -113,6 +116,7 @@ export default function GameDashboardPage() {
         </div>
 
         <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
+        <CompleteGameNightSection overview={postgame} />
 
         <div className="bfg-dash-grid">
           <div className="bfg-dash-card" data-testid="bfg-dashboard-goal-card">
@@ -125,8 +129,17 @@ export default function GameDashboardPage() {
             <h3>Game Status</h3>
             {data.situation_completed ? (
               <>
-                <p className="bfg-big" style={{ fontSize: 22 }}>Set Up Your Board Fundraising Game</p>
-                <p className="bfg-sub">Your game setup is complete. Board invitations and the Individual Game are coming next.</p>
+                <p className="bfg-big" style={{ fontSize: 22 }} data-testid="bfg-journey-status">{postgame?.journey_status || "Set Up Your Board Fundraising Game"}</p>
+                <p className="bfg-sub">{{
+                  "Setting Up": "Complete your setup and add the board members who will play.",
+                  "Board Preparing": "Invitations are out and your board members are playing their Individual Games.",
+                  "Ready For Game Night": "Your Game Night is scheduled and your board is preparing.",
+                  "Game Night In Progress": "Your board is playing the Group Review Game together.",
+                  "Strategy Review": "Your board is reviewing its fundraising strategy.",
+                  "Strategy Adopted": "Your board has adopted its fundraising strategy.",
+                  "Moving Into Execution": "Board Fundraising Portfolios are being prepared and sent.",
+                  "Execution Ready": "Approved board members can now access their execution resources.",
+                }[postgame?.journey_status] || "Your game setup is complete. Prepare your board for Game Night."}</p>
               </>
             ) : (
               <>

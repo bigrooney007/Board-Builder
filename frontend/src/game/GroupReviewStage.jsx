@@ -154,6 +154,67 @@ const FinalResponseBlock = ({ token, identity, organizationName, myResponse, onS
   );
 };
 
+const PostGameComplete = ({ token, identity, organizationName }) => {
+  const [info, setInfo] = useState(null);
+  useEffect(() => {
+    axios.get(`${API}/game/postgame/play/${token}`, { params: { slot: identity.slot_id } })
+      .then((response) => setInfo(response.data))
+      .catch(() => setInfo({ adopted: false }));
+  }, [token, identity]);
+
+  if (!info) return <div className="bfg-gg-card" style={{ textAlign: "center" }} />;
+
+  if (!info.adopted) {
+    return (
+      <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gr-adopted">
+        <p className="bfg-gg-eyebrow">Game Night</p>
+        <h1>Your Fundraising Strategy Is Ready</h1>
+        <p style={{ marginTop: 14 }}>{organizationName} has adopted its fundraising strategy.</p>
+        <p className="bfg-gg-rule" style={{ marginTop: 14 }}>You will receive your personal Board Fundraising Portfolio when it is ready.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bfg-gg-card" data-testid="bfg-postgame-complete">
+      <p className="bfg-gg-eyebrow">Game Night</p>
+      <h1>Your Board Fundraising Game Is Complete</h1>
+      <p style={{ marginTop: 14 }}>{info.organization_name} has adopted the fundraising strategy your board built together.</p>
+      <div style={{ marginTop: 16, textAlign: "left" }} data-testid="bfg-postgame-goal">
+        <p><strong>Fundraising Goal:</strong> {info.goal_display}</p>
+        {info.deadline_display && <p style={{ marginTop: 4 }}><strong>Goal Deadline:</strong> {info.deadline_display}</p>}
+      </div>
+      <a className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} href={`/strategy/${info.strategy_share_token}`}
+        target="_blank" rel="noreferrer" data-testid="bfg-postgame-view-strategy-btn">
+        View Our Adopted Fundraising Strategy
+      </a>
+      <div style={{ marginTop: 24, textAlign: "left" }}>
+        <h2 style={{ fontSize: 18 }}>What Happens Next?</h2>
+        <p style={{ marginTop: 10 }}>
+          The strategy tells your organisation what it plans to do. Your Board Fundraising Portfolio will show how you personally can help execute it.
+        </p>
+        <p style={{ marginTop: 12 }}>Your portfolio will combine:</p>
+        <ul style={{ marginTop: 8, paddingLeft: 22 }}>
+          <li>How you said you want to help build the fundraising system</li>
+          <li>How you said you want to help raise money</li>
+          <li>Commitments you made during Game Night</li>
+          <li>Any final responsibilities agreed with the organisation</li>
+        </ul>
+        {info.portfolio_state === "sent" && info.portfolio_token ? (
+          <a className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} href={`/board-portfolio/${info.portfolio_token}`}
+            target="_blank" rel="noreferrer" data-testid="bfg-postgame-view-portfolio-btn">
+            Review My Board Fundraising Portfolio
+          </a>
+        ) : (
+          <p className="bfg-gg-rule" style={{ marginTop: 16 }} data-testid="bfg-postgame-portfolio-waiting">
+            Your Board Fundraising Portfolio is being prepared. You will receive it when it is ready for review.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const GroupReviewStage = ({ token, identity }) => {
   const [data, setData] = useState(null);
 
@@ -244,17 +305,7 @@ export const GroupReviewStage = ({ token, identity }) => {
   }
 
   if (data.status === "adopted") {
-    return (
-      <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gr-adopted">
-        <p className="bfg-gg-eyebrow">Game Night</p>
-        <h1>Your Fundraising Strategy Is Ready</h1>
-        <p style={{ marginTop: 14 }}>{data.organization_name} has adopted its fundraising strategy.</p>
-        <p style={{ marginTop: 10 }}>
-          The next step is turning the strategy into clear roles for each board member and giving everyone the resources they need to execute.
-        </p>
-        <p className="bfg-gg-rule" style={{ marginTop: 14 }}>You will receive your personal Board Fundraising Portfolio when it is ready.</p>
-      </div>
-    );
+    return <PostGameComplete token={token} identity={identity} organizationName={data.organization_name} />;
   }
 
   return null;

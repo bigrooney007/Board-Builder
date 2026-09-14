@@ -298,6 +298,48 @@ const HostToolsContent = () => {
   );
 };
 
+const PostGameCommunication = () => {
+  const [content, setContent] = useState(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    client.get("/admin/game/postgame-email").then((r) => setContent(r.data.content)).catch(() => {});
+  }, []);
+  if (!content) return null;
+
+  const set = (key) => (value) => setContent((current) => ({ ...current, [key]: value }));
+
+  const save = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const response = await client.put("/admin/game/postgame-email", content);
+      setContent(response.data.content);
+      setMessage("Post-game email saved.");
+    } catch (err) {
+      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save the post-game email.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-postgame-panel">
+      <h3>Post-Game Communication</h3>
+      <p style={{ color: "#555" }}>
+        The Adopted Strategy delivery email sent to board members after Game Night. Placeholders available: [Board Member First Name], [Organisation Name], [Fundraising Goal], [Primary User Full Name], [Primary User Job Title], [Organisation Website].
+      </p>
+      <TextField label="Subject" value={content.subject} onChange={set("subject")} testId="game-pg-subject" />
+      <TextField label="Opening" value={content.opening} onChange={set("opening")} testId="game-pg-opening" textarea />
+      <TextField label="Strategy ready message (shown before the View Our Fundraising Strategy button)" value={content.strategy_ready} onChange={set("strategy_ready")} testId="game-pg-strategy-ready" textarea />
+      <TextField label="Execution next-step message (shown after the button)" value={content.execution_next} onChange={set("execution_next")} testId="game-pg-execution-next" textarea />
+      <div style={{ marginTop: 14 }}>
+        <button className="button" onClick={save} disabled={busy} data-testid="game-pg-save">{busy ? "Saving…" : "Save Post-Game Email"}</button>
+        {message && <span style={{ marginLeft: 12 }} data-testid="game-pg-message">{message}</span>}
+      </div>
+    </div>
+  );
+};
+
 export const GameSection = () => {
   const [content, setContent] = useState(null);
   const [message, setMessage] = useState("");
@@ -368,6 +410,7 @@ export const GameSection = () => {
       <VideosManager />
       <IndividualGameContent />
       <HostToolsContent />
+      <PostGameCommunication />
       <CustomersTable />
     </section>
   );

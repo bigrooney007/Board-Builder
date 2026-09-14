@@ -242,6 +242,8 @@ from portfolio_routes import create_portfolio_router
 app.include_router(create_portfolio_router(db))
 from host_tools_routes import create_host_tools_router
 app.include_router(create_host_tools_router(db))
+from postgame_routes import create_postgame_router
+app.include_router(create_postgame_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router
