@@ -1,0 +1,187 @@
+{
+  "project_name": "Nonprofit Board Builder - Board Fundraising Game",
+  "design_archetype": "The Performance Pro / Swiss SaaS hybrid",
+  "theme_strategy": "Dark mode primary with deep obsidian backgrounds (#090D16), glowing electric indigo (#6366F1) and emerald (#10B981) accents for data clarity and game progression.",
+  "visual_identity": {
+    "vibe": "Modern, Premium, Product-Led, Spacious, Engaging, Non-childish",
+    "positioning": "A high-performance interactive software product for nonprofit leaders and board members to build, adopt, and execute their fundraising strategy.",
+    "border_radius": "Rounded corners (8px - 12px) with crisp 1px borders (border-white/10 or border-slate-800)",
+    "glassmorphism": "backdrop-blur-xl bg-slate-900/80 border border-white/10 shadow-2xl"
+  },
+  "colors": {
+    "background": {
+      "main": "#080C14",
+      "surface_card": "#0F172A",
+      "surface_card_hover": "#1E293B",
+      "surface_elevated": "#182238",
+      "glass": "rgba(15, 23, 42, 0.75)"
+    },
+    "text": {
+      "primary": "#F8FAFC",
+      "secondary": "#94A3B8",
+      "muted": "#64748B",
+      "accent_emerald": "#34D399",
+      "accent_indigo": "#818CF8"
+    },
+    "brand_accents": {
+      "primary_indigo": "#6366F1",
+      "primary_indigo_hover": "#4F46E5",
+      "emerald_success": "#10B981",
+      "amber_highlight": "#F59E0B",
+      "rose_urgent": "#F43F5E"
+    },
+    "gradients": {
+      "hero_glow": "radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.25), transparent 70%)",
+      "card_beam": "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%)",
+      "accent_cta": "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)",
+      "badge_emerald": "linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%)"
+    }
+  },
+  "typography": {
+    "font_family_heading": "Cabinet Grotesk, Outfit, system-ui, sans-serif",
+    "font_family_body": "Inter, system-ui, sans-serif",
+    "font_family_mono": "JetBrains Mono, Source Code Pro, monospace",
+    "scales": {
+      "h1_hero": "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight",
+      "h2_section": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-100",
+      "h3_card": "text-xl sm:text-2xl font-semibold text-slate-100",
+      "h4_sub": "text-lg font-medium text-slate-200",
+      "body_lg": "text-lg text-slate-300 leading-relaxed",
+      "body_base": "text-base text-slate-400 leading-normal",
+      "label_caps": "text-xs font-semibold uppercase tracking-widest text-indigo-400"
+    }
+  },
+  "layout_and_spacing": {
+    "container_max_width": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "section_padding": "py-16 md:py-24 lg:py-32",
+    "bento_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8",
+    "card_padding": "p-6 md:p-8"
+  },
+  "pages_and_flows": {
+    "homepage": {
+      "nav": {
+        "logo": "Nonprofit Board Builder (Product Badge: Board Fundraising Game)",
+        "links": ["How It Works", "3-Stage Game", "9 Outcomes", "Pricing", "Login"],
+        "cta": "Start Game Prep"
+      },
+      "hero": {
+        "badge": "NEW PRODUCT: THE BOARD FUNDRAISING GAME",
+        "title": "Bring Your Board Together to Build & Execute Your Fundraising Strategy",
+        "subtitle": "Unite your nonprofit board around a clear revenue goal. Turn abstract fundraising ideas into an actionable game plan in one focused session.",
+        "calculator_input": {
+          "label": "How Much Does Your Organisation Want To Raise?",
+          "placeholder": "e.g. $500,000",
+          "preset_buttons": ["$250K", "$500K", "$1M", "$2.5M"],
+          "cta_button": "Build Your Board Fundraising Game →"
+        }
+      },
+      "video_section": {
+        "headline": "See How The Game Unites Nonprofit Boards",
+        "admin_managed": true,
+        "toggleable": true,
+        "aspect_ratio": "aspect-video",
+        "features": "Interactive video overlay with chapter markers and transcripts modal"
+      },
+      "three_stage_explanation": {
+        "stage_1": {
+          "tag": "STAGE 1",
+          "title": "Before Game Night",
+          "description": "Board members receive lightweight prep links, learn fundamental fundraising strategy, and submit their ideas anonymously.",
+          "badge": "15-Min Prep"
+        },
+        "stage_2": {
+          "tag": "STAGE 2",
+          "title": "During Game Night",
+          "description": "The board convenes live. Review, rate, and prioritize strategy cards while the platform dynamically compiles your consensus strategy.",
+          "badge": "60-90 Min Workshop"
+        },
+        "stage_3": {
+          "tag": "STAGE 3",
+          "title": "After Game Night",
+          "description": "Receive an executive strategy blueprint, specific role allocations for every trustee, and downloadable execution templates.",
+          "badge": "Instant Blueprint"
+        }
+      },
+      "benefits_grid_9": [
+        {"title": "100% Board Alignment", "desc": "Eliminate endless debating with a structured voting mechanism."},
+        {"title": "Clear Financial Targets", "desc": "Deconstruct target revenue into individual board member goals."},
+        {"title": "Zero Strategy Jargon", "desc": "Gamified prompts make fundraising concepts accessible to all trustees."},
+        {"title": "Role-Based Accountability", "desc": "Assign tailored action items based on each member's personal network."},
+        {"title": "Ready-to-Use Materials", "desc": "Auto-generate pitch decks, email copy, and donor talk tracks."},
+        {"title": "Time-Efficient Session", "desc": "Complete the entire annual strategy in a single structured 90-minute meeting."},
+        {"title": "Anonymized Idea Submission", "desc": "Encourage candid feedback without hierarchy friction."},
+        {"title": "Live Revenue Tracker", "desc": "Interactive dashboard monitoring progress against your target."},
+        {"title": "Founder & Admin Control", "desc": "Full visibility to edit cards, update goals, and download PDF summaries."}
+      ],
+      "pricing_block": {
+        "price": "$497",
+        "type": "One-time payment • Lifetime access for your organization",
+        "features": [
+          "Full Board Access (Unlimited Board Members)",
+          "Interactive Game Night Facilitation Portal",
+          "Automated Strategy Blueprint & PDF Generator",
+          "Individual Board Member Workbooks",
+          "Donor Outreach Templates & Script Library"
+        ],
+        "cta": "Get Started Today - $497"
+      }
+    },
+    "onboarding_flow": {
+      "step_1_pre_payment": "Organization & Leader Profile (Org Name, Cause Area, Current Board Size, Target Goal)",
+      "step_2_checkout_gate": "Summary Review + $497 Stripe / Payment Simulation Gate",
+      "step_3_post_payment": "Fundraising Situation Questionnaire (Primary Revenue Channels, Board Engagement Level, Launch Date)"
+    },
+    "dashboard_shell": {
+      "welcome_banner": "Welcome Video Holder + Onboarding Checklist",
+      "goal_widget": "Fundraising Goal Target vs Current Progress Counter",
+      "game_status": "Current Phase: Stage 1 Prep Phase / Active / Completed",
+      "feature_cards": [
+        {"id": "board_members", "title": "Board Members", "status": "Locked until prep launch"},
+        {"id": "individual_game", "title": "Individual Game Prep", "status": "Available"},
+        {"id": "group_game", "title": "Group Game Night", "status": "Scheduled"},
+        {"id": "strategies", "title": "Strategy Blueprint", "status": "Generates post-game"},
+        {"id": "portfolios", "title": "Donor Portfolios", "status": "Generates post-game"},
+        {"id": "execution_materials", "title": "Execution Materials", "status": "Toolkit ready"}
+      ]
+    }
+  },
+  "image_urls": [
+    {
+      "category": "team_collaboration",
+      "url": "https://images.unsplash.com/photo-1590402494587-44b71d7772f6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwyfHxub25wcm9maXQlMjB0ZWFtJTIwY29sbGFib3JhdGlvbiUyMG1lZXRpbmclMjBzdHJhdGVneSUyMGJvYXJkfGVufDB8fHx8MTc4OTM5Mjg3MXww&ixlib=rb-4.1.0&q=85",
+      "description": "Nonprofit team collaborating on strategy using notes on wall"
+    },
+    {
+      "category": "board_meeting",
+      "url": "https://images.unsplash.com/photo-1624555130581-1d9cca783bc0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxub25wcm9maXQlMjB0ZWFtJTIwY29sbGFib3JhdGlvbiUyMG1lZXRpbmclMjBzdHJhdGVneSUyMGJvYXJkfGVufDB8fHx8MTc4OTM5Mjg3MXww&ixlib=rb-4.1.0&q=85",
+      "description": "Board members around a executive meeting table discussing strategy"
+    }
+  ],
+  "testing_guidelines": {
+    "data_testid_convention": "kebab-case, role-based identifiers for all key elements",
+    "required_test_ids": [
+      "goal-input-field",
+      "build-game-cta-button",
+      "explainer-video-container",
+      "explainer-video-play-button",
+      "stage-before-card",
+      "stage-during-card",
+      "stage-after-card",
+      "benefits-grid",
+      "pricing-cta-button",
+      "testimonial-carousel",
+      "onboarding-step-1-form",
+      "onboarding-step-2-payment",
+      "dashboard-goal-tracker",
+      "dashboard-feature-card-board-members"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Ensure dark mode is default with crisp dark slates (#080C14 and #0F172A).",
+    "Never use raw transparent backgrounds on navigation header or modal dialogs; use backdrop-blur with slate overlay.",
+    "Make the fundraising goal input prominent with preset quick buttons ($250K, $500K, $1M) that prefill the input.",
+    "Ensure all forms and buttons have proper data-testid attributes for testing.",
+    "Reuse existing testimonial carousel component while keeping the visual theme cohesive.",
+    "Keep the tone software-led, highly professional, and empowering for nonprofit boards."
+  ]
+}

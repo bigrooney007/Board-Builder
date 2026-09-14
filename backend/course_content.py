@@ -157,7 +157,7 @@ ACTIVATION_MODULES = [
     {"number": 5, "title": "Equipping Board Members to Execute", "kind": "shell"},
 ]
 
-ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided", "activation_self_guided"}
+ALL_PRODUCT_KEYS = PRODUCT_KEYS | {"reactivation_self_guided", "activation_self_guided", "board_fundraising_game"}
 
 # Canonical video sources — explicit per (flow product, module). These are authoritative.
 CANONICAL_COURSE_VIDEOS = {

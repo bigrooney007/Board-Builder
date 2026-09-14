@@ -228,6 +228,8 @@ from board_fix_routes import create_board_fix_router
 app.include_router(create_board_fix_router(db))
 from fbb_routes import create_fbb_router
 app.include_router(create_fbb_router(db))
+from game_routes import create_game_router
+app.include_router(create_game_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router

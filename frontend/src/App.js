@@ -71,8 +71,15 @@ import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
 import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
+import GameHomePage from "@/game/GameHomePage";
+import GameAuthPage from "@/game/GameAuthPage";
+import GameAuthCallback from "@/game/GameAuthCallback";
+import GameProfilePage from "@/game/GameProfilePage";
+import GameWelcomePage from "@/game/GameWelcomePage";
+import GameSituationPage from "@/game/GameSituationPage";
+import GameDashboardPage from "@/game/GameDashboardPage";
 
-const PUBLIC_CENTERED_PATHS = ["/", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
+const PUBLIC_CENTERED_PATHS = ["/fundraising-system", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
 const PublicCenteringScope = () => {
   const { pathname } = useLocation();
@@ -92,6 +99,12 @@ const HomeExperience = () => {
   return <LandingPage onJoin={() => navigate("/join-a-board")} />;
 };
 
+const GoogleAuthGate = ({ children }) => {
+  const location = useLocation();
+  if (location.hash && location.hash.includes("session_id=")) return <GameAuthCallback />;
+  return children;
+};
+
 const LegacyAssessmentPage = () => {
   const [confirmation, setConfirmation] = useState(null);
   const navigate = useNavigate();
@@ -106,8 +119,15 @@ export default function App() {
         <PublicCenteringScope />
         <ReviewProgressTracker />
         <WorkspaceModeBanner />
+        <GoogleAuthGate>
         <Routes>
-          <Route path="/" element={<HomeExperience />} />
+          <Route path="/" element={<GameHomePage />} />
+          <Route path="/fundraising-system" element={<HomeExperience />} />
+          <Route path="/game/signup" element={<GameAuthPage />} />
+          <Route path="/game/start" element={<GameProfilePage />} />
+          <Route path="/game/welcome" element={<GameWelcomePage />} />
+          <Route path="/game/setup" element={<GameSituationPage />} />
+          <Route path="/game/dashboard" element={<GameDashboardPage />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/board-transformation" element={<BoardTransformationPage />} />
           <Route path="/board-transformation/result/:token" element={<BoardTransformationResultPage />} />
@@ -201,6 +221,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </GoogleAuthGate>
       </MemberAuthProvider>
     </BrowserRouter>
   );

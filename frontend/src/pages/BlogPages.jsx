@@ -79,7 +79,7 @@ export const BlogPostPage = () => {
             <article className="blog-article-body" data-testid="article-body">{renderBody(post.body)}</article>
             <section className="blog-cta" data-testid="article-cta">
               <h2>Let us show you the top 3 mistakes you are making with your board that are limiting your organization's ability to raise money exponentially.</h2>
-              <a className="button" href="/" data-testid="article-cta-button">SHOW ME THE 3 BOARD MISTAKES <ArrowRight size={16} /></a>
+              <a className="button" href="/fundraising-system" data-testid="article-cta-button">SHOW ME THE 3 BOARD MISTAKES <ArrowRight size={16} /></a>
             </section>
             <p><Link to="/blog" className="blog-read-link">Read All Articles</Link></p>
           </>

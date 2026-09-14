@@ -20,5 +20,5 @@
   "seed_data_creation": "Test suite creates ephemeral Stripe test-mode checkout sessions + one temporary member (test_brp_<uuid>@example.com) and cleans up payment_transactions and the member after each test.",
   "retest_needed": false,
   "main_agent_can_self_test": true,
-  "context_for_next_testing_agent": "The regression file /app/backend/tests/test_board_recruitment_proposal.py covers direct-project checkout, status idempotency, claim-purchase rejection, RwR gating and SPA-route smoke checks. Preview URL: https://board-drip.preview.emergentagent.com. STRIPE_DIRECT_BOARD_RECRUITMENT_PRICE_ID = price_1U3iBEDyMuVBxFnGzSzg194L ($1,998.50 one-time). Run with -o 'addopts=' to bypass pytest-xdist skip-reason truncation."
+  "context_for_next_testing_agent": "The regression file /app/backend/tests/test_board_recruitment_proposal.py covers direct-project checkout, status idempotency, claim-purchase rejection, RwR gating and SPA-route smoke checks. Preview URL: https://fundraising-game.preview.emergentagent.com. STRIPE_DIRECT_BOARD_RECRUITMENT_PRICE_ID = price_1U3iBEDyMuVBxFnGzSzg194L ($1,998.50 one-time). Run with -o 'addopts=' to bypass pytest-xdist skip-reason truncation."
 }

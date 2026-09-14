@@ -172,6 +172,8 @@ def create_course_router(db) -> APIRouter:
             allowed = {"reactivation_self_guided"}
         elif payload.product == "activation_self_guided":
             allowed = {"activation_self_guided"}
+        elif payload.product == "board_fundraising_game":
+            allowed = {"board_fundraising_game"}
         else:
             allowed = {"recruitment_self_guided"}
         require_entitlement(member, allowed)
@@ -186,6 +188,7 @@ def create_course_router(db) -> APIRouter:
             "recruitment_basic": "Recruitment Basic",
             "reactivation_self_guided": "Reactivation Self-Guided",
             "activation_self_guided": "Fundraising Activation Self-Guided",
+            "board_fundraising_game": "Board Fundraising Game",
         }[payload.product]
         now = datetime.now(timezone.utc).isoformat()
         record = {

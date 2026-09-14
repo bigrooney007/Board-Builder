@@ -23,7 +23,7 @@ CATEGORIES = {
     "reactivation": {"name": "Board Reactivation", "day": 2, "cta_label": "Ready to Reactivate Your Board?", "cta_button": "See How We Can Help You Reactivate", "cta_url": "/reactivate"},
     "fundraising_activation": {"name": "Board Fundraising Activation", "day": 4, "cta_label": "Ready to Activate Your Board Around Fundraising?", "cta_button": "See How We Can Help You Activate Your Board", "cta_url": "/activate"},
     "transformation": {"name": "Complete Board Transformation", "day": 5, "cta_label": "Ready to Transform Your Board?", "cta_button": "Start Your Complete Board Transformation", "cta_url": "/board-transformation"},
-    "weekly": {"name": "Nonprofit Board Leadership", "day": 0, "cta_label": "", "cta_button": "SHOW ME THE 3 BOARD MISTAKES", "cta_url": "/"},
+    "weekly": {"name": "Nonprofit Board Leadership", "day": 0, "cta_label": "", "cta_button": "SHOW ME THE 3 BOARD MISTAKES", "cta_url": "/fundraising-system"},
 }
 BANNED_PHRASES = ["in today's fast-paced world", "in the ever-evolving landscape", "it's important to note", "let's dive in", "game changer", "unlock the power", "navigate the complexities", "revolutionize", "game-changer"]
 

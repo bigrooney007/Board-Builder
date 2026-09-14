@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from urllib.parse import urlparse
 
+import httpx
 import resend
 import stripe
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -38,6 +39,10 @@ class LoginRequest(BaseModel):
 
 
 class ClaimRequest(BaseModel):
+    session_id: str = Field(min_length=1)
+
+
+class GoogleSessionRequest(BaseModel):
     session_id: str = Field(min_length=1)
 
 
@@ -115,6 +120,9 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         entitlement = "fbb_activation"
         product_name = "Board Fundraising Activation"
         extra_entitlements.append("activation_self_guided")
+    elif offer_source == "board_fundraising_game":
+        entitlement = "board_fundraising_game"
+        product_name = "Board Fundraising Game"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -201,6 +209,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         purchase.update({
             "purchase_source": "board_fundraising_activation_497",
             "offer": "Board Fundraising Activation", "price_paid": 497,
+        })
+    elif offer_source == "board_fundraising_game":
+        purchase.update({
+            "purchase_source": "board_fundraising_game_497",
+            "offer": "Board Fundraising Game", "price_paid": 497,
         })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
@@ -296,6 +309,46 @@ def create_member_router(db) -> APIRouter:
                 "claimed": purchase["entitlement"] if purchase else "",
                 "claimed_source": purchase.get("purchase_source", "") if purchase else ""}
 
+    @router.post("/google/session")
+    async def google_session(payload: GoogleSessionRequest, response: Response):
+        # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.get(
+                    "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                    headers={"X-Session-ID": payload.session_id})
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail="Google sign-in could not be verified. Please try again.") from exc
+        if resp.status_code != 200:
+            raise HTTPException(status_code=401, detail="Google sign-in could not be verified. Please try again.")
+        data = resp.json()
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            raise HTTPException(status_code=401, detail="Google sign-in did not return an email address")
+        member = await db.members.find_one({"email": email})
+        now = datetime.now(timezone.utc).isoformat()
+        if not member:
+            name = (data.get("name") or "").strip()
+            first, _, last = name.partition(" ")
+            member = {
+                "user_id": new_uuid(), "email": email,
+                "first_name": first or email.split("@")[0], "last_name": last.strip(),
+                "password_hash": "", "auth_provider": "google",
+                "google_id": data.get("id", ""), "picture": data.get("picture", ""),
+                "entitlements": [], "lead_ids": [], "stripe_customer_id": "",
+                "created_at": now, "updated_at": now,
+            }
+            await db.members.insert_one(member.copy())
+        else:
+            await db.members.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {"google_id": data.get("id", member.get("google_id", "")),
+                          "picture": data.get("picture", member.get("picture", "")), "updated_at": now}})
+        fresh = await db.members.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+        token = create_member_token(fresh["user_id"], email)
+        set_member_cookie(response, token)
+        return {"member": public_member(fresh), "token": token}
+
     @router.post("/logout")
     async def logout(response: Response):
         clear_member_cookie(response)
@@ -334,6 +387,7 @@ def create_member_router(db) -> APIRouter:
         activation_route = "/app/activation/self-guided" if "board_fix_system" in entitlements else "/app/activation/start"
         activation_name = "Board Fundraising Activation — Self-Guided System" if "board_fix_system" in entitlements else "Board Fundraising Activation"
         for entitlement, name, route in [
+            ("board_fundraising_game", "The Board Fundraising Game", "/game/dashboard"),
             ("recruitment_basic", "Board Recruitment — Basic", "/app/recruitment/basic"),
             ("recruitment_self_guided", "Board Recruitment — Self-Guided System", "/app/recruitment/self-guided"),
             ("reactivation_self_guided", "Board Reactivation — Self-Guided System", "/app/reactivation/self-guided"),

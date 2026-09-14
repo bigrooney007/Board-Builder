@@ -39,7 +39,7 @@ class DIYCheckoutRequest(BaseModel):
     product: str = ""
 
 
-ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation"}
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/"}
 
 
 def resolve_cancel_url(payload, default_path: str) -> str:
@@ -136,6 +136,10 @@ def resolve_complete_transformation_price_id() -> str:
 
 def resolve_campaign_launch_price_id() -> str:
     return resolve_offer_price_id("STRIPE_RECRUITMENT_CAMPAIGN_LAUNCH_697_PRICE_ID", "recruitment_campaign_launch_697", "Recruitment Campaign Launch", 69700)
+
+
+def resolve_game_price_id() -> str:
+    return resolve_offer_price_id("STRIPE_BOARD_FUNDRAISING_GAME_497_PRICE_ID", "board_fundraising_game_497", "Board Fundraising Game", 49700)
 
 
 DFY_CHECKOUT_OFFERS = {
@@ -581,6 +585,42 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, **(await lead_checkout_context(db, payload.result_token)), "origin_url": payload.origin_url, "offer_source": spec["offer_source"],
             "selected_tier": "497", "purchase_source": spec["purchase_source"],
             "offer": spec["offer"],
+            "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/game-checkout")
+    async def create_game_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": resolve_cancel_url(payload, "/game/start"),
+            "metadata": {
+                "offer_source": "board_fundraising_game", "selected_tier": "497",
+                "purchase_source": "board_fundraising_game_497",
+                "offer": "Board Fundraising Game",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "board_fundraising_game",
+            "selected_tier": "497", "purchase_source": "board_fundraising_game_497",
+            "offer": "Board Fundraising Game",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
