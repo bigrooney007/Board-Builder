@@ -7,6 +7,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
 import { GameNightSection } from "./GameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
+import { WorkingStrategyCard, StrategiesHistoryCard } from "./StrategyCards";
 import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
 
 const SUPPORT_TYPES = [
@@ -148,6 +149,8 @@ export default function GameDashboardPage() {
         <GameNightSection />
         <BoardMembersSection />
         <GroupGameCard />
+        <WorkingStrategyCard />
+        <StrategiesHistoryCard />
 
         <p className="bfg-eyebrow" style={{ marginTop: 30 }}>Your Game Areas</p>
         <div className="bfg-areas">

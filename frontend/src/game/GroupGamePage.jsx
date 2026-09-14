@@ -25,6 +25,14 @@ const ResultsSummary = () => {
       <div className="bfg-panel">
         <h2>Group Game Results</h2>
         <p className="bfg-panel-sub">{data.rounds_completed} of {data.total_rounds} rounds completed · {data.participants} board members participated</p>
+        {data.status === "completed" && (
+          <div style={{ marginTop: 14 }}>
+            <Link className="bfg-btn bfg-btn-primary bfg-btn-sm" to="/game/strategy/priorities" data-testid="bfg-gg-results-generate-strategy-btn">
+              Generate Board-Prioritised Strategy
+            </Link>
+            <p className="bfg-note" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
+          </div>
+        )}
       </div>
       {data.areas.map((area) => (
         <div className="bfg-panel" key={area.round_number} data-testid={`bfg-gg-summary-${area.section_key}`}>
@@ -241,6 +249,13 @@ export default function GroupGamePage() {
                   {" "}The prioritised ideas and additional board ideas have been saved and are ready to be used to build your Board-Prioritised Fundraising Strategy.
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#34d399" }}>8 of 8 Review Rounds Completed</p>
+                <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
+                  <h3 style={{ fontSize: 17 }}>Generate Board-Prioritised Strategy</h3>
+                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
+                  <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/strategy/priorities" data-testid="bfg-gg-generate-strategy-btn">
+                    Generate Board-Prioritised Strategy
+                  </Link>
+                </div>
                 <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 18 }}>
                   <Link className="bfg-btn bfg-btn-ghost" to="/game/group?results=1" data-testid="bfg-gg-view-results-btn">View Group Game Results</Link>
                   <Link className="bfg-btn bfg-btn-primary" to="/game/dashboard" data-testid="bfg-gg-return-dashboard-btn">Return To Dashboard</Link>

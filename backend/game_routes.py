@@ -74,7 +74,6 @@ USER_FIELDS = ["full_name", "job_title", "email"]
 SITUATION_SECTIONS = ["financial", "activities", "team", "donors", "corporate", "grantors", "technology", "materials", "reflections"]
 
 GAME_AREAS = [
-    {"key": "working_strategy", "name": "Working Fundraising Strategy", "description": "The strategy built from your board's collective thinking."},
     {"key": "final_strategy", "name": "Final Fundraising Strategy", "description": "The strategy your board reviews, refines and adopts."},
     {"key": "portfolios", "name": "Board Portfolios", "description": "Each board member's role in executing the strategy."},
     {"key": "execution_materials", "name": "Execution Materials", "description": "The tools and resources your board needs to execute."},
