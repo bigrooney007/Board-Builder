@@ -15,10 +15,10 @@ GAME_ENTITLEMENT = "board_fundraising_game"
 TOTAL_SECTIONS = 10
 
 DEFAULT_POSTGAME_EMAIL = {
-    "subject": "[Organisation Name]'s Fundraising Strategy Is Ready",
-    "opening": "Thank you for participating in [Organisation Name]'s Board Fundraising Game.\n\nTogether, your board contributed ideas, prioritised the strongest opportunities, reviewed the fundraising strategy and adopted the plan your organisation will now use to work toward its [Fundraising Goal] fundraising goal.",
+    "subject": "[Organization Name]'s Fundraising Strategy Is Ready",
+    "opening": "Thank you for participating in [Organization Name]'s Board Fundraising Game.\n\nTogether, your board contributed ideas, prioritized the strongest opportunities, reviewed the fundraising strategy and adopted the plan your organization will now use to work toward its [Fundraising Goal] fundraising goal.",
     "strategy_ready": "Your adopted fundraising strategy is now ready.",
-    "execution_next": "This strategy belongs to the board as a working document. It brings together the decisions made during Game Night and provides the direction for how [Organisation Name] will raise money and build its fundraising system.\n\nThe next step is execution.\n\nYou will also receive your personal Board Fundraising Portfolio showing how you can help build the fundraising system and how you can support fundraising directly.",
+    "execution_next": "This strategy belongs to the board as a working document. It brings together the decisions made during Game Night and provides the direction for how [Organization Name] will raise money and build its fundraising system.\n\nThe next step is execution.\n\nYou will also receive your personal Board Fundraising Portfolio showing how you can help build the fundraising system and how you can support fundraising directly.",
 }
 
 PORTFOLIO_SENT_STATUSES = {"sent", "change_requested", "approved", "materials_ready"}
@@ -63,12 +63,13 @@ def create_postgame_router(db) -> APIRouter:
         primary = profile.get("primary_user") or {}
         return {
             "[Board Member First Name]": first_name,
-            "[Organisation Name]": (organization.get("name") or "").strip() or "our organisation",
+            "[Organization Name]": (organization.get("name") or "").strip() or "our organization",
+            "[Organisation Name]": (organization.get("name") or "").strip() or "our organization",
             "[Fundraising Goal]": fmt_goal(profile),
             "[Fundraising Deadline]": fmt_deadline(profile) or "our deadline",
             "[Primary User Full Name]": primary.get("full_name", ""),
             "[Primary User Job Title]": primary.get("job_title", ""),
-            "[Organisation Website]": organization.get("website", ""),
+            "[Organization Website]": organization.get("website", ""),
         }
 
     def fill(text: str, mapping: dict) -> str:
@@ -212,7 +213,7 @@ def create_postgame_router(db) -> APIRouter:
         portfolios = await portfolio_summary(member["user_id"])
         organization = (profile.get("organization") or {}).get("name", "")
         base = {
-            "organisation_name": organization,
+            "organization_name": organization,
             "goal_display": fmt_goal(profile), "deadline_display": fmt_deadline(profile),
             "journey_status": await journey_status(member["user_id"], strategy, portfolios),
             "portfolios": portfolios,

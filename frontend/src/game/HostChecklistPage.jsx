@@ -25,7 +25,7 @@ export default function HostChecklistPage() {
       <button className="bfg-pf-btn" onClick={() => window.print()} data-testid="bfg-cl-print-btn">Print / Save As PDF</button>
     }>
       <HostContextHeader title={checklist.page_title} rows={[
-        ["Organisation", context.organisation_name],
+        ["Organization", context.organization_name],
         ["Fundraising Goal", context.goal_display],
         ["Game Night", context.night_display],
       ]} />

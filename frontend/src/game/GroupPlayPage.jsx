@@ -215,7 +215,7 @@ export default function GroupPlayPage() {
                 <p style={{ marginTop: 8 }}>{round.title}</p>
                 <RoundResults results={round.results || []} />
                 <p style={{ marginTop: 16 }}>
-                  These are the ideas your board collectively prioritised. The remaining ideas have been saved and can still be considered when your fundraising strategy is created.
+                  These are the ideas your board collectively prioritized. The remaining ideas have been saved and can still be considered when your fundraising strategy is created.
                 </p>
                 <p className="bfg-gg-rule">Waiting for the host to continue.</p>
               </div>

@@ -162,7 +162,7 @@ export default function GameNightCompletePage() {
     }>
       <main className="bfg-flow" data-testid="bfg-game-complete-page" style={{ maxWidth: 860, margin: "0 auto", padding: "26px 16px 70px" }}>
         <section className="bfg-panel">
-          <p className="bfg-eyebrow">{overview.organisation_name}</p>
+          <p className="bfg-eyebrow">{overview.organization_name}</p>
           <h1>Game Night Complete</h1>
           <div className="bfg-night-summary" style={{ marginTop: 12 }} data-testid="bfg-gc-header-meta">
             <div className="bfg-summary-row"><span>Fundraising Goal</span><strong>{overview.goal_display}</strong></div>

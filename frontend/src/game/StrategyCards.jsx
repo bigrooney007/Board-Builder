@@ -50,13 +50,13 @@ export const WorkingStrategyCard = () => {
       <div className="bfg-panel-head">
         <div>
           <h2>Working Fundraising Strategy</h2>
-          <p className="bfg-panel-sub">Generate a working fundraising strategy at any time using the information currently available from your organisation and board.</p>
+          <p className="bfg-panel-sub">Generate a working fundraising strategy at any time using the information currently available from your organization and board.</p>
         </div>
       </div>
       {phase === "generating" ? (
         <div style={{ marginTop: 14 }} data-testid="bfg-working-generating">
           <p className="bfg-note">Generating Your Fundraising Strategy...</p>
-          <p className="bfg-note">We are bringing together your fundraising goal, organisation information and board ideas to build your strategy.</p>
+          <p className="bfg-note">We are bringing together your fundraising goal, organization information and board ideas to build your strategy.</p>
           <div className="bfg-doc-loading"><span /><span /><span /></div>
         </div>
       ) : phase === "failed" ? (

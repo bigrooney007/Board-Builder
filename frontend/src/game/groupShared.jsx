@@ -13,8 +13,8 @@ export const RoundProgress = ({ current, total }) => (
 
 export const RoundResults = ({ results, compact }) => (
   <div className="bfg-gg-results" data-testid="bfg-gg-results">
-    {results.filter((item) => item.prioritised).map((item) => (
-      <div className="bfg-gg-result prioritised" key={item.idea_id}>
+    {results.filter((item) => item.prioritized).map((item) => (
+      <div className="bfg-gg-result prioritized" key={item.idea_id}>
         <span className="bfg-gg-result-rank">{item.rank}</span>
         <div>
           <strong>{item.text}</strong>
@@ -23,10 +23,10 @@ export const RoundResults = ({ results, compact }) => (
         <span className="bfg-gg-score">Board Score: {item.total_score}</span>
       </div>
     ))}
-    {results.some((item) => !item.prioritised) && (
+    {results.some((item) => !item.prioritized) && (
       <>
         <p className="bfg-gg-additional-label">Additional Board Ideas</p>
-        {results.filter((item) => !item.prioritised).map((item) => (
+        {results.filter((item) => !item.prioritized).map((item) => (
           <div className="bfg-gg-result" key={item.idea_id}>
             <span className="bfg-gg-result-rank muted">{item.rank}</span>
             <div>

@@ -84,7 +84,7 @@ export default function HostFacilitationPage() {
 
   const fullText = [
     guide.page_title,
-    `Organisation: ${context.organisation_name}`,
+    `Organization: ${context.organization_name}`,
     `Fundraising Goal: ${context.goal_display}`,
     ...(context.night_display ? [`Game Night: ${context.night_display}`] : []),
     `Board Members Invited: ${context.invited_count}`,
@@ -113,7 +113,7 @@ export default function HostFacilitationPage() {
       </>
     }>
       <HostContextHeader title={guide.page_title} rows={[
-        ["Organisation", context.organisation_name],
+        ["Organization", context.organization_name],
         ["Fundraising Goal", context.goal_display],
         ["Game Night", context.night_display],
         ["Board Members Invited", String(context.invited_count)],

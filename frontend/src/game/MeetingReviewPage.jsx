@@ -105,7 +105,7 @@ export default function MeetingReviewPage() {
           <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-review-complete-summary">
             <h1>Strategy Review Complete</h1>
             <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-              Your board has reviewed the Board-Prioritised Fundraising Strategy. The next step is to process the decisions made during the discussion and create the Final Fundraising Strategy.
+              Your board has reviewed the Board-Prioritized Fundraising Strategy. The next step is to process the decisions made during the discussion and create the Final Fundraising Strategy.
             </p>
             <div className="bfg-gg-playerlist" style={{ marginTop: 20, textAlign: "left" }}>
               <div className="bfg-summary-row"><span>Sections Reviewed</span><strong>{state.total_sections} of {state.total_sections}</strong></div>
@@ -127,7 +127,7 @@ export default function MeetingReviewPage() {
               <h1>{state.organization_name}</h1>
               <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
                 {state.goal_display && <>Fundraising Goal: <strong>{state.goal_display}</strong> · </>}
-                Strategy: Board-Prioritised Draft
+                Strategy: Board-Prioritized Draft
               </p>
               <p className="bfg-note" data-testid="bfg-mr-joined-count">{state.joined_count} board member{state.joined_count === 1 ? "" : "s"} connected through the Group Game link.</p>
             </div>
@@ -158,7 +158,7 @@ export default function MeetingReviewPage() {
                 </>
               ) : (
                 <>
-                  <p className="bfg-note" style={{ marginTop: 8 }}>Manual edits update the Board-Prioritised Draft — no AI call is made.</p>
+                  <p className="bfg-note" style={{ marginTop: 8 }}>Manual edits update the Board-Prioritized Draft — no AI call is made.</p>
                   <label className="bfg-field">
                     <span>Strategy text for this section</span>
                     <textarea rows={14} value={draft} onChange={(event) => setDraft(event.target.value)} data-testid="bfg-mr-edit-text" />

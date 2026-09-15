@@ -4,8 +4,8 @@ import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, GameProgress, formatDate, money, useGameContent } from "./gameShared";
 
-const STEPS = ["About Your Organisation", "Your Fundraising Goal", "About You", "Review"];
-const ORG_TYPES = ["Charity / Nonprofit", "Foundation", "Association", "School / Education", "Faith-Based Organisation", "Community Organisation", "Other"];
+const STEPS = ["About Your Organization", "Your Fundraising Goal", "About You", "Review"];
+const ORG_TYPES = ["Charity / Nonprofit", "Foundation", "Association", "School / Education", "Faith-Based Organization", "Community Organization", "Other"];
 
 const Field = ({ label, value, onChange, testId, required, type = "text", textarea, hint, options, readOnly }) => (
   <label className="bfg-field">
@@ -88,7 +88,7 @@ export default function GameProfilePage() {
   };
 
   const validators = [
-    () => (org.name.trim() ? "" : "Please enter your organisation's name."),
+    () => (org.name.trim() ? "" : "Please enter your organization's name."),
     () => (goalAmount > 0 ? (goal.purpose.trim() ? "" : "Please tell us what the money will be used for.") : "Please enter the amount you want to raise."),
     () => (user.full_name.trim() ? "" : "Please enter your full name."),
   ];
@@ -147,12 +147,12 @@ export default function GameProfilePage() {
             <div data-testid="bfg-profile-step-org">
               <p className="bfg-eyebrow">Step 1 of 4</p>
               <h2>{pf.step1_heading}</h2>
-              <Field label="Organisation name" value={org.name} onChange={setOrgField("name")} testId="bfg-org-name" required />
+              <Field label="Organization name" value={org.name} onChange={setOrgField("name")} testId="bfg-org-name" required />
               <Field label="Website" value={org.website} onChange={setOrgField("website")} testId="bfg-org-website" hint="Optional" />
-              <Field label="Organisation type" value={org.org_type} onChange={setOrgField("org_type")} testId="bfg-org-type" options={ORG_TYPES} />
+              <Field label="Organization type" value={org.org_type} onChange={setOrgField("org_type")} testId="bfg-org-type" options={ORG_TYPES} />
               <Field label="Location" value={org.location} onChange={setOrgField("location")} testId="bfg-org-location" hint="City, state or region" />
               <Field label="Mission" value={org.mission} onChange={setOrgField("mission")} testId="bfg-org-mission" textarea />
-              <Field label="Who does your organisation serve?" value={org.who_served} onChange={setOrgField("who_served")} testId="bfg-org-who-served" textarea />
+              <Field label="Who does your organization serve?" value={org.who_served} onChange={setOrgField("who_served")} testId="bfg-org-who-served" textarea />
             </div>
           )}
           {step === 1 && (
@@ -161,7 +161,7 @@ export default function GameProfilePage() {
               <h2>{pf.step2_heading}</h2>
               <p style={{ marginTop: 10 }}>This goal is the centre of your Board Fundraising Game. Your board will build the strategy required to raise it.</p>
               <label className="bfg-field">
-                <span>How much does your organisation want to raise? <b>*</b></span>
+                <span>How much does your organization want to raise? <b>*</b></span>
                 <div className="bfg-goal-input">
                   <span>$</span>
                   <input inputMode="numeric" value={goal.amount}
@@ -178,12 +178,12 @@ export default function GameProfilePage() {
             <div data-testid="bfg-profile-step-user">
               <p className="bfg-eyebrow">Step 3 of 4</p>
               <h2>{pf.step3_heading}</h2>
-              <p style={{ marginTop: 10 }}>You will lead the Board Fundraising Game for {org.name || "your organisation"}.</p>
+              <p style={{ marginTop: 10 }}>You will lead the Board Fundraising Game for {org.name || "your organization"}.</p>
               <Field label="Full name" value={user.full_name} onChange={setUserField("full_name")} testId="bfg-user-full-name" required />
               <Field label="Job title" value={user.job_title} onChange={setUserField("job_title")} testId="bfg-user-job-title" />
               <Field label="Email" type="email" value={user.email} onChange={() => {}} testId="bfg-user-email" readOnly hint="From your account" />
-              <Field label="Organisation name" value={org.name} onChange={setOrgField("name")} testId="bfg-user-org-name" hint="From Step 1" />
-              <Field label="Organisation website" value={org.website} onChange={setOrgField("website")} testId="bfg-user-org-website" hint="From Step 1" />
+              <Field label="Organization name" value={org.name} onChange={setOrgField("name")} testId="bfg-user-org-name" hint="From Step 1" />
+              <Field label="Organization website" value={org.website} onChange={setOrgField("website")} testId="bfg-user-org-website" hint="From Step 1" />
             </div>
           )}
           {step === 3 && (
@@ -198,7 +198,7 @@ export default function GameProfilePage() {
                 {goal.deadline && <span>By {formatDate(goal.deadline)}</span>}
               </div>
               <div className="bfg-summary-grid">
-                <div className="bfg-summary-row"><span>Organisation</span><strong data-testid="bfg-review-org">{org.name}</strong></div>
+                <div className="bfg-summary-row"><span>Organization</span><strong data-testid="bfg-review-org">{org.name}</strong></div>
                 {goal.purpose && <div className="bfg-summary-row"><span>Purpose</span><strong>{goal.purpose}</strong></div>}
                 {org.mission && <div className="bfg-summary-row"><span>Mission</span><strong>{org.mission}</strong></div>}
                 {org.who_served && <div className="bfg-summary-row"><span>Who We Serve</span><strong>{org.who_served}</strong></div>}

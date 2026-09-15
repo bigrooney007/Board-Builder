@@ -94,7 +94,7 @@ export default function PortfolioEditPage() {
     if (isCustom && !customLabel.trim()) return;
     const label = isCustom ? customLabel.trim() : (catalog.system_roles.find((r) => r.role_key === addRoleKey)?.label || "");
     setSystemRoles((current) => [...current, {
-      item_id: `new-${Date.now()}`, role_key: addRoleKey, label, source: "organisation_added",
+      item_id: `new-${Date.now()}`, role_key: addRoleKey, label, source: "organization_added",
       involvement: "", member_note: "", commitment: "", deadline: "", requires_confirmation: false, active: true,
     }]);
     setAddRoleKey(""); setCustomLabel("");
@@ -112,7 +112,7 @@ export default function PortfolioEditPage() {
       return;
     }
     setActivities((current) => [...current, {
-      item_id: `new-${Date.now()}`, activity_key: key, label, source: "organisation_added",
+      item_id: `new-${Date.now()}`, activity_key: key, label, source: "organization_added",
       member_note: "", commitment: "", deadline: "",
       audiences: detail.strategy_audiences || [],
       requires_confirmation: confirmed, active: true,
@@ -127,7 +127,7 @@ export default function PortfolioEditPage() {
           <p className="bfg-eyebrow">Board Fundraising Portfolio</p>
           <h1>{portfolio.member_name}</h1>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
-            Organisation: {detail.organization_name} · Fundraising Goal: {detail.goal_display}
+            Organization: {detail.organization_name} · Fundraising Goal: {detail.goal_display}
             {detail.goal_deadline && <> · Goal Deadline: {detail.goal_deadline}</>}
             {" "}· Status: <strong data-testid="bfg-pe-status">{STATUS_LABELS[portfolio.status]}</strong>
           </p>
@@ -270,7 +270,7 @@ export default function PortfolioEditPage() {
             </button>
           )}
           <label className="bfg-field">
-            <span>Organisation note (shown to the board member)</span>
+            <span>Organization note (shown to the board member)</span>
             <textarea rows={3} value={orgNote} disabled={locked} onChange={(event) => setOrgNote(event.target.value)} data-testid="bfg-pe-org-note" />
           </label>
         </div>

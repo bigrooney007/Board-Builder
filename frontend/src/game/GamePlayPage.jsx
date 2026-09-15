@@ -69,7 +69,7 @@ export default function GamePlayPage() {
   const progress = ctx?.progress || {};
   const completedCount = Object.values(progress).filter((p) => p.completed).length;
   const fill = useCallback((text) => String(text || "")
-    .replaceAll("{organisation}", ctx?.organization_name || "your organisation")
+    .replaceAll("{organization}", ctx?.organization_name || "your organization")
     .replaceAll("{goal}", ctx?.goal_display || "its fundraising goal")
     .replaceAll("{deadline}", ctx?.deadline_display || "its deadline"), [ctx]);
 
@@ -125,7 +125,7 @@ export default function GamePlayPage() {
     } catch { setError("We could not save. Please try again."); setSaving(false); return false; }
   };
 
-  if (notFound) return <div className="bfg" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}><div className="bfg-card"><h2>This game link is not valid</h2><p style={{ marginTop: 10 }}>Please ask your organisation to resend your invitation.</p></div></div>;
+  if (notFound) return <div className="bfg" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}><div className="bfg-card"><h2>This game link is not valid</h2><p style={{ marginTop: 10 }}>Please ask your organization to resend your invitation.</p></div></div>;
   if (!ctx) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
   const Header = () => (
@@ -150,11 +150,11 @@ export default function GamePlayPage() {
           <div className="bfg-card">
             <h1>Welcome To Your Board Fundraising Game</h1>
             <p style={{ marginTop: 14 }}>{ctx.organization_name} wants to raise {ctx.goal_display}{ctx.deadline_display ? ` by ${ctx.deadline_display}` : ""}.</p>
-            <p style={{ marginTop: 10 }}>Before your board meets for Game Night, you are going to build your own version of the fundraising strategy you believe can help your organisation reach that goal.</p>
+            <p style={{ marginTop: 10 }}>Before your board meets for Game Night, you are going to build your own version of the fundraising strategy you believe can help your organization reach that goal.</p>
             <h2 style={{ marginTop: 22 }}>You Do Not Need To Be A Fundraising Expert</h2>
             <p style={{ marginTop: 10 }}>The game will teach you how a complete fundraising strategy is built while helping you contribute the knowledge, relationships and ideas you already have.</p>
             <p style={{ marginTop: 10 }}>In each section, we will ask what you think first. Then we will show you how fundraisers think about that part of the strategy and give you another opportunity to add to your ideas.</p>
-            <p style={{ marginTop: 10 }}>Your board will bring everyone's ideas together during Game Night and decide what should become part of the organisation's fundraising strategy.</p>
+            <p style={{ marginTop: 10 }}>Your board will bring everyone's ideas together during Game Night and decide what should become part of the organization's fundraising strategy.</p>
             <div className="bfg-ig-card" style={{ marginTop: 18 }}>
               <strong>10 Strategy Sections</strong>
               <p>Complete one section at a time. Your progress is saved after every completed section.</p>
@@ -185,7 +185,7 @@ export default function GamePlayPage() {
                 <p style={{ marginTop: 8 }}>You identified who could fund the mission, where to find them, how to attract them, the process required to raise money, the technology, team and materials needed to execute, and what the execution timeline could look like.</p>
                 <p style={{ marginTop: 8 }}>You also told us how you want to help build the fundraising system and how you want to participate in raising money.</p>
                 <h2 style={{ marginTop: 18 }}>What Happens Next?</h2>
-                <p style={{ marginTop: 8 }}>During Game Night, your board will see the ideas contributed by everyone, prioritise the strongest ones and use those decisions to build the organisation's fundraising strategy.</p>
+                <p style={{ marginTop: 8 }}>During Game Night, your board will see the ideas contributed by everyone, prioritize the strongest ones and use those decisions to build the organization's fundraising strategy.</p>
                 <p style={{ marginTop: 12, fontWeight: 700 }}>10 of 10 Sections Completed</p>
                 {ctx.game_night?.date_display && <p style={{ marginTop: 8 }}>Game Night: {ctx.game_night.date_display}{ctx.game_night.time_display ? ` · Time: ${ctx.game_night.time_display}` : ""}</p>}
                 <p style={{ marginTop: 8 }}>Come ready to think, decide and build the strategy together.</p>

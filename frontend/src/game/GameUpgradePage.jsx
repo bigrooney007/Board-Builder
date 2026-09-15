@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { BfgShell, formatDate, money, useGameContent } from "./gameShared";
+import { useFlowVideo } from "@/hooks/useFlowVideos";
+import { BfgShell, GameVideo, formatDate, money, useGameContent } from "./gameShared";
 
 export default function GameUpgradePage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
   const content = useGameContent();
+  const video = useFlowVideo("game_homepage");
   const [profile, setProfile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -65,10 +67,39 @@ export default function GameUpgradePage() {
         <p style={{ marginTop: 14, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>{up.supporting}</p>
 
         <div className="bfg-goal-highlight" style={{ maxWidth: 480, margin: "26px auto 0" }} data-testid="bfg-upgrade-goal">
-          <span>Your Fundraising Goal</span>
+          <span>{up.goal_label}</span>
           <strong>{goalAmount ? money(goalAmount) : ""}</strong>
           {profile.goal?.deadline && <span>By {formatDate(profile.goal.deadline)}</span>}
         </div>
+
+        <PaymentCard idSuffix="top" />
+
+        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-video">
+          <p className="bfg-eyebrow">{up.video_label}</p>
+          <h2>{up.video_heading}</h2>
+          <p style={{ marginTop: 12, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>{up.video_text}</p>
+          <GameVideo video={video} testId="bfg-upgrade-video-player" />
+        </section>
+
+        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-process">
+          <p className="bfg-eyebrow">{up.process_label}</p>
+          <h2>{up.process_heading}</h2>
+          <p style={{ marginTop: 12, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>{up.process_supporting}</p>
+          {(up.process_steps || []).map((step, index) => (
+            <div className="bfg-card" key={index} style={{ marginTop: 16, textAlign: "center" }} data-testid={`bfg-upgrade-process-step-${index + 1}`}>
+              <h3 style={{ fontSize: 18 }}>{step.heading}</h3>
+              {(step.paragraphs || []).map((paragraph, i) => <p key={i} style={{ marginTop: 10 }}>{paragraph}</p>)}
+            </div>
+          ))}
+        </section>
+
+        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-repeat-cta">
+          <h2>{up.repeat_heading}</h2>
+          <p style={{ marginTop: 12, maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>{up.repeat_supporting}</p>
+          <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} onClick={unlock} disabled={busy} data-testid="bfg-upgrade-repeat-btn">
+            {busy ? "Preparing secure checkout…" : up.repeat_cta}
+          </button>
+        </section>
 
         <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-intro">
           <h2>{up.intro_heading}</h2>
@@ -86,8 +117,6 @@ export default function GameUpgradePage() {
             </div>
           ))}
         </section>
-
-        <PaymentCard idSuffix="top" />
 
         <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-features">
           <h2>{up.features_heading}</h2>

@@ -61,7 +61,7 @@ export default function GameAuthPage() {
         <div className="bfg-card">
           <p className="bfg-eyebrow">Your Board Fundraising Game</p>
           <h1>{mode === "signup" ? "Create Your Account" : "Welcome Back"}</h1>
-          <p style={{ marginTop: 10 }}>{mode === "signup" ? "Set up your account to build your organisation's Board Fundraising Game." : "Log in to continue setting up your Board Fundraising Game."}</p>
+          <p style={{ marginTop: 10 }}>{mode === "signup" ? "Set up your account to build your organization's Board Fundraising Game." : "Log in to continue setting up your Board Fundraising Game."}</p>
           <div className="bfg-auth-tabs" style={{ marginTop: 24 }}>
             <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => { setMode("signup"); setError(""); }} data-testid="bfg-auth-signup-tab">Create Account</button>
             <button type="button" className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); }} data-testid="bfg-auth-login-tab">Log In</button>

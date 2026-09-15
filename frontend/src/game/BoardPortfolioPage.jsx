@@ -73,7 +73,7 @@ export default function BoardPortfolioPage() {
       <div className="bfg-pf-page" style={{ display: "grid", placeItems: "center" }}>
         <div className="bfg-pf-doc" style={{ maxWidth: 440, textAlign: "center" }} data-testid="bfg-bp-invalid">
           <h2>This Portfolio Link Is Not Valid</h2>
-          <p className="bfg-pf-sub">Please ask your organisation to resend your Board Fundraising Portfolio link.</p>
+          <p className="bfg-pf-sub">Please ask your organization to resend your Board Fundraising Portfolio link.</p>
         </div>
       </div>
     );

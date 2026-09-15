@@ -127,7 +127,7 @@ const FinalResponseBlock = ({ token, identity, organizationName, myResponse, onS
   return (
     <div style={{ marginTop: 18, textAlign: "left" }} data-testid="bfg-gr-final-response">
       <p>You have reviewed {organizationName}'s Final Fundraising Strategy.</p>
-      <h2 style={{ fontSize: 18, marginTop: 14 }}>Are you ready for the organisation to adopt this strategy?</h2>
+      <h2 style={{ fontSize: 18, marginTop: 14 }}>Are you ready for the organization to adopt this strategy?</h2>
       {!requesting ? (
         <div className="bfg-gr-options">
           <button type="button" className="bfg-gr-option" onClick={() => submit("approved")} disabled={busy} data-testid="bfg-gr-approve-final-btn">
@@ -191,14 +191,14 @@ const PostGameComplete = ({ token, identity, organizationName }) => {
       <div style={{ marginTop: 24, textAlign: "left" }}>
         <h2 style={{ fontSize: 18 }}>What Happens Next?</h2>
         <p style={{ marginTop: 10 }}>
-          The strategy tells your organisation what it plans to do. Your Board Fundraising Portfolio will show how you personally can help execute it.
+          The strategy tells your organization what it plans to do. Your Board Fundraising Portfolio will show how you personally can help execute it.
         </p>
         <p style={{ marginTop: 12 }}>Your portfolio will combine:</p>
         <ul style={{ marginTop: 8, paddingLeft: 22 }}>
           <li>How you said you want to help build the fundraising system</li>
           <li>How you said you want to help raise money</li>
           <li>Commitments you made during Game Night</li>
-          <li>Any final responsibilities agreed with the organisation</li>
+          <li>Any final responsibilities agreed with the organization</li>
         </ul>
         {info.portfolio_state === "sent" && info.portfolio_token ? (
           <a className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} href={`/board-portfolio/${info.portfolio_token}`}
@@ -237,7 +237,7 @@ export const GroupReviewStage = ({ token, identity }) => {
       <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gg-complete">
         <p className="bfg-gg-eyebrow">Game Night</p>
         <h1>Review Game Complete</h1>
-        <p style={{ marginTop: 14 }}>Your board has now identified the fundraising ideas it wants to prioritise.</p>
+        <p style={{ marginTop: 14 }}>Your board has now identified the fundraising ideas it wants to prioritize.</p>
         <p style={{ marginTop: 10 }}>Stay with your board as you move into the next part of Game Night.</p>
       </div>
     );

@@ -114,7 +114,7 @@ const CustomersTable = () => {
       {rows.length === 0 ? <p style={{ color: "#555" }}>No Board Fundraising Game customers yet.</p> : (
         <div className="admin-table-wrap">
           <table className="admin-table">
-            <thead><tr>{["Stage", "Name", "Email", "Organisation", "Goal", "Access", "Actions"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
+            <thead><tr>{["Stage", "Name", "Email", "Organization", "Goal", "Access", "Actions"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
             <tbody>
               {rows.map((row) => (
                 <Fragment key={row.user_id}>
@@ -177,7 +177,7 @@ const CustomersTable = () => {
               This will give this account access to the post-payment Board Fundraising Game without creating a Stripe payment. Use this only for internal product testing.
             </p>
             <p style={{ marginTop: 12 }}><strong>Account:</strong> {unlockTarget.email}</p>
-            {unlockTarget.organization && <p style={{ marginTop: 4 }}><strong>Organisation:</strong> {unlockTarget.organization}</p>}
+            {unlockTarget.organization && <p style={{ marginTop: 4 }}><strong>Organization:</strong> {unlockTarget.organization}</p>}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
               <button className="button button-small" onClick={() => setUnlockTarget(null)} data-testid="game-unlock-cancel">Cancel</button>
               <button className="button" onClick={unlock} disabled={busy} data-testid="game-unlock-confirm">
@@ -287,7 +287,7 @@ const IndividualGameContent = () => {
             <div style={{ marginTop: 8 }}>
               <TextField label="Section title" value={drafts.title} onChange={setDraft("title")} testId={`game-ig-title-${section.id}`} />
               <TextField label="Scenario text" value={drafts.scenario} onChange={setDraft("scenario")} testId={`game-ig-scenario-${section.id}`} textarea
-                hint="Placeholders available: {organisation}, {goal}, {deadline}" />
+                hint="Placeholders available: {organization}, {goal}, {deadline}" />
               <TextField label="First Move question" value={drafts.first_move_question} onChange={setDraft("first_move_question")} testId={`game-ig-firstmove-${section.id}`} textarea />
               <TextField label="First Move supporting text" value={drafts.first_move_support} onChange={setDraft("first_move_support")} testId={`game-ig-firstsupport-${section.id}`} textarea />
               <TextField label="Fundraising Wisdom text" value={drafts.wisdom} onChange={setDraft("wisdom")} testId={`game-ig-wisdom-${section.id}`} textarea />
@@ -357,7 +357,7 @@ const HostToolsContent = () => {
   return (
     <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-host-tools-panel">
       <h3>Host Tools Content</h3>
-      <p style={{ color: "#555" }}>The Invitation Call Script, Facilitation Guide and Game Night Checklist shown to organisation users. Defaults load automatically — edit only what you want to change. Placeholders available: [Organisation Name], [Fundraising Goal], [Fundraising Deadline], [Board Member First Name].</p>
+      <p style={{ color: "#555" }}>The Invitation Call Script, Facilitation Guide and Game Night Checklist shown to organization users. Defaults load automatically — edit only what you want to change. Placeholders available: [Organization Name], [Fundraising Goal], [Fundraising Deadline], [Board Member First Name].</p>
 
       <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 8, padding: "10px 14px" }}>
         <button className="button button-small" onClick={() => togglePanel("call")} data-testid="game-ht-toggle-call">
@@ -468,7 +468,7 @@ const PostGameCommunication = () => {
     <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-postgame-panel">
       <h3>Post-Game Communication</h3>
       <p style={{ color: "#555" }}>
-        The Adopted Strategy delivery email sent to board members after Game Night. Placeholders available: [Board Member First Name], [Organisation Name], [Fundraising Goal], [Primary User Full Name], [Primary User Job Title], [Organisation Website].
+        The Adopted Strategy delivery email sent to board members after Game Night. Placeholders available: [Board Member First Name], [Organization Name], [Fundraising Goal], [Primary User Full Name], [Primary User Job Title], [Organization Website].
       </p>
       <TextField label="Subject" value={content.subject} onChange={set("subject")} testId="game-pg-subject" />
       <TextField label="Opening" value={content.opening} onChange={set("opening")} testId="game-pg-opening" textarea />
@@ -539,10 +539,10 @@ export const GameSection = () => {
           <TextField label="Subtitle" value={content.subheadline} onChange={set("subheadline")} testId="game-content-subheadline" textarea />
         </div>
 
-        <div style={groupStyle}><h4>Intro Statement (white section)</h4>
+        <div style={groupStyle}><h4>Strategy Explanation (white section)</h4>
           <TextField label="Section heading" value={content.intro_heading} onChange={set("intro_heading")} testId="game-content-intro-heading" />
-          {[0, 1, 2].map((index) => (
-            <TextField key={index} label={`Paragraph ${index + 1}`} value={(content.intro_paragraphs || [])[index] || ""}
+          {(content.intro_paragraphs || []).map((paragraph, index) => (
+            <TextField key={index} label={`Paragraph ${index + 1}`} value={paragraph}
               onChange={setIntroParagraph(index)} testId={`game-content-intro-paragraph-${index + 1}`} textarea />
           ))}
         </div>
@@ -553,15 +553,18 @@ export const GameSection = () => {
           <TextField label="Primary CTA button text" value={content.cta_label} onChange={set("cta_label")} testId="game-content-cta-label" />
         </div>
 
-        <div style={groupStyle}><h4>Video Section</h4>
+        <div style={groupStyle}><h4>Board Fundraising Game Explainer Video (ONE shared video — homepage + Upgrade page)</h4>
           <label className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
             <input type="checkbox" checked={!!content.video_enabled} onChange={(event) => set("video_enabled")(event.target.checked)} data-testid="game-content-video-enabled" />
-            <span>Show the homepage video section</span>
+            <span>Show the explainer video sections</span>
           </label>
-          <TextField label="Small label" value={content.video_label} onChange={set("video_label")} testId="game-content-video-label" />
-          <TextField label="Heading" value={content.video_heading} onChange={set("video_heading")} testId="game-content-video-heading" />
-          <TextField label="Supporting text" value={content.video_text} onChange={set("video_text")} testId="game-content-video-text" textarea
-            hint="The video itself is managed in the Game Videos panel below (flow key game_homepage)." />
+          <TextField label="Homepage small label" value={content.video_label} onChange={set("video_label")} testId="game-content-video-label" />
+          <TextField label="Homepage heading" value={content.video_heading} onChange={set("video_heading")} testId="game-content-video-heading" />
+          <TextField label="Homepage supporting text" value={content.video_text} onChange={set("video_text")} testId="game-content-video-text" textarea
+            hint="The shared video URL/thumbnail is managed in the Game Videos panel below (flow key game_homepage). Until a video is added, both pages show the Video coming soon placeholder." />
+          <TextField label="Upgrade page small label" value={(content.upgrade_page || {}).video_label || ""} onChange={setUp("video_label")} testId="game-content-up-video-label" />
+          <TextField label="Upgrade page heading" value={(content.upgrade_page || {}).video_heading || ""} onChange={setUp("video_heading")} testId="game-content-up-video-heading" />
+          <TextField label="Upgrade page supporting text" value={(content.upgrade_page || {}).video_text || ""} onChange={setUp("video_text")} testId="game-content-up-video-text" textarea />
         </div>
 
         <div style={groupStyle}><h4>How It Works</h4>
@@ -611,6 +614,12 @@ export const GameSection = () => {
           <TextField label="Button text" value={content.closing_cta_label} onChange={set("closing_cta_label")} testId="game-content-closing-cta" />
         </div>
 
+        <div style={groupStyle}><h4>Footer Links</h4>
+          <TextField label="Recruitment link label" value={content.footer_recruit_label || ""} onChange={set("footer_recruit_label")} testId="game-content-footer-recruit-label" />
+          <TextField label="Recruitment link URL/path" value={content.footer_recruit_url || ""} onChange={set("footer_recruit_url")} testId="game-content-footer-recruit-url"
+            hint="Points to the existing Board Recruitment video sales page (/recruit). The Fundraising System link stays as-is." />
+        </div>
+
         <div style={groupStyle}><h4>Pre-Payment Profile Content</h4>
           {[["heading", "Main profile heading"], ["supporting", "Main profile supporting text"], ["step1_heading", "Step 1 heading"],
             ["step2_heading", "Step 2 heading"], ["step3_heading", "Step 3 heading"], ["review_heading", "Review heading"],
@@ -624,8 +633,8 @@ export const GameSection = () => {
         </div>
 
         <div style={groupStyle}><h4>Upgrade Page Content</h4>
-          {[["label", "Small label"], ["heading", "Main heading"], ["supporting", "Supporting text"],
-            ["intro_heading", "Intro heading"]].map(([key, label]) => (
+          {[["label", "Small label"], ["heading", "Main heading"], ["supporting", "Supporting text"], ["goal_label", "Fundraising goal label"],
+            ["intro_heading", "Stop Carrying Fundraising Alone heading"]].map(([key, label]) => (
             <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
               testId={`game-content-up-${key}`} textarea={key === "supporting"} />
           ))}
@@ -652,8 +661,22 @@ export const GameSection = () => {
               <TextField label={`Step ${index + 1} description`} value={step.description} onChange={setUpItem("steps", index, "description")} testId={`game-content-up-step-${index + 1}-description`} textarea />
             </div>
           ))}
+          {[["process_label", "Process small label"], ["process_heading", "Process heading"], ["process_supporting", "Process supporting text"]].map(([key, label]) => (
+            <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
+              testId={`game-content-up-${key}`} textarea={key === "process_supporting"} />
+          ))}
+          {((content.upgrade_page || {}).process_steps || []).map((step, index) => (
+            <div key={index} style={{ marginTop: 12, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Process step ${index + 1} heading`} value={step.heading} onChange={setUpItem("process_steps", index, "heading")} testId={`game-content-up-process-${index + 1}-heading`} />
+              <TextField label={`Process step ${index + 1} paragraphs (one per line)`} value={(step.paragraphs || []).join("\n")} onChange={setUpItem("process_steps", index, "paragraphs", true)} testId={`game-content-up-process-${index + 1}-paragraphs`} textarea />
+            </div>
+          ))}
+          {[["repeat_heading", "Repeat CTA heading"], ["repeat_supporting", "Repeat CTA supporting text"], ["repeat_cta", "Repeat CTA button text"]].map(([key, label]) => (
+            <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
+              testId={`game-content-up-${key}`} textarea={key === "repeat_supporting"} />
+          ))}
           {[["payment_heading", "Payment block heading"], ["payment_price", "Price display text"], ["payment_onetime", "One-time payment label"],
-            ["payment_org_line", "Organisation/board line"], ["payment_subscription_line", "Subscription line"],
+            ["payment_org_line", "Organization/board line"], ["payment_subscription_line", "Subscription line"],
             ["payment_includes", "Included-summary text"], ["payment_cta", "Payment CTA text"]].map(([key, label]) => (
             <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
               testId={`game-content-up-${key}`} textarea={key === "payment_includes"}

@@ -19,7 +19,7 @@ export default function HostCallScriptPage() {
 
   const fullText = [
     script.page_title,
-    `Organisation: ${context.organisation_name}`,
+    `Organization: ${context.organization_name}`,
     `Fundraising Goal: ${context.goal_display}`,
     ...(context.night_display ? [`Game Night: ${context.night_display}`] : []),
     "",
@@ -40,7 +40,7 @@ export default function HostCallScriptPage() {
       </>
     }>
       <HostContextHeader title={script.page_title} rows={[
-        ["Organisation", context.organisation_name],
+        ["Organization", context.organization_name],
         ["Fundraising Goal", context.goal_display],
         ["Game Night", context.night_display],
       ]} />

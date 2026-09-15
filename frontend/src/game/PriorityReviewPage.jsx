@@ -79,7 +79,7 @@ export default function PriorityReviewPage() {
           <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-strategy-generating">
             <h2>Building Your Fundraising Strategy</h2>
             <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-              We are bringing together your fundraising goal, organisation information and board ideas to build your strategy.
+              We are bringing together your fundraising goal, organization information and board ideas to build your strategy.
             </p>
             <div className="bfg-doc-loading"><span /><span /><span /></div>
           </div>
@@ -91,10 +91,10 @@ export default function PriorityReviewPage() {
           </div>
         ) : (
           <>
-            <p className="bfg-eyebrow">Board-Prioritised Strategy</p>
+            <p className="bfg-eyebrow">Board-Prioritized Strategy</p>
             <h1>Review Your Board's Priorities</h1>
             <p style={{ marginTop: 10, maxWidth: 640 }}>
-              These are the ideas your board prioritised during the Group Review Game. Review them before generating your fundraising strategy.
+              These are the ideas your board prioritized during the Group Review Game. Review them before generating your fundraising strategy.
             </p>
             {error && <div className="bfg-panel" style={{ marginTop: 16 }}><p className="bfg-error">{error}</p></div>}
             {(areas || []).map((area) => (

@@ -257,21 +257,21 @@ def create_game_night_router(db) -> APIRouter:
                 f"text-decoration:none;font-weight:bold;display:inline-block;'>{html.escape(label)}</a></p>")
 
     async def send_invitation(member: dict, record: dict, profile: dict, night: dict, origin: str):
-        organization = (profile.get("organization") or {}).get("name", "your organisation")
+        organization = (profile.get("organization") or {}).get("name", "your organization")
         primary = profile.get("primary_user") or {}
         primary_name = primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
         primary_first = primary_name.split(" ")[0] if primary_name else ""
         first_name = record["full_name"].split(" ")[0]
         goal = fmt_goal(profile)
         deadline = fmt_deadline(profile)
-        goal_line = f"Our organisation is working toward a fundraising goal of {html.escape(goal)}"
+        goal_line = f"Our organization is working toward a fundraising goal of {html.escape(goal)}"
         goal_line += f" by {html.escape(deadline)}." if deadline else "."
         link = f"{origin.rstrip('/')}/play/{record['token']}"
         body = (
             f"<p>Hi {html.escape(first_name)},</p>"
             f"<p>{html.escape(primary_name)} has invited you to participate in {html.escape(organization)}'s Board Fundraising Game.</p>"
             f"<p>{goal_line}</p>"
-            f"<p>During our next board meeting, we will come together to build and adopt the fundraising strategy our organisation will use to work toward this goal.</p>"
+            f"<p>During our next board meeting, we will come together to build and adopt the fundraising strategy our organization will use to work toward this goal.</p>"
             f"<p><strong>Before Game Night, we need your ideas.</strong></p>"
             f"<p>You will play a short individual fundraising game that will teach you how a complete fundraising strategy is built while helping you share your own ideas about how {html.escape(organization)} can raise money.</p>"
             f"<p>You can complete the game one section at a time and return whenever you need to.</p>"
@@ -283,7 +283,7 @@ def create_game_night_router(db) -> APIRouter:
         await send_game_email(record["email"], member["email"], subject, body)
 
     async def send_reminder(member: dict, record: dict, profile: dict, night: dict, origin: str):
-        organization = (profile.get("organization") or {}).get("name", "your organisation")
+        organization = (profile.get("organization") or {}).get("name", "your organization")
         primary = profile.get("primary_user") or {}
         primary_name = primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
         first_name = record["full_name"].split(" ")[0]
@@ -293,7 +293,7 @@ def create_game_night_router(db) -> APIRouter:
         body = (
             f"<p>Hi {html.escape(first_name)},</p>"
             f"<p>Game Night for {html.escape(organization)} is coming up.</p>"
-            f"<p>Your ideas will help your board build the fundraising strategy your organisation will use to work toward its {html.escape(fmt_goal(profile))} goal.</p>"
+            f"<p>Your ideas will help your board build the fundraising strategy your organization will use to work toward its {html.escape(fmt_goal(profile))} goal.</p>"
             f"<p>Complete your Individual Board Fundraising Game before the meeting so your ideas can be included when the board plays together.</p>"
             f"{game_button(link, 'Continue My Game')}"
             f"<p>Game Night: {html.escape(fmt_meeting_date(night))} at {html.escape(fmt_time(night))}</p>"

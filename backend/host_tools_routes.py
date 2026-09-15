@@ -112,9 +112,10 @@ def create_host_tools_router(db) -> APIRouter:
         member = await game_member(request)
         profile = await db.game_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         night = await get_night(member["user_id"])
-        organisation = (profile.get("organization") or {}).get("name", "").strip() or "our organisation"
+        organization = (profile.get("organization") or {}).get("name", "").strip() or "our organization"
         content = substitute(await merged_content(), {
-            "[Organisation Name]": organisation,
+            "[Organization Name]": organization,
+            "[Organisation Name]": organization,
             "[Fundraising Goal]": fmt_goal(profile),
             "[Fundraising Deadline]": fmt_deadline(profile) or "our deadline",
         })
@@ -138,7 +139,7 @@ def create_host_tools_router(db) -> APIRouter:
         if night.get("meeting_date"):
             night_display = f"{fmt_meeting_date(night)} at {fmt_time(night)}".strip()
         return {"content": content, "context": {
-            "organisation_name": organisation,
+            "organization_name": organization,
             "goal_display": fmt_goal(profile),
             "deadline_display": fmt_deadline(profile),
             "night_display": night_display,

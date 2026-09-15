@@ -16,7 +16,7 @@ const STEPS = [
     fields: [
       { key: "annual_budget", label: "Current annual budget / revenue (if you know it)" },
       { key: "raised_last_12m", label: "Approximately how much did you raise through fundraising in the previous 12 months?" },
-      { key: "major_income_sources", label: "What are the major sources of your organisation's income?", textarea: true },
+      { key: "major_income_sources", label: "What are the major sources of your organization's income?", textarea: true },
     ],
   },
   {
@@ -64,7 +64,7 @@ const STEPS = [
       { key: "what_support", label: "What do those businesses support?", textarea: true },
       { key: "group_description", label: "How would you describe those businesses as a group?", textarea: true },
       { key: "support_type", label: "What type of support do they provide?", textarea: true },
-      { key: "how_connected", label: "How did your organisation originally connect with them?", textarea: true },
+      { key: "how_connected", label: "How did your organization originally connect with them?", textarea: true },
       { key: "typical_level", label: "Typical contribution level (if known)" },
     ],
   },
@@ -102,10 +102,10 @@ const STEPS = [
     intro: "Last step — your honest read on your fundraising.",
     fields: [
       { key: "working_well", label: "What is presently working well in your fundraising?", textarea: true },
-      { key: "limiting", label: "What is presently limiting your organisation's ability to raise more money?", textarea: true },
+      { key: "limiting", label: "What is presently limiting your organization's ability to raise more money?", textarea: true },
       { key: "tried", label: "What have you already tried that did not produce the fundraising results you expected?", textarea: true },
-      { key: "opportunity", label: "What do you believe is the biggest fundraising opportunity available to your organisation right now?", textarea: true },
-      { key: "challenge", label: "What is the biggest thing standing between your organisation and its fundraising goal right now?", textarea: true },
+      { key: "opportunity", label: "What do you believe is the biggest fundraising opportunity available to your organization right now?", textarea: true },
+      { key: "challenge", label: "What is the biggest thing standing between your organization and its fundraising goal right now?", textarea: true },
     ],
   },
 ];

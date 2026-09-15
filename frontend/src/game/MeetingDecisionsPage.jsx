@@ -298,7 +298,7 @@ export default function MeetingDecisionsPage() {
             <div className="bfg-panel" data-testid="bfg-md-generate-final">
               <h2>Create Your Final Fundraising Strategy</h2>
               <p className="bfg-panel-sub" style={{ marginTop: 6 }}>
-                Your Board-Prioritised Draft and the decisions accepted from your board discussion will now be combined into the Final Fundraising Strategy.
+                Your Board-Prioritized Draft and the decisions accepted from your board discussion will now be combined into the Final Fundraising Strategy.
               </p>
               {generating ? (
                 <div style={{ marginTop: 16 }} data-testid="bfg-md-generating">

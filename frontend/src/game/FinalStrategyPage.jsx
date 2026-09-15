@@ -137,7 +137,7 @@ export default function FinalStrategyPage() {
             <p className="bfg-success" style={{ fontWeight: 700, fontSize: 16, marginTop: 10 }}>Adopted</p>
             {strategy.adopted_at && <p className="bfg-note">Adopted on {new Date(strategy.adopted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>}
             <p className="bfg-note" style={{ marginTop: 8 }}>
-              This is your organisation's current working fundraising strategy. It is now read-only.
+              This is your organization's current working fundraising strategy. It is now read-only.
             </p>
             <button className="bfg-btn bfg-btn-ghost" style={{ marginTop: 14 }} onClick={copyLink} data-testid="bfg-adopted-copy-link-btn">
               {copied ? "Link Copied" : "Copy Strategy Link"}
@@ -192,7 +192,7 @@ export default function FinalStrategyPage() {
                 <p className="bfg-note" style={{ marginTop: 10 }}>Board member responses will appear here after you review the final strategy with your board.</p>
               )}
               <p className="bfg-note" style={{ marginTop: 8 }}>
-                Not every participant is required to approve before adoption — your organisation's normal board decision-making process applies.
+                Not every participant is required to approve before adoption — your organization's normal board decision-making process applies.
               </p>
               <div className="bfg-bm-actions" style={{ marginTop: 14 }}>
                 {revising ? (
@@ -267,12 +267,12 @@ export default function FinalStrategyPage() {
             <div className="bfg-modal">
               <h2>Adopt This Fundraising Strategy?</h2>
               <p className="bfg-panel-sub" style={{ marginTop: 10 }}>
-                Adopting this strategy will mark it as your organisation's current working fundraising strategy.
+                Adopting this strategy will mark it as your organization's current working fundraising strategy.
               </p>
               <label className={`bfg-check ${adoptChecked ? "checked" : ""}`} style={{ marginTop: 16 }}>
                 <input type="checkbox" checked={adoptChecked} onChange={(event) => setAdoptChecked(event.target.checked)}
                   data-testid="bfg-adopt-checkbox" />
-                I confirm that this strategy has been reviewed and adopted according to our organisation's normal board decision-making process.
+                I confirm that this strategy has been reviewed and adopted according to our organization's normal board decision-making process.
               </label>
               <div className="bfg-form-actions">
                 <button className="bfg-btn bfg-btn-ghost" onClick={() => setShowAdopt(false)} data-testid="bfg-adopt-cancel-btn">Cancel</button>

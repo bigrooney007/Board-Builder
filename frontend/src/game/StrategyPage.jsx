@@ -90,7 +90,7 @@ export default function StrategyPage() {
               <section className="bfg-panel" data-testid="bfg-review-with-board-panel">
                 <h2>Review With Your Board</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 6 }}>
-                  Review your Board-Prioritised Fundraising Strategy together during Game Night, capture the decisions your board makes and turn those decisions into your Final Fundraising Strategy.
+                  Review your Board-Prioritized Fundraising Strategy together during Game Night, capture the decisions your board makes and turn those decisions into your Final Fundraising Strategy.
                 </p>
                 <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} disabled={startingReview}
                   onClick={startBoardReview} data-testid="bfg-start-board-review-btn">
@@ -105,7 +105,7 @@ export default function StrategyPage() {
           <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-review-complete">
             <h2>Board Strategy Review Complete</h2>
             <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-              Your Board-Prioritised Fundraising Strategy has been reviewed. The final adoption process will be completed in the next stage of Game Night.
+              Your Board-Prioritized Fundraising Strategy has been reviewed. The final adoption process will be completed in the next stage of Game Night.
             </p>
             <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }}
               onClick={() => { setReviewDone(false); setSearchParams({}); }} data-testid="bfg-return-to-strategy-btn">

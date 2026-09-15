@@ -15,7 +15,7 @@ export const STRATEGY_SECTIONS = [
   { key: "next_step", title: "Next Step" },
 ];
 
-export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritised Draft", final: "Final Fundraising Strategy" };
+export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritized Draft", final: "Final Fundraising Strategy" };
 
 export const STATUS_LABELS = { final_draft: "Final Draft", adopted: "Adopted" };
 
@@ -97,7 +97,7 @@ export const SectionBody = ({ section, data, mode }) => {
   if (section.key === "additional_board_ideas") {
     return (
       <div>
-        <p className="bfg-doc-text">These ideas were contributed by your board but were not selected as current priorities. They remain available if your organisation decides to expand or adjust the strategy.</p>
+        <p className="bfg-doc-text">These ideas were contributed by your board but were not selected as current priorities. They remain available if your organization decides to expand or adjust the strategy.</p>
         {Object.entries(IDEA_AREA_LABELS).map(([areaKey, label]) => (
           (data[areaKey] || []).length > 0 && (
             <div key={areaKey} className="bfg-doc-stage">

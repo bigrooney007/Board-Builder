@@ -144,7 +144,7 @@ export default function GameDashboardPage() {
             ) : (
               <>
                 <p className="bfg-big" style={{ fontSize: 22 }}>Complete Your Game Setup</p>
-                <p className="bfg-sub">Tell us about your current fundraising situation so your game fits your organisation.</p>
+                <p className="bfg-sub">Tell us about your current fundraising situation so your game fits your organization.</p>
                 <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 14 }} onClick={() => navigate("/game/setup")} data-testid="bfg-dashboard-complete-setup-btn">
                   Complete My Game Setup
                 </button>

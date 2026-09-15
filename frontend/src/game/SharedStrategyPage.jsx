@@ -22,7 +22,7 @@ export default function SharedStrategyPage() {
       <div className="bfg bfg-gg" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
         <div className="bfg-gg-card" style={{ maxWidth: 420, textAlign: "center" }} data-testid="bfg-shared-invalid">
           <h2>This Strategy Link Is Not Valid</h2>
-          <p>Please ask the organisation to share the current strategy link.</p>
+          <p>Please ask the organization to share the current strategy link.</p>
         </div>
       </div>
     );
