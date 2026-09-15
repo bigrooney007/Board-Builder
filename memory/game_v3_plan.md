@@ -37,3 +37,8 @@ NEXT: Rooney adds ELEVENLABS_API_KEY + voice ID, generates static clips in admin
 - Admin endpoints: GET/PUT voice settings (incl voice_environment, masked voice refs), GET assets (per-clip test+live status, script_version, missing_live list, bulk job status), PUT text, POST generate {environment, force} (live READY requires force=confirmed Regenerate), POST generate-missing-live (in-process lock, background asyncio task, generates ONLY missing live clips, skips READY, progress in marketing_settings game_voice_bulk).
 - Admin UI: admin/VoiceGuidedAdmin.jsx (extracted from GameSection.jsx): TEST VOICE badge when test env active, environment selector, per-clip Generate Test Clip / Generate Live Clip / Regenerate Clip (with exact confirmation copy), Generate All Missing Live Narration (confirmation: "Generate Live Narration? You are about to generate [N]... / Cancel / Generate [N] Missing Clips"), bulk progress polling.
 - No automatic generation anywhere (startup/deploy/game/missing-asset all safe); game works with zero generated audio.
+
+## TEST CLIP GENERATION (Sept 15, 2026, on PRODUCTION nonprofitboardbuilder.com)
+- Generated via prod admin API (admin cookie login) exactly 3 TEST clips with TEST voice (…O9Qt): c01 (1.0MB), c05 (1.1MB), c31 (572KB) — all READY, stored in prod Mongo game_voice_audio (environment=test), served at /api/game/voice/audio/{id} (active env=test).
+- Prod env check: ELEVENLABS_API_KEY configured, TEST voice configured, ELEVENLABS_LIVE_VOICE_ID NOT configured in production (name to add before live generation).
+- Added <audio controls> preview player per clip row in admin/VoiceGuidedAdmin.jsx (in preview code; appears on prod after next publish). No other clips, no personalized clips, no live narration generated.

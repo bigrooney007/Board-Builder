@@ -162,6 +162,11 @@ export const VoiceGuidedAdmin = () => {
             <div key={asset.narration_id} style={{ marginTop: 12, borderTop: "1px solid #eee", paddingTop: 10 }} data-testid={`voice-asset-${asset.narration_id}`}>
               <strong>{asset.narration_id}</strong> — {asset.label}
               <span style={{ marginLeft: 8, fontSize: 12, color: "#666" }}>script v{asset.script_version}</span>
+              {asset.kind === "static" && (asset.test.status !== "missing" || asset.live.status !== "missing") && (
+                <audio controls preload="none" style={{ display: "block", marginTop: 6, width: "100%", maxWidth: 420 }}
+                  src={`${API}/game/voice/audio/${asset.narration_id}?v=${settings.voice_environment}${asset[settings.voice_environment]?.version || 0}`}
+                  data-testid={`voice-asset-player-${asset.narration_id}`} />
+              )}
               <textarea rows={3} style={{ width: "100%", marginTop: 6, fontSize: 12.5 }} value={asset.text}
                 onChange={(event) => setAssets(assets.map((row, i) => i === index ? { ...row, text: event.target.value } : row))}
                 data-testid={`voice-asset-text-${asset.narration_id}`} />
