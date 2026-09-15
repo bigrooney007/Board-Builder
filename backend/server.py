@@ -234,6 +234,8 @@ from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
 from game_finetune_routes import create_finetune_router
 app.include_router(create_finetune_router(db))
+from voice_routes import create_voice_router
+app.include_router(create_voice_router(db))
 from group_game_routes import create_group_game_router
 app.include_router(create_group_game_router(db))
 from strategy_routes import create_strategy_router

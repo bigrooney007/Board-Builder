@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { FineTuneReview } from "./FineTuneReview";
+import { ModeSelect, PermissionScreen, VoicePanel, fetchVoiceManifest } from "./VoiceGuide";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -88,6 +89,11 @@ export default function GamePlayPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [state, setState] = useState({});
+  const [manifest, setManifest] = useState(null);
+  const [voiceMode, setVoiceMode] = useState(() => localStorage.getItem(`bfgVoiceMode:${token}`) || "");
+  const [soundOn, setSoundOn] = useState(true);
+
+  const chooseMode = (mode) => { localStorage.setItem(`bfgVoiceMode:${token}`, mode); setVoiceMode(mode); };
 
   useEffect(() => { document.title = "Play | Board Fundraising Game"; }, []);
 
@@ -101,6 +107,7 @@ export default function GamePlayPage() {
         sections[id] = sec.data.response || {};
       }
       setCtx({ ...context, saved: sections });
+      fetchVoiceManifest(token).then(setManifest);
       const firstIncomplete = [1, 2, 3, 4].find((id) => !sections[id]?.completed);
       const isPrimary = context.member?.is_primary;
       const ftPending = [1, 2, 3, 4].find((id) => !sections[id]?.fine_tuning?.completed);
@@ -125,6 +132,7 @@ export default function GamePlayPage() {
         build: sections[5]?.extras?.build || [], buildOther: sections[5]?.extras?.build_other || "",
         raise: sections[5]?.extras?.raise || [], raiseOther: sections[5]?.extras?.raise_other || "",
         time: sections[5]?.extras?.time || "",
+        additional: sections[5]?.extras?.additional_idea || "",
       });
     } catch { setError("This game link is not valid."); }
   }, [token, navigate]);
@@ -141,6 +149,63 @@ export default function GamePlayPage() {
     ...state.grantors.filter(Boolean).map((name) => ({ name, type: "grantor" })),
   ];
   const exampleAudience = audiences[0]?.name || "one of your audiences";
+
+  const applyTranscript = (target, text) => {
+    if (target.startsWith("first:")) {
+      const id = Number(target.split(":")[1]);
+      set({ first: { ...state.first, [id]: `${state.first[id] ? `${state.first[id]} ` : ""}${text}` } });
+    } else if (["people", "businesses", "grantors"].includes(target)) {
+      set({ [target]: [...state[target].filter(Boolean), text] });
+    } else if (target.startsWith("place:")) {
+      const name = target.slice(6);
+      set({ places: { ...state.places, [name]: [...(state.places[name] || []).filter(Boolean), text] } });
+    } else if (target.startsWith("idea:")) {
+      const name = target.slice(5);
+      set({ ideas: { ...state.ideas, [name]: [...(state.ideas[name] || []).filter(Boolean), text] } });
+    } else if (target === "process") {
+      set({ process: `${state.process ? `${state.process} ` : ""}${text}` });
+    } else if (target === "additional") {
+      set({ additional: text });
+    } else if (target === "buildOther" || target === "raiseOther") {
+      set({ [target]: text });
+    }
+  };
+
+  const voiceActive = voiceMode === "voice" && manifest?.voice_enabled;
+  const guide = (steps, key) => voiceActive ? (
+    <VoicePanel token={token} manifest={manifest} steps={steps} stepsKey={key}
+      onCapture={applyTranscript} soundOn={soundOn} setSoundOn={setSoundOn} />
+  ) : null;
+
+  const audCaptures = (type, prefix, label, addLabel) => audiences.filter((a) => a.type === type)
+    .map((a) => ({ capture: { target: `${prefix}:${a.name}`, label: `${a.name} — ${label}`, list: true, addLabel } }));
+
+  const ROUND_STEPS = {
+    1: [{ clip: "c02" }, { clip: "c03" }, { capture: { target: "first:1", label: "Your First Thoughts" } },
+        { personal: "p2_after_q1" }, { clip: "c04" }, { clip: "c05" }, { clip: "c06" },
+        { capture: { target: "people", label: "People", list: true, addLabel: "+ Add Another Type Of Person" } },
+        { clip: "c07" }, { clip: "c08" }, { clip: "c09" },
+        { capture: { target: "businesses", label: "Businesses", list: true, addLabel: "+ Add Another Type Of Business" } },
+        { clip: "c10" }, { clip: "c11" }, { clip: "c12" },
+        { capture: { target: "grantors", label: "Grantors", list: true, addLabel: "+ Add Another Type Of Grantor" } },
+        { clip: "c13" }],
+    2: [{ personal: "p3_round_2" }, { clip: "c14" }, { clip: "c15" },
+        { capture: { target: "first:2", label: "Your First Thoughts" } },
+        { clip: "c16" }, { clip: "c17" },
+        ...audCaptures("person", "place", "Where can you consistently find them?", "+ Add Another Place"),
+        { clip: "c18" }, { clip: "c19" },
+        ...audCaptures("business", "place", "Where can you consistently find them?", "+ Add Another Place"),
+        { clip: "c20" }, { clip: "c21" },
+        ...audCaptures("grantor", "place", "Where can you consistently find them?", "+ Add Another Place"),
+        { clip: "c22" }],
+    3: [{ clip: "c23" }, { clip: "c24" }, { capture: { target: "first:3", label: "Your First Thoughts" } },
+        { clip: "c25" }, { clip: "c26" }, { clip: "c27" }, { clip: "c28" }, { clip: "c29" },
+        ...audiences.map((a) => ({ capture: { target: `idea:${a.name}`, label: `${a.name} — What can you offer them?`, list: true, addLabel: "+ Add Another Idea" } })),
+        { clip: "c30" }],
+    4: [{ clip: "c31" }, { clip: "c32" }, { capture: { target: "first:4", label: "Your First Thoughts" } },
+        { clip: "c33" }, { clip: "c34" }, { clip: "c35" }, { clip: "c36" }, { clip: "c37" }, { clip: "c38" }, { clip: "c39" }, { clip: "c40" },
+        { clip: "c41" }, { capture: { target: "process", label: "Now Build Your Process" } }],
+  };
 
   const completeRound = async (id, payload) => {
     setBusy(true); setError("");
@@ -176,10 +241,20 @@ export default function GamePlayPage() {
     </div>
   );
 
+  const needsModeChoice = manifest?.voice_enabled && !["voice", "type"].includes(voiceMode) && ["intro", "round"].includes(phase);
+  if (needsModeChoice && voiceMode !== "pending") {
+    return shell(<ModeSelect readTypeEnabled={manifest?.read_type_enabled !== false}
+      onVoice={() => setVoiceMode("pending")} onType={() => chooseMode("type")} />);
+  }
+  if (voiceMode === "pending") {
+    return shell(<PermissionScreen onGranted={() => chooseMode("voice")} onType={() => chooseMode("type")} />);
+  }
+
   if (phase === "intro") {
     const audioText = [...v3.intro.paragraphs, v3.intro.strategy_heading, v3.intro.completion_text].join(" ");
     return shell(<>
       <h1>{v3.intro.heading}</h1>
+      {guide([{ personal: "p1_welcome" }, { clip: "c01" }], "intro")}
       {v3.intro.paragraphs.map((p, i) => <p key={i} style={{ marginTop: 14 }}>{p}</p>)}
       <h2 style={{ marginTop: 18 }}>{v3.intro.strategy_heading}</h2>
       <p style={{ marginTop: 12 }}>{v3.intro.completion_text}</p>
@@ -187,8 +262,8 @@ export default function GamePlayPage() {
         <span>{v3.intro.goal_label}</span><strong>{ctx.goal_display}</strong>
         {ctx.deadline_display && <span>By {ctx.deadline_display}</span>}
       </div>
-      <AudioControls text={audioText} />
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={() => setPhase("round")} data-testid="bfg-v3-get-started">{v3.intro.cta}</button>
+      {!voiceActive && <AudioControls text={audioText} />}
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={() => setPhase("round")} data-testid="bfg-v3-get-started">{voiceActive ? "Start My Game" : v3.intro.cta}</button>
     </>);
   }
 
@@ -196,6 +271,7 @@ export default function GamePlayPage() {
     const r = v3.strategy_ready;
     return shell(<>
       <h1 data-testid="bfg-strategy-ready-heading">{r.heading}</h1>
+      {guide([{ personal: "p4_after_q8" }, { personal: "p5_completion" }, { clip: "c50a" }], "ready")}
       <p style={{ marginTop: 14, fontWeight: 700 }}>{r.completed_intro}</p>
       {r.completed_areas.map((a) => <p key={a} style={{ marginTop: 8 }}><span style={{ color: "#059669", fontWeight: 700 }}>✓</span> {a}</p>)}
       <h2 style={{ marginTop: 24 }}>{r.imagine_heading}</h2>
@@ -216,6 +292,7 @@ export default function GamePlayPage() {
     return shell(<>
       <p className="bfg-eyebrow">STRATEGIC AREA {ftArea} OF 4</p>
       <h1 data-testid="bfg-finetune-heading">{ft.heading}</h1>
+      {ftArea === 1 && guide([{ personal: "p4_after_q8" }, { clip: "c42" }], "finetune-start")}
       <p style={{ marginTop: 12 }}>{ft.supporting}</p>
       <FineTuneReview token={token} sectionId={ftArea} copy={ft} areaTitle={(ft.area_titles || [])[ftArea - 1]}
         onDone={(entries) => {
@@ -249,6 +326,7 @@ export default function GamePlayPage() {
     );
     return shell(<>
       <h1 data-testid="bfg-ministrategy-heading">{ms.heading}</h1>
+      {guide([{ personal: "p5_completion" }, { clip: "c50b" }], "ministrategy")}
       <p style={{ marginTop: 12 }}>{String(ms.supporting || "").split("{organization}").join(ctx.organization_name || "your organization")}</p>
       <Section heading={ms.people_heading}>
         <p style={{ fontWeight: 700, marginTop: 8, textAlign: "left" }}>{ms.individuals_label}</p><List items={individuals} testId="bfg-ms-individuals" />
@@ -299,6 +377,10 @@ export default function GamePlayPage() {
     );
     return shell(<>
       <h1>{p.heading}</h1>
+      {guide([
+        { clip: "c43" }, { clip: "c44" }, { clip: "c46" }, { clip: "c48" }, { clip: "c49" },
+        { capture: { target: "additional", label: "Is There Anything Else You Want To Share?", skippable: true } },
+      ], "participation")}
       {checkList(p.build_question, p.build_options, "build", "buildOther", p.build_other_prompt, "bfg-v3-build")}
       {checkList(p.raise_question, p.raise_options, "raise", "raiseOther", p.raise_other_prompt, "bfg-v3-raise")}
       <div style={{ marginTop: 24, textAlign: "left" }}>
@@ -307,11 +389,17 @@ export default function GamePlayPage() {
           <label key={option} className="bfg-ht-check"><input type="radio" name="time" checked={state.time === option} onChange={() => set({ time: option })} /><span>{option}</span></label>
         ))}
       </div>
+      <div style={{ marginTop: 24, textAlign: "left" }} data-testid="bfg-v3-additional">
+        <h3>Is There Anything Else You Want To Share?</h3>
+        <p style={{ marginTop: 6, fontSize: 14 }}>If you have another fundraising idea, opportunity, relationship, concern or way you would like to help that we haven't asked about, share it here.</p>
+        <textarea rows={4} style={{ width: "100%", marginTop: 8 }} value={state.additional || ""}
+          onChange={(event) => set({ additional: event.target.value })} data-testid="bfg-v3-additional-input" />
+      </div>
       {error && <p className="bfg-error">{error}</p>}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} disabled={busy}
-        onClick={() => completeRound(5, { first_response: [], final_response: [], first_move_locked: true, guided_selections: {}, additional_ideas: {}, stage_responses: {}, preferences: [], do_not_want: [], group_game_ideas: [], extras: { build: state.build, build_other: state.buildOther, raise: state.raise, raise_other: state.raiseOther, time: state.time } })}
+        onClick={() => completeRound(5, { first_response: [], final_response: [], first_move_locked: true, guided_selections: {}, additional_ideas: {}, stage_responses: {}, preferences: [], do_not_want: [], group_game_ideas: [], extras: { build: state.build, build_other: state.buildOther, raise: state.raise, raise_other: state.raiseOther, time: state.time, additional_idea: state.additional || "" } })}
         data-testid="bfg-v3-participation-submit">
-        {busy ? "Saving…" : "Complete My Fundraising Game"}
+        {busy ? "Saving…" : "Complete My Game"}
       </button>
     </>);
   }
@@ -342,8 +430,9 @@ export default function GamePlayPage() {
   return shell(<>
     <p className="bfg-eyebrow">{round.label}</p>
     <h1>{round.heading}</h1>
+    {guide(ROUND_STEPS[id], `round-${id}`)}
     <Paras text={round.teaching} />
-    <AudioControls text={round.teaching.replace(/\n/g, " ")} />
+    {!voiceActive && <AudioControls text={round.teaching.replace(/\n/g, " ")} />}
 
     <div style={{ marginTop: 24, textAlign: "left" }}>
       <VoiceArea label={`${round.first_label} — ${round.first_question}`} value={state.first[id] || ""}
