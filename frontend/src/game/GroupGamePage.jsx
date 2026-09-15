@@ -248,7 +248,7 @@ export default function GroupGamePage() {
                   Your board has reviewed the ideas contributed before Game Night and identified its strongest fundraising priorities.
                   {" "}The prioritised ideas and additional board ideas have been saved and are ready to be used to build your Board-Prioritised Fundraising Strategy.
                 </p>
-                <p style={{ marginTop: 14, fontWeight: 700, color: "#34d399" }}>8 of 8 Review Rounds Completed</p>
+                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>8 of 8 Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
                   <h3 style={{ fontSize: 17 }}>Generate Board-Prioritised Strategy</h3>
                   <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>

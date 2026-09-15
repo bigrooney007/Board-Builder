@@ -39,7 +39,7 @@ export default function GameAuthCallback() {
           <button className="bfg-btn bfg-btn-primary" onClick={() => navigate("/game/signup")} data-testid="bfg-auth-callback-retry">Back to Sign Up</button>
         </div>
       ) : (
-        <p style={{ color: "#94a3b8" }}>Signing you in…</p>
+        <p style={{ color: "#6B7280" }}>Signing you in…</p>
       )}
     </div>
   );

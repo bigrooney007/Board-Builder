@@ -156,7 +156,7 @@ export default function PortfolioEditPage() {
           {systemRoles.map((role) => role.active !== false && (
             <div className="bfg-mr-decision" key={role.item_id} data-testid={`bfg-pe-role-${role.item_id}`}>
               <div className="bfg-panel-head">
-                <strong style={{ color: "#f8fafc" }}>{role.label}</strong>
+                <strong style={{ color: "#111827" }}>{role.label}</strong>
                 {!locked && (
                   <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => updateRole(role.item_id, "active", false)}
                     data-testid={`bfg-pe-remove-role-${role.item_id}`}>Remove</button>
@@ -206,7 +206,7 @@ export default function PortfolioEditPage() {
             <div className="bfg-mr-decision" key={act.item_id} data-testid={`bfg-pe-activity-${act.item_id}`}>
               <div className="bfg-panel-head">
                 <div>
-                  <strong style={{ color: "#f8fafc" }}>{act.label}</strong>
+                  <strong style={{ color: "#111827" }}>{act.label}</strong>
                   {act.requires_confirmation && <span className="bfg-pe-badge">Requires Board Member Confirmation</span>}
                 </div>
                 {!locked && (

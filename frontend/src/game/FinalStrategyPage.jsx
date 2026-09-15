@@ -173,7 +173,7 @@ export default function FinalStrategyPage() {
                     {approvals.members.map((row, rowIndex) => (
                       <div className="bfg-summary-row" key={rowIndex} data-testid={`bfg-approval-row-${rowIndex}`}>
                         <span>{row.name}</span>
-                        <strong style={{ color: row.approval_status === "approved" ? "#34d399" : row.approval_status === "change_requested" ? "#facc15" : "#64748b" }}>
+                        <strong style={{ color: row.approval_status === "approved" ? "#059669" : row.approval_status === "change_requested" ? "#facc15" : "#64748b" }}>
                           {row.approval_status === "approved" ? "Approved" : row.approval_status === "change_requested" ? "Requested Change" : "No Response Yet"}
                         </strong>
                       </div>

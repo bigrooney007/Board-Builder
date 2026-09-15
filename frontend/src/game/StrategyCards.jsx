@@ -102,7 +102,7 @@ export const AdoptedStrategyCard = ({ goalDisplay }) => {
         <div>
           <h2>Fundraising Strategy</h2>
           <p className="bfg-panel-sub">
-            Status: <strong style={{ color: "#34d399" }}>Adopted</strong>
+            Status: <strong style={{ color: "#059669" }}>Adopted</strong>
             {goalDisplay && <> · Goal: {goalDisplay}</>}
             {adopted.adopted_at && <> · Adopted: {new Date(adopted.adopted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</>}
           </p>
@@ -115,7 +115,7 @@ export const AdoptedStrategyCard = ({ goalDisplay }) => {
       {portfolioSummary?.execution_ready && (
         <div style={{ marginTop: 16 }} data-testid="bfg-execution-ready">
           <p className="bfg-eyebrow" style={{ marginBottom: 6 }}>Your Board Fundraising Game — Strategy Adopted</p>
-          <p style={{ fontWeight: 700, color: "#34d399" }}>Execution Ready</p>
+          <p style={{ fontWeight: 700, color: "#059669" }}>Execution Ready</p>
           <p className="bfg-note">
             Your fundraising strategy has been adopted, board roles are being confirmed and approved board members can now access the resources they need to execute.
           </p>
@@ -123,7 +123,7 @@ export const AdoptedStrategyCard = ({ goalDisplay }) => {
       )}
       <div style={{ marginTop: 16 }}>
         <p className="bfg-eyebrow" style={{ marginBottom: 6 }}>Next Step</p>
-        <p style={{ fontWeight: 700, color: "#f8fafc" }}>
+        <p style={{ fontWeight: 700, color: "#111827" }}>
           {portfolioSummary && portfolioSummary.total > 0 ? "Board Fundraising Portfolios" : "Create Board Fundraising Portfolios"}
         </p>
         <p className="bfg-note">
@@ -157,8 +157,8 @@ export const StrategiesHistoryCard = () => {
         {strategies.map((row) => (
           <div className="bfg-summary-row" key={row.strategy_id} data-testid={`bfg-strategy-row-${row.strategy_id}`}>
             <span>
-              <strong style={{ color: "#f8fafc" }}>{MODE_LABELS[row.mode] || row.mode} — Version {row.version}</strong>
-              <br /><small style={{ color: "#94a3b8" }}>{row.generated_at ? new Date(row.generated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}</small>
+              <strong style={{ color: "#111827" }}>{MODE_LABELS[row.mode] || row.mode} — Version {row.version}</strong>
+              <br /><small style={{ color: "#6B7280" }}>{row.generated_at ? new Date(row.generated_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}</small>
             </span>
             <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate(`/game/strategy/view/${row.strategy_id}`)} data-testid={`bfg-view-strategy-${row.strategy_id}`}>View</button>
           </div>

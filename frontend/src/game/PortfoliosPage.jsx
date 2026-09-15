@@ -9,8 +9,8 @@ const STATUS_LABELS = {
   change_requested: "Change Requested", approved: "Approved", materials_ready: "Execution Materials Ready",
 };
 const STATUS_COLORS = {
-  draft: "#94a3b8", ready_to_send: "#818cf8", sent: "#facc15",
-  change_requested: "#fb923c", approved: "#34d399", materials_ready: "#34d399",
+  draft: "#6B7280", ready_to_send: "#818cf8", sent: "#facc15",
+  change_requested: "#fb923c", approved: "#059669", materials_ready: "#059669",
 };
 
 export default function PortfoliosPage() {
@@ -69,7 +69,7 @@ export default function PortfoliosPage() {
               <h1>Board Fundraising Portfolios</h1>
               <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
                 {data.goal_display && <>Fundraising Goal: <strong>{data.goal_display}</strong> · </>}
-                Strategy: <strong style={{ color: "#34d399" }}>Adopted</strong>
+                Strategy: <strong style={{ color: "#059669" }}>Adopted</strong>
               </p>
               {data.total === 0 ? (
                 <>
@@ -108,7 +108,7 @@ export default function PortfoliosPage() {
                   <div>
                     <h2>{row.member_name}</h2>
                     <p className="bfg-panel-sub" style={{ marginTop: 4 }}>
-                      Portfolio: <strong style={{ color: STATUS_COLORS[row.status] || "#94a3b8" }}>{STATUS_LABELS[row.status] || row.status}</strong>
+                      Portfolio: <strong style={{ color: STATUS_COLORS[row.status] || "#6B7280" }}>{STATUS_LABELS[row.status] || row.status}</strong>
                       {" "}· System-Building Roles: {row.system_count} · Fundraising Activities: {row.direct_count}
                     </p>
                     <p className="bfg-note" style={{ marginTop: 4 }}>

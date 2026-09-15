@@ -504,6 +504,15 @@ export const GameSection = () => {
     const outcomes = current.outcomes.map((outcome, i) => i === index ? { ...outcome, [field]: field === "paragraphs" ? value.split("\n").filter(Boolean) : value } : outcome);
     return { ...current, outcomes };
   });
+  const setPf = (key) => (value) => setContent((current) => ({ ...current, profile_flow: { ...current.profile_flow, [key]: value } }));
+  const setUp = (key) => (value) => setContent((current) => ({ ...current, upgrade_page: { ...current.upgrade_page, [key]: value } }));
+  const setUpItem = (listKey, index, field, isList) => (value) => setContent((current) => ({
+    ...current,
+    upgrade_page: {
+      ...current.upgrade_page,
+      [listKey]: current.upgrade_page[listKey].map((item, i) => i === index ? { ...item, [field]: isList ? value.split("\n").filter(Boolean) : value } : item),
+    },
+  }));
 
   const save = async () => {
     setBusy(true); setMessage("");
@@ -600,6 +609,56 @@ export const GameSection = () => {
           <TextField label="Heading" value={content.closing_heading} onChange={set("closing_heading")} testId="game-content-closing-heading" />
           <TextField label="Supporting text" value={content.closing_text} onChange={set("closing_text")} testId="game-content-closing-text" textarea />
           <TextField label="Button text" value={content.closing_cta_label} onChange={set("closing_cta_label")} testId="game-content-closing-cta" />
+        </div>
+
+        <div style={groupStyle}><h4>Pre-Payment Profile Content</h4>
+          {[["heading", "Main profile heading"], ["supporting", "Main profile supporting text"], ["step1_heading", "Step 1 heading"],
+            ["step2_heading", "Step 2 heading"], ["step3_heading", "Step 3 heading"], ["review_heading", "Review heading"],
+            ["review_supporting", "Review supporting text"], ["save_button", "Save Profile button text"],
+            ["saved_heading", "Profile Saved heading"], ["saved_supporting", "Profile Saved supporting text"],
+            ["next_heading", "Next-step heading"], ["next_supporting", "Next-step supporting text"],
+            ["invite_cta", "Invite board CTA text"]].map(([key, label]) => (
+            <TextField key={key} label={label} value={(content.profile_flow || {})[key] || ""} onChange={setPf(key)}
+              testId={`game-content-pf-${key}`} textarea={key.includes("supporting")} />
+          ))}
+        </div>
+
+        <div style={groupStyle}><h4>Upgrade Page Content</h4>
+          {[["label", "Small label"], ["heading", "Main heading"], ["supporting", "Supporting text"],
+            ["intro_heading", "Intro heading"]].map(([key, label]) => (
+            <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
+              testId={`game-content-up-${key}`} textarea={key === "supporting"} />
+          ))}
+          <TextField label="Intro paragraphs (one per line)" value={((content.upgrade_page || {}).intro_paragraphs || []).join("\n")}
+            onChange={(value) => setUp("intro_paragraphs")(value.split("\n").filter(Boolean))} testId="game-content-up-intro-paragraphs" textarea />
+          <TextField label="Outcomes heading" value={(content.upgrade_page || {}).outcomes_heading || ""} onChange={setUp("outcomes_heading")} testId="game-content-up-outcomes-heading" />
+          {((content.upgrade_page || {}).outcomes || []).map((outcome, index) => (
+            <div key={index} style={{ marginTop: 12, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Outcome ${index + 1} heading`} value={outcome.heading} onChange={setUpItem("outcomes", index, "heading")} testId={`game-content-up-outcome-${index + 1}-heading`} />
+              <TextField label={`Outcome ${index + 1} body (one paragraph per line)`} value={(outcome.paragraphs || []).join("\n")} onChange={setUpItem("outcomes", index, "paragraphs", true)} testId={`game-content-up-outcome-${index + 1}-body`} textarea />
+            </div>
+          ))}
+          <TextField label="Included features heading" value={(content.upgrade_page || {}).features_heading || ""} onChange={setUp("features_heading")} testId="game-content-up-features-heading" />
+          {((content.upgrade_page || {}).features || []).map((feature, index) => (
+            <div key={index} style={{ marginTop: 12, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Feature ${index + 1} heading`} value={feature.heading} onChange={setUpItem("features", index, "heading")} testId={`game-content-up-feature-${index + 1}-heading`} />
+              <TextField label={`Feature ${index + 1} description`} value={feature.description} onChange={setUpItem("features", index, "description")} testId={`game-content-up-feature-${index + 1}-description`} textarea />
+            </div>
+          ))}
+          <TextField label="What Happens Next heading" value={(content.upgrade_page || {}).steps_heading || ""} onChange={setUp("steps_heading")} testId="game-content-up-steps-heading" />
+          {((content.upgrade_page || {}).steps || []).map((step, index) => (
+            <div key={index} style={{ marginTop: 12, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Step ${index + 1} heading`} value={step.heading} onChange={setUpItem("steps", index, "heading")} testId={`game-content-up-step-${index + 1}-heading`} />
+              <TextField label={`Step ${index + 1} description`} value={step.description} onChange={setUpItem("steps", index, "description")} testId={`game-content-up-step-${index + 1}-description`} textarea />
+            </div>
+          ))}
+          {[["payment_heading", "Payment block heading"], ["payment_price", "Price display text"], ["payment_onetime", "One-time payment label"],
+            ["payment_org_line", "Organisation/board line"], ["payment_subscription_line", "Subscription line"],
+            ["payment_includes", "Included-summary text"], ["payment_cta", "Payment CTA text"]].map(([key, label]) => (
+            <TextField key={key} label={label} value={(content.upgrade_page || {})[key] || ""} onChange={setUp(key)}
+              testId={`game-content-up-${key}`} textarea={key === "payment_includes"}
+              hint={key === "payment_price" ? "Display only. The actual Stripe charge remains the $497 Board Fundraising Game product." : undefined} />
+          ))}
         </div>
 
         <div style={groupStyle}><h4>Pre-Payment Unlock Page (not shown on the homepage)</h4>

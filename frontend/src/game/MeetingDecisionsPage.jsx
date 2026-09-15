@@ -91,7 +91,7 @@ const CommitmentCard = ({ commitment, onUpdate }) => {
   return (
     <div className="bfg-mr-decision" data-testid={`bfg-commitment-${commitment.commitment_id}`}
       style={{ opacity: commitment.review_status === "removed" ? 0.55 : 1 }}>
-      <p style={{ fontWeight: 700, color: "#f8fafc" }}>{commitment.board_member_name || "Board Member"}</p>
+      <p style={{ fontWeight: 700, color: "#111827" }}>{commitment.board_member_name || "Board Member"}</p>
       {editing ? (
         <textarea rows={3} className="bfg-mr-segment" style={{ width: "100%", marginTop: 8 }} value={draft}
           onChange={(event) => setDraft(event.target.value)} data-testid={`bfg-commitment-edit-${commitment.commitment_id}`} />
@@ -269,7 +269,7 @@ export default function MeetingDecisionsPage() {
               )}
               {(decisions.sections || []).map((section) => section.changes.length > 0 && (
                 <div key={section.section_key} style={{ marginTop: 20 }}>
-                  <h3 style={{ color: "#f8fafc" }}>{section.section_title}</h3>
+                  <h3 style={{ color: "#111827" }}>{section.section_title}</h3>
                   {section.decision_summary && <p className="bfg-note" style={{ marginTop: 4 }}>{section.decision_summary}</p>}
                   {section.changes.map((change) => <ChangeCard key={change.decision_id} change={change} onUpdate={updateDecision} />)}
                 </div>

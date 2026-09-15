@@ -61,7 +61,7 @@ const DeliveryModal = ({ overview, onClose, onSent }) => {
         <div className="bfg-modal" style={{ maxWidth: 620 }}>
           <h2>Adopted Strategy Sent</h2>
           <p className="bfg-note" style={{ marginTop: 10 }}>Your board members now have access to the fundraising strategy they created together.</p>
-          <p style={{ marginTop: 14, fontWeight: 700, color: "#34d399" }} data-testid="bfg-delivery-sent-count">Sent Successfully: {result.sent}</p>
+          <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }} data-testid="bfg-delivery-sent-count">Sent Successfully: {result.sent}</p>
           {result.failed.length > 0 && (
             <div style={{ marginTop: 10 }} data-testid="bfg-delivery-failed-list">
               <p style={{ fontWeight: 700 }} className="bfg-error">Could Not Be Sent: {result.failed.length}</p>
@@ -94,12 +94,12 @@ const DeliveryModal = ({ overview, onClose, onSent }) => {
         </p>
         <div style={{ marginTop: 14, maxHeight: 320, overflowY: "auto" }}>
           {overview.recipients.map((row) => (
-            <label className="bfg-ht-check" key={row.member_id} style={{ color: "#e2e8f0" }} data-testid={`bfg-delivery-recipient-${row.member_id}`}>
+            <label className="bfg-ht-check" key={row.member_id} style={{ color: "#374151" }} data-testid={`bfg-delivery-recipient-${row.member_id}`}>
               <input type="checkbox" checked={selected.has(row.member_id)} onChange={() => toggle(row.member_id)} />
-              <span style={{ textDecoration: "none", color: "#e2e8f0" }}>
+              <span style={{ textDecoration: "none", color: "#374151" }}>
                 <strong>{row.full_name}</strong> — {row.email}
                 <br />
-                <small style={{ color: "#94a3b8" }}>
+                <small style={{ color: "#6B7280" }}>
                   {row.game_status}
                   {row.group_joined && " · Joined Game Night"}
                   {" · "}
@@ -166,7 +166,7 @@ export default function GameNightCompletePage() {
           <h1>Game Night Complete</h1>
           <div className="bfg-night-summary" style={{ marginTop: 12 }} data-testid="bfg-gc-header-meta">
             <div className="bfg-summary-row"><span>Fundraising Goal</span><strong>{overview.goal_display}</strong></div>
-            <div className="bfg-summary-row"><span>Strategy Status</span><strong style={{ color: "#34d399" }}>Adopted</strong></div>
+            <div className="bfg-summary-row"><span>Strategy Status</span><strong style={{ color: "#059669" }}>Adopted</strong></div>
             {overview.adopted_at && <div className="bfg-summary-row"><span>Adopted</span><strong>{fmtDateTime(overview.adopted_at)}</strong></div>}
           </div>
           <h2 style={{ marginTop: 20 }}>Your Board Fundraising Game Is Complete</h2>
@@ -179,8 +179,8 @@ export default function GameNightCompletePage() {
           <h2>Your Board's Journey</h2>
           <div style={{ marginTop: 12 }}>
             {JOURNEY_STEPS.map((step) => (
-              <p key={step} style={{ marginTop: 6, color: "#e2e8f0" }} data-testid={`bfg-gc-journey-${step.replace(/\s+/g, "-").toLowerCase()}`}>
-                <span style={{ color: "#34d399", fontWeight: 700, marginRight: 8 }}>✓</span>{step}
+              <p key={step} style={{ marginTop: 6, color: "#374151" }} data-testid={`bfg-gc-journey-${step.replace(/\s+/g, "-").toLowerCase()}`}>
+                <span style={{ color: "#059669", fontWeight: 700, marginRight: 8 }}>✓</span>{step}
               </p>
             ))}
           </div>
