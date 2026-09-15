@@ -491,61 +491,126 @@ export const GameSection = () => {
   if (!content) return <section><p>Loading…</p></section>;
 
   const set = (key) => (value) => setContent((current) => ({ ...current, [key]: value }));
+  const setIntroParagraph = (index) => (value) => setContent((current) => {
+    const intro_paragraphs = [...(current.intro_paragraphs || [])];
+    intro_paragraphs[index] = value;
+    return { ...current, intro_paragraphs };
+  });
   const setStage = (index, field) => (value) => setContent((current) => {
     const stages = current.stages.map((stage, i) => i === index ? { ...stage, [field]: field === "items" ? value.split("\n").filter(Boolean) : value } : stage);
     return { ...current, stages };
+  });
+  const setOutcome = (index, field) => (value) => setContent((current) => {
+    const outcomes = current.outcomes.map((outcome, i) => i === index ? { ...outcome, [field]: field === "paragraphs" ? value.split("\n").filter(Boolean) : value } : outcome);
+    return { ...current, outcomes };
   });
 
   const save = async () => {
     setBusy(true); setMessage("");
     try {
       await client.put("/admin/game/content", content);
-      setMessage("Website content saved. The homepage updates immediately.");
+      setMessage("Homepage content saved. The homepage updates immediately.");
     } catch (err) {
       setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save content.");
     }
     setBusy(false);
   };
 
+  const groupStyle = { marginTop: 22, paddingTop: 14, borderTop: "2px solid #eee" };
+
   return (
     <section data-testid="admin-game-section">
       <div className="admin-import-panel" data-testid="game-content-panel">
-        <h3>Board Fundraising Game — Website Content</h3>
-        <p style={{ color: "#555" }}>Everything below controls the new homepage at the root of the website. The old homepage now lives at /fundraising-system.</p>
-        <TextField label="Hero badge" value={content.hero_badge} onChange={set("hero_badge")} testId="game-content-hero-badge" />
-        <TextField label="Homepage headline" value={content.headline} onChange={set("headline")} testId="game-content-headline" textarea />
-        <TextField label="Homepage subheadline" value={content.subheadline} onChange={set("subheadline")} testId="game-content-subheadline" textarea />
-        <TextField label="Fundraising goal input label" value={content.goal_label} onChange={set("goal_label")} testId="game-content-goal-label" />
-        <TextField label="Primary CTA wording" value={content.cta_label} onChange={set("cta_label")} testId="game-content-cta-label" />
-        <label className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-          <input type="checkbox" checked={!!content.video_enabled} onChange={(event) => set("video_enabled")(event.target.checked)} data-testid="game-content-video-enabled" />
-          <span>Show the homepage video section</span>
-        </label>
-        <TextField label="Video section heading" value={content.video_heading} onChange={set("video_heading")} testId="game-content-video-heading" />
-        <TextField label="Video supporting text" value={content.video_text} onChange={set("video_text")} testId="game-content-video-text" textarea />
-        <TextField label="Stages section heading" value={content.stages_heading} onChange={set("stages_heading")} testId="game-content-stages-heading" />
-        {content.stages.map((stage, index) => (
-          <div key={stage.key} style={{ marginTop: 14, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
-            <TextField label={`Stage ${index + 1} title`} value={stage.title} onChange={setStage(index, "title")} testId={`game-content-stage-${stage.key}-title`} />
-            <TextField label={`Stage ${index + 1} points (one per line)`} value={stage.items.join("\n")} onChange={setStage(index, "items")} testId={`game-content-stage-${stage.key}-items`} textarea />
-          </div>
-        ))}
-        <TextField label="Benefits section heading" value={content.benefits_heading} onChange={set("benefits_heading")} testId="game-content-benefits-heading" />
-        <TextField label="Product benefits (one per line — also shown before payment)" value={content.benefits.join("\n")} onChange={(value) => set("benefits")(value.split("\n").filter(Boolean))} testId="game-content-benefits" textarea />
-        <TextField label="Pricing section heading" value={content.pricing_heading} onChange={set("pricing_heading")} testId="game-content-pricing-heading" />
-        <TextField label="Price display" value={content.price_display} onChange={set("price_display")} testId="game-content-price-display" hint="Display only. The actual Stripe charge is the $497 Board Fundraising Game product." />
-        <TextField label="Price note" value={content.price_note} onChange={set("price_note")} testId="game-content-price-note" />
-        <TextField label="FAQ section heading" value={content.faqs_heading} onChange={set("faqs_heading")} testId="game-content-faqs-heading" />
-        <TextField label="FAQs (one per line, format: Question | Answer)" textarea
-          value={content.faqs.map((faq) => `${faq.q} | ${faq.a}`).join("\n")}
-          onChange={(value) => set("faqs")(value.split("\n").filter(Boolean).map((line) => {
-            const [q, ...rest] = line.split("|");
-            return { q: (q || "").trim(), a: rest.join("|").trim() };
-          }).filter((faq) => faq.q))}
-          testId="game-content-faqs" />
-        <TextField label="Testimonials section heading" value={content.testimonials_heading} onChange={set("testimonials_heading")} testId="game-content-testimonials-heading" hint="Testimonials themselves come from the existing site-wide testimonial system." />
+        <h3>Board Fundraising Game — Homepage Content</h3>
+        <p style={{ color: "#555" }}>Everything below controls the Board Fundraising Game homepage at the root of the website.</p>
+
+        <div style={groupStyle}><h4>Hero (dark banner)</h4>
+          <TextField label="Product label" value={content.hero_badge} onChange={set("hero_badge")} testId="game-content-hero-badge" />
+          <TextField label="Main headline" value={content.headline} onChange={set("headline")} testId="game-content-headline" textarea />
+          <TextField label="Subtitle" value={content.subheadline} onChange={set("subheadline")} testId="game-content-subheadline" textarea />
+        </div>
+
+        <div style={groupStyle}><h4>Intro Statement (white section)</h4>
+          <TextField label="Section heading" value={content.intro_heading} onChange={set("intro_heading")} testId="game-content-intro-heading" />
+          {[0, 1, 2].map((index) => (
+            <TextField key={index} label={`Paragraph ${index + 1}`} value={(content.intro_paragraphs || [])[index] || ""}
+              onChange={setIntroParagraph(index)} testId={`game-content-intro-paragraph-${index + 1}`} textarea />
+          ))}
+        </div>
+
+        <div style={groupStyle}><h4>Fundraising Goal Section</h4>
+          <TextField label="Question / headline" value={content.goal_label} onChange={set("goal_label")} testId="game-content-goal-label" />
+          <TextField label="Goal input placeholder" value={content.goal_placeholder} onChange={set("goal_placeholder")} testId="game-content-goal-placeholder" />
+          <TextField label="Primary CTA button text" value={content.cta_label} onChange={set("cta_label")} testId="game-content-cta-label" />
+        </div>
+
+        <div style={groupStyle}><h4>Video Section</h4>
+          <label className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+            <input type="checkbox" checked={!!content.video_enabled} onChange={(event) => set("video_enabled")(event.target.checked)} data-testid="game-content-video-enabled" />
+            <span>Show the homepage video section</span>
+          </label>
+          <TextField label="Small label" value={content.video_label} onChange={set("video_label")} testId="game-content-video-label" />
+          <TextField label="Heading" value={content.video_heading} onChange={set("video_heading")} testId="game-content-video-heading" />
+          <TextField label="Supporting text" value={content.video_text} onChange={set("video_text")} testId="game-content-video-text" textarea
+            hint="The video itself is managed in the Game Videos panel below (flow key game_homepage)." />
+        </div>
+
+        <div style={groupStyle}><h4>How It Works</h4>
+          <TextField label="Small label" value={content.stages_label} onChange={set("stages_label")} testId="game-content-stages-label" />
+          <TextField label="Main heading" value={content.stages_heading} onChange={set("stages_heading")} testId="game-content-stages-heading" />
+          {content.stages.map((stage, index) => (
+            <div key={stage.key} style={{ marginTop: 14, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Stage ${index + 1} number`} value={stage.number || String(index + 1)} onChange={setStage(index, "number")} testId={`game-content-stage-${stage.key}-number`} />
+              <TextField label={`Stage ${index + 1} heading`} value={stage.title} onChange={setStage(index, "title")} testId={`game-content-stage-${stage.key}-title`} />
+              <TextField label={`Stage ${index + 1} paragraphs (one per line)`} value={stage.items.join("\n")} onChange={setStage(index, "items")} testId={`game-content-stage-${stage.key}-items`} textarea />
+            </div>
+          ))}
+          <TextField label="CTA after How It Works" value={content.stages_cta_label} onChange={set("stages_cta_label")} testId="game-content-stages-cta" />
+        </div>
+
+        <div style={groupStyle}><h4>Outcomes</h4>
+          <TextField label="Small label" value={content.outcomes_label} onChange={set("outcomes_label")} testId="game-content-outcomes-label" />
+          <TextField label="Section heading" value={content.outcomes_heading} onChange={set("outcomes_heading")} testId="game-content-outcomes-heading" />
+          {(content.outcomes || []).map((outcome, index) => (
+            <div key={outcome.key} style={{ marginTop: 14, paddingLeft: 12, borderLeft: "3px solid #ddd" }}>
+              <TextField label={`Outcome ${index + 1} heading`} value={outcome.heading} onChange={setOutcome(index, "heading")} testId={`game-content-outcome-${outcome.key}-heading`} />
+              <TextField label={`Outcome ${index + 1} paragraphs (one per line)`} value={(outcome.paragraphs || []).join("\n")} onChange={setOutcome(index, "paragraphs")} testId={`game-content-outcome-${outcome.key}-paragraphs`} textarea />
+            </div>
+          ))}
+        </div>
+
+        <div style={groupStyle}><h4>Testimonials</h4>
+          <TextField label="Testimonials section heading" value={content.testimonials_heading} onChange={set("testimonials_heading")} testId="game-content-testimonials-heading"
+            hint="Testimonials themselves come from the existing site-wide testimonial system." />
+        </div>
+
+        <div style={groupStyle}><h4>FAQs</h4>
+          <TextField label="FAQ section label" value={content.faqs_label} onChange={set("faqs_label")} testId="game-content-faqs-label" />
+          <TextField label="FAQ heading" value={content.faqs_heading} onChange={set("faqs_heading")} testId="game-content-faqs-heading" />
+          <TextField label="FAQs (one per line, format: Question | Answer)" textarea
+            value={content.faqs.map((faq) => `${faq.q} | ${faq.a}`).join("\n")}
+            onChange={(value) => set("faqs")(value.split("\n").filter(Boolean).map((line) => {
+              const [q, ...rest] = line.split("|");
+              return { q: (q || "").trim(), a: rest.join("|").trim() };
+            }).filter((faq) => faq.q))}
+            testId="game-content-faqs" />
+        </div>
+
+        <div style={groupStyle}><h4>Final CTA</h4>
+          <TextField label="Heading" value={content.closing_heading} onChange={set("closing_heading")} testId="game-content-closing-heading" />
+          <TextField label="Supporting text" value={content.closing_text} onChange={set("closing_text")} testId="game-content-closing-text" textarea />
+          <TextField label="Button text" value={content.closing_cta_label} onChange={set("closing_cta_label")} testId="game-content-closing-cta" />
+        </div>
+
+        <div style={groupStyle}><h4>Pre-Payment Unlock Page (not shown on the homepage)</h4>
+          <TextField label="Product benefits (one per line — shown before payment)" value={content.benefits.join("\n")} onChange={(value) => set("benefits")(value.split("\n").filter(Boolean))} testId="game-content-benefits" textarea />
+          <TextField label="Pricing section heading" value={content.pricing_heading} onChange={set("pricing_heading")} testId="game-content-pricing-heading" />
+          <TextField label="Price display" value={content.price_display} onChange={set("price_display")} testId="game-content-price-display" hint="Display only. The actual Stripe charge is the $497 Board Fundraising Game product." />
+          <TextField label="Price note" value={content.price_note} onChange={set("price_note")} testId="game-content-price-note" />
+        </div>
+
         <div style={{ marginTop: 18 }}>
-          <button className="button" onClick={save} disabled={busy} data-testid="game-content-save">{busy ? "Saving…" : "Save Website Content"}</button>
+          <button className="button" onClick={save} disabled={busy} data-testid="game-content-save">{busy ? "Saving…" : "Save Homepage Content"}</button>
           {message && <span style={{ marginLeft: 12 }} data-testid="game-content-message">{message}</span>}
         </div>
       </div>

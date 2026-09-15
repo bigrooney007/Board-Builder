@@ -15,31 +15,69 @@ GAME_ENTITLEMENT = "board_fundraising_game"
 
 DEFAULT_CONTENT = {
     "hero_badge": "THE BOARD FUNDRAISING GAME",
-    "headline": "Bring Your Board Together to Build the Fundraising Strategy Your Organisation Needs",
-    "subheadline": "The Board Fundraising Game unites your nonprofit board around one goal: creating and adopting the fundraising strategy your organization needs to raise money exponentially.",
-    "goal_label": "How Much Does Your Organisation Want To Raise?",
+    "headline": "Get Your Board Members To Raise Money and Work With You To Build Your Organization's Fundraising System",
+    "subheadline": "Stop Self-Funding or Carrying Fundraising Alone. Turn Your Next Board Meeting Into A Fun Board Fundraising Activation Session.",
+    "intro_heading": "Why Your Board Is Not Fundraising With You",
+    "intro_paragraphs": [
+        "Your board cannot fully commit to raising money and building your organization's fundraising system when they had no role in creating the strategy they are being asked to execute.",
+        "If you want your board members to raise money and help build your fundraising system, bring them into the process of creating and adopting the fundraising strategy with you.",
+        "The Board Fundraising Game brings everyone into the process from the beginning. It captures the knowledge, relationships and ideas already sitting around your board table and turns them into a fundraising strategy your board understands, adopts and is prepared to execute.",
+    ],
+    "goal_label": "How Much Does Your Organization Want To Raise?",
     "goal_placeholder": "500,000",
-    "cta_label": "Start Your Board Fundraising Game",
+    "cta_label": "Start My Board Fundraising Game",
     "video_enabled": True,
-    "video_heading": "See How the Board Fundraising Game Works",
-    "video_text": "What board members do before Game Night, what happens during Game Night, and how your board leaves with a fundraising strategy and clear execution roles.",
-    "stages_heading": "One Game. Three Stages. A Board That Fundraises.",
+    "video_label": "Watch",
+    "video_heading": "See How The Board Fundraising Game Works",
+    "video_text": "See how your board moves from individual thinking to collective decisions, an adopted fundraising strategy and clear fundraising roles for every board member.",
+    "stages_label": "How It Works",
+    "stages_heading": "One Game. One Fundraising Goal. Your Entire Board Behind It.",
     "stages": [
-        {"key": "before", "title": "Before Game Night", "items": [
-            "Your organisation invites its board.",
-            "Each board member receives a link to prepare for the Board Fundraising Game.",
-            "They learn how fundraising strategy works, contribute their ideas and indicate how they want to participate in fundraising.",
+        {"key": "before", "number": "1", "title": "Before Game Night", "items": [
+            "Each board member receives their own Individual Game invitation link before your next board meeting.",
+            "They learn how fundraising works, contribute their ideas about how your organization can raise money and decide how they would like to participate in fundraising.",
+            "By the time your board meets, everyone has already thought seriously about how your organization can reach its fundraising goal.",
         ]},
-        {"key": "during", "title": "During Game Night", "items": [
-            "The board comes together.",
-            "They review and prioritise the ideas contributed by the board.",
-            "The platform uses their collective thinking to create your organisation's fundraising strategy.",
-            "The board reviews the strategy and agrees on how they will execute it.",
+        {"key": "during", "number": "2", "title": "During Game Night", "items": [
+            "Your board turns individual ideas into collective decisions.",
+            "Everyone reviews the ideas contributed by the board and ranks the strongest opportunities they believe your organization should prioritize.",
+            "The platform turns those priorities into your fundraising strategy.",
+            "Your board reviews the strategy together, makes the final decisions and adopts the strategy it is prepared to execute.",
         ]},
-        {"key": "after", "title": "After Game Night", "items": [
-            "Your organisation has its fundraising strategy.",
-            "Each board member receives their role in helping build the fundraising system and supporting fundraising.",
-            "They also receive the materials and resources required to execute.",
+        {"key": "after", "number": "3", "title": "After Game Night", "items": [
+            "Everyone leaves knowing what happens next.",
+            "Your organization leaves with an adopted fundraising strategy.",
+            "Each board member receives a personal Board Fundraising Portfolio showing how they will help build your fundraising system and how they will help raise money.",
+            "They also receive the scripts, templates, checklists and resources they need to execute their role.",
+        ]},
+    ],
+    "stages_cta_label": "Launch My Board Fundraising Game",
+    "outcomes_label": "Outcomes",
+    "outcomes_heading": "Your Board Meeting Ends With More Than A Conversation",
+    "outcomes": [
+        {"key": "strategy", "heading": "1. A Clear Fundraising Strategy and Direction", "paragraphs": [
+            "Your board identifies who your organization should raise money from, where to find them, how to attract them, the process to raise money from them, and the team, technology and materials required to execute.",
+            "You also leave with a clear execution timeline and direction for moving from strategy into action.",
+        ]},
+        {"key": "knowledge", "heading": "2. A Board That Knows How To Raise Money", "paragraphs": [
+            "Your board members learn how fundraising actually works while building the strategy themselves.",
+            "They understand who your organization is raising money from, how those funders will be reached and what needs to happen to move them from first contact to financial support.",
+            "Instead of simply telling your board members to fundraise, you give them the knowledge, strategy and tools to actually do it.",
+        ]},
+        {"key": "system", "heading": "3. A Fundraising System Your Organization Can Build On", "paragraphs": [
+            "If your organization wants to consistently raise money from individuals, businesses and grantmakers, fundraising cannot depend entirely on you.",
+            "You need a system that consistently helps your organization find potential funders, attract their attention, build relationships, ask for support, follow up and steward them.",
+            "The Board Fundraising Game helps your board design that system with you so fundraising can become an organizational capability instead of one person's responsibility.",
+        ]},
+        {"key": "roles", "heading": "4. A Clear Role For Every Board Member", "paragraphs": [
+            "Every board member chooses how they want to participate.",
+            "They identify how they want to help build your fundraising system and how they want to help raise money directly.",
+            "Then they receive a personal Board Fundraising Portfolio and the tools they need to execute their role.",
+        ]},
+        {"key": "trust", "heading": "5. A Board That Trusts Your Leadership", "paragraphs": [
+            "When you lead your board through a clear process that teaches them, involves them in decisions and equips them to contribute, you give them a reason to trust your leadership.",
+            "You are no longer simply asking them to do more.",
+            "You are giving them the structure, direction and resources they need to show up at the level they want to show up.",
         ]},
     ],
     "benefits_heading": "What Your Organisation Walks Away With",
@@ -57,6 +95,7 @@ DEFAULT_CONTENT = {
     "pricing_heading": "Unlock Your Board Fundraising Game",
     "price_display": "$497",
     "price_note": "One-time payment. One organisation. Your entire board plays.",
+    "faqs_label": "Questions",
     "faqs_heading": "Frequently Asked Questions",
     "faqs": [
         {"q": "What exactly is the Board Fundraising Game?", "a": "It is a structured experience that brings your board together to build, adopt and prepare to execute the fundraising strategy your organisation needs to raise its fundraising goal."},
@@ -66,6 +105,9 @@ DEFAULT_CONTENT = {
         {"q": "What happens after we play?", "a": "Your organisation leaves with its fundraising strategy, and every board member receives their execution role and the materials to act on it."},
     ],
     "testimonials_heading": "What Nonprofit Leaders Say",
+    "closing_heading": "Ready To Stop Carrying Fundraising Alone?",
+    "closing_text": "Bring your board together around one fundraising goal and build the strategy, system and board participation required to reach it.",
+    "closing_cta_label": "Start My Board Fundraising Game",
 }
 
 ORG_FIELDS = ["name", "website", "org_type", "location", "mission", "who_served"]

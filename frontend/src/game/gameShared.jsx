@@ -48,8 +48,8 @@ export const GameProgress = ({ steps, current }) => (
   </div>
 );
 
-export const BfgShell = ({ children, nav }) => (
-  <div className="bfg">
+export const BfgShell = ({ children, nav, shellClass = "" }) => (
+  <div className={`bfg ${shellClass}`.trim()}>
     <header className="bfg-nav">
       <Link to="/" className="bfg-logo" data-testid="bfg-logo-link">
         <span className="bfg-logo-mark">BG</span>
