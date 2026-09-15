@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { VoiceGuidedAdmin } from "./VoiceGuidedAdmin";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -478,101 +479,6 @@ const PostGameCommunication = () => {
         <button className="button" onClick={save} disabled={busy} data-testid="game-pg-save">{busy ? "Saving…" : "Save Post-Game Email"}</button>
         {message && <span style={{ marginLeft: 12 }} data-testid="game-pg-message">{message}</span>}
       </div>
-    </div>
-  );
-};
-
-const VoiceGuidedAdmin = () => {
-  const [settings, setSettings] = useState(null);
-  const [assets, setAssets] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [busyId, setBusyId] = useState("");
-  const [message, setMessage] = useState("");
-
-  const load = async () => {
-    setSettings((await client.get("/admin/game/voice/settings")).data.settings);
-    setAssets((await client.get("/admin/game/voice/assets")).data.assets);
-  };
-  const toggle = async () => { if (!open && !settings) await load().catch(() => setMessage("Could not load voice settings.")); setOpen(!open); };
-
-  const saveSettings = async () => {
-    setMessage("");
-    try { await client.put("/admin/game/voice/settings", { settings }); setMessage("Voice settings saved."); }
-    catch { setMessage("Could not save settings."); }
-  };
-  const saveText = async (asset) => {
-    setBusyId(asset.narration_id); setMessage("");
-    try { await client.put(`/admin/game/voice/assets/${asset.narration_id}`, { text: asset.text }); setMessage("Script text saved."); await load(); }
-    catch { setMessage("Could not save text."); }
-    setBusyId("");
-  };
-  const generate = async (asset) => {
-    setBusyId(asset.narration_id); setMessage("");
-    try { await client.post(`/admin/game/voice/assets/${asset.narration_id}/generate`); setMessage(`Audio generated: ${asset.narration_id}`); await load(); }
-    catch (err) { setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Generation failed."); }
-    setBusyId("");
-  };
-
-  const check = (key, label) => (
-    <label style={{ display: "block", marginTop: 8 }}>
-      <input type="checkbox" checked={!!settings[key]} onChange={(event) => setSettings({ ...settings, [key]: event.target.checked })} data-testid={`voice-setting-${key}`} /> {label}
-    </label>
-  );
-
-  return (
-    <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="voice-guided-panel">
-      <h3>Voice Guided Game</h3>
-      <p style={{ color: "#555" }}>The narrator script ships preloaded word-for-word. Generate each static clip ONCE (ElevenLabs key + Voice ID required). Personalized first-name clips are generated automatically in-game, cached and capped.</p>
-      <button className="button button-small" onClick={toggle} data-testid="voice-guided-toggle">{open ? "Hide" : "Open Voice Settings"}</button>
-      {open && settings && (
-        <div style={{ marginTop: 12 }}>
-          {check("voice_enabled", "Voice Guided Mode")}
-          {check("read_type_enabled", "Read & Type Mode")}
-          {check("narration_on", "Narration")}
-          {check("personalization_on", "Personalized Voice Moments")}
-          {check("browser_stt_on", "Browser Speech Recognition")}
-          {check("generic_fallback_on", "Generic Voice Fallback")}
-          <label style={{ display: "block", marginTop: 10 }}>
-            <span style={{ fontWeight: 600 }}>Default Mode</span>
-            <select value={settings.default_mode} onChange={(event) => setSettings({ ...settings, default_mode: event.target.value })} data-testid="voice-setting-default-mode">
-              <option value="voice">Voice Guided</option><option value="type">Read & Type</option>
-            </select>
-          </label>
-          <label style={{ display: "block", marginTop: 10 }}>
-            <span style={{ fontWeight: 600 }}>Maximum Personalized Clips Per Individual Game</span>
-            <input type="number" min="0" max="10" value={settings.max_personal_clips}
-              onChange={(event) => setSettings({ ...settings, max_personal_clips: Number(event.target.value) })} data-testid="voice-setting-max-clips" />
-          </label>
-          <label style={{ display: "block", marginTop: 10 }}>
-            <span style={{ fontWeight: 600 }}>ElevenLabs Voice ID</span>
-            <input style={{ width: "100%" }} value={settings.voice_id || ""} onChange={(event) => setSettings({ ...settings, voice_id: event.target.value })} data-testid="voice-setting-voice-id" />
-            <small style={{ color: "#666" }}>API key is configured on the server only ({settings.provider_key_configured ? "configured" : "NOT configured yet"}).</small>
-          </label>
-          <button className="button" style={{ marginTop: 12 }} onClick={saveSettings} data-testid="voice-settings-save">Save Voice Settings</button>
-
-          <h4 style={{ marginTop: 22 }}>Narration Library</h4>
-          {(assets || []).map((asset, index) => (
-            <div key={asset.narration_id} style={{ marginTop: 12, borderTop: "1px solid #eee", paddingTop: 10 }}>
-              <strong>{asset.narration_id}</strong> — {asset.label}
-              <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 700, color: asset.status === "ready" ? "#059669" : asset.status === "missing" ? "#b91c1c" : "#92400e" }}>
-                {asset.status === "ready" ? "Ready" : asset.status === "missing" ? "Missing" : asset.status === "needs_regeneration" ? "Needs Regeneration" : "Not Generated"}
-              </span>
-              <textarea rows={3} style={{ width: "100%", marginTop: 6, fontSize: 12.5 }} value={asset.text}
-                onChange={(event) => setAssets(assets.map((row, i) => i === index ? { ...row, text: event.target.value } : row))}
-                data-testid={`voice-asset-text-${asset.narration_id}`} />
-              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                <button className="button button-small" disabled={busyId === asset.narration_id} onClick={() => saveText(asset)} data-testid={`voice-asset-save-${asset.narration_id}`}>Save Text</button>
-                {asset.kind === "static" && asset.status !== "ready" && (
-                  <button className="button button-small" disabled={busyId === asset.narration_id} onClick={() => generate(asset)} data-testid={`voice-asset-generate-${asset.narration_id}`}>
-                    {busyId === asset.narration_id ? "Generating…" : "Generate Audio"}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {message && <p style={{ marginTop: 10 }} data-testid="voice-guided-message">{message}</p>}
     </div>
   );
 };
