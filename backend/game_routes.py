@@ -272,10 +272,27 @@ def create_game_router(db) -> APIRouter:
         rows = []
         profiles = await db.game_profiles.find({}, {"_id": 0}).sort("updated_at", -1).to_list(300)
         for profile in profiles:
-            member = await db.members.find_one({"user_id": profile["user_id"]}, {"_id": 0, "email": 1, "first_name": 1, "last_name": 1, "entitlements": 1}) or {}
+            member = await db.members.find_one(
+                {"user_id": profile["user_id"]},
+                {"_id": 0, "email": 1, "first_name": 1, "last_name": 1, "entitlements": 1, "game_test_unlock": 1}) or {}
             unlocked = GAME_ENTITLEMENT in member.get("entitlements", [])
+            purchase = await db.purchases.find_one(
+                {"user_id": profile["user_id"], "purchase_source": "board_fundraising_game_497"},
+                {"_id": 0, "offer": 1, "price_paid": 1, "purchased_at": 1, "created_at": 1})
+            test_unlock = member.get("game_test_unlock") if isinstance(member.get("game_test_unlock"), dict) else {}
+            test_active = bool(test_unlock.get("active"))
+            if purchase:
+                access_state = "Paid — Stripe"
+            elif test_active:
+                access_state = "Unlocked For Testing"
+            elif unlocked:
+                access_state = "Unlocked"
+            else:
+                access_state = "Not Unlocked"
             if unlocked and profile.get("situation_completed"):
                 stage = "Game Setup Complete"
+            elif unlocked and test_active and not purchase:
+                stage = "Testing — Setup In Progress"
             elif unlocked:
                 stage = "Paid — Setup In Progress"
             elif profile.get("profile_completed"):
@@ -290,8 +307,63 @@ def create_game_router(db) -> APIRouter:
                 "goal_amount": profile.get("goal", {}).get("amount", 0),
                 "goal_deadline": profile.get("goal", {}).get("deadline", ""),
                 "unlocked": unlocked,
+                "access_state": access_state,
+                "test_unlock": {
+                    "active": test_active,
+                    "unlocked_at": test_unlock.get("test_unlocked_at", ""),
+                    "unlocked_by": test_unlock.get("test_unlocked_by_email", "") or test_unlock.get("test_unlocked_by", ""),
+                },
+                "purchase": {
+                    "offer": purchase.get("offer", ""), "price_paid": purchase.get("price_paid", 0),
+                    "purchased_at": purchase.get("purchased_at", "") or purchase.get("created_at", ""),
+                } if purchase else None,
                 "updated_at": profile.get("updated_at", ""),
             })
         return {"customers": rows}
+
+    async def game_purchase_for(user_id: str):
+        return await db.purchases.find_one(
+            {"user_id": user_id, "purchase_source": "board_fundraising_game_497"}, {"_id": 0, "purchase_id": 1})
+
+    @router.post("/admin/game/customers/{user_id}/unlock-testing")
+    async def unlock_for_testing(user_id: str, request: Request):
+        admin = await authenticate_admin(request, db)
+        target = await db.members.find_one(
+            {"user_id": user_id}, {"_id": 0, "user_id": 1, "email": 1, "entitlements": 1, "game_test_unlock": 1})
+        if not target:
+            raise HTTPException(status_code=404, detail="Account not found")
+        if await game_purchase_for(user_id):
+            raise HTTPException(status_code=409, detail="This account already has a genuine Stripe payment for the Board Fundraising Game")
+        existing_unlock = target.get("game_test_unlock") if isinstance(target.get("game_test_unlock"), dict) else {}
+        if existing_unlock.get("active"):
+            raise HTTPException(status_code=409, detail="This account is already unlocked for testing")
+        now = datetime.now(timezone.utc).isoformat()
+        unlock = {
+            "active": True, "payment_status": "unlocked", "payment_source": "admin_test", "test_unlock": True,
+            "test_unlocked_at": now,
+            "test_unlocked_by": admin.get("user_id", ""), "test_unlocked_by_email": admin.get("email", ""),
+        }
+        await db.members.update_one(
+            {"user_id": user_id},
+            {"$addToSet": {"entitlements": GAME_ENTITLEMENT},
+             "$set": {"game_test_unlock": unlock, "updated_at": now}})
+        return {"status": "unlocked", "unlocked_at": now, "access_source": "Admin Test"}
+
+    @router.post("/admin/game/customers/{user_id}/revoke-testing")
+    async def revoke_testing_access(user_id: str, request: Request):
+        await authenticate_admin(request, db)
+        target = await db.members.find_one(
+            {"user_id": user_id}, {"_id": 0, "user_id": 1, "game_test_unlock": 1})
+        if not target:
+            raise HTTPException(status_code=404, detail="Account not found")
+        unlock = target.get("game_test_unlock") if isinstance(target.get("game_test_unlock"), dict) else {}
+        if not unlock.get("active"):
+            raise HTTPException(status_code=409, detail="This account does not have testing access")
+        now = datetime.now(timezone.utc).isoformat()
+        update = {"$set": {"game_test_unlock.active": False, "game_test_unlock.revoked_at": now, "updated_at": now}}
+        if not await game_purchase_for(user_id):
+            update["$pull"] = {"entitlements": GAME_ENTITLEMENT}
+        await db.members.update_one({"user_id": user_id}, update)
+        return {"status": "revoked"}
 
     return router

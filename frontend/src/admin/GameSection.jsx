@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -57,26 +57,168 @@ const VideosManager = () => {
   );
 };
 
+const modalOverlayStyle = { position: "fixed", inset: 0, background: "rgba(2, 6, 23, 0.6)", display: "grid", placeItems: "center", zIndex: 90, padding: 20 };
+const modalStyle = { background: "#fff", borderRadius: 12, padding: 26, maxWidth: 480, width: "100%", boxShadow: "0 18px 50px rgba(0,0,0,0.25)" };
+
+const fmtStamp = (raw) => {
+  if (!raw) return "";
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
+};
+
 const CustomersTable = () => {
   const [rows, setRows] = useState([]);
-  useEffect(() => { client.get("/admin/game/customers").then((r) => setRows(r.data.customers || [])).catch(() => {}); }, []);
+  const [expandedId, setExpandedId] = useState("");
+  const [unlockTarget, setUnlockTarget] = useState(null);
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [successInfo, setSuccessInfo] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const load = useCallback(() => {
+    client.get("/admin/game/customers").then((r) => setRows(r.data.customers || [])).catch(() => {});
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const unlock = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const response = await client.post(`/admin/game/customers/${unlockTarget.user_id}/unlock-testing`);
+      setSuccessInfo({ user_id: unlockTarget.user_id, unlocked_at: response.data.unlocked_at });
+      setUnlockTarget(null);
+      load();
+    } catch (err) {
+      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not unlock this account.");
+      setUnlockTarget(null);
+    }
+    setBusy(false);
+  };
+
+  const revoke = async () => {
+    setBusy(true); setMessage("");
+    try {
+      await client.post(`/admin/game/customers/${revokeTarget.user_id}/revoke-testing`);
+      setMessage("Testing access revoked.");
+      load();
+    } catch (err) {
+      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not revoke testing access.");
+    }
+    setRevokeTarget(null);
+    setBusy(false);
+  };
+
   return (
     <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-customers-panel">
       <h3>Game Customers</h3>
+      {message && <p style={{ marginTop: 8 }} data-testid="game-customers-message">{message}</p>}
       {rows.length === 0 ? <p style={{ color: "#555" }}>No Board Fundraising Game customers yet.</p> : (
         <div className="admin-table-wrap">
           <table className="admin-table">
-            <thead><tr>{["Stage", "Name", "Email", "Organisation", "Goal", "Deadline", "Updated"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
+            <thead><tr>{["Stage", "Name", "Email", "Organisation", "Goal", "Access", "Actions"].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.user_id} data-testid={`game-customer-row-${row.user_id}`}>
-                  <td>{row.stage}</td><td>{row.name}</td><td>{row.email}</td><td>{row.organization}</td>
-                  <td>{row.goal_amount ? `$${Number(row.goal_amount).toLocaleString()}` : ""}</td>
-                  <td>{row.goal_deadline}</td><td>{row.updated_at?.slice(0, 10)}</td>
-                </tr>
+                <Fragment key={row.user_id}>
+                  <tr data-testid={`game-customer-row-${row.user_id}`}>
+                    <td>{row.stage}</td><td>{row.name}</td><td>{row.email}</td><td>{row.organization}</td>
+                    <td>{row.goal_amount ? `$${Number(row.goal_amount).toLocaleString()}` : ""}</td>
+                    <td data-testid={`game-customer-access-${row.user_id}`}>{row.access_state}</td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {row.access_state === "Not Unlocked" && (
+                          <button className="button button-small" onClick={() => setUnlockTarget(row)} data-testid={`game-unlock-testing-${row.user_id}`}>
+                            Unlock For Testing
+                          </button>
+                        )}
+                        {row.access_state === "Unlocked For Testing" && (
+                          <button className="button button-small" onClick={() => setRevokeTarget(row)} data-testid={`game-revoke-testing-${row.user_id}`}>
+                            Revoke Testing Access
+                          </button>
+                        )}
+                        <button className="button button-small" onClick={() => setExpandedId(expandedId === row.user_id ? "" : row.user_id)}
+                          data-testid={`game-customer-details-${row.user_id}`}>
+                          {expandedId === row.user_id ? "Hide" : "Details"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedId === row.user_id && (
+                    <tr>
+                      <td colSpan={7} data-testid={`game-customer-record-${row.user_id}`}>
+                        <strong>Board Fundraising Game Access</strong>
+                        {row.purchase ? (
+                          <p style={{ marginTop: 6 }}>
+                            Access: Unlocked · Source: Stripe · {row.purchase.offer}{row.purchase.price_paid ? ` — $${Number(row.purchase.price_paid).toLocaleString()}` : ""}
+                            {row.purchase.purchased_at && ` · Purchased: ${fmtStamp(row.purchase.purchased_at)}`}
+                          </p>
+                        ) : row.test_unlock?.active ? (
+                          <p style={{ marginTop: 6 }}>
+                            Access: Unlocked · Source: Admin Test
+                            {row.test_unlock.unlocked_at && ` · Unlocked On: ${fmtStamp(row.test_unlock.unlocked_at)}`}
+                            {row.test_unlock.unlocked_by && ` · Unlocked By: ${row.test_unlock.unlocked_by}`}
+                          </p>
+                        ) : (
+                          <p style={{ marginTop: 6 }}>Access: {row.access_state}</p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {unlockTarget && (
+        <div style={modalOverlayStyle} data-testid="game-unlock-modal">
+          <div style={modalStyle}>
+            <h3>Unlock This Account For Testing?</h3>
+            <p style={{ marginTop: 10, color: "#444" }}>
+              This will give this account access to the post-payment Board Fundraising Game without creating a Stripe payment. Use this only for internal product testing.
+            </p>
+            <p style={{ marginTop: 12 }}><strong>Account:</strong> {unlockTarget.email}</p>
+            {unlockTarget.organization && <p style={{ marginTop: 4 }}><strong>Organisation:</strong> {unlockTarget.organization}</p>}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+              <button className="button button-small" onClick={() => setUnlockTarget(null)} data-testid="game-unlock-cancel">Cancel</button>
+              <button className="button" onClick={unlock} disabled={busy} data-testid="game-unlock-confirm">
+                {busy ? "Unlocking…" : "Unlock For Testing"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {revokeTarget && (
+        <div style={modalOverlayStyle} data-testid="game-revoke-modal">
+          <div style={modalStyle}>
+            <h3>Revoke Testing Access?</h3>
+            <p style={{ marginTop: 10, color: "#444" }}>
+              This removes the admin testing payment bypass from this account. It does not delete the account or the Board Fundraising Game data already created.
+            </p>
+            <p style={{ marginTop: 12 }}><strong>Account:</strong> {revokeTarget.email}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+              <button className="button button-small" onClick={() => setRevokeTarget(null)} data-testid="game-revoke-cancel">Cancel</button>
+              <button className="button" onClick={revoke} disabled={busy} data-testid="game-revoke-confirm">
+                {busy ? "Revoking…" : "Revoke Testing Access"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {successInfo && (
+        <div style={modalOverlayStyle} data-testid="game-unlock-success-modal">
+          <div style={modalStyle}>
+            <h3>Testing Access Enabled</h3>
+            <p style={{ marginTop: 10, color: "#444" }}>This account now has access to the Board Fundraising Game without a Stripe payment.</p>
+            <p style={{ marginTop: 12 }}><strong>Access Source:</strong> Admin Test</p>
+            <p style={{ marginTop: 4 }}><strong>Unlocked:</strong> {fmtStamp(successInfo.unlocked_at)}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+              <button className="button" onClick={() => { setExpandedId(successInfo.user_id); setSuccessInfo(null); }} data-testid="game-unlock-open-record">
+                Open Customer Record
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
