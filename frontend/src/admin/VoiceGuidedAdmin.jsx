@@ -25,6 +25,8 @@ export const VoiceGuidedAdmin = () => {
   const [confirmId, setConfirmId] = useState("");
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [message, setMessage] = useState("");
+  const [personalClips, setPersonalClips] = useState([]);
+  const [previewNames, setPreviewNames] = useState({});
 
   const load = async () => {
     const [settingsResponse, assetsResponse] = await Promise.all([
@@ -32,6 +34,7 @@ export const VoiceGuidedAdmin = () => {
     setSettings(settingsResponse.data.settings);
     setAssets(assetsResponse.data.assets);
     setMissingLive(assetsResponse.data.missing_live || []);
+    setPersonalClips(assetsResponse.data.personal_clips || []);
     setBulk(assetsResponse.data.bulk || null);
     return assetsResponse.data.bulk;
   };
@@ -81,6 +84,25 @@ export const VoiceGuidedAdmin = () => {
       if (response.data.started) { setMessage(`Generating ${response.data.total} missing production clips…`); pollBulk(); }
       else setMessage("No missing production clips to generate.");
     } catch (err) { setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not start generation."); }
+  };
+
+  const generatePreview = async (asset) => {
+    const pointId = asset.narration_id.replace("template_", "");
+    const firstName = (previewNames[pointId] || "").trim();
+    if (!firstName) { setMessage("Enter a first name for the preview clip."); return; }
+    setBusyId(`preview:${pointId}`); setMessage("");
+    try {
+      await client.post("/admin/game/voice/personal-preview", { point_id: pointId, first_name: firstName });
+      setMessage(`Personalized ${settings.voice_environment} clip ready.`);
+      await load();
+    } catch (err) { setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Generation failed."); }
+    setBusyId("");
+  };
+
+  const playWithClip01 = (clip) => {
+    const personal = new Audio(`${API}${clip.url}`);
+    personal.onended = () => { new Audio(`${API}/game/voice/audio/c01?v=x`).play().catch(() => {}); };
+    personal.play().catch(() => {});
   };
 
   const check = (key, label) => (
@@ -172,6 +194,17 @@ export const VoiceGuidedAdmin = () => {
                 data-testid={`voice-asset-text-${asset.narration_id}`} />
               <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <button className="button button-small" disabled={busyId === asset.narration_id} onClick={() => saveText(asset)} data-testid={`voice-asset-save-${asset.narration_id}`}>Save Text</button>
+                {asset.kind === "template" && (
+                  <span>
+                    <input placeholder="First name" style={{ width: 110 }} value={previewNames[asset.narration_id.replace("template_", "")] || ""}
+                      onChange={(event) => setPreviewNames({ ...previewNames, [asset.narration_id.replace("template_", "")]: event.target.value })}
+                      data-testid={`voice-preview-name-${asset.narration_id}`} />{" "}
+                    <button className="button button-small" disabled={busyId === `preview:${asset.narration_id.replace("template_", "")}`}
+                      onClick={() => generatePreview(asset)} data-testid={`voice-preview-generate-${asset.narration_id}`}>
+                      {busyId === `preview:${asset.narration_id.replace("template_", "")}` ? "Generating…" : `Generate ${settings.voice_environment === "live" ? "Live" : "Test"} Preview Clip`}
+                    </button>
+                  </span>
+                )}
                 {asset.kind === "static" && (
                   <>
                     <span>Test: <StatusBadge status={asset.test.status} />{" "}
@@ -204,6 +237,23 @@ export const VoiceGuidedAdmin = () => {
               </div>
             </div>
           ))}
+
+          {personalClips.length > 0 && (
+            <div style={{ marginTop: 22 }} data-testid="voice-personal-clips">
+              <h4>Personalized Clips (cached)</h4>
+              {personalClips.map((clip) => (
+                <div key={clip.cache_key} style={{ marginTop: 10, borderTop: "1px solid #eee", paddingTop: 8 }} data-testid={`voice-personal-${clip.cache_key.slice(0, 8)}`}>
+                  <strong>{clip.text}</strong>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: clip.environment === "test" ? "#92400e" : "#059669", fontWeight: 700 }}>{(clip.environment || "").toUpperCase()}</span>
+                  <span style={{ marginLeft: 8, fontSize: 11, color: "#666" }}>{(clip.created_at || "").slice(0, 10)}</span>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
+                    <audio controls preload="none" style={{ maxWidth: 320 }} src={`${API}${clip.url}`} data-testid={`voice-personal-player-${clip.cache_key.slice(0, 8)}`} />
+                    <button className="button button-small" onClick={() => playWithClip01(clip)} data-testid={`voice-personal-chain-${clip.cache_key.slice(0, 8)}`}>Play With Clip 01</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
       {message && <p style={{ marginTop: 10 }} data-testid="voice-guided-message">{message}</p>}

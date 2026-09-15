@@ -74,6 +74,11 @@ class PersonalPayload(BaseModel):
     point_id: str = Field(min_length=1)
 
 
+class PersonalPreviewPayload(BaseModel):
+    point_id: str = Field(min_length=1)
+    first_name: str = Field(min_length=1, max_length=60)
+
+
 def create_voice_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
     bulk_lock = {"running": False}
@@ -209,7 +214,7 @@ def create_voice_router(db) -> APIRouter:
             return fallback
         await db.game_voice_personal_cache.insert_one({
             "cache_key": cache_key, "environment": environment, "voice_id": voice_id,
-            "audio": audio, "created_at": now_iso()})
+            "text": text, "point_id": point["point_id"], "audio": audio, "created_at": now_iso()})
         await db.game_board_members.update_one(
             {"member_id": record["member_id"]}, {"$inc": {"personal_clips_generated": 1}})
         return {"url": f"/api/game/voice/audio/personal/{cache_key}", "fallback_narration_id": point["fallback_id"]}
@@ -265,9 +270,42 @@ def create_voice_router(db) -> APIRouter:
         missing_live = [row["narration_id"] for row in rows
                         if row["kind"] == "static" and row["live"]["status"] == "missing" and row["text"]]
         bulk = await db.marketing_settings.find_one({"key": "game_voice_bulk"}, {"_id": 0}) or {}
+        personal = await db.game_voice_personal_cache.find(
+            {}, {"_id": 0, "audio": 0}).sort("created_at", -1).to_list(30)
         return {"assets": rows, "missing_live": missing_live,
+                "personal_clips": [{**row, "url": f"/api/game/voice/audio/personal/{row['cache_key']}"} for row in personal],
                 "bulk": {"running": bool(bulk_lock["running"]), "done": bulk.get("done", 0),
                          "total": bulk.get("total", 0), "failed": bulk.get("failed", [])}}
+
+    @router.post("/admin/game/voice/personal-preview")
+    async def personal_preview(payload: PersonalPreviewPayload, request: Request):
+        """Explicit admin action: generate one personalized micro-clip through the standard cache architecture."""
+        await authenticate_admin(request, db)
+        point = POINTS_BY_ID.get(payload.point_id)
+        if not point:
+            raise HTTPException(status_code=404, detail="Unknown personalization point")
+        first_name = clean_first_name(payload.first_name)
+        if not first_name:
+            raise HTTPException(status_code=422, detail="Enter a valid first name")
+        template = (await text_doc(f"template_{point['point_id']}"))["text"]
+        if not template or "[FIRST NAME]" not in template:
+            raise HTTPException(status_code=409, detail="This personalized template has no script text")
+        settings = await get_settings()
+        environment = settings["voice_environment"]
+        voice_id = env_voice_id(environment)
+        text = template.replace("[FIRST NAME]", first_name)
+        cache_key = hashlib.sha256(f"{text}|{environment}|{voice_id}|v1".encode()).hexdigest()
+        cached = await db.game_voice_personal_cache.find_one({"cache_key": cache_key}, {"_id": 0, "cache_key": 1})
+        if not cached:
+            try:
+                audio = await eleven_tts(text, voice_id)
+            except Exception:
+                raise HTTPException(status_code=502, detail="Audio generation failed. Check the ElevenLabs key and voice ID.")
+            await db.game_voice_personal_cache.insert_one({
+                "cache_key": cache_key, "environment": environment, "voice_id": voice_id,
+                "text": text, "point_id": point["point_id"], "audio": audio, "created_at": now_iso()})
+        return {"status": "ready", "environment": environment,
+                "url": f"/api/game/voice/audio/personal/{cache_key}", "cache_key": cache_key}
 
     @router.put("/admin/game/voice/assets/{narration_id}")
     async def save_asset_text(narration_id: str, payload: AssetTextPayload, request: Request):

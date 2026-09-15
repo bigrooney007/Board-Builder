@@ -42,3 +42,7 @@ NEXT: Rooney adds ELEVENLABS_API_KEY + voice ID, generates static clips in admin
 - Generated via prod admin API (admin cookie login) exactly 3 TEST clips with TEST voice (…O9Qt): c01 (1.0MB), c05 (1.1MB), c31 (572KB) — all READY, stored in prod Mongo game_voice_audio (environment=test), served at /api/game/voice/audio/{id} (active env=test).
 - Prod env check: ELEVENLABS_API_KEY configured, TEST voice configured, ELEVENLABS_LIVE_VOICE_ID NOT configured in production (name to add before live generation).
 - Added <audio controls> preview player per clip row in admin/VoiceGuidedAdmin.jsx (in preview code; appears on prod after next publish). No other clips, no personalized clips, no live narration generated.
+
+## PERSONALIZED TEST CLIP (Sept 2026)
+- Added admin-only POST /api/admin/game/voice/personal-preview {point_id, first_name} (standard cache architecture, active-env voice) + admin UI: preview generation on template rows, "Personalized Clips (cached)" section with audio players and "Play With Clip 01" chained playback. Redeployed to production.
+- Generated on production (TEST voice): "Welcome to the Board Fundraising Game, Rooney." — cached at game_voice_personal_cache key 325416e4… (~55KB mp3), playable in Admin → Voice Guided Game and reused automatically by gameplay for any player whose sanitized name yields identical text.
