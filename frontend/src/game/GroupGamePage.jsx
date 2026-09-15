@@ -28,7 +28,7 @@ const ResultsSummary = () => {
         {data.status === "completed" && (
           <div style={{ marginTop: 14 }}>
             <Link className="bfg-btn bfg-btn-primary bfg-btn-sm" to="/game/strategy/priorities" data-testid="bfg-gg-results-generate-strategy-btn">
-              Generate Board-Prioritized Strategy
+              Generate Our Complete Fundraising Strategy
             </Link>
             <p className="bfg-note" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
           </div>
@@ -243,17 +243,17 @@ export default function GroupGamePage() {
 
             {status === "completed" && (
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
-                <h2>Your Board Review Is Complete</h2>
+                <h2>Your Board Has Completed The Fundraising Game</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board has reviewed the ideas contributed before Game Night and identified its strongest fundraising priorities.
-                  {" "}The prioritized ideas and additional board ideas have been saved and are ready to be used to build your Board-Prioritized Fundraising Strategy.
+                  Your board reviewed everyone's ideas across the four strategic areas and prioritized the strongest opportunities.
+                  {" "}The next step is turning those decisions into your organization's complete fundraising strategy — including the team, technology, materials, resources and timeline needed to execute it.
                 </p>
-                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>8 of 8 Review Rounds Completed</p>
+                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
-                  <h3 style={{ fontSize: 17 }}>Generate Board-Prioritized Strategy</h3>
+                  <h3 style={{ fontSize: 17 }}>Generate Our Complete Fundraising Strategy</h3>
                   <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
                   <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/strategy/priorities" data-testid="bfg-gg-generate-strategy-btn">
-                    Generate Board-Prioritized Strategy
+                    Generate Our Complete Fundraising Strategy
                   </Link>
                 </div>
                 <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 18 }}>

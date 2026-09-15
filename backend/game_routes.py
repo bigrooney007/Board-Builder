@@ -114,74 +114,66 @@ DEFAULT_CONTENT = {
         "review_heading": "Review Your Fundraising Game",
         "review_supporting": "Make sure everything is correct before saving your Fundraising Game Profile.",
         "save_button": "Save My Fundraising Game Profile",
-        "saved_heading": "Your Fundraising Game Profile Is Ready",
-        "saved_supporting": "You now have the goal and organization information your Board Fundraising Game will be built around.",
-        "next_heading": "Ready To Bring Your Board Into The Process?",
-        "next_supporting": "The next step is inviting your board members to participate in building the fundraising strategy your organization will use to pursue this goal.",
-        "invite_cta": "Start Inviting Board Members To Participate",
+        "saved_heading": "Your Board Fundraising Game Is Ready",
+        "saved_supporting": "You have set your fundraising goal. Now play the game yourself and create the fundraising strategy your organization will use to reach it.",
+        "next_heading": "Play The Game And Create Your Fundraising Strategy",
+        "next_supporting": "Answer eight guided questions across four strategic areas. By the end, you will have created the thinking behind your organization's fundraising strategy.",
+        "invite_cta": "Play My Board Fundraising Game",
     },
     "upgrade_page": {
-        "label": "YOUR BOARD FUNDRAISING GAME",
-        "heading": "To Start Inviting Your Board Members, Unlock The Full Board Fundraising Game",
-        "supporting": "Unlock the complete process your board will use to learn fundraising, build and adopt your fundraising strategy, choose how each member will contribute, and leave equipped to execute.",
+        "label": "YOUR FUNDRAISING STRATEGY IS READY",
+        "heading": "Bring Your Board Into The Game",
+        "supporting": "You have completed your game and created the thinking your fundraising strategy will be built around. Unlock the full Board Fundraising Game to see your strategy, invite your board members and bring everyone's ideas together during your next board meeting.",
+        "completed_areas": [
+            "The exact type of people, businesses and grantors meant to fund your mission or with the greatest reason to fund your organization",
+            "Where to consistently find potential funders",
+            "How to attract their attention",
+            "The exact process to raise money exponentially for your organization",
+        ],
+        "more_people_statement": "The more the people that play the game, the more ideas you have on how to raise money and the more support you have when raising money and building the system that drives the strategy.",
         "goal_label": "Your Fundraising Goal",
         "video_label": "Watch",
         "video_heading": "See What Happens After You Unlock",
         "video_text": "See exactly what happens from the moment you unlock your Board Fundraising Game to the moment your board leaves with an adopted fundraising strategy, clear roles and the tools required to execute.",
-        "process_label": "The Process",
+        "process_label": "What Happens Next",
         "process_heading": "What Happens After You Unlock",
         "process_supporting": "From the moment you unlock your game, the platform leads you and your board through the entire process.",
         "process_steps": [
-            {"heading": "1. You Play The Game First", "paragraphs": [
-                "In about 30 minutes, you learn how a complete fundraising system works and build your own fundraising strategy for your organization.",
-                "You work through who should fund your mission, where to find them, how to attract them, the process to raise money from them, and the people, technology, resources, timeline and budget needed to execute.",
-                "By the end of the game, you understand how your organization can raise money and have built your own fundraising strategy."]},
-            {"heading": "2. Invite Your Board Members", "paragraphs": [
-                "Invite your board members to participate in the Board Fundraising Game during your next board meeting.",
-                "Each board member also receives their own secure Individual Game link before Game Night.",
-                "They learn how fundraising works, contribute their own ideas for reaching your fundraising goal and choose how they want to participate in fundraising and in building your organization's fundraising system.",
-                "By the time your board meets, everyone has already thought seriously about how your organization can raise the money."]},
-            {"heading": "3. See Your Board's Ideas", "paragraphs": [
-                "As each board member completes their Individual Game, their fundraising ideas become part of your Board Fundraising Game.",
-                "You can see their progress and the thinking they contributed before Game Night.",
-                "Instead of beginning your board meeting with a blank page, you begin with ideas from everyone around the table."]},
-            {"heading": "4. Play Together During Your Board Meeting", "paragraphs": [
-                "During your next board meeting, you and your board members play the Group Review Game together for about 20 minutes.",
-                "Everyone reviews the ideas contributed by the board and prioritizes the strongest opportunities.",
-                "The platform uses those collective priorities to create a detailed Board-Prioritized Fundraising Strategy while preserving the other board ideas for future execution."]},
-            {"heading": "5. Review and Adopt Your Fundraising Strategy", "paragraphs": [
-                "You and your board review the fundraising strategy together, make the final decisions and adopt it as your organization's working fundraising strategy.",
-                "You then discuss execution based on the strategy and how each board member said they want to support fundraising and help build the fundraising system."]},
-            {"heading": "6. Everyone Leaves Equipped To Execute", "paragraphs": [
-                "After Game Night, your board members receive the final adopted fundraising strategy and their personal Board Fundraising Portfolio showing how they will support execution.",
-                "Once they approve their portfolio, they receive personalized scripts, templates, checklists and execution materials created around the role they agreed to perform.",
-                "Your organization leaves Game Night with a strategy. Your board members leave knowing how they will help execute it."]},
+            {"heading": "1. See The Fundraising Strategy You Just Created", "paragraphs": [
+                "Your answers are turned into your fundraising strategy around the goal your organization wants to reach.",
+                "You can now see the exact type of people, businesses and grantors meant to fund your mission, where to consistently find them, how to attract their attention and the exact process to raise money exponentially for your organization."]},
+            {"heading": "2. Tell Us What You Already Have", "paragraphs": [
+                "To build the complete fundraising system around your strategy, tell us about your present donor base, the businesses and grantors already giving to your organization, your fundraising team and the resources you already use.",
+                "You will also tell us how you want to be involved in building and managing the fundraising system and how you want to be involved in raising money."]},
+            {"heading": "3. Invite Your Board Members To Play", "paragraphs": [
+                "Each board member receives their own secure Individual Game link.",
+                "They answer the same eight guided questions you answered, learn how fundraising works while playing the game, contribute their ideas and tell us how they want to be involved in building and managing the fundraising system and raising money."]},
+            {"heading": "4. Play Together During Your Next Board Meeting", "paragraphs": [
+                "During your next board meeting, you and your board review the ideas contributed by everyone across the four areas that drive your fundraising strategy.",
+                "Your board prioritizes the strongest ideas together. Because the Group Game is now focused on only four areas, the game itself can be completed in about 10 minutes."]},
+            {"heading": "5. Build The Complete Fundraising System Around The Strategy", "paragraphs": [
+                "The platform uses your fundraising strategy, your organization's present reality, your fundraising goal, your deadline and your board's decisions to identify the people, technology, materials, resources and execution plan needed to execute the strategy.",
+                "Your board does not have to manually design every part of the fundraising system. The system is built around the strategy your board has already agreed on."]},
+            {"heading": "6. Adopt The Strategy And Start Executing", "paragraphs": [
+                "You and your board review the final fundraising strategy, make the final decisions and adopt it as your organization's working fundraising strategy.",
+                "After the meeting, every board member receives the adopted strategy, their personal Board Fundraising Portfolio and the personalized scripts, templates, checklists and execution materials they need to perform the role they agreed to play."]},
         ],
         "repeat_heading": "Ready To Bring Your Board Into The Process?",
         "repeat_supporting": "Unlock your Board Fundraising Game and start preparing your board to build, adopt and execute the fundraising strategy your organization needs.",
-        "repeat_cta": "Unlock My Board Fundraising Game — $497",
+        "repeat_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
         "intro_heading": "Stop Carrying Fundraising Alone",
         "intro_paragraphs": [
             "Your board is less likely to take ownership of fundraising when they had no role in creating the strategy they are being asked to execute.",
             "The Board Fundraising Game brings them into the process. Your board learns how fundraising works, contributes ideas, makes collective decisions, adopts the strategy and chooses how each member will participate in execution.",
         ],
-        "outcomes_heading": "What Your Organization Will Walk Away With",
+        "outcomes_label": "Outcomes",
+        "outcomes_heading": "What Your Organization Walks Away With",
         "outcomes": [
-            {"heading": "1. A Clear Fundraising Strategy and Direction", "paragraphs": [
-                "Your board identifies who your organization should raise money from, where to find them, how to attract them, the process to raise money from them, and the team, technology and materials required to execute.",
-                "You also leave with a clear execution timeline and direction for moving from strategy into action."]},
-            {"heading": "2. A Board That Knows How To Raise Money", "paragraphs": [
-                "Your board members learn how fundraising actually works while building the strategy themselves.",
-                "Instead of simply telling board members to fundraise, you give them the knowledge, strategy and tools to actually do it."]},
-            {"heading": "3. A Fundraising System Your Organization Can Build On", "paragraphs": [
-                "Build a system that consistently helps your organization find potential funders, attract their attention, build relationships, ask for support, follow up and steward them.",
-                "Fundraising becomes an organizational capability instead of one person's responsibility."]},
-            {"heading": "4. A Clear Role For Every Board Member", "paragraphs": [
-                "Every board member chooses how they want to help build your fundraising system and how they want to help raise money.",
-                "Then they receive a personal Board Fundraising Portfolio and the tools they need to execute their role."]},
-            {"heading": "5. A Board That Trusts Your Leadership", "paragraphs": [
-                "Lead your board through a clear process that teaches them, involves them in decisions and equips them to contribute.",
-                "Give them the structure, direction and resources they need to show up at the level they want to show up."]},
+            {"heading": "A Clear Fundraising Strategy", "paragraphs": ["Know the exact type of people, businesses and grantors meant to fund your mission, where to find them, how to attract them and the exact process to raise money exponentially for your organization."]},
+            {"heading": "A Fundraising System Built Around The Strategy", "paragraphs": ["Know the people, technology, materials, resources, timeline and execution structure needed to put the strategy to work."]},
+            {"heading": "More Ideas From Your Entire Board", "paragraphs": ["The more the people that play the game, the more ideas you have on how to raise money and the more support you have when raising money and building the system that drives the strategy."]},
+            {"heading": "A Clear Role For Every Board Member", "paragraphs": ["Every board member chooses how they want to help build and manage the fundraising system and how they want to help raise money."]},
+            {"heading": "The Tools To Execute", "paragraphs": ["Board members receive their Board Fundraising Portfolio and personalized scripts, templates, checklists and execution materials based on the role they agreed to perform."]},
         ],
         "features_heading": "Everything You Need To Run Your Board Fundraising Game",
         "features": [
@@ -205,15 +197,15 @@ DEFAULT_CONTENT = {
         "payment_onetime": "One-time payment",
         "payment_org_line": "One organization. Your entire board participates.",
         "payment_subscription_line": "No subscription.",
-        "payment_includes": "Includes the complete Board Fundraising Game, a clear fundraising strategy, a fun and productive fundraising session with your board, Board Fundraising Portfolios and personalized Execution Toolkits for every board member.",
-        "payment_cta": "Unlock My Board Fundraising Game — $497",
+        "payment_includes": "Includes the complete Board Fundraising Game, a Clear Fundraising Strategy, Fun Filled Moment With Board Members, Board Fundraising Portfolios and personalized Execution Toolkits for each Board Member.",
+        "payment_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
     },
 }
 
 ORG_FIELDS = ["name", "website", "org_type", "location", "mission", "who_served"]
 GOAL_FIELDS = ["amount", "deadline", "purpose", "why_now"]
 USER_FIELDS = ["full_name", "job_title", "email"]
-SITUATION_SECTIONS = ["financial", "activities", "team", "donors", "corporate", "grantors", "technology", "materials", "reflections"]
+SITUATION_SECTIONS = ["financial", "activities", "team", "donors", "corporate", "grantors", "technology", "materials", "reflections", "current_reality", "participation"]
 
 GAME_AREAS = [
     {"key": "final_strategy", "name": "Final Fundraising Strategy", "description": "The strategy your board reviews, refines and adopts."},

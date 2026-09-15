@@ -194,10 +194,10 @@ def create_postgame_router(db) -> APIRouter:
             return "Board Preparing"
         return "Setting Up"
 
-    async def game_status_for(member_id: str, invitation_status: str) -> str:
+    async def game_status_for(member_id: str, invitation_status: str, total: int = 0) -> str:
         done = await db.game_section_responses.count_documents(
             {"board_member_id": member_id, "completed": True})
-        if done >= TOTAL_SECTIONS:
+        if done >= (total or TOTAL_SECTIONS):
             return "Game Completed"
         if done > 0:
             return "Game In Progress"
@@ -231,7 +231,7 @@ def create_postgame_router(db) -> APIRouter:
                 sent_count += 1
             recipients.append({
                 "member_id": record["member_id"], "full_name": record["full_name"], "email": record["email"],
-                "game_status": await game_status_for(record["member_id"], record.get("invitation_status", "")),
+                "game_status": await game_status_for(record["member_id"], record.get("invitation_status", ""), record.get("total_sections") or 0),
                 "group_joined": record["member_id"] in joined,
                 "delivery": {
                     "status": delivery.get("status", "not_sent"),

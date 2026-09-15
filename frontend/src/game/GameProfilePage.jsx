@@ -51,13 +51,16 @@ export default function GameProfilePage() {
         return;
       }
       const storedGoal = sessionStorage.getItem("bfgGoal") || "";
-      setOrg((current) => ({ ...current, ...(profile?.organization || {}) }));
+      setOrg((current) => ({
+        ...current, ...(profile?.organization || {}),
+        name: profile?.organization?.name || sessionStorage.getItem("bfgOrg") || "",
+      }));
       setGoal((current) => ({
         ...current, ...(profile?.goal || {}),
         amount: profile?.goal?.amount ? Number(profile.goal.amount).toLocaleString("en-US") : (storedGoal ? Number(storedGoal).toLocaleString("en-US") : ""),
       }));
       setUser((current) => ({
-        full_name: profile?.primary_user?.full_name || `${member.first_name} ${member.last_name}`.trim(),
+        full_name: profile?.primary_user?.full_name || sessionStorage.getItem("bfgName") || `${member.first_name} ${member.last_name}`.trim(),
         job_title: profile?.primary_user?.job_title || "",
         email: member.email,
         ...current.full_name ? current : {},
@@ -113,6 +116,17 @@ export default function GameProfilePage() {
 
   const pf = content.profile_flow || {};
 
+  const playGame = async () => {
+    setError(""); setBusy(true);
+    try {
+      const response = await memberApi.post("/game/self-play");
+      navigate(`/play/${response.data.token}`);
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not start your game. Please try again.");
+      setBusy(false);
+    }
+  };
+
   if (saved) {
     return (
       <BfgShell>
@@ -125,9 +139,12 @@ export default function GameProfilePage() {
           </div>
           <h2 style={{ marginTop: 32 }}>{pf.next_heading}</h2>
           <p style={{ marginTop: 10, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>{pf.next_supporting}</p>
+          {error && <p className="bfg-error" data-testid="bfg-profile-saved-error">{error}</p>}
           <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
-            <button className="bfg-btn bfg-btn-primary" onClick={() => navigate("/game/upgrade")} data-testid="bfg-invite-board-cta">{pf.invite_cta}</button>
-            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => { setSaved(false); setStep(0); }} data-testid="bfg-edit-my-profile-btn">Edit My Profile</button>
+            <button className="bfg-btn bfg-btn-primary" onClick={playGame} disabled={busy} data-testid="bfg-play-my-game-cta">
+              {busy ? "Starting your game…" : pf.invite_cta}
+            </button>
+            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => { setSaved(false); setStep(0); }} data-testid="bfg-edit-my-profile-btn">Edit My Game Profile</button>
           </div>
         </main>
       </BfgShell>

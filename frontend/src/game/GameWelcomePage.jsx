@@ -75,7 +75,7 @@ export default function GameWelcomePage() {
               <button className="bfg-btn bfg-btn-primary" onClick={() => navigate("/game/setup")} data-testid="bfg-complete-setup-btn">
                 Complete My Game Setup
               </button>
-              <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: tell us about your current fundraising situation so your game fits your organization.</p>
+              <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: review the fundraising strategy you created and tell us what your organization already has.</p>
             </div>
           </div>
         )}

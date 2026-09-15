@@ -14,6 +14,7 @@ export default function GameHomePage() {
   const content = useGameContent();
   const video = useFlowVideo("game_homepage");
   const [goal, setGoal] = useState("");
+  const [lead, setLead] = useState({ name: "", email: "", org: "" });
 
   useEffect(() => { document.title = "The Board Fundraising Game | Nonprofit Board Builder"; }, []);
 
@@ -22,6 +23,9 @@ export default function GameHomePage() {
   const startGame = () => {
     const digits = String(goal).replace(/[^0-9]/g, "");
     if (digits) sessionStorage.setItem("bfgGoal", digits);
+    if (lead.name.trim()) sessionStorage.setItem("bfgName", lead.name.trim());
+    if (lead.email.trim()) sessionStorage.setItem("bfgEmail", lead.email.trim());
+    if (lead.org.trim()) sessionStorage.setItem("bfgOrg", lead.org.trim());
     navigate(member ? "/game/start" : "/game/signup");
   };
 
@@ -75,6 +79,11 @@ export default function GameHomePage() {
                   {money(preset)}
                 </button>
               ))}
+            </div>
+            <div className="bfg-goal-lead">
+              <input placeholder="Your name" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="bfg-lead-name" />
+              <input type="email" placeholder="Email" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} data-testid="bfg-lead-email" />
+              <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
             </div>
             <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-hero-cta">{content.cta_label}</button>
           </div>

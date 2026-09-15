@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from ai_service import parse_json_response
 from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
-from group_game_routes import ROUND_DEFS, extract_ideas
+from group_game_routes import AREA_DEFS, ROUND_DEFS, area_ideas
 
 GAME_ENTITLEMENT = "board_fundraising_game"
 MODES = {"working": "working", "board_prioritized": "board_prioritized_draft"}
@@ -26,6 +26,7 @@ When strategy_mode is board_prioritized, Board Priorities represent the stronges
 When strategy_mode is working, create the best working strategy possible from all information currently available. Do not describe any idea as board-approved, board-prioritised or adopted unless the supplied data explicitly establishes that status.
 Do not invent facts, funders, organisations, relationships, commitments, results or financial information.
 Where strategic information is missing, you may provide a concise recommendation, but clearly identify it as a recommendation rather than something supplied by the organisation or board.
+The board supplies only four human decisions: the exact type of people, businesses and grantors meant to fund the mission, where to consistently find them, how to attract their attention, and the exact process to raise money. YOU must derive the fundraising team, technology, materials, resources, execution timeline and any budget guidance needed to execute those decisions — grounded in the organisation's current reality (current donors, business supporters, grantors, team, tools and resources) and the stated participation choices and time commitments of the people involved. Mark every derived item with "source": "recommendation".
 Write for nonprofit leaders and board members. Use clear, direct, execution-ready language.
 Return only the required structured strategy output."""
 
@@ -124,13 +125,17 @@ def create_strategy_router(db) -> APIRouter:
             {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1}).to_list(200)
         member_ids = [record["member_id"] for record in members]
         collected = {}
-        for definition in ROUND_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition["section_key"])
+        for definition in AREA_DEFS:
+            section_id = SECTION_ID_BY_KEY.get(definition["key"])
             responses = await db.game_section_responses.find(
                 {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id}, {"_id": 0}).to_list(300)
             ideas = []
             for response in responses:
-                ideas.extend(extract_ideas(response, definition["section_key"]))
+                if definition["key"] == "who_should_fund":
+                    for audience_type, label in (("individual", "Individual"), ("business", "Business"), ("grantor", "Grantor")):
+                        ideas.extend(f"{label}: {text}" for text in area_ideas(response, definition["key"], audience_type))
+                else:
+                    ideas.extend(area_ideas(response, definition["key"]))
             seen = set()
             unique = []
             for idea in ideas:
@@ -138,8 +143,24 @@ def create_strategy_router(db) -> APIRouter:
                 if key and key not in seen:
                     seen.add(key)
                     unique.append(str(idea).strip()[:400])
-            collected[definition["section_key"]] = unique
+            collected[definition["key"]] = unique
         return collected
+
+    async def participation_choices(user_id: str) -> list:
+        rows = await db.game_section_responses.find(
+            {"user_id": user_id, "section_id": 5, "completed": True}, {"_id": 0, "extras": 1}).to_list(300)
+        choices = []
+        for row in rows:
+            extras = row.get("extras") or {}
+            if extras.get("build") or extras.get("raise") or extras.get("time"):
+                choices.append({
+                    "wants_to_help_build_and_manage_the_fundraising_system": extras.get("build", []),
+                    "build_other": extras.get("build_other", ""),
+                    "wants_to_help_raise_money": extras.get("raise", []),
+                    "raise_other": extras.get("raise_other", ""),
+                    "monthly_time_commitment": extras.get("time", ""),
+                })
+        return choices
 
     async def assemble_context(user_id: str, mode: str) -> tuple:
         profile = await get_profile(user_id)
@@ -157,6 +178,7 @@ def create_strategy_router(db) -> APIRouter:
             },
             "current_fundraising_situation": situation.get("sections", {}),
             "board_member_submitted_ideas_by_strategy_area": board_ideas,
+            "participation_choices_of_people_playing_the_game": await participation_choices(user_id),
         }
         group_session_id = ""
         if mode == "board_prioritized":

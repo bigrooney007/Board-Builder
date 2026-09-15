@@ -11,6 +11,7 @@ from pydantic import BaseModel, EmailStr, Field
 from auth_service import authenticate_admin
 from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import EDITABLE_FIELDS, merged_sections
+from game_content_v3 import GAME_V3
 
 GAME_ENTITLEMENT = "board_fundraising_game"
 REMINDER_HOURS = 48
@@ -112,11 +113,17 @@ def create_game_night_router(db) -> APIRouter:
         doc = await db.marketing_settings.find_one({"key": "game_individual_content"}, {"_id": 0}) or {}
         return merged_sections(doc.get("sections") or {})
 
+    async def merged_v3() -> dict:
+        doc = await db.marketing_settings.find_one({"key": "game_v3_content"}, {"_id": 0}) or {}
+        stored = doc.get("content") if isinstance(doc.get("content"), dict) else {}
+        return {**GAME_V3, **{key: value for key, value in stored.items() if key in GAME_V3}}
+
     async def member_row(record: dict) -> dict:
+        total = record.get("total_sections") or TOTAL_SECTIONS
         completed = await db.game_section_responses.count_documents(
             {"board_member_id": record["member_id"], "completed": True})
         started = completed > 0 or await db.game_section_responses.count_documents({"board_member_id": record["member_id"]}) > 0
-        if completed >= TOTAL_SECTIONS:
+        if completed >= total:
             game_status = "Game Completed"
         elif completed > 0:
             game_status = "Game In Progress"
@@ -135,7 +142,7 @@ def create_game_night_router(db) -> APIRouter:
             "invitation_status": record.get("invitation_status", "not_invited"),
             "invited_at": record.get("invited_at", ""), "last_reminder_at": record.get("last_reminder_at", ""),
             "reminder_available_at": reminder_available_at,
-            "sections_completed": completed, "total_sections": TOTAL_SECTIONS,
+            "sections_completed": completed, "total_sections": total,
             "game_started": started, "status": game_status,
         }
 
@@ -185,11 +192,36 @@ def create_game_night_router(db) -> APIRouter:
             "token": secrets.token_urlsafe(24),
             "full_name": payload.full_name.strip(), "email": str(payload.email).lower(),
             "board_title": payload.board_title.strip(),
+            "game_version": 3, "total_sections": 5,
             "invitation_status": "not_invited", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
         }
         await db.game_board_members.insert_one(record.copy())
         return {"board_member": await member_row(record)}
+
+    @router.post("/game/self-play", status_code=201)
+    async def self_play(request: Request):
+        member = await authenticate_member(request, db)
+        profile = await db.game_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        if not profile.get("profile_completed"):
+            raise HTTPException(status_code=409, detail="Save your Fundraising Game Profile before playing")
+        existing = await db.game_board_members.find_one(
+            {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}}, {"_id": 0})
+        if existing:
+            return {"token": existing["token"], "member_id": existing["member_id"]}
+        primary = profile.get("primary_user") or {}
+        now = now_iso()
+        record = {
+            "member_id": new_uuid(), "user_id": member["user_id"],
+            "token": secrets.token_urlsafe(24),
+            "full_name": primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip() or "Primary User",
+            "email": member["email"], "board_title": primary.get("job_title", ""),
+            "is_primary": True, "game_version": 3, "total_sections": 4,
+            "invitation_status": "self", "invited_at": "", "last_reminder_at": "",
+            "removed": False, "created_at": now, "updated_at": now,
+        }
+        await db.game_board_members.insert_one(record.copy())
+        return {"token": record["token"], "member_id": record["member_id"]}
 
     @router.put("/game/board-members/{member_id}")
     async def edit_board_member(member_id: str, payload: BoardMemberCreate, request: Request):
@@ -353,7 +385,9 @@ def create_game_night_router(db) -> APIRouter:
         return f"{hours}h {minutes}m"
 
     async def is_completed(member_id: str) -> bool:
-        return await db.game_section_responses.count_documents({"board_member_id": member_id, "completed": True}) >= TOTAL_SECTIONS
+        record = await db.game_board_members.find_one({"member_id": member_id}, {"_id": 0, "total_sections": 1}) or {}
+        total = record.get("total_sections") or TOTAL_SECTIONS
+        return await db.game_section_responses.count_documents({"board_member_id": member_id, "completed": True}) >= total
 
     @router.post("/game/board-members/{member_id}/remind")
     async def remind_board_member(member_id: str, payload: SendPayload, request: Request):
@@ -469,7 +503,9 @@ def create_game_night_router(db) -> APIRouter:
             {"board_member_id": record["member_id"]},
             {"_id": 0, "section_id": 1, "completed": 1, "first_move_locked": 1}).to_list(20)
         organization = profile.get("organization") or {}
+        org_member = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0, "entitlements": 1}) or {}
         return {
+            "paid": GAME_ENTITLEMENT in org_member.get("entitlements", []),
             "first_name": record["full_name"].split(" ")[0],
             "organization_name": organization.get("name", ""),
             "goal_display": fmt_goal(profile),
@@ -481,6 +517,12 @@ def create_game_night_router(db) -> APIRouter:
                 "note": night.get("note", ""),
             } if night else None,
             "sections": await get_sections_content(),
+            "v3": await merged_v3(),
+            "member": {
+                "game_version": record.get("game_version") or 2,
+                "is_primary": bool(record.get("is_primary")),
+                "total_sections": record.get("total_sections") or TOTAL_SECTIONS,
+            },
             "situation_context": {
                 "technology": context_lines("technology", ["tools", "tech_working"]),
                 "team": context_lines("team", ["who_handles", "board_involvement"]),
@@ -537,7 +579,7 @@ def create_game_night_router(db) -> APIRouter:
         completed_count = await db.game_section_responses.count_documents(
             {"board_member_id": record["member_id"], "completed": True})
         member_sets = {"updated_at": now}
-        if completed_count >= TOTAL_SECTIONS:
+        if completed_count >= (record.get("total_sections") or TOTAL_SECTIONS):
             member_sets["completed_at"] = now
         await db.game_board_members.update_one({"member_id": record["member_id"]}, {"$set": member_sets})
         return completed_count
@@ -552,6 +594,19 @@ def create_game_night_router(db) -> APIRouter:
     async def complete_play_section(token: str, section_id: int, payload: SectionSave):
         record = await playing_member(token)
         completed_count = await save_section(record, section_id, payload, complete=True)
-        return {"status": "completed", "sections_completed": completed_count, "total_sections": TOTAL_SECTIONS}
+        return {"status": "completed", "sections_completed": completed_count, "total_sections": record.get("total_sections") or TOTAL_SECTIONS}
+
+    @router.get("/admin/game/v3-content")
+    async def admin_read_v3(request: Request):
+        await authenticate_admin(request, db)
+        return {"content": await merged_v3()}
+
+    @router.put("/admin/game/v3-content")
+    async def admin_save_v3(payload: dict, request: Request):
+        await authenticate_admin(request, db)
+        content = {key: value for key, value in (payload or {}).items() if key in GAME_V3}
+        await db.marketing_settings.update_one(
+            {"key": "game_v3_content"}, {"$set": {"content": content, "updated_at": now_iso()}}, upsert=True)
+        return {"content": await merged_v3()}
 
     return router

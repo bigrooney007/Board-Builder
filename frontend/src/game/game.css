@@ -645,3 +645,9 @@
   .bfg-flow, .bfg-dash { padding-left: 20px; padding-right: 20px; }
   .bfg-card, .bfg-panel { padding: 20px; }
 }
+
+/* V3: homepage lead capture + AI fine-tuning */
+.bfg-goal-lead { display: grid; gap: 10px; margin: 14px 0 16px; text-align: left; }
+.bfg-goal-lead input { width: 100%; padding: 11px 14px; border: 1px solid #d1d5db; border-radius: 10px; background: #fff; color: #111827; font-size: 15px; }
+.bfg-goal-lead input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+.bfg-ft-card { border-left: 3px solid #4f46e5; }

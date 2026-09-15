@@ -123,11 +123,11 @@ def create_host_tools_router(db) -> APIRouter:
             {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": "invited"})
         completed = 0
         records = await db.game_board_members.find(
-            {"user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0, "member_id": 1}).to_list(200)
+            {"user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0, "member_id": 1, "total_sections": 1}).to_list(200)
         for record in records:
             done = await db.game_section_responses.count_documents(
                 {"board_member_id": record["member_id"], "completed": True})
-            if done >= TOTAL_SECTIONS:
+            if done >= (record.get("total_sections") or TOTAL_SECTIONS):
                 completed += 1
         member_first_name = ""
         if member_id:

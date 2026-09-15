@@ -10,27 +10,37 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 
 GAME_ENTITLEMENT = "board_fundraising_game"
-TOTAL_ROUNDS = 8
+TOTAL_ROUNDS = 6
 
 ROUND_DEFS = [
-    {"round_number": 1, "section_key": "who_should_fund", "title": "Round 1: Who Should Fund Us?",
-     "instruction": "Your board contributed the following ideas about who {organisation} could raise money from. Review every idea and rank the ones you believe should be your organisation's highest fundraising priorities."},
-    {"round_number": 2, "section_key": "where_to_find", "title": "Round 2: Where Can We Find Them?",
-     "instruction": "Your board contributed ideas about where your organisation can find potential funders. Rank the places and channels you believe should receive the greatest attention."},
-    {"round_number": 3, "section_key": "attract_attention", "title": "Round 3: How Will We Attract Them?",
-     "instruction": "Your board contributed ideas about how {organisation} can become visible, relevant and attractive to potential funders. Rank the approaches you believe should be prioritised."},
-    {"round_number": 4, "section_key": "fundraising_process", "title": "Round 4: What Fundraising Process Should We Use?",
-     "instruction": "Your board contributed ideas about how your organisation should move potential funders from first contact to financial support and continued relationship. Rank the ideas you believe are most important to the fundraising process."},
-    {"round_number": 5, "section_key": "technology", "title": "Round 5: What Technology Do We Need?",
-     "instruction": "Your board contributed ideas about the technology needed to execute fundraising effectively and at scale. Rank the technology priorities you believe the organisation needs most."},
-    {"round_number": 6, "section_key": "team", "title": "Round 6: Who Do We Need On The Fundraising Team?",
-     "instruction": "Your board contributed ideas about the people and roles required to execute the fundraising strategy. Rank the roles you believe are most important to building the fundraising team."},
-    {"round_number": 7, "section_key": "materials", "title": "Round 7: What Materials And Tools Do We Need?",
-     "instruction": "Your board contributed ideas about the materials and tools needed to execute fundraising. Rank the ones you believe should be prioritised."},
-    {"round_number": 8, "section_key": "timeline", "title": "Round 8: What Should Our Execution Timeline Prioritise?",
-     "instruction": "Your board contributed ideas about what needs to happen as the fundraising strategy is executed. Rank the actions you believe should receive the highest priority."},
+    {"round_number": 1, "section_key": "who_should_fund_individuals", "source_key": "who_should_fund", "audience_type": "individual",
+     "title": "Strategic Area 1A: The Exact Individuals Meant To Fund Our Mission",
+     "instruction": "Your board identified the exact types of people with the greatest reason to fund {organization}'s mission. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
+    {"round_number": 2, "section_key": "who_should_fund_businesses", "source_key": "who_should_fund", "audience_type": "business",
+     "title": "Strategic Area 1B: The Exact Businesses Meant To Fund Our Mission",
+     "instruction": "Your board identified the exact types of businesses with a real reason to see {organization}'s mission succeed. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
+    {"round_number": 3, "section_key": "who_should_fund_grantors", "source_key": "who_should_fund", "audience_type": "grantor",
+     "title": "Strategic Area 1C: The Exact Grantors Meant To Fund Our Mission",
+     "instruction": "Your board identified the grantors whose funding focus connects directly with {organization}'s mission. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
+    {"round_number": 4, "section_key": "where_to_find", "source_key": "where_to_find",
+     "title": "Strategic Area 2: Where We Can Consistently Find Them",
+     "instruction": "Your board identified where the funders you prioritized can be consistently found. Each idea keeps the audience it belongs to. Rank the places and channels you believe should receive the greatest attention."},
+    {"round_number": 5, "section_key": "attract_attention", "source_key": "attract_attention",
+     "title": "Strategic Area 3: How We Will Attract Their Attention",
+     "instruction": "Your board identified what {organization} can offer to attract each audience's attention. Each idea keeps the audience it belongs to. Rank the approaches you believe should be prioritized."},
+    {"round_number": 6, "section_key": "fundraising_process", "source_key": "fundraising_process",
+     "title": "Strategic Area 4: The Exact Process We Will Use To Raise Money",
+     "instruction": "Your board contributed ideas for moving potential funders through KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD. Rank the ideas you believe are most important to your organization's fundraising process."},
 ]
 
+AREA_DEFS = [
+    {"key": "who_should_fund", "title": "The Exact Type Of People, Businesses and Grantors Meant To Fund The Mission"},
+    {"key": "where_to_find", "title": "Where To Consistently Find Them"},
+    {"key": "attract_attention", "title": "How To Attract Their Attention"},
+    {"key": "fundraising_process", "title": "The Exact Process To Raise Money Exponentially"},
+]
+
+AUDIENCE_BUCKETS = {"individual": "people", "business": "businesses", "grantor": "grantors"}
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
 STAGE_LABELS = {section["key"]: {stage["key"]: stage["label"] for stage in section.get("stages", [])}
                 for section in GAME_SECTION_DEFAULTS if section.get("stages")}
@@ -92,6 +102,24 @@ def extract_ideas(response: dict, section_key: str) -> list:
     return ideas
 
 
+def area_ideas(response: dict, source_key: str, audience_type: str = "") -> list:
+    """Final APPROVED fine-tuned entries feed the Group Game; deterministic fallbacks for records without fine-tuning."""
+    approved = [entry for entry in (response.get("approved_entries") or [])
+                if isinstance(entry, dict) and str(entry.get("text", "")).strip()]
+    if approved:
+        if audience_type:
+            return [str(entry["text"]).strip() for entry in approved if entry.get("audience_type") == audience_type]
+        return [str(entry["text"]).strip() for entry in approved]
+    extras = response.get("extras") or {}
+    if audience_type:
+        bucket = AUDIENCE_BUCKETS[audience_type]
+        items = [str(item).strip() for item in (extras.get(bucket) or []) if str(item).strip()]
+        if items or any(extras.get(name) for name in AUDIENCE_BUCKETS.values()):
+            return items
+        return extract_ideas(response, source_key) if audience_type == "individual" else []
+    return extract_ideas(response, source_key)
+
+
 class JoinPayload(BaseModel):
     slot_id: str = Field(min_length=1)
     device_id: str = Field(min_length=1, max_length=120)
@@ -127,7 +155,7 @@ def create_group_game_router(db) -> APIRouter:
         return await db.game_board_members.find(
             {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0}).sort("created_at", 1).to_list(200)
 
-    async def build_rounds_and_ideas(session_id: str, user_id: str, organisation: str):
+    async def build_rounds_and_ideas(session_id: str, user_id: str, organization: str):
         await db.group_game_rounds.delete_many({"session_id": session_id})
         await db.group_game_ideas.delete_many({"session_id": session_id})
         await db.group_game_rankings.delete_many({"session_id": session_id})
@@ -136,7 +164,7 @@ def create_group_game_router(db) -> APIRouter:
         member_names = {record["member_id"]: record["full_name"].split(" ")[0] for record in members}
         member_ids = list(member_names.keys())
         for definition in ROUND_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition["section_key"])
+            section_id = SECTION_ID_BY_KEY.get(definition["source_key"])
             responses = await db.game_section_responses.find(
                 {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id},
                 {"_id": 0}).to_list(300)
@@ -144,7 +172,7 @@ def create_group_game_router(db) -> APIRouter:
             order = 0
             for response in responses:
                 name = member_names.get(response["board_member_id"], "Board Member")
-                for raw in extract_ideas(response, definition["section_key"]):
+                for raw in area_ideas(response, definition["source_key"], definition.get("audience_type", "")):
                     text = str(raw).strip()[:400]
                     key = normalise(text)
                     if not key:
@@ -166,7 +194,7 @@ def create_group_game_router(db) -> APIRouter:
                 "round_id": new_uuid(), "session_id": session_id,
                 "round_number": definition["round_number"], "section_key": definition["section_key"],
                 "title": definition["title"],
-                "instruction": definition["instruction"].replace("{organisation}", organisation),
+                "instruction": definition["instruction"].replace("{organization}", organization),
                 "status": "waiting", "required_rank": required_rank_for(len(ideas)),
                 "idea_count": len(ideas), "started_at": "", "closed_at": "", "created_at": now_iso(),
             })
@@ -203,11 +231,11 @@ def create_group_game_router(db) -> APIRouter:
         completed = 0
         in_progress = 0
         ideas_ready = 0
-        strategy_ids = [SECTION_ID_BY_KEY[definition["section_key"]] for definition in ROUND_DEFS]
+        strategy_ids = list({SECTION_ID_BY_KEY[definition["source_key"]] for definition in ROUND_DEFS})
         for record in members:
             done = await db.game_section_responses.count_documents(
                 {"board_member_id": record["member_id"], "completed": True})
-            if done >= 10:
+            if done >= (record.get("total_sections") or 10):
                 completed += 1
             elif done > 0:
                 in_progress += 1
@@ -236,12 +264,12 @@ def create_group_game_router(db) -> APIRouter:
     async def prepare_group_game(request: Request):
         member = await game_member(request)
         profile = await get_profile(member["user_id"])
-        organisation = (profile.get("organization") or {}).get("name", "your organisation")
+        organization = (profile.get("organization") or {}).get("name", "your organization")
         session = await active_session(member["user_id"])
         if session and session["status"] == "in_progress":
             return {"session": session}
         if session and session["status"] in {"prepared", "waiting"}:
-            await build_rounds_and_ideas(session["session_id"], member["user_id"], organisation)
+            await build_rounds_and_ideas(session["session_id"], member["user_id"], organization)
             await db.group_game_sessions.update_one(
                 {"session_id": session["session_id"]}, {"$set": {"updated_at": now_iso()}})
             return {"session": await active_session(member["user_id"])}
@@ -255,7 +283,7 @@ def create_group_game_router(db) -> APIRouter:
             "created_at": now_iso(), "started_at": "", "completed_at": "", "updated_at": now_iso(),
         }
         await db.group_game_sessions.insert_one(record.copy())
-        await build_rounds_and_ideas(session_id, member["user_id"], organisation)
+        await build_rounds_and_ideas(session_id, member["user_id"], organization)
         return {"session": record}
 
     @router.get("/game/group/session")

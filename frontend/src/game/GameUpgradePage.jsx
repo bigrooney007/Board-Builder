@@ -3,14 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { useFlowVideo } from "@/hooks/useFlowVideos";
-import { BfgShell, GameVideo, formatDate, money, useGameContent } from "./gameShared";
+import { BfgShell, formatDate, money, useGameContent } from "./gameShared";
 
 export default function GameUpgradePage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
   const content = useGameContent();
-  const video = useFlowVideo("game_homepage");
   const [profile, setProfile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -72,14 +70,22 @@ export default function GameUpgradePage() {
           {profile.goal?.deadline && <span>By {formatDate(profile.goal.deadline)}</span>}
         </div>
 
-        <PaymentCard idSuffix="top" />
-
-        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-video">
-          <p className="bfg-eyebrow">{up.video_label}</p>
-          <h2>{up.video_heading}</h2>
-          <p style={{ marginTop: 12, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }}>{up.video_text}</p>
-          <GameVideo video={video} testId="bfg-upgrade-video-player" />
+        <section style={{ marginTop: 34 }} data-testid="bfg-upgrade-completed-areas">
+          <h2 style={{ fontSize: 22 }}>You Just Identified:</h2>
+          <div style={{ maxWidth: 640, margin: "0 auto" }}>
+            {(up.completed_areas || []).map((area, index) => (
+              <p key={index} style={{ marginTop: 12, textAlign: "left", display: "flex", gap: 10 }} data-testid={`bfg-upgrade-area-${index + 1}`}>
+                <CheckCircle2 size={20} style={{ color: "#059669", flexShrink: 0, marginTop: 2 }} />
+                <span>{area}</span>
+              </p>
+            ))}
+          </div>
+          <p style={{ marginTop: 20, fontWeight: 600, maxWidth: 680, marginLeft: "auto", marginRight: "auto" }} data-testid="bfg-upgrade-more-people">
+            {up.more_people_statement}
+          </p>
         </section>
+
+        <PaymentCard idSuffix="top" />
 
         <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-process">
           <p className="bfg-eyebrow">{up.process_label}</p>
@@ -93,22 +99,8 @@ export default function GameUpgradePage() {
           ))}
         </section>
 
-        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-repeat-cta">
-          <h2>{up.repeat_heading}</h2>
-          <p style={{ marginTop: 12, maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>{up.repeat_supporting}</p>
-          <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} onClick={unlock} disabled={busy} data-testid="bfg-upgrade-repeat-btn">
-            {busy ? "Preparing secure checkout…" : up.repeat_cta}
-          </button>
-        </section>
-
-        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-intro">
-          <h2>{up.intro_heading}</h2>
-          {(up.intro_paragraphs || []).map((paragraph, index) => (
-            <p key={index} style={{ marginTop: 14, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>{paragraph}</p>
-          ))}
-        </section>
-
         <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-outcomes">
+          <p className="bfg-eyebrow">{up.outcomes_label}</p>
           <h2>{up.outcomes_heading}</h2>
           {(up.outcomes || []).map((outcome, index) => (
             <div className="bfg-card" key={index} style={{ marginTop: 16, textAlign: "center" }} data-testid={`bfg-upgrade-outcome-${index + 1}`}>
@@ -118,33 +110,14 @@ export default function GameUpgradePage() {
           ))}
         </section>
 
-        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-features">
-          <h2>{up.features_heading}</h2>
-          <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", marginTop: 18 }}>
-            {(up.features || []).map((feature, index) => (
-              <div className="bfg-card" key={index} style={{ textAlign: "center", padding: 22 }} data-testid={`bfg-upgrade-feature-${index + 1}`}>
-                <CheckCircle2 size={20} style={{ color: "#059669" }} />
-                <h4 style={{ marginTop: 8, fontSize: 16 }}>{feature.heading}</h4>
-                <p style={{ marginTop: 8, fontSize: 14 }}>{feature.description}</p>
-              </div>
-            ))}
-          </div>
+        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-repeat-cta">
+          <h2>{up.repeat_heading}</h2>
+          <p style={{ marginTop: 12, maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>{up.repeat_supporting}</p>
+          <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} onClick={unlock} disabled={busy} data-testid="bfg-upgrade-repeat-btn">
+            {busy ? "Preparing secure checkout…" : up.repeat_cta}
+          </button>
         </section>
 
-        <section style={{ marginTop: 44 }} data-testid="bfg-upgrade-steps">
-          <h2>{up.steps_heading}</h2>
-          <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginTop: 18 }}>
-            {(up.steps || []).map((step, index) => (
-              <div className="bfg-card" key={index} style={{ textAlign: "center", padding: 22 }} data-testid={`bfg-upgrade-step-${index + 1}`}>
-                <span className="bfg-stage-number">{index + 1}</span>
-                <h4 style={{ fontSize: 16 }}>{step.heading}</h4>
-                <p style={{ marginTop: 8, fontSize: 14 }}>{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <PaymentCard idSuffix="bottom" />
         {error && <p className="bfg-error" data-testid="bfg-upgrade-error">{error}</p>}
       </main>
     </BfgShell>

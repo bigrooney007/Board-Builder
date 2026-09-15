@@ -1,242 +1,261 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { BfgShell, GameProgress } from "./gameShared";
+import { BfgShell } from "./gameShared";
+import { FineTuneReview } from "./FineTuneReview";
 
-const ACTIVITY_OPTIONS = ["Individual giving", "Major donors", "Recurring donors", "Corporate sponsorships", "Corporate partnerships", "Grants", "Foundations", "Government funding", "Events", "Online fundraising", "Community fundraising", "Other"];
-const TECH_OPTIONS = ["CRM", "Donor database", "Email marketing system", "Grant tracking", "Prospect research", "Online donation platform", "Spreadsheets", "No formal system", "Other"];
-const MATERIAL_OPTIONS = ["Case for support", "Sponsorship proposal", "Grant materials", "Impact report", "Fundraising emails", "Donation page", "Corporate partnership materials", "Board fundraising resources", "Donor stewardship materials", "Other"];
-const YES_NO = ["Yes", "No", "Not sure"];
-
-const STEPS = [
-  {
-    key: "financial", title: "Current Financial & Fundraising Situation",
-    intro: "Help us understand where your fundraising stands today.",
-    fields: [
-      { key: "annual_budget", label: "Current annual budget / revenue (if you know it)" },
-      { key: "raised_last_12m", label: "Approximately how much did you raise through fundraising in the previous 12 months?" },
-      { key: "major_income_sources", label: "What are the major sources of your organization's income?", textarea: true },
-    ],
-  },
-  {
-    key: "activities", title: "Existing Fundraising Activities",
-    intro: "How are you currently raising money?",
-    fields: [
-      { key: "methods", label: "Select everything you currently do", checks: ACTIVITY_OPTIONS },
-      { key: "methods_detail", label: "Briefly explain how the activities you selected work today", textarea: true },
-      { key: "working_well", label: "What is presently working well?", textarea: true },
-      { key: "not_working", label: "What is not working as well as you need it to?", textarea: true },
-    ],
-  },
-  {
-    key: "team", title: "Existing Fundraising Team",
-    intro: "Who is doing the fundraising work right now?",
-    fields: [
-      { key: "has_team", label: "Do you currently have a fundraising team?", options: YES_NO },
-      { key: "who_handles", label: "Who currently handles fundraising?", textarea: true },
-      { key: "has_staff", label: "Do you have fundraising staff?", options: YES_NO },
-      { key: "uses_consultants", label: "Do you use consultants?", options: YES_NO },
-      { key: "board_involvement", label: "How involved is the board currently?", textarea: true },
-      { key: "board_member_count", label: "Approximate number of board members" },
-    ],
-  },
-  {
-    key: "donors", title: "Existing Individual Donors",
-    intro: "Describe your existing donor base.",
-    fields: [
-      { key: "donor_types", label: "What types of individuals currently give?", textarea: true },
-      { key: "why_they_give", label: "Why do you believe these people give?", textarea: true },
-      { key: "give_toward", label: "What do they usually give toward?", textarea: true },
-      { key: "group_description", label: "How would you describe these donors as a group?", textarea: true },
-      { key: "typical_size", label: "Typical donation size (if known)" },
-      { key: "recurring", label: "Do you have recurring donors?", options: YES_NO },
-      { key: "major", label: "Do you have major donors?", options: YES_NO },
-      { key: "stewardship", label: "How do you currently communicate with and steward donors?", textarea: true },
-    ],
-  },
-  {
-    key: "corporate", title: "Existing Corporate Sponsors & Partners",
-    intro: "Describe your existing business supporters.",
-    fields: [
-      { key: "business_types", label: "What types of businesses currently support you?", textarea: true },
-      { key: "why_support", label: "Why do those businesses support you?", textarea: true },
-      { key: "what_support", label: "What do those businesses support?", textarea: true },
-      { key: "group_description", label: "How would you describe those businesses as a group?", textarea: true },
-      { key: "support_type", label: "What type of support do they provide?", textarea: true },
-      { key: "how_connected", label: "How did your organization originally connect with them?", textarea: true },
-      { key: "typical_level", label: "Typical contribution level (if known)" },
-    ],
-  },
-  {
-    key: "grantors", title: "Existing Grantors",
-    intro: "Describe your existing grantor base.",
-    fields: [
-      { key: "grantmaker_types", label: "What types of grantmakers currently fund you?", textarea: true },
-      { key: "why_fund", label: "Why do you believe those grantmakers fund you?", textarea: true },
-      { key: "usually_fund", label: "What do the grantmakers usually fund?", textarea: true },
-      { key: "group_description", label: "How would you describe your grantmakers as a group?", textarea: true },
-      { key: "typical_size", label: "Typical grant size (if known)" },
-      { key: "recurring", label: "Are these recurring or one-time grants?", options: ["Mostly recurring", "Mostly one-time", "A mix", "Not sure"] },
-    ],
-  },
-  {
-    key: "technology", title: "Current Fundraising Technology",
-    intro: "What do you currently use to manage fundraising?",
-    fields: [
-      { key: "tools", label: "Select everything you currently use", checks: TECH_OPTIONS },
-      { key: "tech_working", label: "What is working well with your current fundraising technology?", textarea: true },
-      { key: "tech_missing", label: "What do you believe is missing or needs improvement?", textarea: true },
-    ],
-  },
-  {
-    key: "materials", title: "Current Fundraising Materials",
-    intro: "Which materials do you currently have?",
-    fields: [
-      { key: "materials", label: "Select everything you currently have", checks: MATERIAL_OPTIONS },
-      { key: "materials_needed", label: "What needs to be created or improved?", textarea: true },
-    ],
-  },
-  {
-    key: "reflections", title: "The Big Picture",
-    intro: "Last step — your honest read on your fundraising.",
-    fields: [
-      { key: "working_well", label: "What is presently working well in your fundraising?", textarea: true },
-      { key: "limiting", label: "What is presently limiting your organization's ability to raise more money?", textarea: true },
-      { key: "tried", label: "What have you already tried that did not produce the fundraising results you expected?", textarea: true },
-      { key: "opportunity", label: "What do you believe is the biggest fundraising opportunity available to your organization right now?", textarea: true },
-      { key: "challenge", label: "What is the biggest thing standing between your organization and its fundraising goal right now?", textarea: true },
-    ],
-  },
-];
-
-const CheckGroup = ({ options, value, onChange, testId }) => {
-  const selected = value || [];
-  const toggle = (option) => onChange(selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option]);
-  return (
-    <div className="bfg-checks" data-testid={testId}>
-      {options.map((option) => (
-        <label key={option} className={`bfg-check ${selected.includes(option) ? "checked" : ""}`}>
-          <input type="checkbox" checked={selected.includes(option)} onChange={() => toggle(option)} data-testid={`${testId}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} />
-          {option}
-        </label>
-      ))}
-    </div>
-  );
-};
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function GameSituationPage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
-  const [step, setStep] = useState(0);
-  const [sections, setSections] = useState({});
-  const [ready, setReady] = useState(false);
+  const [phase, setPhase] = useState("loading");
+  const [token, setToken] = useState("");
+  const [ctx, setCtx] = useState(null);
+  const [ftArea, setFtArea] = useState(1);
+  const [reality, setReality] = useState({});
+  const [part, setPart] = useState({ build: [], buildOther: "", raise: [], raiseOther: "", time: "" });
+  const [strategyId, setStrategyId] = useState("");
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const poller = useRef(null);
 
   useEffect(() => { document.title = "Complete Your Game Setup | Board Fundraising Game"; }, []);
+  useEffect(() => () => clearInterval(poller.current), []);
 
   useEffect(() => {
     if (loading) return;
     if (!member) { navigate("/game/signup?mode=login", { replace: true }); return; }
-    memberApi.get("/game/situation").then((response) => {
-      if (response.data.completed) { navigate("/game/dashboard", { replace: true }); return; }
-      setSections(response.data.sections || {});
-      setStep(Math.min(response.data.current_step || 0, STEPS.length - 1));
-      setReady(true);
-    }).catch((err) => {
-      if (err.response?.status === 403) { navigate("/game/start", { replace: true }); return; }
-      setReady(true);
-    });
+    (async () => {
+      try {
+        const situation = (await memberApi.get("/game/situation")).data;
+        if (situation.completed) { navigate("/game/dashboard", { replace: true }); return; }
+        setReality(situation.sections?.current_reality || {});
+        const saved = situation.sections?.participation || {};
+        setPart({
+          build: saved.build || [], buildOther: saved.build_other || "",
+          raise: saved.raise || [], raiseOther: saved.raise_other || "", time: saved.time || "",
+        });
+        let selfToken = "";
+        try { selfToken = (await memberApi.post("/game/self-play")).data.token; }
+        catch { navigate("/game/start", { replace: true }); return; }
+        setToken(selfToken);
+        const context = (await axios.get(`${API}/game/play/${selfToken}`)).data;
+        setCtx(context);
+        const playedAll = [1, 2, 3, 4].every((id) => context.progress?.[id]?.completed);
+        if (!playedAll) { setPhase("play_first"); return; }
+        const responses = {};
+        for (const id of [1, 2, 3, 4]) {
+          responses[id] = (await axios.get(`${API}/game/play/${selfToken}/section/${id}`)).data.response || {};
+        }
+        const ftPending = [1, 2, 3, 4].find((id) => !responses[id]?.fine_tuning?.completed);
+        if (ftPending) { setFtArea(ftPending); setPhase("intro"); }
+        else setPhase("reality");
+      } catch (err) {
+        if (err.response?.status === 403) { navigate("/game/start", { replace: true }); return; }
+        setError("We could not load your game setup. Please refresh the page.");
+      }
+    })();
   }, [loading, member, navigate]);
 
-  if (loading || !ready) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+  const startGeneration = async () => {
+    setPhase("generating"); setError("");
+    try { await memberApi.post("/game/strategy/generate", { mode: "working" }); }
+    catch { setPhase("failed"); return; }
+    clearInterval(poller.current);
+    poller.current = setInterval(async () => {
+      try {
+        const status = (await memberApi.get("/game/strategy/status", { params: { mode: "working" } })).data;
+        if (status.status === "done" && status.strategy_id) {
+          clearInterval(poller.current);
+          setStrategyId(status.strategy_id);
+          setPhase("generated");
+        } else if (status.status === "failed") {
+          clearInterval(poller.current);
+          setPhase("failed");
+        }
+      } catch { /* keep polling */ }
+    }, 3000);
+  };
 
-  const config = STEPS[step];
-  const section = sections[config.key] || {};
-  const setValue = (fieldKey) => (value) => setSections((current) => ({ ...current, [config.key]: { ...(current[config.key] || {}), [fieldKey]: value } }));
-
-  const persist = async (nextStep) => {
-    setError(""); setBusy(true); setSaved(false);
+  const finishParticipation = async () => {
+    setBusy(true); setError("");
+    const participation = { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time };
     try {
-      await memberApi.put("/game/situation", { sections: { [config.key]: sections[config.key] || {} }, current_step: nextStep });
-      return true;
-    } catch (err) {
-      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your progress. Please try again.");
-      return false;
-    } finally {
+      await memberApi.put("/game/situation", { sections: { current_reality: reality, participation }, current_step: 6 });
+      await memberApi.post("/game/situation/complete");
+      try {
+        await axios.post(`${API}/game/play/${token}/section/5/complete`, {
+          first_response: [], final_response: [], first_move_locked: true, guided_selections: {}, additional_ideas: {},
+          stage_responses: {}, preferences: [], do_not_want: [], group_game_ideas: [],
+          extras: { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time },
+        });
+      } catch { /* participation stored on the situation either way */ }
+      setBusy(false);
+      await startGeneration();
+    } catch {
+      setError("We could not save your answers. Please try again.");
       setBusy(false);
     }
   };
 
-  const next = async () => {
-    if (step === STEPS.length - 1) {
-      if (await persist(step)) {
-        setBusy(true);
-        try {
-          await memberApi.post("/game/situation/complete");
-          navigate("/game/dashboard");
-        } catch {
-          setError("We could not complete your setup. Please try again.");
-          setBusy(false);
-        }
-      }
-      return;
-    }
-    if (await persist(step + 1)) { setStep(step + 1); window.scrollTo({ top: 0 }); }
-  };
+  if (loading || phase === "loading" || !ctx) {
+    return (
+      <BfgShell>
+        <main className="bfg-flow" style={{ textAlign: "center" }} data-testid="bfg-situation-loading">
+          {error ? <p className="bfg-error">{error}</p> : <p style={{ marginTop: 40 }}>Loading your game setup…</p>}
+        </main>
+      </BfgShell>
+    );
+  }
 
-  const saveAndExit = async () => {
-    if (await persist(step)) { setSaved(true); navigate("/game/dashboard"); }
-  };
+  const v3 = ctx.v3 || {};
+  const pr = v3.primary_review || {};
+  const ft = v3.fine_tuning || {};
+  const cr = v3.current_reality || {};
+  const pp = v3.participation || {};
 
-  return (
-    <BfgShell nav={<button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={saveAndExit} data-testid="bfg-situation-save-exit">Save & Exit</button>}>
-      <main className="bfg-flow" data-testid="bfg-situation-page">
-        <GameProgress steps={STEPS.map((item) => item.title)} current={step} />
-        <div className="bfg-card" data-testid={`bfg-situation-step-${config.key}`}>
-          <p className="bfg-eyebrow">Your Current Fundraising Situation</p>
-          <h2>{config.title}</h2>
-          <p style={{ marginTop: 10 }}>{config.intro}</p>
-          {config.fields.map((field) => (
-            field.checks ? (
-              <label className="bfg-field" key={field.key}>
-                <span>{field.label}</span>
-                <CheckGroup options={field.checks} value={section[field.key]} onChange={setValue(field.key)} testId={`bfg-${config.key}-${field.key}`} />
-              </label>
-            ) : field.options ? (
-              <label className="bfg-field" key={field.key}>
-                <span>{field.label}</span>
-                <select value={section[field.key] || ""} onChange={(event) => setValue(field.key)(event.target.value)} data-testid={`bfg-${config.key}-${field.key}`}>
-                  <option value="">Select one</option>
-                  {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-              </label>
-            ) : field.textarea ? (
-              <label className="bfg-field" key={field.key}>
-                <span>{field.label}</span>
-                <textarea rows={3} value={section[field.key] || ""} onChange={(event) => setValue(field.key)(event.target.value)} data-testid={`bfg-${config.key}-${field.key}`} />
-              </label>
-            ) : (
-              <label className="bfg-field" key={field.key}>
-                <span>{field.label}</span>
-                <input value={section[field.key] || ""} onChange={(event) => setValue(field.key)(event.target.value)} data-testid={`bfg-${config.key}-${field.key}`} />
-              </label>
-            )
-          ))}
-          {error && <p className="bfg-error" data-testid="bfg-situation-error">{error}</p>}
-          {saved && <p className="bfg-success">Progress saved.</p>}
-          <div className="bfg-form-actions">
-            {step > 0 ? (
-              <button className="bfg-btn bfg-btn-ghost" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0 }); }} data-testid="bfg-situation-back">Back</button>
-            ) : <span />}
-            <button className="bfg-btn bfg-btn-primary" onClick={next} disabled={busy} data-testid="bfg-situation-next">
-              {busy ? "Saving…" : step === STEPS.length - 1 ? "Complete My Game Setup" : "Save & Continue"}
-            </button>
-          </div>
-        </div>
+  const shell = (children, testId) => (
+    <BfgShell>
+      <main className="bfg-flow" style={{ maxWidth: 760, margin: "0 auto", padding: "30px 20px 80px", textAlign: "center" }} data-testid={testId}>
+        {children}
       </main>
     </BfgShell>
   );
+
+  if (phase === "play_first") {
+    return shell(<>
+      <h1>{pr.play_first_heading}</h1>
+      <p style={{ marginTop: 14 }}>{pr.play_first_text}</p>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={() => navigate(`/play/${token}`)} data-testid="bfg-setup-play-first-btn">
+        {pr.play_first_button}
+      </button>
+    </>, "bfg-setup-play-first");
+  }
+
+  if (phase === "intro") {
+    return shell(<>
+      <h1 data-testid="bfg-setup-review-heading">{pr.heading}</h1>
+      <p style={{ marginTop: 14 }}>{pr.supporting}</p>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={() => setPhase("finetune")} data-testid="bfg-setup-start-review-btn">
+        {pr.start_button}
+      </button>
+    </>, "bfg-setup-review-intro");
+  }
+
+  if (phase === "finetune") {
+    return shell(<>
+      <p className="bfg-eyebrow">STRATEGIC AREA {ftArea} OF 4</p>
+      <h1>{ft.heading}</h1>
+      <p style={{ marginTop: 12 }}>{ft.supporting}</p>
+      <FineTuneReview token={token} sectionId={ftArea} copy={ft} areaTitle={(ft.area_titles || [])[ftArea - 1]}
+        onDone={() => {
+          if (ftArea < 4) setFtArea(ftArea + 1); else setPhase("reality");
+          window.scrollTo({ top: 0 });
+        }} />
+    </>, "bfg-setup-finetune");
+  }
+
+  if (phase === "reality") {
+    const questions = cr.questions || [];
+    const continueReality = async () => {
+      setBusy(true); setError("");
+      try {
+        await memberApi.put("/game/situation", { sections: { current_reality: reality }, current_step: 5 });
+        setPhase("participation"); window.scrollTo({ top: 0 });
+      } catch { setError("We could not save your answers. Please try again."); }
+      setBusy(false);
+    };
+    return shell(<>
+      <h1 data-testid="bfg-reality-heading">{cr.heading}</h1>
+      {String(cr.supporting || "").split("\n").filter((line) => line.trim()).map((line, i) => <p key={i} style={{ marginTop: 12 }}>{line}</p>)}
+      <div style={{ marginTop: 10, textAlign: "left" }}>
+        {questions.map((question) => (
+          <div className="bfg-card" key={question.key} style={{ marginTop: 16, padding: 18 }}>
+            <h3>{question.heading}</h3>
+            <label className="bfg-field" style={{ marginTop: 8 }}>
+              <span>{question.question}</span>
+              <textarea rows={4} value={reality[question.key] || ""}
+                onChange={(event) => setReality((current) => ({ ...current, [question.key]: event.target.value }))}
+                data-testid={`bfg-reality-${question.key}`} />
+            </label>
+          </div>
+        ))}
+      </div>
+      {error && <p className="bfg-error">{error}</p>}
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={continueReality} data-testid="bfg-reality-continue">
+        {busy ? "Saving…" : "Save & Continue"}
+      </button>
+    </>, "bfg-setup-reality");
+  }
+
+  if (phase === "participation") {
+    const toggle = (listKey, option) => setPart((current) => ({
+      ...current,
+      [listKey]: current[listKey].includes(option) ? current[listKey].filter((item) => item !== option) : [...current[listKey], option],
+    }));
+    const checkList = (question, options, listKey, otherKey, otherPrompt, testId) => (
+      <div style={{ marginTop: 24, textAlign: "left" }}>
+        <h3>{question}</h3>
+        {options.map((option) => (
+          <label key={option} className="bfg-ht-check" data-testid={`${testId}-${option.slice(0, 20).replace(/\s+/g, "-").toLowerCase()}`}>
+            <input type="checkbox" checked={part[listKey].includes(option)} onChange={() => toggle(listKey, option)} /><span>{option}</span>
+          </label>
+        ))}
+        {part[listKey].includes("Other") && (
+          <label className="bfg-field">
+            <span>{otherPrompt}</span>
+            <textarea rows={3} value={part[otherKey]} onChange={(event) => setPart((current) => ({ ...current, [otherKey]: event.target.value }))} data-testid={`${testId}-other-input`} />
+          </label>
+        )}
+      </div>
+    );
+    return shell(<>
+      <h1 data-testid="bfg-participation-heading">{pp.heading}</h1>
+      {checkList(pp.build_question, pp.build_options || [], "build", "buildOther", pp.build_other_prompt, "bfg-setup-build")}
+      {checkList(pp.raise_question, pp.raise_options || [], "raise", "raiseOther", pp.raise_other_prompt, "bfg-setup-raise")}
+      <div style={{ marginTop: 24, textAlign: "left" }}>
+        <h3>{pp.time_question}</h3>
+        {(pp.time_options || []).map((option) => (
+          <label key={option} className="bfg-ht-check"><input type="radio" name="bfg-setup-time" checked={part.time === option} onChange={() => setPart((current) => ({ ...current, time: option }))} /><span>{option}</span></label>
+        ))}
+      </div>
+      {error && <p className="bfg-error">{error}</p>}
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={finishParticipation} data-testid="bfg-setup-participation-submit">
+        {busy ? "Saving…" : pr.generate_button}
+      </button>
+      <p style={{ marginTop: 12, fontSize: 14 }}>{pr.generate_text}</p>
+    </>, "bfg-setup-participation");
+  }
+
+  if (phase === "generating") {
+    return shell(<>
+      <h1>{pr.generate_heading}</h1>
+      <p style={{ marginTop: 14 }}>{pr.generating_text}</p>
+    </>, "bfg-setup-generating");
+  }
+
+  if (phase === "failed") {
+    return shell(<>
+      <h1>{pr.failed_heading}</h1>
+      <p style={{ marginTop: 14 }}>{pr.failed_text}</p>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={startGeneration} data-testid="bfg-setup-generate-retry">{pr.try_again_button}</button>
+      <div style={{ marginTop: 14 }}>
+        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/dashboard")} data-testid="bfg-setup-failed-dashboard">Go To My Dashboard</button>
+      </div>
+    </>, "bfg-setup-failed");
+  }
+
+  return shell(<>
+    <h1 data-testid="bfg-setup-generated-heading">{pr.generated_heading}</h1>
+    <p style={{ marginTop: 14 }}>{pr.generated_text}</p>
+    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={() => navigate(`/game/strategy/view/${strategyId}`)} data-testid="bfg-setup-view-strategy-btn">
+      {pr.generated_button}
+    </button>
+    <div style={{ marginTop: 14 }}>
+      <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/dashboard")} data-testid="bfg-setup-generated-dashboard">Go To My Dashboard</button>
+    </div>
+  </>, "bfg-setup-generated");
 }

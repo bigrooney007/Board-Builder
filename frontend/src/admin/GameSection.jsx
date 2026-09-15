@@ -482,6 +482,63 @@ const PostGameCommunication = () => {
   );
 };
 
+const V3_KEYS = ["intro", "rounds", "strategy_ready", "current_reality", "participation", "board_completion", "fine_tuning", "mini_strategy", "primary_review", "group_complete"];
+
+const V3GameContent = () => {
+  const [open, setOpen] = useState(false);
+  const [drafts, setDrafts] = useState(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const toggle = async () => {
+    if (!open && !drafts) {
+      try {
+        const response = await client.get("/admin/game/v3-content");
+        const content = response.data.content || {};
+        setDrafts(Object.fromEntries(V3_KEYS.map((key) => [key, JSON.stringify(content[key] ?? {}, null, 2)])));
+      } catch { setMessage("Could not load the game content."); }
+    }
+    setOpen((current) => !current);
+  };
+
+  const save = async () => {
+    setBusy(true); setMessage("");
+    try {
+      const payload = {};
+      for (const key of V3_KEYS) payload[key] = JSON.parse(drafts[key]);
+      await client.put("/admin/game/v3-content", payload);
+      setMessage("Game content saved. The game updates immediately.");
+    } catch (err) {
+      setMessage(err instanceof SyntaxError
+        ? "One of the sections is not valid JSON. Fix the highlighted structure and try again."
+        : (typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save content."));
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="admin-import-panel" style={{ marginTop: 20 }} data-testid="game-v3-content-panel">
+      <h3>Individual Game Content (V3 — 4 Rounds + AI Fine-Tuning)</h3>
+      <p style={{ color: "#555" }}>All customer-facing copy for the simplified 4-round game, the fine-tuning review, the personal mini strategy, the post-payment strategy review and the Group Game completion screen. Edit carefully — the structure must stay valid JSON.</p>
+      <button className="button button-small" onClick={toggle} data-testid="game-v3-toggle">{open ? "Hide Editor" : "Open Editor"}</button>
+      {open && drafts && (
+        <div style={{ marginTop: 12 }}>
+          {V3_KEYS.map((key) => (
+            <label key={key} style={{ display: "block", marginTop: 14 }}>
+              <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>{key.replace(/_/g, " ")}</span>
+              <textarea rows={key === "rounds" ? 14 : 7} style={{ width: "100%", fontFamily: "monospace", fontSize: 12.5 }}
+                value={drafts[key]} onChange={(event) => setDrafts({ ...drafts, [key]: event.target.value })}
+                data-testid={`game-v3-field-${key}`} />
+            </label>
+          ))}
+          <button className="button" style={{ marginTop: 12 }} onClick={save} disabled={busy} data-testid="game-v3-save">{busy ? "Saving…" : "Save Game Content"}</button>
+        </div>
+      )}
+      {message && <p style={{ marginTop: 10 }} data-testid="game-v3-message">{message}</p>}
+    </div>
+  );
+};
+
 export const GameSection = () => {
   const [content, setContent] = useState(null);
   const [message, setMessage] = useState("");
@@ -698,6 +755,7 @@ export const GameSection = () => {
       </div>
       <VideosManager />
       <IndividualGameContent />
+      <V3GameContent />
       <HostToolsContent />
       <PostGameCommunication />
       <CustomersTable />

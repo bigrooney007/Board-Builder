@@ -24,7 +24,13 @@ export default function GameAuthPage() {
   const [searchParams] = useSearchParams();
   const { member, loading, login, register } = useMemberAuth();
   const [mode, setMode] = useState(searchParams.get("mode") === "login" ? "login" : "signup");
-  const [form, setForm] = useState({ first_name: "", last_name: "", email: "", password: "", confirm: "" });
+  const [form, setForm] = useState(() => {
+    const storedName = (sessionStorage.getItem("bfgName") || "").split(" ").filter(Boolean);
+    return {
+      first_name: storedName[0] || "", last_name: storedName.slice(1).join(" "),
+      email: sessionStorage.getItem("bfgEmail") || "", password: "", confirm: "",
+    };
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
