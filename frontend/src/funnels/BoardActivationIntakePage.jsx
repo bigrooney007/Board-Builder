@@ -67,6 +67,7 @@ export default function BoardActivationIntakePage() {
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
   const boardFixMode = useMemo(() => new URLSearchParams(location.search).get("bf") === "1", [location.search]);
+  const facilitatedMode = useMemo(() => new URLSearchParams(location.search).get("facilitated") === "1", [location.search]);
   const [gate, setGate] = useState(sessionId || boardFixMode ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
   const [purchaseSource, setPurchaseSource] = useState("");
@@ -172,6 +173,16 @@ export default function BoardActivationIntakePage() {
           <p className="funnel-hero-banner-supporting" data-testid="aintake-subtitle">{activationIntakeText.s_giveMeTheInformationI}</p>
           <i aria-hidden="true" />
         </section>
+
+        {facilitatedMode && gate !== "done" && (
+          <div className="intake-card" data-testid="aintake-facilitated-welcome">
+            <h2>Welcome. Let's Get Your Organization Ready.</h2>
+            <p>Thank you for getting started.</p>
+            <p>The first step is helping us understand your organization, your board and your present fundraising situation.</p>
+            <p>Complete the Fundraising Activation Intake below.</p>
+            <p>Once you submit it, you will be taken directly to my calendar to book our first meeting.</p>
+          </div>
+        )}
 
         {new URLSearchParams(location.search).get("dfy") === "1" && gate !== "done" && (
           <div className="intake-card" data-testid="aintake-dfy-welcome">
@@ -315,7 +326,7 @@ export default function BoardActivationIntakePage() {
               {step < 4 ? (
                 <button type="button" className="button" onClick={next} data-testid="aintake-next-button">Next</button>
               ) : (
-                <button type="button" className="button" onClick={submit} disabled={busy} data-testid="aintake-submit-button">{busy ? "Saving…" : "Submit"}</button>
+                <button type="button" className="button" onClick={submit} disabled={busy} data-testid="aintake-submit-button">{busy ? "Saving…" : facilitatedMode ? "SUBMIT AND BOOK MY MEETING" : "Submit"}</button>
               )}
             </div>
           </section>

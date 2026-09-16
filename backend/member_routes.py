@@ -219,11 +219,18 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "purchase_source": "board_fundraising_game_497",
             "offer": "Board Fundraising Game", "price_paid": 497,
         })
+    elif offer_source == "facilitated_board_fundraising_game":
+        purchase.update({
+            "purchase_source": "facilitated_board_fundraising_game_3497",
+            "offer": "Facilitated Board Fundraising Game", "price_paid": 3497,
+        })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
     if lead_id:
         add_to_set["lead_ids"] = lead_id
     update = {"$addToSet": add_to_set, "$set": {"updated_at": now}}
+    if offer_source == "facilitated_board_fundraising_game":
+        update["$set"]["facilitated_game"] = True
     if session.customer:
         update["$set"]["stripe_customer_id"] = session.customer
     await db.members.update_one({"user_id": member["user_id"]}, update)

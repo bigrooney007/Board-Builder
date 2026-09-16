@@ -18,12 +18,13 @@ CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 ACTIVATION_START_ROUTE = "/app/activation/start"
 BOARD_FIX_COURSE_ROUTE = "/app/activation/self-guided/module/2"
 START_PAGE_SOURCES = {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997"}
-QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997", "direct_board_activation_project_2497", "board_fundraising_activation_dfy"}
+QUALIFYING_SOURCES = {"direct_diy_board_activation_497", "activate_my_board_with_rooney_2997", "direct_board_activation_project_2497", "board_fundraising_activation_dfy", "facilitated_board_fundraising_game_3497"}
 OFFER_LABELS = {
     "direct_diy_board_activation_497": "Fundraising Activation — Do It Yourself — $497",
     "activate_my_board_with_rooney_2997": "Fundraising Activation — Done With Rooney — $2,997",
     "direct_board_activation_project_2497": "Fundraising Activation — Do It With Rooney — $2,497",
     "board_fundraising_activation_dfy": "Board Fundraising Activation — Done For You — $997",
+    "facilitated_board_fundraising_game_3497": "Facilitated Board Fundraising Game — $3,497",
     BOARD_FIX_SOURCE: "Complete Board Fix System — $497",
 }
 
