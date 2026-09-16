@@ -9,12 +9,14 @@ from datetime import datetime, timezone
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from ai_service import parse_json_response
 from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 from group_game_routes import AREA_DEFS, ROUND_DEFS, area_ideas
+from strategy_pdf import build_strategy_pdf
 
 GAME_ENTITLEMENT = "board_fundraising_game"
 MODES = {"working": "working", "board_prioritized": "board_prioritized_draft"}
@@ -60,7 +62,8 @@ OUTPUT_SCHEMA = {
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
 EDITABLE_SECTION_KEYS = ["executive_summary", "fundraising_goal", "fundraising_audiences", "where_to_find", "attraction",
                          "fundraising_process", "technology", "fundraising_team", "materials", "execution_timeline",
-                         "additional_board_ideas", "next_step"]
+                         "additional_board_ideas", "next_step", "board_fundraising_process", "team_roles",
+                         "execution_resources", "board_priorities"]
 
 
 def now_iso() -> str:
@@ -216,9 +219,12 @@ def create_strategy_router(db) -> APIRouter:
             for key in EDITABLE_SECTION_KEYS:
                 data.setdefault(key, {} if key not in {"executive_summary", "next_step"} else "")
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": mode}) + 1
+            member_doc = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1}) or {}
+            prepared_by = f"{member_doc.get('first_name', '')} {member_doc.get('last_name', '')}".strip()
             strategy = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": mode,
-                "status": MODES[mode], "version": version,
+                "status": MODES[mode], "version": version, "schema_version": 1,
+                "prepared_by": prepared_by,
                 "share_token": secrets.token_urlsafe(24),
                 "data": data, "section_edits": {},
                 "group_session_id": group_session_id,
@@ -328,6 +334,19 @@ def create_strategy_router(db) -> APIRouter:
         profile = await get_profile(member["user_id"])
         strategy["organization_name"] = (profile.get("organization") or {}).get("name", "")
         return {"strategy": strategy}
+
+    @router.get("/game/strategy/view/{strategy_id}/download")
+    async def download_strategy(strategy_id: str, request: Request):
+        member = await game_member(request)
+        strategy = await db.game_strategies.find_one(
+            {"strategy_id": strategy_id, "user_id": member["user_id"]}, {"_id": 0})
+        if not strategy:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+        profile = await get_profile(member["user_id"])
+        org_name = (profile.get("organization") or {}).get("name", "")
+        pdf = build_strategy_pdf(strategy, org_name)
+        return Response(content=pdf, media_type="application/pdf", headers={
+            "Content-Disposition": f'attachment; filename="fundraising-strategy-v{strategy["version"]}.pdf"'})
 
     @router.put("/game/strategy/view/{strategy_id}/section")
     async def edit_strategy_section(strategy_id: str, payload: SectionEditPayload, request: Request):

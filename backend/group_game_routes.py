@@ -77,12 +77,23 @@ def contributor_names(names: list) -> str:
     return ", ".join(unique[:-1]) + " and " + unique[-1]
 
 
+def dedupe_texts(items: list) -> list:
+    seen = set()
+    out = []
+    for item in items:
+        key = normalise(item)
+        if key and key not in seen:
+            seen.add(key)
+            out.append(item)
+    return out
+
+
 def extract_ideas(response: dict, section_key: str) -> list:
     """Return individual idea strings from an Individual Game response document.
     V2 responses carry a deterministic flat group_game_ideas list; use it when present."""
     v2_ideas = [str(item).strip() for item in (response.get("group_game_ideas") or []) if str(item).strip()]
     if v2_ideas:
-        return v2_ideas
+        return dedupe_texts(v2_ideas)
     ideas = []
     final = [item for item in (response.get("final_response") or []) if str(item).strip()]
     ideas.extend(final)
@@ -99,7 +110,7 @@ def extract_ideas(response: dict, section_key: str) -> list:
                 ideas.append(f"{label}: {str(entry).strip()}")
     if not final:
         ideas.extend(item for item in (response.get("first_response") or []) if str(item).strip())
-    return ideas
+    return dedupe_texts(ideas)
 
 
 def area_ideas(response: dict, source_key: str, audience_type: str = "") -> list:
@@ -108,8 +119,8 @@ def area_ideas(response: dict, source_key: str, audience_type: str = "") -> list
                 if isinstance(entry, dict) and str(entry.get("text", "")).strip()]
     if approved:
         if audience_type:
-            return [str(entry["text"]).strip() for entry in approved if entry.get("audience_type") == audience_type]
-        return [str(entry["text"]).strip() for entry in approved]
+            return dedupe_texts([str(entry["text"]).strip() for entry in approved if entry.get("audience_type") == audience_type])
+        return dedupe_texts([str(entry["text"]).strip() for entry in approved])
     extras = response.get("extras") or {}
     if audience_type:
         bucket = AUDIENCE_BUCKETS[audience_type]
@@ -202,11 +213,32 @@ def create_group_game_router(db) -> APIRouter:
     async def session_rounds(session_id: str) -> list:
         return await db.group_game_rounds.find({"session_id": session_id}, {"_id": 0}).sort("round_number", 1).to_list(20)
 
+    def dedupe_idea_docs(ideas: list) -> tuple:
+        """One canonical idea per normalized text. Returns (ordered unique idea docs, alias map idea_id -> canonical idea_id)."""
+        canonical = {}
+        alias = {}
+        ordered = []
+        for idea in ideas:
+            key = idea.get("normalized") or normalise(idea["text"])
+            if key in canonical:
+                canon = canonical[key]
+                alias[idea["idea_id"]] = canon["idea_id"]
+                for name in idea.get("contributor_names", []):
+                    if name not in canon["contributor_names"]:
+                        canon["contributor_names"].append(name)
+                continue
+            entry = {**idea, "contributor_names": list(idea.get("contributor_names", []))}
+            canonical[key] = entry
+            alias[idea["idea_id"]] = idea["idea_id"]
+            ordered.append(entry)
+        return ordered, alias
+
     async def round_ideas(session_id: str, round_number: int) -> list:
         ideas = await db.group_game_ideas.find(
             {"session_id": session_id, "round_number": round_number}, {"_id": 0}).sort("order", 1).to_list(400)
+        unique, _ = dedupe_idea_docs(ideas)
         return [{"idea_id": idea["idea_id"], "text": idea["text"],
-                 "suggested_by": contributor_names(idea["contributor_names"])} for idea in ideas]
+                 "suggested_by": contributor_names(idea["contributor_names"])} for idea in unique]
 
     async def participants(session_id: str) -> list:
         return await db.group_game_participants.find({"session_id": session_id}, {"_id": 0}).to_list(300)
@@ -217,8 +249,12 @@ def create_group_game_router(db) -> APIRouter:
         return {row["slot_id"] for row in rows}
 
     async def round_results(session_id: str, round_number: int) -> dict:
-        return await db.group_game_results.find_one(
+        doc = await db.group_game_results.find_one(
             {"session_id": session_id, "round_number": round_number}, {"_id": 0}) or {}
+        if doc.get("results"):
+            # Only ideas that were actually ranked are shown; unranked ideas stay stored for the final strategy.
+            doc = {**doc, "results": [row for row in doc["results"] if row.get("selection_count", 0) > 0]}
+        return doc
 
     # ---------- Host endpoints ----------
 
@@ -349,13 +385,14 @@ def create_group_game_router(db) -> APIRouter:
             {"session_id": session_id, "round_number": round_doc["round_number"]}, {"_id": 0}).sort("order", 1).to_list(400)
         rankings = await db.group_game_rankings.find(
             {"session_id": session_id, "round_number": round_doc["round_number"]}, {"_id": 0}).to_list(300)
+        unique, alias = dedupe_idea_docs(ideas)
         stats = {idea["idea_id"]: {"idea_id": idea["idea_id"], "text": idea["text"],
                                    "suggested_by": contributor_names(idea["contributor_names"]),
                                    "total_score": 0, "first_place_count": 0,
-                                   "selection_count": 0, "order": idea["order"]} for idea in ideas}
+                                   "selection_count": 0, "order": idea["order"]} for idea in unique}
         for row in rankings:
             for entry in row.get("rankings", []):
-                stat = stats.get(entry.get("idea_id"))
+                stat = stats.get(alias.get(entry.get("idea_id"), entry.get("idea_id")))
                 if not stat:
                     continue
                 stat["total_score"] += entry.get("points", 0)

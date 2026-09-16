@@ -15,15 +15,44 @@ export const STRATEGY_SECTIONS = [
   { key: "next_step", title: "Next Step" },
 ];
 
-export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritized Draft", final: "Final Fundraising Strategy" };
+export const V2_STRATEGY_SECTIONS = [
+  { key: "executive_summary", title: "Executive Summary" },
+  { key: "fundraising_goal", title: "Fundraising Goal" },
+  { key: "fundraising_audiences", title: "Ideal Funding Audiences", v2: "audiences" },
+  { key: "where_to_find", title: "Where To Find Potential Funders", priorityLabel: "Priority Places And Channels", additionalLabel: "Additional Places And Channels To Consider" },
+  { key: "attraction", title: "Attraction Strategy", priorityLabel: "Priority Attraction Activities", additionalLabel: "Additional Ideas To Consider" },
+  { key: "fundraising_process", title: "Fundraising Process", v2: "process" },
+  { key: "board_fundraising_process", title: "Board Fundraising Process", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
+  { key: "team_roles", title: "Team, Roles & Responsibilities", v2: "team" },
+  { key: "execution_resources", title: "Technology, Materials, Resources & Content", v2: "resources" },
+  { key: "execution_timeline", title: "Execution Timeline", stages: [["phase_1_build_the_system", "PHASE 1: BUILD THE SYSTEM"], ["phase_2_build_know_like_trust", "PHASE 2: BUILD KNOW, LIKE AND TRUST"], ["phase_3_ask_campaign", "PHASE 3: ASK CAMPAIGN"], ["follow_up_and_steward", "FOLLOW UP AND STEWARD"], ["business_timeline", "BUSINESS TIMELINE"], ["grantor_timeline", "GRANTOR TIMELINE"]] },
+  { key: "board_priorities", title: "Board Priorities", v2: "grouped" },
+  { key: "additional_board_ideas", title: "Additional Board Ideas", v2: "grouped" },
+  { key: "next_step", title: "Next Step" },
+];
+
+export const getStrategySections = (strategy) =>
+  (strategy?.schema_version || 1) >= 2 ? V2_STRATEGY_SECTIONS : STRATEGY_SECTIONS;
+
+export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritized Draft", final: "Final Board Fundraising Strategy" };
 
 export const STATUS_LABELS = { final_draft: "Final Draft", adopted: "Adopted" };
+
+export const versionLabel = (row) => {
+  if (row.mode === "working") return row.version > 1 ? "Updated Working Strategy" : "Working Strategy";
+  if (row.mode === "final") return row.version > 1 ? "Updated Final Strategy" : "Final Board Fundraising Strategy";
+  return MODE_LABELS[row.mode] || row.mode;
+};
 
 const IDEA_AREA_LABELS = {
   fundraising_audiences: "Potential Fundraising Audiences", where_to_find: "Places To Find Funders",
   attraction: "Attraction Ideas", fundraising_process: "Fundraising Process Ideas", technology: "Technology Ideas",
   fundraising_team: "Team Ideas", materials: "Materials Ideas", execution_timeline: "Timeline Ideas",
 };
+
+const AUDIENCE_LABELS = [["individuals", "Individuals"], ["businesses", "Businesses"], ["grantors", "Grantors"]];
+const PROCESS_STAGES = [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]];
+const RESOURCE_LABELS = [["people", "People"], ["technology", "Technology"], ["materials", "Materials"], ["resources", "Resources"], ["content", "Content"]];
 
 const EMPTY_MESSAGE = "Your board has not provided enough information for this section yet. Review this area together before adopting the final strategy.";
 
@@ -57,15 +86,35 @@ const Bullets = ({ items }) => (
   </ul>
 );
 
+const hasStageContent = (process) => PROCESS_STAGES.some(([stage]) => ((process || {})[stage] || []).length);
+
 const isEmptySection = (section, data) => {
   if (!data) return true;
   if (section.key === "executive_summary" || section.key === "next_step") return !String(data).trim();
+  if (section.v2 === "audiences") return AUDIENCE_LABELS.every(([field]) => !(data[field] || []).length);
+  if (section.v2 === "process") return AUDIENCE_LABELS.every(([field]) => !hasStageContent(data[field]));
+  if (section.v2 === "team") return !(Array.isArray(data) && data.length);
+  if (section.v2 === "resources") return RESOURCE_LABELS.every(([field]) => !(data[field] || []).length);
+  if (section.v2 === "grouped") return !(Array.isArray(data) && data.some((group) => (group.items || []).length));
   if (section.stages) return section.stages.every(([stageKey]) => !(data[stageKey] || []).length);
   if (section.priorityLabel) return !(data.priorities || []).length && !(data.additional_ideas || []).length;
   if (section.key === "fundraising_goal") return !data.summary && !data.amount;
   if (section.key === "additional_board_ideas") return !Object.values(data || {}).some((list) => (list || []).length);
   return false;
 };
+
+const Stages = ({ stages, data }) => (
+  <div>
+    {stages.map(([stageKey, label]) => (
+      (data[stageKey] || []).length > 0 && (
+        <div key={stageKey} className="bfg-doc-stage">
+          <h4>{label}</h4>
+          <Bullets items={data[stageKey]} />
+        </div>
+      )
+    ))}
+  </div>
+);
 
 export const SectionBody = ({ section, data, mode }) => {
   if (isEmptySection(section, data)) return <p className="bfg-doc-empty">{EMPTY_MESSAGE}</p>;
@@ -82,10 +131,82 @@ export const SectionBody = ({ section, data, mode }) => {
       </div>
     );
   }
-  if (section.stages) {
+  if (section.v2 === "audiences") {
     return (
       <div>
-        {section.stages.map(([stageKey, label]) => (
+        {AUDIENCE_LABELS.map(([field, label]) => (
+          (data[field] || []).length > 0 && (
+            <div key={field} className="bfg-doc-stage">
+              <h4>{label.toUpperCase()}</h4>
+              <PriorityList items={data[field]} mode={mode} />
+            </div>
+          )
+        ))}
+      </div>
+    );
+  }
+  if (section.v2 === "process") {
+    return (
+      <div>
+        {AUDIENCE_LABELS.map(([field, label]) => (
+          hasStageContent(data[field]) && (
+            <div key={field} className="bfg-doc-stage">
+              <h4>{label.toUpperCase()} FUNDRAISING PROCESS</h4>
+              <Stages stages={PROCESS_STAGES} data={data[field] || {}} />
+            </div>
+          )
+        ))}
+      </div>
+    );
+  }
+  if (section.v2 === "team") {
+    return (
+      <div className="bfg-doc-cards">
+        {data.map((row, index) => (
+          <div className="bfg-doc-card" key={index}>
+            <div className="bfg-doc-card-head"><strong>{row.role}</strong></div>
+            <p>Assigned: {String(row.assigned || "").trim() || "ROLE / CAPACITY NEEDED"}</p>
+            {row.responsibility && <p className="bfg-doc-focus">{row.responsibility}</p>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (section.v2 === "resources") {
+    return (
+      <div>
+        {RESOURCE_LABELS.map(([field, label]) => (
+          (data[field] || []).length > 0 && (
+            <div key={field} className="bfg-doc-stage">
+              <h4>{label.toUpperCase()}</h4>
+              <Bullets items={data[field]} />
+            </div>
+          )
+        ))}
+      </div>
+    );
+  }
+  if (section.v2 === "grouped") {
+    return (
+      <div>
+        {data.map((group, index) => (
+          (group.items || []).length > 0 && (
+            <div key={index} className="bfg-doc-stage">
+              <h4>{group.area}</h4>
+              <Bullets items={group.items} />
+            </div>
+          )
+        ))}
+      </div>
+    );
+  }
+  if (section.stages) {
+    const required = section.key === "board_fundraising_process" || section.key === "execution_timeline"
+      ? section.stages.filter(([stageKey]) => (data[stageKey] || []).length)
+      : section.stages;
+    return (
+      <div>
+        {required.map(([stageKey, label]) => (
           <div key={stageKey} className="bfg-doc-stage">
             <h4>{label}</h4>
             {(data[stageKey] || []).length ? <Bullets items={data[stageKey]} /> : <p className="bfg-doc-empty">{EMPTY_MESSAGE}</p>}
@@ -134,9 +255,34 @@ export const sectionToText = (section, data) => {
     return [data.amount && `Goal: ${data.amount}`, data.deadline && `Deadline: ${data.deadline}`,
             data.purpose && `Purpose: ${data.purpose}`, data.summary].filter(Boolean).join("\n\n");
   }
+  if (section.v2 === "audiences") {
+    return AUDIENCE_LABELS.map(([field, label]) =>
+      (data[field] || []).length ? `${label.toUpperCase()}\n${data[field].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+  }
+  if (section.v2 === "process") {
+    return AUDIENCE_LABELS.map(([field, label]) => {
+      const process = data[field] || {};
+      if (!hasStageContent(process)) return "";
+      const stages = PROCESS_STAGES.map(([stage, stageLabel]) =>
+        (process[stage] || []).length ? `${stageLabel}\n${process[stage].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+      return `${label.toUpperCase()} FUNDRAISING PROCESS\n\n${stages}`;
+    }).filter(Boolean).join("\n\n");
+  }
+  if (section.v2 === "team") {
+    return (Array.isArray(data) ? data : []).map((row) =>
+      `${row.role}\nAssigned: ${String(row.assigned || "").trim() || "ROLE / CAPACITY NEEDED"}${row.responsibility ? `\n${row.responsibility}` : ""}`).join("\n\n");
+  }
+  if (section.v2 === "resources") {
+    return RESOURCE_LABELS.map(([field, label]) =>
+      (data[field] || []).length ? `${label.toUpperCase()}\n${data[field].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+  }
+  if (section.v2 === "grouped") {
+    return (Array.isArray(data) ? data : []).map((group) =>
+      (group.items || []).length ? `${group.area}\n${group.items.map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+  }
   if (section.stages) {
     return section.stages.map(([stageKey, label]) =>
-      `${label}\n${(data[stageKey] || []).map((item) => `- ${itemText(item)}`).join("\n")}`).join("\n\n");
+      (data[stageKey] || []).length ? `${label}\n${(data[stageKey] || []).map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
   }
   if (section.key === "additional_board_ideas") {
     return Object.entries(IDEA_AREA_LABELS).map(([areaKey, label]) =>
@@ -151,17 +297,23 @@ export const sectionToText = (section, data) => {
 export const StrategyDocument = ({ strategy }) => {
   const data = strategy.data || {};
   const edits = strategy.section_edits || {};
+  const sections = getStrategySections(strategy);
   return (
     <div className="bfg-doc" data-testid="bfg-strategy-document">
       <header className="bfg-doc-header">
         <p className="bfg-doc-org">{strategy.organization_name}</p>
         <h1>{strategy.mode === "final" && strategy.status !== "adopted" ? "Final Fundraising Strategy" : "Fundraising Strategy"}</h1>
+        {(strategy.prepared_by || strategy.organization_name) && (
+          <p className="bfg-doc-meta" data-testid="bfg-doc-prepared-by">
+            Prepared By: <strong>{strategy.prepared_by || (strategy.mode === "final" ? `The Board of ${strategy.organization_name}` : strategy.organization_name)}</strong>
+          </p>
+        )}
         <p className="bfg-doc-meta">
           {data.fundraising_goal?.amount && <>Fundraising Goal: <strong>{data.fundraising_goal.amount}</strong></>}
           {data.fundraising_goal?.deadline && <> · Deadline: <strong>{data.fundraising_goal.deadline}</strong></>}
         </p>
         <p className="bfg-doc-meta">
-          <span className={`bfg-doc-type ${strategy.mode}`}>{STATUS_LABELS[strategy.status] || MODE_LABELS[strategy.mode] || strategy.mode}</span>
+          <span className={`bfg-doc-type ${strategy.mode}`}>{versionLabel(strategy)}</span>
           {" "}· Version {strategy.version} · Generated: {strategy.generated_at ? new Date(strategy.generated_at).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" }) : ""}
           {strategy.adopted_at && <> · Adopted on {new Date(strategy.adopted_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</>}
         </p>
@@ -169,12 +321,12 @@ export const StrategyDocument = ({ strategy }) => {
       <nav className="bfg-doc-toc" data-testid="bfg-strategy-toc">
         <h3>Strategy Sections</h3>
         <ol>
-          {STRATEGY_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <li key={section.key}><a href={`#strategy-${section.key}`}>{section.title}</a></li>
           ))}
         </ol>
       </nav>
-      {STRATEGY_SECTIONS.map((section, index) => (
+      {sections.map((section, index) => (
         <section key={section.key} id={`strategy-${section.key}`} className="bfg-doc-section" data-testid={`bfg-strategy-section-${section.key}`}>
           <h2><span>{index + 1}.</span> {section.title}</h2>
           {edits[section.key] ? (

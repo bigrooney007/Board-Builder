@@ -70,7 +70,7 @@ export default function GamePlayPage() {
       }
       if (context.member?.is_primary) {
         if (context.paid) { navigate("/game/setup", { replace: true }); return; }
-        setPhase("ready");
+        navigate("/game/upgrade", { replace: true }); return;
       } else if (sections[5].completed) setPhase("board_done");
       else { setPIdx(0); setPhase("participation"); }
     } catch { setError("This game link is not valid."); setPhase("error"); }
@@ -135,6 +135,7 @@ export default function GamePlayPage() {
     if (audioRef.current) audioRef.current.pause();
     set({ approved: { ...state.approved, [sec]: entries } });
     if (sec < 4) { setSec(sec + 1); setStage("intro"); }
+    else if (isPrimary) navigate(ctx.paid ? "/game/setup" : "/game/upgrade", { replace: true });
     else setPhase("direction");
   };
 

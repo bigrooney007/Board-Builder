@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { memberApi } from "@/member/api";
 
 const TIMEZONES = ["Eastern Time (ET)", "Central Time (CT)", "Mountain Time (MT)", "Pacific Time (PT)", "Alaska Time (AKT)", "Hawaii Time (HT)", "UTC"];
-const FORMATS = [{ value: "in_person", label: "In Person" }, { value: "online", label: "Online" }, { value: "hybrid", label: "Hybrid" }];
+const FORMATS = [{ value: "in_person", label: "In Person" }, { value: "online", label: "Virtual" }, { value: "hybrid", label: "Hybrid" }];
 
 const fmtDate = (raw) => {
   if (!raw) return "";
@@ -36,7 +35,7 @@ export const GameNightSection = () => {
 
   const startEdit = () => {
     setForm({
-      name: night?.name || defaultName,
+      name: night?.name || defaultName || "Board Fundraising Day/Night",
       meeting_date: night?.meeting_date || "",
       start_time: night?.start_time || "",
       timezone_name: night?.timezone || "Eastern Time (ET)",
@@ -50,7 +49,7 @@ export const GameNightSection = () => {
 
   const save = async () => {
     setError("");
-    if (!form.meeting_date) { setError("Board meeting date is required."); return; }
+    if (!form.meeting_date) { setError("Meeting date is required."); return; }
     if (!form.start_time) { setError("Start time is required."); return; }
     if (!form.timezone_name) { setError("Time zone is required."); return; }
     setBusy(true);
@@ -59,7 +58,7 @@ export const GameNightSection = () => {
       setNight(response.data.night);
       setEditing(false);
     } catch (err) {
-      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your Game Night. Please try again.");
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your meeting details. Please try again.");
     }
     setBusy(false);
   };
@@ -67,52 +66,44 @@ export const GameNightSection = () => {
   if (!loaded) return null;
   const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
   const saved = night?.meeting_date;
+  const formatLabel = (FORMATS.find((item) => item.value === night?.meeting_format) || {}).label || night?.meeting_format;
 
   return (
     <section className="bfg-panel" data-testid="bfg-game-night-section">
       <div className="bfg-panel-head">
         <div>
-          <h2>Prepare For Game Night</h2>
-          <p className="bfg-panel-sub">Set your next board meeting and invite your board members to prepare for the Board Fundraising Game.</p>
+          <h2>Prepare For Fundraising Day/Night</h2>
+          <p className="bfg-panel-sub">Add the details of your next board meeting so your Board Fundraising Day/Night is connected to a specific date, time and meeting.</p>
         </div>
         {saved && !editing && (
-          <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={startEdit} data-testid="bfg-edit-game-night-btn">Edit Game Night</button>
+          <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={startEdit} data-testid="bfg-edit-game-night-btn">Edit Meeting Details</button>
         )}
       </div>
 
-      <div className="bfg-bm-actions" style={{ marginTop: 12 }} data-testid="bfg-night-quick-tools">
-        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/call-script" data-testid="bfg-quick-call-script">Call Script</Link>
-        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/facilitation" data-testid="bfg-quick-facilitation">Facilitation Guide</Link>
-        <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/host/checklist" data-testid="bfg-quick-checklist">Game Night Checklist</Link>
-      </div>
-
       {!saved && !editing && (
-        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} onClick={startEdit} data-testid="bfg-setup-game-night-btn">Set Up Game Night</button>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} onClick={startEdit} data-testid="bfg-setup-game-night-btn">Add Meeting Details</button>
       )}
 
       {saved && !editing && (
         <div className="bfg-night-summary" data-testid="bfg-game-night-summary">
-          <div className="bfg-summary-row"><span>Game Night</span><strong>{night.name}</strong></div>
+          <p className="bfg-eyebrow" style={{ margin: "8px 0 4px" }}>Your Next Board Fundraising Day/Night</p>
           <div className="bfg-summary-row"><span>Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
           <div className="bfg-summary-row"><span>Time</span><strong>{fmtTime(night.start_time)} {night.timezone}</strong></div>
-          <div className="bfg-summary-row"><span>Format</span><strong>{(FORMATS.find((item) => item.value === night.meeting_format) || {}).label || night.meeting_format}</strong></div>
+          <div className="bfg-summary-row"><span>Format</span><strong>{formatLabel}</strong></div>
           {["online", "hybrid"].includes(night.meeting_format) && night.meeting_link && (
             <div className="bfg-summary-row"><span>Meeting Link</span><strong>{night.meeting_link}</strong></div>
           )}
           {["in_person", "hybrid"].includes(night.meeting_format) && night.meeting_location && (
             <div className="bfg-summary-row"><span>Location</span><strong>{night.meeting_location}</strong></div>
           )}
-          {night.note && <div className="bfg-summary-row"><span>Note to board</span><strong>{night.note}</strong></div>}
+          {night.note && <div className="bfg-summary-row"><span>Meeting Notes</span><strong>{night.note}</strong></div>}
         </div>
       )}
 
       {editing && (
         <div style={{ marginTop: 8 }} data-testid="bfg-game-night-form">
-          <label className="bfg-field"><span>Game Night Name <b>*</b></span>
-            <input value={form.name} onChange={set("name")} data-testid="bfg-night-name" />
-          </label>
           <div className="bfg-two-col">
-            <label className="bfg-field"><span>Board Meeting Date <b>*</b></span>
+            <label className="bfg-field"><span>Meeting Date <b>*</b></span>
               <input type="date" value={form.meeting_date} onChange={set("meeting_date")} data-testid="bfg-night-date" />
             </label>
             <label className="bfg-field"><span>Start Time <b>*</b></span>
@@ -141,15 +132,15 @@ export const GameNightSection = () => {
               <input value={form.meeting_location} onChange={set("meeting_location")} data-testid="bfg-night-location" />
             </label>
           )}
-          <label className="bfg-field"><span>Optional Note To Board</span>
-            <textarea rows={3} value={form.note} placeholder="Add anything you want your board members to know before Game Night."
+          <label className="bfg-field"><span>Optional Meeting Notes</span>
+            <textarea rows={3} value={form.note} placeholder="Add anything you want your board members to know before the meeting."
               onChange={set("note")} data-testid="bfg-night-note" />
           </label>
           {error && <p className="bfg-error" data-testid="bfg-night-error">{error}</p>}
           <div className="bfg-form-actions">
             {saved ? <button className="bfg-btn bfg-btn-ghost" onClick={() => setEditing(false)} data-testid="bfg-night-cancel">Cancel</button> : <span />}
             <button className="bfg-btn bfg-btn-primary" onClick={save} disabled={busy} data-testid="bfg-night-save">
-              {busy ? "Saving…" : "Save Game Night"}
+              {busy ? "Saving…" : "Save Meeting Details"}
             </button>
           </div>
         </div>

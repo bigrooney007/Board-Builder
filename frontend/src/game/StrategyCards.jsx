@@ -25,7 +25,8 @@ export const WorkingStrategyCard = () => {
         const status = (await memberApi.get("/game/strategy/status", { params: { mode: "working" } })).data;
         if (status.status === "done" && status.strategy_id) {
           clearInterval(timer.current); setPhase("idle");
-          navigate(`/game/strategy/view/${status.strategy_id}`);
+          const rows = (await memberApi.get("/game/strategies")).data.strategies || [];
+          setStrategies(rows);
         } else if (status.status === "failed") {
           clearInterval(timer.current); setPhase("failed");
         }
@@ -55,8 +56,9 @@ export const WorkingStrategyCard = () => {
       </div>
       {phase === "generating" ? (
         <div style={{ marginTop: 14 }} data-testid="bfg-working-generating">
-          <p className="bfg-note">Generating Your Fundraising Strategy...</p>
-          <p className="bfg-note">We are bringing together your fundraising goal, organization information and board ideas to build your strategy.</p>
+          <p style={{ fontWeight: 700, color: "#111827" }}>Building Your Working Fundraising Strategy</p>
+          <p className="bfg-note">We are bringing together the information currently available from your organization and board.</p>
+          <p className="bfg-note">This usually takes a few minutes. You can continue using your dashboard while we work.</p>
           <div className="bfg-doc-loading"><span /><span /><span /></div>
         </div>
       ) : phase === "failed" ? (

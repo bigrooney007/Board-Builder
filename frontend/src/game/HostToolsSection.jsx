@@ -3,23 +3,23 @@ import { Link } from "react-router-dom";
 const TOOLS = [
   {
     key: "call-script",
-    title: "Invite Your Board",
-    text: "Use this call script to personally introduce the Board Fundraising Game and explain what you need each board member to do before Game Night.",
-    button: "Open Invitation Call Script",
+    title: "Call Script",
+    text: "Push board members to complete the game before the meeting and make sure they know the invitation is already in their inbox.",
+    button: "Open Call Script",
     to: "/game/host/call-script",
   },
   {
     key: "facilitation",
-    title: "Facilitate Game Night",
-    text: "Use this step-by-step facilitation guide to lead your board through the Review Game, fundraising strategy review and adoption process.",
-    button: "Open Facilitation Script",
+    title: "Facilitation Guide",
+    text: "A step-by-step guide to running your Board Fundraising Day/Night — before, during and after the meeting.",
+    button: "Open Facilitation Guide",
     to: "/game/host/facilitation",
   },
   {
     key: "checklist",
-    title: "Prepare For Game Night",
-    text: "Use this checklist to make sure your board, game and meeting are ready before you begin.",
-    button: "Open Game Night Checklist",
+    title: "Checklist",
+    text: "Make sure your board, game and meeting are ready before, during and after your Board Fundraising Day/Night.",
+    button: "Open Checklist",
     to: "/game/host/checklist",
   },
 ];
@@ -28,8 +28,8 @@ export const HostToolsSection = () => (
   <section className="bfg-panel" data-testid="bfg-host-tools-section">
     <div className="bfg-panel-head">
       <div>
-        <h2>Game Night Tools</h2>
-        <p className="bfg-panel-sub">Everything you need to prepare your board and facilitate your Board Fundraising Game.</p>
+        <h2>Meeting Resources</h2>
+        <p className="bfg-panel-sub">Use the Call Script, Facilitation Guide and Checklist to prepare your board members and run the meeting.</p>
       </div>
     </div>
     <div className="bfg-ht-cards">

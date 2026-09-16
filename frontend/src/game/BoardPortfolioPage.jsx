@@ -245,6 +245,19 @@ export default function BoardPortfolioPage() {
             <ToolkitView toolkit={toolkit.toolkit} />
           </section>
         )}
+
+        {data.play_token && (
+          <section className="bfg-pf-section bfg-no-print" data-testid="bfg-bp-relationship-section">
+            <h2>Relationship Mapping</h2>
+            <p className="bfg-pf-sub">
+              Identify the people, businesses and grantors in your own network who match the funder profiles identified in {data.organization_name}'s fundraising strategy.
+            </p>
+            <a className="bfg-pf-btn" style={{ marginTop: 12, display: "inline-block" }}
+              href={`/relationship-mapping/${data.play_token}`} data-testid="bfg-bp-relationship-link">
+              Complete My Relationship Mapping
+            </a>
+          </section>
+        )}
       </div>
 
       {showApprove && (

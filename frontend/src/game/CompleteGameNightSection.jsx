@@ -28,13 +28,13 @@ export const CompleteGameNightSection = ({ overview }) => {
         </button>
       </div>
       <div className="bfg-night-summary" style={{ marginTop: 14 }}>
-        <div className="bfg-summary-row"><span>1. Send The Adopted Strategy</span><strong data-testid="bfg-cgn-delivery-status">{deliveryStatus}</strong></div>
+        <div className="bfg-summary-row"><span>1. Send The Final Strategy</span><strong data-testid="bfg-cgn-delivery-status">{deliveryStatus}</strong></div>
         <div className="bfg-summary-row"><span>2. Create Board Fundraising Portfolios</span><strong data-testid="bfg-cgn-portfolio-status">{portfolioStatus}</strong></div>
         <div className="bfg-summary-row"><span>3. Move Into Execution</span><strong data-testid="bfg-cgn-execution-status">{executionStatus}</strong></div>
       </div>
       {overview.sent_count === 0 ? (
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} onClick={() => navigate("/game/complete?send=1")} data-testid="bfg-send-adopted-strategy-btn">
-          Send Adopted Strategy To Board
+          Send Final Strategy To Board
         </button>
       ) : (
         <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 16 }} onClick={() => navigate("/game/complete?send=1")} data-testid="bfg-manage-strategy-delivery-btn">

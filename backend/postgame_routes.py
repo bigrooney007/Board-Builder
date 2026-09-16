@@ -15,10 +15,10 @@ GAME_ENTITLEMENT = "board_fundraising_game"
 TOTAL_SECTIONS = 10
 
 DEFAULT_POSTGAME_EMAIL = {
-    "subject": "[Organization Name]'s Fundraising Strategy Is Ready",
-    "opening": "Thank you for participating in [Organization Name]'s Board Fundraising Game.\n\nTogether, your board contributed ideas, prioritized the strongest opportunities, reviewed the fundraising strategy and adopted the plan your organization will now use to work toward its [Fundraising Goal] fundraising goal.",
-    "strategy_ready": "Your adopted fundraising strategy is now ready.",
-    "execution_next": "This strategy belongs to the board as a working document. It brings together the decisions made during Game Night and provides the direction for how [Organization Name] will raise money and build its fundraising system.\n\nThe next step is execution.\n\nYou will also receive your personal Board Fundraising Portfolio showing how you can help build the fundraising system and how you can support fundraising directly.",
+    "subject": "Your Board Fundraising Strategy Is Ready",
+    "opening": "Thank you for participating in [Organization Name]'s Board Fundraising Game.",
+    "strategy_ready": "Your board's final fundraising strategy is now ready.\n\nThe strategy brings together the ideas contributed by the board, the priorities selected during the Group Game and the decisions made during your board meeting.",
+    "execution_next": "Start by reviewing the final strategy.\n\nThen click See How I Am Involved to view your personal Board Fundraising Portfolio and see exactly how you agreed to help.\n\nYou will also be able to access your Execution Materials and complete your Relationship Mapping Form.",
 }
 
 PORTFOLIO_SENT_STATUSES = {"sent", "change_requested", "approved", "materials_ready"}
@@ -104,7 +104,7 @@ def create_postgame_router(db) -> APIRouter:
             f"<p style='margin:14px 0;'>Hi {html.escape(first)},</p>"
             + paragraphs_html(fill(content["opening"], mapping))
             + paragraphs_html(fill(content["strategy_ready"], mapping))
-            + game_button(f"{origin.rstrip('/')}/strategy/{strategy['share_token']}", "View Our Fundraising Strategy")
+            + game_button(f"{origin.rstrip('/')}/game/final/{record['token']}", "View Final Fundraising Strategy")
             + paragraphs_html(fill(content["execution_next"], mapping))
             + "<p style='margin:22px 0 4px;'></p>" + signature_html(profile, member)
         )

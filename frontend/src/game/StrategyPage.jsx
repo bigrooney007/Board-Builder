@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
-import { MODE_LABELS, STRATEGY_SECTIONS, StrategyDocument, sectionToText } from "./strategyRender";
+import { MODE_LABELS, getStrategySections, versionLabel, StrategyDocument, sectionToText } from "./strategyRender";
 
 export default function StrategyPage() {
   const { strategyId } = useParams();
@@ -12,6 +12,8 @@ export default function StrategyPage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
   const [strategy, setStrategy] = useState(null);
+  const [versions, setVersions] = useState([]);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -25,6 +27,8 @@ export default function StrategyPage() {
   const load = useCallback(async () => {
     try { setStrategy((await memberApi.get(`/game/strategy/view/${strategyId}`)).data.strategy); }
     catch { setError("This strategy could not be loaded."); }
+    try { setVersions((await memberApi.get("/game/strategies")).data.strategies || []); }
+    catch { /* the version selector simply stays hidden */ }
   }, [strategyId]);
 
   useEffect(() => {
@@ -35,7 +39,8 @@ export default function StrategyPage() {
 
   useEffect(() => {
     if (!strategy) return;
-    const section = STRATEGY_SECTIONS[sectionIndex];
+    const section = getStrategySections(strategy)[sectionIndex];
+    if (!section) return;
     const edits = strategy.section_edits || {};
     setDraft(edits[section.key] !== undefined && edits[section.key] !== ""
       ? edits[section.key]
@@ -44,6 +49,24 @@ export default function StrategyPage() {
   }, [strategy, sectionIndex]);
 
   if (loading || (!strategy && !error)) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+
+  const sections = strategy ? getStrategySections(strategy) : [];
+
+  const download = async () => {
+    setDownloading(true);
+    try {
+      const response = await memberApi.get(`/game/strategy/view/${strategyId}/download`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `fundraising-strategy-v${strategy.version}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch { /* keep the page usable */ }
+    setDownloading(false);
+  };
 
   const copyLink = async () => {
     const link = `${window.location.origin}/strategy/${strategy.share_token}`;
@@ -63,8 +86,8 @@ export default function StrategyPage() {
     setSaveState("saving");
     try {
       await memberApi.put(`/game/strategy/view/${strategyId}/section`, {
-        section_key: STRATEGY_SECTIONS[sectionIndex].key, text: draft });
-      setStrategy((current) => ({ ...current, section_edits: { ...(current.section_edits || {}), [STRATEGY_SECTIONS[sectionIndex].key]: draft } }));
+        section_key: sections[sectionIndex].key, text: draft });
+      setStrategy((current) => ({ ...current, section_edits: { ...(current.section_edits || {}), [sections[sectionIndex].key]: draft } }));
       setSaveState("saved");
     } catch { setSaveState("error"); }
   };
@@ -81,10 +104,29 @@ export default function StrategyPage() {
         {error && <div className="bfg-panel"><p className="bfg-error">{error}</p></div>}
         {strategy && !reviewMode && (
           <>
-            <div className="bfg-bm-actions" style={{ marginBottom: 16 }}>
-              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={copyLink} data-testid="bfg-copy-strategy-link-btn">
-                {copied ? "Link Copied" : "Copy Strategy Link"}
-              </button>
+            <div className="bfg-panel" style={{ padding: "14px 18px", marginBottom: 16 }} data-testid="bfg-strategy-toolbar">
+              <div className="bfg-panel-head" style={{ alignItems: "center" }}>
+                <label className="bfg-field" style={{ margin: 0, maxWidth: 420 }}>
+                  <span>Version</span>
+                  <select value={strategyId}
+                    onChange={(event) => navigate(`/game/strategy/view/${event.target.value}`)}
+                    data-testid="bfg-strategy-version-select">
+                    {(versions.length ? versions : [strategy]).map((row) => (
+                      <option key={row.strategy_id} value={row.strategy_id}>
+                        {versionLabel(row)} — {row.generated_at ? new Date(row.generated_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="bfg-bm-actions" style={{ marginTop: 0 }}>
+                  <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={download} disabled={downloading} data-testid="bfg-download-strategy-btn">
+                    {downloading ? "Preparing PDF…" : "Download Strategy"}
+                  </button>
+                  <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={copyLink} data-testid="bfg-copy-strategy-link-btn">
+                    {copied ? "Link Copied" : "Copy Strategy Link"}
+                  </button>
+                </div>
+              </div>
             </div>
             {strategy.mode === "board_prioritized" && strategy.status !== "adopted" && (
               <section className="bfg-panel" data-testid="bfg-review-with-board-panel">
@@ -115,8 +157,8 @@ export default function StrategyPage() {
         )}
         {strategy && reviewMode && !reviewDone && (
           <div className="bfg-panel" data-testid="bfg-strategy-review">
-            <p className="bfg-eyebrow">Reviewing Section {sectionIndex + 1} of {STRATEGY_SECTIONS.length}</p>
-            <h2>{STRATEGY_SECTIONS[sectionIndex].title}</h2>
+            <p className="bfg-eyebrow">Reviewing Section {sectionIndex + 1} of {sections.length}</p>
+            <h2>{sections[sectionIndex].title}</h2>
             <p className="bfg-note" style={{ marginTop: 8 }}>{MODE_LABELS[strategy.mode]} — edits save without another AI call.</p>
             <label className="bfg-field">
               <span>Strategy text for this section</span>
@@ -131,7 +173,7 @@ export default function StrategyPage() {
               <button className="bfg-btn bfg-btn-ghost" disabled={saveState === "saving"} onClick={saveSection} data-testid="bfg-review-save-btn">
                 {saveState === "saving" ? "Saving…" : "Save Changes"}
               </button>
-              {sectionIndex < STRATEGY_SECTIONS.length - 1 ? (
+              {sectionIndex < sections.length - 1 ? (
                 <button className="bfg-btn bfg-btn-primary" onClick={() => setSectionIndex(sectionIndex + 1)} data-testid="bfg-review-next-btn">Next Section</button>
               ) : (
                 <button className="bfg-btn bfg-btn-primary" onClick={finishReview} data-testid="bfg-finish-review-btn">Finish Review</button>

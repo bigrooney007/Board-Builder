@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, PlayCircle } from "lucide-react";
 import { memberApi } from "@/member/api";
-import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { SupportBox } from "@/member/CoursePages";
 import { GameNightSection } from "./GameNightSection";
@@ -10,7 +8,9 @@ import { HostToolsSection } from "./HostToolsSection";
 import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
 import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
-import { BfgShell, GameVideo, formatDate, money } from "./gameShared";
+import { CompleteBoardMeetingSection, FinalOutputsSection } from "./MeetingOutputs";
+import { DashboardTour } from "./DashboardTour";
+import { BfgShell, formatDate, money } from "./gameShared";
 
 const SUPPORT_TYPES = [
   "I have a question about this module",
@@ -29,7 +29,7 @@ const GroupGameCard = () => {
   const session = overview.session;
   const completed = session?.status === "completed";
   return (
-    <section className="bfg-panel" data-testid="bfg-group-game-card">
+    <section className="bfg-panel" data-tour="group-game" data-testid="bfg-group-game-card">
       <div className="bfg-panel-head">
         <div>
           <h2>Group Review Game</h2>
@@ -37,10 +37,10 @@ const GroupGameCard = () => {
             {completed
               ? "Completed — 8 of 8 rounds completed"
               : session?.status === "in_progress"
-                ? "In progress — continue running Game Night with your board."
+                ? "In progress — continue running your Board Fundraising Day/Night with your board."
                 : session
                   ? "Ready — your Group Game link is prepared and waiting."
-                  : "Bring your board together to review and rank the ideas contributed before Game Night."}
+                  : "Bring your board together to review and rank the ideas contributed before your meeting."}
           </p>
           {completed && <p className="bfg-note">{session.participants_joined} board members participated</p>}
         </div>
@@ -64,13 +64,33 @@ const GroupGameCard = () => {
 export default function GameDashboardPage() {
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
-  const video = useFlowVideo("game_welcome");
   const [data, setData] = useState(null);
   const [postgame, setPostgame] = useState(null);
-  const [showTutorial, setShowTutorial] = useState(false);
+  const [meeting, setMeeting] = useState(null);
+  const [showTour, setShowTour] = useState(false);
   const [denied, setDenied] = useState(false);
+  const meetingPoller = useRef(null);
 
   useEffect(() => { document.title = "Your Game Dashboard | Board Fundraising Game"; }, []);
+
+  const loadMeeting = useCallback(async () => {
+    try {
+      const overview = (await memberApi.get("/game/meeting/overview")).data;
+      setMeeting(overview);
+      clearInterval(meetingPoller.current);
+      if (overview.final?.status === "running") {
+        meetingPoller.current = setInterval(async () => {
+          try {
+            const next = (await memberApi.get("/game/meeting/overview")).data;
+            setMeeting(next);
+            if (next.final?.status !== "running") clearInterval(meetingPoller.current);
+          } catch { /* keep polling */ }
+        }, 5000);
+      }
+    } catch { /* section stays hidden */ }
+  }, []);
+
+  useEffect(() => () => clearInterval(meetingPoller.current), []);
 
   useEffect(() => {
     if (loading) return;
@@ -82,7 +102,8 @@ export default function GameDashboardPage() {
         else navigate("/game/start", { replace: true });
       });
     memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
-  }, [loading, member, navigate]);
+    loadMeeting();
+  }, [loading, member, navigate, loadMeeting]);
 
   if (loading || (!data && !denied)) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
@@ -115,6 +136,10 @@ export default function GameDashboardPage() {
           <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/start?edit=1" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
         </div>
 
+        <div data-tour="working-strategy">
+          <WorkingStrategyCard />
+        </div>
+
         <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
         <CompleteGameNightSection overview={postgame} />
 
@@ -133,13 +158,13 @@ export default function GameDashboardPage() {
                 <p className="bfg-sub">{{
                   "Setting Up": "Complete your setup and add the board members who will play.",
                   "Board Preparing": "Invitations are out and your board members are playing their Individual Games.",
-                  "Ready For Game Night": "Your Game Night is scheduled and your board is preparing.",
+                  "Ready For Game Night": "Your Board Fundraising Day/Night is scheduled and your board is preparing.",
                   "Game Night In Progress": "Your board is playing the Group Review Game together.",
                   "Strategy Review": "Your board is reviewing its fundraising strategy.",
                   "Strategy Adopted": "Your board has adopted its fundraising strategy.",
                   "Moving Into Execution": "Board Fundraising Portfolios are being prepared and sent.",
                   "Execution Ready": "Approved board members can now access their execution resources.",
-                }[postgame?.journey_status] || "Your game setup is complete. Prepare your board for Game Night."}</p>
+                }[postgame?.journey_status] || "Your game setup is complete. Prepare your board for your Board Fundraising Day/Night."}</p>
               </>
             ) : (
               <>
@@ -153,34 +178,31 @@ export default function GameDashboardPage() {
           </div>
           <div className="bfg-dash-card" data-testid="bfg-dashboard-tutorial-card">
             <h3>Tutorial</h3>
-            <p className="bfg-sub">How to use the platform, prepare your board and run the game.</p>
-            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 14 }} onClick={() => setShowTutorial(!showTutorial)} data-testid="bfg-watch-tutorial-btn">
-              <PlayCircle size={16} /> {showTutorial ? "Hide Tutorial" : "Watch Tutorial"}
+            <p className="bfg-sub">Take a guided tour of your dashboard — how to prepare your board, run the meeting and build your strategy.</p>
+            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 14 }} onClick={() => setShowTour(true)} data-testid="bfg-watch-tutorial-btn">
+              Tutorial
             </button>
           </div>
         </div>
 
-        {showTutorial && <div style={{ marginBottom: 24 }}><GameVideo video={video} testId="bfg-dashboard-tutorial-video" /></div>}
-
-        <GameNightSection />
-        <HostToolsSection />
-        <BoardMembersSection />
+        <div data-tour="board-participation">
+          <BoardMembersSection />
+        </div>
+        <div data-tour="prepare-meeting">
+          <GameNightSection />
+        </div>
+        <div data-tour="meeting-resources">
+          <HostToolsSection />
+        </div>
         <GroupGameCard />
-        <WorkingStrategyCard />
+        <div data-tour="complete-meeting">
+          <CompleteBoardMeetingSection overview={meeting} onRefresh={loadMeeting} />
+        </div>
+        <FinalOutputsSection overview={meeting} />
         <StrategiesHistoryCard />
 
-        <p className="bfg-eyebrow" style={{ marginTop: 30 }}>Your Game Areas</p>
-        <div className="bfg-areas">
-          {data.areas.map((area) => (
-            <div className="bfg-area" key={area.key} data-testid={`bfg-area-${area.key}`}>
-              <span className="bfg-lock-badge"><Lock size={12} /> Coming Soon</span>
-              <h4>{area.name}</h4>
-              <p>{area.description}</p>
-            </div>
-          ))}
-        </div>
-
         <SupportBox productKey="board_fundraising_game" moduleNumber={1} supportTypes={SUPPORT_TYPES} />
+        {showTour && <DashboardTour onClose={() => setShowTour(false)} />}
       </main>
     </BfgShell>
   );

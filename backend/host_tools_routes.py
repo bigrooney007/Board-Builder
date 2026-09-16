@@ -118,6 +118,7 @@ def create_host_tools_router(db) -> APIRouter:
             "[Organisation Name]": organization,
             "[Fundraising Goal]": fmt_goal(profile),
             "[Fundraising Deadline]": fmt_deadline(profile) or "our deadline",
+            "[Meeting Date]": fmt_meeting_date(night) or "our next board meeting",
         })
         invited = await db.game_board_members.count_documents(
             {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": "invited"})

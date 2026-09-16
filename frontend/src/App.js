@@ -96,6 +96,10 @@ import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
 import GameUpgradePage from "@/game/GameUpgradePage";
+import ExecutionMaterialsPage from "@/game/ExecutionMaterialsPage";
+import RelationshipMapDashboardPage from "@/game/RelationshipMapDashboardPage";
+import RelationshipMappingPage from "@/game/RelationshipMappingPage";
+import FinalStrategyMemberPage from "@/game/FinalStrategyMemberPage";
 
 const PUBLIC_CENTERED_PATHS = ["/fundraising-system", "/board-fix", "/board-fix-intake", "/board-fix-orientation", "/recruit", "/reactivate", "/activate", "/recruit/process", "/recruit-with-rooney", "/reactivate-with-rooney", "/activate-with-rooney", "/about-rooney", "/board-reactivation", "/board-recruitment", "/board-fundraising-activation", "/complete-board-transformation"];
 
@@ -163,6 +167,10 @@ export default function App() {
           <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/game/complete" element={<GameNightCompletePage />} />
           <Route path="/game/upgrade" element={<GameUpgradePage />} />
+          <Route path="/game/execution-materials" element={<ExecutionMaterialsPage />} />
+          <Route path="/game/relationships" element={<RelationshipMapDashboardPage />} />
+          <Route path="/game/final/:token" element={<FinalStrategyMemberPage />} />
+          <Route path="/relationship-mapping/:token" element={<RelationshipMappingPage />} />
           <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
           <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
           <Route path="/board-transformation" element={<BoardTransformationPage />} />

@@ -93,8 +93,9 @@ export default function GameSituationPage() {
           extras: { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time },
         });
       } catch { /* participation stored on the situation either way */ }
-      setBusy(false);
-      await startGeneration();
+      try { await memberApi.post("/game/strategy/generate", { mode: "working" }); }
+      catch { /* the dashboard can start generation again */ }
+      navigate("/game/dashboard", { replace: true });
     } catch {
       setError("We could not save your answers. Please try again.");
       setBusy(false);

@@ -601,7 +601,11 @@ def create_portfolio_router(db) -> APIRouter:
         strategy = await db.game_strategies.find_one(
             {"strategy_id": portfolio["strategy_id"]}, {"_id": 0, "share_token": 1}) or {}
         toolkit = await toolkit_for(portfolio)
-        return portfolio_view(portfolio, profile, strategy, toolkit)
+        view = portfolio_view(portfolio, profile, strategy, toolkit)
+        record = await db.game_board_members.find_one(
+            {"member_id": portfolio["board_member_id"]}, {"_id": 0, "token": 1}) or {}
+        view["play_token"] = record.get("token", "")
+        return view
 
     @router.post("/board-portfolio/{token}/respond")
     async def public_respond(token: str, payload: RespondPayload):
