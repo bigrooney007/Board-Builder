@@ -11,6 +11,17 @@ export default function FinalStrategyMemberPage() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [showCta, setShowCta] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const first = document.getElementById("strategy-executive_summary");
+      if (first && first.getBoundingClientRect().top < window.innerHeight * 0.85) setShowCta(true);
+    };
+    window.addEventListener("scroll", onScroll);
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [data]);
 
   useEffect(() => { document.title = "Your Board Fundraising Strategy | Board Fundraising Game"; }, []);
   useEffect(() => {
@@ -43,32 +54,21 @@ export default function FinalStrategyMemberPage() {
 
   return (
     <BfgShell>
-      <main className="bfg-dash" data-testid="bfg-member-final-page" style={{ maxWidth: 900 }}>
-        <div className="bfg-panel" data-testid="bfg-member-final-actions">
-          <div className="bfg-panel-head">
-            <div>
-              <h2>{data.member_first_name ? `${data.member_first_name}, here` : "Here"} is your board's final fundraising strategy</h2>
-              <p className="bfg-panel-sub" style={{ marginTop: 6 }}>
-                It brings together the ideas contributed by the board, the priorities selected during the Group Game and the decisions made during your board meeting.
-              </p>
-            </div>
-          </div>
-          <div className="bfg-bm-actions" style={{ marginTop: 14 }}>
-            {data.portfolio_token ? (
-              <button className="bfg-btn bfg-btn-primary" onClick={() => navigate(`/board-portfolio/${data.portfolio_token}`)}
-                data-testid="bfg-see-how-involved-btn">
-                See How I Am Involved
-              </button>
-            ) : (
-              <p className="bfg-note" data-testid="bfg-portfolio-pending-note">Your personal Board Fundraising Portfolio is being prepared.</p>
-            )}
-            <button className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/relationship-mapping/${token}`)}
-              data-testid="bfg-complete-relationship-mapping-btn">
-              Complete My Relationship Mapping
+      <main className="bfg-dash" data-testid="bfg-member-final-page" style={{ maxWidth: 900, paddingBottom: 110 }}>
+        <StrategyDocument strategy={data.strategy} />
+        {showCta && data.portfolio_token && (
+          <div style={{
+            position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 500,
+            background: "rgba(255,255,255,0.96)", borderTop: "1px solid #e5e7eb",
+            padding: "12px 20px", display: "flex", justifyContent: "center",
+            boxShadow: "0 -8px 24px rgba(0,0,0,0.08)",
+          }} data-testid="bfg-member-final-sticky-cta">
+            <button className="bfg-btn bfg-btn-primary" onClick={() => navigate(`/board-portfolio/${data.portfolio_token}`)}
+              data-testid="bfg-see-how-involved-btn">
+              See How I Am Involved
             </button>
           </div>
-        </div>
-        <StrategyDocument strategy={data.strategy} />
+        )}
       </main>
     </BfgShell>
   );

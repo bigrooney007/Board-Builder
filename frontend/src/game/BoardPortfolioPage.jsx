@@ -137,6 +137,7 @@ export default function BoardPortfolioPage() {
 
         {data.system_roles.length > 0 && (
           <section className="bfg-pf-section" data-testid="bfg-bp-system-section">
+            <p className="bfg-pf-eyebrow">HOW I AGREED TO HELP</p>
             <h2>Your Role In Building Our Fundraising System</h2>
             <p className="bfg-pf-sub">
               These are the areas where you will help strengthen the people, processes, technology and resources required to execute our fundraising strategy.
@@ -238,11 +239,16 @@ export default function BoardPortfolioPage() {
 
         {toolkitReady && (
           <section className="bfg-pf-section" data-testid="bfg-bp-toolkit-section">
+            <p className="bfg-pf-eyebrow">WHAT I NEED TO EXECUTE</p>
             <h2>Your Execution Toolkit</h2>
             <p className="bfg-pf-sub">
               These materials were created specifically for the role you approved in {data.organization_name}'s fundraising strategy.
             </p>
             <ToolkitView toolkit={toolkit.toolkit} />
+            <a className="bfg-pf-btn bfg-no-print" style={{ marginTop: 14, display: "inline-block" }}
+              href={`${API}/board-portfolio/${token}/toolkit/download`} data-testid="bfg-bp-download-materials-btn">
+              Download My Execution Materials
+            </a>
           </section>
         )}
 

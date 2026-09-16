@@ -164,9 +164,14 @@ export default function GroupGamePage() {
                     </div>
                   ))}
                 </div>
+                <h3 style={{ marginTop: 22, fontSize: 18 }}>Now Let's Bring The Board's Ideas Together</h3>
+                <p className="bfg-panel-sub" style={{ marginTop: 8, textAlign: "left" }}>
+                  Everyone has already shared their thinking individually. Now your job as a board is to review the ideas, identify what you believe should become priorities and use your collective wisdom to strengthen the fundraising strategy.
+                  {" "}The ideas that receive the strongest board support will become Board Priorities. The other valid ideas will remain available as Additional Board Ideas in the final strategy.
+                </p>
                 <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "start"}
                   onClick={() => run("start", () => memberApi.post("/game/group/start"))} data-testid="bfg-gg-start-btn">
-                  {busy === "start" ? "Starting…" : "Start Review Game"}
+                  {busy === "start" ? "Starting…" : "Start Group Game"}
                 </button>
               </div>
             )}
@@ -243,10 +248,11 @@ export default function GroupGamePage() {
 
             {status === "completed" && (
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
-                <h2>Your Board Has Completed The Fundraising Game</h2>
+                <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board reviewed everyone's ideas across the four strategic areas and prioritized the strongest opportunities.
-                  {" "}The next step is turning those decisions into your organization's complete fundraising strategy — including the team, technology, materials, resources and timeline needed to execute it.
+                  You have identified your board's fundraising priorities.
+                  {" "}Now continue your board discussion. Talk about what needs to change, what needs to be added, who will take responsibility and how the strategy should be executed.
+                  {" "}After the meeting, add the meeting transcript to your dashboard so those decisions can be reflected in the Final Board Fundraising Strategy.
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>

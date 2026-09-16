@@ -20,7 +20,27 @@ export default function GameSituationPage() {
   const [strategyId, setStrategyId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [rIdx, setRIdx] = useState(-1);
+  const [partStep, setPartStep] = useState(-1);
+  const [anything, setAnything] = useState("");
+  const [clips, setClips] = useState({});
+  const audioRef = useRef(null);
   const poller = useRef(null);
+
+  const playClip = (id) => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    const clip = clips[id];
+    if (!clip?.ready) return null;
+    const audio = new Audio(`${process.env.REACT_APP_BACKEND_URL}${clip.url}`);
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+    return audio;
+  };
+  useEffect(() => () => { if (audioRef.current) audioRef.current.pause(); }, []);
+  useEffect(() => {
+    if (!token) return;
+    axios.get(`${API}/game/voice/manifest/${token}`).then((r) => setClips(r.data.clips || {})).catch(() => {});
+  }, [token]);
 
   useEffect(() => { document.title = "Complete Your Game Setup | Board Fundraising Game"; }, []);
   useEffect(() => () => clearInterval(poller.current), []);
@@ -38,6 +58,7 @@ export default function GameSituationPage() {
           build: saved.build || [], buildOther: saved.build_other || "",
           raise: saved.raise || [], raiseOther: saved.raise_other || "", time: saved.time || "",
         });
+        setAnything(saved.anything_else || "");
         let selfToken = "";
         try { selfToken = (await memberApi.post("/game/self-play")).data.token; }
         catch { navigate("/game/start", { replace: true }); return; }
@@ -80,9 +101,24 @@ export default function GameSituationPage() {
     }, 3000);
   };
 
+  const REALITY_CLIPS = ["reality_donors", "reality_businesses", "reality_grantors", "reality_team", "reality_resources"];
+  const PART_CLIPS = ["part_build", "part_raise", "part_time", "part_anything"];
+
+  useEffect(() => {
+    if (phase === "reality") playClip(rIdx === -1 ? "reality_intro" : REALITY_CLIPS[rIdx]);
+    else if (phase === "participation") playClip(partStep === -1 ? "part_intro" : PART_CLIPS[partStep]);
+    else if (phase === "done") {
+      const audio = playClip("lead_setup_complete");
+      const go = () => navigate("/game/dashboard", { replace: true });
+      if (audio) audio.onended = go;
+      else setTimeout(go, 2500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, rIdx, partStep, clips]);
+
   const finishParticipation = async () => {
     setBusy(true); setError("");
-    const participation = { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time };
+    const participation = { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time, anything_else: anything };
     try {
       await memberApi.put("/game/situation", { sections: { current_reality: reality, participation }, current_step: 6 });
       await memberApi.post("/game/situation/complete");
@@ -90,12 +126,14 @@ export default function GameSituationPage() {
         await axios.post(`${API}/game/play/${token}/section/5/complete`, {
           first_response: [], final_response: [], first_move_locked: true, guided_selections: {}, additional_ideas: {},
           stage_responses: {}, preferences: [], do_not_want: [], group_game_ideas: [],
-          extras: { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time },
+          extras: { build: part.build, build_other: part.buildOther, raise: part.raise, raise_other: part.raiseOther, time: part.time, additional_idea: anything },
         });
       } catch { /* participation stored on the situation either way */ }
       try { await memberApi.post("/game/strategy/generate", { mode: "working" }); }
       catch { /* the dashboard can start generation again */ }
-      navigate("/game/dashboard", { replace: true });
+      setBusy(false);
+      setPhase("done");
+      window.scrollTo({ top: 0 });
     } catch {
       setError("We could not save your answers. Please try again.");
       setBusy(false);
@@ -161,33 +199,36 @@ export default function GameSituationPage() {
 
   if (phase === "reality") {
     const questions = cr.questions || [];
+    if (rIdx === -1) {
+      return shell(<>
+        <h1 data-testid="bfg-reality-intro-heading">NOW LET'S BUILD AROUND WHAT YOU ALREADY HAVE</h1>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} onClick={() => { setRIdx(0); window.scrollTo({ top: 0 }); }} data-testid="bfg-reality-intro-continue">
+          Continue
+        </button>
+      </>, "bfg-setup-reality-intro");
+    }
+    const question = questions[rIdx] || {};
+    const last = rIdx === questions.length - 1;
     const continueReality = async () => {
+      if (!last) { setRIdx(rIdx + 1); window.scrollTo({ top: 0 }); return; }
       setBusy(true); setError("");
       try {
         await memberApi.put("/game/situation", { sections: { current_reality: reality }, current_step: 5 });
-        setPhase("participation"); window.scrollTo({ top: 0 });
+        setPhase("participation"); setPartStep(-1); window.scrollTo({ top: 0 });
       } catch { setError("We could not save your answers. Please try again."); }
       setBusy(false);
     };
     return shell(<>
-      <h1 data-testid="bfg-reality-heading">{cr.heading}</h1>
-      {String(cr.supporting || "").split("\n").filter((line) => line.trim()).map((line, i) => <p key={i} style={{ marginTop: 12 }}>{line}</p>)}
-      <div style={{ marginTop: 10, textAlign: "left" }}>
-        {questions.map((question) => (
-          <div className="bfg-card" key={question.key} style={{ marginTop: 16, padding: 18 }}>
-            <h3>{question.heading}</h3>
-            <label className="bfg-field" style={{ marginTop: 8 }}>
-              <span>{question.question}</span>
-              <textarea rows={4} value={reality[question.key] || ""}
-                onChange={(event) => setReality((current) => ({ ...current, [question.key]: event.target.value }))}
-                data-testid={`bfg-reality-${question.key}`} />
-            </label>
-          </div>
-        ))}
-      </div>
+      <p className="bfg-eyebrow">YOUR CURRENT REALITY — {rIdx + 1} OF {questions.length}</p>
+      <h1 data-testid="bfg-reality-heading">{question.heading}</h1>
+      <p style={{ marginTop: 18, fontWeight: 700, fontSize: 18 }} data-testid={`bfg-reality-question-${question.key}`}>{question.question}</p>
+      <textarea rows={7} style={{ width: "100%", marginTop: 22, padding: 16, border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, lineHeight: 1.6 }}
+        placeholder="Type your answer here..." value={reality[question.key] || ""}
+        onChange={(event) => setReality((current) => ({ ...current, [question.key]: event.target.value }))}
+        data-testid={`bfg-reality-${question.key}`} />
       {error && <p className="bfg-error">{error}</p>}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={continueReality} data-testid="bfg-reality-continue">
-        {busy ? "Saving…" : "Save & Continue"}
+        {busy ? "Saving…" : "Continue"}
       </button>
     </>, "bfg-setup-reality");
   }
@@ -197,9 +238,8 @@ export default function GameSituationPage() {
       ...current,
       [listKey]: current[listKey].includes(option) ? current[listKey].filter((item) => item !== option) : [...current[listKey], option],
     }));
-    const checkList = (question, options, listKey, otherKey, otherPrompt, testId) => (
-      <div style={{ marginTop: 24, textAlign: "left" }}>
-        <h3>{question}</h3>
+    const checkList = (options, listKey, otherKey, otherPrompt, testId) => (
+      <div style={{ marginTop: 20, textAlign: "left" }}>
         {options.map((option) => (
           <label key={option} className="bfg-ht-check" data-testid={`${testId}-${option.slice(0, 20).replace(/\s+/g, "-").toLowerCase()}`}>
             <input type="checkbox" checked={part[listKey].includes(option)} onChange={() => toggle(listKey, option)} /><span>{option}</span>
@@ -213,22 +253,55 @@ export default function GameSituationPage() {
         )}
       </div>
     );
+    const screens = [
+      { heading: "HOW DO YOU WANT TO HELP BUILD AND MANAGE THE FUNDRAISING SYSTEM?",
+        body: checkList(pp.build_options || [], "build", "buildOther", pp.build_other_prompt, "bfg-setup-build"), can: true },
+      { heading: "HOW DO YOU WANT TO HELP RAISE MONEY?",
+        body: checkList(pp.raise_options || [], "raise", "raiseOther", pp.raise_other_prompt, "bfg-setup-raise"), can: true },
+      { heading: "HOW MUCH TIME CAN YOU REALISTICALLY COMMIT EACH MONTH?",
+        body: (
+          <div style={{ marginTop: 20, textAlign: "left" }}>
+            {(pp.time_options || []).map((option) => (
+              <label key={option} className="bfg-ht-check"><input type="radio" name="bfg-setup-time" checked={part.time === option} onChange={() => setPart((current) => ({ ...current, time: option }))} /><span>{option}</span></label>
+            ))}
+          </div>), can: !!part.time },
+      { heading: "IS THERE ANYTHING ELSE YOU WANT TO SHARE?",
+        body: (
+          <textarea rows={6} style={{ width: "100%", marginTop: 20, padding: 16, border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, lineHeight: 1.6 }}
+            placeholder="Type your answer here..." value={anything}
+            onChange={(event) => setAnything(event.target.value)} data-testid="bfg-setup-anything-input" />), can: true },
+    ];
+    if (partStep === -1) {
+      return shell(<>
+        <h1 data-testid="bfg-participation-intro-heading">NOW LET'S TALK ABOUT YOU</h1>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} onClick={() => { setPartStep(0); window.scrollTo({ top: 0 }); }} data-testid="bfg-participation-intro-continue">
+          Continue
+        </button>
+      </>, "bfg-setup-participation-intro");
+    }
+    const screen = screens[partStep];
+    const last = partStep === screens.length - 1;
     return shell(<>
-      <h1 data-testid="bfg-participation-heading">{pp.heading}</h1>
-      {checkList(pp.build_question, pp.build_options || [], "build", "buildOther", pp.build_other_prompt, "bfg-setup-build")}
-      {checkList(pp.raise_question, pp.raise_options || [], "raise", "raiseOther", pp.raise_other_prompt, "bfg-setup-raise")}
-      <div style={{ marginTop: 24, textAlign: "left" }}>
-        <h3>{pp.time_question}</h3>
-        {(pp.time_options || []).map((option) => (
-          <label key={option} className="bfg-ht-check"><input type="radio" name="bfg-setup-time" checked={part.time === option} onChange={() => setPart((current) => ({ ...current, time: option }))} /><span>{option}</span></label>
-        ))}
-      </div>
+      <h1 data-testid="bfg-participation-heading">{screen.heading}</h1>
+      {screen.body}
       {error && <p className="bfg-error">{error}</p>}
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={finishParticipation} data-testid="bfg-setup-participation-submit">
-        {busy ? "Saving…" : pr.generate_button}
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy || !screen.can}
+        onClick={() => { if (last) finishParticipation(); else { setPartStep(partStep + 1); window.scrollTo({ top: 0 }); } }}
+        data-testid="bfg-setup-participation-submit">
+        {busy ? "Saving…" : last ? "Continue" : "Continue"}
       </button>
-      <p style={{ marginTop: 12, fontSize: 14 }}>{pr.generate_text}</p>
-    </>, "bfg-setup-participation");
+    </>, `bfg-setup-participation-${partStep}`);
+  }
+
+  if (phase === "done") {
+    return shell(<>
+      <h1 data-testid="bfg-setup-done-heading">Building Your Working Fundraising Strategy</h1>
+      <p style={{ marginTop: 14 }}>We're taking you to your dashboard now. Your working strategy will be there as soon as it's ready.</p>
+      <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 22 }}
+        onClick={() => navigate("/game/dashboard", { replace: true })} data-testid="bfg-setup-done-dashboard">
+        Go To My Dashboard
+      </button>
+    </>, "bfg-setup-done");
   }
 
   if (phase === "generating") {

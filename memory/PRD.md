@@ -31,7 +31,18 @@ Stripe (payments), Claude via Emergent LLM key (strategy/fine-tune/compile), Ele
 
 ## Implemented (dates)
 - 2026-06: Second Response save bug fix ($set/$setOnInsert conflict on `completed`).
-- 2026-06: FULL dashboard/strategy/post-game/document workflow update (all 48 spec sections above). Backend restarted cleanly, frontend webpack compiled successfully. NOT functionally tested per user's no-testing rule — user will verify in production.
+- 2026-06: FULL dashboard/strategy/post-game/document workflow update (48-section spec).
+- 2026-06: LEARNING EXPERIENCE UPDATE:
+  - voice_content.py rewritten: 25 active learning clips (exact Rooney scripts, keys: lead_opening, board_opening, a1-a4 _intro/_deeper, approval_review, lead_free_complete, reality_intro, reality_donors/businesses/grantors/team/resources, part_intro/build/raise/time/anything, board_complete, lead_setup_complete). Old audio docs stay in game_voice_audio (inactive/needs_regeneration). NO audio generated — admin "Generate All Missing Learning Narration" button triggers later, LIVE voice ID, one request per script.
+  - GamePlayPage: new "welcome" phase (lead/board variants, START MY GAME, org+goal shown), per-screen autoplay clips (welcome/intro/deeper/finetune/participation/board_done), per-area deeper labels (label2), new "lead_done" phase (clip 12 → CONTINUE → /game/upgrade).
+  - game_content_v3.py: guided questions updated to exact spec wording + label2 per area; board_completion heading "YOU COMPLETED YOUR BOARD FUNDRAISING GAME".
+  - GameSituationPage: reality now intro screen + 5 sequential one-question screens (clips 13-18); participation now intro + build/raise/time/anything-else screens (clips 19-23, anything_else saved to situation + section-5 extras.additional_idea); "done" phase plays clip 25 then auto-redirects to dashboard (no waiting for generation).
+  - Final compile AI context now includes each member's additional_comments.
+  - Postgame email: two buttons — View Final Fundraising Strategy (/game/final/{token}) AND Complete Relationship Mapping (/relationship-mapping/{token}); body copy per spec.
+  - FinalStrategyMemberPage: top panel removed; sticky bottom "See How I Am Involved" CTA appears once reader scrolls to Executive Summary.
+  - BoardPortfolioPage: "HOW I AGREED TO HELP" / "WHAT I NEED TO EXECUTE" structure labels, Download My Execution Materials (ZIP of DOCX via GET /api/board-portfolio/{token}/toolkit/download, python-docx + zipfile, filename Org-Member-Execution-Materials.zip), relationship mapping link.
+  - GroupGamePage: pre-start "Now Let's Bring The Board's Ideas Together" copy + Start Group Game; completed state "The Group Game Is Complete" transcript instruction. Group Game stays silent.
+  - NOT added (per spec): volunteer fellowship, AI fundraising agents, post-meeting training modules, homepage video changes.
 
 ## Backlog
 - User to generate 9 narration clips from Admin panel.

@@ -203,7 +203,7 @@ def create_game_meeting_router(db) -> APIRouter:
         choices = []
         for row in rows:
             extras = row.get("extras") or {}
-            if extras.get("build") or extras.get("raise") or extras.get("time"):
+            if extras.get("build") or extras.get("raise") or extras.get("time") or extras.get("additional_idea"):
                 choices.append({
                     "board_member_name": members.get(row.get("board_member_id"), ""),
                     "wants_to_help_build_and_manage_the_fundraising_system": extras.get("build", []),
@@ -211,6 +211,7 @@ def create_game_meeting_router(db) -> APIRouter:
                     "wants_to_help_raise_money": extras.get("raise", []),
                     "raise_other": extras.get("raise_other", ""),
                     "monthly_time_commitment": extras.get("time", ""),
+                    "additional_comments": extras.get("additional_idea", ""),
                 })
         return choices
 

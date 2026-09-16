@@ -63,6 +63,7 @@ export default function GamePlayPage() {
         const doc = sections[id];
         if (!doc.fine_tuning?.completed) {
           setSec(id);
+          if (id === 1 && !doc.completed && !doc.first_move_locked) { setPhase("welcome"); return; }
           setStage(doc.completed ? "finetune" : doc.first_move_locked ? "deeper" : "intro");
           setPhase("section");
           return;
@@ -80,10 +81,14 @@ export default function GamePlayPage() {
   useEffect(() => { window.scrollTo({ top: 0 }); }, [phase, sec, stage, pIdx]);
 
   useEffect(() => {
-    if (phase === "section" && stage === "intro") playClip(`a${sec}_intro`);
+    if (phase === "welcome") playClip(ctx?.member?.is_primary ? "lead_opening" : "board_opening");
+    else if (phase === "section" && stage === "intro") playClip(`a${sec}_intro`);
     else if (phase === "section" && stage === "deeper") playClip(`a${sec}_deeper`);
+    else if (phase === "lead_done") playClip("lead_free_complete");
+    else if (phase === "board_done") playClip("board_complete");
+    else if (phase === "participation") playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, sec, stage, clips]);
+  }, [phase, sec, stage, pIdx, clips]);
 
   if (phase === "loading") return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
@@ -135,8 +140,10 @@ export default function GamePlayPage() {
     if (audioRef.current) audioRef.current.pause();
     set({ approved: { ...state.approved, [sec]: entries } });
     if (sec < 4) { setSec(sec + 1); setStage("intro"); }
-    else if (isPrimary) navigate(ctx.paid ? "/game/setup" : "/game/upgrade", { replace: true });
-    else setPhase("direction");
+    else if (isPrimary) {
+      if (ctx.paid) navigate("/game/setup", { replace: true });
+      else setPhase("lead_done");
+    } else setPhase("direction");
   };
 
   const answerScreen = (question, label, value, onChange, onContinue, testPrefix) => (
@@ -155,13 +162,43 @@ export default function GamePlayPage() {
 
   if (phase === "error") return shell(null, "bfg-play-invalid");
 
+  if (phase === "welcome") {
+    return shell(<>
+      <h1 style={{ marginTop: 10 }} data-testid="bfg-welcome-heading">WELCOME TO THE BOARD FUNDRAISING GAME</h1>
+      {isPrimary ? (
+        <p style={{ marginTop: 16, fontSize: 17 }}>Let's build your organization's fundraising strategy.</p>
+      ) : (
+        <p style={{ marginTop: 16, fontSize: 17 }}>Help {ctx.organization_name || "your organization"} build the fundraising strategy to raise:</p>
+      )}
+      <div className="bfg-card" style={{ marginTop: 22, padding: 22 }} data-testid="bfg-welcome-goal">
+        {isPrimary && <p style={{ fontWeight: 700, letterSpacing: 1, fontSize: 13 }}>HELP {(ctx.organization_name || "YOUR ORGANIZATION").toUpperCase()} RAISE</p>}
+        <p style={{ fontFamily: "Outfit", fontWeight: 800, fontSize: 40, color: "#111827", marginTop: 6 }}>{ctx.goal_display || ""}</p>
+      </div>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-start-my-game-btn"
+        onClick={() => { setStage("intro"); setPhase("section"); }}>
+        START MY GAME
+      </button>
+    </>, "bfg-welcome");
+  }
+
+  if (phase === "lead_done") {
+    return shell(<>
+      <h1 style={{ marginTop: 10 }} data-testid="bfg-lead-done-heading">You Built The Foundation Of Your Fundraising Strategy</h1>
+      <p style={{ marginTop: 16 }}>Now, let's bring your board into the game.</p>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-lead-done-continue"
+        onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/game/upgrade", { replace: true }); }}>
+        CONTINUE
+      </button>
+    </>, "bfg-lead-done");
+  }
+
   if (phase === "section" && stage === "intro") {
     return shell(answerScreen(sdef.q1, "", state.firsts[sec],
       (value) => setState((c) => ({ ...c, firsts: { ...c.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`), `bfg-s${sec}-intro`);
   }
 
   if (phase === "section" && stage === "deeper") {
-    return shell(answerScreen(sdef.q2, g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
+    return shell(answerScreen(sdef.q2, sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
       (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`), `bfg-s${sec}-deeper`);
   }
 

@@ -607,6 +607,41 @@ def create_portfolio_router(db) -> APIRouter:
         view["play_token"] = record.get("token", "")
         return view
 
+    @router.get("/board-portfolio/{token}/toolkit/download")
+    async def download_toolkit_zip(token: str):
+        portfolio = await portfolio_by_token(token)
+        toolkit = await toolkit_for(portfolio)
+        if not toolkit or toolkit.get("status") != "ready":
+            raise HTTPException(status_code=409, detail="Execution materials are not ready yet")
+        import io
+        import re as _re
+        import zipfile
+        from docx import Document as DocxDocument
+        from fastapi.responses import Response as HttpResponse
+        profile = await get_profile(portfolio["user_id"])
+        org = (profile.get("organization") or {}).get("name", "Organization")
+        safe = lambda t: _re.sub(r"[^A-Za-z0-9]+", "-", str(t or "")).strip("-") or "File"
+        buffer = io.BytesIO()
+        index = 0
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            for pack in (toolkit.get("data") or {}).get("material_packs", []) or []:
+                for material in pack.get("materials", []) or []:
+                    index += 1
+                    document = DocxDocument()
+                    document.add_heading(str(material.get("title", "Execution Material")), level=1)
+                    if material.get("purpose"):
+                        document.add_paragraph(str(material["purpose"]))
+                    for line in str(material.get("content", "")).split("\n"):
+                        document.add_paragraph(line)
+                    doc_buffer = io.BytesIO()
+                    document.save(doc_buffer)
+                    archive.writestr(f"{index:02d}-{safe(material.get('title'))}.docx", doc_buffer.getvalue())
+        if index == 0:
+            raise HTTPException(status_code=409, detail="No execution materials available yet")
+        filename = f"{safe(org)}-{safe(portfolio.get('member_name'))}-Execution-Materials.zip"
+        return HttpResponse(content=buffer.getvalue(), media_type="application/zip",
+                            headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
     @router.post("/board-portfolio/{token}/respond")
     async def public_respond(token: str, payload: RespondPayload):
         portfolio = await portfolio_by_token(token)

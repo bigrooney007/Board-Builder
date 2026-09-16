@@ -18,7 +18,7 @@ DEFAULT_POSTGAME_EMAIL = {
     "subject": "Your Board Fundraising Strategy Is Ready",
     "opening": "Thank you for participating in [Organization Name]'s Board Fundraising Game.",
     "strategy_ready": "Your board's final fundraising strategy is now ready.\n\nThe strategy brings together the ideas contributed by the board, the priorities selected during the Group Game and the decisions made during your board meeting.",
-    "execution_next": "Start by reviewing the final strategy.\n\nThen click See How I Am Involved to view your personal Board Fundraising Portfolio and see exactly how you agreed to help.\n\nYou will also be able to access your Execution Materials and complete your Relationship Mapping Form.",
+    "execution_next": "Start by reviewing the final strategy.\n\nAs you review it, you will be able to see how you personally agreed to participate.\n\nWe have also created a Relationship Mapping Form for you so you can begin identifying people, businesses and grantors in your network who match the ideal funder profiles your board identified.",
 }
 
 PORTFOLIO_SENT_STATUSES = {"sent", "change_requested", "approved", "materials_ready"}
@@ -104,8 +104,9 @@ def create_postgame_router(db) -> APIRouter:
             f"<p style='margin:14px 0;'>Hi {html.escape(first)},</p>"
             + paragraphs_html(fill(content["opening"], mapping))
             + paragraphs_html(fill(content["strategy_ready"], mapping))
-            + game_button(f"{origin.rstrip('/')}/game/final/{record['token']}", "View Final Fundraising Strategy")
             + paragraphs_html(fill(content["execution_next"], mapping))
+            + game_button(f"{origin.rstrip('/')}/game/final/{record['token']}", "View Final Fundraising Strategy")
+            + game_button(f"{origin.rstrip('/')}/relationship-mapping/{record['token']}", "Complete Relationship Mapping")
             + "<p style='margin:22px 0 4px;'></p>" + signature_html(profile, member)
         )
         resend.api_key = os.environ["RESEND_API_KEY"]

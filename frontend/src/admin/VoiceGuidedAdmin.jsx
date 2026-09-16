@@ -175,7 +175,7 @@ export const VoiceGuidedAdmin = () => {
               </div>
             ) : (
               <button className="button button-small" style={{ marginTop: 6 }} disabled={!missingLive.length}
-                onClick={() => setBulkConfirm(true)} data-testid="voice-bulk-open">Generate All Missing Live Narration</button>
+                onClick={() => setBulkConfirm(true)} data-testid="voice-bulk-open">Generate All Missing Learning Narration</button>
             )}
           </div>
 
