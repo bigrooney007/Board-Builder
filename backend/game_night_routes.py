@@ -564,8 +564,8 @@ def create_game_night_router(db) -> APIRouter:
             sets["first_response"] = clean_list(payload.first_response)
             if payload.first_move_locked:
                 sets["first_move_locked"] = True
+        sets["completed"] = True if complete else bool(existing.get("completed"))
         if complete:
-            sets["completed"] = True
             if not existing.get("completed_at"):
                 sets["completed_at"] = now
             if not existing.get("first_move_locked") and not payload.first_move_locked:
@@ -574,7 +574,7 @@ def create_game_night_router(db) -> APIRouter:
             {"board_member_id": record["member_id"], "section_id": section_id},
             {"$set": sets, "$setOnInsert": {
                 "board_member_id": record["member_id"], "user_id": record["user_id"],
-                "section_id": section_id, "completed": False, "created_at": now}},
+                "section_id": section_id, "created_at": now}},
             upsert=True)
         completed_count = await db.game_section_responses.count_documents(
             {"board_member_id": record["member_id"], "completed": True})
