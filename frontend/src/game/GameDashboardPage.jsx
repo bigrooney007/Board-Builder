@@ -61,6 +61,25 @@ const GroupGameCard = () => {
   );
 };
 
+const BoardReviewCard = ({ meeting }) => {
+  const navigate = useNavigate();
+  if (!meeting?.group_completed) return null;
+  return (
+    <section className="bfg-panel" data-tour="board-review" data-testid="bfg-board-review-card">
+      <div className="bfg-panel-head">
+        <div>
+          <h2>Board Strategy Review</h2>
+          <p className="bfg-panel-sub">Review your Group Game priorities, additional board ideas and Rooney's recommendations with your board before adding your meeting transcript.</p>
+        </div>
+        <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 0 }}
+          onClick={() => navigate("/game/board-review")} data-testid="bfg-open-board-review-btn">
+          Open Board Strategy Review
+        </button>
+      </div>
+    </section>
+  );
+};
+
 export default function GameDashboardPage() {
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
@@ -141,6 +160,22 @@ export default function GameDashboardPage() {
         </div>
 
         <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
+
+        <div data-tour="prepare-meeting">
+          <GameNightSection />
+        </div>
+        <div data-tour="board-participation">
+          <BoardMembersSection />
+        </div>
+        <div data-tour="meeting-resources">
+          <HostToolsSection />
+        </div>
+        <GroupGameCard />
+        <BoardReviewCard meeting={meeting} />
+        <div data-tour="complete-meeting">
+          <CompleteBoardMeetingSection overview={meeting} onRefresh={loadMeeting} />
+        </div>
+        <FinalOutputsSection overview={meeting} />
         <CompleteGameNightSection overview={postgame} />
 
         <div className="bfg-dash-grid">
@@ -185,20 +220,6 @@ export default function GameDashboardPage() {
           </div>
         </div>
 
-        <div data-tour="board-participation">
-          <BoardMembersSection />
-        </div>
-        <div data-tour="prepare-meeting">
-          <GameNightSection />
-        </div>
-        <div data-tour="meeting-resources">
-          <HostToolsSection />
-        </div>
-        <GroupGameCard />
-        <div data-tour="complete-meeting">
-          <CompleteBoardMeetingSection overview={meeting} onRefresh={loadMeeting} />
-        </div>
-        <FinalOutputsSection overview={meeting} />
         <StrategiesHistoryCard />
 
         <SupportBox productKey="board_fundraising_game" moduleNumber={1} supportTypes={SUPPORT_TYPES} />

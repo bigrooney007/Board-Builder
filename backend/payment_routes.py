@@ -627,6 +627,44 @@ def create_payment_router(db) -> APIRouter:
         })
         return {"checkout_url": session.url, "session_id": session.id}
 
+    @router.post("/facilitated-game-checkout")
+    async def create_facilitated_game_checkout(payload: DIYCheckoutRequest):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price_data": {
+                "currency": "usd", "unit_amount": 349700,
+                "product_data": {"name": "Facilitated Board Fundraising Game"}}, "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}/board-activation-intake?facilitated=1&session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": resolve_cancel_url(payload, "/organize-board-fundraising-game"),
+            "metadata": {
+                "offer_source": "facilitated_board_fundraising_game", "selected_tier": "3497",
+                "purchase_source": "facilitated_board_fundraising_game_3497",
+                "offer": "Facilitated Board Fundraising Game",
+            },
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(
+                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+            )
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "facilitated_board_fundraising_game",
+            "selected_tier": "3497", "purchase_source": "facilitated_board_fundraising_game_3497",
+            "offer": "Facilitated Board Fundraising Game",
+            "amount": 349700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
+            "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
     @router.post("/activation-diy-checkout")
     async def create_activation_diy_checkout(payload: DIYCheckoutRequest):
         parsed = urlparse(payload.origin_url)

@@ -148,14 +148,22 @@ export const SectionBody = ({ section, data, mode }) => {
   if (section.v2 === "process") {
     return (
       <div>
-        {AUDIENCE_LABELS.map(([field, label]) => (
-          hasStageContent(data[field]) && (
+        {AUDIENCE_LABELS.map(([field, label]) => {
+          const process = data[field] || {};
+          if (!hasStageContent(process) && !process.how_this_process_works) return null;
+          return (
             <div key={field} className="bfg-doc-stage">
               <h4>{label.toUpperCase()} FUNDRAISING PROCESS</h4>
-              <Stages stages={PROCESS_STAGES} data={data[field] || {}} />
+              {process.how_this_process_works && (
+                <div style={{ marginBottom: 10 }}>
+                  <h4 className="bfg-doc-sublabel">HOW THIS PROCESS WORKS</h4>
+                  <p className="bfg-doc-text">{process.how_this_process_works}</p>
+                </div>
+              )}
+              <Stages stages={PROCESS_STAGES} data={process} />
             </div>
-          )
-        ))}
+          );
+        })}
       </div>
     );
   }

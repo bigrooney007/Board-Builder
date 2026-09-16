@@ -4,6 +4,7 @@ import axios from "axios";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
+import { NarrationControl, isNarrationMuted, wasClipPlayed, markClipPlayed } from "./NarrationControl";
 import { FineTuneReview } from "./FineTuneReview";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -29,10 +30,12 @@ export default function GameSituationPage() {
 
   const playClip = (id) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    if (isNarrationMuted() || wasClipPlayed(id)) return null;
     const clip = clips[id];
     if (!clip?.ready) return null;
     const audio = new Audio(`${process.env.REACT_APP_BACKEND_URL}${clip.url}`);
     audioRef.current = audio;
+    markClipPlayed(id);
     audio.play().catch(() => {});
     return audio;
   };
@@ -101,11 +104,20 @@ export default function GameSituationPage() {
     }, 3000);
   };
 
-  const REALITY_CLIPS = ["reality_donors", "reality_businesses", "reality_grantors", "reality_team", "reality_resources"];
+  const REALITY_CLIP_BY_KEY = {
+    current_individual_donors: "reality_donors", current_businesses: "reality_businesses",
+    current_grantors: "reality_grantors", current_team: "reality_team", current_resources: "reality_resources",
+  };
   const PART_CLIPS = ["part_build", "part_raise", "part_time", "part_anything"];
 
   useEffect(() => {
-    if (phase === "reality") playClip(rIdx === -1 ? "reality_intro" : REALITY_CLIPS[rIdx]);
+    if (phase === "reality") {
+      if (rIdx === -1) { playClip("reality_intro"); return; }
+      const key = (((ctx || {}).v3 || {}).current_reality || {}).questions?.[rIdx]?.key;
+      const clip = REALITY_CLIP_BY_KEY[key];
+      if (clip) playClip(clip);
+      else if (audioRef.current) audioRef.current.pause();
+    }
     else if (phase === "participation") playClip(partStep === -1 ? "part_intro" : PART_CLIPS[partStep]);
     else if (phase === "done") {
       const audio = playClip("lead_setup_complete");
@@ -208,8 +220,7 @@ export default function GameSituationPage() {
       </>, "bfg-setup-reality-intro");
     }
     const question = questions[rIdx] || {};
-    const last = rIdx === questions.length - 1;
-    const continueReality = async () => {
+    const last = rIdx === questions.length - 1;    const continueReality = async () => {
       if (!last) { setRIdx(rIdx + 1); window.scrollTo({ top: 0 }); return; }
       setBusy(true); setError("");
       try {
@@ -219,17 +230,25 @@ export default function GameSituationPage() {
       setBusy(false);
     };
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
       <p className="bfg-eyebrow">YOUR CURRENT REALITY — {rIdx + 1} OF {questions.length}</p>
       <h1 data-testid="bfg-reality-heading">{question.heading}</h1>
       <p style={{ marginTop: 18, fontWeight: 700, fontSize: 18 }} data-testid={`bfg-reality-question-${question.key}`}>{question.question}</p>
+      {question.hint && <p style={{ marginTop: 8, fontSize: 14, color: "#6B7280" }}>{question.hint}</p>}
       <textarea rows={7} style={{ width: "100%", marginTop: 22, padding: 16, border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, lineHeight: 1.6 }}
         placeholder="Type your answer here..." value={reality[question.key] || ""}
         onChange={(event) => setReality((current) => ({ ...current, [question.key]: event.target.value }))}
         data-testid={`bfg-reality-${question.key}`} />
       {error && <p className="bfg-error">{error}</p>}
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={continueReality} data-testid="bfg-reality-continue">
-        {busy ? "Saving…" : "Continue"}
-      </button>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 22 }}>
+        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid="bfg-reality-back"
+          onClick={() => { if (audioRef.current) audioRef.current.pause(); setRIdx(rIdx - 1); window.scrollTo({ top: 0 }); }}>
+          Back
+        </button>
+        <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={continueReality} data-testid="bfg-reality-continue">
+          {busy ? "Saving…" : "Continue"}
+        </button>
+      </div>
     </>, "bfg-setup-reality");
   }
 
@@ -285,11 +304,22 @@ export default function GameSituationPage() {
       <h1 data-testid="bfg-participation-heading">{screen.heading}</h1>
       {screen.body}
       {error && <p className="bfg-error">{error}</p>}
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy || !screen.can}
-        onClick={() => { if (last) finishParticipation(); else { setPartStep(partStep + 1); window.scrollTo({ top: 0 }); } }}
-        data-testid="bfg-setup-participation-submit">
-        {busy ? "Saving…" : last ? "Continue" : "Continue"}
-      </button>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 22 }}>
+        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid="bfg-participation-back"
+          onClick={() => {
+            if (audioRef.current) audioRef.current.pause();
+            if (partStep === 0) { setPhase("reality"); setRIdx((cr.questions || []).length - 1); }
+            else setPartStep(partStep - 1);
+            window.scrollTo({ top: 0 });
+          }}>
+          Back
+        </button>
+        <button className="bfg-btn bfg-btn-primary" disabled={busy || !screen.can}
+          onClick={() => { if (last) finishParticipation(); else { setPartStep(partStep + 1); window.scrollTo({ top: 0 }); } }}
+          data-testid="bfg-setup-participation-submit">
+          {busy ? "Saving…" : last ? "Continue" : "Continue"}
+        </button>
+      </div>
     </>, `bfg-setup-participation-${partStep}`);
   }
 

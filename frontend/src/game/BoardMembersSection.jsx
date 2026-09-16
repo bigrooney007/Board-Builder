@@ -39,6 +39,14 @@ const MemberForm = ({ initial, onSave, onCancel, busy, saveLabel }) => {
       <label className="bfg-field"><span>Board Title</span>
         <input value={form.board_title} placeholder="Board Chair, Treasurer, Secretary, Board Member" onChange={set("board_title")} data-testid="bfg-bm-title" />
       </label>
+      <label className="bfg-field"><span>Participant Role <b>*</b></span>
+        <select value={form.participant_role || "board_member"} onChange={set("participant_role")} data-testid="bfg-bm-role">
+          <option value="board_member">Board Member</option>
+          <option value="staff">Staff / Team Member</option>
+          <option value="volunteer">Volunteer</option>
+          <option value="other_leader">Other Organizational Leader</option>
+        </select>
+      </label>
       {error && <p className="bfg-error">{error}</p>}
       <div className="bfg-form-actions">
         <button className="bfg-btn bfg-btn-ghost" onClick={onCancel} data-testid="bfg-bm-cancel">Cancel</button>
@@ -133,7 +141,15 @@ export const BoardMembersSection = () => {
   const run = async (key, fn, successMessage) => {
     setBusy(key); setNotice("");
     try { await fn(); if (successMessage) setNotice(successMessage); await load(); }
-    catch (err) { setNotice(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Something went wrong. Please try again."); }
+    catch (err) {
+      const detail = err.response?.data?.detail;
+      if (detail === "meeting_details_required") {
+        setNotice("ADD YOUR BOARD FUNDRAISING DAY/NIGHT DETAILS FIRST — Save your meeting date and time so your participants know when they need to complete the game.");
+        document.querySelector('[data-tour="prepare-meeting"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        setNotice(typeof detail === "string" ? detail : "Something went wrong. Please try again.");
+      }
+    }
     setBusy("");
   };
 
@@ -170,8 +186,8 @@ export const BoardMembersSection = () => {
     <section className="bfg-panel" data-testid="bfg-board-members-section">
       <div className="bfg-panel-head">
         <div>
-          <h2>Board Members</h2>
-          <p className="bfg-panel-sub">Add the board members you want to participate in your Board Fundraising Game.</p>
+          <h2>Invite Board Members And Others In Your Organization</h2>
+          <p className="bfg-panel-sub">Add the board members, staff, volunteers and other organizational leaders you want to participate in your Board Fundraising Game. Save your meeting details first so invitations include your Board Fundraising Day/Night.</p>
         </div>
         <div className="bfg-bm-actions" style={{ marginTop: 0 }}>
           <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => { setAdding(!adding); setEditingId(""); }} data-testid="bfg-add-board-member-btn">Add Board Member</button>

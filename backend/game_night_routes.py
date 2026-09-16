@@ -68,6 +68,7 @@ class BoardMemberCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=200)
     email: EmailStr
     board_title: str = Field(default="", max_length=200)
+    participant_role: str = Field(default="board_member", max_length=60)
 
 
 class SendPayload(BaseModel):
@@ -192,6 +193,8 @@ def create_game_night_router(db) -> APIRouter:
             "token": secrets.token_urlsafe(24),
             "full_name": payload.full_name.strip(), "email": str(payload.email).lower(),
             "board_title": payload.board_title.strip(),
+            "participant_role": payload.participant_role if payload.participant_role in
+            {"board_member", "staff", "volunteer", "other_leader"} else "board_member",
             "game_version": 3, "total_sections": 5,
             "invitation_status": "not_invited", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
@@ -336,7 +339,7 @@ def create_game_night_router(db) -> APIRouter:
     async def require_night(user_id: str) -> dict:
         night = await get_night(user_id)
         if not night.get("meeting_date"):
-            raise HTTPException(status_code=409, detail="Save your Game Night details before sending invitations")
+            raise HTTPException(status_code=409, detail="meeting_details_required")
         return night
 
     @router.post("/game/board-members/{member_id}/invite")
@@ -521,6 +524,7 @@ def create_game_night_router(db) -> APIRouter:
             "member": {
                 "game_version": record.get("game_version") or 2,
                 "is_primary": bool(record.get("is_primary")),
+                "participant_role": record.get("participant_role", "board_member"),
                 "total_sections": record.get("total_sections") or TOTAL_SECTIONS,
             },
             "situation_context": {

@@ -158,6 +158,21 @@ export default function GameHomePage() {
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
           <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-closing-cta">{content.closing_cta_label}</button>
         </section>
+
+        {/* EXACT CTA COPY — provided separately, inserted word for word. */}
+        <section className="bfg-section bfg-closing" data-testid="bfg-recruit-cta-section">
+          <h2 data-testid="bfg-recruit-cta-heading">Need to recruit board members with fundraising experience?</h2>
+          <button className="bfg-btn bfg-btn-primary" onClick={() => { window.location.href = "/recruit"; }} data-testid="bfg-recruit-cta-btn">
+            Recruit Board Members
+          </button>
+        </section>
+
+        <section className="bfg-section bfg-closing" data-testid="bfg-facilitated-cta-section">
+          <h2 data-testid="bfg-facilitated-cta-heading">Do you want us to organize the Board Fundraising Game for your organization?</h2>
+          <button className="bfg-btn bfg-btn-primary" onClick={() => { window.location.href = "/organize-board-fundraising-game"; }} data-testid="bfg-facilitated-cta-btn">
+            Organize My Board Fundraising Game
+          </button>
+        </section>
         </div>
       </main>
     </BfgShell>

@@ -55,8 +55,14 @@ export default function FinalStrategyMemberPage() {
   return (
     <BfgShell>
       <main className="bfg-dash" data-testid="bfg-member-final-page" style={{ maxWidth: 900, paddingBottom: 110 }}>
+        <div style={{ textAlign: "right", marginBottom: 10 }}>
+          <a className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid="bfg-member-final-download"
+            href={`${API}/game/final/${token}/download`}>
+            Download Strategy
+          </a>
+        </div>
         <StrategyDocument strategy={data.strategy} />
-        {showCta && data.portfolio_token && (
+        {showCta && data.portfolio_token && data.participant_role === "board_member" && (
           <div style={{
             position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 500,
             background: "rgba(255,255,255,0.96)", borderTop: "1px solid #e5e7eb",

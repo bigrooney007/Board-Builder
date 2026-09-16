@@ -79,8 +79,11 @@ def section_blocks(key: str, data, schema_version: int) -> list:
     if key == "fundraising_process" and schema_version >= 2:
         for field, label in AUDIENCE_LABELS:
             process = data.get(field) or {}
-            if any((process.get(stage) or []) for stage, _ in PROCESS_STAGES):
-                blocks.append(("sub", f"{label.upper().rstrip('SE') if label == 'Businesses' else label.upper().rstrip('S')} FUNDRAISING PROCESS"))
+            if any((process.get(stage) or []) for stage, _ in PROCESS_STAGES) or process.get("how_this_process_works"):
+                blocks.append(("sub", f"{label.upper()} FUNDRAISING PROCESS"))
+                if process.get("how_this_process_works"):
+                    blocks.append(("sub", "HOW THIS PROCESS WORKS"))
+                    blocks.append(("body", str(process["how_this_process_works"])))
                 for stage, stage_label in PROCESS_STAGES:
                     items = process.get(stage) or []
                     if items:

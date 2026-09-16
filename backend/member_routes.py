@@ -123,6 +123,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "board_fundraising_game":
         entitlement = "board_fundraising_game"
         product_name = "Board Fundraising Game"
+    elif offer_source == "facilitated_board_fundraising_game":
+        entitlement = "board_fundraising_game"
+        product_name = "Facilitated Board Fundraising Game"
+        extra_entitlements.append("facilitated_board_fundraising_game")
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]

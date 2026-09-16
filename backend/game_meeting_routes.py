@@ -30,7 +30,9 @@ Divide the fundraising process by audience (Individuals, Businesses, Grantors) a
 Board Priorities are only the ideas actually ranked by the board in the Group Game. Additional Board Ideas are valid contributed ideas that were not prioritised — preserve them separately, never discard them and never misrepresent them as priorities.
 For team roles, use the supplied team, participation choices, time commitments and responsibilities from the transcript. Assign a person only where they explicitly indicated they want to help or accepted a responsibility. Where a required responsibility has nobody available, set assigned to exactly "ROLE / CAPACITY NEEDED". Never invent commitments.
 The execution timeline must start with building the fundraising system, then roughly 30 to 60 days of Know/Like/Trust activity for individuals, then roughly a 30-day concentrated ask campaign, with follow up and stewardship continuing. Businesses and grantors are worked one relationship or one funder at a time on their own timelines built from the organisation's actual strategy.
-Do not invent facts, funders, organisations, relationships, commitments, amounts or deadlines.
+Do not invent facts, funders, organisations, relationships, commitments, amounts or deadlines. Do not invent specific entities such as named businesses, foundations, LinkedIn or Facebook groups, associations, conferences or directories — where a specific entity was not supplied, give the exact search method instead.
+Inspect the organisation's present fundraising processes (Current Reality). Never discard an existing approach simply because the framework offers another: preserve what the organisation says is working, strengthen weaknesses, fill missing pieces and add better processes where needed. Where useful distinguish what they are already doing, what should be strengthened and what should be added. Do not claim something is proven to work unless the organisation indicated it produces results.
+Every fundraising_process audience MUST begin with how_this_process_works — a short organisation-specific explanation (not generic boilerplate, never one copied paragraph reused across audiences).
 Write for nonprofit leaders and board members in clear, direct, execution-ready language.
 Return only the required structured JSON."""
 
@@ -46,9 +48,9 @@ FINAL_V2_SCHEMA = {
     "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "string", "focus": "string"}], "additional_ideas": ["string"]},
     "attraction": {"priorities": [{"title": "Attraction activity", "explanation": "string", "focus": "string"}], "additional_ideas": ["string"]},
     "fundraising_process": {
-        "individuals": {"know": ["string — organisation-specific"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
-        "businesses": {"know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
-        "grantors": {"know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "individuals": {"how_this_process_works": "string — organization-specific explanation of which individuals this process is for, why they care, how it moves them from discovery to financial support and why it fits — generated from the actual audiences, attraction strategy and current reality; never generic boilerplate", "know": ["string — organisation-specific"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "businesses": {"how_this_process_works": "string — which businesses, why they align, which decision makers matter, how the organization gets in front of them and how it moves toward support", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "grantors": {"how_this_process_works": "string — what type of grantors, why they align, how to identify them, how relationships and deadlines are handled and why the process fits", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
     },
     "team_roles": [{"role": "Role title", "assigned": "Person's name where explicitly committed, otherwise exactly 'ROLE / CAPACITY NEEDED'", "responsibility": "string"}],
     "execution_resources": {"people": ["string"], "technology": ["string"], "materials": ["string"], "resources": ["string"], "content": ["string"]},
@@ -226,6 +228,23 @@ def create_game_meeting_router(db) -> APIRouter:
             "additional_board_ideas_not_prioritised": [item["text"] for item in row["results"] if not item.get("prioritised")],
         } for row in rows}
 
+    async def review_decisions_context(user_id: str) -> dict:
+        review = await db.game_board_reviews.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        items = review.get("items", [])
+        return {
+            "note": ("These are explicit board decisions made during the Board Strategy Review. Honour them. "
+                     "Adopted Rooney recommendations must move into the relevant main strategy sections and Board Priorities, "
+                     "keeping their origin behind the scenes. A later explicit meeting-transcript decision may supersede these; "
+                     "if a conflict is ambiguous, flag it rather than silently choosing."),
+            "board_priorities": [{"area": i["area"], "text": i["text"], "source": i["source"]}
+                                 for i in items if i["status"] == "priority"],
+            "additional_board_ideas": [{"area": i["area"], "text": i["text"], "source": i["source"]}
+                                       for i in items if i["status"] == "additional"],
+            "rooney_recommendations_not_adopted": [{"area": i["area"], "text": i["text"]}
+                                                   for i in items if i["status"] == "recommendation"],
+            "marked_not_now": [{"area": i["area"], "text": i["text"]} for i in items if i["status"] == "not_now"],
+        }
+
     async def run_final_compile(user_id: str):
         try:
             profile = await get_profile(user_id)
@@ -244,6 +263,7 @@ def create_game_meeting_router(db) -> APIRouter:
                 "approved_board_member_ideas_by_strategy_area": await board_ideas_by_area(user_id),
                 "participation_choices_and_time_commitments": await participation_choices(user_id),
                 "group_game_results": await group_results_by_area(user_id),
+                "board_strategy_review_decisions": await review_decisions_context(user_id),
                 "board_meeting_transcript": (transcript.get("text") or "")[:120000],
             }
             api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
@@ -278,6 +298,13 @@ def create_game_meeting_router(db) -> APIRouter:
                 "last_edited_at": "", "last_edited_by": "", "review_completed_at": "",
             }
             await db.game_strategies.insert_one(record.copy())
+            try:
+                from rooney_intelligence import store_strategy_patterns
+                await store_strategy_patterns(db, user_id=user_id,
+                                              mission_category=str(organization.get("mission", ""))[:160],
+                                              strategy_data=data)
+            except Exception:
+                pass
             await db.game_strategy_jobs.update_one(
                 {"user_id": user_id, "mode": "final"},
                 {"$set": {"status": "done", "strategy_id": record["strategy_id"], "error": "", "finished_at": now_iso()}})
@@ -285,6 +312,108 @@ def create_game_meeting_router(db) -> APIRouter:
             await db.game_strategy_jobs.update_one(
                 {"user_id": user_id, "mode": "final"},
                 {"$set": {"status": "failed", "error": "generation_failed", "finished_at": now_iso()}})
+
+    # ---------- Board Strategy Review (post-Group-Game, before transcript) ----------
+
+    async def seed_review(user_id: str):
+        session = await completed_group_session(user_id)
+        if not session:
+            raise HTTPException(status_code=409, detail="Complete the Group Game first")
+        review = await db.game_board_reviews.find_one({"user_id": user_id}, {"_id": 0})
+        if review:
+            return review
+        rows = await db.group_game_results.find({"session_id": session["session_id"]}, {"_id": 0}).sort("round_number", 1).to_list(20)
+        items = []
+        for row in rows:
+            for result in row.get("results", []):
+                prioritised = bool(result.get("prioritised")) and result.get("selection_count", 0) > 0
+                status = "priority" if prioritised else "additional"
+                items.append({
+                    "item_id": new_uuid(), "area": row.get("title", ""), "text": result.get("text", ""),
+                    "source": "board_priority" if prioritised else "additional_idea",
+                    "original_status": status, "status": status,
+                    "decided_at": "", "decided_by": "",
+                })
+        review = {"user_id": user_id, "items": items, "recommendations_generated": False,
+                  "completed": False, "created_at": now_iso(), "updated_at": now_iso()}
+        await db.game_board_reviews.insert_one(dict(review))
+        return review
+
+    @router.get("/game/review")
+    async def get_board_review(request: Request):
+        member = await game_member(request)
+        review = await seed_review(member["user_id"])
+        review.pop("_id", None)
+        return review
+
+    @router.post("/game/review/recommendations")
+    async def generate_recommendations(request: Request):
+        member = await game_member(request)
+        review = await seed_review(member["user_id"])
+        if review.get("recommendations_generated"):
+            return {"status": "already_generated"}
+        profile = await get_profile(member["user_id"])
+        situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        context = {
+            "organisation_profile": profile.get("organization") or {},
+            "fundraising_goal": profile.get("goal") or {},
+            "current_fundraising_reality": situation.get("sections", {}),
+            "board_ideas_by_area": await board_ideas_by_area(member["user_id"]),
+            "participation_choices": await participation_choices(member["user_id"]),
+            "group_game_results": await group_results_by_area(member["user_id"]),
+        }
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
+        chat = LlmChat(api_key=api_key, session_id=f"bfg-review-recs-{uuid.uuid4()}",
+                       system_message=(
+                           "You are Rooney Akpesiri's fundraising process applied by an experienced nonprofit fundraising strategist. "
+                           "Recommend practical, specific, executable ideas this organisation should consider that are currently missing or underdeveloped. "
+                           "Every recommendation must state exactly who, exactly where, exactly what to create or do, exactly how to find them, what process should run and the next step. "
+                           "Never return vague ideas like build relationships, reach businesses, create awareness, use LinkedIn, apply for grants or create content. "
+                           "Never invent named businesses, foundations, groups, associations, events or funders — give the exact search method instead. Return only JSON.")
+                       ).with_model("anthropic", os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"))
+        prompt = (f"CONTEXT:\n{json.dumps(context, indent=1)}\n\n"
+                  "Return ONE JSON object: {\"recommendations\": [{\"area\": \"strategic area title\", \"text\": \"one complete actionable recommendation\"}]} "
+                  "with 4 to 10 recommendations. Only JSON.")
+        response = await chat.send_message(UserMessage(text=prompt))
+        data = parse_json_response(response if isinstance(response, str) else getattr(response, "text", str(response)))
+        new_items = [{
+            "item_id": new_uuid(), "area": str(item.get("area", ""))[:200], "text": str(item.get("text", ""))[:3000],
+            "source": "ROONEY_PROCESS_RECOMMENDATION", "original_status": "recommendation",
+            "status": "recommendation", "decided_at": "", "decided_by": "",
+        } for item in (data.get("recommendations") or []) if str(item.get("text", "")).strip()]
+        await db.game_board_reviews.update_one(
+            {"user_id": member["user_id"]},
+            {"$push": {"items": {"$each": new_items}},
+             "$set": {"recommendations_generated": True, "updated_at": now_iso()}})
+        return {"status": "generated", "count": len(new_items)}
+
+    @router.post("/game/review/decision")
+    async def review_decision(payload: dict, request: Request):
+        member = await game_member(request)
+        item_id = str(payload.get("item_id", ""))
+        status = str(payload.get("status", ""))
+        if status not in {"priority", "additional", "recommendation", "not_now"}:
+            raise HTTPException(status_code=422, detail="Unknown decision")
+        review = await db.game_board_reviews.find_one({"user_id": member["user_id"]}, {"_id": 0})
+        item = next((i for i in (review or {}).get("items", []) if i["item_id"] == item_id), None)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        actor = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+        await db.game_board_reviews.update_one(
+            {"user_id": member["user_id"], "items.item_id": item_id},
+            {"$set": {"items.$.status": status, "items.$.decided_at": now_iso(),
+                      "items.$.decided_by": actor, "updated_at": now_iso()}})
+        from rooney_intelligence import log_review_decision
+        await log_review_decision(db, user_id=member["user_id"], item=item, new_status=status, actor=actor)
+        return {"status": "saved"}
+
+    @router.post("/game/review/complete")
+    async def complete_board_review(request: Request):
+        member = await game_member(request)
+        await db.game_board_reviews.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"completed": True, "completed_at": now_iso(), "updated_at": now_iso()}})
+        return {"status": "completed"}
 
     # ---------- Transcript + compile ----------
 
@@ -438,6 +567,7 @@ def create_game_meeting_router(db) -> APIRouter:
             "organization_name": (profile.get("organization") or {}).get("name", ""),
             "member_first_name": record["full_name"].split(" ")[0],
             "portfolio_token": (portfolio or {}).get("token", ""),
+            "participant_role": record.get("participant_role", "board_member"),
             "strategy": {
                 "mode": strategy["mode"], "status": strategy["status"], "version": strategy["version"],
                 "schema_version": strategy.get("schema_version", 1),
@@ -447,5 +577,20 @@ def create_game_meeting_router(db) -> APIRouter:
                 "organization_name": (profile.get("organization") or {}).get("name", ""),
             },
         }
+
+    @router.get("/game/final/{token}/download")
+    async def member_final_download(token: str):
+        from fastapi.responses import Response as HttpResponse
+        from strategy_pdf import build_strategy_pdf
+        record = await member_by_token(token)
+        profile = await get_profile(record["user_id"])
+        strategy = await latest_final(record["user_id"]) or await db.game_strategies.find_one(
+            {"user_id": record["user_id"], "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
+        if not strategy:
+            raise HTTPException(status_code=404, detail="No final strategy available yet")
+        org_name = (profile.get("organization") or {}).get("name", "")
+        pdf = build_strategy_pdf(strategy, org_name)
+        return HttpResponse(content=pdf, media_type="application/pdf", headers={
+            "Content-Disposition": f'attachment; filename="final-fundraising-strategy-v{strategy["version"]}.pdf"'})
 
     return router

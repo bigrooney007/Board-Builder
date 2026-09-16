@@ -250,6 +250,8 @@ from postgame_routes import create_postgame_router
 app.include_router(create_postgame_router(db))
 from game_meeting_routes import create_game_meeting_router
 app.include_router(create_game_meeting_router(db))
+from admin_contacts_routes import create_admin_contacts_router
+app.include_router(create_admin_contacts_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router
@@ -332,6 +334,9 @@ async def startup_tasks():
     await db.reactivation_board_members.create_index([("user_id", 1), ("email", 1)])
     await db.reactivation_engagements.create_index("purchase_id", unique=True)
     await seed_admin(db)
+    import asyncio as _asyncio
+    from lifecycle_engine import run_lifecycle_loop
+    _asyncio.create_task(run_lifecycle_loop(db))
     automation_task = asyncio.create_task(automation_loop(db))
     app.state.marketing_task = asyncio.create_task(marketing_loop(db))
     app.state.accountability_task = asyncio.create_task(accountability_loop(db))

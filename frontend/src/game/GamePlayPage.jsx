@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { FineTuneReview } from "./FineTuneReview";
+import { NarrationControl, isNarrationMuted, wasClipPlayed, markClipPlayed } from "./NarrationControl";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -32,10 +33,12 @@ export default function GamePlayPage() {
 
   const playClip = useCallback((id) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    if (isNarrationMuted() || wasClipPlayed(id)) return;
     const clip = clips[id];
     if (!clip?.ready) return;
     const audio = new Audio(`${BASE}${clip.url}`);
     audioRef.current = audio;
+    markClipPlayed(id);
     audio.play().catch(() => {});
   }, [clips]);
   useEffect(() => () => { if (audioRef.current) audioRef.current.pause(); }, []);
@@ -71,7 +74,7 @@ export default function GamePlayPage() {
       }
       if (context.member?.is_primary) {
         if (context.paid) { navigate("/game/setup", { replace: true }); return; }
-        navigate("/game/upgrade", { replace: true }); return;
+        navigate("/game/unlock", { replace: true }); return;
       } else if (sections[5].completed) setPhase("board_done");
       else { setPIdx(0); setPhase("participation"); }
     } catch { setError("This game link is not valid."); setPhase("error"); }
@@ -81,11 +84,14 @@ export default function GamePlayPage() {
   useEffect(() => { window.scrollTo({ top: 0 }); }, [phase, sec, stage, pIdx]);
 
   useEffect(() => {
-    if (phase === "welcome") playClip(ctx?.member?.is_primary ? "lead_opening" : "board_opening");
+    if (phase === "welcome") {
+      const role = ctx?.member?.participant_role || "board_member";
+      playClip(ctx?.member?.is_primary ? "lead_opening" : role === "board_member" ? "board_opening" : "");
+    }
     else if (phase === "section" && stage === "intro") playClip(`a${sec}_intro`);
     else if (phase === "section" && stage === "deeper") playClip(`a${sec}_deeper`);
     else if (phase === "lead_done") playClip("lead_free_complete");
-    else if (phase === "board_done") playClip("board_complete");
+    else if (phase === "board_done") playClip((ctx?.member?.participant_role || "board_member") === "board_member" ? "board_complete" : "");
     else if (phase === "participation") playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sec, stage, pIdx, clips]);
@@ -174,6 +180,11 @@ export default function GamePlayPage() {
         {isPrimary && <p style={{ fontWeight: 700, letterSpacing: 1, fontSize: 13 }}>HELP {(ctx.organization_name || "YOUR ORGANIZATION").toUpperCase()} RAISE</p>}
         <p style={{ fontFamily: "Outfit", fontWeight: 800, fontSize: 40, color: "#111827", marginTop: 6 }}>{ctx.goal_display || ""}</p>
       </div>
+      {!isPrimary && (ctx.member?.participant_role || "board_member") === "board_member" && (
+        <p style={{ marginTop: 12, fontSize: 14, color: "#6B7280" }} data-testid="bfg-board-responsibility-note">
+          Helping ensure your organization is adequately funded is part of your responsibility as a board member.
+        </p>
+      )}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-start-my-game-btn"
         onClick={() => { setStage("intro"); setPhase("section"); }}>
         START MY GAME
@@ -186,20 +197,32 @@ export default function GamePlayPage() {
       <h1 style={{ marginTop: 10 }} data-testid="bfg-lead-done-heading">You Built The Foundation Of Your Fundraising Strategy</h1>
       <p style={{ marginTop: 16 }}>Now, let's bring your board into the game.</p>
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-lead-done-continue"
-        onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/game/upgrade", { replace: true }); }}>
+        onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/game/unlock", { replace: true }); }}>
         CONTINUE
       </button>
     </>, "bfg-lead-done");
   }
 
   if (phase === "section" && stage === "intro") {
-    return shell(answerScreen(sdef.q1, "", state.firsts[sec],
-      (value) => setState((c) => ({ ...c, firsts: { ...c.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`), `bfg-s${sec}-intro`);
+    return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
+      {answerScreen(sdef.q1, "", state.firsts[sec],
+        (value) => setState((c) => ({ ...c, firsts: { ...c.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
+    </>, `bfg-s${sec}-intro`);
   }
 
   if (phase === "section" && stage === "deeper") {
-    return shell(answerScreen(sdef.q2, sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
-      (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`), `bfg-s${sec}-deeper`);
+    return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
+      {answerScreen(sdef.q2, sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
+        (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`)}
+      <p style={{ marginTop: 14 }}>
+        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid={`bfg-s${sec}-back-btn`}
+          onClick={() => { if (audioRef.current) audioRef.current.pause(); setStage("intro"); }}>
+          Back
+        </button>
+      </p>
+    </>, `bfg-s${sec}-deeper`);
   }
 
   if (phase === "section" && stage === "finetune") {
@@ -331,10 +354,18 @@ export default function GamePlayPage() {
   }
 
   const b = v3.board_completion || {};
+  const nonBoard = (ctx.member?.participant_role || "board_member") !== "board_member";
   return shell(<>
     <h1 data-testid="bfg-board-done-heading">{b.heading}</h1>
-    <p style={{ marginTop: 12 }}>{b.supporting}</p>
-    <p style={{ marginTop: 14, fontWeight: 600 }}>{b.more_people_statement}</p>
+    {nonBoard ? (
+      <>
+        <p style={{ marginTop: 12 }}>Thank you for contributing your ideas.</p>
+        <p style={{ marginTop: 10 }}>Your responses will now become part of the fundraising strategy being built for {ctx.organization_name || "your organization"}.</p>
+      </>
+    ) : (
+      <p style={{ marginTop: 12 }}>{b.supporting}</p>
+    )}
+    {!nonBoard && <p style={{ marginTop: 14, fontWeight: 600 }}>{b.more_people_statement}</p>}
     <p style={{ marginTop: 14 }}>{b.game_night_text}</p>
     {ctx.game_night?.date_display && (
       <p style={{ marginTop: 14, fontWeight: 700 }}>Game Night: {ctx.game_night.date_display}{ctx.game_night.time_display ? ` at ${ctx.game_night.time_display}` : ""}</p>

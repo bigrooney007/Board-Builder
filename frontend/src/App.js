@@ -96,6 +96,9 @@ import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
 import GameUpgradePage from "@/game/GameUpgradePage";
+import UnlockGamePage from "@/game/UnlockGamePage";
+import FacilitatedGamePage from "@/game/FacilitatedGamePage";
+import BoardStrategyReviewPage from "@/game/BoardStrategyReviewPage";
 import ExecutionMaterialsPage from "@/game/ExecutionMaterialsPage";
 import RelationshipMapDashboardPage from "@/game/RelationshipMapDashboardPage";
 import RelationshipMappingPage from "@/game/RelationshipMappingPage";
@@ -167,6 +170,9 @@ export default function App() {
           <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/game/complete" element={<GameNightCompletePage />} />
           <Route path="/game/upgrade" element={<GameUpgradePage />} />
+          <Route path="/game/unlock" element={<UnlockGamePage />} />
+          <Route path="/game/board-review" element={<BoardStrategyReviewPage />} />
+          <Route path="/organize-board-fundraising-game" element={<FacilitatedGamePage />} />
           <Route path="/game/execution-materials" element={<ExecutionMaterialsPage />} />
           <Route path="/game/relationships" element={<RelationshipMapDashboardPage />} />
           <Route path="/game/final/:token" element={<FinalStrategyMemberPage />} />
