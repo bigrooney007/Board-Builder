@@ -483,7 +483,7 @@ const PostGameCommunication = () => {
   );
 };
 
-const V3_KEYS = ["intro", "rounds", "strategy_ready", "current_reality", "participation", "board_completion", "fine_tuning", "mini_strategy", "primary_review", "group_complete"];
+const V3_KEYS = ["intro", "rounds", "guided", "strategy_ready", "current_reality", "participation", "board_completion", "fine_tuning", "mini_strategy", "primary_review", "group_complete"];
 
 const V3GameContent = () => {
   const [open, setOpen] = useState(false);

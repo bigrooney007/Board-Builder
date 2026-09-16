@@ -5,7 +5,6 @@ import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
 import { FineTuneReview } from "./FineTuneReview";
-import { VoicePanel, fetchVoiceManifest } from "./VoiceGuide";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -22,8 +21,6 @@ export default function GameSituationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const poller = useRef(null);
-  const [manifest, setManifest] = useState(null);
-  const [soundOn, setSoundOn] = useState(true);
 
   useEffect(() => { document.title = "Complete Your Game Setup | Board Fundraising Game"; }, []);
   useEffect(() => () => clearInterval(poller.current), []);
@@ -45,7 +42,6 @@ export default function GameSituationPage() {
         try { selfToken = (await memberApi.post("/game/self-play")).data.token; }
         catch { navigate("/game/start", { replace: true }); return; }
         setToken(selfToken);
-        fetchVoiceManifest(selfToken).then(setManifest);
         const context = (await axios.get(`${API}/game/play/${selfToken}`)).data;
         setCtx(context);
         const playedAll = [1, 2, 3, 4].every((id) => context.progress?.[id]?.completed);
@@ -121,20 +117,6 @@ export default function GameSituationPage() {
   const cr = v3.current_reality || {};
   const pp = v3.participation || {};
 
-  const voiceActive = manifest?.voice_enabled && localStorage.getItem(`bfgVoiceMode:${token}`) === "voice";
-  const applyTranscript = (target, text) => {
-    if (target.startsWith("reality:")) {
-      const key = target.slice(8);
-      setReality((current) => ({ ...current, [key]: `${current[key] ? `${current[key]} ` : ""}${text}` }));
-    } else if (target === "buildOther" || target === "raiseOther") {
-      setPart((current) => ({ ...current, [target]: text }));
-    }
-  };
-  const guide = (steps, key) => voiceActive ? (
-    <VoicePanel token={token} manifest={manifest} steps={steps} stepsKey={key}
-      onCapture={applyTranscript} soundOn={soundOn} setSoundOn={setSoundOn} />
-  ) : null;
-
   const shell = (children, testId) => (
     <BfgShell>
       <main className="bfg-flow" style={{ maxWidth: 760, margin: "0 auto", padding: "30px 20px 80px", textAlign: "center" }} data-testid={testId}>
@@ -156,7 +138,6 @@ export default function GameSituationPage() {
   if (phase === "intro") {
     return shell(<>
       <h1 data-testid="bfg-setup-review-heading">{pr.heading}</h1>
-      {guide([{ clip: "c51" }], "setup-intro")}
       <p style={{ marginTop: 14 }}>{pr.supporting}</p>
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={() => setPhase("finetune")} data-testid="bfg-setup-start-review-btn">
         {pr.start_button}
@@ -165,12 +146,11 @@ export default function GameSituationPage() {
   }
 
   if (phase === "finetune") {
+    const gft = (v3.guided || {}).finetune || {};
     return shell(<>
       <p className="bfg-eyebrow">STRATEGIC AREA {ftArea} OF 4</p>
-      <h1>{ft.heading}</h1>
-      {guide([{ clip: "c52" }], `setup-ft-${ftArea}`)}
-      <p style={{ marginTop: 12 }}>{ft.supporting}</p>
-      <FineTuneReview token={token} sectionId={ftArea} copy={ft} areaTitle={(ft.area_titles || [])[ftArea - 1]}
+      <h1>{gft.heading || ft.heading}</h1>
+      <FineTuneReview token={token} sectionId={ftArea} copy={{ ...gft, refining: (v3.guided || {}).refining }}
         onDone={() => {
           if (ftArea < 4) setFtArea(ftArea + 1); else setPhase("reality");
           window.scrollTo({ top: 0 });
@@ -190,15 +170,6 @@ export default function GameSituationPage() {
     };
     return shell(<>
       <h1 data-testid="bfg-reality-heading">{cr.heading}</h1>
-      {guide([
-        { clip: "c53" }, { clip: "c54" },
-        { clip: "c55" }, { capture: { target: `reality:${questions[0]?.key}`, label: questions[0]?.heading } },
-        { clip: "c56" }, { capture: { target: `reality:${questions[1]?.key}`, label: questions[1]?.heading } },
-        { clip: "c57" }, { capture: { target: `reality:${questions[2]?.key}`, label: questions[2]?.heading } },
-        { clip: "c58" }, { capture: { target: `reality:${questions[3]?.key}`, label: questions[3]?.heading } },
-        { clip: "c59" }, { capture: { target: `reality:${questions[4]?.key}`, label: questions[4]?.heading } },
-        { clip: "c60" },
-      ], "setup-reality")}
       {String(cr.supporting || "").split("\n").filter((line) => line.trim()).map((line, i) => <p key={i} style={{ marginTop: 12 }}>{line}</p>)}
       <div style={{ marginTop: 10, textAlign: "left" }}>
         {questions.map((question) => (
@@ -243,7 +214,6 @@ export default function GameSituationPage() {
     );
     return shell(<>
       <h1 data-testid="bfg-participation-heading">{pp.heading}</h1>
-      {guide([{ clip: "c43" }, { clip: "c44" }, { clip: "c46" }, { clip: "c48" }], "setup-participation")}
       {checkList(pp.build_question, pp.build_options || [], "build", "buildOther", pp.build_other_prompt, "bfg-setup-build")}
       {checkList(pp.raise_question, pp.raise_options || [], "raise", "raiseOther", pp.raise_other_prompt, "bfg-setup-raise")}
       <div style={{ marginTop: 24, textAlign: "left" }}>
