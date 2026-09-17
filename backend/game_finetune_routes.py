@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from ai_service import parse_json_response
 from rooney_intelligence import log_refinement
+from game_night_routes import is_meaningful_game_response
 
 SYSTEM_MESSAGE = """You are an experienced nonprofit fundraising strategist applying Rooney Akpesiri's fundraising process inside the Board Fundraising Game.
 A participant answered one strategic area twice: a FIRST RESPONSE (their original thinking) and a SECOND RESPONSE (their thinking after teaching). Both matter. Your job:
@@ -22,6 +23,7 @@ A participant answered one strategic area twice: a FIRST RESPONSE (their origina
 3. If the participant already gave a strong, specific, executable idea, PRESERVE it — improve only clarity, structure, completeness, specificity and operational detail. Never replace a good idea with a different idea. The participant must recognize their own thinking.
 4. Never invent specific entities: no invented businesses, foundations, grantmakers, LinkedIn or Facebook groups, associations, conferences, directories, networks, events, funders or donor names. If the organization supplied an entity, use it. Otherwise give the exact search method instead of a name.
 5. Extract the individual ideas as structured entries for downstream use, preserving the writer's meaning.
+6. If the responses do not contain a usable idea, do not supply one from general fundraising knowledge. Never turn blanks, confirmations such as Yes, or other non-answers into a strategy.
 Plain, direct language. Do not merely make vague ideas sound professional. Return only the required JSON."""
 
 SECTION_TASKS = {
@@ -146,6 +148,11 @@ def create_finetune_router(db) -> APIRouter:
         fine_tuning = response.get("fine_tuning") or {}
         if fine_tuning.get("input_hash") == current_hash and fine_tuning.get("proposals") is not None:
             return state_payload(response)
+        if not is_meaningful_game_response(first_text, text):
+            raise HTTPException(
+                status_code=422,
+                detail="Tell us your actual idea before continuing. We will not invent a fundraising strategy from a blank answer or a response such as 'Yes'.",
+            )
         if not text:
             await db.game_section_responses.update_one(
                 {"board_member_id": record["member_id"], "section_id": section_id},
