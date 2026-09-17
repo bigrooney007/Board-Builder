@@ -29,7 +29,7 @@ export default function UnlockGamePage() {
         <div className="bfg-card" style={{ marginTop: 26, padding: 26 }}>
           <p style={{ fontFamily: "Outfit", fontWeight: 800, fontSize: 42, color: "#111827" }}>$497 ONE-TIME</p>
           <p style={{ marginTop: 10 }}>One organization.</p>
-          <p>Your board and organization.</p>
+          <p>Your entire board.</p>
           <p>No subscription.</p>
         </div>
         {error && <p className="bfg-error" style={{ marginTop: 14 }} data-testid="bfg-unlock-error">{error}</p>}
