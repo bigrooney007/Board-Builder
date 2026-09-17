@@ -1,6 +1,7 @@
 """Board Fundraising Game Phase 2: Game Night setup, board members, invitations, reminders, individual game play."""
 import html
 import os
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -16,6 +17,24 @@ from game_content_v3 import GAME_V3
 GAME_ENTITLEMENT = "board_fundraising_game"
 REMINDER_HOURS = 48
 TOTAL_SECTIONS = 10
+
+NON_ANSWERS = {
+    "yes", "no", "ok", "okay", "none", "nothing", "not sure", "i don't know",
+    "i dont know", "n/a", "na", "nil", "skip", "continue",
+}
+
+
+def is_meaningful_game_response(*values) -> bool:
+    """Return True only when the player supplied an idea the strategy can honestly use."""
+    parts = []
+    for value in values:
+        if isinstance(value, list):
+            parts.extend(str(item).strip() for item in value if str(item).strip())
+        elif value is not None and str(value).strip():
+            parts.append(str(value).strip())
+    normalized = re.sub(r"[^a-z0-9' ]+", " ", " ".join(parts).lower())
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return bool(normalized and normalized not in NON_ANSWERS and len(normalized) >= 5)
 
 
 def now_iso() -> str:
@@ -597,6 +616,14 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/play/{token}/section/{section_id}/complete")
     async def complete_play_section(token: str, section_id: int, payload: SectionSave):
         record = await playing_member(token)
+        second_response = (payload.extras or {}).get("second_response", "") if isinstance(payload.extras, dict) else ""
+        if section_id <= 4 and not is_meaningful_game_response(
+            payload.first_response, payload.final_response, second_response
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="Tell us your actual idea before continuing. A short answer such as 'Yes' does not give us enough to strengthen without inventing information.",
+            )
         completed_count = await save_section(record, section_id, payload, complete=True)
         return {"status": "completed", "sections_completed": completed_count, "total_sections": record.get("total_sections") or TOTAL_SECTIONS}
 
