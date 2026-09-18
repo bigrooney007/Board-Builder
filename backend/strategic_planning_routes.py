@@ -1520,7 +1520,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
         g=await generate_structured("strategic_meeting_guide",f"ORGANIZATION: {p['organization_name']}\n\nSTRATEGIC PLAN DRAFT:\n{plan['display_text']}","Create a practical facilitation guide for the Board's strategic planning review and delegation meeting. The meeting must review the draft, improve/remove ideas, then assign every strategic area to Board Members for deeper planning and future leadership/oversight.")
-        text=str(g.get("guide") or g.get("content") or g);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Draft","meeting_guide_text":text}});return {"status":"Draft"}
+        text="\n\n".join(f"{x.get('heading','')}\n{x.get('content','')}" for x in g.get("sections",[]));await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Draft","meeting_guide_text":text}});return {"status":"Draft"}
 
     @router.post("/auto-delegate")
     async def auto_delegate(request:Request):
