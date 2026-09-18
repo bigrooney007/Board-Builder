@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowRight, CheckCircle2, Map, RefreshCw, Users, Video } from "lucide-react";
+import { ArrowRight, CheckCircle2, Map, RefreshCw, Video } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
