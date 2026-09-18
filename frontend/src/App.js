@@ -209,6 +209,7 @@ export default function App() {
           <Route path="/board-reactivation-proposal" element={<Navigate to="/" replace />} />
           <Route path="/board-reactivation-intake" element={<Navigate to="/" replace />} />
           <Route path="/reactivation-start-here" element={<Navigate to="/" replace />} />
+          <Route path="/board-recommitment" element={<div style={{maxWidth:760,margin:"80px auto",padding:24,textAlign:"center"}}><h1>Board Recommitment</h1><p>Help your present board members recommit, clarify how they want to contribute and identify who is ready to continue building the organization with you.</p><p>This product page is being prepared.</p></div>} />
           <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
           <Route path="/portfolio/:token" element={<PortfolioPage />} />
           <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
