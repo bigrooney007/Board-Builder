@@ -18,7 +18,7 @@ export default function GamePlayPage() {
   const [ctx, setCtx] = useState(null);
   const [phase, setPhase] = useState("loading");
   const [sec, setSec] = useState(1);
-  const [stage, setStage] = useState("intro");
+  const [stage, setStage] = useState("deeper");
   const [pIdx, setPIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -31,15 +31,15 @@ export default function GamePlayPage() {
   const audioRef = useRef(null);
   const set = (patch) => setState((current) => ({ ...current, ...patch }));
 
-  const playClip = useCallback((id) => {
+  const playClip = useCallback((id, force = false) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (isNarrationMuted() || wasClipPlayed(id)) return;
     const clip = clips[id];
     if (!clip?.ready) return;
+    const playedKey = `${id}:${clip.url}`;
+    if (isNarrationMuted() || (!force && wasClipPlayed(playedKey))) return;
     const audio = new Audio(`${BASE}${clip.url}`);
     audioRef.current = audio;
-    markClipPlayed(id);
-    audio.play().catch(() => {});
+    audio.play().then(() => markClipPlayed(playedKey)).catch(() => {});
   }, [clips]);
   useEffect(() => () => { if (audioRef.current) audioRef.current.pause(); }, []);
 
@@ -67,7 +67,7 @@ export default function GamePlayPage() {
         if (!doc.fine_tuning?.completed) {
           setSec(id);
           if (id === 1 && !doc.completed && !doc.first_move_locked) { setPhase("welcome"); return; }
-          setStage(doc.completed ? "finetune" : doc.first_move_locked ? "deeper" : "intro");
+          setStage(doc.completed ? "finetune" : "deeper");
           setPhase("section");
           return;
         }
@@ -88,7 +88,6 @@ export default function GamePlayPage() {
       const role = ctx?.member?.participant_role || "board_member";
       playClip(ctx?.member?.is_primary ? "lead_opening" : role === "board_member" ? "board_opening" : "");
     }
-    else if (phase === "section" && stage === "intro") playClip(`a${sec}_intro`);
     else if (phase === "section" && stage === "deeper") playClip(`a${sec}_deeper`);
     else if (phase === "lead_done") playClip("lead_free_complete");
     else if (phase === "board_done") playClip((ctx?.member?.participant_role || "board_member") === "board_member" ? "board_complete" : "");
@@ -116,46 +115,42 @@ export default function GamePlayPage() {
     </div>
   );
 
-  const saveFirst = async () => {
-    if (!state.firsts[sec].trim()) return;
-    setBusy(true); setError("");
-    try {
-      await axios.put(`${API}/game/play/${token}/section/${sec}`, {
-        ...EMPTY_PAYLOAD, first_response: [state.firsts[sec].trim()], first_move_locked: true,
-      });
-      setStage("deeper");
-    } catch { setError("We could not save your answer. Please try again."); }
-    setBusy(false);
-  };
-
   const saveSecond = async () => {
     const text = state.seconds[sec].trim();
     if (!text) return;
     setBusy(true); setError("");
     try {
       await axios.post(`${API}/game/play/${token}/section/${sec}/complete`, {
-        ...EMPTY_PAYLOAD, first_response: [state.firsts[sec].trim()].filter(Boolean), first_move_locked: true,
+        ...EMPTY_PAYLOAD, first_move_locked: true,
         final_response: [text], extras: { second_response: text },
       });
       setStage("finetune");
-    } catch { setError("We could not save your answer. Please try again."); }
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your answer. Please try again.");
+    }
     setBusy(false);
   };
 
   const afterApproval = (entries) => {
     if (audioRef.current) audioRef.current.pause();
     set({ approved: { ...state.approved, [sec]: entries } });
-    if (sec < 4) { setSec(sec + 1); setStage("intro"); }
+    if (sec < 4) { setSec(sec + 1); setStage("deeper"); }
     else if (isPrimary) {
       if (ctx.paid) navigate("/game/setup", { replace: true });
       else setPhase("lead_done");
     } else setPhase("direction");
   };
 
-  const answerScreen = (question, label, value, onChange, onContinue, testPrefix) => (
+  const answerScreen = (question, label, value, onChange, onContinue, testPrefix, teachingText = "") => (
     <>
-      {label ? <p className="bfg-eyebrow" style={{ marginTop: 22 }}>{label}</p> : null}
-      {!label && <h1 style={{ marginTop: 14 }} data-testid={`${testPrefix}-heading`}>{sdef.heading}</h1>}
+      <h1 style={{ marginTop: 14 }} data-testid={`${testPrefix}-heading`}>{sdef.heading}</h1>
+      {teachingText && (
+        <details className="bfg-card" style={{ marginTop: 18, padding: 16, textAlign: "left" }} data-testid={`${testPrefix}-teaching-transcript`}>
+          <summary style={{ cursor: "pointer", fontWeight: 700 }}>Read the teaching</summary>
+          <p style={{ whiteSpace: "pre-wrap", marginTop: 12, lineHeight: 1.7 }}>{teachingText}</p>
+        </details>
+      )}
+      {label ? <p className="bfg-eyebrow" style={{ marginTop: 16 }}>{label}</p> : null}
       <p style={{ marginTop: 18, fontWeight: 700, fontSize: 18 }} data-testid={`${testPrefix}-question`}>{question}</p>
       <textarea rows={8} style={{ width: "100%", marginTop: 22, padding: 16, border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, lineHeight: 1.6 }}
         placeholder={g.placeholder || "Type your answer here..."} value={value}
@@ -170,6 +165,9 @@ export default function GamePlayPage() {
 
   if (phase === "welcome") {
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}>
+        <NarrationControl audioRef={audioRef} onReplay={() => playClip(isPrimary ? "lead_opening" : (ctx?.member?.participant_role || "board_member") === "board_member" ? "board_opening" : "", true)} />
+      </div>
       <h1 style={{ marginTop: 10 }} data-testid="bfg-welcome-heading">WELCOME TO THE BOARD FUNDRAISING GAME</h1>
       {isPrimary ? (
         <p style={{ marginTop: 16, fontSize: 17 }}>Let's build your organization's fundraising strategy.</p>
@@ -186,7 +184,7 @@ export default function GamePlayPage() {
         </p>
       )}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-start-my-game-btn"
-        onClick={() => { setStage("intro"); setPhase("section"); }}>
+        onClick={() => { setStage("deeper"); setPhase("section"); }}>
         START MY GAME
       </button>
     </>, "bfg-welcome");
@@ -194,6 +192,7 @@ export default function GamePlayPage() {
 
   if (phase === "lead_done") {
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip("lead_free_complete", true)} /></div>
       <h1 style={{ marginTop: 10 }} data-testid="bfg-lead-done-heading">You Built The Foundation Of Your Fundraising Strategy</h1>
       <p style={{ marginTop: 16 }}>Now, let's bring your board into the game.</p>
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-lead-done-continue"
@@ -203,33 +202,22 @@ export default function GamePlayPage() {
     </>, "bfg-lead-done");
   }
 
-  if (phase === "section" && stage === "intro") {
-    return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
-      {answerScreen(sdef.q1, "", state.firsts[sec],
-        (value) => setState((c) => ({ ...c, firsts: { ...c.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
-    </>, `bfg-s${sec}-intro`);
-  }
-
   if (phase === "section" && stage === "deeper") {
+    const teachingClip = clips[`a${sec}_deeper`] || {};
     return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(`a${sec}_deeper`, true)} /></div>
       {answerScreen(sdef.q2, sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
-        (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`)}
-      <p style={{ marginTop: 14 }}>
-        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid={`bfg-s${sec}-back-btn`}
-          onClick={() => { if (audioRef.current) audioRef.current.pause(); setStage("intro"); }}>
-          Back
-        </button>
-      </p>
+        (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`, teachingClip.text)}
     </>, `bfg-s${sec}-deeper`);
   }
 
   if (phase === "section" && stage === "finetune") {
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip("approval_review", true)} /></div>
       <h1 style={{ marginTop: 14 }} data-testid="bfg-finetune-heading">{ft.heading}</h1>
       <FineTuneReview token={token} sectionId={sec} copy={{ ...ft, refining: g.refining }}
-        onReady={() => playClip("approval_review")} onDone={afterApproval} />
+        onReady={() => playClip("approval_review")} onDone={afterApproval}
+        onEdit={(message) => { setError(message || "Edit your answer, then continue."); setStage("deeper"); }} />
     </>, `bfg-s${sec}-finetune`);
   }
 

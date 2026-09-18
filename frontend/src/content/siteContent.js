@@ -980,3 +980,104 @@ export const stepTwoText = {
   giveUsAClearPicture: "Give us a clear picture of your board today.",
   numberOrNotSure: "Number or Not sure",
 };
+
+
+// Recruitment homepage copy. The existing intake is embedded by the route.
+export const recruitmentHomeContent = {
+  "brand": "Nonprofit Board Builder",
+  "subtitle": "Board Recruitment",
+  "logoMark": "NB",
+  "eyebrow": "BOARD RECRUITMENT",
+  "headline": "Recruit Board Members With Fundraising Experience",
+  "subheadline": "Bring in the people with the skills and experience your organization needs to raise money and move your mission forward.",
+  "primaryCta": "START MY BOARD RECRUITMENT",
+  "introHeading": "Build The Board Your Organization Needs",
+  "introParagraphs": [
+    "Bringing in board members with fundraising experience can strengthen your organization's ability to raise money. Your board also needs people whose skills complement the board you already have.",
+    "Start by telling us about your organization and the board you want to recruit. We will help you identify the exact type of people you need and show you how to recruit them."
+  ],
+  "formEyebrow": "LET'S START WITH YOUR ORGANIZATION",
+  "formHeading": "How Many Board Members Do You Want To Recruit?",
+  "formText": "Enter your details below to begin identifying the board members your organization needs.",
+  "videoEyebrow": "A MESSAGE FROM ROONEY",
+  "videoHeading": "How You Recruit Your Board Members Matters",
+  "videoText": "How you recruit these board members is as important as the quality of board members you bring in.",
+  "videoTitle": "Rooney explains the board recruitment process",
+  "processEyebrow": "THE RECRUITMENT PROCESS",
+  "processHeading": "A Clear Path To Your New Board",
+  "processText": "Follow the process with the guidance and customized materials you need at each stage.",
+  "stages": [
+    {
+      "title": "Identify The People You Need",
+      "text": "Understand the skills and experience that will complement your current board and help your organization succeed."
+    },
+    {
+      "title": "Prepare Your Recruitment Campaign",
+      "text": "Turn your board needs into a clear opportunity that the right people can recognize and respond to."
+    },
+    {
+      "title": "Attract Qualified Applicants",
+      "text": "Reach potential board members through your network and the platforms where suitable professionals can be found."
+    },
+    {
+      "title": "Interview And Select",
+      "text": "Get to know your applicants and assess how their experience and commitment fit your organization."
+    },
+    {
+      "title": "Complete The Appropriate Checks",
+      "text": "Use the checks your organization requires to support your appointment decisions."
+    },
+    {
+      "title": "Onboard Your New Board Members",
+      "text": "Help each new member understand the mission and their responsibilities so they can begin contributing."
+    }
+  ],
+  "outcomesEyebrow": "THE BOARD YOU ARE BUILDING",
+  "outcomesHeading": "Bring The Support Your Mission Needs Into The Room",
+  "outcomes": [
+    {
+      "title": "Fundraising Experience",
+      "text": "Recruit people who understand fundraising and can help your organization develop its ability to raise money."
+    },
+    {
+      "title": "Skills That Complement Your Board",
+      "text": "Identify the missing expertise that matters to your organization's priorities and recruit for those needs."
+    },
+    {
+      "title": "Clear Expectations From The Beginning",
+      "text": "Give applicants a proper selection and onboarding experience that establishes what serving on your board involves."
+    },
+    {
+      "title": "A Process You Can Use Again",
+      "text": "Learn how board recruitment works while building the resources your organization can return to when it needs to recruit again."
+    }
+  ],
+  "testimonialsHeading": "See What Other Nonprofit Leaders Have Accomplished",
+  "faqHeading": "Before You Get Started",
+  "faqs": [
+    {
+      "q": "Can I recruit board members with fundraising experience?",
+      "a": "Yes. Fundraising experience can be one of your recruitment priorities. The process helps you identify the experience your organization needs and communicate it clearly to potential applicants."
+    },
+    {
+      "q": "What if I am building my first board?",
+      "a": "Start with your mission and the support your organization needs. If you already have a board, use the process to identify people whose skills will complement it."
+    },
+    {
+      "q": "Do I need to know exactly who to recruit?",
+      "a": "You can begin with what your organization needs to accomplish. Identifying the types of board members who can help is part of the process."
+    },
+    {
+      "q": "Will I receive materials for the recruitment process?",
+      "a": "The guided recruitment system provides customized materials and tools for the recruitment stages. Review the offer for what is included before making payment."
+    }
+  ],
+  "closingHeading": "Start Building The Board Your Mission Needs",
+  "closingText": "Tell us about your organization and take the first step toward recruiting the people who can help you move it forward.",
+  "login": "Log In",
+  "howItWorks": "How It Works",
+  "privacy": "Privacy Policy",
+  "terms": "Terms",
+  "footer": "Nonprofit Board Builder, LLC."
+};
+

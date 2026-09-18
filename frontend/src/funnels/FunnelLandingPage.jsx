@@ -1,3 +1,4 @@
+import RecruitmentHomePage from "./RecruitmentHomePage";
 import { FunnelLayout } from "./FunnelLayout";
 import { FunnelStepForm } from "./FunnelStepForm";
 import { funnelConfigs } from "./funnelConfig";
@@ -9,6 +10,7 @@ export default function FunnelLandingPage({ offerSource }) {
   const meta = PAGE_META[offerSource] || PAGE_META.recruitment;
   usePageMeta(meta[0], meta[1]);
   const isRecruitment = offerSource === "recruitment";
+  if (isRecruitment) return <RecruitmentHomePage form={<FunnelStepForm offerSource={offerSource} />} />;
   return (
     <FunnelLayout>
       <main data-testid={`${offerSource}-landing-page`}>
@@ -25,3 +27,4 @@ export default function FunnelLandingPage({ offerSource }) {
     </FunnelLayout>
   );
 }
+
