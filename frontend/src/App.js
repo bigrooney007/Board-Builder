@@ -65,6 +65,7 @@ import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
 import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferencePages";
 import { ReviewProgressTracker } from "@/reviewMode";
 import { WorkspaceModeBanner } from "@/operatorMode";
+import { GuidedLandingPage, GuidedVideoPage, GuidedPaymentConfirmedPage, GuidedWelcomePage, GuidedIntakePage, GuidedDashboardPage } from "@/funnels/GuidedProductPages";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
 import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
 import AreaPackPage from "@/funnels/AreaPackPage";
@@ -209,7 +210,12 @@ export default function App() {
           <Route path="/board-reactivation-proposal" element={<Navigate to="/" replace />} />
           <Route path="/board-reactivation-intake" element={<Navigate to="/" replace />} />
           <Route path="/reactivation-start-here" element={<Navigate to="/" replace />} />
-          <Route path="/board-recommitment" element={<div style={{maxWidth:760,margin:"80px auto",padding:24,textAlign:"center"}}><h1>Board Recommitment</h1><p>Help your present board members recommit, clarify how they want to contribute and identify who is ready to continue building the organization with you.</p><p>This product page is being prepared.</p></div>} />
+          <Route path="/board-recommitment" element={<GuidedLandingPage />} />
+          <Route path="/board-recommitment/video" element={<GuidedVideoPage />} />
+          <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaymentConfirmedPage />} />
+          <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage />} />
+          <Route path="/board-recommitment/intake" element={<GuidedIntakePage />} />
+          <Route path="/board-recommitment/dashboard" element={<GuidedDashboardPage />} />
           <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
           <Route path="/portfolio/:token" element={<PortfolioPage />} />
           <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
@@ -262,7 +268,12 @@ export default function App() {
           <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
           <Route path="/reference-form/:token" element={<CandidateReferenceFormPage />} />
           <Route path="/referee-form/:token" element={<RefereeFormPage />} />
-          <Route path="/strategic-planning" element={<div style={{maxWidth:760,margin:"80px auto",padding:24,textAlign:"center"}}><h1>Strategic Planning</h1><p>Build a strategic plan with the people responsible for carrying it out.</p><p>This product page is being prepared.</p></div>} />
+          <Route path="/strategic-planning" element={<GuidedLandingPage />} />
+          <Route path="/strategic-planning/video" element={<GuidedVideoPage />} />
+          <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage />} />
+          <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage />} />
+          <Route path="/strategic-planning/intake" element={<GuidedIntakePage />} />
+          <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
           <Route path="/area-pack/:token" element={<AreaPackPage />} />
