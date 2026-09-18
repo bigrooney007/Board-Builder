@@ -256,6 +256,8 @@ from admin_contacts_routes import create_admin_contacts_router
 app.include_router(create_admin_contacts_router(db))
 from strategic_planning_routes import create_strategic_planning_router
 app.include_router(create_strategic_planning_router(db))
+from guided_product_routes import create_guided_product_router
+app.include_router(create_guided_product_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router
 app.include_router(create_reactivation_plan_router(db))
 app.include_router(create_public_opportunity_router(db))
