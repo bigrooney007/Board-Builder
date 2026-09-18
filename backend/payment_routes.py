@@ -39,7 +39,7 @@ class DIYCheckoutRequest(BaseModel):
     product: str = ""
 
 
-ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/"}
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/", "/strategic-planning/video", "/board-recommitment/video"}
 
 
 def resolve_cancel_url(payload, default_path: str) -> str:
@@ -595,6 +595,42 @@ def create_payment_router(db) -> APIRouter:
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
+        })
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    @router.post("/guided-checkout")
+    async def create_guided_checkout(payload: DIYCheckoutRequest):
+        product = payload.product
+        config = {
+            "strategic-planning": ("Strategic Planning With Your Board", "strategic_planning_497", "/strategic-planning"),
+            "board-recommitment": ("Board Recommitment", "board_recommitment_497", "/board-recommitment"),
+        }.get(product)
+        if not config:
+            raise HTTPException(status_code=400, detail="Unknown guided product")
+        product_name, purchase_source, base_path = config
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
+        kwargs = {
+            "line_items": [{"price_data": {"currency": "usd", "unit_amount": 49700, "product_data": {"name": product_name}}, "quantity": 1}],
+            "mode": "payment",
+            "success_url": f"{payload.origin_url}{base_path}/payment-confirmed?session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{payload.origin_url}{base_path}/video?token={payload.result_token}&checkout=cancelled",
+            "metadata": {"offer_source": product.replace("-", "_"), "selected_tier": "497", "purchase_source": purchase_source, "offer": product_name, "guided_lead_token": payload.result_token},
+        }
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            message = (getattr(exc, "user_message", "") or str(exc)).lower()
+            if "managed payments" not in message and "ineligible" not in message:
+                raise
+            session = stripe.checkout.Session.create(**kwargs, automatic_tax={"enabled": True}, billing_address_collection="required")
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "origin_url": payload.origin_url, "offer_source": product.replace("-", "_"),
+            "selected_tier": "497", "purchase_source": purchase_source, "offer": product_name, "guided_lead_token": payload.result_token,
+            "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live", "created_at": now, "updated_at": now,
         })
         return {"checkout_url": session.url, "session_id": session.id}
 
