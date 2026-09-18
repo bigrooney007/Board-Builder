@@ -44,7 +44,7 @@ export default function StrategicPlanningDashboard(){
 
    <Card n="2" title="See Everyone Who Has Completed The Form">
     <p>Each board member appears here as soon as they submit. Open their response online or download a copy for your records.</p>
-    {!respondents.length?<p className="sp-empty">No completed board responses yet.</p>:<div className="sp-people">{respondents.map(p=><article key={p.participant_id}><Users size={18}/><div><strong>{p.name}</strong><span>{p.role||"Board Member"}</span></div><a href={`/strategic-planning-response/${p.response_token||p.participant_id}`} target="_blank" rel="noreferrer">VIEW RESPONSE</a></article>)}</div>}
+    {!respondents.length?<p className="sp-empty">No completed board responses yet.</p>:<div className="sp-people">{respondents.map(p=><article key={p.participant_id}><Users size={18}/><div><strong>{p.name}</strong><span>{p.role||"Board Member"}</span></div><a href={`/strategic-planning-response/${p.participant_id}`} target="_blank" rel="noreferrer">VIEW RESPONSE</a></article>)}</div>}
    </Card>
 
    <Card n="3" title="Generate Your First Strategic Plan Draft">
