@@ -21,7 +21,7 @@ export default function GamePlayPage() {
   const [phase, setPhase] = useState("loading");
   useWakeLock(["welcome", "section", "direction", "participation", "ministrategy"].includes(phase));
   const [sec, setSec] = useState(1);
-  const [stage, setStage] = useState("deeper");
+  const [stage, setStage] = useState("first");
   const [pIdx, setPIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -70,7 +70,7 @@ export default function GamePlayPage() {
         if (!doc.fine_tuning?.completed) {
           setSec(id);
           if (id === 1 && !doc.completed && !doc.first_move_locked) { setPhase("welcome"); return; }
-          setStage(doc.completed ? "finetune" : "deeper");
+          setStage(doc.completed ? "finetune" : (doc.first_move_locked ? "deeper" : "first"));
           setPhase("section");
           return;
         }
@@ -117,6 +117,21 @@ export default function GamePlayPage() {
       </main>
     </div>
   );
+
+  const saveFirst = async () => {
+    const text = state.firsts[sec].trim();
+    if (!text) return;
+    setBusy(true); setError("");
+    try {
+      await axios.put(`${API}/game/play/${token}/section/${sec}`, {
+        ...EMPTY_PAYLOAD, first_response: [text], first_move_locked: true,
+      });
+      setStage("deeper");
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your answer. Please try again.");
+    }
+    setBusy(false);
+  };
 
   const saveSecond = async () => {
     const text = state.seconds[sec].trim();
@@ -182,7 +197,7 @@ export default function GamePlayPage() {
         </p>
       )}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-start-my-game-btn"
-        onClick={() => { setStage("deeper"); setPhase("section"); }}>
+        onClick={() => { setStage("first"); setPhase("section"); }}>
         START MY GAME
       </button>
     </>, "bfg-welcome");
@@ -198,6 +213,13 @@ export default function GamePlayPage() {
         CONTINUE
       </button>
     </>, "bfg-lead-done");
+  }
+
+  if (phase === "section" && stage === "first") {
+    return shell(<>
+      {answerScreen(sdef.q1, sdef.label1 || "YOUR FIRST MOVE", state.firsts[sec],
+        (value) => setState((current) => ({ ...current, firsts: { ...current.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
+    </>, `bfg-s${sec}-first`);
   }
 
   if (phase === "section" && stage === "deeper") {
