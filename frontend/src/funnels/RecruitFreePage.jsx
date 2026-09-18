@@ -67,11 +67,9 @@ export default function RecruitFreePage() {
     setStage(idx === -1 ? "generating" : `q${idx}`);
   }, []);
 
-  useEffect(() => {
-    const token = localStorage.getItem("recruitFreeToken");
-    if (!token) return;
-    axios.get(`${API}/recruit/free/${token}`).then((r) => resumeFrom(r.data)).catch(() => localStorage.removeItem("recruitFreeToken"));
-  }, [resumeFrom]);
+  // The public recruitment homepage always starts clean. A previous person's
+  // assessment on this browser must never hijack a new visitor's journey.
+  useEffect(() => { localStorage.removeItem("recruitFreeToken"); }, []);
 
   useEffect(() => {
     if (stage === "landing") play("recruitment-free-entry");
@@ -81,6 +79,7 @@ export default function RecruitFreePage() {
   }, [stage, clips]);
 
   const start = async () => {
+    localStorage.removeItem("recruitFreeToken");
     if (!lead.name.trim() || !lead.email.trim() || !lead.organization.trim() || (!lead.count.trim() && !lead.notSure)) {
       setError("Please complete every field, or choose I'M NOT SURE YET."); return;
     }

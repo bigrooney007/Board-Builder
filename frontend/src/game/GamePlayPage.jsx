@@ -69,7 +69,6 @@ export default function GamePlayPage() {
         const doc = sections[id];
         if (!doc.fine_tuning?.completed) {
           setSec(id);
-          if (id === 1 && !doc.completed && !doc.first_move_locked) { setPhase("welcome"); return; }
           setStage(doc.completed ? "finetune" : (doc.first_move_locked ? "deeper" : "first"));
           setPhase("section");
           return;
