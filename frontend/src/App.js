@@ -144,7 +144,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<MainHomePage />} />
           <Route path="/board-fundraising-game" element={<GameHomePage />} />
-          <Route path="/fundraising-system" element={<HomeExperience />} />
+          <Route path="/fundraising-system" element={<Navigate to="/" replace />} />
           <Route path="/game/signup" element={<Navigate to="/board-fundraising-game" replace />} />
           <Route path="/game/start" element={<Navigate to="/board-fundraising-game" replace />} />
           <Route path="/game/welcome" element={<GameWelcomePage />} />
@@ -175,55 +175,55 @@ export default function App() {
           <Route path="/game/final/:token" element={<FinalStrategyMemberPage />} />
           <Route path="/relationship-mapping/:token" element={<RelationshipMappingPage />} />
           <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
-          <Route path="/board-assessment" element={<LegacyAssessmentPage />} />
-          <Route path="/board-transformation" element={<BoardTransformationPage />} />
+          <Route path="/board-assessment" element={<Navigate to="/" replace />} />
+          <Route path="/board-transformation" element={<Navigate to="/" replace />} />
           <Route path="/board-transformation/result/:token" element={<BoardTransformationResultPage />} />
-          <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
+          <Route path="/activate-with-rooney" element={<Navigate to="/" replace />} />
           <Route path="/recruit" element={<RecruitFreePage />} />
           <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
           <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
-          <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
-          <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
-          <Route path="/offer/fundraising-board-builder" element={<FundraisingBoardBuilderOfferPage />} />
-          <Route path="/welcome" element={<WelcomePage />} />
+          <Route path="/board-fix" element={<Navigate to="/" replace />} />
+          <Route path="/offer/board-fix" element={<Navigate to="/" replace />} />
+          <Route path="/offer/fundraising-board-builder" element={<Navigate to="/" replace />} />
+          <Route path="/welcome" element={<Navigate to="/" replace />} />
           <Route path="/board-reactivation" element={<Navigate to="/" replace />} />
-          <Route path="/board-recruitment" element={<DirectOfferPage pathway="recruitment" />} />
-          <Route path="/board-fundraising-activation" element={<DirectOfferPage pathway="activation" />} />
+          <Route path="/board-recruitment" element={<Navigate to="/" replace />} />
+          <Route path="/board-fundraising-activation" element={<Navigate to="/" replace />} />
           <Route path="/complete-board-transformation" element={<Navigate to="/" replace />} />
-          <Route path="/board-fix-intake" element={<BoardFixIntakePage />} />
-          <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
-          <Route path="/board-fix-dashboard" element={<BoardFixRoadmapPage />} />
-          <Route path="/board-fix-orientation" element={<BoardFixOrientationPage />} />
-          <Route path="/recruit/process" element={<Navigate to="/recruit" replace />} />
-          <Route path="/recruit/checkout" element={<Navigate to="/recruit/walkthrough" replace />} />
-          <Route path="/recruit-with-rooney" element={<Navigate to="/recruit" replace />} />
-          <Route path="/board-recruitment-proposal" element={<BoardRecruitmentProposalPage />} />
-          <Route path="/board-recruitment-proposal/confirmed" element={<BoardRecruitmentProposalConfirmedPage />} />
-          <Route path="/about-rooney" element={<AboutRooneyPage />} />
-          <Route path="/recruit-your-board-yourself" element={<Navigate to="/recruit" replace />} />
-          <Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />
-          <Route path="/recruitment-start-here" element={<Navigate to="/recruit" replace />} />
-          <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
-          <Route path="/reactivate-with-rooney" element={<ReactivateWithRooneyPage />} />
-          <Route path="/reactivate-your-board-yourself" element={<ReactivateYourBoardYourselfPage />} />
-          <Route path="/board-reactivation-proposal" element={<BoardReactivationProposalPage />} />
-          <Route path="/board-reactivation-intake" element={<BoardReactivationIntakePage />} />
-          <Route path="/reactivation-start-here" element={<ReactivationStartHerePage />} />
+          <Route path="/board-fix-intake" element={<Navigate to="/" replace />} />
+          <Route path="/board-fix-roadmap" element={<Navigate to="/" replace />} />
+          <Route path="/board-fix-dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/board-fix-orientation" element={<Navigate to="/" replace />} />
+          <Route path="/recruit/process" element={<Navigate to="/" replace />} />
+          <Route path="/recruit/checkout" element={<Navigate to="/" replace />} />
+          <Route path="/recruit-with-rooney" element={<Navigate to="/" replace />} />
+          <Route path="/board-recruitment-proposal" element={<Navigate to="/" replace />} />
+          <Route path="/board-recruitment-proposal/confirmed" element={<Navigate to="/" replace />} />
+          <Route path="/about-rooney" element={<Navigate to="/" replace />} />
+          <Route path="/recruit-your-board-yourself" element={<Navigate to="/" replace />} />
+          <Route path="/board-recruitment-intake" element={<Navigate to="/" replace />} />
+          <Route path="/recruitment-start-here" element={<Navigate to="/" replace />} />
+          <Route path="/reactivate" element={<Navigate to="/" replace />} />
+          <Route path="/reactivate-with-rooney" element={<Navigate to="/" replace />} />
+          <Route path="/reactivate-your-board-yourself" element={<Navigate to="/" replace />} />
+          <Route path="/board-reactivation-proposal" element={<Navigate to="/" replace />} />
+          <Route path="/board-reactivation-intake" element={<Navigate to="/" replace />} />
+          <Route path="/reactivation-start-here" element={<Navigate to="/" replace />} />
           <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
           <Route path="/portfolio/:token" element={<PortfolioPage />} />
           <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
           <Route path="/app/reactivation/self-guided/module/:moduleNumber" element={<ReactivationModulePage />} />
-          <Route path="/activate" element={<FunnelLandingPage offerSource="fundraising_activation" />} />
-          <Route path="/activate-your-board-yourself" element={<ActivateYourBoardYourselfPage />} />
-          <Route path="/board-activation-proposal" element={<BoardActivationProposalPage />} />
-          <Route path="/board-activation-intake" element={<BoardActivationIntakePage />} />
-          <Route path="/activation-start-here" element={<ActivationStartHerePage />} />
+          <Route path="/activate" element={<Navigate to="/" replace />} />
+          <Route path="/activate-your-board-yourself" element={<Navigate to="/" replace />} />
+          <Route path="/board-activation-proposal" element={<Navigate to="/" replace />} />
+          <Route path="/board-activation-intake" element={<Navigate to="/" replace />} />
+          <Route path="/activation-start-here" element={<Navigate to="/" replace />} />
           <Route path="/planning-form/:token" element={<PlanningFormPage />} />
           <Route path="/strategy-review/:token" element={<StrategyReviewPage />} />
           <Route path="/strategy-plan/:token" element={<StrategyPlanPage />} />
-          <Route path="/offer/recruitment" element={<Navigate to="/board-recruitment" replace />} />
-          <Route path="/offer/reactivation" element={<OfferVideoPage offer="reactivation" />} />
-          <Route path="/offer/activation" element={<OfferVideoPage offer="activation" />} />
+          <Route path="/offer/recruitment" element={<Navigate to="/" replace />} />
+          <Route path="/offer/reactivation" element={<Navigate to="/" replace />} />
+          <Route path="/offer/activation" element={<Navigate to="/" replace />} />
           <Route path="/fundraising-portfolio/:token" element={<FundraisingPortfolioPage />} />
           <Route path="/case-for-support/:token" element={<CaseForSupportPage />} />
           <Route path="/app/activation/self-guided/my-fundraising-board" element={<MyFundraisingBoardPage />} />
@@ -233,9 +233,9 @@ export default function App() {
           <Route path="/app/activation/self-guided/module/:moduleNumber" element={<ActivationModulePage />} />
           <Route path="/reactivate/result/:token" element={<FunnelResultPage offerSource="reactivation" />} />
           <Route path="/activate/result/:token" element={<FunnelResultPage offerSource="fundraising_activation" />} />
-          <Route path="/recruit/options" element={<FunnelOptionsPage offerSource="recruitment" />} />
-          <Route path="/reactivate/options" element={<FunnelOptionsPage offerSource="reactivation" />} />
-          <Route path="/activate/options" element={<FunnelOptionsPage offerSource="fundraising_activation" />} />
+          <Route path="/recruit/options" element={<Navigate to="/" replace />} />
+          <Route path="/reactivate/options" element={<Navigate to="/" replace />} />
+          <Route path="/activate/options" element={<Navigate to="/" replace />} />
           <Route path="/join-a-board" element={<JoinBoardPage />} />
           <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
