@@ -6,6 +6,7 @@ import { BfgShell } from "@/game/gameShared";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
+import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -107,7 +108,8 @@ export function GuidedIntakePage(){
 
 export function GuidedDashboardPage(){
  const [product,c]=useProduct();
- if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [ctx,setCtx]=useState(null);
+ if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;
+ if(product==="strategic-planning") return <StrategicPlanningDashboard/>;const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [ctx,setCtx]=useState(null);
  useEffect(()=>{axios.get(`${API}/guided/dashboard`,{params:{session_id:sid,product}}).then(r=>setCtx(r.data)).catch(()=>setCtx({error:true}))},[sid,product]);
  const strategic=product==="strategic-planning";
  return <BfgShell><main className="guided-page"><section className="guided-section"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.dashboardTitle}</h1><p className="guided-intro">{strategic?"Start by preparing the individual strategic planning form for every board member. Their responses will become your first draft.":"Start by preparing the board members you need to recommit. Each response will help you decide the right one-on-one conversation."}</p><div className="guided-dashboard-grid">{(strategic?[["1","Invite Your Board","Prepare and send the individual strategic planning form."],["2","First Strategic Plan Draft","Combine board member ideas into the first working draft."],["3","Assign Leadership Areas","Match board members to the areas they said they can help lead."],["4","Area Plans & Adoption","Build, review and adopt each deeper area plan."],["5","Build The Structures","Move from adopted plans into teams, technology, materials and oversight."]]:[["1","Prepare Board Members","Add the board members you need to recommit."],["2","Send Recommitment Forms","Send the provided email and individual form."],["3","Review Their Responses","See who will recommit, who is unsure and who wants to step down."],["4","Prepare One-On-One Conversations","Use the interpretation and conversation script for each board member."],["5","Confirm The Way Forward","Record recommitments, responsibilities and graceful transitions."]]).map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p><button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled>{n==="1"?"NEXT BUILD STEP":"COMING NEXT"}</button></article>)}</div>{ctx?.error&&<p className="bfg-error">We could not confirm this workspace.</p>}</section></main></BfgShell>
