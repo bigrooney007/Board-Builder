@@ -1,7 +1,7 @@
 import { ArrowRight, BriefcaseBusiness, GraduationCap, HeartHandshake, Map, TrendingUp } from "lucide-react";
 import { SITE_CONTENT, founderStorySectionText } from "@/content/siteContent";
 
-const founderPhotoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
+const founderPhotoUrl = process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL || "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp";
 
 const content = SITE_CONTENT.founderStory;
 const credibilityIcons = [HeartHandshake, BriefcaseBusiness, GraduationCap, Map, TrendingUp];
