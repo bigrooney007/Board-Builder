@@ -81,11 +81,11 @@ export default function RecruitFreePage() {
 
   const start = async () => {
     localStorage.removeItem("recruitFreeToken");
-    // This call happens inside the user's tap, so iPhone/Safari can authorize audio.
-    play("recruitment-free-question-1-mission");
     if (!lead.name.trim() || !lead.email.trim() || !lead.organization.trim() || (!lead.count.trim() && !lead.notSure)) {
       setError("Please complete every field, or choose I'M NOT SURE YET."); return;
     }
+    // This call happens inside the user's tap, so iPhone/Safari can authorize audio.
+    play("recruitment-free-question-1-mission");
     setBusy(true); setError("");
     try {
       const response = await axios.post(`${API}/recruit/free/start`, {
