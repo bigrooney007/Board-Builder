@@ -4,6 +4,7 @@ import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
 import { memberApi } from "./api";
 import ReactivationStep2, { ResponseView } from "./ReactivationStep2";
+import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
 import "./sgr.css";
@@ -60,6 +61,7 @@ export default function BoardRecommitmentDashboard(){
 
    <section style={{marginTop:26}} data-testid="recommitment-interpret-conversation">
     <div className="member-card"><p className="eyebrow">3. INTERPRET & HAVE THE CONVERSATION</p><h2>Understand Their Response. Prepare The Call. Record What You Agreed.</h2><p>For each person who responded, interpret their answers, generate the one-on-one call script, have the conversation, then save the conclusion and final outcome. Saving what was actually agreed becomes the authoritative basis for their portfolio.</p></div>
+    <ReactivationUnderstand/>
     <ReactivationStep3/>
    </section>
 
