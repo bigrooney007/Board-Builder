@@ -40,10 +40,12 @@ def is_meaningful_game_response(*values) -> bool:
 
 
 def response_texts(response: dict) -> list[str]:
-    """Return the player's one current answer once, even when legacy fields duplicate it."""
+    """Return both participant answers once, preserving their own thinking for refinement."""
     response = response or {}
     extras = response.get("extras") if isinstance(response.get("extras"), dict) else {}
-    candidates = [extras.get("second_response")]
+    candidates = []
+    candidates.extend(response.get("first_response") or [])
+    candidates.append(extras.get("second_response"))
     candidates.extend(response.get("final_response") or [])
     current = []
     seen = set()
@@ -52,9 +54,7 @@ def response_texts(response: dict) -> list[str]:
         if key and key not in seen:
             current.append(text)
             seen.add(key)
-    if current:
-        return current
-    return list(_flatten(response.get("first_response") or []))
+    return current
 
 
 def original_idea_text(response: dict) -> str:
