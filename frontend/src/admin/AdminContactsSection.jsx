@@ -101,7 +101,7 @@ export const AdminContactsSection = () => {
         <thead>
           <tr style={{ textAlign: "left" }}>
             <th>Name</th><th>Email</th><th>Phone</th><th>Organization</th><th>Source</th>
-            <th>Products</th><th>Type</th><th>Paid</th><th>Access</th><th>Stage</th><th>Created</th><th>Last Email</th><th></th>
+            <th>Products</th><th>Type</th><th>Paid</th><th>Access</th><th>Lifecycle</th><th>Stage</th><th>Status</th><th>Next Email</th><th>Created</th><th>Last Email</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -111,7 +111,11 @@ export const AdminContactsSection = () => {
               <td>{contact.organization}</td><td>{contact.source}</td>
               <td>{(contact.products || []).join("; ")}</td><td>{contact.contact_type}</td>
               <td>{contact.paid ? "Paid" : "Unpaid"}</td><td>{contact.access_status}</td>
-              <td>{contact.current_stage}</td><td>{(contact.created_at || "").slice(0, 10)}</td>
+              <td>{contact.lifecycle || ""}</td>
+              <td>{contact.current_stage}</td>
+              <td>{contact.lifecycle_status || ""}</td>
+              <td>{(contact.next_scheduled_email || "").slice(0, 10)}</td>
+              <td>{(contact.created_at || "").slice(0, 10)}</td>
               <td>{(contact.last_email_sent || "").slice(0, 10)}</td>
               <td><button disabled={busy === contact.user_id} onClick={() => open(contact)} data-testid={`admin-open-contact-${contact.contact_id}`}>Open</button></td>
             </tr>

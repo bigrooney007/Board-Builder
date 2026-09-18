@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
+import { memberApi } from "@/member/api";
 import { BfgShell } from "./gameShared";
 
 const GoogleIcon = () => (
@@ -35,7 +36,7 @@ export default function GameAuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = "Create Your Account | Board Fundraising Game"; }, []);
-  useEffect(() => { if (!loading && member) navigate("/game/start", { replace: true }); }, [loading, member, navigate]);
+  useEffect(() => { if (!loading && member && !busy) navigate("/game/start", { replace: true }); }, [loading, member, busy, navigate]);
 
   const set = (key) => (value) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -47,6 +48,19 @@ export default function GameAuthPage() {
         await register({ first_name: form.first_name, last_name: form.last_name, email: form.email, password: form.password, confirm_password: form.confirm });
       } else {
         await login(form.email, form.password);
+      }
+      const storedGoal = Number(sessionStorage.getItem("bfgGoal") || 0);
+      const storedName = (sessionStorage.getItem("bfgName") || "").trim();
+      const storedOrg = (sessionStorage.getItem("bfgOrg") || "").trim();
+      if (storedGoal && storedName && storedOrg) {
+        await memberApi.put("/game/profile", {
+          organization: { name: storedOrg },
+          goal: { amount: storedGoal, purpose: "Reach our fundraising goal" },
+          primary_user: { full_name: storedName, email: form.email },
+        });
+        const play = await memberApi.post("/game/self-play");
+        navigate(`/play/${play.data.token}`);
+        return;
       }
       navigate("/game/start");
     } catch (err) {

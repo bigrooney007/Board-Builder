@@ -1,6 +1,132 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Mic, Pause, Play, Square } from "lucide-react";
 import { memberApi } from "@/member/api";
+import { useWakeLock } from "./useWakeLock";
+
+const Recognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+
+const LiveMeetingRecorder = ({ onFinished }) => {
+  const [status, setStatus] = useState("idle"); // idle | recording | paused | finishing
+  const [elapsed, setElapsed] = useState(0);
+  const [error, setError] = useState("");
+  const recRef = useRef(null);
+  const bufferRef = useRef("");
+  const statusRef = useRef("idle");
+  const tickRef = useRef(null);
+  const flushRef = useRef(null);
+  useWakeLock(status === "recording");
+
+  const flush = async () => {
+    const text = bufferRef.current.trim();
+    if (!text) return;
+    bufferRef.current = "";
+    try { await memberApi.post("/game/meeting/recording/chunk", { text }); } catch { bufferRef.current = `${text} ${bufferRef.current}`.trim(); }
+  };
+
+  const startRecognition = () => {
+    const rec = new Recognition();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = "en-US";
+    rec.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        if (event.results[i].isFinal) bufferRef.current = `${bufferRef.current} ${event.results[i][0].transcript}`.trim();
+      }
+      if (bufferRef.current.length > 900) flush();
+    };
+    rec.onend = () => { if (statusRef.current === "recording") { try { rec.start(); } catch { /* noop */ } } };
+    rec.onerror = (event) => { if (event.error === "not-allowed") { setError("Microphone permission was denied. You can upload or paste a transcript instead."); stopAll("idle"); } };
+    try { rec.start(); } catch { /* noop */ }
+    recRef.current = rec;
+  };
+
+  const stopAll = (next) => {
+    statusRef.current = next;
+    setStatus(next);
+    if (recRef.current) { try { recRef.current.stop(); } catch { /* noop */ } recRef.current = null; }
+    clearInterval(tickRef.current);
+    clearInterval(flushRef.current);
+  };
+
+  const start = () => {
+    if (!Recognition) { setError("Live recording is not supported in this browser. Please upload or paste a transcript instead."); return; }
+    setError("");
+    statusRef.current = "recording";
+    setStatus("recording");
+    startRecognition();
+    tickRef.current = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+    flushRef.current = setInterval(flush, 20000);
+  };
+
+  const pause = () => {
+    statusRef.current = "paused";
+    setStatus("paused");
+    if (recRef.current) { try { recRef.current.stop(); } catch { /* noop */ } recRef.current = null; }
+    clearInterval(tickRef.current);
+    flush();
+  };
+
+  const resume = () => {
+    statusRef.current = "recording";
+    setStatus("recording");
+    startRecognition();
+    tickRef.current = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+  };
+
+  const finish = async () => {
+    stopAll("finishing");
+    setError("");
+    await flush();
+    try {
+      await memberApi.post("/game/meeting/recording/finish");
+      await memberApi.post("/game/meeting/compile-final");
+      setElapsed(0);
+      statusRef.current = "idle";
+      setStatus("idle");
+      onFinished();
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your recording. You can paste or upload a transcript instead.");
+      statusRef.current = "idle";
+      setStatus("idle");
+    }
+  };
+
+  useEffect(() => () => stopAll("idle"), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
+
+  return (
+    <div style={{ marginTop: 14, border: "1px solid #E5E7EB", borderRadius: 14, padding: 18 }} data-testid="bfg-live-recorder">
+      <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>Record The Rest Of My Board Meeting</p>
+      <p className="bfg-note" style={{ marginTop: 8 }}>
+        Before recording, make sure everyone in the meeting knows the discussion is being recorded and transcribed for the purpose of completing your organization's fundraising strategy.
+      </p>
+      {status === "idle" && (
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 12 }} onClick={start} data-testid="bfg-record-meeting-btn">
+          <Mic size={15} /> RECORD THE REST OF MY BOARD MEETING
+        </button>
+      )}
+      {(status === "recording" || status === "paused") && (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontWeight: 800, color: status === "recording" ? "#dc2626" : "#b45309", margin: 0 }} data-testid="bfg-recording-state">
+            {status === "recording" ? "● RECORDING" : "❚❚ PAUSED"} — {clock}
+          </p>
+          <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+            {status === "recording" ? (
+              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={pause} data-testid="bfg-recording-pause"><Pause size={13} /> PAUSE</button>
+            ) : (
+              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={resume} data-testid="bfg-recording-resume"><Play size={13} /> RESUME</button>
+            )}
+            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={finish} data-testid="bfg-recording-finish"><Square size={13} /> FINISH MEETING</button>
+          </div>
+        </div>
+      )}
+      {status === "finishing" && <p style={{ marginTop: 12, fontWeight: 700 }}>COMPILING YOUR FINAL FUNDRAISING STRATEGY…</p>}
+      {error && <p className="bfg-error" style={{ marginTop: 10 }} data-testid="bfg-recording-error">{error}</p>}
+    </div>
+  );
+};
 
 export const CompleteBoardMeetingSection = ({ overview, onRefresh }) => {
   const navigate = useNavigate();
@@ -81,6 +207,8 @@ export const CompleteBoardMeetingSection = ({ overview, onRefresh }) => {
           {finalStatus === "failed" && (
             <p className="bfg-error" data-testid="bfg-final-failed">We could not compile your final strategy. Your transcript is saved — please try again.</p>
           )}
+          <LiveMeetingRecorder onFinished={onRefresh} />
+          <p className="bfg-note" style={{ marginTop: 14 }}>Or use one of the alternatives below:</p>
           <label className="bfg-field">
             <span>Paste Transcript</span>
             <textarea rows={8} value={text} placeholder="Paste the transcript from the rest of your board meeting here."

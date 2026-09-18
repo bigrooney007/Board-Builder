@@ -1,0 +1,58 @@
+/* Self-Guided Board Recruitment — visual alignment with the Board Fundraising Game (bfg) design system. */
+.sgr { background: #fafafc; color: #111827; }
+.sgr h1, .sgr h2, .sgr h3, .sgr h4 { font-family: "Outfit", system-ui, sans-serif; color: #111827; letter-spacing: -0.02em; }
+.sgr p { color: #4b5563; line-height: 1.65; }
+.sgr .member-card, .sgr .workspace-panel, .sgr .detail-section {
+  background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px;
+  padding: clamp(20px, 3vw, 30px); box-shadow: 0 10px 34px rgba(17, 24, 39, 0.05);
+}
+.sgr .button, .sgr button.button {
+  border-radius: 999px; font-family: "Outfit", system-ui, sans-serif; font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: none;
+  padding: 12px 24px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 8px 26px rgba(99, 102, 241, 0.3);
+}
+.sgr .button:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4); }
+.sgr .button:disabled { opacity: 0.55; transform: none; cursor: not-allowed; }
+.sgr .button-back, .sgr .button-outline {
+  background: transparent; color: #111827; border: 1px solid #e5e7eb; box-shadow: none;
+}
+.sgr .member-page-heading .eyebrow { color: #4f46e5; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; font-size: 12px; }
+.sgr input, .sgr textarea, .sgr select { border: 1px solid #d1d5db; border-radius: 12px; }
+.sgr input:focus, .sgr textarea:focus, .sgr select:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+
+.sgr-btn {
+  display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+  border-radius: 999px; padding: 13px 26px; font-family: "Outfit", system-ui, sans-serif;
+  font-weight: 700; font-size: 14px; transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sgr-btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; box-shadow: 0 8px 26px rgba(99, 102, 241, 0.32); }
+.sgr-btn-primary:hover { transform: translateY(-1px); }
+
+.sgr-highlight { outline: 3px solid #6366f1; outline-offset: 6px; border-radius: 18px; transition: outline-color 0.3s ease; }
+
+.sgr-tutorial-overlay { position: fixed; inset: 0; z-index: 4000; background: rgba(15, 23, 42, 0.6); display: grid; place-items: center; padding: 20px; }
+.sgr-tutorial-modal { background: #ffffff; border-radius: 18px; padding: 24px 26px; width: 480px; max-width: 100%; max-height: 82vh; overflow-y: auto; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35); }
+.sgr-tutorial-modal h3 { font-size: 18px; }
+.sgr-tutorial-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  text-align: left; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: 13px 16px; margin-top: 8px; cursor: pointer; font-weight: 600; color: #111827;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.sgr-tutorial-item:hover { background: #eef2ff; border-color: #6366f1; }
+.sgr-tutorial-item em { font-size: 11px; color: #9ca3af; font-style: normal; white-space: nowrap; }
+.sgr-tutorial-close { background: none; border: none; cursor: pointer; color: #6b7280; padding: 4px; }
+.sgr-tutorial-fab {
+  position: fixed; bottom: 22px; right: 22px; z-index: 900; display: inline-flex; align-items: center; gap: 7px;
+  background: #111827; color: #ffffff; border: none; border-radius: 999px; padding: 11px 18px;
+  font-family: "Outfit", system-ui, sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+}
+.sgr-tutorial-stop {
+  position: fixed; bottom: 22px; left: 22px; z-index: 900; display: inline-flex; align-items: center; gap: 6px;
+  background: #4f46e5; color: #fff; border: none; border-radius: 999px; padding: 10px 16px;
+  font-weight: 700; font-size: 12px; cursor: pointer;
+}
+.sgr-help-footer { margin-top: 18px; border-top: 1px dashed #e5e7eb; padding-top: 14px; }
+.sgr-help-footer p { font-weight: 700; color: #111827; margin: 0 0 8px; font-size: 14px; }

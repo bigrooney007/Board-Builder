@@ -20,6 +20,7 @@ export const PurchaseSuccessPage = () => {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [claimed, setClaimed] = useState("");
+  const [guestPassword, setGuestPassword] = useState({ password: "", confirm_password: "" });
 
   useEffect(() => {
     if (!sessionId) { setPaymentState("missing"); return undefined; }
@@ -48,6 +49,8 @@ export const PurchaseSuccessPage = () => {
         await refresh();
         if (response.data.claimed_source === "recruit_with_rooney_997") {
           navigate("/app/recruitment/self-guided/module/1");
+        } else if (response.data.claimed_source === "recruitment_497") {
+          navigate("/recruit/welcome");
         } else if (response.data.claimed_source === "direct_diy_board_recruitment_497" || response.data.claimed_source === "recruitment_campaign_diy_297") {
           navigate(`/board-recruitment-intake?session_id=${sessionId}`);
         } else if (response.data.claimed_source === "recruitment_selection_onboarding_297") {
@@ -65,6 +68,18 @@ export const PurchaseSuccessPage = () => {
   }, [paymentState, loading, member, claimed, sessionId, refresh, navigate]);
 
   const updateField = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
+
+  const secureGuestAccount = async (event) => {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      await memberApi.post("/members/complete-guest-account", guestPassword);
+      await refresh();
+      navigate("/game/welcome");
+    } catch (err) {
+      setError(err.response?.data?.detail || "We could not save your password. Please try again.");
+      setBusy(false);
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError("");
@@ -85,6 +100,8 @@ export const PurchaseSuccessPage = () => {
       }
       if (claimedSource === "direct_diy_board_recruitment_497" || claimedSource === "recruitment_campaign_diy_297") {
         navigate(`/board-recruitment-intake?session_id=${sessionId}`);
+      } else if (claimedSource === "recruitment_497") {
+        navigate("/recruit/welcome");
       } else if (claimedSource === "recruitment_selection_onboarding_297") {
         navigate("/app/recruitment/self-guided/module/4");
       } else if (claimedSource === "board_fix_system_497") {
@@ -111,7 +128,24 @@ export const PurchaseSuccessPage = () => {
         {paymentState === "paid" && (
           <div className="member-auth-card wide" data-testid="purchase-paid">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Payment confirmed</p>
-            {member ? (
+            {member?.account_status === "free_game_guest" ? (
+              <>
+                <h1>Secure Your Board Builder Account</h1>
+                <p>Your purchase is linked. Create a password so you can return to your Board Fundraising Game at any time.</p>
+                <form onSubmit={secureGuestAccount} className="member-auth-form">
+                  <label className="field"><span>Password <b>*</b></span><input type="password" minLength={8}
+                    value={guestPassword.password} onChange={(event) => setGuestPassword({ ...guestPassword, password: event.target.value })}
+                    required data-testid="guest-password" /></label>
+                  <label className="field"><span>Confirm password <b>*</b></span><input type="password" minLength={8}
+                    value={guestPassword.confirm_password} onChange={(event) => setGuestPassword({ ...guestPassword, confirm_password: event.target.value })}
+                    required data-testid="guest-confirm-password" /></label>
+                  {error && <p className="submit-error" data-testid="guest-account-error">{error}</p>}
+                  <button className="button" type="submit" disabled={busy || !claimed} data-testid="guest-account-submit">
+                    {busy ? "Saving…" : claimed ? "SAVE PASSWORD AND CONTINUE" : "LINKING YOUR PURCHASE…"}
+                  </button>
+                </form>
+              </>
+            ) : member ? (
               <>
                 <h1>{purchaseSuccessText.h_yourPurchaseIsLinkedTo}</h1>
                 <p>You are logged in as {member.email}.{claimed ? " Your program access is ready." : ""}</p>

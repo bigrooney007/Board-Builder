@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { BfgShell, GameVideo, money, useGameContent } from "./gameShared";
+import { memberApi, storeMemberToken } from "@/member/api";
+import { BfgShell, money, useGameContent } from "./gameShared";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
 
@@ -12,21 +12,41 @@ export default function GameHomePage() {
   const navigate = useNavigate();
   const { member } = useMemberAuth();
   const content = useGameContent();
-  const video = useFlowVideo("game_homepage");
   const [goal, setGoal] = useState("");
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState("");
 
   useEffect(() => { document.title = "The Board Fundraising Game | Nonprofit Board Builder"; }, []);
 
   if (!content) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
-  const startGame = () => {
+  const startGame = async () => {
     const digits = String(goal).replace(/[^0-9]/g, "");
     if (digits) sessionStorage.setItem("bfgGoal", digits);
     if (lead.name.trim()) sessionStorage.setItem("bfgName", lead.name.trim());
     if (lead.email.trim()) sessionStorage.setItem("bfgEmail", lead.email.trim());
     if (lead.org.trim()) sessionStorage.setItem("bfgOrg", lead.org.trim());
-    navigate(member ? "/game/start" : "/game/signup");
+    if (!lead.name.trim() || !lead.email.trim() || !lead.org.trim() || !digits) {
+      if (member) { navigate("/game/start"); return; }
+      setStartError("Enter your name, email, organization name and fundraising goal to start.");
+      document.getElementById("bfg-goal")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setStarting(true); setStartError("");
+    try {
+      const response = await memberApi.post("/members/game-free-start", {
+        name: lead.name.trim(), email: lead.email.trim(),
+        organization: lead.org.trim(), goal_amount: Number(digits),
+      });
+      if (response.data.existing_account) { navigate("/game/signup?mode=login"); return; }
+      storeMemberToken(response.data.token);
+      const play = await memberApi.post("/game/self-play");
+      navigate(`/play/${play.data.token}`);
+    } catch {
+      setStartError("We could not start your game. Please check your details and try again.");
+      setStarting(false);
+    }
   };
 
   const launchFromStages = () => {
@@ -85,20 +105,12 @@ export default function GameHomePage() {
               <input type="email" placeholder="Email" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} data-testid="bfg-lead-email" />
               <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
             </div>
-            <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-hero-cta">{content.cta_label}</button>
+            {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
+            <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startGame} data-testid="bfg-hero-cta">
+              {starting ? "Starting…" : "START MY BOARD FUNDRAISING GAME"}
+            </button>
           </div>
         </section>
-
-        {content.video_enabled && (
-          <section className="bfg-section bfg-video-section" data-testid="bfg-video-section">
-            <div className="bfg-section-head">
-              <p className="bfg-eyebrow">{content.video_label}</p>
-              <h2>{content.video_heading}</h2>
-              <p style={{ marginTop: 12 }}>{content.video_text}</p>
-            </div>
-            <GameVideo video={video} testId="bfg-homepage-video" />
-          </section>
-        )}
 
         <section className="bfg-section" data-testid="bfg-stages-section">
           <div className="bfg-section-head">
@@ -156,7 +168,9 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
-          <button className="bfg-btn bfg-btn-primary" onClick={startGame} data-testid="bfg-closing-cta">{content.closing_cta_label}</button>
+          <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startGame} data-testid="bfg-closing-cta">
+            {starting ? "Starting…" : "START MY BOARD FUNDRAISING GAME"}
+          </button>
         </section>
 
         {/* EXACT CTA COPY — provided separately, inserted word for word. */}

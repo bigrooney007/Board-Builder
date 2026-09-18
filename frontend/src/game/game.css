@@ -651,3 +651,24 @@
 .bfg-goal-lead input { width: 100%; padding: 11px 14px; border: 1px solid #d1d5db; border-radius: 10px; background: #fff; color: #111827; font-size: 15px; }
 .bfg-goal-lead input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
 .bfg-ft-card { border-left: 3px solid #4f46e5; }
+
+/* Recruitment assessment guidance stays optional because narration leads each question. */
+.recruit-question-guidance {
+  margin: 16px auto 0;
+  max-width: 600px;
+  padding: 0 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: center;
+}
+.recruit-question-guidance summary {
+  cursor: pointer;
+  padding: 14px 0;
+  color: #4f46e5;
+  font-family: "Outfit";
+  font-weight: 700;
+  list-style-position: inside;
+}
+.recruit-question-guidance[open] { padding-bottom: 16px; }
+.recruit-question-guidance p { color: #4b5563; line-height: 1.6; text-align: center; }

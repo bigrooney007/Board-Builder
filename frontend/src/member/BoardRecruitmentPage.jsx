@@ -2,18 +2,26 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
+import { memberApi } from "./api";
 import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { Module3Launch } from "./workspace/WorkspaceModules";
 import { Module4Applicants, Module5References, Module6Onboarding, useApplications, useBranding } from "./workspace/ApplicantModules";
 import { BoardMemberResultCard } from "./workspace/ResultsPage";
-import { useFlowVideo } from "@/hooks/useFlowVideos";
+import { RecruitmentTutorial } from "./RecruitmentTutorial";
+import "./sgr.css";
+
+const scrollToSupport = () => document.getElementById("sgr-support")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
 const Section = ({ number, title, children, testId }) => (
   <section className="member-card" data-testid={testId} style={{ marginTop: 26 }}>
     <h2 style={{ marginTop: 0 }}>{number}. {title}</h2>
     {children}
+    <div className="sgr-help-footer">
+      <p>NEED HELP WITH THIS STEP?</p>
+      <button className="button" onClick={scrollToSupport} data-testid={`sgr-request-help-${testId}`}>REQUEST HELP</button>
+    </div>
   </section>
 );
 
@@ -34,22 +42,23 @@ const PortfolioSection = () => {
 export default function BoardRecruitmentPage() {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
-  const video = useFlowVideo("board_recruitment");
 
   useEffect(() => {
     if (loading) return;
     if (!member) { navigate("/login?next=/app/board-recruitment"); return; }
+    memberApi.post("/recruit/free/member-event/dashboard_entered").catch(() => {});
   }, [loading, member, navigate]);
 
   const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "fbb_recruitment", "recruitment_self_guided"].includes(e));
 
   return (
     <MemberShell>
-      <main className="member-page" data-testid="fbb-recruitment-page">
+      <main className="member-page sgr" data-testid="fbb-recruitment-page">
         <header className="member-page-heading">
-          <p className="eyebrow">Fundraising Board Builder</p>
-          <h1 data-testid="fbb-recruitment-heading">BOARD RECRUITMENT</h1>
+          <p className="eyebrow">Nonprofit Board Builder</p>
+          <h1 data-testid="fbb-recruitment-heading">SELF-GUIDED BOARD RECRUITMENT</h1>
           <p><strong>Identify and recruit the professional board members your organization needs to strengthen your board and your ability to raise money.</strong></p>
+          {allowed && <div style={{ marginTop: 14 }}><RecruitmentTutorial /></div>}
         </header>
         {member && !allowed && (
           <section className="member-card" data-testid="fbb-recruitment-forbidden">
@@ -59,11 +68,6 @@ export default function BoardRecruitmentPage() {
         )}
         {allowed && (
           <>
-            {video?.youtube_id && (
-              <div className="module-video" data-testid="fbb-recruitment-video">
-                <iframe src={`https://www.youtube.com/embed/${video.youtube_id}`} title="Board Recruitment" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-              </div>
-            )}
             <section className="member-card" data-testid="fbb-recruitment-intro">
               <p>Building the right board starts with knowing exactly who your organization needs.</p>
               <p>Do not recruit people simply because they are available.</p>
@@ -117,8 +121,10 @@ export default function BoardRecruitmentPage() {
               <p>The goal is to intentionally build the board your organization needs to raise money, grow and accomplish its mission.</p>
             </section>
 
-            <SupportBox productKey="recruitment_self_guided" moduleNumber={1}
-              supportTypes={["I have a question about this step", "I need help using the platform", "I need help executing this step", "I would like someone to help me complete this step"]} />
+            <div id="sgr-support">
+              <SupportBox productKey="recruitment_self_guided" moduleNumber={1}
+                supportTypes={["I have a question about this step", "I need help using the platform", "I need help executing this step", "I would like someone to help me complete this step"]} />
+            </div>
           </>
         )}
       </main>

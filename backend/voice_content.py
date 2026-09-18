@@ -1,4 +1,4 @@
-"""Active learning narration library — 25 static clips, Rooney Akpesiri LIVE ElevenLabs voice.
+"""Active learning narration library, Rooney Akpesiri LIVE ElevenLabs voice.
 Scripts are word-for-word and must not be rewritten. Older narration audio stays stored but inactive."""
 
 TEXTS = {
@@ -29,35 +29,89 @@ TEXTS = {
     "lead_setup_complete": "Great.\nWe now have your fundraising direction, we understand what your organization already has and we know how you want to participate.\nThat's enough for us to begin building your working fundraising strategy.\nRemember, the strategy is the roadmap.\nIt tells you who you're raising money from, where to find them, how to attract them, the process to raise money from them and what your organization needs to execute.\nThe next step is bringing more people into the process.\nBecause the stronger the collective thinking behind the strategy, the stronger the strategy becomes.\nWe're taking you to your dashboard now.\nYour working strategy will be there as soon as it's ready, and you can continue preparing your board while we build it.",
 }
 
+# The first-question screens were retired. Each active teaching clip now opens with the
+# context that used to live in that question, continues into the lesson, and ends with
+# the single answer prompt shown on screen.
+TEXTS.update({
+    "a1_deeper": "Let's start with the most important question.\nWho should actually fund your mission?\nThis is important because not everybody is meant to fund your organization.\nOne of the mistakes organizations make is simply saying, we need donors, we need businesses or we need foundations.\nThat's too broad.\nThere are specific people who have a strong reason to care about the problem you solve.\nThere are specific businesses that have a reason to care about the people you serve, the community you work in or the outcome you're trying to create.\nAnd there are grantors whose funding priorities already align with your mission.\nSo your job is to find your people.\nNow let's go a little deeper.\nWhen I say identify your ideal funders, I don't mean simply saying parents, businesses or foundations.\nWe need to get specific enough that your organization can actually go out and find these people.\nFor individuals, think about who has experienced the problem you're solving.\nWho knows somebody affected by it?\nWho strongly believes in the change you're trying to create?\nWho benefits when the people or community you serve become stronger?\nWho is already spending their time, attention or money around issues connected to your mission?\nThen look at businesses.\nWhich businesses serve the same people you serve?\nWho employs them?\nWho sells to them?\nWho benefits when this community becomes stronger?\nWhich companies already support issues connected to your work?\nThen look at grantors.\nWho already funds your issue?\nWho funds the population you serve?\nWho funds your geography, your type of program or the outcome you're trying to create?\nThe clearer you are about who you're looking for, the easier the rest of fundraising becomes.\nSo based on that, who specifically should your organization be looking for?",
+    "a2_deeper": "Now that we know who we're looking for, the next question is where do we find them?\nKnowing your ideal funders is only useful if your organization can consistently put those people in front of you.\nThis is where fundraising begins to become a system.\nYou shouldn't wake up every morning wondering who you are going to contact today.\nYou should already know where your ideal funders congregate and have a process that consistently helps your organization find them.\nThink about it this way.\nIf you're looking for Christians, you go to the church.\nIf you're looking for Muslims, you go to the mosque.\nWhy?\nBecause that's where they congregate.\nThe same thing applies to fundraising.\nThe exact people you're trying to reach are already somewhere.\nThey belong to communities.\nThey work somewhere.\nThey attend events.\nThey join professional associations.\nThey use particular platforms.\nThey belong to churches, clubs, alumni networks, Facebook groups, LinkedIn communities and professional networks.\nBusinesses also congregate.\nYou find them through chambers, trade associations, business networks, industry events, directories and LinkedIn.\nAnd grantors congregate too.\nYou find them through funding databases, community foundations, funder networks, existing grantee lists, conferences, information sessions and the people responsible for their funding programs.\nYou don't need to search everywhere.\nYou need to know where your people already are.\nBased on that, where should your organization consistently go to find the funders you identified?",
+    "a3_deeper": "Now let's talk about attraction.\nKnowing where your funders are does not mean you need to spend every day chasing them.\nThere are things your organization can put out there that will attract the right people and businesses to you.\nThere are also ways of positioning your organization that can attract the attention of grantors.\nThink about your ideal funders.\nWhat can you put in front of them that is already valuable to them?\nIt could be a guide.\nIt could be a report.\nA checklist.\nA survey.\nAn assessment.\nA webinar.\nAn event.\nA community activity.\nA campaign.\nA useful resource.\nAn opportunity to share their opinion.\nOr simply an invitation to become part of something they already care about.\nFor businesses, sometimes the attraction is simply starting the right conversation around something both your organization and that business care about.\nFor grantors, attraction can mean understanding their priorities, attending their information sessions, asking good questions and making sure they know your organization before an application ever lands in front of them.\nThis is very important.\nYour first interaction does not always have to be an ask.\nThe first goal is to get the right people to notice you, connect with you and give you the opportunity to build a relationship.\nBased on that, what can your organization offer your potential funders that gives them a reason to move toward you before you ask them for money?",
+    "a4_deeper": "Now we get to the actual fundraising process.\nFinding somebody is not fundraising.\nAttracting them is not fundraising either.\nYou still need a process that moves that relationship towards financial support.\nThis is where many organizations get it wrong.\nThey meet somebody for the first time and immediately ask them for money.\nThat's not a fundraising system.\nThere needs to be a clear process.\nThis is one of the most important things I want you to learn from this game.\nPeople usually need to know you, like you and trust you before they are ready to give.\nSo the fundraising process we use is very simple.\nKnow.\nLike.\nTrust.\nAsk.\nFollow up.\nSteward.\nFirst is KNOW.\nThe potential funder needs to discover your organization and understand what you do.\nThen LIKE.\nGive them reasons to stay connected, pay attention and become interested in the work.\nThen TRUST.\nThey need to see your impact.\nThey need to trust your leadership.\nThey need to believe your organization can actually create the change you say you're creating.\nThen you ASK.\nAt that point, you clearly invite them to financially support the mission.\nAnd if they don't give immediately, you FOLLOW UP.\nDon't just disappear.\nContinue the relationship.\nFind out what they need.\nGive them more information.\nContinue the conversation.\nThen when they give, you STEWARD them.\nThank them.\nShow them what their support made possible.\nKeep them connected.\nThe goal is not simply to get one donation.\nThe goal is to build a relationship that can continue to support the mission.\nThis process may look different for individuals, businesses and grantors.\nA grantor may need to know your organization long before your application comes in.\nA business may need several conversations before a partnership or sponsorship opportunity makes sense.\nAn individual may need to experience your stories, events, content and impact before making that first gift.\nBut the principle remains the same.\nKnow.\nLike.\nTrust.\nAsk.\nFollow up.\nSteward.\nNow based on this process, how should your organization move your potential funders from first connection to financial support and an ongoing relationship?",
+    "approval_review": "Great.\nI've kept exactly what you wrote as your original idea and created an improved version that is clearer, more specific and easier for your organization to use.\nReview both versions.\nChoose your original idea, choose the improved version or go back and edit your answer.",
+})
+
+for retired_id in ("a1_intro", "a2_intro", "a3_intro", "a4_intro"):
+    TEXTS.pop(retired_id, None)
+
+# Free Board Recruitment assessment. These clips lead the experience while the
+# longer on-screen guidance remains optional behind “Read the guidance”.
+TEXTS.update({
+    "recruitment-free-entry": "Welcome. In the next few minutes, I am going to help you identify the exact types of board members your organization should recruit. Tell us about your mission, the board you have today, the areas your organization needs to do well and where you need stronger board support. You do not need formal language or perfect answers. Use your own words. We will compare what your organization needs with what your present board already brings, then show you the people you should look for. Complete the short form on this page to begin.",
+    "recruitment-free-question-1-mission": "Let's begin with your mission. What does your organization exist to achieve, who do you serve and what change are you trying to create? Tell us in your own words. You do not need to make it sound formal. This gives us the context we need to recommend board members who fit your real mission.",
+    "recruitment-free-question-2-current-board": "Now tell us about the board you have today. How many board members do you currently have, and how does each person presently help your organization? You can describe their roles, skills, experience or the areas they normally support. For example, you might have an accountant who helps with finance, an educator who advises on programs or someone with strong community relationships. If you do not currently have board members, simply tell us that.",
+    "recruitment-free-question-3-important-areas": "Now think about what your organization needs to do really well in order to grow, raise money and achieve its mission. List the areas that genuinely matter to your success. These might include fundraising, marketing, sales, partnerships, community engagement, programs, finance, operations, technology, legal knowledge, government relations, volunteer management, corporate relationships, grant development, communications or lived experience. Add whatever is important to your organization.",
+    "recruitment-free-question-4-support-needed": "Finally, where do you specifically need new board members to support your organization right now, and why? Think about the important areas you just identified. Which ones need stronger board-level support? Where are you currently struggling? What experience, relationships or leadership are you hoping new board members will bring? Be as specific as you can, because this answer helps us prioritize the right recruitment profiles for your organization.",
+    "recruitment-free-result": "Your board recruitment result is ready. We compared the capabilities your organization needs with the support your present board already provides. On this page, you will see the areas your board already covers, the most important gaps and the exact board-member profiles we recommend you recruit. Review each profile carefully. It explains the experience to look for and why that person matters to your organization. When you are ready, continue to see the complete self-guided process for finding, selecting and onboarding these board members.",
+    "recruitment-free-video-page": "You now know who your organization needs to recruit. The Self-Guided Board Recruitment System helps you carry out the rest of the process yourself. It takes you from these priority profiles to a professional recruitment campaign, applicant review, interviews, references, selection and onboarding. You will have the process, tools and materials you need at each step, and you can request help when you need it. Review the information on this page and choose the button when you are ready to start your board recruitment.",
+    "rct_how_this_works": "This dashboard takes you through your board recruitment one step at a time. Start by confirming the board members your organization needs. Then create and launch your recruitment campaign, review applicants, conduct interviews and references, select the right people and onboard them. Choose any tutorial topic to hear guidance for that part of the process.",
+    "rct_identify": "Begin by identifying the exact board members your organization needs. Review the recommended profiles and compare them with what your present board already brings. Edit anything that needs to change, then approve the result. The approved profiles become the foundation for the recruitment materials you create next.",
+    "rct_strategy": "Use your approved board-member profiles to build the recruitment strategy and application process. The system uses what you have already provided, so review the material carefully, add any missing organization details and approve it when it accurately reflects who you want to recruit.",
+    "rct_launch": "When your strategy and application are ready, create the campaign materials for the channels you want to use. Review every item before publishing or sending it. Your board application link is included where applicants need it, and completed applications will appear in this dashboard.",
+    "rct_review": "Review each applicant against the board role and experience your organization needs. You can also add people you discover through referrals, LinkedIn, networking or your existing relationships. When you want to interview someone, generate the interview guide for that applicant, conduct the conversation and record your decision.",
+    "rct_references": "For applicants you decide to move forward, use this section to complete references, any appropriate background checks and the conditional appointment process. You control every communication and final decision. Once you select someone, send the agreements and Board Member Profile Form needed before onboarding.",
+    "rct_onboarding": "Prepare for onboarding only after the selection and required documents are complete. Generate the facilitation guide, lead the onboarding conversation and confirm the new member's role, responsibilities, contribution and first steps. Their completed information can then be used to create their Board Member Portfolio.",
+})
+
 LABELS = {
     "lead_opening": "01 Lead User Opening",
     "board_opening": "02 Board Member Opening",
-    "a1_intro": "03 Area 1 First Question",
-    "a1_deeper": "04 Area 1 Teaching",
-    "approval_review": "05 Generic Fine-Tuned Idea Review",
-    "a2_intro": "06 Area 2 First Question",
-    "a2_deeper": "07 Area 2 Teaching",
-    "a3_intro": "08 Area 3 First Question",
-    "a3_deeper": "09 Area 3 Teaching",
-    "a4_intro": "10 Area 4 First Question",
-    "a4_deeper": "11 Area 4 Teaching",
-    "lead_free_complete": "12 Lead Free-Game Completion",
-    "reality_intro": "13 Current Reality Introduction",
-    "reality_donors": "14 Current Individual Donors",
-    "reality_businesses": "15 Current Businesses",
-    "reality_grantors": "16 Current Grantors",
-    "reality_team": "17 Current Fundraising Team",
-    "reality_resources": "18 Current Technology / Materials / Resources",
-    "part_intro": "19 Participation Introduction",
-    "part_build": "20 Participation: Build & Manage System",
-    "part_raise": "21 Participation: Raise Money",
-    "part_time": "22 Participation: Time",
-    "part_anything": "23 Participation: Anything Else",
-    "board_complete": "24 Board Member Completion",
-    "lead_setup_complete": "25 Lead User Post-Second-Form Completion",
+    "a1_deeper": "03 Area 1 Introduction + Teaching",
+    "approval_review": "04 Original + Improved Idea Review",
+    "a2_deeper": "05 Area 2 Introduction + Teaching",
+    "a3_deeper": "06 Area 3 Introduction + Teaching",
+    "a4_deeper": "07 Area 4 Introduction + Teaching",
+    "lead_free_complete": "08 Lead Free-Game Completion",
+    "reality_intro": "09 Current Reality Introduction",
+    "reality_donors": "10 Current Individual Donors",
+    "reality_businesses": "11 Current Businesses",
+    "reality_grantors": "12 Current Grantors",
+    "reality_team": "13 Current Fundraising Team",
+    "reality_resources": "14 Current Technology / Materials / Resources",
+    "part_intro": "15 Participation Introduction",
+    "part_build": "16 Participation: Build & Manage System",
+    "part_raise": "17 Participation: Raise Money",
+    "part_time": "18 Participation: Time",
+    "part_anything": "19 Participation: Anything Else",
+    "board_complete": "20 Board Member Completion",
+    "lead_setup_complete": "21 Lead User Post-Second-Form Completion",
+    "recruitment-free-entry": "F01 Free Flow Entry",
+    "recruitment-free-question-1-mission": "F02 Question 1 — Mission",
+    "recruitment-free-question-2-current-board": "F03 Question 2 — Present Board",
+    "recruitment-free-question-3-important-areas": "F04 Question 3 — Important Areas",
+    "recruitment-free-question-4-support-needed": "F05 Question 4 — Support Needed",
+    "recruitment-free-result": "F06 Result",
+    "recruitment-free-video-page": "F07 Walkthrough Video Page",
+    "rct_how_this_works": "R00 How This Works",
+    "rct_identify": "R01 Identify The Board Members You Need",
+    "rct_strategy": "R02 Build Your Recruitment Strategy",
+    "rct_launch": "R03 Launch Your Recruitment Campaign",
+    "rct_review": "R04 Review Applicants And Introductory Calls",
+    "rct_references": "R05 References, Background Checks And Conditional Appointment",
+    "rct_onboarding": "R06 Onboard Your New Board Members",
 }
 
-STATIC_NARRATIONS = [{"narration_id": key, "game_step_id": key, "label": LABELS[key]} for key in TEXTS]
+def narration_category(narration_id: str) -> str:
+    if narration_id.startswith("recruitment-free-"):
+        return "FREE_RECRUITMENT"
+    if narration_id.startswith("rct_"):
+        return "RECRUITMENT_DASHBOARD"
+    return "INDIVIDUAL_GAME"
+
+
+STATIC_NARRATIONS = [
+    {"narration_id": key, "game_step_id": key, "label": LABELS[key], "category": narration_category(key)}
+    for key in TEXTS
+]
 
 PERSONALIZED_POINTS = []
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -52,19 +52,21 @@ export const GameProgress = ({ steps, current }) => (
 
 export const BfgShell = ({ children, nav, shellClass = "" }) => {
   const content = useGameContent();
+  const { pathname } = useLocation();
+  const isRecruitment = pathname === "/recruit" || pathname.startsWith("/recruit/");
   return (
     <div className={`bfg ${shellClass}`.trim()}>
       <header className="bfg-nav">
-        <Link to="/" className="bfg-logo" data-testid="bfg-logo-link">
-          <span className="bfg-logo-mark">BG</span>
-          <span><strong>Nonprofit Board Builder</strong><em>The Board Fundraising Game</em></span>
+        <Link to={isRecruitment ? "/recruit" : "/"} className="bfg-logo" data-testid="bfg-logo-link">
+          <span className="bfg-logo-mark">{isRecruitment ? "NB" : "BG"}</span>
+          <span><strong>Nonprofit Board Builder</strong><em>{isRecruitment ? "Board Recruitment" : "The Board Fundraising Game"}</em></span>
         </Link>
         <div className="bfg-nav-actions">{nav}</div>
       </header>
       {children}
       <footer className="bfg-footer">
         <p>© {new Date().getFullYear()} Nonprofit Board Builders, LLC. All rights reserved.</p>
-        <a href="/fundraising-system" data-testid="bfg-footer-system-link">Looking for the Fundraising Board Builder? Visit the fundraising system</a>
+        {!isRecruitment && <a href="/fundraising-system" data-testid="bfg-footer-system-link">Looking for the Fundraising Board Builder? Visit the fundraising system</a>}
         <a href={content?.footer_recruit_url || "/recruit"} data-testid="bfg-footer-recruit-link">
           {content?.footer_recruit_label || "Recruit Board Members With Fundraising Experience"}
         </a>

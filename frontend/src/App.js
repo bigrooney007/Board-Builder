@@ -9,6 +9,9 @@ import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
 import FunnelLandingPage from "@/funnels/FunnelLandingPage";
+import RecruitFreePage from "@/funnels/RecruitFreePage";
+import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
+import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import FunnelResultPage from "@/funnels/FunnelResultPage";
 import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
 import RecruitProcessPage from "@/funnels/RecruitProcessPage";
@@ -182,7 +185,9 @@ export default function App() {
           <Route path="/board-transformation" element={<BoardTransformationPage />} />
           <Route path="/board-transformation/result/:token" element={<BoardTransformationResultPage />} />
           <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
-          <Route path="/recruit" element={<FunnelLandingPage offerSource="recruitment" />} />
+          <Route path="/recruit" element={<RecruitFreePage />} />
+          <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
+          <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
           <Route path="/offer/fundraising-board-builder" element={<FundraisingBoardBuilderOfferPage />} />

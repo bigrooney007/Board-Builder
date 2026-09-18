@@ -6,6 +6,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
 import { NarrationControl, isNarrationMuted, wasClipPlayed, markClipPlayed } from "./NarrationControl";
 import { FineTuneReview } from "./FineTuneReview";
+import { SpeakButton } from "./SpeakButton";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -239,6 +240,7 @@ export default function GameSituationPage() {
         placeholder="Type your answer here..." value={reality[question.key] || ""}
         onChange={(event) => setReality((current) => ({ ...current, [question.key]: event.target.value }))}
         data-testid={`bfg-reality-${question.key}`} />
+      <div><SpeakButton value={reality[question.key] || ""} onChange={(value) => setReality((current) => ({ ...current, [question.key]: value }))} testId={`bfg-reality-${question.key}-speak`} /></div>
       {error && <p className="bfg-error">{error}</p>}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 22 }}>
         <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" data-testid="bfg-reality-back"
@@ -285,10 +287,12 @@ export default function GameSituationPage() {
             ))}
           </div>), can: !!part.time },
       { heading: "IS THERE ANYTHING ELSE YOU WANT TO SHARE?",
-        body: (
+        body: (<>
           <textarea rows={6} style={{ width: "100%", marginTop: 20, padding: 16, border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, lineHeight: 1.6 }}
             placeholder="Type your answer here..." value={anything}
-            onChange={(event) => setAnything(event.target.value)} data-testid="bfg-setup-anything-input" />), can: true },
+            onChange={(event) => setAnything(event.target.value)} data-testid="bfg-setup-anything-input" />
+          <div><SpeakButton value={anything} onChange={setAnything} testId="bfg-setup-anything-speak" /></div>
+        </>), can: true },
     ];
     if (partStep === -1) {
       return shell(<>

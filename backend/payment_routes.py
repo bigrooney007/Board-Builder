@@ -190,8 +190,8 @@ def create_payment_router(db) -> APIRouter:
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found")
         if lead["offer_source"] == "recruitment":
-            flag = "RECRUITMENT_97_LIVE" if payload.tier == "97" else "RECRUITMENT_497_LIVE"
-            paid_live = os.environ.get(flag, "false").lower() == "true"
+            # The four-question recruitment journey is the live $497 sales flow.
+            paid_live = payload.tier == "497" or os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true"
         else:
             paid_live = os.environ["PAID_PROGRAMS_LIVE"].lower() == "true"
         if not paid_live:
@@ -208,12 +208,19 @@ def create_payment_router(db) -> APIRouter:
             "recruitment": "/recruit/options", "reactivation": "/reactivate/options",
             "fundraising_activation": "/activate/options",
         }[lead["offer_source"]]
+        if lead.get("lead_source") == "recruitment_free_assessment":
+            option_path = "/recruit/walkthrough"
         if lead["offer_source"] == "recruitment":
             success_url = f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}"
         else:
             success_url = f"{payload.origin_url}{option_path}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}"
+        if lead["offer_source"] == "recruitment" and payload.tier == "497":
+            price_id = resolve_offer_price_id(
+                price_env, "recruitment_self_guided_497", "Recruitment Self-Guided", 49700)
+        else:
+            price_id = os.environ[price_env]
         kwargs = {
-            "line_items": [{"price": os.environ[price_env], "quantity": 1}], "mode": "payment",
+            "line_items": [{"price": price_id, "quantity": 1}], "mode": "payment",
             "customer_email": lead["email"],
             "success_url": success_url,
             "cancel_url": f"{payload.origin_url}{option_path}?checkout=cancelled",
@@ -236,7 +243,7 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, "lead_id": lead["lead_id"], "offer_source": lead["offer_source"],
             "selected_tier": payload.tier, "amount": 9700 if payload.tier == "97" else 49700,
             "currency": "usd", "status": "initiated", "payment_status": "pending",
-            "test_mode": True, "created_at": now, "updated_at": now,
+            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live", "created_at": now, "updated_at": now,
         }
         await db.payment_transactions.insert_one(transaction.copy())
         await db.funnel_leads.update_one(

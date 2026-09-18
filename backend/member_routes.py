@@ -57,6 +57,19 @@ class ResetPasswordRequest(BaseModel):
     confirm_password: str
 
 
+class GameFreeStartRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    organization: str = Field(min_length=1, max_length=300)
+    goal_amount: int = Field(gt=0, le=1_000_000_000_000)
+
+
+class CompleteGuestAccountRequest(BaseModel):
+    password: str = Field(min_length=8)
+    confirm_password: str
+
+
 async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     """Server-side Stripe verification. Grants entitlement only when Stripe confirms payment."""
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -224,6 +237,12 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "purchase_source": "facilitated_board_fundraising_game_3497",
             "offer": "Facilitated Board Fundraising Game", "price_paid": 3497,
         })
+    elif offer_source == "recruitment":
+        purchase.update({
+            "purchase_source": f"recruitment_{tier}",
+            "offer": product_name,
+            "price_paid": int(tier),
+        })
     await db.purchases.update_one({"session_id": session_id}, {"$set": purchase}, upsert=True)
     add_to_set = {"entitlements": {"$each": [entitlement] + extra_entitlements}}
     if lead_id:
@@ -244,6 +263,13 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         await db.funnel_leads.update_one(
             {"lead_id": lead_id}, {"$set": {"member_user_id": member["user_id"], "updated_at": now}}
         )
+        if offer_source == "recruitment":
+            try:
+                from recruit_free_routes import attach_free_assessment_to_member
+                await attach_free_assessment_to_member(db, lead_id, member)
+            except Exception:
+                # The verified purchase remains claimed even if optional assessment migration needs retrying.
+                pass
     try:
         from marketing_service import stop_recruitment_nurture
         await stop_recruitment_nurture(db, member["email"])
@@ -272,11 +298,82 @@ def public_member(member: dict) -> dict:
         "user_id": member["user_id"], "email": member["email"],
         "first_name": member["first_name"], "last_name": member["last_name"],
         "entitlements": member.get("entitlements", []),
+        "account_status": member.get("account_status", "active"),
     }
 
 
 def create_member_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/members")
+
+    @router.post("/game-free-start", status_code=201)
+    async def game_free_start(payload: GameFreeStartRequest, response: Response):
+        """Create the secure guest session used to play the free individual game.
+
+        Existing accounts are never modified from an unauthenticated email-only form. They
+        are sent through the normal login screen instead.
+        """
+        email = str(payload.email).lower()
+        if await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1}):
+            return {"existing_account": True}
+
+        name_parts = payload.name.strip().split(None, 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        now = datetime.now(timezone.utc).isoformat()
+        user_id = new_uuid()
+        member = {
+            "user_id": user_id,
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "password_hash": hash_member_password(secrets.token_urlsafe(48)),
+            "entitlements": [],
+            "lead_ids": [],
+            "stripe_customer_id": "",
+            "account_status": "free_game_guest",
+            "created_at": now,
+            "updated_at": now,
+        }
+        try:
+            await db.members.insert_one(member.copy())
+        except Exception:
+            # A concurrent submission may have created the account after the lookup.
+            if await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1}):
+                return {"existing_account": True}
+            raise
+
+        await db.game_profiles.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "organization": {"name": payload.organization.strip()},
+                "goal": {"amount": payload.goal_amount, "purpose": "Reach our fundraising goal"},
+                "primary_user": {"full_name": payload.name.strip(), "email": email},
+                "profile_completed": True,
+                "source": "free_game_homepage",
+                "updated_at": now,
+            }, "$setOnInsert": {"user_id": user_id, "created_at": now}},
+            upsert=True,
+        )
+        token = create_member_token(user_id, email)
+        set_member_cookie(response, token)
+        return {"existing_account": False, "token": token}
+
+    @router.post("/complete-guest-account")
+    async def complete_guest_account(payload: CompleteGuestAccountRequest, request: Request):
+        member = await authenticate_member(request, db)
+        if payload.password != payload.confirm_password:
+            raise HTTPException(status_code=422, detail="Passwords do not match")
+        if member.get("account_status") != "free_game_guest":
+            return {"member": public_member(member)}
+        now = datetime.now(timezone.utc).isoformat()
+        await db.members.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"password_hash": hash_member_password(payload.password),
+                      "account_status": "active", "updated_at": now}},
+        )
+        fresh = await db.members.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0, "password_hash": 0})
+        return {"member": public_member(fresh)}
 
     @router.post("/register", status_code=201)
     async def register(payload: RegisterRequest, response: Response):

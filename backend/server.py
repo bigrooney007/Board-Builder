@@ -29,6 +29,7 @@ from marketing_routes import create_marketing_router
 from review_routes import create_review_router
 from reference_routes import create_reference_router
 from marketing_service import marketing_loop
+from recruit_free_routes import create_recruit_free_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -204,6 +205,7 @@ app.include_router(create_funnel_router(db))
 app.include_router(create_payment_router(db))
 app.include_router(create_stripe_webhook_router(db))
 app.include_router(create_member_router(db))
+app.include_router(create_recruit_free_router(db))
 app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
 from refinement_routes import create_refinement_router

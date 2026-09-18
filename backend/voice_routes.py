@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
 from voice_content import DEFAULT_VOICE_SETTINGS, PERSONALIZED_POINTS, STATIC_NARRATIONS, TEXTS
+from voice_script_state import SOURCE_REVISION, recording_status, resolve_script, script_hash
 
 STATIC_BY_ID = {item["narration_id"]: item for item in STATIC_NARRATIONS}
 POINTS_BY_ID = {item["point_id"]: item for item in PERSONALIZED_POINTS}
@@ -98,20 +99,19 @@ def create_voice_router(db) -> APIRouter:
         if not default_text and narration_id.startswith("template_"):
             point = POINTS_BY_ID.get(narration_id[len("template_"):]) or {}
             default_text = point.get("template", "")
-        return {"text": (doc.get("text") or "").strip() or default_text,
-                "script_version": int(doc.get("script_version") or 1)}
+        return resolve_script(
+            default_text,
+            doc,
+            force_revision=narration_id in {"a1_deeper", "a2_deeper", "a3_deeper", "a4_deeper", "approval_review"},
+        )
 
     async def audio_doc(narration_id: str, environment: str, include_audio: bool = False) -> dict:
         projection = {"_id": 0} if include_audio else {"_id": 0, "audio": 0}
         return await db.game_voice_audio.find_one(
             {"narration_id": narration_id, "environment": environment}, projection) or {}
 
-    def audio_status(audio: dict, script_version: int) -> str:
-        if not audio or audio.get("status") != "ready":
-            return "missing"
-        if int(audio.get("script_version") or 0) != script_version:
-            return "needs_regeneration"
-        return "ready"
+    def audio_status(audio: dict, script: dict) -> str:
+        return recording_status(audio, script)
 
     async def playing_member(token: str) -> dict:
         record = await db.game_board_members.find_one({"token": token, "removed": {"$ne": True}}, {"_id": 0})
@@ -128,7 +128,8 @@ def create_voice_router(db) -> APIRouter:
         await db.game_voice_audio.update_one(
             {"narration_id": narration_id, "environment": environment},
             {"$set": {"audio": audio, "status": "ready", "provider": "elevenlabs", "voice_id": voice_id,
-                      "script_version": script["script_version"], "generated_at": now_iso()},
+                      "script_version": script["script_version"], "source_revision": script["source_revision"],
+                      "script_hash": script["script_hash"], "generated_at": now_iso()},
              "$inc": {"version": 1},
              "$setOnInsert": {"created_at": now_iso()}},
             upsert=True)
@@ -142,6 +143,39 @@ def create_voice_router(db) -> APIRouter:
                              ("voice_enabled", "read_type_enabled", "default_mode", "narration_on",
                               "personalization_on", "browser_stt_on")}}
 
+    @router.get("/game/voice/tutorial/{tutorial_name}")
+    async def tutorial_manifest(tutorial_name: str):
+        prefixes = {
+            "recruitment-free": "recruitment-free-",
+            "recruitment": "rct_",
+        }
+        prefix = prefixes.get(tutorial_name)
+        if not prefix:
+            raise HTTPException(status_code=404, detail="Unknown tutorial")
+        settings = await get_settings()
+        environment = settings["voice_environment"]
+        selected = [item for item in STATIC_NARRATIONS if item["narration_id"].startswith(prefix)]
+        rows = await db.game_voice_audio.find(
+            {"environment": environment, "status": "ready",
+             "narration_id": {"$in": [item["narration_id"] for item in selected]}},
+            {"_id": 0, "narration_id": 1, "version": 1, "script_version": 1,
+             "source_revision": 1, "script_hash": 1},
+        ).to_list(len(selected))
+        audio_by_id = {row["narration_id"]: row for row in rows}
+        clips = {}
+        for item in selected:
+            narration_id = item["narration_id"]
+            script = await text_doc(narration_id)
+            audio = audio_by_id.get(narration_id) or {}
+            ready = audio_status(audio, script) == "ready"
+            version = audio.get("version", 0) if ready else 0
+            clips[narration_id] = {
+                "ready": ready,
+                "label": item["label"],
+                "url": f"/api/game/voice/audio/{narration_id}?v={environment[:1]}{version}",
+            }
+        return {"clips": clips}
+
     @router.get("/game/voice/manifest/{token}")
     async def voice_manifest(token: str):
         record = await playing_member(token)
@@ -149,8 +183,21 @@ def create_voice_router(db) -> APIRouter:
         environment = settings["voice_environment"]
         rows = await db.game_voice_audio.find(
             {"environment": environment, "status": "ready"},
-            {"_id": 0, "narration_id": 1, "version": 1}).to_list(300)
-        ready = {row["narration_id"]: row.get("version", 1) for row in rows}
+            {"_id": 0, "narration_id": 1, "version": 1, "script_version": 1,
+             "source_revision": 1, "script_hash": 1}).to_list(300)
+        audio_by_id = {row["narration_id"]: row for row in rows}
+        clips = {}
+        for item in STATIC_NARRATIONS:
+            narration_id = item["narration_id"]
+            script = await text_doc(narration_id)
+            audio = audio_by_id.get(narration_id) or {}
+            is_ready = audio_status(audio, script) == "ready"
+            version = audio.get("version", 0) if is_ready else 0
+            clips[narration_id] = {
+                "ready": is_ready,
+                "text": script["text"],
+                "url": f"/api/game/voice/audio/{narration_id}?v={environment[:1]}{version}",
+            }
         return {
             "voice_enabled": bool(settings["voice_enabled"] and settings["narration_on"]),
             "read_type_enabled": bool(settings["read_type_enabled"]),
@@ -158,10 +205,7 @@ def create_voice_router(db) -> APIRouter:
             "browser_stt_on": bool(settings["browser_stt_on"]),
             "personalization_on": bool(settings["personalization_on"]),
             "first_name": clean_first_name(record.get("full_name", "")),
-            "clips": {item["narration_id"]: {
-                "ready": item["narration_id"] in ready,
-                "url": f"/api/game/voice/audio/{item['narration_id']}?v={environment[:1]}{ready.get(item['narration_id'], 0)}",
-            } for item in STATIC_NARRATIONS},
+            "clips": clips,
             "personal_points": [item["point_id"] for item in PERSONALIZED_POINTS],
         }
 
@@ -170,8 +214,9 @@ def create_voice_router(db) -> APIRouter:
         if narration_id not in STATIC_BY_ID:
             raise HTTPException(status_code=404, detail="Unknown narration")
         settings = await get_settings()
+        script = await text_doc(narration_id)
         doc = await audio_doc(narration_id, settings["voice_environment"], include_audio=True)
-        if doc.get("status") != "ready" or not doc.get("audio"):
+        if audio_status(doc, script) != "ready" or not doc.get("audio"):
             raise HTTPException(status_code=404, detail="Narration audio not available")
         return Response(content=bytes(doc["audio"]), media_type="audio/mpeg",
                         headers={"Cache-Control": "public, max-age=86400"})
@@ -254,7 +299,7 @@ def create_voice_router(db) -> APIRouter:
             for environment in ENVIRONMENTS:
                 audio = await audio_doc(item["narration_id"], environment)
                 entry[environment] = {
-                    "status": audio_status(audio, script["script_version"]) if script["text"] else "missing",
+                    "status": audio_status(audio, script) if script["text"] else "missing",
                     "version": audio.get("version", 0),
                     "generated_at": audio.get("generated_at", ""),
                     "voice_ref": mask(audio.get("voice_id", "")) if audio else "",
@@ -268,7 +313,7 @@ def create_voice_router(db) -> APIRouter:
                          "test": {"status": "ready" if script["text"] else "missing"},
                          "live": {"status": "ready" if script["text"] else "missing"}})
         missing_live = [row["narration_id"] for row in rows
-                        if row["kind"] == "static" and row["live"]["status"] == "missing" and row["text"]]
+                        if row["kind"] == "static" and row["live"]["status"] != "ready" and row["text"]]
         bulk = await db.marketing_settings.find_one({"key": "game_voice_bulk"}, {"_id": 0}) or {}
         personal = await db.game_voice_personal_cache.find(
             {}, {"_id": 0, "audio": 0}).sort("created_at", -1).to_list(30)
@@ -315,7 +360,8 @@ def create_voice_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Unknown narration asset")
         current = await text_doc(narration_id)
         text = payload.text.strip()
-        updates = {"text": text, "updated_at": now_iso()}
+        updates = {"text": text, "source_revision": SOURCE_REVISION,
+                   "script_hash": script_hash(text), "updated_at": now_iso()}
         if text != current["text"]:
             updates["script_version"] = current["script_version"] + 1
         await db.game_voice_assets.update_one(
@@ -335,7 +381,7 @@ def create_voice_router(db) -> APIRouter:
         script = await text_doc(narration_id)
         existing = await audio_doc(narration_id, payload.environment)
         if (payload.environment == "live" and not payload.force
-                and audio_status(existing, script["script_version"]) == "ready"):
+                and audio_status(existing, script) == "ready"):
             raise HTTPException(status_code=409, detail="This production clip is already generated. Use Regenerate Clip to replace it.")
         try:
             await generate_static(narration_id, payload.environment)
@@ -347,7 +393,7 @@ def create_voice_router(db) -> APIRouter:
 
     @router.post("/admin/game/voice/generate-missing-live")
     async def generate_missing_live(request: Request):
-        """Explicit, confirmed admin action: generate ONLY missing LIVE static clips. Skips READY clips."""
+        """Explicit admin action: generate missing or outdated LIVE clips. Skips current READY clips."""
         await authenticate_admin(request, db)
         if bulk_lock["running"]:
             raise HTTPException(status_code=409, detail="A generation job is already running")
@@ -357,7 +403,7 @@ def create_voice_router(db) -> APIRouter:
             if not script["text"]:
                 continue
             audio = await audio_doc(item["narration_id"], "live")
-            if not audio or audio.get("status") != "ready":
+            if audio_status(audio, script) != "ready":
                 missing.append(item["narration_id"])
         if not missing:
             return {"started": False, "total": 0}
