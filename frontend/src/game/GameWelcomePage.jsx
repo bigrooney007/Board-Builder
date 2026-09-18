@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 
-let profileCompletedCache = null;
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, GameVideo } from "./gameShared";
@@ -75,15 +74,7 @@ export default function GameWelcomePage() {
             <GameVideo video={video} testId="bfg-welcome-video" />
             <div style={{ textAlign: "center", marginTop: 32 }}>
               <button className="bfg-btn bfg-btn-primary" data-testid="bfg-complete-setup-btn"
-                onClick={async () => {
-                  try {
-                    if (profileCompletedCache === null) {
-                      const response = await memberApi.get("/game/profile");
-                      profileCompletedCache = !!response.data.profile?.profile_completed;
-                    }
-                  } catch { profileCompletedCache = true; }
-                  navigate(profileCompletedCache ? "/game/setup" : "/game/start?edit=1");
-                }}>
+                onClick={() => navigate("/game/setup")}>
                 Complete My Game Setup
               </button>
               <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: review the fundraising strategy you created and tell us what your organization already has.</p>

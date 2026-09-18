@@ -151,7 +151,7 @@ export default function GamePlayPage() {
   const afterApproval = (entries) => {
     if (audioRef.current) audioRef.current.pause();
     set({ approved: { ...state.approved, [sec]: entries } });
-    if (sec < 4) { setSec(sec + 1); setStage("deeper"); }
+    if (sec < 4) { setSec(sec + 1); setStage("first"); }
     else if (isPrimary) {
       if (ctx.paid) navigate("/game/setup", { replace: true });
       else setPhase("lead_done");
