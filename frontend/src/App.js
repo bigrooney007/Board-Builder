@@ -11,17 +11,11 @@ import LegalPage from "@/pages/LegalPage";
 import FunnelLandingPage from "@/funnels/FunnelLandingPage";
 import RecruitFreePage from "@/funnels/RecruitFreePage";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
-import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import FunnelResultPage from "@/funnels/FunnelResultPage";
 import FunnelOptionsPage from "@/funnels/FunnelOptionsPage";
-import RecruitProcessPage from "@/funnels/RecruitProcessPage";
-import RecruitCheckoutPage from "@/funnels/RecruitCheckoutPage";
-import RecruitWithRooneyPage from "@/funnels/RecruitWithRooneyPage";
 import BoardRecruitmentProposalPage, { BoardRecruitmentProposalConfirmedPage } from "@/funnels/BoardRecruitmentProposalPage";
 import AboutRooneyPage from "@/funnels/AboutRooneyPage";
-import RecruitYourBoardYourselfPage from "@/funnels/RecruitYourBoardYourselfPage";
 import BoardRecruitmentIntakePage from "@/funnels/BoardRecruitmentIntakePage";
-import RecruitmentStartHerePage from "@/funnels/RecruitmentStartHerePage";
 import ReactivateWithRooneyPage from "@/funnels/ReactivateWithRooneyPage";
 import ReactivateYourBoardYourselfPage from "@/funnels/ReactivateYourBoardYourselfPage";
 import BoardReactivationProposalPage from "@/funnels/BoardReactivationProposalPage";
@@ -75,10 +69,7 @@ import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 import GameHomePage from "@/game/GameHomePage";
-import GameAuthPage from "@/game/GameAuthPage";
 import GameAuthCallback from "@/game/GameAuthCallback";
-import GameProfilePage from "@/game/GameProfilePage";
-import GameWelcomePage from "@/game/GameWelcomePage";
 import GameSituationPage from "@/game/GameSituationPage";
 import GameDashboardPage from "@/game/GameDashboardPage";
 import GamePlayPage from "@/game/GamePlayPage";
@@ -98,7 +89,6 @@ import HostCallScriptPage from "@/game/HostCallScriptPage";
 import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
-import GameUpgradePage from "@/game/GameUpgradePage";
 import UnlockGamePage from "@/game/UnlockGamePage";
 import FacilitatedGamePage from "@/game/FacilitatedGamePage";
 import BoardStrategyReviewPage from "@/game/BoardStrategyReviewPage";
@@ -151,9 +141,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<GameHomePage />} />
           <Route path="/fundraising-system" element={<HomeExperience />} />
-          <Route path="/game/signup" element={<GameAuthPage />} />
-          <Route path="/game/start" element={<GameProfilePage />} />
-          <Route path="/game/welcome" element={<GameWelcomePage />} />
+          <Route path="/game/signup" element={<Navigate to="/" replace />} />
+          <Route path="/game/start" element={<Navigate to="/" replace />} />
+          <Route path="/game/welcome" element={<Navigate to="/" replace />} />
           <Route path="/game/setup" element={<GameSituationPage />} />
           <Route path="/game/dashboard" element={<GameDashboardPage />} />
           <Route path="/play/:token" element={<GamePlayPage />} />
@@ -172,7 +162,7 @@ export default function App() {
           <Route path="/game/host/facilitation" element={<HostFacilitationPage />} />
           <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/game/complete" element={<GameNightCompletePage />} />
-          <Route path="/game/upgrade" element={<GameUpgradePage />} />
+          <Route path="/game/upgrade" element={<Navigate to="/game/unlock" replace />} />
           <Route path="/game/unlock" element={<UnlockGamePage />} />
           <Route path="/game/board-review" element={<BoardStrategyReviewPage />} />
           <Route path="/organize-board-fundraising-game" element={<FacilitatedGamePage />} />
@@ -187,7 +177,7 @@ export default function App() {
           <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
           <Route path="/recruit" element={<RecruitFreePage />} />
           <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
-          <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
+          <Route path="/recruit/welcome" element={<Navigate to="/recruit" replace />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
           <Route path="/offer/fundraising-board-builder" element={<FundraisingBoardBuilderOfferPage />} />
@@ -200,15 +190,15 @@ export default function App() {
           <Route path="/board-fix-roadmap" element={<BoardFixRoadmapPage />} />
           <Route path="/board-fix-dashboard" element={<BoardFixRoadmapPage />} />
           <Route path="/board-fix-orientation" element={<BoardFixOrientationPage />} />
-          <Route path="/recruit/process" element={<RecruitProcessPage />} />
-          <Route path="/recruit/checkout" element={<RecruitCheckoutPage />} />
-          <Route path="/recruit-with-rooney" element={<RecruitWithRooneyPage />} />
+          <Route path="/recruit/process" element={<Navigate to="/recruit" replace />} />
+          <Route path="/recruit/checkout" element={<Navigate to="/recruit/walkthrough" replace />} />
+          <Route path="/recruit-with-rooney" element={<Navigate to="/recruit" replace />} />
           <Route path="/board-recruitment-proposal" element={<BoardRecruitmentProposalPage />} />
           <Route path="/board-recruitment-proposal/confirmed" element={<BoardRecruitmentProposalConfirmedPage />} />
           <Route path="/about-rooney" element={<AboutRooneyPage />} />
-          <Route path="/recruit-your-board-yourself" element={<RecruitYourBoardYourselfPage />} />
+          <Route path="/recruit-your-board-yourself" element={<Navigate to="/recruit" replace />} />
           <Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />
-          <Route path="/recruitment-start-here" element={<RecruitmentStartHerePage />} />
+          <Route path="/recruitment-start-here" element={<Navigate to="/recruit" replace />} />
           <Route path="/reactivate" element={<FunnelLandingPage offerSource="reactivation" />} />
           <Route path="/reactivate-with-rooney" element={<ReactivateWithRooneyPage />} />
           <Route path="/reactivate-your-board-yourself" element={<ReactivateYourBoardYourselfPage />} />
