@@ -313,8 +313,27 @@ def create_member_router(db) -> APIRouter:
         are sent through the normal login screen instead.
         """
         email = str(payload.email).lower()
-        if await db.members.find_one({"email": email}, {"_id": 0, "user_id": 1}):
-            return {"existing_account": True}
+        existing = await db.members.find_one({"email": email}, {"_id": 0})
+        if existing:
+            # Homepage entry is intentionally frictionless. Reuse the existing member
+            # record and refresh the game profile instead of forcing a login/profile step.
+            user_id = existing["user_id"]
+            now = datetime.now(timezone.utc).isoformat()
+            await db.game_profiles.update_one(
+                {"user_id": user_id},
+                {"$set": {
+                    "organization": {"name": payload.organization.strip()},
+                    "goal": {"amount": payload.goal_amount, "purpose": "Reach our fundraising goal"},
+                    "primary_user": {"full_name": payload.name.strip(), "email": email},
+                    "profile_completed": True,
+                    "source": "free_game_homepage",
+                    "updated_at": now,
+                }, "$setOnInsert": {"user_id": user_id, "created_at": now}},
+                upsert=True,
+            )
+            token = create_member_token(user_id, email)
+            set_member_cookie(response, token)
+            return {"existing_account": True, "token": token}
 
         name_parts = payload.name.strip().split(None, 1)
         first_name = name_parts[0]

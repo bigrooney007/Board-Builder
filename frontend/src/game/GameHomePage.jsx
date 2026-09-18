@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { useMemberAuth } from "@/member/MemberAuthContext";
 import { memberApi, storeMemberToken } from "@/member/api";
 import { BfgShell, money, useGameContent } from "./gameShared";
 
@@ -10,7 +9,6 @@ const PRESETS = [100000, 250000, 500000, 1000000];
 
 export default function GameHomePage() {
   const navigate = useNavigate();
-  const { member } = useMemberAuth();
   const content = useGameContent();
   const [goal, setGoal] = useState("");
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
@@ -28,7 +26,6 @@ export default function GameHomePage() {
     if (lead.email.trim()) sessionStorage.setItem("bfgEmail", lead.email.trim());
     if (lead.org.trim()) sessionStorage.setItem("bfgOrg", lead.org.trim());
     if (!lead.name.trim() || !lead.email.trim() || !lead.org.trim() || !digits) {
-      if (member) { navigate("/game/start"); return; }
       setStartError("Enter your name, email, organization name and fundraising goal to start.");
       document.getElementById("bfg-goal")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -39,7 +36,6 @@ export default function GameHomePage() {
         name: lead.name.trim(), email: lead.email.trim(),
         organization: lead.org.trim(), goal_amount: Number(digits),
       });
-      if (response.data.existing_account) { navigate("/game/signup?mode=login"); return; }
       storeMemberToken(response.data.token);
       const play = await memberApi.post("/game/self-play");
       navigate(`/play/${play.data.token}`);
@@ -59,11 +55,7 @@ export default function GameHomePage() {
   const setAmount = (value) => setGoal(Number(String(value).replace(/[^0-9]/g, "") || 0) ? Number(String(value).replace(/[^0-9]/g, "")).toLocaleString("en-US") : "");
 
   return (
-    <BfgShell shellClass="bfg-home-shell" nav={member ? (
-      <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/start")} data-testid="bfg-nav-continue-btn">My Game</button>
-    ) : (
-      <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/signup?mode=login")} data-testid="bfg-nav-login-btn">Log In</button>
-    )}>
+    <BfgShell shellClass="bfg-home-shell">
       <main data-testid="bfg-homepage" className="bfg-home">
         <section className="bfg-hero">
           <div className="bfg-hero-inner">
