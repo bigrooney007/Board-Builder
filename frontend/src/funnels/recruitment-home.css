@@ -75,3 +75,19 @@
 @media (prefers-reduced-motion: reduce) {
   .recruit-home-shell * { scroll-behavior: auto !important; }
 }
+
+/* Canonical recruitment CTA contrast lock */
+.recruit-home-shell .bfg-btn.bfg-btn-primary,
+.recruit-home-shell a.bfg-btn.bfg-btn-primary,
+.recruit-home-shell button.bfg-btn.bfg-btn-primary {
+  background: #4f46e5 !important;
+  border: 2px solid #4f46e5 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+}
+.recruit-home-shell .bfg-btn.bfg-btn-primary:hover,
+.recruit-home-shell .bfg-btn.bfg-btn-primary:focus-visible {
+  background: #312e81 !important;
+  border-color: #312e81 !important;
+  color: #ffffff !important;
+}
