@@ -68,6 +68,7 @@ import { WorkspaceModeBanner } from "@/operatorMode";
 import { GuidedLandingPage, GuidedVideoPage, GuidedPaymentConfirmedPage, GuidedWelcomePage, GuidedIntakePage, GuidedDashboardPage } from "@/funnels/GuidedProductPages";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
 import CommunityNeedResearchPage from "@/funnels/CommunityNeedResearchPage";
+import StrategicPlanningResponsePage from "@/funnels/StrategicPlanningResponsePage";
 import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
 import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
@@ -277,6 +278,7 @@ export default function App() {
           <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/community-need-research/:token" element={<CommunityNeedResearchPage />} />
+          <Route path="/strategic-planning-response/:participantId" element={<StrategicPlanningResponsePage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
           <Route path="/area-pack/:token" element={<AreaPackPage />} />
           <Route path="/strategic-plan/:token" element={<PublicStrategicPlanPage />} />
