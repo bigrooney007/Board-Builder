@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { memberApi, storeMemberToken } from "@/member/api";
+import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
 import { BfgShell, money, useGameContent } from "./gameShared";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
@@ -20,6 +20,13 @@ export default function GameHomePage() {
   if (!content) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
   const startGame = async () => {
+    // Every homepage submission is a deliberate fresh public test/play session.
+    // Clear browser-bound member state so a previous player on this device cannot
+    // hijack the new journey.
+    clearMemberToken();
+    localStorage.removeItem("recruitFreeToken");
+    sessionStorage.removeItem("operateAsUserId");
+    try { await memberApi.post("/members/logout"); } catch { /* no active server session */ }
     const digits = String(goal).replace(/[^0-9]/g, "");
     if (digits) sessionStorage.setItem("bfgGoal", digits);
     if (lead.name.trim()) sessionStorage.setItem("bfgName", lead.name.trim());
