@@ -4,6 +4,7 @@ import { CheckCircle2, ClipboardList, Download, ExternalLink, FileText, Mail, Pl
 import { BfgShell } from "@/game/gameShared";
 import "@/game/game.css";
 import "./guided-products.css";
+import "./strategic-planning-dashboard.css";
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 const A=({children,onClick,disabled=false})=><button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={disabled} onClick={onClick}>{children}</button>;
 const Card=({n,title,children})=><section className="sp-dash-card"><div className="sp-step">{n}</div><h2>{title}</h2>{children}</section>;
