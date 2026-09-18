@@ -91,3 +91,6 @@
   border-color: #312e81 !important;
   color: #ffffff !important;
 }
+
+/* Requested recruitment hero alignment and CTA contrast */
+.recruit-hero-copy{text-align:center!important;display:flex;flex-direction:column;align-items:center}.recruit-hero-sub{margin-left:auto!important;margin-right:auto!important}.recruit-hero-copy .bfg-btn-primary{color:#fff!important}.recruit-hero-copy .bfg-btn-primary svg{color:#fff!important;stroke:#fff!important}

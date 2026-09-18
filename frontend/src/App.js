@@ -8,6 +8,8 @@ import { ConfirmationScreen } from "@/components/ConfirmationScreen";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
+import MainHomePage from "@/pages/MainHomePage";
+import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import FunnelLandingPage from "@/funnels/FunnelLandingPage";
 import RecruitFreePage from "@/funnels/RecruitFreePage";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
@@ -71,6 +73,7 @@ import { PAGE_META, usePageMeta } from "@/seo";
 import GameHomePage from "@/game/GameHomePage";
 import GameAuthCallback from "@/game/GameAuthCallback";
 import GameSituationPage from "@/game/GameSituationPage";
+import GameWelcomePage from "@/game/GameWelcomePage";
 import GameDashboardPage from "@/game/GameDashboardPage";
 import GamePlayPage from "@/game/GamePlayPage";
 import GroupGamePage from "@/game/GroupGamePage";
@@ -139,11 +142,12 @@ export default function App() {
         <WorkspaceModeBanner />
         <GoogleAuthGate>
         <Routes>
-          <Route path="/" element={<GameHomePage />} />
+          <Route path="/" element={<MainHomePage />} />
+          <Route path="/board-fundraising-game" element={<GameHomePage />} />
           <Route path="/fundraising-system" element={<HomeExperience />} />
-          <Route path="/game/signup" element={<Navigate to="/" replace />} />
-          <Route path="/game/start" element={<Navigate to="/" replace />} />
-          <Route path="/game/welcome" element={<Navigate to="/" replace />} />
+          <Route path="/game/signup" element={<Navigate to="/board-fundraising-game" replace />} />
+          <Route path="/game/start" element={<Navigate to="/board-fundraising-game" replace />} />
+          <Route path="/game/welcome" element={<GameWelcomePage />} />
           <Route path="/game/setup" element={<GameSituationPage />} />
           <Route path="/game/dashboard" element={<GameDashboardPage />} />
           <Route path="/play/:token" element={<GamePlayPage />} />
@@ -177,7 +181,7 @@ export default function App() {
           <Route path="/activate-with-rooney" element={<ActivateWithRooneyPage />} />
           <Route path="/recruit" element={<RecruitFreePage />} />
           <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
-          <Route path="/recruit/welcome" element={<Navigate to="/recruit" replace />} />
+          <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
           <Route path="/board-fix" element={<FunnelLandingPage offerSource="board_fix" />} />
           <Route path="/offer/board-fix" element={<OfferVideoPage offer="board-fix" />} />
           <Route path="/offer/fundraising-board-builder" element={<FundraisingBoardBuilderOfferPage />} />
@@ -257,6 +261,7 @@ export default function App() {
           <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
           <Route path="/reference-form/:token" element={<CandidateReferenceFormPage />} />
           <Route path="/referee-form/:token" element={<RefereeFormPage />} />
+          <Route path="/strategic-planning" element={<div style={{maxWidth:760,margin:"80px auto",padding:24,textAlign:"center"}}><h1>Strategic Planning</h1><p>Build a strategic plan with the people responsible for carrying it out.</p><p>This product page is being prepared.</p></div>} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
           <Route path="/area-pack/:token" element={<AreaPackPage />} />
