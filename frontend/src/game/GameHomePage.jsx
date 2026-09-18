@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { useMemberAuth } from "@/member/MemberAuthContext";
 import { memberApi, storeMemberToken } from "@/member/api";
 import { BfgShell, money, useGameContent } from "./gameShared";
 
@@ -10,7 +9,6 @@ const PRESETS = [100000, 250000, 500000, 1000000];
 
 export default function GameHomePage() {
   const navigate = useNavigate();
-  const { member } = useMemberAuth();
   const content = useGameContent();
   const [goal, setGoal] = useState("");
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
