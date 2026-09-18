@@ -51,7 +51,8 @@ export const FineTuneReview = ({ token, sectionId, copy, onDone, onReady, onEdit
   if (state === "loading") {
     return (
       <div style={{ marginTop: 40, textAlign: "center" }} data-testid="bfg-ft-loading">
-        <p style={{ fontWeight: 700, fontSize: 18 }}>{copy.refining || "Refining Your Idea..."}</p>
+        <div className="bfg-thinking-dots" aria-label={copy.refining || "Refining your idea"}><span></span><span></span><span></span></div>
+        <p style={{ fontWeight: 700, fontSize: 16, marginTop: 12 }}>{copy.refining || "Refining Your Idea..."}</p>
       </div>
     );
   }
