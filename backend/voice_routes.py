@@ -99,11 +99,17 @@ def create_voice_router(db) -> APIRouter:
         if not default_text and narration_id.startswith("template_"):
             point = POINTS_BY_ID.get(narration_id[len("template_"):]) or {}
             default_text = point.get("template", "")
-        return resolve_script(
+        script = resolve_script(
             default_text,
             doc,
             force_revision=narration_id in {"a1_deeper", "a2_deeper", "a3_deeper", "a4_deeper", "approval_review"},
         )
+        # The recruitment dashboard clips already exist in production from the deployed
+        # workspace. Keep same-version approved recordings live when their historical
+        # source hash is unavailable; an admin text edit increments the version and still
+        # marks the recording for regeneration.
+        script["preserve_same_version_recording"] = narration_id.startswith("rct_")
+        return script
 
     async def audio_doc(narration_id: str, environment: str, include_audio: bool = False) -> dict:
         projection = {"_id": 0} if include_audio else {"_id": 0, "audio": 0}
@@ -111,6 +117,9 @@ def create_voice_router(db) -> APIRouter:
             {"narration_id": narration_id, "environment": environment}, projection) or {}
 
     def audio_status(audio: dict, script: dict) -> str:
+        if (script.get("preserve_same_version_recording") and audio.get("status") == "ready"
+                and int(audio.get("script_version") or 0) == int(script.get("script_version") or 0)):
+            return "ready"
         return recording_status(audio, script)
 
     async def playing_member(token: str) -> dict:
