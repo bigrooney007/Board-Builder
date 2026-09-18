@@ -1465,6 +1465,22 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         token=secrets.token_urlsafe(32);posts=[f"We are reviewing the future direction of {p['organization_name']} and want to hear directly from the community. Share what you believe the real need is and what would make the strongest difference.",f"What does our community need most in relation to {p.get('mission') or 'our mission'}? We are listening before we finalize our next strategic plan.",f"Help shape the next chapter of {p['organization_name']}. Tell us what is working, what is missing and what approach you believe would create the greatest impact.",f"Good strategy starts by listening. If you have lived experience, professional insight or community knowledge connected to our mission, we would value your perspective.",f"Our Board is preparing its next strategic plan. Take a few minutes to tell us about the need, the best way to address it and how you or others could help."]
         doc={"project_id":p["project_id"],"token":token,"social_posts":posts,"response_count":0,"created_at":now_iso()};await db.sp_community_research.insert_one(doc.copy());return doc
 
+    @router.get("/community-research/{token}")
+    async def public_community_research(token:str):
+        doc=await db.sp_community_research.find_one({"token":token},{"_id":0})
+        if not doc:raise HTTPException(404,"This Community Need Research link is not valid")
+        p=await owned_project(doc["project_id"])
+        return {"organization_name":p["organization_name"],"mission":p.get("mission",""),"questions":["What do you believe is the most important need or challenge connected to this mission?","Who is most affected by this need, and what does it look like in real life?","What approaches do you believe would make the strongest difference?","What is currently missing from the way this need is being addressed?","How could you, your organization, your network or your community help address this need?"]}
+
+    @router.post("/community-research/{token}")
+    async def submit_community_research(token:str,request:Request):
+        doc=await db.sp_community_research.find_one({"token":token},{"_id":0})
+        if not doc:raise HTTPException(404,"This Community Need Research link is not valid")
+        body=await request.json();responses=body.get("answers") or []
+        if len(responses)!=5 or any(not str(x).strip() for x in responses):raise HTTPException(422,"Please answer all five questions")
+        await db.sp_community_research.update_one({"token":token},{"$push":{"responses":{"name":str(body.get("name","")).strip(),"email":str(body.get("email","")).strip(),"answers":responses,"submitted_at":now_iso()}},"$inc":{"response_count":1}})
+        return {"status":"submitted"}
+
     @router.post("/generate-draft")
     async def generate_draft(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);responses=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
