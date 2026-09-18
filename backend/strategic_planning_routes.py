@@ -499,6 +499,19 @@ def create_strategic_planning_router(db) -> APIRouter:
                 "OPEN STRATEGIC PLANNING", f"{origin}/admin")
         return {"status": "submitted", "organization_name": project["organization_name"]}
 
+    @router.get("/strategic-planning-response/{participant_id}")
+    async def public_response(participant_id: str):
+        record = await db.sp_participants.find_one({"participant_id": participant_id, "status": "COMPLETED"}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
+        project = await owned_project(record["project_id"])
+        prompts = {q["id"]: q for q in record.get("response_questions", [])}
+        rows = []
+        for qid, value in (record.get("response") or {}).items():
+            q = prompts.get(qid, {})
+            rows.append({"section": q.get("section", ""), "question": q.get("prompt", qid), "answer": value})
+        return {"organization_name": project["organization_name"], "name": record.get("name", ""), "submitted_at": record.get("submitted_at", ""), "responses": rows}
+
     # ---------------- FOUNDATIONAL PLAN ----------------
 
     async def current_plan(project_id: str) -> dict:
