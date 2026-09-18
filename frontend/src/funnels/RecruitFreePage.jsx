@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
+import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import "@/game/game.css";
 
@@ -83,6 +84,8 @@ export default function RecruitFreePage() {
     if (!lead.name.trim() || !lead.email.trim() || !lead.organization.trim() || (!lead.count.trim() && !lead.notSure)) {
       setError("Please complete every field, or choose I'M NOT SURE YET."); return;
     }
+    // This call happens inside the user's tap, so iPhone/Safari can authorize audio.
+    play("recruitment-free-question-1-mission");
     setBusy(true); setError("");
     try {
       const response = await axios.post(`${API}/recruit/free/start`, {
@@ -157,6 +160,9 @@ export default function RecruitFreePage() {
     const index = Number(stage.slice(1));
     const q = QUESTIONS[index];
     return shell(<>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <NarrationControl audioRef={audioRef} onReplay={() => play(q.clip)} />
+      </div>
       <p className="bfg-eyebrow" data-testid="recruit-free-progress">{q.progress}</p>
       <h1 style={{ marginTop: 12 }} data-testid={`recruit-free-q${index + 1}-heading`}>{q.heading}</h1>
       <p style={{ marginTop: 16, fontWeight: 700, fontSize: 17, color: "#111827" }}>{q.question}</p>
@@ -183,58 +189,35 @@ export default function RecruitFreePage() {
 
   if (stage === "generating") {
     return shell(<>
-      <h1 data-testid="recruit-free-generating">Preparing Your Board Recruitment Result…</h1>
+      <div className="bfg-thinking-dots" aria-label="Preparing your board recruitment result"><span></span><span></span><span></span></div>
+      <h1 style={{ marginTop: 18 }} data-testid="recruit-free-generating">Preparing Your Board Recruitment Result…</h1>
       <p style={{ marginTop: 14 }}>We are comparing what your organization needs with what your present board already brings.</p>
     </>, "recruit-free-generating");
   }
 
   const result = assessment?.result || {};
-  const covered = (result.present_board_capability_map || []).filter((r) => r.representation_status !== "NOT REPRESENTED");
-  const gaps = result.board_gap || [];
   const profiles = result.priority_roles || [];
-  const desired = assessment?.desired_count;
 
   return shell(<>
+    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+      <NarrationControl audioRef={audioRef} onReplay={() => play("recruitment-free-result")} />
+    </div>
     <p className="bfg-eyebrow">YOUR BOARD RECRUITMENT RESULT</p>
     <h1 style={{ marginTop: 12 }} data-testid="recruit-free-result-heading">Here Are The Board Members We Recommend You Recruit</h1>
-    <p style={{ marginTop: 16 }}>Based on what you told us about {assessment?.organization}, the board you already have, the areas that are important to moving your organization forward and the areas where you specifically need board support, here's what we found.</p>
-    <h2 style={{ marginTop: 28, fontSize: 17, letterSpacing: 1 }}>YOUR PRESENT BOARD ALREADY GIVES YOU SUPPORT IN:</h2>
-    <ul style={{ marginTop: 10, paddingLeft: 22, color: "#4B5563", lineHeight: 1.7 }} data-testid="recruit-free-covered">
-      {covered.length ? covered.map((row, i) => <li key={i}>{row.capability}</li>) : <li>No areas of existing board support were identified from your answers.</li>}
-    </ul>
-    <h2 style={{ marginTop: 24, fontSize: 17, letterSpacing: 1 }}>THE BIGGEST GAPS WE IDENTIFIED ARE:</h2>
-    <ul style={{ marginTop: 10, paddingLeft: 22, color: "#4B5563", lineHeight: 1.7 }} data-testid="recruit-free-gaps">
-      {gaps.map((row, i) => <li key={i}>{row.gap}</li>)}
-    </ul>
-    {desired ? (
-      <>
-        <h2 style={{ marginTop: 26, fontSize: 18 }}>YOU TOLD US YOU WANT TO RECRUIT {desired} NEW BOARD MEMBERS.</h2>
-        <p style={{ marginTop: 8 }}>So we have organized these needs into {desired} board-member profiles.</p>
-      </>
-    ) : (
-      result.recommended_count_statement ? <p style={{ marginTop: 26, fontWeight: 700, color: "#111827" }}>{result.recommended_count_statement}</p> : null
-    )}
-    <div data-testid="recruit-free-profiles">
-      {profiles.map((role, i) => (
-        <div key={i} style={{ marginTop: 20, border: "1px solid #E5E7EB", borderRadius: 16, padding: 22, background: "#fff" }} data-testid={`recruit-free-profile-${i + 1}`}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>{i + 1}. {role.role_name}</h3>
-          <p style={{ marginTop: 12, fontWeight: 700, fontSize: 13, letterSpacing: 1, color: "#4f46e5" }}>LOOK FOR SOMEONE WITH EXPERIENCE IN:</p>
-          <ul style={{ marginTop: 6, paddingLeft: 22, color: "#4B5563", lineHeight: 1.7 }}>
-            {(role.what_to_look_for || []).slice(0, 3).map((skill, j) => <li key={j}>{skill}</li>)}
-          </ul>
-          <p style={{ marginTop: 12, fontWeight: 700, fontSize: 13, letterSpacing: 1, color: "#111827" }}>WHY YOUR ORGANIZATION NEEDS THIS PERSON</p>
-          <p style={{ marginTop: 6 }}>{[role.why_this_person_is_important, role.how_this_person_can_support].filter(Boolean).join(" ")}</p>
-        </div>
-      ))}
+    <div data-testid="recruit-free-profiles" style={{ marginTop: 24 }}>
+      {profiles.map((role, i) => {
+        const why = [role.why_this_person_is_important, role.how_this_person_can_support].filter(Boolean).join(" ");
+        return (
+          <p key={i} style={{ marginTop: i ? 18 : 0, lineHeight: 1.7 }} data-testid={`recruit-free-profile-${i + 1}`}>
+            <strong style={{ color: "#111827" }}>{role.role_name}:</strong> {why}
+          </p>
+        );
+      })}
     </div>
-    <h2 style={{ marginTop: 36 }}>Now You Know Who You Need To Recruit.</h2>
-    <p style={{ marginTop: 12 }}>The next question is:</p>
-    <p style={{ marginTop: 8 }}>How do you actually find these people, get them interested in your mission, take them through a professional recruitment process and successfully bring them onto your board?</p>
-    <p style={{ marginTop: 8 }}>We've built the Self-Guided Board Recruitment System to help you do exactly that yourself.</p>
-    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} data-testid="recruit-free-see-how-btn"
+    <h2 style={{ marginTop: 36, textAlign: "center" }}>Now You Know Who You Need To Recruit.</h2>
+    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18, width: "100%" }} data-testid="recruit-free-see-how-btn"
       onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/recruit/walkthrough"); }}>
-      SEE HOW TO RECRUIT THESE BOARD MEMBERS YOURSELF
+      SEE HOW TO RECRUIT THESE BOARD MEMBERS MYSELF
     </button>
-    <p style={{ marginTop: 10, fontSize: 13 }}>Watch the short walkthrough and see the complete process.</p>
   </>, "recruit-free-result");
 }

@@ -65,6 +65,10 @@ export default function GamePlayPage() {
         raise: sections[5].extras?.raise || [], raiseOther: sections[5].extras?.raise_other || "",
         time: sections[5].extras?.time || "", additional: sections[5].extras?.additional_idea || "",
       });
+      const freshGame = !sections[1].first_move_locked && !(sections[1].first_response || []).length && !sections[1].completed;
+      if (freshGame) {
+        setSec(1); setStage("first"); setPhase("welcome"); return;
+      }
       for (let id = 1; id <= 4; id += 1) {
         const doc = sections[id];
         if (!doc.fine_tuning?.completed) {
@@ -196,7 +200,7 @@ export default function GamePlayPage() {
         </p>
       )}
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-start-my-game-btn"
-        onClick={() => { setStage("first"); setPhase("section"); }}>
+        onClick={() => { playClip(isPrimary ? "lead_opening" : (ctx?.member?.participant_role || "board_member") === "board_member" ? "board_opening" : "", true); setStage("first"); setPhase("section"); }}>
         START MY GAME
       </button>
     </>, "bfg-welcome");
@@ -216,7 +220,8 @@ export default function GamePlayPage() {
 
   if (phase === "section" && stage === "first") {
     return shell(<>
-      {answerScreen(sdef.q1, sdef.label1 || "YOUR FIRST MOVE", state.firsts[sec],
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(sec === 1 && isPrimary ? "lead_opening" : sec === 1 ? "board_opening" : `a${sec}_deeper`, true)} /></div>
+      {answerScreen(sdef.q1, sdef.label1 || "QUESTION 1 OF 2", state.firsts[sec],
         (value) => setState((current) => ({ ...current, firsts: { ...current.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
     </>, `bfg-s${sec}-first`);
   }
@@ -224,7 +229,7 @@ export default function GamePlayPage() {
   if (phase === "section" && stage === "deeper") {
     return shell(<>
       <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(`a${sec}_deeper`, true)} /></div>
-      {answerScreen(sdef.q2, sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER", state.seconds[sec],
+      {answerScreen(sdef.q2, `QUESTION 2 OF 2 · ${sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER"}`, state.seconds[sec],
         (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`)}
     </>, `bfg-s${sec}-deeper`);
   }

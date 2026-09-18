@@ -53,21 +53,28 @@ export default function RecruitWalkthroughPage() {
 
   return (
     <BfgShell>
-      <main className="bfg-flow" style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 90px" }} data-testid="recruit-walkthrough-page">
-        <h1 data-testid="recruit-walkthrough-heading">See How To Recruit The Board Members Your Organization Needs Yourself</h1>
-        <p style={{ marginTop: 16 }}>You already know who you need.</p>
-        <p style={{ marginTop: 8 }}>Now see the exact system you can use to find them, launch your recruitment campaign, review applicants and bring the right people successfully onto your board.</p>
-        <div style={{ marginTop: 26, aspectRatio: "16 / 9", background: "#0F172A", borderRadius: 16, display: "grid", placeItems: "center" }}
+      <main className="bfg-flow" style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="recruit-walkthrough-page">
+        <h1 style={{ fontSize: "clamp(30px, 6vw, 48px)", lineHeight: 1.08, maxWidth: 680, margin: "0 auto" }} data-testid="recruit-walkthrough-heading">
+          See How To Recruit The Board Members Your Organization Needs Yourself
+        </h1>
+        <p style={{ marginTop: 18, fontWeight: 800, fontSize: 18, color: "#111827" }}>Press Play and Watch The Short Video</p>
+        <div style={{ marginTop: 18, aspectRatio: "16 / 9", background: "#0F172A", borderRadius: 16, display: "grid", placeItems: "center", overflow: "hidden" }}
           data-testid="recruit-walkthrough-video-slot">
           <p style={{ color: "#94A3B8", fontSize: 14 }}>Walkthrough video coming soon</p>
         </div>
-        <h2 style={{ marginTop: 34 }}>Start Recruiting The Board Members Your Organization Needs</h2>
-        <p style={{ marginTop: 12 }}>Use the complete Self-Guided Board Recruitment System to move from knowing who you need to successfully bringing them onto your board.</p>
-        <p style={{ marginTop: 18, fontFamily: "Outfit", fontWeight: 800, fontSize: 34, color: "#111827" }} data-testid="recruit-walkthrough-price">$497 One Time</p>
-        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} disabled={busy} onClick={buy} data-testid="recruit-walkthrough-buy-btn">
-          {busy ? "Opening Checkout…" : "START MY BOARD RECRUITMENT — $497"}
-        </button>
-        <p style={{ marginTop: 12, fontSize: 14 }}>Follow the process step by step. Get the tools and materials you need at every stage. Request help whenever you need it.</p>
+
+        <h2 style={{ marginTop: 36, fontSize: "clamp(24px, 4vw, 32px)" }}>Start Recruiting The Board Members Your Organization Needs</h2>
+        <div className="bfg-card" style={{ marginTop: 20, padding: "26px 22px", textAlign: "left" }}>
+          <p style={{ fontWeight: 800, fontSize: 18, color: "#111827", textAlign: "center" }}>Your Self-Guided Board Recruitment System</p>
+          <p style={{ marginTop: 18 }}><strong>See the process executed step by step.</strong> Know exactly what to do from recruitment campaign to selection and onboarding.</p>
+          <p style={{ marginTop: 14 }}><strong>Use the materials we provide to execute it yourself.</strong> Get the forms, campaign materials, interview tools, reference process and onboarding materials you need at each stage.</p>
+          <p style={{ marginTop: 14 }}><strong>Get support throughout the entire process.</strong> When you need help, request support without handing the whole process over to someone else.</p>
+          <p style={{ marginTop: 24, textAlign: "center", fontFamily: "Outfit", fontWeight: 800, fontSize: 38, color: "#111827" }} data-testid="recruit-walkthrough-price">$497 One Time</p>
+          <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16, width: "100%", minHeight: 58, fontSize: 16 }} disabled={busy} onClick={buy} data-testid="recruit-walkthrough-buy-btn">
+            {busy ? "Opening Secure Checkout…" : "START MY BOARD RECRUITMENT — $497"}
+          </button>
+          <p style={{ marginTop: 12, textAlign: "center", fontSize: 13 }}>One payment. Follow the complete recruitment process inside your dashboard.</p>
+        </div>
         {error && <p className="bfg-error" data-testid="recruit-walkthrough-error">{error}</p>}
       </main>
     </BfgShell>

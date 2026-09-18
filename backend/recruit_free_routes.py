@@ -261,7 +261,10 @@ def create_recruit_free_router(db) -> APIRouter:
         instructions = (
             "Use this concise four-question assessment as the complete verified context. Produce practical, "
             "organization-specific board profiles. If an exact new_members_count is supplied, return exactly that many "
-            "priority_roles. Treat confirmed_present_board as the authoritative description of the present board."
+            "priority_roles. Treat confirmed_present_board as the authoritative description of the present board. "
+            "Keep the customer-facing recommendation concise: each priority role needs a clear role_name and only one or two "
+            "sentences across why_this_person_is_important/how_this_person_can_support explaining how that board member will help "
+            "this specific organization. Do not pad the result with generic explanations."
         )
         try:
             generated = await generate_structured(
