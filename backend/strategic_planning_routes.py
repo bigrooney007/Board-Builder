@@ -1491,6 +1491,21 @@ def create_strategic_planning_router(db) -> APIRouter:
 def create_guided_strategic_planning_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/guided/strategic-planning")
 
+    async def owned_project(project_id: str) -> dict:
+        project = await db.sp_projects.find_one({"project_id": project_id}, {"_id": 0})
+        if not project:
+            raise HTTPException(status_code=404, detail="Strategic Planning project not found")
+        return project
+
+    async def send_email(to_email: str, subject: str, body: str, button_label: str, link: str, reply_to: str = ""):
+        resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+        message = {"from": os.environ["NONPROFIT_SENDER"], "to": [to_email],
+                   "subject": subject, "html": email_html(body, button_label, link)}
+        if reply_to:
+            message["reply_to"] = [reply_to]
+        await resend.Emails.send_async(message)
+
+
     async def paid(session_id: str):
         tx=await db.payment_transactions.find_one({"session_id":session_id,"payment_status":"paid","purchase_source":"strategic_planning_497"},{"_id":0})
         if not tx: raise HTTPException(status_code=402,detail="Paid Strategic Planning access could not be confirmed")
