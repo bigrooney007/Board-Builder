@@ -161,6 +161,10 @@ class AreaPlanSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     plan_text: str = Field(min_length=1)
 
+class AreaPlanEdit(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    plan_text: str = Field(min_length=1)
+
 
 def create_strategic_planning_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
@@ -190,7 +194,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         return {**{k: area.get(k, "") for k in [
             "area_key", "area", "direction", "status", "owner_participant_id",
             "pack_status", "pack_generation_error", "last_pack_sent_at", "plan_submitted_at",
-            "adoption_conclusion", "submitted_plan"]},
+            "adoption_conclusion", "submitted_plan", "detailed_plan_text", "detailed_plan_status", "detailed_plan_approved_at"]},
             "adopted": area.get("adopted", False),
             "proposed_priorities": area.get("proposed_priorities", []),
             "owner_name": owner.get("name", "")}
@@ -941,26 +945,70 @@ def create_strategic_planning_router(db) -> APIRouter:
         owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
         return {"organization_name": project["organization_name"], "area": area["area"],
                 "owner_name": owner.get("name", ""), "pack_text": area.get("pack_text", ""),
-                "submitted": bool(area.get("submitted_plan")), "submitted_at": area.get("plan_submitted_at", "")}
+                "submitted": bool(area.get("submitted_plan")), "submitted_at": area.get("plan_submitted_at", ""), "draft_text": area.get("detailed_plan_text",""), "draft_status": area.get("detailed_plan_status","NONE"), "approved": area.get("detailed_plan_status")=="Approved"}
 
-    @router.post("/area-pack/{token}/submit", status_code=201)
-    async def submit_area_plan(token: str, payload: AreaPlanSubmission):
+    @router.post("/area-pack/{token}/generate")
+    async def generate_area_plan(token: str):
         plan, area = await area_by_pack_token(token)
         if area.get("pack_status") != "Approved":
             raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
         project = await owned_project(plan["project_id"])
-        now = now_iso()
-        await db.sp_plans.update_one(
-            {"project_id": plan["project_id"], "areas.area_key": area["area_key"]},
-            {"$set": {"areas.$.submitted_plan": payload.plan_text, "areas.$.plan_submitted_at": now,
-                      "areas.$.status": "SUBMITTED"},
-             "$push": {"areas.$.submission_history": {"plan_text": payload.plan_text, "submitted_at": now}}})
-        origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
-        await notify_owner(
-            f"Strategic Area Plan Submitted | {area['area']}",
-            f"The detailed plan for the {area['area']} area of {project['organization_name']}'s strategic plan has been submitted.\n\n[OPEN STRATEGIC PLANNING]",
-            "OPEN STRATEGIC PLANNING", f"{origin}/admin")
-        return {"status": "submitted"}
+        owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        context = (
+            f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission','')}\n"
+            f"BOARD MEMBER: {owner.get('name','')}\nSTRATEGIC AREA: {area.get('area','')}\n"
+            f"FOUNDATIONAL DIRECTION: {area.get('direction','')}\n"
+            f"APPROVED PRIORITIES: {area.get('proposed_priorities',[])}\n"
+            f"BOARD IDEAS: {area.get('ideas_shared',[])}\n"
+            f"BOARD MEMBER'S OWN PLANNING RESPONSE: {owner.get('response',{})}\n"
+            f"FOUNDATIONAL STRATEGIC PLAN: {plan.get('display_text','')}"
+        )
+        prompt = """Build ONLY this board member's detailed plan for the assigned strategic area from the supplied facts and Board decisions. Do not invent facts, dates, budgets, people, programs or commitments. If a required detail was not supplied, write a clear decision placeholder instead of guessing. Use these headings in this exact order: Strategic Area / Purpose; What We Must Accomplish; Priorities/Objectives; Step-by-Step Actions; People/Team Required; Technology/Tools Required; Leadership/Oversight Role; Budget/Cost to Execute at 100%; Timeline/Milestones; Measures/How We Know It's Working. The output must be practical, detailed, editable and ready for the board member to refine."""
+        g = await generate_structured("strategic_detailed_area_plan", context, prompt)
+        sections = g.get("sections", [])
+        text = "\n\n".join(f"{str(x.get('heading','')).upper()}\n{str(x.get('content',''))}" for x in sections).strip()
+        if not text:
+            text = str(g.get("display_text") or g.get("plan_text") or "").strip()
+        if not text:
+            raise HTTPException(status_code=502, detail="AI did not return a usable detailed plan. Please try again.")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":text,"areas.$.detailed_plan_status":"Draft","areas.$.status":"IN DEVELOPMENT","areas.$.detailed_plan_updated_at":now},"$push":{"areas.$.detailed_plan_versions":{"plan_text":text,"source":"ai","created_at":now}}})
+        return {"status":"Draft","plan_text":text}
+
+    @router.put("/area-pack/{token}/plan")
+    async def save_area_plan(token: str, payload: AreaPlanEdit):
+        plan, area = await area_by_pack_token(token)
+        if area.get("pack_status") != "Approved": raise HTTPException(409,"This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status")=="Approved": raise HTTPException(409,"This detailed plan is approved and locked.")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":payload.plan_text,"areas.$.detailed_plan_status":"Draft","areas.$.detailed_plan_updated_at":now},"$push":{"areas.$.detailed_plan_versions":{"plan_text":payload.plan_text,"source":"edited","created_at":now}}})
+        return {"status":"Draft"}
+
+    @router.post("/area-pack/{token}/approve")
+    async def approve_area_plan(token: str):
+        plan, area = await area_by_pack_token(token)
+        text=str(area.get("detailed_plan_text") or "").strip()
+        if not text: raise HTTPException(409,"Generate and review the detailed plan before approving it")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_status":"Approved","areas.$.detailed_plan_approved_at":now,"areas.$.submitted_plan":text,"areas.$.plan_submitted_at":now,"areas.$.status":"SUBMITTED"},"$push":{"areas.$.submission_history":{"plan_text":text,"submitted_at":now,"approved":True}}})
+        return {"status":"Approved"}
+
+    @router.get("/area-pack/{token}/pdf")
+    async def approved_area_plan_pdf(token: str):
+        plan, area = await area_by_pack_token(token)
+        if area.get("detailed_plan_status")!="Approved" or not area.get("submitted_plan"): raise HTTPException(409,"Approve the detailed plan before downloading it")
+        project=await owned_project(plan["project_id"])
+        owner=await owned_participant(plan["project_id"],area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        return build_portfolio_pdf(f"DETAILED STRATEGIC PLAN — {area['area']}",project["organization_name"],{"organization_name":project["organization_name"],"issued_by":owner.get("name","Board Member")},area["submitted_plan"])
+
+    @router.post("/area-pack/{token}/submit", status_code=201)
+    async def submit_area_plan(token: str, payload: AreaPlanSubmission):
+        # Backward-compatible endpoint: manual submission now saves a draft; explicit approval is required.
+        plan, area = await area_by_pack_token(token)
+        if area.get("pack_status") != "Approved": raise HTTPException(409,"This Area Development Pack is not available yet")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":payload.plan_text,"areas.$.detailed_plan_status":"Draft","areas.$.detailed_plan_updated_at":now}})
+        return {"status":"Draft"}
 
     @router.put("/admin/sp/projects/{project_id}/areas/{area_key}/adoption")
     async def record_adoption(project_id: str, area_key: str, payload: AdoptionPayload, request: Request):
@@ -1573,7 +1621,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/final-plan")
     async def build_final(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};areas=plan.get("areas",[])
-        if not areas or any(not a.get("submitted_plan") for a in areas):raise HTTPException(409,"Every delegated strategic area needs an approved detailed plan before consolidation")
+        if not areas or any(a.get("detailed_plan_status")!="Approved" or not a.get("submitted_plan") for a in areas):raise HTTPException(409,"Every delegated strategic area needs an approved detailed plan before consolidation")
         context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nFOUNDATIONAL PLAN:\n{plan.get('display_text','')}\n\nAPPROVED DETAILED AREA PLANS:\n"+"\n\n".join(f"{a['area']}:\n{a['submitted_plan']}" for a in areas);g=await generate_structured("strategic_final_plan",context,"Consolidate only the supplied approved plans into one coherent final Strategic Plan. Do not invent new Board decisions.")
         display=final_display(g,p["organization_name"]);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Approved","final_display_text":display,"final_share_token":secrets.token_urlsafe(32),"updated_at":now_iso()}});return {"status":"Approved"}
 
