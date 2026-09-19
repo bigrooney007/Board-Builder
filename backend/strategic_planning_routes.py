@@ -1494,7 +1494,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     async def detail(p):
         participants=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};by={x["participant_id"]:x for x in participants};areas=[]
-        for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name","")})
+        for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name",""),"collaborator_names":[by.get(pid,{}).get("name","") for pid in a.get("collaborator_participant_ids",[]) if by.get(pid)]})
         return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text","")},"portfolios":plan.get("leadership_portfolios",[])}
 
     @router.get("/workspace")
