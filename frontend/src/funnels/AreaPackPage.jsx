@@ -1,54 +1,32 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { areaPackText } from "../content/appContent";
-import { areaPackPageText } from "../content/siteContent";
+import { Download, Sparkles } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function AreaPackPage() {
   const { token } = useParams();
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-  const [planText, setPlanText] = useState("");
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    axios.get(`${API}/area-pack/${token}`).then((r) => { setData(r.data); if (r.data.submitted) setDone(true); })
-      .catch((e) => setError(e.response?.data?.detail || "This link is not valid."));
-  }, [token]);
-
-  const submit = async (e) => {
-    e.preventDefault(); setBusy(true); setError("");
-    try { await axios.post(`${API}/area-pack/${token}/submit`, { plan_text: planText }); setDone(true); }
-    catch (ex) { setError(ex.response?.data?.detail || "Submission failed. Please try again."); }
-    setBusy(false);
-  };
-
-  if (error && !data) return <main className="legal-page"><h1>{areaPackText.h_strategicAreaDevelopmentPack}</h1><p data-testid="area-pack-error">{error}</p></main>;
-  if (!data) return <main className="legal-page"><p>Loading…</p></main>;
-  return (
-    <main className="legal-page" data-testid="area-pack-page" style={{ maxWidth: "820px", margin: "0 auto", padding: "32px 16px" }}>
-      <p className="eyebrow">{data.organization_name}</p>
-      <h1>Strategic Area Development Pack — {data.area}</h1>
-      {data.owner_name && <p>Prepared for: <strong>{data.owner_name}</strong></p>}
-      <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f2", padding: "16px", borderRadius: "10px" }} data-testid="area-pack-text">{data.pack_text}</pre>
-      {done ? (
-        <div data-testid="area-pack-thanks">
-          <h2>{areaPackText.h_detailedPlanSubmitted}</h2>
-          <p>Thank you. Your detailed plan for {data.area} has been submitted{data.submitted_at ? ` (${data.submitted_at.slice(0, 10)})` : ""} and will be presented to the Board. You can submit an updated version below at any time before the Board meeting.</p>
-          <button className="button button-back button-small" onClick={() => setDone(false)} data-testid="area-pack-resubmit">{areaPackPageText.submitAnUpdatedVersion}</button>
-        </div>
-      ) : (
-        <form onSubmit={submit}>
-          <h2>Submit Your Detailed Plan for {data.area}</h2>
-          <p>{areaPackPageText.takeTheAgreedFoundationAbove}</p>
-          <textarea required rows="14" style={{ width: "100%" }} value={planText} onChange={(e) => setPlanText(e.target.value)} data-testid="area-pack-plan-input" />
-          {error && <p className="submit-error">{error}</p>}
-          <button className="button" type="submit" disabled={busy} data-testid="area-pack-submit" style={{ marginTop: "14px" }}>{busy ? "Submitting…" : "SUBMIT MY DETAILED AREA PLAN"}</button>
-        </form>
-      )}
-    </main>
-  );
+  const [data,setData]=useState(null),[error,setError]=useState(""),[planText,setPlanText]=useState(""),[busy,setBusy]=useState("");
+  const load=()=>axios.get(`${API}/area-pack/${token}`).then(r=>{setData(r.data);setPlanText(r.data.draft_text||r.data.submitted_plan||"")}).catch(e=>setError(e.response?.data?.detail||"This link is not valid."));
+  useEffect(load,[token]);
+  const act=async(key,fn)=>{setBusy(key);setError("");try{await fn();await load()}catch(e){setError(e.response?.data?.detail||"That action could not be completed.")}setBusy("")};
+  if(error&&!data)return <main className="legal-page"><h1>Strategic Area Development</h1><p>{error}</p></main>;
+  if(!data)return <main className="legal-page"><p>Loading…</p></main>;
+  const approved=data.approved||data.draft_status==="Approved";
+  return <main className="legal-page" data-testid="area-pack-page" style={{maxWidth:920,margin:"0 auto",padding:"32px 16px"}}>
+    <p className="eyebrow">{data.organization_name}</p><h1>Strategic Plan Draft</h1>
+    <p>This is the strategic direction your Board developed together. Your role is to turn <strong>{data.area}</strong> into a detailed, executable plan.</p>
+    <details style={{margin:"22px 0"}}><summary style={{cursor:"pointer",fontWeight:700}}>VIEW MY ROLE AND ASSIGNMENT</summary><pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10}}>{data.pack_text}</pre></details>
+    {!planText&&!approved&&<button className="button" disabled={busy==="generate"} onClick={()=>act("generate",()=>axios.post(`${API}/area-pack/${token}/generate`))}><Sparkles size={16}/> {busy==="generate"?"BUILDING…":"START BUILDING MY DETAILED PLAN WITH AI"}</button>}
+    {!!planText&&<section style={{marginTop:24}}>
+      <h2>Your Detailed Plan: {data.area}</h2><p>AI has created the working draft from the Board's approved direction and your own planning response. Edit it directly. Nothing becomes part of the Final Strategic Plan until you approve it.</p>
+      <textarea rows={30} style={{width:"100%",fontFamily:"Georgia, serif",fontSize:"1rem",lineHeight:1.65,padding:18,border:"1px solid #bbb",borderRadius:8}} value={planText} disabled={approved} onChange={e=>setPlanText(e.target.value)} data-testid="area-plan-editor"/>
+      {error&&<p className="submit-error">{error}</p>}
+      {!approved?<div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
+        <button className="button button-back" disabled={!!busy} onClick={()=>act("save",()=>axios.put(`${API}/area-pack/${token}/plan`,{plan_text:planText}))}>{busy==="save"?"SAVING…":"SAVE MY DRAFT"}</button>
+        <button className="button" disabled={!!busy||!planText.trim()} onClick={()=>act("approve",async()=>{await axios.put(`${API}/area-pack/${token}/plan`,{plan_text:planText});await axios.post(`${API}/area-pack/${token}/approve`)})}>{busy==="approve"?"APPROVING…":"APPROVE MY DETAILED PLAN"}</button>
+      </div>:<div style={{marginTop:14}}><h3>Approved</h3><p>This approved copy is saved as the authoritative plan for this strategic area and can now be used in the Final Strategic Plan.</p><a className="button" href={`${API}/area-pack/${token}/pdf`}><Download size={16}/> DOWNLOAD APPROVED PLAN</a></div>}
+    </section>}
+  </main>;
 }
