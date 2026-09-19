@@ -3,14 +3,16 @@
 This file is the routing contract for the launch application. A page may move forward only inside the flow that created its lead/payment/session.
 
 ## 1. Board Recruitment
-`/` → `/recruit` → four-question assessment → result → `/recruit/walkthrough` → Stripe → `/purchase/success` → `/recruit/welcome?session_id=...` → `/app/board-recruitment` → recruitment profiles/campaign.
+`/` → `/recruit` → lead capture → `/recruit/walkthrough` → Stripe → `/purchase/success` → `/recruit/welcome?session_id=...` → four-question assessment and result → `/app/board-recruitment` → recruitment profiles/campaign.
 
 Payment identity: offer_source `recruitment`, $497 entitlement. Recruitment onboarding rejects sessions belonging to the other three flows.
 
 ## 2. Board Fundraising Game
-`/` → `/board-fundraising-game` → free game → `/game/unlock` → Stripe → `/game/welcome?session_id=...` → `/game/setup` → `/game/dashboard` → board invitations/group game/strategy/portfolios/execution.
+`/` → `/board-fundraising-game` → lead and fundraising-goal capture → `/game/demonstration` → Stripe → `/game/welcome?session_id=...` → paid Game at `/game/setup` → `/game/dashboard` → board invitations/group game/strategy/portfolios/execution.
 
 Payment identity: offer_source `board_fundraising_game`, purchase_source `board_fundraising_game_497`.
+
+The product demonstration replaces the former free-game sales experience. `/game/unlock` and `/game/upgrade` are compatibility redirects to `/game/demonstration`; they do not own a second sales page.
 
 ## 3. Strategic Planning
 `/` → `/strategic-planning` → `/strategic-planning/video?token=...` → Stripe → `/strategic-planning/payment-confirmed?session_id=...` → `/strategic-planning/welcome?session_id=...` → `/strategic-planning/intake?session_id=...` → `/strategic-planning/dashboard?session_id=...`.

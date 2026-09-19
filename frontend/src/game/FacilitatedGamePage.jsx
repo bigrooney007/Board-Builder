@@ -31,7 +31,7 @@ export default function FacilitatedGamePage() {
       <div className="facilitated-price-card">
         <p className="facilitated-price">$3,497</p><p className="facilitated-kicker">ONE-TIME ENGAGEMENT</p>
         <Cta id="facilitated-cta-hero"/>
-        <small>Apply first. After submitting your application, book a call with Rooney Akpesiri.</small>
+        <small>Apply first. We will review your application and follow up through email.</small>
       </div>
     </section>
 

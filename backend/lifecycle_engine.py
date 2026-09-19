@@ -200,7 +200,7 @@ async def scan_once(db):
                 if not completed:
                     await process_contact_state(db, dict(member), "board_fundraising_game", True, stage, path)
         elif has_game_activity:
-            await process_contact_state(db, dict(member), "board_fundraising_game", False, 0, "/game/unlock")
+            await process_contact_state(db, dict(member), "board_fundraising_game", False, 0, "/game/demonstration")
         # --- Board Recruitment engine ---
         recruitment_paid = bool(entitlements & {"fbb_recruitment", "recruitment_self_guided", "fundraising_board_builder"})
         recruitment_lead = bool(await db.leads.find_one(

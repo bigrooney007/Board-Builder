@@ -80,7 +80,7 @@ export default function GamePlayPage() {
       }
       if (context.member?.is_primary) {
         if (context.paid) { navigate("/game/setup", { replace: true }); return; }
-        navigate("/game/unlock", { replace: true }); return;
+        navigate("/game/demonstration", { replace: true }); return;
       } else if (sections[5].completed) setPhase("board_done");
       else { setPIdx(0); setPhase("participation"); }
     } catch { setError("This game link is not valid."); setPhase("error"); }
@@ -212,7 +212,7 @@ export default function GamePlayPage() {
       <h1 style={{ marginTop: 10 }} data-testid="bfg-lead-done-heading">You Built The Foundation Of Your Fundraising Strategy</h1>
       <p style={{ marginTop: 16 }}>Now, let's bring your board into the game.</p>
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} data-testid="bfg-lead-done-continue"
-        onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/game/unlock", { replace: true }); }}>
+        onClick={() => { if (audioRef.current) audioRef.current.pause(); navigate("/game/demonstration", { replace: true }); }}>
         CONTINUE
       </button>
     </>, "bfg-lead-done");

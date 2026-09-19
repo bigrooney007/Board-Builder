@@ -187,7 +187,7 @@ def test_teaching_clips_merge_the_retired_opening_and_are_active():
     assert "Let's start with the most important question" in TEXTS["a1_deeper"]
     assert "where do we find them" in TEXTS["a2_deeper"]
     assert "Now let's talk about attraction" in TEXTS["a3_deeper"]
-    assert "actual fundraising process" in TEXTS["a4_deeper"]
+    assert "fundraising idea practical" in TEXTS["a4_deeper"]
 
 
 def test_revised_teaching_script_requires_audio_regeneration():
