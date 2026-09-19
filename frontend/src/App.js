@@ -282,6 +282,7 @@ export default function App() {
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
           <Route path="/area-pack/:token" element={<AreaPackPage />} />
           <Route path="/strategic-plan/:token" element={<PublicStrategicPlanPage />} />
+          <Route path="/strategic-draft/:token" element={<PublicStrategicPlanPage endpoint="strategic-draft" />} />
           <Route path="/strategic-action-plan/:token" element={<PublicActionPlanPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
