@@ -66,7 +66,6 @@ export const BfgShell = ({ children, nav, shellClass = "" }) => {
       {children}
       <footer className="bfg-footer">
         <p>© {new Date().getFullYear()} Nonprofit Board Builders, LLC. All rights reserved.</p>
-        {!isRecruitment && <a href="/fundraising-system" data-testid="bfg-footer-system-link">Looking for the Fundraising Board Builder? Visit the fundraising system</a>}
         <a href={content?.footer_recruit_url || "/recruit"} data-testid="bfg-footer-recruit-link">
           {content?.footer_recruit_label || "Recruit Board Members With Fundraising Experience"}
         </a>

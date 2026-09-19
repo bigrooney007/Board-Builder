@@ -73,11 +73,11 @@ export default function GameWelcomePage() {
             </div>
             <GameVideo video={video} testId="bfg-welcome-video" />
             <div style={{ textAlign: "center", marginTop: 32 }}>
-              <button className="bfg-btn bfg-btn-primary" data-testid="bfg-complete-setup-btn"
+              <button className="bfg-btn bfg-btn-primary" data-testid="bfg-play-game-btn"
                 onClick={() => navigate("/game/setup")}>
-                Complete My Game Setup
+                Play My Board Fundraising Game
               </button>
-              <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: review the fundraising strategy you created and tell us what your organization already has.</p>
+              <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: play the game. When you finish, we will take you into your dashboard.</p>
             </div>
           </div>
         )}
