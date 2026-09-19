@@ -327,7 +327,7 @@ def create_game_router(db) -> APIRouter:
                             f"<p>Hello {html.escape(member.get('first_name', ''))},</p>"
                             f"<p>Your Board Fundraising Game is unlocked. Your tutorial video explains how to use the platform, prepare your board and run the game.</p>"
                             f"{video_block}{dashboard_link}"
-                            f"<p>Next step: complete your game setup so we understand your organization's current fundraising situation.</p></div>",
+                            f"<p>Next step: play your Board Fundraising Game. When you finish, continue into your dashboard.</p></div>",
                 })
                 await db.game_profiles.update_one(
                     {"user_id": member["user_id"]},
