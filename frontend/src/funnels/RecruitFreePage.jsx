@@ -68,9 +68,14 @@ export default function RecruitFreePage() {
     setStage(idx === -1 ? "generating" : `q${idx}`);
   }, []);
 
-  // The public recruitment homepage always starts clean. A previous person's
-  // assessment on this browser must never hijack a new visitor's journey.
-  useEffect(() => { localStorage.removeItem("recruitFreeToken"); }, []);
+  // Public visits start clean. Paid onboarding deliberately resumes the lead created before checkout.
+  useEffect(() => {
+    const onboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
+    if (!onboarding) { localStorage.removeItem("recruitFreeToken"); return; }
+    const token = localStorage.getItem("recruitFreeToken");
+    if (!token) { setError("We could not find your Recruitment setup. Please sign in or contact support."); return; }
+    axios.get(API + "/recruit/free/" + token).then((r) => resumeFrom(r.data)).catch(() => setError("We could not reopen your Recruitment setup."));
+  }, [resumeFrom]);
 
   useEffect(() => {
     if (stage === "landing") play("recruitment-free-entry");
