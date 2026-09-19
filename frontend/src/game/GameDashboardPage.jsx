@@ -113,12 +113,12 @@ export default function GameDashboardPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!member) { navigate("/game/signup?mode=login", { replace: true }); return; }
+    if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
     memberApi.get("/game/dashboard")
       .then((response) => setData(response.data))
       .catch((err) => {
         if (err.response?.status === 403) setDenied(true);
-        else navigate("/game/start", { replace: true });
+        else navigate("/board-fundraising-game", { replace: true });
       });
     memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
     loadMeeting();
@@ -133,7 +133,7 @@ export default function GameDashboardPage() {
           <div className="bfg-card" style={{ textAlign: "center" }}>
             <h1>Unlock Your Board Fundraising Game</h1>
             <p style={{ marginTop: 12 }}>Your account does not include the Board Fundraising Game yet.</p>
-            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to="/game/start">Set Up & Unlock My Game</Link>
+            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to="/board-fundraising-game">Return To My Board Fundraising Game</Link>
           </div>
         </main>
       </BfgShell>
@@ -152,7 +152,7 @@ export default function GameDashboardPage() {
             <p className="bfg-eyebrow">Your Board Fundraising Game</p>
             <h1 data-testid="bfg-dashboard-welcome">Welcome back, {data.first_name}</h1>
           </div>
-          <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/start?edit=1" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
+          <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/board-fundraising-game" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
         </div>
 
         <div data-tour="working-strategy">
