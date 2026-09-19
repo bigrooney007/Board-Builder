@@ -1541,7 +1541,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
         sent=0
         for r in respondents:
-            link=f"{origin_of(request)}/strategic-plan-review/{r.get('review_token')}";e=review_email(p,r,link);await send_email(r["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
+            link=f"{origin_of(request)}/strategic-draft/{plan.get('share_token')}";e=review_email(p,r,link);await send_email(r["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
         return {"status":"sent","count":sent}
 
     @router.post("/facilitation-guide")
