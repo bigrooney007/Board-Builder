@@ -222,10 +222,13 @@ def create_recruit_free_router(db) -> APIRouter:
         return public_assessment(doc)
 
     @router.put("/{token}/answer")
-    async def answer(token: str, payload: RecruitFreeAnswer):
+    async def answer(token: str, payload: RecruitFreeAnswer, request: Request):
         collection, doc = await find_assessment(db, {"token": token})
         if not doc:
             raise HTTPException(status_code=404, detail="Assessment not found")
+        member = await authenticate_member(request, db)
+        if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
+            raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before answering these questions")
         key = QUESTION_KEYS[payload.question]
         text = payload.text.strip()
         timestamp = now_iso()
@@ -240,10 +243,13 @@ def create_recruit_free_router(db) -> APIRouter:
         return {"status": "saved", "question": payload.question}
 
     @router.post("/{token}/result")
-    async def result(token: str):
+    async def result(token: str, request: Request):
         collection, doc = await find_assessment(db, {"token": token})
         if not doc:
             raise HTTPException(status_code=404, detail="Assessment not found")
+        member = await authenticate_member(request, db)
+        if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
+            raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before generating your result")
         if doc.get("result"):
             return {"result": doc["result"]}
         answers = doc.get("answers") or {}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import "@/game/game.css";
@@ -36,6 +37,7 @@ const QUESTIONS = [
 
 export default function RecruitFreePage() {
   const navigate = useNavigate();
+  const { member, loading } = useMemberAuth();
   const [stage, setStage] = useState("landing"); // landing | q0..q3 | generating | result
   const [lead, setLead] = useState({ name: "", email: "", organization: "", count: "", notSure: false });
   const [assessment, setAssessment] = useState(null);
@@ -68,9 +70,20 @@ export default function RecruitFreePage() {
     setStage(idx === -1 ? "generating" : `q${idx}`);
   }, []);
 
-  // The public recruitment homepage always starts clean. A previous person's
-  // assessment on this browser must never hijack a new visitor's journey.
-  useEffect(() => { localStorage.removeItem("recruitFreeToken"); }, []);
+  // Public visits start clean. Paid onboarding deliberately resumes the lead created before checkout.
+  useEffect(() => {
+    const onboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
+    if (!onboarding) { localStorage.removeItem("recruitFreeToken"); return; }
+    if (!loading && !member) {
+      const sid = new URLSearchParams(window.location.search).get("session_id") || "";
+      const next = "/recruit?onboarding=1" + (sid ? `&session_id=${encodeURIComponent(sid)}` : "");
+      navigate("/login?next=" + encodeURIComponent(next), { replace: true });
+      return;
+    }
+    const token = localStorage.getItem("recruitFreeToken");
+    if (!token) { setError("We could not find your Recruitment setup. Please sign in or contact support."); return; }
+    axios.get(API + "/recruit/free/" + token).then((r) => resumeFrom(r.data)).catch(() => setError("We could not reopen your Recruitment setup."));
+  }, [resumeFrom, loading, member, navigate]);
 
   useEffect(() => {
     if (stage === "landing") play("recruitment-free-entry");
@@ -93,7 +106,9 @@ export default function RecruitFreePage() {
         desired_count: lead.notSure ? "not_sure" : lead.count.trim(),
       });
       localStorage.setItem("recruitFreeToken", response.data.token);
-      resumeFrom(response.data);
+      setAssessment(response.data);
+      setAnswers(response.data.answers || {});
+      navigate("/recruit/walkthrough");
     } catch { setError("We could not start your assessment. Please check your details and try again."); }
     setBusy(false);
   };
@@ -104,13 +119,13 @@ export default function RecruitFreePage() {
     if (!text) return;
     setBusy(true); setError("");
     try {
-      await axios.put(`${API}/recruit/free/${assessment.token}/answer`, { question: index + 1, text });
+      await memberApi.put(`/recruit/free/${assessment.token}/answer`, { question: index + 1, text });
       if (index < 3) setStage(`q${index + 1}`);
       else {
         setStage("generating");
-        const response = await axios.post(`${API}/recruit/free/${assessment.token}/result`);
+        const response = await memberApi.post(`/recruit/free/${assessment.token}/result`);
         setAssessment((current) => ({ ...current, result: response.data.result }));
-        setStage("result");
+        navigate("/app/board-recruitment");
       }
     } catch (err) {
       setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your answer. Please try again.");
@@ -132,9 +147,8 @@ export default function RecruitFreePage() {
   if (stage === "landing") {
     const leadForm = (
       <div data-testid="recruit-free-landing" style={{ textAlign: "center" }}>
-        <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">Answer 4 Questions To Identify The Exact Board Members Your Nonprofit Needs To Recruit</h3>
-        <p style={{ marginTop: 14 }}>Tell us about your mission, the board you have today, what your organization needs to move forward and where you need board support.</p>
-        <p style={{ marginTop: 10 }}>We will show you the exact type of people you should recruit and then show you how to recruit them yourself.</p>
+        <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">See The Exact Step-By-Step Process To Recruit The Board Members Your Organization Needs</h3>
+        <p style={{ marginTop: 14 }}>Tell us who you are and how many board members you want to recruit. We will show you how to identify the right people and recruit them yourself using the platform.</p>
         <input style={field} placeholder="Your Name" value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} data-testid="recruit-free-name" />
         <input style={field} placeholder="Email Address" type="email" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} data-testid="recruit-free-email" />
         <input style={field} placeholder="Organization Name" value={lead.organization} onChange={(e) => setLead({ ...lead, organization: e.target.value })} data-testid="recruit-free-org" />
@@ -148,7 +162,7 @@ export default function RecruitFreePage() {
           </button>
         </div>
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy} onClick={start} data-testid="recruit-free-start-btn">
-          {busy ? "Starting…" : "ANSWER THE 4 QUESTIONS"}
+          {busy ? "Opening…" : "SHOW ME THE STEP-BY-STEP PROCESS"}
         </button>
         {error && <p className="bfg-error" data-testid="recruit-free-error">{error}</p>}
       </div>

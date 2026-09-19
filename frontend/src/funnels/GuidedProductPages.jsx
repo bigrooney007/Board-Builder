@@ -4,6 +4,7 @@ import axios from "axios";
 import { ArrowRight, CheckCircle2, Map, RefreshCw, Video } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
 import { memberApi, storeMemberToken } from "@/member/api";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
@@ -35,8 +36,19 @@ const CONFIG={
     ],
     outcomes:["A board-built strategic roadmap","Clear ownership across major organizational areas","Board members leading deeper planning in the areas they can support","A costed plan showing what 100% execution requires","A pathway from founder-led work to delegated structures and board oversight"],
     intakeFields:[
-      ["mission","What is your organization's mission?","textarea"],["direction","What must your organization accomplish over the next 12–24 months?","textarea"],
-      ["areas","What major areas of the organization need stronger plans, structures or leadership?","textarea"],["current_plan","Do you already have a strategic plan? If yes, what needs to change?","textarea"],
+      ["mission","What is your organization's mission statement?","textarea"],
+      ["goals","What are your organization's present goals for the next 12–24 months?","textarea"],
+      ["objectives","What objectives are you presently working toward under those goals?","textarea"],
+      ["programs","List your present programs or services, one per line.","textarea"],
+      ["team_building","What team, staff, volunteer or leadership capacity are you currently trying to build?","textarea"],
+      ["operations","What operational systems or processes are most important to how the organization works today?","textarea"],
+      ["marketing","How are you presently marketing the organization and building visibility?","textarea"],
+      ["partnerships","What partnerships do you currently have or need to strengthen?","textarea"],
+      ["fundraising","How are you presently raising money, and what needs to improve?","textarea"],
+      ["technology","What technology or tools does the organization currently use or need?","textarea"],
+      ["budget","What is the organization's present budget or best current understanding of the cost of operating and growing?","textarea"],
+      ["priorities","What are the organization's most important priorities right now?","textarea"],
+      ["action_planning","What major actions are already planned or underway?","textarea"],
       ["next_meeting","When is your next board meeting?","text"],
     ],
   },
@@ -62,9 +74,8 @@ const CONFIG={
     ],
     outcomes:["Board Recommitment Form","Ready-to-send board member email","Clear interpretation of each response","Personalized one-on-one conversation script","A practical pathway for recommitment or graceful transition"],
     intakeFields:[
-      ["situation","What does disengagement currently look like on your board?","textarea"],["history","What do you believe caused board members to become passive or disengaged?","textarea"],
-      ["attempts","What have you already tried to get them involved again?","textarea"],["responsibilities","What responsibilities do you need board members to step back into?","textarea"],
-      ["next_meeting","When is your next board meeting?","text"],
+      ["mission","What is your organization's mission statement?","textarea"],
+      ["goals","What is your organization trying to accomplish or grow into right now?","textarea"],
     ],
   }
 };
@@ -108,17 +119,21 @@ export function GuidedWelcomePage({ product: explicitProduct }){
 }
 
 export function GuidedIntakePage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");const allowed=usePaidFlow(sid,product);
+ const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const {member,loading}=useMemberAuth();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");const allowed=usePaidFlow(sid,product);
  if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
- const submit=async()=>{if(c.intakeFields.some(([k])=>!String(answers[k]||"").trim())){setError("Please answer each question so we can prepare your workspace.");return}setBusy(true);try{let r=await axios.post(`${API}/guided/intake`,{session_id:sid,product,answers});nav(r.data.dashboard_url)}catch(e){setError(e.response?.data?.detail||"We could not save your intake.")}setBusy(false)};
+ if(product==="board-recommitment"&&!loading&&!member)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>Log In To Continue Your Board Recommitment Setup.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav("/login?next="+encodeURIComponent(`/board-recommitment/intake?session_id=${sid}`))}>LOG IN</button></section></main></BfgShell>;
+ const submit=async()=>{
+  if(product==="board-recommitment"&&!loading&&!member){nav("/login?next="+encodeURIComponent(`/board-recommitment/intake?session_id=${sid}`));return}
+  if(c.intakeFields.some(([k])=>!String(answers[k]||"").trim())){setError("Please answer each question so we can prepare your workspace.");return}setBusy(true);try{let r=await memberApi.post("/guided/intake",{session_id:sid,product,answers});nav(r.data.dashboard_url)}catch(e){setError(e.response?.data?.detail||"We could not save your intake.")}setBusy(false)};
  return <BfgShell><main className="guided-page"><section className="guided-section"><p className="bfg-eyebrow">YOUR INTAKE</p><h1>{c.intakeTitle}</h1><p className="guided-intro">Give us the context we need to prepare the guided process around your organization.</p><div className="guided-intake">{c.intakeFields.map(([k,label,type])=><label key={k}><span>{label}</span>{type==="textarea"?<textarea rows={5} value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>:<input value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>}</label>)}{error&&<p className="bfg-error">{error}</p>}<button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={submit}>{busy?"SAVING…":"BUILD MY WORKSPACE"}</button></div></section></main></BfgShell>
 }
 
 export function GuidedDashboardPage({ product: explicitProduct }){
- const [product]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const allowed=usePaidFlow(sid,product);
+ const [product]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const {member,loading}=useMemberAuth();const allowed=usePaidFlow(sid,product);
  if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
+ if(product==="board-recommitment"&&!loading&&!member)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>Log In To Open Your Board Recommitment Dashboard.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav("/login?next="+encodeURIComponent(`/board-recommitment/dashboard?session_id=${sid}`))}>LOG IN</button></section></main></BfgShell>;
  if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;
  return <StrategicPlanningDashboard/>;
 }

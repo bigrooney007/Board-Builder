@@ -61,7 +61,7 @@ export default function MainHomePage() {
       <main>
         <section className="nBB-home-hero">
           <p className="nBB-home-eyebrow">NONPROFIT LEADERSHIP SYSTEMS</p>
-          <h1>Build The People And Systems Your Nonprofit Needs To Grow.</h1>
+          <h1>Build The Board And Systems Your Nonprofit Needs To Grow And Raise Money Exponentially.</h1>
           <p className="nBB-home-lead">Your nonprofit cannot grow beyond the people making the decisions and the systems helping them execute. We help you build stronger boards, activate them around fundraising and turn organizational priorities into strategy.</p>
           <a href="#choose-path" className="nBB-home-primary">CHOOSE WHAT YOU NEED <ArrowRight size={18}/></a>
         </section>

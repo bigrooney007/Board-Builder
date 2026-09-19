@@ -5,7 +5,7 @@ def _signature(founder_name: str, founder_title: str, organization: str) -> str:
     return founder_name + (f"\n{founder_title}" if founder_title else "") + f"\n{organization}"
 
 
-def recommitment_outreach_email(kind: str, first: str, founder_name: str, founder_title: str, organization: str) -> dict:
+def recommitment_outreach_email(kind: str, first: str, founder_name: str, founder_title: str, organization: str, mission: str = "", goals: str = "") -> dict:
     signature = _signature(founder_name, founder_title, organization)
     if kind == "reminder":
         return {
@@ -22,11 +22,18 @@ def recommitment_outreach_email(kind: str, first: str, founder_name: str, founde
             "button_label": "COMPLETE MY FORM",
         }
     greeting = f"Dear {first}," if first else "Dear Board Member,"
+    context_lines = []
+    if mission:
+        context_lines.append(f"Our mission is: {mission}")
+    if goals:
+        context_lines.append(f"Our current organizational goals are: {goals}")
+    why = ("\n\n".join(context_lines) + "\n\n") if context_lines else ""
     return {
         "subject": f"Board Recommitment & Profile | {organization}",
         "body": (
             f"{greeting}\n\n"
-            f"As we continue strengthening the Board of {organization}, we are taking time to make sure every Board Member has clarity about their role, capacity and how they would like to contribute moving forward.\n\n"
+            + why
+            + f"As we continue strengthening the Board of {organization}, we are taking time to make sure every Board Member has clarity about their role, capacity and how they would like to contribute moving forward.\n\n"
             "Please take a few minutes to complete your Board Member Profile & Recommitment Form.\n\n"
             "Your responses will help us understand:\n"
             "- how you would like to continue contributing\n"

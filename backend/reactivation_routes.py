@@ -85,9 +85,9 @@ def origin_of(request: Request) -> str:
     return f"https://{forwarded}" if forwarded else "https://nonprofitboardbuilder.com"
 
 
-def build_outreach_email(kind: str, member: dict, founder_name: str, founder_title: str, organization: str, form_link: str) -> dict:
+def build_outreach_email(kind: str, member: dict, founder_name: str, founder_title: str, organization: str, form_link: str, mission: str = "", goals: str = "") -> dict:
     first = (member.get("name") or "").split(" ")[0]
-    email = recommitment_outreach_email(kind, first, founder_name, founder_title, organization)
+    email = recommitment_outreach_email(kind, first, founder_name, founder_title, organization, mission=mission, goals=goals)
     return {**email, "form_link": form_link}
 
 
@@ -114,6 +114,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
     from reportlab.platypus import BaseDocTemplate, Frame, PageBreak, PageTemplate, Paragraph, Spacer
 
     buffer = BytesIO()
+    organization = issuer.get("organization") or issuer.get("organization_name", "")
     doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=22 * mm, bottomMargin=22 * mm, title=title)
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
 
@@ -124,7 +125,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
         canvas.rect(11 * mm, 11 * mm, LETTER[0] - 22 * mm, LETTER[1] - 22 * mm)
         if canvas.getPageNumber() > 1:
             canvas.setFont("Helvetica", 8)
-            canvas.drawString(doc.leftMargin, 13.5 * mm, f"{issuer.get('organization', '')} — {title}")
+            canvas.drawString(doc.leftMargin, 13.5 * mm, f"{organization} — {title}")
             canvas.drawRightString(doc.leftMargin + doc.width, 13.5 * mm, f"Page {canvas.getPageNumber()}")
         canvas.restoreState()
 
@@ -144,7 +145,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
     issuer_lines = [f"Issued By: {issuer.get('issued_by', '')}"]
     if issuer.get("issuer_title"):
         issuer_lines.append(f"Title: {issuer['issuer_title']}")
-    issuer_lines.extend([f"Organization: {issuer.get('organization', '')}", f"Date: {issuer.get('issue_date', '')}"])
+    issuer_lines.extend([f"Organization: {organization}", f"Date: {issuer.get('issue_date', '')}"])
     story.append(Paragraph("<br/>".join(escape(line) for line in issuer_lines), issuer_style))
     story.append(PageBreak())
 
@@ -194,7 +195,10 @@ def create_reactivation_router(db) -> APIRouter:
             "founder_title": (intake or {}).get("founder_title", ""),
             "founder_phone": (intake or {}).get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
-            "transition_options": (intake or {}).get("transition_options", []),
+            # Streamlined Recommitment always keeps the three graceful transition pathways available.
+            "transition_options": [ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"],
+            "mission": (intake or {}).get("mission", ""),
+            "organization_goals": (intake or {}).get("organization_goals", ""),
         }
 
     async def owned_board_member(user_id: str, member_record_id: str) -> dict:
@@ -277,7 +281,7 @@ def create_reactivation_router(db) -> APIRouter:
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
         form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
-        email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link)
+        email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         return {"to_name": record["name"], "to_email": record["email"], **email}
 
     @router.post("/reactivation/board-members/{member_record_id}/send")
@@ -286,7 +290,7 @@ def create_reactivation_router(db) -> APIRouter:
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
         form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
-        email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link)
+        email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
         message = {
             "from": os.environ["NONPROFIT_SENDER"], "to": [record["email"]],
@@ -338,15 +342,14 @@ def create_reactivation_router(db) -> APIRouter:
 
     BASE_OUTCOMES = ["Continuing as an Active Board Member", "Follow-Up Conversation Needed"]
 
-    def allowed_outcomes(transition_options: list) -> list:
-        outcomes = list(BASE_OUTCOMES)
-        if ADVISORY_OPTION in transition_options:
-            outcomes.append("Transitioning to an Advisory Role")
-        if SUPPORT_OPTION in transition_options:
-            outcomes.append("Transitioning to Another Support Role")
-        if "Step Down From the Board" in transition_options:
-            outcomes.append("Stepping Down From the Board")
-        return outcomes
+    def allowed_outcomes() -> list:
+        # The streamlined Recommitment product no longer asks the founder to pre-authorize
+        # transition choices in intake. The one-on-one conversation determines the right outcome.
+        return list(BASE_OUTCOMES) + [
+            "Transitioning to an Advisory Role",
+            "Transitioning to Another Support Role",
+            "Stepping Down From the Board",
+        ]
 
     async def user_intake(user_id: str) -> dict:
         intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)]) or {}
@@ -453,7 +456,7 @@ def create_reactivation_router(db) -> APIRouter:
                          "script": material_summary(material_by_member.get(record["member_record_id"]))})
         return {
             "members": rows,
-            "outcome_options": allowed_outcomes(intake.get("transition_options", [])),
+            "outcome_options": allowed_outcomes(),
             "directions": CONVERSATION_DIRECTIONS,
             "progress": {"total": len(records), "conversations_completed": completed_conversations,
                          "follow_up_needed": follow_up, "waiting_for_form": waiting},
@@ -466,8 +469,11 @@ def create_reactivation_router(db) -> APIRouter:
         if record["status"] != "COMPLETED" or not record.get("response"):
             raise HTTPException(status_code=409, detail="This Board Member has not completed their Recommitment & Profile Form yet. Their response is needed before a person-specific conversation script can be generated.")
         intake = await user_intake(member["user_id"])
-        transition_options = intake.get("transition_options", [])
-        permitted = [option for option in transition_options if option not in {"We Have Not Decided Yet"}]
+        permitted = [
+            "Transitioning to an Advisory Role",
+            "Transitioning to Another Support Role",
+            "Stepping Down From the Board",
+        ]
         org_context = {key: intake.get(key, "") for key in [
             "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
             "present_board", "active_board", "disengaged_board", "current_skills", "missing_skills",
@@ -1048,7 +1054,7 @@ def create_reactivation_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Generate and approve the Recommitment Form first")
         context = await founder_context(member["user_id"])
         link = f"{origin_of(request)}/board-recommitment/{form['generic_token']}"
-        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"])
+        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"], mission=context.get("mission", ""), goals=context.get("organization_goals", ""))
         return {**email, "form_link": link}
 
     # ---------------- STEP 3: UNDERSTAND THEIR RESPONSE ----------------

@@ -161,6 +161,10 @@ class AreaPlanSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     plan_text: str = Field(min_length=1)
 
+class AreaPlanEdit(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    plan_text: str = Field(min_length=1)
+
 
 def create_strategic_planning_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
@@ -190,7 +194,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         return {**{k: area.get(k, "") for k in [
             "area_key", "area", "direction", "status", "owner_participant_id",
             "pack_status", "pack_generation_error", "last_pack_sent_at", "plan_submitted_at",
-            "adoption_conclusion", "submitted_plan"]},
+            "adoption_conclusion", "submitted_plan", "detailed_plan_text", "detailed_plan_status", "detailed_plan_approved_at"]},
             "adopted": area.get("adopted", False),
             "proposed_priorities": area.get("proposed_priorities", []),
             "owner_name": owner.get("name", "")}
@@ -511,6 +515,22 @@ def create_strategic_planning_router(db) -> APIRouter:
             q = prompts.get(qid, {})
             rows.append({"section": q.get("section", ""), "question": q.get("prompt", qid), "answer": value})
         return {"organization_name": project["organization_name"], "name": record.get("name", ""), "submitted_at": record.get("submitted_at", ""), "responses": rows}
+
+    @router.get("/strategic-planning-response/{participant_id}/pdf")
+    async def public_response_pdf(participant_id: str):
+        record = await db.sp_participants.find_one({"participant_id": participant_id, "status": "COMPLETED"}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
+        project = await owned_project(record["project_id"])
+        prompts = {q["id"]: q for q in record.get("response_questions", [])}
+        lines = ["STRATEGIC PLANNING RESPONSE", "", f"Board Member: {record.get('name','')}", f"Organization: {project['organization_name']}", ""]
+        for qid, value in (record.get("response") or {}).items():
+            q = prompts.get(qid, {})
+            rendered = ", ".join(value) if isinstance(value, list) else str(value or "")
+            lines.extend([str(q.get("section", "")).upper(), str(q.get("prompt", qid)), rendered, ""])
+        return build_portfolio_pdf("STRATEGIC PLANNING RESPONSE", record.get("name","Board Member"),
+                                   {"organization_name": project["organization_name"], "issued_by": record.get("name","Board Member")},
+                                   "\n".join(lines))
 
     # ---------------- FOUNDATIONAL PLAN ----------------
 
@@ -925,42 +945,102 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     # ---------------- PUBLIC: AREA PACK + PLAN SUBMISSION ----------------
 
-    async def area_by_pack_token(token: str):
+    async def area_assignment_by_token(token: str):
         plan = await db.sp_plans.find_one({"areas.pack_token": token}, {"_id": 0})
-        if not plan:
-            raise HTTPException(status_code=404, detail="This link is not valid")
-        area = next(a for a in plan["areas"] if a["pack_token"] == token)
-        return plan, area
+        if plan:
+            area = next(a for a in plan["areas"] if a.get("pack_token") == token)
+            participant=await db.sp_participants.find_one({"project_id":plan["project_id"],"participant_id":area.get("owner_participant_id","")},{"_id":0}) or {}
+            return plan,area,participant
+        participants=await db.sp_participants.find({"area_assignment_tokens":{"$exists":True}},{"_id":0}).to_list(500)
+        for participant in participants:
+            for area_key,assignment_token in (participant.get("area_assignment_tokens") or {}).items():
+                if assignment_token==token:
+                    plan=await db.sp_plans.find_one({"project_id":participant["project_id"]},{"_id":0})
+                    area=next((a for a in (plan or {}).get("areas",[]) if a.get("area_key")==area_key),None)
+                    if plan and area:return plan,area,participant
+        raise HTTPException(status_code=404, detail="This link is not valid")
+
+    async def area_by_pack_token(token: str):
+        plan,area,_=await area_assignment_by_token(token)
+        return plan,area
 
     @router.get("/area-pack/{token}")
     async def public_pack(token: str):
-        plan, area = await area_by_pack_token(token)
+        plan, area, assignment_person = await area_assignment_by_token(token)
         if area.get("pack_status") != "Approved":
             raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
         project = await owned_project(plan["project_id"])
-        owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        owner = assignment_person or (await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {})
         return {"organization_name": project["organization_name"], "area": area["area"],
                 "owner_name": owner.get("name", ""), "pack_text": area.get("pack_text", ""),
-                "submitted": bool(area.get("submitted_plan")), "submitted_at": area.get("plan_submitted_at", "")}
+                "foundational_plan": plan.get("display_text",""), "submitted_plan": area.get("submitted_plan",""),
+                "submitted": bool(area.get("submitted_plan")), "submitted_at": area.get("plan_submitted_at", ""), "draft_text": area.get("detailed_plan_text",""), "draft_status": area.get("detailed_plan_status","NONE"), "approved": area.get("detailed_plan_status")=="Approved"}
+
+    @router.post("/area-pack/{token}/generate")
+    async def generate_area_plan(token: str):
+        plan, area, assignment_person = await area_assignment_by_token(token)
+        if area.get("pack_status") != "Approved":
+            raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status") == "Approved":
+            raise HTTPException(status_code=409, detail="This detailed plan is approved and locked.")
+        project = await owned_project(plan["project_id"])
+        owner = assignment_person or (await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {})
+        context = (
+            f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission','')}\n"
+            f"BOARD MEMBER: {owner.get('name','')}\nSTRATEGIC AREA: {area.get('area','')}\n"
+            f"FOUNDATIONAL DIRECTION: {area.get('direction','')}\n"
+            f"APPROVED PRIORITIES: {area.get('proposed_priorities',[])}\n"
+            f"BOARD IDEAS: {area.get('ideas_shared',[])}\n"
+            f"BOARD MEMBER'S OWN PLANNING RESPONSE: {owner.get('response',{})}\n"
+            f"FOUNDATIONAL STRATEGIC PLAN: {plan.get('display_text','')}"
+        )
+        prompt = """Build ONLY this board member's detailed plan for the assigned strategic area from the supplied facts and Board decisions. Do not invent facts, dates, budgets, people, programs or commitments. If a required detail was not supplied, write a clear decision placeholder instead of guessing. Use these headings in this exact order: Strategic Area / Purpose; What We Must Accomplish; Priorities/Objectives; Step-by-Step Actions; People/Team Required; Technology/Tools Required; Leadership/Oversight Role; Budget/Cost to Execute at 100%; Timeline/Milestones; Measures/How We Know It's Working. The output must be practical, detailed, editable and ready for the board member to refine."""
+        g = await generate_structured("strategic_detailed_area_plan", context, prompt)
+        sections = g.get("sections", [])
+        text = "\n\n".join(f"{str(x.get('heading','')).upper()}\n{str(x.get('content',''))}" for x in sections).strip()
+        if not text:
+            text = str(g.get("display_text") or g.get("plan_text") or "").strip()
+        if not text:
+            raise HTTPException(status_code=502, detail="AI did not return a usable detailed plan. Please try again.")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":text,"areas.$.detailed_plan_status":"Draft","areas.$.status":"IN DEVELOPMENT","areas.$.detailed_plan_updated_at":now},"$push":{"areas.$.detailed_plan_versions":{"plan_text":text,"source":"ai","created_at":now}}})
+        return {"status":"Draft","plan_text":text}
+
+    @router.put("/area-pack/{token}/plan")
+    async def save_area_plan(token: str, payload: AreaPlanEdit):
+        plan, area = await area_by_pack_token(token)
+        if area.get("pack_status") != "Approved": raise HTTPException(409,"This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status")=="Approved": raise HTTPException(409,"This detailed plan is approved and locked.")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":payload.plan_text,"areas.$.detailed_plan_status":"Draft","areas.$.detailed_plan_updated_at":now},"$push":{"areas.$.detailed_plan_versions":{"plan_text":payload.plan_text,"source":"edited","created_at":now}}})
+        return {"status":"Draft"}
+
+    @router.post("/area-pack/{token}/approve")
+    async def approve_area_plan(token: str):
+        plan, area = await area_by_pack_token(token)
+        text=str(area.get("detailed_plan_text") or "").strip()
+        if not text: raise HTTPException(409,"Generate and review the detailed plan before approving it")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_status":"Approved","areas.$.detailed_plan_approved_at":now,"areas.$.submitted_plan":text,"areas.$.plan_submitted_at":now,"areas.$.status":"SUBMITTED"},"$push":{"areas.$.submission_history":{"plan_text":text,"submitted_at":now,"approved":True}}})
+        return {"status":"Approved"}
+
+    @router.get("/area-pack/{token}/pdf")
+    async def approved_area_plan_pdf(token: str):
+        plan, area = await area_by_pack_token(token)
+        if area.get("detailed_plan_status")!="Approved" or not area.get("submitted_plan"): raise HTTPException(409,"Approve the detailed plan before downloading it")
+        project=await owned_project(plan["project_id"])
+        owner=await owned_participant(plan["project_id"],area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        return build_portfolio_pdf(f"DETAILED STRATEGIC PLAN — {area['area']}",project["organization_name"],{"organization_name":project["organization_name"],"issued_by":owner.get("name","Board Member")},area["submitted_plan"])
 
     @router.post("/area-pack/{token}/submit", status_code=201)
     async def submit_area_plan(token: str, payload: AreaPlanSubmission):
+        # Backward-compatible endpoint: manual submission now saves a draft; explicit approval is required.
         plan, area = await area_by_pack_token(token)
-        if area.get("pack_status") != "Approved":
-            raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
-        project = await owned_project(plan["project_id"])
-        now = now_iso()
-        await db.sp_plans.update_one(
-            {"project_id": plan["project_id"], "areas.area_key": area["area_key"]},
-            {"$set": {"areas.$.submitted_plan": payload.plan_text, "areas.$.plan_submitted_at": now,
-                      "areas.$.status": "SUBMITTED"},
-             "$push": {"areas.$.submission_history": {"plan_text": payload.plan_text, "submitted_at": now}}})
-        origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
-        await notify_owner(
-            f"Strategic Area Plan Submitted | {area['area']}",
-            f"The detailed plan for the {area['area']} area of {project['organization_name']}'s strategic plan has been submitted.\n\n[OPEN STRATEGIC PLANNING]",
-            "OPEN STRATEGIC PLANNING", f"{origin}/admin")
-        return {"status": "submitted"}
+        if area.get("pack_status") != "Approved": raise HTTPException(409,"This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status") == "Approved": raise HTTPException(409,"This detailed plan is approved and locked.")
+        now=now_iso()
+        await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":payload.plan_text,"areas.$.detailed_plan_status":"Draft","areas.$.detailed_plan_updated_at":now}})
+        return {"status":"Draft"}
 
     @router.put("/admin/sp/projects/{project_id}/areas/{area_key}/adoption")
     async def record_adoption(project_id: str, area_key: str, payload: AdoptionPayload, request: Request):
@@ -1430,6 +1510,48 @@ def create_strategic_planning_router(db) -> APIRouter:
 def create_guided_strategic_planning_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/guided/strategic-planning")
 
+    async def owned_project(project_id: str) -> dict:
+        project = await db.sp_projects.find_one({"project_id": project_id}, {"_id": 0})
+        if not project:
+            raise HTTPException(status_code=404, detail="Strategic Planning project not found")
+        return project
+
+    async def send_email(to_email: str, subject: str, body: str, button_label: str, link: str, reply_to: str = ""):
+        resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+        message = {"from": os.environ["NONPROFIT_SENDER"], "to": [to_email],
+                   "subject": subject, "html": email_html(body, button_label, link)}
+        if reply_to:
+            message["reply_to"] = [reply_to]
+        await resend.Emails.send_async(message)
+
+
+    def generic_form_email(project: dict, link: str) -> dict:
+        organization = project["organization_name"]
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return sp_generic_form_invitation_email(organization, link, signature)
+
+    def review_email(project: dict, participant: dict, link: str) -> dict:
+        first = (participant.get("name") or "").split(" ")[0]
+        organization = project["organization_name"]
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return {**sp_review_invitation_email(first, organization, signature), "form_link": link}
+
+    def pack_email(project: dict, area: dict, owner: dict, link: str) -> dict:
+        first = (owner.get("name") or "").split(" ")[0]
+        organization = project["organization_name"]
+        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
+        body = (
+            f"Dear {first},\n\n"
+            f"The Board has developed and refined the foundational direction for the {area['area']} area of {organization}'s strategic plan.\n\n"
+            f"Based on your strengths, skills and role, we are asking you to take that agreed foundation and develop the detailed plan for {area['area']}.\n\n"
+            "Your secure Strategic Area Development Pack below contains the agreed direction, the Board's ideas and comments for your area, and what still needs resolution.\n\n"
+            "[OPEN MY AREA DEVELOPMENT PACK]\n\n"
+            "When your detailed plan is ready, you can submit it through the same link.\n\n"
+            f"Thank you for carrying this forward.\n\n{signature}"
+        )
+        return {"subject": f"Your Strategic Area: {area['area']} | {organization}", "body": body,
+                "button_label": "OPEN MY AREA DEVELOPMENT PACK", "form_link": link}
+
     async def paid(session_id: str):
         tx=await db.payment_transactions.find_one({"session_id":session_id,"payment_status":"paid","purchase_source":"strategic_planning_497"},{"_id":0})
         if not tx: raise HTTPException(status_code=402,detail="Paid Strategic Planning access could not be confirmed")
@@ -1445,8 +1567,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     async def detail(p):
         participants=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};by={x["participant_id"]:x for x in participants};areas=[]
-        for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name","")})
-        return {**p,"participants":participants,"form":form,"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":""},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text","")},"portfolios":plan.get("leadership_portfolios",[])}
+        for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name",""),"collaborator_names":[by.get(pid,{}).get("name","") for pid in a.get("collaborator_participant_ids",[]) if by.get(pid)]})
+        return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text","")},"portfolios":plan.get("leadership_portfolios",[])}
 
     @router.get("/workspace")
     async def workspace(session_id:str):
@@ -1457,9 +1579,27 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def prepare_form(request:Request):
         body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);_,_,intake=await paid(sid);a=intake.get("answers") or {}
         programs=a.get("programs") or a.get("areas") or ""; program_lines=[x.strip(" -•\t") for x in str(programs).split("\n") if x.strip()][:12]
-        qs=[("Mission",[f"Our mission is: {a.get('mission') or p.get('mission') or 'Mission not supplied'}. What should remain, change or become clearer about this mission?"]),("Goals",[f"Our current goals are: {a.get('direction','')}. What should our organization accomplish over the next 12–24 months?"]),("Objectives",["What measurable objectives will show that we are making meaningful progress toward our goals?"])]
+        qs=[
+            ("Mission",[f"Our mission is: {a.get('mission') or p.get('mission') or 'Mission not supplied'}. Review it. What should remain, change or become clearer?"]),
+            ("Goals",[f"Our lead user identified these present goals: {a.get('goals','')}. Review them. What should remain, change or be added for the next 12–24 months?"]),
+            ("Objectives",[f"Our lead user identified these present objectives: {a.get('objectives','')}. Review them. What should remain, change or be added so progress is clear and measurable?"]),
+        ]
         if program_lines: qs.append(("Programs",[f"Review this program or service: {x}. What should we continue, stop, improve or build so it contributes fully to our mission and goals?" for x in program_lines]))
-        qs += [("Team Building",["What team, staff, volunteer or leadership capacity must we build to execute this plan?"]),("Operations",["What operational systems, policies or processes must we strengthen?"]),("Marketing",["How should we strengthen visibility, communication and marketing?"]),("Partnerships",["What partnerships must we build or strengthen, and why?"]),("Fundraising",["What must our fundraising approach accomplish to adequately fund this plan?"]),("Technology",["What technology do we need to execute more effectively and sustainably?"]),("Budget",["What will it realistically cost to execute the organization at 100% over the planning period, and what major costs must we plan for?"]),("Organizational Priorities",["What should be our highest organizational priorities over the planning period?"]),("Action Planning",["What are the most important step-by-step actions required to move this plan from ideas into execution?","Which areas are you personally willing and able to help lead or oversee? Explain why."])]
+        review_sections=[
+            ("Team Building","team_building","team, staff, volunteer and leadership capacity"),
+            ("Operations","operations","operational systems, policies and processes"),
+            ("Marketing","marketing","marketing, visibility and communications"),
+            ("Partnerships","partnerships","partnerships and relationships"),
+            ("Fundraising","fundraising","fundraising approach and capacity"),
+            ("Technology","technology","technology and tools"),
+            ("Budget","budget","budget and the resources required for execution"),
+            ("Organizational Priorities","priorities","organizational priorities"),
+            ("Action Planning","action_planning","major actions and execution priorities"),
+        ]
+        for title,key,label in review_sections:
+            supplied=str(a.get(key) or "").strip()
+            qs.append((title,[f"Our lead user shared this about our {label}: {supplied or 'No current detail was supplied.'} Review this area. What should remain, change, be added or be prioritized?"]))
+        qs[-1][1].append("Which areas are you personally willing and able to help lead or oversee? Explain why.")
         sections=[]
         for i,(title,prompts) in enumerate(qs,1):sections.append({"key":f"s{i}","title":title,"questions":[{"id":f"s{i}_q{j}","prompt":q,"type":"long","options":[],"required":True} for j,q in enumerate(prompts,1)]})
         content={"introduction":f"We are reviewing the complete direction of {p['organization_name']} together. Please answer from your experience and perspective as a Board Member. Your ideas will be combined with the rest of the Board's thinking to create our first Strategic Plan Draft.","sections":sections};now=now_iso()
@@ -1498,13 +1638,24 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def generate_draft(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);responses=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         if not responses:raise HTTPException(409,"At least one Board Member response is required")
-        context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nBOARD RESPONSES:\n"+ "\n\n".join(f"{x.get('name','Board Member')}: {x.get('response',{})}" for x in responses)
+        _,_,intake=await paid(sid); intake_answers=intake.get("answers") or {}
+        context=(f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\n"
+                 f"LEAD USER INTAKE (starting organizational reality to be reviewed, not automatically treated as a Board decision):\n{intake_answers}\n\n"
+                 "BOARD RESPONSES:\n"+ "\n\n".join(f"{x.get('name','Board Member')}: {x.get('response',{})}" for x in responses))
         research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0});
         if research: context+="\n\nCOMMUNITY NEED RESEARCH:\n"+str(research.get("responses",[]))
-        structured=await generate_structured("strategic_planning_foundational",context,"Combine the Board's ideas into a first Strategic Plan Draft. Preserve the organization's supplied mission and Board ideas. Organize the draft into the strategic areas actually reviewed by the form. Do not invent Board decisions.")
+        structured=await generate_structured("strategic_planning_foundational",context,"Create the first Strategic Plan Draft from the lead-user starting context and the Board's actual review responses. The draft must explicitly cover Mission, Goals, Objectives, Programs, Team Building, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Organizational Priorities and Action Planning. Preserve supplied facts and Board ideas, reflect changes or disagreements rather than inventing consensus, and do not invent Board decisions.")
         display=plan_display(structured,p["organization_name"]);areas=[]
         for i,a in enumerate(structured.get("areas",[]),1):areas.append({"area_key":f"area_{i}","area":a.get("area",f"Area {i}"),"direction":a.get("direction",""),"proposed_priorities":a.get("proposed_priorities",[]),"ideas_shared":a.get("ideas_shared",[]),"status":"NOT ASSIGNED"})
-        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","structured":structured,"display_text":display,"finalized_text":display,"areas":areas,"updated_at":now_iso()},"$setOnInsert":{"created_at":now_iso()}},upsert=True);return {"status":"Approved"}
+        share_token=secrets.token_urlsafe(32)
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","structured":structured,"display_text":display,"finalized_text":display,"areas":areas,"share_token":share_token,"updated_at":now_iso()},"$setOnInsert":{"created_at":now_iso()}},upsert=True);return {"status":"Approved"}
+
+    @router.get("/strategic-draft/{token}")
+    async def guided_public_draft(token: str):
+        plan=await db.sp_plans.find_one({"share_token":token,"status":"Approved"},{"_id":0})
+        if not plan: raise HTTPException(404,"This Strategic Plan Draft link is not valid")
+        project=await owned_project(plan["project_id"])
+        return {"title":"Strategic Plan Draft","organization_name":project["organization_name"],"display_text":plan.get("display_text",""),"issued_by":project.get("founder_name","")}
 
     @router.post("/send-draft-email")
     async def send_draft_email(request:Request):
@@ -1512,39 +1663,58 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
         sent=0
         for r in respondents:
-            link=f"{origin_of(request)}/strategic-plan-review/{r.get('review_token')}";e=review_email(p,r,link);await send_email(r["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
+            link=f"{origin_of(request)}/strategic-draft/{plan.get('share_token')}";e=review_email(p,r,link);await send_email(r["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
         return {"status":"sent","count":sent}
 
     @router.post("/facilitation-guide")
     async def facilitation(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
-        g=await generate_structured("strategic_meeting_guide",f"ORGANIZATION: {p['organization_name']}\n\nSTRATEGIC PLAN DRAFT:\n{plan['display_text']}","Create a practical facilitation guide for the Board's strategic planning review and delegation meeting. The meeting must review the draft, improve/remove ideas, then assign every strategic area to Board Members for deeper planning and future leadership/oversight.")
+        g=await generate_structured("strategic_delegation_meeting_guide",f"ORGANIZATION: {p['organization_name']}\n\nSTRATEGIC PLAN DRAFT:\n{plan['display_text']}","Create a practical facilitation guide for the Board's strategic planning review and delegation meeting. The meeting must review the draft, improve/remove ideas, then assign every strategic area to Board Members for deeper planning and future leadership/oversight.")
         text="\n\n".join(f"{x.get('heading','')}\n{x.get('content','')}" for x in g.get("sections",[]));await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Draft","meeting_guide_text":text}});return {"status":"Draft"}
 
     @router.post("/auto-delegate")
     async def auto_delegate(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);areas=plan.get("areas",[])
         if not people or not areas:raise HTTPException(409,"Board responses and a Strategic Plan Draft are required first")
-        # deterministic round-robin coverage; preference score chooses starting order, then every area is assigned exactly once.
-        for i,a in enumerate(areas):
-            scored=[]
+        # Assign for alignment while balancing workload. Every area gets an owner.
+        # When there are more people than areas, extra participants become collaborators
+        # so every participating Board Member has a meaningful strategic role.
+        loads={pson["participant_id"]:0 for pson in people}
+        for a in areas:
+            words=(a.get("area","")+" "+a.get("direction","")).lower().split();scored=[]
             for pson in people:
-                words=(a.get("area","")+" "+a.get("direction","")).lower().split();own=str(pson.get("response",{})).lower();score=sum(1 for w in words if len(w)>4 and w in own);scored.append((score,pson))
-            scored.sort(key=lambda x:x[0],reverse=True);owner=scored[i%len(scored)][1] if scored else people[i%len(people)];a["owner_participant_id"]=owner["participant_id"];a["status"]="ASSIGNED"
+                own=str(pson.get("response",{})).lower();alignment=sum(1 for w in words if len(w)>4 and w in own)
+                scored.append((alignment,-loads[pson["participant_id"]],pson))
+            scored.sort(key=lambda x:(x[0],x[1]),reverse=True);owner=scored[0][2];loads[owner["participant_id"]]+=1
+            a["owner_participant_id"]=owner["participant_id"];a["collaborator_participant_ids"]=[];a["status"]="ASSIGNED"
+        unassigned=[p for p in people if loads[p["participant_id"]]==0]
+        for pson in unassigned:
+            best=max(areas,key=lambda a:sum(1 for w in (a.get("area","")+" "+a.get("direction","")).lower().split() if len(w)>4 and w in str(pson.get("response",{})).lower()))
+            best.setdefault("collaborator_participant_ids",[]).append(pson["participant_id"])
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":areas}});return {"status":"ASSIGNED","area_count":len(areas)}
 
     @router.post("/send-area-assignment")
     async def area_assignment(request:Request):
         body=await request.json();sid=body.get("session_id","");key=body.get("area_key","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};area=next((x for x in plan.get("areas",[]) if x.get("area_key")==key),None)
         if not area or not area.get("owner_participant_id"):raise HTTPException(409,"Assign this strategic area first")
-        owner=await db.sp_participants.find_one({"project_id":p["project_id"],"participant_id":area["owner_participant_id"]},{"_id":0});token=area.get("pack_token") or secrets.token_urlsafe(32);area["pack_token"]=token;area["pack_status"]="Approved";area["pack_text"]=pack_display({"mission_direction":area.get("direction",""),"foundational_priorities":area.get("proposed_priorities",[]),"ideas":area.get("ideas_shared",[]),"development_instruction":"Build the detailed plan for this strategic area. Define exactly what must be done, the people and technology required, your role in leading and overseeing it, the full cost of executing it at 100%, and a step-by-step action plan for the planning period."},area["area"],p["organization_name"]);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":plan["areas"]}})
-        link=f"{origin_of(request)}/area-pack/{token}";e=pack_email(p,area,owner,link);await send_email(owner["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));return {"status":"sent"}
+        recipients=[area["owner_participant_id"]]+area.get("collaborator_participant_ids",[]);sent=0
+        for pid in recipients:
+            person=await db.sp_participants.find_one({"project_id":p["project_id"],"participant_id":pid},{"_id":0})
+            if not person: continue
+            assignments=person.get("area_assignment_tokens") or {};token=assignments.get(key) or secrets.token_urlsafe(32);assignments[key]=token
+            await db.sp_participants.update_one({"participant_id":pid},{"$set":{"area_assignment_tokens":assignments}})
+            if pid==area["owner_participant_id"]:
+                area["pack_token"]=token
+            area["pack_status"]="Approved";area["pack_text"]=pack_display({"mission_direction":area.get("direction",""),"foundational_priorities":area.get("proposed_priorities",[]),"ideas":area.get("ideas_shared",[]),"development_instruction":"Build the detailed plan for this strategic area. Define exactly what must be done, the people and technology required, your role in leading and overseeing it, the full cost of executing it at 100%, and a step-by-step action plan for the planning period."},area["area"],p["organization_name"])
+            link=f"{origin_of(request)}/area-pack/{token}";e=pack_email(p,area,person,link);await send_email(person["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":plan["areas"]}})
+        return {"status":"sent","count":sent}
 
     @router.post("/final-plan")
     async def build_final(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};areas=plan.get("areas",[])
-        if not areas or any(not a.get("submitted_plan") for a in areas):raise HTTPException(409,"Every delegated strategic area needs an approved detailed plan before consolidation")
+        if not areas or any(a.get("detailed_plan_status")!="Approved" or not a.get("submitted_plan") for a in areas):raise HTTPException(409,"Every delegated strategic area needs an approved detailed plan before consolidation")
         context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nFOUNDATIONAL PLAN:\n{plan.get('display_text','')}\n\nAPPROVED DETAILED AREA PLANS:\n"+"\n\n".join(f"{a['area']}:\n{a['submitted_plan']}" for a in areas);g=await generate_structured("strategic_final_plan",context,"Consolidate only the supplied approved plans into one coherent final Strategic Plan. Do not invent new Board decisions.")
         display=final_display(g,p["organization_name"]);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Approved","final_display_text":display,"final_share_token":secrets.token_urlsafe(32),"updated_at":now_iso()}});return {"status":"Approved"}
 
@@ -1560,7 +1730,24 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan.get("final_display_text"):raise HTTPException(409,"Generate the Final Strategic Plan first")
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);rows=[]
         for person in people:
-            owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"]];areas=[a["area"] for a in owned];text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."
+            owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"] or person["participant_id"] in a.get("collaborator_participant_ids",[])];areas=[a["area"] for a in owned];text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."
             token=secrets.token_urlsafe(24);rows.append({"participant_id":person["participant_id"],"name":person["name"],"areas":areas,"text":text,"token":token,"url":f"/strategic-leadership-portfolio/{token}"})
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"leadership_portfolios":rows}});return {"status":"created","count":len(rows)}
+
+    @router.get("/leadership-portfolio/{token}")
+    async def leadership_portfolio(token:str):
+        plan=await db.sp_plans.find_one({"leadership_portfolios.token":token,"final_status":"Approved"},{"_id":0})
+        if not plan: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
+        if not row: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        project=await owned_project(plan["project_id"])
+        return {"title":"Board Member Leadership Portfolio","organization_name":project["organization_name"],"member_name":row.get("name",""),"areas":row.get("areas",[]),"display_text":row.get("text",""),"issued_by":project.get("founder_name","")}
+
+    @router.get("/leadership-portfolio/{token}/pdf")
+    async def leadership_portfolio_pdf(token:str):
+        plan=await db.sp_plans.find_one({"leadership_portfolios.token":token,"final_status":"Approved"},{"_id":0})
+        if not plan: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
+        project=await owned_project(plan["project_id"])
+        return build_portfolio_pdf("BOARD MEMBER LEADERSHIP PORTFOLIO",row.get("name",""),{"organization_name":project["organization_name"],"issued_by":project.get("founder_name","")},row.get("text",""))
     return router

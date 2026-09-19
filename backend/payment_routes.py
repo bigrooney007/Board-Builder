@@ -39,7 +39,7 @@ class DIYCheckoutRequest(BaseModel):
     product: str = ""
 
 
-ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/", "/strategic-planning/video", "/board-recommitment/video"}
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/game/unlock", "/", "/strategic-planning/video", "/board-recommitment/video"}
 
 
 def resolve_cancel_url(payload, default_path: str) -> str:
@@ -674,7 +674,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": resolve_cancel_url(payload, "/game/start"),
+            "cancel_url": resolve_cancel_url(payload, "/game/unlock"),
             "metadata": {
                 "offer_source": "board_fundraising_game", "selected_tier": "497",
                 "purchase_source": "board_fundraising_game_497",
