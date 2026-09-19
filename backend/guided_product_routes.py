@@ -40,6 +40,13 @@ def create_guided_product_router(db):
             raise HTTPException(402,"Paid access could not be confirmed")
         now=datetime.now(timezone.utc).isoformat()
         await db.guided_product_intakes.update_one({"session_id":payload.session_id},{"$set":{"session_id":payload.session_id,"product":payload.product,"answers":payload.answers,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
+        if payload.product=="board-recommitment":
+            lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0})
+            member=await db.members.find_one({"email":(lead or {}).get("email","")},{"_id":0})
+            if not member:
+                raise HTTPException(409,"Your Board Recommitment workspace session could not be linked")
+            await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"reactivation_self_guided"},"$set":{"updated_at":now}})
+            await db.board_reactivation_intakes.insert_one({"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","guided_session_id":payload.session_id,"guided_answers":payload.answers,"submitted_at":now})
         return {"saved":True,"dashboard_url":f"/{payload.product}/dashboard?session_id={payload.session_id}"}
 
     @router.get("/dashboard")
