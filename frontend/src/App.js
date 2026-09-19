@@ -212,12 +212,12 @@ export default function App() {
           <Route path="/board-reactivation-proposal" element={<Navigate to="/" replace />} />
           <Route path="/board-reactivation-intake" element={<Navigate to="/" replace />} />
           <Route path="/reactivation-start-here" element={<Navigate to="/" replace />} />
-          <Route path="/board-recommitment" element={<GuidedLandingPage />} />
-          <Route path="/board-recommitment/video" element={<GuidedVideoPage />} />
-          <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaymentConfirmedPage />} />
-          <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage />} />
-          <Route path="/board-recommitment/intake" element={<GuidedIntakePage />} />
-          <Route path="/board-recommitment/dashboard" element={<GuidedDashboardPage />} />
+          <Route path="/board-recommitment" element={<GuidedLandingPage product="board-recommitment" />} />
+          <Route path="/board-recommitment/video" element={<GuidedVideoPage product="board-recommitment" />} />
+          <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaymentConfirmedPage product="board-recommitment" />} />
+          <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage product="board-recommitment" />} />
+          <Route path="/board-recommitment/intake" element={<GuidedIntakePage product="board-recommitment" />} />
+          <Route path="/board-recommitment/dashboard" element={<GuidedDashboardPage product="board-recommitment" />} />
           <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
           <Route path="/portfolio/:token" element={<PortfolioPage />} />
           <Route path="/app/reactivation/self-guided" element={<ReactivationOverviewPage />} />
@@ -270,12 +270,12 @@ export default function App() {
           <Route path="/board-profile/:token" element={<BoardProfileFormPage />} />
           <Route path="/reference-form/:token" element={<CandidateReferenceFormPage />} />
           <Route path="/referee-form/:token" element={<RefereeFormPage />} />
-          <Route path="/strategic-planning" element={<GuidedLandingPage />} />
-          <Route path="/strategic-planning/video" element={<GuidedVideoPage />} />
-          <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage />} />
-          <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage />} />
-          <Route path="/strategic-planning/intake" element={<GuidedIntakePage />} />
-          <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage />} />
+          <Route path="/strategic-planning" element={<GuidedLandingPage product="strategic-planning" />} />
+          <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
+          <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage product="strategic-planning" />} />
+          <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage product="strategic-planning" />} />
+          <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
+          <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/community-need-research/:token" element={<CommunityNeedResearchPage />} />
           <Route path="/strategic-planning-response/:participantId" element={<StrategicPlanningResponsePage />} />

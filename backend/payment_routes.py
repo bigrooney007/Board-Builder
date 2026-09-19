@@ -174,6 +174,25 @@ def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
+    @router.get("/flow-status/{session_id}")
+    async def flow_status(session_id: str, flow: str):
+        contracts = {
+            "recruitment": {"offer_sources": {"recruitment"}, "purchase_sources": {"recruitment_497", "recruitment_self_guided_497"}},
+            "board-fundraising-game": {"offer_sources": {"board_fundraising_game"}, "purchase_sources": {"board_fundraising_game_497"}},
+            "strategic-planning": {"offer_sources": {"strategic_planning"}, "purchase_sources": {"strategic_planning_497"}},
+            "board-recommitment": {"offer_sources": {"board_recommitment"}, "purchase_sources": {"board_recommitment_497"}},
+        }
+        contract = contracts.get(flow)
+        if not contract:
+            raise HTTPException(status_code=400, detail="Unknown product flow")
+        tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+        if not tx:
+            raise HTTPException(status_code=404, detail="Payment session not found")
+        source_ok = tx.get("offer_source", "") in contract["offer_sources"] or tx.get("purchase_source", "") in contract["purchase_sources"]
+        if not source_ok:
+            raise HTTPException(status_code=409, detail="This payment belongs to a different product flow")
+        return {"flow": flow, "payment_status": tx.get("payment_status", "pending"), "valid_flow": True}
+
     @router.get("/config")
     async def payment_config():
         return {
@@ -608,6 +627,9 @@ def create_payment_router(db) -> APIRouter:
         if not config:
             raise HTTPException(status_code=400, detail="Unknown guided product")
         product_name, purchase_source, base_path = config
+        lead = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
+        if not lead or lead.get("product") != product:
+            raise HTTPException(status_code=409, detail="This journey token belongs to a different product flow")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")

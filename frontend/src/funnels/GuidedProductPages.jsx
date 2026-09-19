@@ -67,10 +67,11 @@ const CONFIG={
     ],
   }
 };
-const useProduct=()=>{const p=window.location.pathname.startsWith("/strategic-planning")?"strategic-planning":"board-recommitment";return [p,CONFIG[p]]};
+const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); return [p,CONFIG[p]]};
+const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
-export function GuidedLandingPage(){
- const [product,c]=useProduct();const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
+export function GuidedLandingPage({ product: explicitProduct }){
+ const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
  useEffect(()=>{document.title=`${c.eyebrow} | Nonprofit Board Builder`},[c]);
  const start=async()=>{if(!form.name||!form.email||!form.board_count){setError("Complete your name, email and number of board members.");return}setBusy(true);setError("");try{let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count)});nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
  return <BfgShell><main className="guided-page">
@@ -83,34 +84,37 @@ export function GuidedLandingPage(){
  </main></BfgShell>
 }
 
-export function GuidedVideoPage(){
- const [product,c]=useProduct();const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(false),[error,setError]=useState("");
+export function GuidedVideoPage({ product: explicitProduct }){
+ const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(false),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);
+ useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product]);
  const buy=async()=>{setBusy(true);setError("");try{let r=await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy(false)}};
- return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><Video size={38}/><strong>Short walkthrough video</strong><span>Video URL can be added before launch.</span></div><div className="guided-pay-card"><h2>{c.payTitle}</h2><div className="guided-price">$497 <small>ONE TIME</small></div><p>You see the process step by step, use the forms, scripts and materials we provide, and get guided support throughout the process.</p><button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={buy}>{busy?"OPENING SECURE CHECKOUT…":product==="strategic-planning"?"START MY STRATEGIC PLANNING PROCESS — $497":"START MY BOARD RECOMMITMENT — $497"}</button>{error&&<p className="bfg-error">{error}</p>}</div></section></main></BfgShell>
+ return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><Video size={38}/><strong>Short walkthrough video</strong><span>Video URL can be added before launch.</span></div><div className="guided-pay-card"><h2>{c.payTitle}</h2><div className="guided-price">$497 <small>ONE TIME</small></div><p>You see the process step by step, use the forms, scripts and materials we provide, and get guided support throughout the process.</p><button className="bfg-btn bfg-btn-primary" disabled={busy||!validToken} onClick={buy}>{busy?"OPENING SECURE CHECKOUT…":product==="strategic-planning"?"START MY STRATEGIC PLANNING PROCESS — $497":"START MY BOARD RECOMMITMENT — $497"}</button>{error&&<p className="bfg-error">{error}</p>}</div></section></main></BfgShell>
 }
 
-export function GuidedPaymentConfirmedPage(){
- const [product]=useProduct();const loc=useLocation();const nav=useNavigate();const sid=new URLSearchParams(loc.search).get("session_id")||"";const [state,setState]=useState("checking");
- useEffect(()=>{let n=0,t;const poll=async()=>{n++;try{let r=await axios.get(`${API}/payments/status/${sid}`);if(r.data.payment_status==="paid"){setState("paid");return}}catch{}if(n<8)t=setTimeout(poll,2200);else setState("waiting")};poll();return()=>clearTimeout(t)},[sid]);
+export function GuidedPaymentConfirmedPage({ product: explicitProduct }){
+ const [product]=useProduct(explicitProduct);const loc=useLocation();const nav=useNavigate();const sid=new URLSearchParams(loc.search).get("session_id")||"";const [state,setState]=useState("checking");
+ useEffect(()=>{let n=0,t;const poll=async()=>{n++;try{let r=await axios.get(`${API}/payments/status/${sid}`);if(r.data.payment_status==="paid"){await axios.get(`${API}/payments/flow-status/${sid}`,{params:{flow:product}});setState("paid");return}}catch{}if(n<8)t=setTimeout(poll,2200);else setState("waiting")};poll();return()=>clearTimeout(t)},[sid,product]);
  return <BfgShell><main className="guided-page"><section className="guided-confirm"><CheckCircle2 size={54}/><h1>{state==="paid"?"Payment Confirmed":"Confirming Your Payment…"}</h1><p>{state==="paid"?"Your guided process is ready.":"Please keep this page open while we confirm your payment."}</p>{state==="paid"&&<button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}/welcome?session_id=${sid}`)}>CONTINUE</button>}</section></main></BfgShell>
 }
 
-export function GuidedWelcomePage(){
- const [product,c]=useProduct();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();
+export function GuidedWelcomePage({ product: explicitProduct }){
+ const [product,c]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();
+ const allowed=usePaidFlow(sid,product);
+ if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
+ if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
  return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">WELCOME</p><h1>{c.onboardingTitle}</h1><p>Watch this short onboarding before completing your intake. It will show you what happens next and how to get the most from the process.</p><div className="guided-video"><Video size={38}/><strong>Onboarding video</strong><span>Video URL can be added before launch.</span></div><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}/intake?session_id=${sid}`)}>CONTINUE TO MY INTAKE</button></section></main></BfgShell>
 }
 
-export function GuidedIntakePage(){
- const [product,c]=useProduct();const nav=useNavigate();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");
+export function GuidedIntakePage({ product: explicitProduct }){
+ const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");const allowed=usePaidFlow(sid,product);
+ if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
+ if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
  const submit=async()=>{if(c.intakeFields.some(([k])=>!String(answers[k]||"").trim())){setError("Please answer each question so we can prepare your workspace.");return}setBusy(true);try{let r=await axios.post(`${API}/guided/intake`,{session_id:sid,product,answers});nav(r.data.dashboard_url)}catch(e){setError(e.response?.data?.detail||"We could not save your intake.")}setBusy(false)};
  return <BfgShell><main className="guided-page"><section className="guided-section"><p className="bfg-eyebrow">YOUR INTAKE</p><h1>{c.intakeTitle}</h1><p className="guided-intro">Give us the context we need to prepare the guided process around your organization.</p><div className="guided-intake">{c.intakeFields.map(([k,label,type])=><label key={k}><span>{label}</span>{type==="textarea"?<textarea rows={5} value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>:<input value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>}</label>)}{error&&<p className="bfg-error">{error}</p>}<button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={submit}>{busy?"SAVING…":"BUILD MY WORKSPACE"}</button></div></section></main></BfgShell>
 }
 
-export function GuidedDashboardPage(){
- const [product,c]=useProduct();
+export function GuidedDashboardPage({ product: explicitProduct }){
+ const [product]=useProduct(explicitProduct);
  if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;
- if(product==="strategic-planning") return <StrategicPlanningDashboard/>;const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [ctx,setCtx]=useState(null);
- useEffect(()=>{axios.get(`${API}/guided/dashboard`,{params:{session_id:sid,product}}).then(r=>setCtx(r.data)).catch(()=>setCtx({error:true}))},[sid,product]);
- const strategic=product==="strategic-planning";
- return <BfgShell><main className="guided-page"><section className="guided-section"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.dashboardTitle}</h1><p className="guided-intro">{strategic?"Start by preparing the individual strategic planning form for every board member. Their responses will become your first draft.":"Start by preparing the board members you need to recommit. Each response will help you decide the right one-on-one conversation."}</p><div className="guided-dashboard-grid">{(strategic?[["1","Invite Your Board","Prepare and send the individual strategic planning form."],["2","First Strategic Plan Draft","Combine board member ideas into the first working draft."],["3","Assign Leadership Areas","Match board members to the areas they said they can help lead."],["4","Area Plans & Adoption","Build, review and adopt each deeper area plan."],["5","Build The Structures","Move from adopted plans into teams, technology, materials and oversight."]]:[["1","Prepare Board Members","Add the board members you need to recommit."],["2","Send Recommitment Forms","Send the provided email and individual form."],["3","Review Their Responses","See who will recommit, who is unsure and who wants to step down."],["4","Prepare One-On-One Conversations","Use the interpretation and conversation script for each board member."],["5","Confirm The Way Forward","Record recommitments, responsibilities and graceful transitions."]]).map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p><button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled>{n==="1"?"NEXT BUILD STEP":"COMING NEXT"}</button></article>)}</div>{ctx?.error&&<p className="bfg-error">We could not confirm this workspace.</p>}</section></main></BfgShell>
+ return <StrategicPlanningDashboard/>;
 }
