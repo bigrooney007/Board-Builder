@@ -998,7 +998,7 @@ export const recruitmentHomeContent = {
   ],
   "formEyebrow": "LET'S START WITH YOUR ORGANIZATION",
   "formHeading": "How Many Board Members Do You Want To Recruit?",
-  "formText": "Enter your details below to begin identifying the board members your organization needs.",
+  "formText": "",
   "videoEyebrow": "A MESSAGE FROM ROONEY",
   "videoHeading": "How You Recruit Your Board Members Matters",
   "videoText": "How you recruit these board members is as important as the quality of board members you bring in.",
