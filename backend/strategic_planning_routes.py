@@ -945,6 +945,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
         return {"organization_name": project["organization_name"], "area": area["area"],
                 "owner_name": owner.get("name", ""), "pack_text": area.get("pack_text", ""),
+                "foundational_plan": plan.get("display_text",""), "submitted_plan": area.get("submitted_plan",""),
                 "submitted": bool(area.get("submitted_plan")), "submitted_at": area.get("plan_submitted_at", ""), "draft_text": area.get("detailed_plan_text",""), "draft_status": area.get("detailed_plan_status","NONE"), "approved": area.get("detailed_plan_status")=="Approved"}
 
     @router.post("/area-pack/{token}/generate")
