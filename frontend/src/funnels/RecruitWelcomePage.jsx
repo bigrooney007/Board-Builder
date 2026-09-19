@@ -20,7 +20,7 @@ export default function RecruitWelcomePage() {
 
   const proceed = async () => {
     try { await memberApi.post("/recruit/free/member-event/welcome_completed"); } catch { /* best effort */ }
-    navigate("/recruit?onboarding=1");
+    navigate(`/recruit?onboarding=1&session_id=${encodeURIComponent(sessionId)}`);
   };
   if(allowed===null)return <BfgShell><main className="bfg-flow" style={{maxWidth:720,margin:"0 auto",padding:"60px 20px",textAlign:"center"}}><p>Confirming your Board Recruitment access…</p></main></BfgShell>;
   if(!allowed)return <BfgShell><main className="bfg-flow" style={{maxWidth:720,margin:"0 auto",padding:"60px 20px",textAlign:"center"}}><h1>This Link Does Not Belong To The Board Recruitment Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>navigate("/recruit")}>RETURN TO BOARD RECRUITMENT</button></main></BfgShell>;
