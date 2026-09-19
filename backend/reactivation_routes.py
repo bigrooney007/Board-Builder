@@ -114,6 +114,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
     from reportlab.platypus import BaseDocTemplate, Frame, PageBreak, PageTemplate, Paragraph, Spacer
 
     buffer = BytesIO()
+    organization = issuer.get("organization") or issuer.get("organization_name", "")
     doc = BaseDocTemplate(buffer, pagesize=LETTER, leftMargin=22 * mm, rightMargin=22 * mm, topMargin=22 * mm, bottomMargin=22 * mm, title=title)
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="body")
 
@@ -124,7 +125,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
         canvas.rect(11 * mm, 11 * mm, LETTER[0] - 22 * mm, LETTER[1] - 22 * mm)
         if canvas.getPageNumber() > 1:
             canvas.setFont("Helvetica", 8)
-            canvas.drawString(doc.leftMargin, 13.5 * mm, f"{issuer.get('organization', '')} — {title}")
+            canvas.drawString(doc.leftMargin, 13.5 * mm, f"{organization} — {title}")
             canvas.drawRightString(doc.leftMargin + doc.width, 13.5 * mm, f"Page {canvas.getPageNumber()}")
         canvas.restoreState()
 
@@ -144,7 +145,7 @@ def build_portfolio_pdf(title: str, member_name: str, issuer: dict, text: str):
     issuer_lines = [f"Issued By: {issuer.get('issued_by', '')}"]
     if issuer.get("issuer_title"):
         issuer_lines.append(f"Title: {issuer['issuer_title']}")
-    issuer_lines.extend([f"Organization: {issuer.get('organization', '')}", f"Date: {issuer.get('issue_date', '')}"])
+    issuer_lines.extend([f"Organization: {organization}", f"Date: {issuer.get('issue_date', '')}"])
     story.append(Paragraph("<br/>".join(escape(line) for line in issuer_lines), issuer_style))
     story.append(PageBreak())
 
