@@ -188,6 +188,15 @@ def create_payment_router(db) -> APIRouter:
         tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
         if not tx:
             raise HTTPException(status_code=404, detail="Payment session not found")
+        if tx.get("payment_status") != "paid":
+            try:
+                stripe_session = stripe.checkout.Session.retrieve(session_id)
+                if stripe_session.payment_status == "paid":
+                    now = datetime.now(timezone.utc).isoformat()
+                    await db.payment_transactions.update_one({"session_id": session_id}, {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}})
+                    tx["status"] = "completed"; tx["payment_status"] = "paid"
+            except stripe.StripeError:
+                pass
         source_ok = tx.get("offer_source", "") in contract["offer_sources"] or tx.get("purchase_source", "") in contract["purchase_sources"]
         if not source_ok:
             raise HTTPException(status_code=409, detail="This payment belongs to a different product flow")
