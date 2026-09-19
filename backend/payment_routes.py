@@ -627,6 +627,9 @@ def create_payment_router(db) -> APIRouter:
         if not config:
             raise HTTPException(status_code=400, detail="Unknown guided product")
         product_name, purchase_source, base_path = config
+        lead = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
+        if not lead or lead.get("product") != product:
+            raise HTTPException(status_code=409, detail="This journey token belongs to a different product flow")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
