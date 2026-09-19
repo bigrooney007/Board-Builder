@@ -22,8 +22,6 @@ DEFAULT_CONTENT = {
         "The first step to get your board to start raising money and building your organization's fundraising system with you is by creating your organization's fundraising strategy with them.",
         "I mean a clear strategy that identifies the exact type of people, businesses and grantors with the strongest reason to fund your mission, where to find them, how to attract them consistently, and the exact process to raise money from them.",
         "The Board Fundraising Game helps you create this strategy with your board, equip your board to execute the strategy individually and work with you to build the system that will drive the strategy at scale so as to raise money exponentially for your organization.",
-        "To Raise Money Exponentially, You Need A Fundraising System.",
-        "To Build A Fundraising System, You Need A Fundraising Strategy.",
     ],
     "goal_label": "How Much Does Your Organization Want To Raise?",
     "goal_placeholder": "500,000",

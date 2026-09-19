@@ -90,8 +90,6 @@ export default function GameHomePage() {
           {(content.intro_paragraphs || []).slice(0, 3).map((paragraph, index) => (
             <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
           ))}
-          {content.intro_paragraphs?.[3] && <h2 data-testid="bfg-system-heading">{content.intro_paragraphs[3]}</h2>}
-          {content.intro_paragraphs?.[4] && <h2 data-testid="bfg-strategy-heading">{content.intro_paragraphs[4]}</h2>}
         </section>
 
         <section className="bfg-section bfg-goal-section" data-testid="bfg-goal-section">

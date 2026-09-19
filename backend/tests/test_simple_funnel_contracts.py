@@ -32,11 +32,14 @@ def test_new_game_buyers_can_secure_access_before_playing():
     assert 'memberApi.post("/members/complete-guest-account", password)' in welcome
 
 
-def test_required_game_statements_are_not_duplicated_as_paragraphs():
+def test_removed_game_statements_are_not_rendered():
     homepage = source("frontend/src/game/GameHomePage.jsx")
+    game_routes = source("backend/game_routes.py")
     assert ".slice(0, 3).map" in homepage
-    assert 'data-testid="bfg-system-heading"' in homepage
-    assert 'data-testid="bfg-strategy-heading"' in homepage
+    assert 'data-testid="bfg-system-heading"' not in homepage
+    assert 'data-testid="bfg-strategy-heading"' not in homepage
+    assert "To Raise Money Exponentially, You Need A Fundraising System." not in game_routes
+    assert "To Build A Fundraising System, You Need A Fundraising Strategy." not in game_routes
 
 
 def test_recruitment_helper_does_not_leave_an_empty_paragraph():
