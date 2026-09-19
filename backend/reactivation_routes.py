@@ -468,8 +468,11 @@ def create_reactivation_router(db) -> APIRouter:
         if record["status"] != "COMPLETED" or not record.get("response"):
             raise HTTPException(status_code=409, detail="This Board Member has not completed their Recommitment & Profile Form yet. Their response is needed before a person-specific conversation script can be generated.")
         intake = await user_intake(member["user_id"])
-        transition_options = intake.get("transition_options", [])
-        permitted = [option for option in transition_options if option not in {"We Have Not Decided Yet"}]
+        permitted = [
+            "Transitioning to an Advisory Role",
+            "Transitioning to Another Support Role",
+            "Stepping Down From the Board",
+        ]
         org_context = {key: intake.get(key, "") for key in [
             "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
             "present_board", "active_board", "disengaged_board", "current_skills", "missing_skills",
@@ -1050,7 +1053,7 @@ def create_reactivation_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Generate and approve the Recommitment Form first")
         context = await founder_context(member["user_id"])
         link = f"{origin_of(request)}/board-recommitment/{form['generic_token']}"
-        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"])
+        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"], mission=context.get("mission", ""), goals=context.get("organization_goals", ""))
         return {**email, "form_link": link}
 
     # ---------------- STEP 3: UNDERSTAND THEIR RESPONSE ----------------
