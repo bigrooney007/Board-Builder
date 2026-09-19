@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 
 export default function GameDemonstrationPage() {
+  const { member, loading } = useMemberAuth();
   const video = useFlowVideo("game_homepage");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => { document.title = "See How The Board Fundraising Game Works"; }, []);
+
+  if (loading) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+  if (!member) return <Navigate to="/board-fundraising-game" replace />;
 
   const buy = async () => {
     setBusy(true); setError("");
