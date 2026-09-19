@@ -107,7 +107,7 @@ export default function GameHomePage() {
               <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
             </div>
             {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
-            <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startGame} data-testid="bfg-hero-cta">
+            <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startDemonstration} data-testid="bfg-hero-cta">
               {starting ? "Opening…" : "WATCH THE PRODUCT DEMONSTRATION"}
             </button>
           </div>
@@ -169,7 +169,7 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
-          <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startGame} data-testid="bfg-closing-cta">
+          <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startDemonstration} data-testid="bfg-closing-cta">
             {starting ? "Opening…" : "WATCH THE PRODUCT DEMONSTRATION"}
           </button>
         </section>
