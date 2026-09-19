@@ -35,8 +35,19 @@ const CONFIG={
     ],
     outcomes:["A board-built strategic roadmap","Clear ownership across major organizational areas","Board members leading deeper planning in the areas they can support","A costed plan showing what 100% execution requires","A pathway from founder-led work to delegated structures and board oversight"],
     intakeFields:[
-      ["mission","What is your organization's mission?","textarea"],["direction","What must your organization accomplish over the next 12–24 months?","textarea"],
-      ["areas","What major areas of the organization need stronger plans, structures or leadership?","textarea"],["current_plan","Do you already have a strategic plan? If yes, what needs to change?","textarea"],
+      ["mission","What is your organization's mission statement?","textarea"],
+      ["goals","What are your organization's present goals for the next 12–24 months?","textarea"],
+      ["objectives","What objectives are you presently working toward under those goals?","textarea"],
+      ["programs","List your present programs or services, one per line.","textarea"],
+      ["team_building","What team, staff, volunteer or leadership capacity are you currently trying to build?","textarea"],
+      ["operations","What operational systems or processes are most important to how the organization works today?","textarea"],
+      ["marketing","How are you presently marketing the organization and building visibility?","textarea"],
+      ["partnerships","What partnerships do you currently have or need to strengthen?","textarea"],
+      ["fundraising","How are you presently raising money, and what needs to improve?","textarea"],
+      ["technology","What technology or tools does the organization currently use or need?","textarea"],
+      ["budget","What is the organization's present budget or best current understanding of the cost of operating and growing?","textarea"],
+      ["priorities","What are the organization's most important priorities right now?","textarea"],
+      ["action_planning","What major actions are already planned or underway?","textarea"],
       ["next_meeting","When is your next board meeting?","text"],
     ],
   },
@@ -62,9 +73,8 @@ const CONFIG={
     ],
     outcomes:["Board Recommitment Form","Ready-to-send board member email","Clear interpretation of each response","Personalized one-on-one conversation script","A practical pathway for recommitment or graceful transition"],
     intakeFields:[
-      ["situation","What does disengagement currently look like on your board?","textarea"],["history","What do you believe caused board members to become passive or disengaged?","textarea"],
-      ["attempts","What have you already tried to get them involved again?","textarea"],["responsibilities","What responsibilities do you need board members to step back into?","textarea"],
-      ["next_meeting","When is your next board meeting?","text"],
+      ["mission","What is your organization's mission statement?","textarea"],
+      ["goals","What is your organization trying to accomplish or grow into right now?","textarea"],
     ],
   }
 };
