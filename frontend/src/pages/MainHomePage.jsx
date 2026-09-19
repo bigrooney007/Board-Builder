@@ -67,9 +67,9 @@ export default function MainHomePage() {
         </section>
 
         <section className="nBB-home-problem">
-          <p>Most nonprofit leaders do not need another collection of templates.</p>
-          <h2>They need the right people, a clear plan and a system that gets everyone moving in the same direction.</h2>
-          <p>That is what Nonprofit Board Builder is designed to help you build.</p>
+          <p>You do need another expensive consultant.</p>
+          <h2>What you need is the right board members providing you the right kind of support.</h2>
+          <p>At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs and work with them to raise money and scale your organization.</p>
         </section>
 
         <section id="choose-path" className="nBB-home-paths">
