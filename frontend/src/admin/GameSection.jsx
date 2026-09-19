@@ -541,50 +541,6 @@ const V3GameContent = () => {
 };
 
 export const GameSection = () => {
-  const [content, setContent] = useState(null);
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => { client.get("/game/content").then((r) => setContent(r.data.content)).catch(() => {}); }, []);
-  if (!content) return <section><p>Loading…</p></section>;
-
-  const set = (key) => (value) => setContent((current) => ({ ...current, [key]: value }));
-  const setIntroParagraph = (index) => (value) => setContent((current) => {
-    const intro_paragraphs = [...(current.intro_paragraphs || [])];
-    intro_paragraphs[index] = value;
-    return { ...current, intro_paragraphs };
-  });
-  const setStage = (index, field) => (value) => setContent((current) => {
-    const stages = current.stages.map((stage, i) => i === index ? { ...stage, [field]: field === "items" ? value.split("\n").filter(Boolean) : value } : stage);
-    return { ...current, stages };
-  });
-  const setOutcome = (index, field) => (value) => setContent((current) => {
-    const outcomes = current.outcomes.map((outcome, i) => i === index ? { ...outcome, [field]: field === "paragraphs" ? value.split("\n").filter(Boolean) : value } : outcome);
-    return { ...current, outcomes };
-  });
-  const setPf = (key) => (value) => setContent((current) => ({ ...current, profile_flow: { ...current.profile_flow, [key]: value } }));
-  const setUp = (key) => (value) => setContent((current) => ({ ...current, upgrade_page: { ...current.upgrade_page, [key]: value } }));
-  const setUpItem = (listKey, index, field, isList) => (value) => setContent((current) => ({
-    ...current,
-    upgrade_page: {
-      ...current.upgrade_page,
-      [listKey]: current.upgrade_page[listKey].map((item, i) => i === index ? { ...item, [field]: isList ? value.split("\n").filter(Boolean) : value } : item),
-    },
-  }));
-
-  const save = async () => {
-    setBusy(true); setMessage("");
-    try {
-      await client.put("/admin/game/content", content);
-      setMessage("Homepage content saved. The homepage updates immediately.");
-    } catch (err) {
-      setMessage(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save content.");
-    }
-    setBusy(false);
-  };
-
-  const groupStyle = { marginTop: 22, paddingTop: 14, borderTop: "2px solid #eee" };
-
   return (
     <section data-testid="admin-game-section">
       <div className="admin-import-panel" data-testid="game-content-panel">
