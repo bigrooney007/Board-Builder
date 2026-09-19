@@ -89,13 +89,12 @@ async def send_guided_followups(db, *, reference: Optional[datetime]=None) -> Di
             continue
         templates=GUIDED_FOLLOWUPS.get(lead.get("product"),[])
         step=int(lead.get("followup_step",0))
-        if step>=len(templates):
-            # The app continues light re-engagement monthly until purchase.
-            step=len(templates)-1
-            monthly=True
-        else:
-            monthly=False
-        subject,message=templates[step]
+        if not templates:
+            await db.guided_product_leads.update_one({"token":lead["token"]},{"$set":{"followup_status":"stopped"}})
+            continue
+        monthly = step >= len(templates)
+        template_index = len(templates)-1 if monthly else step
+        subject,message=templates[template_index]
         try:
             await resend.Emails.send_async({"from":os.environ["NONPROFIT_SENDER"],"to":[lead["email"]],"subject":subject,"html":guided_followup_html(lead,subject,message)})
             sent+=1
