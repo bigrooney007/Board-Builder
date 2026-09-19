@@ -80,7 +80,9 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-intro" data-testid="bfg-intro-section">
           <h2 data-testid="bfg-intro-heading">{content.intro_heading}</h2>
           {(content.intro_paragraphs || []).map((paragraph, index) => (
-            <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
+            index >= 3
+              ? <h2 key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</h2>
+              : <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
           ))}
         </section>
 
