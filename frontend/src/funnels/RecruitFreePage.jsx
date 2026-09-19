@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import "@/game/game.css";
@@ -36,6 +37,7 @@ const QUESTIONS = [
 
 export default function RecruitFreePage() {
   const navigate = useNavigate();
+  const { member, loading } = useMemberAuth();
   const [stage, setStage] = useState("landing"); // landing | q0..q3 | generating | result
   const [lead, setLead] = useState({ name: "", email: "", organization: "", count: "", notSure: false });
   const [assessment, setAssessment] = useState(null);
@@ -72,10 +74,14 @@ export default function RecruitFreePage() {
   useEffect(() => {
     const onboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
     if (!onboarding) { localStorage.removeItem("recruitFreeToken"); return; }
+    if (!loading && !member) {
+      navigate("/login?next=" + encodeURIComponent("/recruit?onboarding=1"), { replace: true });
+      return;
+    }
     const token = localStorage.getItem("recruitFreeToken");
     if (!token) { setError("We could not find your Recruitment setup. Please sign in or contact support."); return; }
     axios.get(API + "/recruit/free/" + token).then((r) => resumeFrom(r.data)).catch(() => setError("We could not reopen your Recruitment setup."));
-  }, [resumeFrom]);
+  }, [resumeFrom, loading, member, navigate]);
 
   useEffect(() => {
     if (stage === "landing") play("recruitment-free-entry");
