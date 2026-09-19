@@ -516,6 +516,22 @@ def create_strategic_planning_router(db) -> APIRouter:
             rows.append({"section": q.get("section", ""), "question": q.get("prompt", qid), "answer": value})
         return {"organization_name": project["organization_name"], "name": record.get("name", ""), "submitted_at": record.get("submitted_at", ""), "responses": rows}
 
+    @router.get("/strategic-planning-response/{participant_id}/pdf")
+    async def public_response_pdf(participant_id: str):
+        record = await db.sp_participants.find_one({"participant_id": participant_id, "status": "COMPLETED"}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
+        project = await owned_project(record["project_id"])
+        prompts = {q["id"]: q for q in record.get("response_questions", [])}
+        lines = ["STRATEGIC PLANNING RESPONSE", "", f"Board Member: {record.get('name','')}", f"Organization: {project['organization_name']}", ""]
+        for qid, value in (record.get("response") or {}).items():
+            q = prompts.get(qid, {})
+            rendered = ", ".join(value) if isinstance(value, list) else str(value or "")
+            lines.extend([str(q.get("section", "")).upper(), str(q.get("prompt", qid)), rendered, ""])
+        return build_portfolio_pdf("STRATEGIC PLANNING RESPONSE", record.get("name","Board Member"),
+                                   {"organization_name": project["organization_name"], "issued_by": record.get("name","Board Member")},
+                                   "\n".join(lines))
+
     # ---------------- FOUNDATIONAL PLAN ----------------
 
     async def current_plan(project_id: str) -> dict:
@@ -965,6 +981,8 @@ def create_strategic_planning_router(db) -> APIRouter:
         plan, area, assignment_person = await area_assignment_by_token(token)
         if area.get("pack_status") != "Approved":
             raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status") == "Approved":
+            raise HTTPException(status_code=409, detail="This detailed plan is approved and locked.")
         project = await owned_project(plan["project_id"])
         owner = assignment_person or (await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {})
         context = (
@@ -1019,6 +1037,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         # Backward-compatible endpoint: manual submission now saves a draft; explicit approval is required.
         plan, area = await area_by_pack_token(token)
         if area.get("pack_status") != "Approved": raise HTTPException(409,"This Area Development Pack is not available yet")
+        if area.get("detailed_plan_status") == "Approved": raise HTTPException(409,"This detailed plan is approved and locked.")
         now=now_iso()
         await db.sp_plans.update_one({"project_id":plan["project_id"],"areas.area_key":area["area_key"]},{"$set":{"areas.$.detailed_plan_text":payload.plan_text,"areas.$.detailed_plan_status":"Draft","areas.$.detailed_plan_updated_at":now}})
         return {"status":"Draft"}
@@ -1651,7 +1670,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def facilitation(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
-        g=await generate_structured("strategic_meeting_guide",f"ORGANIZATION: {p['organization_name']}\n\nSTRATEGIC PLAN DRAFT:\n{plan['display_text']}","Create a practical facilitation guide for the Board's strategic planning review and delegation meeting. The meeting must review the draft, improve/remove ideas, then assign every strategic area to Board Members for deeper planning and future leadership/oversight.")
+        g=await generate_structured("strategic_delegation_meeting_guide",f"ORGANIZATION: {p['organization_name']}\n\nSTRATEGIC PLAN DRAFT:\n{plan['display_text']}","Create a practical facilitation guide for the Board's strategic planning review and delegation meeting. The meeting must review the draft, improve/remove ideas, then assign every strategic area to Board Members for deeper planning and future leadership/oversight.")
         text="\n\n".join(f"{x.get('heading','')}\n{x.get('content','')}" for x in g.get("sections",[]));await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Draft","meeting_guide_text":text}});return {"status":"Draft"}
 
     @router.post("/auto-delegate")
