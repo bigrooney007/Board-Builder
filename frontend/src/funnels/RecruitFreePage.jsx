@@ -117,7 +117,7 @@ export default function RecruitFreePage() {
         setStage("generating");
         const response = await axios.post(`${API}/recruit/free/${assessment.token}/result`);
         setAssessment((current) => ({ ...current, result: response.data.result }));
-        setStage("result");
+        navigate("/app/board-recruitment");
       }
     } catch (err) {
       setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your answer. Please try again.");
