@@ -7,7 +7,7 @@ import resend
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
+DEFAULT_CALENDLY_URL = "https://calendly.com/boardbuilder/recruitboard"
 READY_OPTIONS = {
     "Yes, we are ready to organize the Board Fundraising Game.",
     "I am ready, but I need to confirm with my board.",
@@ -68,6 +68,6 @@ def create_facilitated_game_application_router(db) -> APIRouter:
             except Exception as exc:
                 await db.facilitated_game_applications.update_one({"_id": result.inserted_id}, {"$set": {"owner_notification": "Failed", "owner_notification_error": str(exc)[:500]}})
 
-        return {"status": "submitted", "booking_url": CALENDLY_URL}
+        return {"status": "submitted", "booking_url": os.environ.get("FACILITATED_GAME_CALENDLY_URL") or DEFAULT_CALENDLY_URL}
 
     return router
