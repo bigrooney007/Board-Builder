@@ -17,6 +17,7 @@ export default function StrategicPlanningDashboard(){
  const act=async(key,fn)=>{setBusy(key);setMsg("");try{await fn();await load()}catch(e){setMsg(e.response?.data?.detail||"That action could not be completed yet.")}setBusy("")};
  const respondents=project?.participants?.filter(x=>x.status==="COMPLETED")||[];const areas=project?.areas||[];const submitted=areas.filter(x=>x.plan_submitted_at||x.submitted_plan).length;
  const formLink=project?.generic_form_token?`${window.location.origin}/strategic-planning-form/${project.generic_form_token}`:"";
+ const leadFormLink=project?.lead_form_token?`${window.location.origin}/strategic-planning-form/${project.lead_form_token}`:"";
  const researchLink=community?.token?`${window.location.origin}/community-need-research/${community.token}`:"";
  const copy=t=>navigator.clipboard?.writeText(t);
  if(!ctx)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning</h1><p>{msg||"Preparing your workspace…"}</p></section></main></BfgShell>;
@@ -37,7 +38,7 @@ export default function StrategicPlanningDashboard(){
 
    <Card n="1" title="Send Your Strategic Planning Form To The Board">
     <p>Your form is built from the information you gave us after payment. It reviews your mission, goals, objectives, programs, team building, operations, marketing, partnerships, fundraising, technology, budget, organizational priorities and action planning.</p>
-    {formLink?<div className="sp-linkbox"><strong>Your Strategic Planning Form</strong><span>{formLink}</span><button onClick={()=>copy(formLink)}>COPY FORM LINK</button></div>:<A disabled={busy==="form"} onClick={()=>act("form",()=>axios.post(`${API}/guided/strategic-planning/prepare-form`,{session_id:sid}))}><ClipboardList size={15}/> {busy==="form"?"PREPARING…":"PREPARE MY STRATEGIC PLANNING FORM"}</A>}
+    {formLink?<><div className="sp-linkbox"><strong>Your Strategic Planning Form</strong><span>{formLink}</span><button onClick={()=>copy(formLink)}>COPY FORM LINK</button></div>{leadFormLink&&<div className="sp-linkbox"><strong>Your Lead User Form</strong><span>{leadFormLink}</span><button onClick={()=>window.location.href=leadFormLink}>COMPLETE MY FORM</button></div>}</>:<A disabled={busy==="form"} onClick={()=>act("form",()=>axios.post(`${API}/guided/strategic-planning/prepare-form`,{session_id:sid}))}><ClipboardList size={15}/> {busy==="form"?"PREPARING…":"PREPARE MY STRATEGIC PLANNING FORM"}</A>}
     {formLink&&<div className="sp-actions"><A onClick={async()=>{const r=await axios.get(`${API}/guided/strategic-planning/form-email`,{params:{session_id:sid}});setEmail(r.data)}}><Mail size={15}/> GENERATE EMAIL TO SEND THE FORM</A></div>}
     {email&&<div className="sp-contentbox"><h3>{email.subject}</h3><p style={{whiteSpace:"pre-wrap"}}>{email.body}</p><A onClick={()=>copy(`Subject: ${email.subject}\n\n${email.body}\n\n${email.form_link||formLink}`)}>COPY EMAIL + LINK</A></div>}
    </Card>
