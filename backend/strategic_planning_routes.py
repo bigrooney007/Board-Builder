@@ -1506,6 +1506,33 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         await resend.Emails.send_async(message)
 
 
+    def generic_form_email(project: dict, link: str) -> dict:
+        organization = project["organization_name"]
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return sp_generic_form_invitation_email(organization, link, signature)
+
+    def review_email(project: dict, participant: dict, link: str) -> dict:
+        first = (participant.get("name") or "").split(" ")[0]
+        organization = project["organization_name"]
+        signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
+        return {**sp_review_invitation_email(first, organization, signature), "form_link": link}
+
+    def pack_email(project: dict, area: dict, owner: dict, link: str) -> dict:
+        first = (owner.get("name") or "").split(" ")[0]
+        organization = project["organization_name"]
+        signature = project["founder_name"] + (f"\n{project['founder_title']}" if project.get("founder_title") else "") + f"\n{organization}"
+        body = (
+            f"Dear {first},\n\n"
+            f"The Board has developed and refined the foundational direction for the {area['area']} area of {organization}'s strategic plan.\n\n"
+            f"Based on your strengths, skills and role, we are asking you to take that agreed foundation and develop the detailed plan for {area['area']}.\n\n"
+            "Your secure Strategic Area Development Pack below contains the agreed direction, the Board's ideas and comments for your area, and what still needs resolution.\n\n"
+            "[OPEN MY AREA DEVELOPMENT PACK]\n\n"
+            "When your detailed plan is ready, you can submit it through the same link.\n\n"
+            f"Thank you for carrying this forward.\n\n{signature}"
+        )
+        return {"subject": f"Your Strategic Area: {area['area']} | {organization}", "body": body,
+                "button_label": "OPEN MY AREA DEVELOPMENT PACK", "form_link": link}
+
     async def paid(session_id: str):
         tx=await db.payment_transactions.find_one({"session_id":session_id,"payment_status":"paid","purchase_source":"strategic_planning_497"},{"_id":0})
         if not tx: raise HTTPException(status_code=402,detail="Paid Strategic Planning access could not be confirmed")
