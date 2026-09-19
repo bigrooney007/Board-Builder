@@ -85,9 +85,9 @@ def origin_of(request: Request) -> str:
     return f"https://{forwarded}" if forwarded else "https://nonprofitboardbuilder.com"
 
 
-def build_outreach_email(kind: str, member: dict, founder_name: str, founder_title: str, organization: str, form_link: str) -> dict:
+def build_outreach_email(kind: str, member: dict, founder_name: str, founder_title: str, organization: str, form_link: str, mission: str = "", goals: str = "") -> dict:
     first = (member.get("name") or "").split(" ")[0]
-    email = recommitment_outreach_email(kind, first, founder_name, founder_title, organization)
+    email = recommitment_outreach_email(kind, first, founder_name, founder_title, organization, mission=mission, goals=goals)
     return {**email, "form_link": form_link}
 
 
@@ -195,6 +195,8 @@ def create_reactivation_router(db) -> APIRouter:
             "founder_phone": (intake or {}).get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
             "transition_options": (intake or {}).get("transition_options", []),
+            "mission": (intake or {}).get("mission", ""),
+            "organization_goals": (intake or {}).get("organization_goals", ""),
         }
 
     async def owned_board_member(user_id: str, member_record_id: str) -> dict:
@@ -277,7 +279,7 @@ def create_reactivation_router(db) -> APIRouter:
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
         form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
-        email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link)
+        email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         return {"to_name": record["name"], "to_email": record["email"], **email}
 
     @router.post("/reactivation/board-members/{member_record_id}/send")
@@ -286,7 +288,7 @@ def create_reactivation_router(db) -> APIRouter:
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
         form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
-        email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link)
+        email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
         message = {
             "from": os.environ["NONPROFIT_SENDER"], "to": [record["email"]],
