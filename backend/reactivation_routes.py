@@ -195,7 +195,8 @@ def create_reactivation_router(db) -> APIRouter:
             "founder_title": (intake or {}).get("founder_title", ""),
             "founder_phone": (intake or {}).get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
-            "transition_options": (intake or {}).get("transition_options", []),
+            # Streamlined Recommitment always keeps the three graceful transition pathways available.
+            "transition_options": [ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"],
             "mission": (intake or {}).get("mission", ""),
             "organization_goals": (intake or {}).get("organization_goals", ""),
         }
@@ -341,7 +342,7 @@ def create_reactivation_router(db) -> APIRouter:
 
     BASE_OUTCOMES = ["Continuing as an Active Board Member", "Follow-Up Conversation Needed"]
 
-    def allowed_outcomes(transition_options: list) -> list:
+    def allowed_outcomes() -> list:
         # The streamlined Recommitment product no longer asks the founder to pre-authorize
         # transition choices in intake. The one-on-one conversation determines the right outcome.
         return list(BASE_OUTCOMES) + [
@@ -455,7 +456,7 @@ def create_reactivation_router(db) -> APIRouter:
                          "script": material_summary(material_by_member.get(record["member_record_id"]))})
         return {
             "members": rows,
-            "outcome_options": allowed_outcomes(intake.get("transition_options", [])),
+            "outcome_options": allowed_outcomes(),
             "directions": CONVERSATION_DIRECTIONS,
             "progress": {"total": len(records), "conversations_completed": completed_conversations,
                          "follow_up_needed": follow_up, "waiting_for_form": waiting},
