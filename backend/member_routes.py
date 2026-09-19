@@ -317,9 +317,8 @@ def create_member_router(db) -> APIRouter:
         email = str(payload.email).lower()
         existing = await db.members.find_one({"email": email}, {"_id": 0})
         if existing:
-            token = create_member_token(existing["user_id"], email)
-            set_member_cookie(response, token)
-            return {"existing_account": True, "token": token}
+            # Never authenticate an existing account from an email-only public form.
+            return {"existing_account": True, "login_required": True, "token": ""}
         parts = payload.name.strip().split(None, 1)
         now = datetime.now(timezone.utc).isoformat()
         user_id = new_uuid()
@@ -345,25 +344,8 @@ def create_member_router(db) -> APIRouter:
         email = str(payload.email).lower()
         existing = await db.members.find_one({"email": email}, {"_id": 0})
         if existing:
-            # Homepage entry is intentionally frictionless. Reuse the existing member
-            # record and refresh the game profile instead of forcing a login/profile step.
-            user_id = existing["user_id"]
-            now = datetime.now(timezone.utc).isoformat()
-            await db.game_profiles.update_one(
-                {"user_id": user_id},
-                {"$set": {
-                    "organization": {"name": payload.organization.strip()},
-                    "goal": {"amount": payload.goal_amount, "purpose": "Reach our fundraising goal"},
-                    "primary_user": {"full_name": payload.name.strip(), "email": email},
-                    "profile_completed": True,
-                    "source": "free_game_homepage",
-                    "updated_at": now,
-                }, "$setOnInsert": {"user_id": user_id, "created_at": now}},
-                upsert=True,
-            )
-            token = create_member_token(user_id, email)
-            set_member_cookie(response, token)
-            return {"existing_account": True, "token": token}
+            # Never authenticate or overwrite an existing account from an email-only public form.
+            return {"existing_account": True, "login_required": True, "token": ""}
 
         name_parts = payload.name.strip().split(None, 1)
         first_name = name_parts[0]
