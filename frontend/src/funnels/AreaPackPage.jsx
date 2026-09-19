@@ -7,7 +7,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function AreaPackPage() {
   const { token } = useParams();
-  const [data,setData]=useState(null),[error,setError]=useState(""),[planText,setPlanText]=useState(""),[busy,setBusy]=useState("");
+  const [data,setData]=useState(null),[error,setError]=useState(""),[planText,setPlanText]=useState(""),[busy,setBusy]=useState(""),[roleOpen,setRoleOpen]=useState(false);
   const load=()=>axios.get(`${API}/area-pack/${token}`).then(r=>{setData(r.data);setPlanText(r.data.draft_text||r.data.submitted_plan||"")}).catch(e=>setError(e.response?.data?.detail||"This link is not valid."));
   useEffect(load,[token]);
   const act=async(key,fn)=>{setBusy(key);setError("");try{await fn();await load()}catch(e){setError(e.response?.data?.detail||"That action could not be completed.")}setBusy("")};
@@ -18,7 +18,7 @@ export default function AreaPackPage() {
     <p className="eyebrow">{data.organization_name}</p><h1>Strategic Plan Draft</h1>
     <p>This is the strategic direction your Board developed together. Your role is to turn <strong>{data.area}</strong> into a detailed, executable plan.</p>
     {data.foundational_plan&&<details style={{margin:"22px 0"}} open><summary style={{cursor:"pointer",fontWeight:700}}>STRATEGIC PLAN DRAFT</summary><pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10,maxHeight:520,overflow:"auto"}}>{data.foundational_plan}</pre></details>}
-    <details style={{margin:"22px 0"}}><summary style={{cursor:"pointer",fontWeight:700}}>VIEW MY ROLE AND ASSIGNMENT</summary><pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10}}>{data.pack_text}</pre></details>
+    <section style={{margin:"22px 0"}}><button className="button button-back" onClick={()=>setRoleOpen(!roleOpen)}>SEE MY ROLE</button>{roleOpen&&<pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10}}>{data.pack_text}</pre>}</section>
     {!planText&&!approved&&<button className="button" disabled={busy==="generate"} onClick={()=>act("generate",()=>axios.post(`${API}/area-pack/${token}/generate`))}><Sparkles size={16}/> {busy==="generate"?"BUILDING…":"START BUILDING MY DETAILED PLAN WITH AI"}</button>}
     {!!planText&&<section style={{marginTop:24}}>
       <h2>Your Detailed Plan: {data.area}</h2><p>AI has created the working draft from the Board's approved direction and your own planning response. Edit it directly. Nothing becomes part of the Final Strategic Plan until you approve it.</p>
