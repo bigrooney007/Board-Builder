@@ -250,9 +250,10 @@ def create_game_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
     async def get_content() -> dict:
-        doc = await db.marketing_settings.find_one({"key": "game_site_content"}, {"_id": 0}) or {}
-        stored = doc.get("content") or {}
-        return {**DEFAULT_CONTENT, **{k: v for k, v in stored.items() if k in DEFAULT_CONTENT}}
+        # Public Game homepage content has one source of truth: the versioned
+        # DEFAULT_CONTENT in this file. Database-stored homepage overrides made
+        # deployments non-deterministic, so they are intentionally not applied.
+        return DEFAULT_CONTENT
 
     async def get_profile_doc(user_id: str) -> dict:
         return await db.game_profiles.find_one({"user_id": user_id}, {"_id": 0}) or {}
@@ -268,13 +269,10 @@ def create_game_router(db) -> APIRouter:
     @router.put("/admin/game/content")
     async def update_game_content(payload: dict, request: Request):
         await authenticate_admin(request, db)
-        clean = {k: payload[k] for k in payload if k in DEFAULT_CONTENT}
-        if not clean:
-            raise HTTPException(status_code=422, detail="No recognized content fields provided")
-        sets = {f"content.{k}": v for k, v in clean.items()}
-        sets["updated_at"] = datetime.now(timezone.utc).isoformat()
-        await db.marketing_settings.update_one({"key": "game_site_content"}, {"$set": sets}, upsert=True)
-        return {"content": await get_content()}
+        raise HTTPException(
+            status_code=409,
+            detail="Board Fundraising Game public-page content is version-controlled in source and cannot be overridden from the database.",
+        )
 
     @router.get("/game/profile")
     async def game_profile(request: Request):
