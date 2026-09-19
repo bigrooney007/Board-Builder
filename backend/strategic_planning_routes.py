@@ -935,7 +935,8 @@ def create_strategic_planning_router(db) -> APIRouter:
             area = next(a for a in plan["areas"] if a.get("pack_token") == token)
             return plan, area
         participant=await db.sp_participants.find_one({"area_assignment_tokens":{"$exists":True}},{"_id":0})
-        if participant:
+        cursor=db.sp_participants.find({"area_assignment_tokens":{"$exists":True}},{"_id":0})
+        async for participant in cursor:
             for area_key,assignment_token in (participant.get("area_assignment_tokens") or {}).items():
                 if assignment_token==token:
                     plan=await db.sp_plans.find_one({"project_id":participant["project_id"]},{"_id":0})
