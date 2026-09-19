@@ -75,7 +75,9 @@ export default function RecruitFreePage() {
     const onboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
     if (!onboarding) { localStorage.removeItem("recruitFreeToken"); return; }
     if (!loading && !member) {
-      navigate("/login?next=" + encodeURIComponent("/recruit?onboarding=1"), { replace: true });
+      const sid = new URLSearchParams(window.location.search).get("session_id") || "";
+      const next = "/recruit?onboarding=1" + (sid ? `&session_id=${encodeURIComponent(sid)}` : "");
+      navigate("/login?next=" + encodeURIComponent(next), { replace: true });
       return;
     }
     const token = localStorage.getItem("recruitFreeToken");
