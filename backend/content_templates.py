@@ -22,6 +22,12 @@ def recommitment_outreach_email(kind: str, first: str, founder_name: str, founde
             "button_label": "COMPLETE MY FORM",
         }
     greeting = f"Dear {first}," if first else "Dear Board Member,"
+    context_lines = []
+    if mission:
+        context_lines.append(f"Our mission is: {mission}")
+    if goals:
+        context_lines.append(f"Our current organizational goals are: {goals}")
+    why = ("\n\n".join(context_lines) + "\n\n") if context_lines else ""
     return {
         "subject": f"Board Recommitment & Profile | {organization}",
         "body": (
