@@ -17,6 +17,7 @@ export default function AreaPackPage() {
   return <main className="legal-page" data-testid="area-pack-page" style={{maxWidth:920,margin:"0 auto",padding:"32px 16px"}}>
     <p className="eyebrow">{data.organization_name}</p><h1>Strategic Plan Draft</h1>
     <p>This is the strategic direction your Board developed together. Your role is to turn <strong>{data.area}</strong> into a detailed, executable plan.</p>
+    {data.foundational_plan&&<details style={{margin:"22px 0"}} open><summary style={{cursor:"pointer",fontWeight:700}}>STRATEGIC PLAN DRAFT</summary><pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10,maxHeight:520,overflow:"auto"}}>{data.foundational_plan}</pre></details>}
     <details style={{margin:"22px 0"}}><summary style={{cursor:"pointer",fontWeight:700}}>VIEW MY ROLE AND ASSIGNMENT</summary><pre style={{whiteSpace:"pre-wrap",background:"#f6f6f2",padding:16,borderRadius:10}}>{data.pack_text}</pre></details>
     {!planText&&!approved&&<button className="button" disabled={busy==="generate"} onClick={()=>act("generate",()=>axios.post(`${API}/area-pack/${token}/generate`))}><Sparkles size={16}/> {busy==="generate"?"BUILDING…":"START BUILDING MY DETAILED PLAN WITH AI"}</button>}
     {!!planText&&<section style={{marginTop:24}}>
