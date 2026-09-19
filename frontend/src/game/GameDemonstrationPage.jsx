@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
@@ -7,6 +7,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 
 export default function GameDemonstrationPage() {
   const { member, loading } = useMemberAuth();
+  const [searchParams] = useSearchParams();
   const video = useFlowVideo("game_homepage");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +20,16 @@ export default function GameDemonstrationPage() {
   const buy = async () => {
     setBusy(true); setError("");
     try {
+      const organization = sessionStorage.getItem("bfgOrg") || "";
+      const amount = Number(sessionStorage.getItem("bfgGoal") || 0);
+      const fullName = sessionStorage.getItem("bfgName") || [member.first_name, member.last_name].filter(Boolean).join(" ");
+      if (organization && amount && fullName) {
+        await memberApi.put("/game/profile", {
+          organization: { name: organization },
+          goal: { amount, purpose: "Reach our fundraising goal" },
+          primary_user: { full_name: fullName, email: member.email || "" },
+        });
+      }
       const response = await memberApi.post("/payments/game-checkout", {
         origin_url: window.location.origin,
         cancel_path: "/game/demonstration",
@@ -38,6 +49,11 @@ export default function GameDemonstrationPage() {
         <p style={{ margin: "16px auto 0", maxWidth: 650, fontSize: 17 }}>
           Watch Rooney take you through the Board Fundraising Game and show you how your board moves from a fundraising goal to a clear fundraising strategy, individual board roles and the tools needed to execute.
         </p>
+        {searchParams.get("checkout") === "cancelled" && (
+          <p className="bfg-error" style={{ marginTop: 16 }} data-testid="bfg-demonstration-checkout-cancelled">
+            Your checkout was cancelled. You have not been charged.
+          </p>
+        )}
         <div style={{ marginTop: 26 }}><GameVideo video={video} testId="bfg-demonstration-video" /></div>
         <div className="bfg-card" style={{ marginTop: 28, padding: 26 }}>
           <h2>Bring Your Board Into The Game</h2>

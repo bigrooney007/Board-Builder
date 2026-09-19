@@ -10,10 +10,12 @@ export default function GameWelcomePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id") || "";
-  const { member, loading } = useMemberAuth();
+  const { member, loading, refresh } = useMemberAuth();
   const video = useFlowVideo("game_welcome");
   const [state, setState] = useState("checking");
   const [detail, setDetail] = useState("");
+  const [password, setPassword] = useState({ password: "", confirm_password: "" });
+  const [securing, setSecuring] = useState(false);
   const attempts = useRef(0);
 
   useEffect(() => { document.title = "Welcome | Board Fundraising Game"; }, []);
@@ -41,6 +43,26 @@ export default function GameWelcomePage() {
     claim();
     return () => { cancelled = true; };
   }, [loading, member, sessionId]);
+
+  const playGame = async () => {
+    if (member?.account_status !== "free_game_guest") {
+      navigate("/game/setup");
+      return;
+    }
+    if (password.password.length < 8 || password.password !== password.confirm_password) {
+      setDetail(password.password !== password.confirm_password ? "Passwords do not match." : "Use at least 8 characters for your password.");
+      return;
+    }
+    setSecuring(true); setDetail("");
+    try {
+      await memberApi.post("/members/complete-guest-account", password);
+      await refresh();
+      navigate("/game/setup");
+    } catch (err) {
+      setDetail(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not secure your account. Please try again.");
+      setSecuring(false);
+    }
+  };
 
   return (
     <BfgShell>
@@ -73,9 +95,20 @@ export default function GameWelcomePage() {
             </div>
             <GameVideo video={video} testId="bfg-welcome-video" />
             <div style={{ textAlign: "center", marginTop: 32 }}>
+              {member?.account_status === "free_game_guest" && (
+                <div className="bfg-card" style={{ maxWidth: 560, margin: "0 auto 24px", padding: 22, textAlign: "left" }} data-testid="bfg-secure-account">
+                  <h2 style={{ textAlign: "center" }}>Secure Your Board Fundraising Game</h2>
+                  <p style={{ marginTop: 10, textAlign: "center" }}>Create a password so you can return to your Game and dashboard from any device.</p>
+                  <label className="bfg-field"><span>Password</span><input type="password" minLength={8} value={password.password}
+                    onChange={(event) => setPassword({ ...password, password: event.target.value })} data-testid="bfg-welcome-password" /></label>
+                  <label className="bfg-field"><span>Confirm password</span><input type="password" minLength={8} value={password.confirm_password}
+                    onChange={(event) => setPassword({ ...password, confirm_password: event.target.value })} data-testid="bfg-welcome-confirm-password" /></label>
+                </div>
+              )}
+              {detail && <p className="bfg-error" style={{ marginBottom: 14 }}>{detail}</p>}
               <button className="bfg-btn bfg-btn-primary" data-testid="bfg-play-game-btn"
-                onClick={() => navigate("/game/setup")}>
-                Play My Board Fundraising Game
+                disabled={securing} onClick={playGame}>
+                {securing ? "Securing My Account…" : "Play My Board Fundraising Game"}
               </button>
               <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: play the game. When you finish, we will take you into your dashboard.</p>
             </div>

@@ -57,25 +57,14 @@ class TestGameContent:
         r = requests.put(f"{API}/admin/game/content", json={"headline": "hi"})
         assert r.status_code == 401
 
-    def test_admin_update_content_and_restore(self, admin_session):
+    def test_admin_cannot_override_source_controlled_content(self, admin_session):
         r = requests.get(f"{API}/game/content")
         original = r.json()["content"]["headline"]
 
-        new_headline = "TEST_ Headline changed by pytest"
         r = admin_session.put(f"{API}/admin/game/content",
-                              json={"headline": new_headline, "unknown_key_ignored": "xxx"})
-        assert r.status_code == 200
-        assert r.json()["content"]["headline"] == new_headline
-        # unknown keys ignored
-        assert "unknown_key_ignored" not in r.json()["content"]
-
-        # public GET reflects it
-        pub = requests.get(f"{API}/game/content").json()["content"]
-        assert pub["headline"] == new_headline
-
-        # restore
-        r = admin_session.put(f"{API}/admin/game/content", json={"headline": original})
-        assert r.status_code == 200
+                              json={"headline": "TEST_ database override must be rejected"})
+        assert r.status_code == 409
+        assert "version-controlled" in r.json()["detail"]
         assert requests.get(f"{API}/game/content").json()["content"]["headline"] == original
 
 

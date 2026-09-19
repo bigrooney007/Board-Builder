@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money, useGameContent } from "./gameShared";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
 
 export default function GameHomePage() {
   const navigate = useNavigate();
+  const { member, loading: authLoading, refresh } = useMemberAuth();
   const content = useGameContent();
   const [goal, setGoal] = useState("");
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
@@ -20,10 +22,6 @@ export default function GameHomePage() {
   if (!content) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
   const startDemonstration = async () => {
-    clearMemberToken();
-    localStorage.removeItem("recruitFreeToken");
-    sessionStorage.removeItem("operateAsUserId");
-    try { await memberApi.post("/members/logout"); } catch { /* no active server session */ }
     const digits = String(goal).replace(/[^0-9]/g, "");
     if (digits) sessionStorage.setItem("bfgGoal", digits);
     if (lead.name.trim()) sessionStorage.setItem("bfgName", lead.name.trim());
@@ -36,6 +34,19 @@ export default function GameHomePage() {
     }
     setStarting(true); setStartError("");
     try {
+      if (member) {
+        await memberApi.put("/game/profile", {
+          organization: { name: lead.org.trim() },
+          goal: { amount: Number(digits), purpose: "Reach our fundraising goal" },
+          primary_user: { full_name: lead.name.trim(), email: member.email || lead.email.trim() },
+        });
+        navigate("/game/demonstration");
+        return;
+      }
+      clearMemberToken();
+      localStorage.removeItem("recruitFreeToken");
+      sessionStorage.removeItem("operateAsUserId");
+      try { await memberApi.post("/members/logout"); } catch { /* no active server session */ }
       const response = await memberApi.post("/members/game-free-start", {
         name: lead.name.trim(), email: lead.email.trim(),
         organization: lead.org.trim(), goal_amount: Number(digits),
@@ -45,6 +56,7 @@ export default function GameHomePage() {
         return;
       }
       storeMemberToken(response.data.token);
+      await refresh();
       navigate("/game/demonstration");
     } catch {
       setStartError("We could not continue. Please check your details and try again.");
@@ -75,7 +87,7 @@ export default function GameHomePage() {
         <div className="bfg-light">
         <section className="bfg-section bfg-intro" data-testid="bfg-intro-section">
           <h2 data-testid="bfg-intro-heading">{content.intro_heading}</h2>
-          {(content.intro_paragraphs || []).map((paragraph, index) => (
+          {(content.intro_paragraphs || []).slice(0, 3).map((paragraph, index) => (
             <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
           ))}
           {content.intro_paragraphs?.[3] && <h2 data-testid="bfg-system-heading">{content.intro_paragraphs[3]}</h2>}
@@ -107,7 +119,7 @@ export default function GameHomePage() {
               <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
             </div>
             {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
-            <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startDemonstration} data-testid="bfg-hero-cta">
+            <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startDemonstration} data-testid="bfg-hero-cta">
               {starting ? "Opening…" : "WATCH THE PRODUCT DEMONSTRATION"}
             </button>
           </div>
@@ -169,7 +181,7 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
-          <button className="bfg-btn bfg-btn-primary" disabled={starting} onClick={startDemonstration} data-testid="bfg-closing-cta">
+          <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startDemonstration} data-testid="bfg-closing-cta">
             {starting ? "Opening…" : "WATCH THE PRODUCT DEMONSTRATION"}
           </button>
         </section>

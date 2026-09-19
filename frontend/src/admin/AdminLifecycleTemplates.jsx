@@ -64,7 +64,7 @@ export const AdminLifecycleTemplates = () => {
       <textarea value={form.body} onChange={set("body")} placeholder="Email body (exact approved copy, word for word)" rows={7} style={{ width: "100%", marginBottom: 6 }} data-testid="lifecycle-template-body" />
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <input value={form.cta_label} onChange={set("cta_label")} placeholder="Button label" data-testid="lifecycle-template-cta-label" />
-        <input value={form.cta_destination} onChange={set("cta_destination")} placeholder="Button path e.g. /game/unlock (blank = stage default)" style={{ flex: 1 }} data-testid="lifecycle-template-cta-destination" />
+        <input value={form.cta_destination} onChange={set("cta_destination")} placeholder="Button path e.g. /game/demonstration (blank = stage default)" style={{ flex: 1 }} data-testid="lifecycle-template-cta-destination" />
         <button onClick={save} disabled={busy} data-testid="lifecycle-template-save">Save Template</button>
       </div>
       <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>

@@ -39,7 +39,7 @@ class DIYCheckoutRequest(BaseModel):
     product: str = ""
 
 
-ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/game/unlock", "/", "/strategic-planning/video", "/board-recommitment/video"}
+ALLOWED_CANCEL_PATHS = {"/offer/recruitment", "/offer/reactivation", "/offer/activation", "/offer/board-fix", "/offer/fundraising-board-builder", "/board-recruitment", "/board-fundraising-activation", "/game/start", "/game/demonstration", "/", "/strategic-planning/video", "/board-recommitment/video"}
 
 
 def resolve_cancel_url(payload, default_path: str) -> str:
@@ -674,7 +674,7 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
             "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": resolve_cancel_url(payload, "/game/unlock"),
+            "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
                 "offer_source": "board_fundraising_game", "selected_tier": "497",
                 "purchase_source": "board_fundraising_game_497",
@@ -696,44 +696,6 @@ def create_payment_router(db) -> APIRouter:
             "selected_tier": "497", "purchase_source": "board_fundraising_game_497",
             "offer": "Board Fundraising Game",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
-            "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
-            "created_at": now, "updated_at": now,
-        })
-        return {"checkout_url": session.url, "session_id": session.id}
-
-    @router.post("/facilitated-game-checkout")
-    async def create_facilitated_game_checkout(payload: DIYCheckoutRequest):
-        parsed = urlparse(payload.origin_url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise HTTPException(status_code=400, detail="Invalid application origin")
-        kwargs = {
-            "line_items": [{"price_data": {
-                "currency": "usd", "unit_amount": 349700,
-                "product_data": {"name": "Facilitated Board Fundraising Game"}}, "quantity": 1}],
-            "mode": "payment",
-            "success_url": f"{payload.origin_url}/board-activation-intake?facilitated=1&session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": resolve_cancel_url(payload, "/organize-board-fundraising-game"),
-            "metadata": {
-                "offer_source": "facilitated_board_fundraising_game", "selected_tier": "3497",
-                "purchase_source": "facilitated_board_fundraising_game_3497",
-                "offer": "Facilitated Board Fundraising Game",
-            },
-        }
-        try:
-            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
-        except stripe.InvalidRequestError as exc:
-            message = (getattr(exc, "user_message", "") or str(exc)).lower()
-            if "managed payments" not in message and "ineligible" not in message:
-                raise
-            session = stripe.checkout.Session.create(
-                **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
-            )
-        now = datetime.now(timezone.utc).isoformat()
-        await db.payment_transactions.insert_one({
-            "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "facilitated_board_fundraising_game",
-            "selected_tier": "3497", "purchase_source": "facilitated_board_fundraising_game_3497",
-            "offer": "Facilitated Board Fundraising Game",
-            "amount": 349700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

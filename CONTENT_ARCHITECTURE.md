@@ -14,6 +14,20 @@ how to add new content without creating hardcoded strings.
 | AI resource-generation prompts and output schemas (ALL products + Strategic Planning) | `backend/ai_service.py` → `GENERATION_TYPES` |
 | Strategic Planning static emails (form invitation, review invitation, area pack email, final delivery, action plan delivery) | `backend/strategic_planning_routes.py` (template helper functions: `generic_form_email`, `planning_email`, `review_email`, etc.) — candidates for future move into `content_templates.py` |
 | Recruitment workspace emails (interview invitation, reference check, conditional offer, portfolio email) | built dynamically in `backend/workspace_routes.py` / `refinement_routes.py` from AI-generated material + candidate data |
+| Board Fundraising Game public homepage | `backend/game_routes.py` → `DEFAULT_CONTENT`, served read-only by `GET /api/game/content` |
+| Board Fundraising Game demonstration and welcome video URLs | `marketing_settings.flow_videos`, managed through the Admin Game Videos panel with keys `game_homepage` and `game_welcome` |
+| Board Recruitment public homepage | `frontend/src/content/siteContent.js` → `recruitmentHomeContent` |
+| Main homepage | `frontend/src/pages/MainHomePage.jsx` |
+| Strategic Planning and Board Recommitment public funnel copy | `frontend/src/funnels/GuidedProductPages.jsx` → `CONFIG` |
+| Facilitated Board Fundraising Game public pages | `frontend/src/game/FacilitatedGamePage.jsx` and `frontend/src/game/FacilitatedGameApplicationPage.jsx` |
+
+## Deterministic public-page ownership
+
+The Board Fundraising Game homepage is source-controlled. Historical values in
+`marketing_settings.game_site_content` are ignored, and
+`PUT /api/admin/game/content` returns HTTP 409. This prevents a stale database
+copy from silently defeating a GitHub deployment. The Admin Game section states
+that ownership explicitly and retains only the separately owned video controls.
 
 ## Content key conventions
 

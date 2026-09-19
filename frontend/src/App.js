@@ -97,7 +97,6 @@ import HostCallScriptPage from "@/game/HostCallScriptPage";
 import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
-import UnlockGamePage from "@/game/UnlockGamePage";
 import FacilitatedGamePage from "@/game/FacilitatedGamePage";
 import FacilitatedGameApplicationPage from "@/game/FacilitatedGameApplicationPage";
 import BoardStrategyReviewPage from "@/game/BoardStrategyReviewPage";
@@ -173,8 +172,8 @@ export default function App() {
           <Route path="/game/host/facilitation" element={<HostFacilitationPage />} />
           <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/game/complete" element={<GameNightCompletePage />} />
-          <Route path="/game/upgrade" element={<Navigate to="/game/unlock" replace />} />
-          <Route path="/game/unlock" element={<UnlockGamePage />} />
+          <Route path="/game/upgrade" element={<Navigate to="/game/demonstration" replace />} />
+          <Route path="/game/unlock" element={<Navigate to="/game/demonstration" replace />} />
           <Route path="/game/board-review" element={<BoardStrategyReviewPage />} />
           <Route path="/organize-board-fundraising-game" element={<FacilitatedGamePage />} />
           <Route path="/organize-board-fundraising-game/apply" element={<FacilitatedGameApplicationPage />} />
