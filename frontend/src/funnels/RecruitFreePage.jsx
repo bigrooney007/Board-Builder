@@ -93,7 +93,9 @@ export default function RecruitFreePage() {
         desired_count: lead.notSure ? "not_sure" : lead.count.trim(),
       });
       localStorage.setItem("recruitFreeToken", response.data.token);
-      resumeFrom(response.data);
+      setAssessment(response.data);
+      setAnswers(response.data.answers || {});
+      navigate("/recruit/walkthrough");
     } catch { setError("We could not start your assessment. Please check your details and try again."); }
     setBusy(false);
   };
@@ -132,9 +134,8 @@ export default function RecruitFreePage() {
   if (stage === "landing") {
     const leadForm = (
       <div data-testid="recruit-free-landing" style={{ textAlign: "center" }}>
-        <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">Answer 4 Questions To Identify The Exact Board Members Your Nonprofit Needs To Recruit</h3>
-        <p style={{ marginTop: 14 }}>Tell us about your mission, the board you have today, what your organization needs to move forward and where you need board support.</p>
-        <p style={{ marginTop: 10 }}>We will show you the exact type of people you should recruit and then show you how to recruit them yourself.</p>
+        <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">See The Exact Step-By-Step Process To Recruit The Board Members Your Organization Needs</h3>
+        <p style={{ marginTop: 14 }}>Tell us who you are and how many board members you want to recruit. We will show you how to identify the right people and recruit them yourself using the platform.</p>
         <input style={field} placeholder="Your Name" value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} data-testid="recruit-free-name" />
         <input style={field} placeholder="Email Address" type="email" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} data-testid="recruit-free-email" />
         <input style={field} placeholder="Organization Name" value={lead.organization} onChange={(e) => setLead({ ...lead, organization: e.target.value })} data-testid="recruit-free-org" />
@@ -148,7 +149,7 @@ export default function RecruitFreePage() {
           </button>
         </div>
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy} onClick={start} data-testid="recruit-free-start-btn">
-          {busy ? "Starting…" : "ANSWER THE 4 QUESTIONS"}
+          {busy ? "Opening…" : "SHOW ME THE STEP-BY-STEP PROCESS"}
         </button>
         {error && <p className="bfg-error" data-testid="recruit-free-error">{error}</p>}
       </div>
