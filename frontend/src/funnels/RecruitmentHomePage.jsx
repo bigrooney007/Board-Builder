@@ -39,7 +39,7 @@ export default function RecruitmentHomePage({ form }) {
           <div className="recruit-section-heading">
             <p className="bfg-eyebrow">{copy.formEyebrow}</p>
             <h2 id="recruit-form-heading">{copy.formHeading}</h2>
-            <p>{copy.formText}</p>
+            {copy.formText ? <p>{copy.formText}</p> : null}
           </div>
           <div className="recruit-intake-card" data-testid="recruit-embedded-form">{form}</div>
         </section>
