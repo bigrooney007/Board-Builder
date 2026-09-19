@@ -84,6 +84,15 @@ export default function GameHomePage() {
           ))}
         </section>
 
+        <section className="bfg-section bfg-intro" data-testid="bfg-system-section">
+          <h2 data-testid="bfg-system-heading">{content.system_heading}</h2>
+          <p><strong>{content.system_subheading}</strong></p>
+          <h2 data-testid="bfg-strategy-heading">{content.strategy_heading}</h2>
+          {(content.strategy_paragraphs || []).map((paragraph, index) => (
+            <p key={index} data-testid={`bfg-strategy-paragraph-${index + 1}`}>{paragraph}</p>
+          ))}
+        </section>
+
         <section className="bfg-section bfg-goal-section" data-testid="bfg-goal-section">
           <h2 data-testid="bfg-goal-heading">{content.goal_label}</h2>
           <div className="bfg-goal-box" data-testid="bfg-goal-box">
