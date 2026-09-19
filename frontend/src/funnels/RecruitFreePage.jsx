@@ -119,11 +119,11 @@ export default function RecruitFreePage() {
     if (!text) return;
     setBusy(true); setError("");
     try {
-      await axios.put(`${API}/recruit/free/${assessment.token}/answer`, { question: index + 1, text });
+      await memberApi.put(`/recruit/free/${assessment.token}/answer`, { question: index + 1, text });
       if (index < 3) setStage(`q${index + 1}`);
       else {
         setStage("generating");
-        const response = await axios.post(`${API}/recruit/free/${assessment.token}/result`);
+        const response = await memberApi.post(`/recruit/free/${assessment.token}/result`);
         setAssessment((current) => ({ ...current, result: response.data.result }));
         navigate("/app/board-recruitment");
       }
