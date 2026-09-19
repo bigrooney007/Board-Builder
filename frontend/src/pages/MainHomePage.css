@@ -58,3 +58,7 @@
   .nBB-home-nav{padding:18px}
   .nBB-home-brand strong{font-size:12px}
 }
+
+/* Keep homepage secondary conversion buttons on the current primary button system. */
+.nBB-home .founder-calendly-button,.nBB-home .blog-all-button{background:#4f46e5!important;color:#fff!important;border-color:#4f46e5!important}
+.nBB-home .founder-calendly-button svg,.nBB-home .blog-all-button svg{color:#fff!important}
