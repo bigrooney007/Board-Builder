@@ -1604,12 +1604,21 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def auto_delegate(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);areas=plan.get("areas",[])
         if not people or not areas:raise HTTPException(409,"Board responses and a Strategic Plan Draft are required first")
-        # deterministic round-robin coverage; preference score chooses starting order, then every area is assigned exactly once.
-        for i,a in enumerate(areas):
-            scored=[]
+        # Assign for alignment while balancing workload. Every area gets an owner.
+        # When there are more people than areas, extra participants become collaborators
+        # so every participating Board Member has a meaningful strategic role.
+        loads={pson["participant_id"]:0 for pson in people}
+        for a in areas:
+            words=(a.get("area","")+" "+a.get("direction","")).lower().split();scored=[]
             for pson in people:
-                words=(a.get("area","")+" "+a.get("direction","")).lower().split();own=str(pson.get("response",{})).lower();score=sum(1 for w in words if len(w)>4 and w in own);scored.append((score,pson))
-            scored.sort(key=lambda x:x[0],reverse=True);owner=scored[i%len(scored)][1] if scored else people[i%len(people)];a["owner_participant_id"]=owner["participant_id"];a["status"]="ASSIGNED"
+                own=str(pson.get("response",{})).lower();alignment=sum(1 for w in words if len(w)>4 and w in own)
+                scored.append((alignment,-loads[pson["participant_id"]],pson))
+            scored.sort(key=lambda x:(x[0],x[1]),reverse=True);owner=scored[0][2];loads[owner["participant_id"]]+=1
+            a["owner_participant_id"]=owner["participant_id"];a["collaborator_participant_ids"]=[];a["status"]="ASSIGNED"
+        unassigned=[p for p in people if loads[p["participant_id"]]==0]
+        for pson in unassigned:
+            best=max(areas,key=lambda a:sum(1 for w in (a.get("area","")+" "+a.get("direction","")).lower().split() if len(w)>4 and w in str(pson.get("response",{})).lower()))
+            best.setdefault("collaborator_participant_ids",[]).append(pson["participant_id"])
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":areas}});return {"status":"ASSIGNED","area_count":len(areas)}
 
     @router.post("/send-area-assignment")
@@ -1638,7 +1647,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan.get("final_display_text"):raise HTTPException(409,"Generate the Final Strategic Plan first")
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);rows=[]
         for person in people:
-            owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"]];areas=[a["area"] for a in owned];text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."
+            owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"] or person["participant_id"] in a.get("collaborator_participant_ids",[])];areas=[a["area"] for a in owned];text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."
             token=secrets.token_urlsafe(24);rows.append({"participant_id":person["participant_id"],"name":person["name"],"areas":areas,"text":text,"token":token,"url":f"/strategic-leadership-portfolio/{token}"})
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"leadership_portfolios":rows}});return {"status":"created","count":len(rows)}
 
