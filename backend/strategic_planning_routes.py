@@ -950,11 +950,11 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     @router.get("/area-pack/{token}")
     async def public_pack(token: str):
-        plan, area = await area_by_pack_token(token)
+        plan, area, assignment_person = await area_assignment_by_token(token)
         if area.get("pack_status") != "Approved":
             raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
         project = await owned_project(plan["project_id"])
-        owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        owner = assignment_person or (await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {})
         return {"organization_name": project["organization_name"], "area": area["area"],
                 "owner_name": owner.get("name", ""), "pack_text": area.get("pack_text", ""),
                 "foundational_plan": plan.get("display_text",""), "submitted_plan": area.get("submitted_plan",""),
