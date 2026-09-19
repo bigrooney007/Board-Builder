@@ -4,6 +4,7 @@ import axios from "axios";
 import { ArrowRight, CheckCircle2, Map, RefreshCw, Video } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
 import { memberApi, storeMemberToken } from "@/member/api";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
@@ -118,10 +119,12 @@ export function GuidedWelcomePage({ product: explicitProduct }){
 }
 
 export function GuidedIntakePage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");const allowed=usePaidFlow(sid,product);
+ const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const {member,loading}=useMemberAuth();const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");const allowed=usePaidFlow(sid,product);
  if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
- const submit=async()=>{if(c.intakeFields.some(([k])=>!String(answers[k]||"").trim())){setError("Please answer each question so we can prepare your workspace.");return}setBusy(true);try{let r=await axios.post(`${API}/guided/intake`,{session_id:sid,product,answers});nav(r.data.dashboard_url)}catch(e){setError(e.response?.data?.detail||"We could not save your intake.")}setBusy(false)};
+ const submit=async()=>{
+  if(product==="board-recommitment"&&!loading&&!member){nav("/login?next="+encodeURIComponent(`/board-recommitment/intake?session_id=${sid}`));return}
+  if(c.intakeFields.some(([k])=>!String(answers[k]||"").trim())){setError("Please answer each question so we can prepare your workspace.");return}setBusy(true);try{let r=await axios.post(`${API}/guided/intake`,{session_id:sid,product,answers});nav(r.data.dashboard_url)}catch(e){setError(e.response?.data?.detail||"We could not save your intake.")}setBusy(false)};
  return <BfgShell><main className="guided-page"><section className="guided-section"><p className="bfg-eyebrow">YOUR INTAKE</p><h1>{c.intakeTitle}</h1><p className="guided-intro">Give us the context we need to prepare the guided process around your organization.</p><div className="guided-intake">{c.intakeFields.map(([k,label,type])=><label key={k}><span>{label}</span>{type==="textarea"?<textarea rows={5} value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>:<input value={answers[k]||""} onChange={e=>setAnswers({...answers,[k]:e.target.value})}/>}</label>)}{error&&<p className="bfg-error">{error}</p>}<button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={submit}>{busy?"SAVING…":"BUILD MY WORKSPACE"}</button></div></section></main></BfgShell>
 }
 
