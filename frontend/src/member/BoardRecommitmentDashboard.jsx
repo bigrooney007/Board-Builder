@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Mail, PlayCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
 import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
 import { memberApi } from "./api";
@@ -27,11 +27,9 @@ const MemberResponse = ({ row }) => {
 };
 
 export default function BoardRecommitmentDashboard(){
- const [roster,setRoster]=useState(null),[email,setEmail]=useState(null),[copied,setCopied]=useState("");
+ const [roster,setRoster]=useState(null);
  const load=useCallback(()=>memberApi.get("/reactivation/roster").then(r=>setRoster(r.data)).catch(()=>setRoster({members:[]})),[]);
  useEffect(()=>{load()},[load]);
- const copy=async(text,tag)=>{try{await navigator.clipboard.writeText(text)}catch{window.prompt("Copy:",text)}setCopied(tag);setTimeout(()=>setCopied(""),2000)};
- const loadEmail=()=>memberApi.get("/reactivation/recommitment-email").then(r=>setEmail(r.data)).catch(e=>window.alert(e.response?.data?.detail||"Approve the Recommitment Form first."));
  return <MemberShell><main className="member-page sgr" data-testid="board-recommitment-dashboard">
    <header className="member-page-heading"><p className="eyebrow">Nonprofit Board Builder</p><h1>BOARD RECOMMITMENT</h1><p><strong>Get clear answers from disengaged board members, have the right one-on-one conversation, and move forward with people who are ready to serve.</strong></p></header>
 
@@ -44,14 +42,6 @@ export default function BoardRecommitmentDashboard(){
    <section style={{marginTop:26}} data-testid="recommitment-form-email">
     <div className="member-card"><p className="eyebrow">1. SEND THE RECOMMITMENT FORM</p><h2>Your Recommitment Form & Email</h2><p>Your form is the first thing you need. Send the same form link to each board member you need to recommit. Their completed responses will automatically appear below.</p></div>
     <ReactivationStep2/>
-    <section className="member-card" style={{marginTop:12}}>
-      <h2>Your Ready-To-Send Email</h2><p>Generate the email containing your Recommitment Form link, review it and copy it into your email.</p>
-      {!email?<button className="button" onClick={loadEmail}><Mail size={15}/> SHOW MY RECOMMITMENT EMAIL</button>:<>
-       <p><strong>Subject:</strong> {email.subject}</p><div style={{whiteSpace:"pre-wrap",border:"1px solid #ddd",padding:16,borderRadius:8}}>{email.body}</div>
-       <p><strong>Form link:</strong> <span style={{wordBreak:"break-all"}}>{email.form_link}</span></p>
-       <button className="button" onClick={()=>copy(`Subject: ${email.subject}\n\n${email.body.replace(/\[[^\]]+\]/,email.form_link)}`,"email")}><Copy size={15}/>{copied==="email"?" COPIED":" COPY EMAIL + FORM LINK"}</button>
-      </>}
-    </section>
    </section>
 
    <section className="member-card" style={{marginTop:26}} data-testid="recommitment-responses">
