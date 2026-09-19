@@ -1457,9 +1457,27 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def prepare_form(request:Request):
         body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);_,_,intake=await paid(sid);a=intake.get("answers") or {}
         programs=a.get("programs") or a.get("areas") or ""; program_lines=[x.strip(" -•\t") for x in str(programs).split("\n") if x.strip()][:12]
-        qs=[("Mission",[f"Our mission is: {a.get('mission') or p.get('mission') or 'Mission not supplied'}. What should remain, change or become clearer about this mission?"]),("Goals",[f"Our current goals are: {a.get('direction','')}. What should our organization accomplish over the next 12–24 months?"]),("Objectives",["What measurable objectives will show that we are making meaningful progress toward our goals?"])]
+        qs=[
+            ("Mission",[f"Our mission is: {a.get('mission') or p.get('mission') or 'Mission not supplied'}. Review it. What should remain, change or become clearer?"]),
+            ("Goals",[f"Our lead user identified these present goals: {a.get('goals','')}. Review them. What should remain, change or be added for the next 12–24 months?"]),
+            ("Objectives",[f"Our lead user identified these present objectives: {a.get('objectives','')}. Review them. What should remain, change or be added so progress is clear and measurable?"]),
+        ]
         if program_lines: qs.append(("Programs",[f"Review this program or service: {x}. What should we continue, stop, improve or build so it contributes fully to our mission and goals?" for x in program_lines]))
-        qs += [("Team Building",["What team, staff, volunteer or leadership capacity must we build to execute this plan?"]),("Operations",["What operational systems, policies or processes must we strengthen?"]),("Marketing",["How should we strengthen visibility, communication and marketing?"]),("Partnerships",["What partnerships must we build or strengthen, and why?"]),("Fundraising",["What must our fundraising approach accomplish to adequately fund this plan?"]),("Technology",["What technology do we need to execute more effectively and sustainably?"]),("Budget",["What will it realistically cost to execute the organization at 100% over the planning period, and what major costs must we plan for?"]),("Organizational Priorities",["What should be our highest organizational priorities over the planning period?"]),("Action Planning",["What are the most important step-by-step actions required to move this plan from ideas into execution?","Which areas are you personally willing and able to help lead or oversee? Explain why."])]
+        review_sections=[
+            ("Team Building","team_building","team, staff, volunteer and leadership capacity"),
+            ("Operations","operations","operational systems, policies and processes"),
+            ("Marketing","marketing","marketing, visibility and communications"),
+            ("Partnerships","partnerships","partnerships and relationships"),
+            ("Fundraising","fundraising","fundraising approach and capacity"),
+            ("Technology","technology","technology and tools"),
+            ("Budget","budget","budget and the resources required for execution"),
+            ("Organizational Priorities","priorities","organizational priorities"),
+            ("Action Planning","action_planning","major actions and execution priorities"),
+        ]
+        for title,key,label in review_sections:
+            supplied=str(a.get(key) or "").strip()
+            qs.append((title,[f"Our lead user shared this about our {label}: {supplied or 'No current detail was supplied.'} Review this area. What should remain, change, be added or be prioritized?"]))
+        qs[-1][1].append("Which areas are you personally willing and able to help lead or oversee? Explain why.")
         sections=[]
         for i,(title,prompts) in enumerate(qs,1):sections.append({"key":f"s{i}","title":title,"questions":[{"id":f"s{i}_q{j}","prompt":q,"type":"long","options":[],"required":True} for j,q in enumerate(prompts,1)]})
         content={"introduction":f"We are reviewing the complete direction of {p['organization_name']} together. Please answer from your experience and perspective as a Board Member. Your ideas will be combined with the rest of the Board's thinking to create our first Strategic Plan Draft.","sections":sections};now=now_iso()
@@ -1498,10 +1516,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def generate_draft(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);responses=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         if not responses:raise HTTPException(409,"At least one Board Member response is required")
-        context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nBOARD RESPONSES:\n"+ "\n\n".join(f"{x.get('name','Board Member')}: {x.get('response',{})}" for x in responses)
+        _,_,intake=await paid(sid); intake_answers=intake.get("answers") or {}
+        context=(f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\n"
+                 f"LEAD USER INTAKE (starting organizational reality to be reviewed, not automatically treated as a Board decision):\n{intake_answers}\n\n"
+                 "BOARD RESPONSES:\n"+ "\n\n".join(f"{x.get('name','Board Member')}: {x.get('response',{})}" for x in responses))
         research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0});
         if research: context+="\n\nCOMMUNITY NEED RESEARCH:\n"+str(research.get("responses",[]))
-        structured=await generate_structured("strategic_planning_foundational",context,"Combine the Board's ideas into a first Strategic Plan Draft. Preserve the organization's supplied mission and Board ideas. Organize the draft into the strategic areas actually reviewed by the form. Do not invent Board decisions.")
+        structured=await generate_structured("strategic_planning_foundational",context,"Create the first Strategic Plan Draft from the lead-user starting context and the Board's actual review responses. The draft must explicitly cover Mission, Goals, Objectives, Programs, Team Building, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Organizational Priorities and Action Planning. Preserve supplied facts and Board ideas, reflect changes or disagreements rather than inventing consensus, and do not invent Board decisions.")
         display=plan_display(structured,p["organization_name"]);areas=[]
         for i,a in enumerate(structured.get("areas",[]),1):areas.append({"area_key":f"area_{i}","area":a.get("area",f"Area {i}"),"direction":a.get("direction",""),"proposed_priorities":a.get("proposed_priorities",[]),"ideas_shared":a.get("ideas_shared",[]),"status":"NOT ASSIGNED"})
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","structured":structured,"display_text":display,"finalized_text":display,"areas":areas,"updated_at":now_iso()},"$setOnInsert":{"created_at":now_iso()}},upsert=True);return {"status":"Approved"}
