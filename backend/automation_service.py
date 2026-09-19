@@ -1,10 +1,11 @@
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
 from resend_service import create_segment_broadcast, send_automation_error
+import resend
 
 
 SALES_EMAILS = {
@@ -49,6 +50,64 @@ SALES_EMAILS = {
         ],
     },
 }
+
+
+GUIDED_FOLLOWUPS = {
+    "board-recommitment": [
+        ("Your board recommitment process is ready", "You already took the first step. Watch the short Board Recommitment walkthrough and see how to give every board member a clear opportunity to recommit, contribute or step down gracefully."),
+        ("Stop guessing which board members are still committed", "The recommitment process is designed to give you clear answers before your next board conversation. Your walkthrough is still waiting for you."),
+        ("Passive board members need a clear choice", "When expectations stay unclear, disengagement can continue indefinitely. Use the Board Recommitment process to get the answers you need and move forward with clarity."),
+        ("Ready to restart your Board Recommitment process?", "Your Board Recommitment walkthrough and guided process are still available. Return when you are ready to continue."),
+    ],
+    "strategic-planning": [
+        ("Your strategic planning process is ready", "You already took the first step. Watch the short walkthrough and see how to build the roadmap with your board, create ownership and begin delegating leadership responsibility."),
+        ("A strategic plan works better when the board helps build it", "Bring your board into the planning process so the roadmap is not simply handed to them after it is finished. Your Strategic Planning walkthrough is still waiting for you."),
+        ("Turn your next board meeting into a planning meeting", "Use the guided Strategic Planning process to combine board perspectives, build the first draft and move organizational areas into clear leadership responsibility."),
+        ("Ready to restart your Strategic Planning process?", "Your Strategic Planning walkthrough and guided process are still available. Return when you are ready to continue."),
+    ],
+}
+GUIDED_FOLLOWUP_DAYS = [0, 2, 5, 10]
+
+def guided_followup_html(lead: Dict[str, Any], subject: str, message: str) -> str:
+    origin=(lead.get("origin_url") or "https://nonprofitboardbuilder.com").rstrip("/")
+    link=f"{origin}/{lead['product']}/video?token={lead['token']}"
+    first=(lead.get("name") or "").split(" ")[0]
+    return f"""<div style="max-width:600px;margin:auto;font-family:Arial,sans-serif;color:#111827;font-size:17px;line-height:1.6;padding:28px;">
+    <p>Hi {first},</p><p>{message}</p>
+    <p style="margin:28px 0;"><a href="{link}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;font-weight:800;padding:14px 20px;border-radius:8px;">WATCH THE WALKTHROUGH AND CONTINUE</a></p>
+    <p>Nonprofit Board Builder</p></div>"""
+
+async def send_guided_followups(db, *, reference: Optional[datetime]=None) -> Dict[str,int]:
+    now=reference or utc_now(); processed=sent=0
+    leads=await db.guided_product_leads.find({"followup_status":"active","next_followup_at":{"$lte":now.isoformat()}},{"_id":0}).to_list(500)
+    resend.api_key=os.environ["RESEND_API_KEY"]
+    for lead in leads:
+        processed+=1
+        paid=await db.payment_transactions.find_one({"guided_lead_token":lead["token"],"payment_status":"paid"},{"_id":0,"session_id":1})
+        if paid:
+            await db.guided_product_leads.update_one({"token":lead["token"]},{"$set":{"followup_status":"converted","converted_at":now.isoformat()}})
+            continue
+        templates=GUIDED_FOLLOWUPS.get(lead.get("product"),[])
+        step=int(lead.get("followup_step",0))
+        if step>=len(templates):
+            # The app continues light re-engagement monthly until purchase.
+            step=len(templates)-1
+            monthly=True
+        else:
+            monthly=False
+        subject,message=templates[step]
+        try:
+            await resend.Emails.send_async({"from":os.environ["NONPROFIT_SENDER"],"to":[lead["email"]],"subject":subject,"html":guided_followup_html(lead,subject,message)})
+            sent+=1
+            next_step=step+1
+            if monthly or next_step>=len(templates):
+                next_at=now+timedelta(days=30)
+            else:
+                next_at=now+timedelta(days=GUIDED_FOLLOWUP_DAYS[next_step]-GUIDED_FOLLOWUP_DAYS[step])
+            await db.guided_product_leads.update_one({"token":lead["token"]},{"$set":{"followup_step":next_step,"last_followup_at":now.isoformat(),"next_followup_at":next_at.isoformat()}})
+        except Exception as exc:
+            await db.guided_product_leads.update_one({"token":lead["token"]},{"$set":{"followup_error":str(exc)[:500],"next_followup_at":(now+timedelta(days=1)).isoformat()}})
+    return {"processed":processed,"sent":sent}
 
 
 def utc_now() -> datetime:
@@ -157,4 +216,5 @@ async def automation_loop(db) -> None:
         now = utc_now()
         if schedule_matches(now):
             await send_weekly_nonprofit_sales_email(db, reference=now)
+        await send_guided_followups(db, reference=now)
         await asyncio.sleep(60)
