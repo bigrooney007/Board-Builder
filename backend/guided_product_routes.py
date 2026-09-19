@@ -22,7 +22,8 @@ def create_guided_product_router(db):
         if payload.product not in {"strategic-planning","board-recommitment"}:
             raise HTTPException(400,"Unknown guided product")
         token=secrets.token_urlsafe(24); now=datetime.now(timezone.utc).isoformat()
-        doc={"token":token,**payload.model_dump(mode="json"),"email":str(payload.email).lower(),"created_at":now,"updated_at":now}
+        doc={"token":token,**payload.model_dump(mode="json"),"email":str(payload.email).lower(),"created_at":now,"updated_at":now,
+             "followup_status":"active","followup_step":0,"next_followup_at":now,"converted_at":""}
         await db.guided_product_leads.insert_one(doc.copy())
         return {"token":token}
 
