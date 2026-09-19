@@ -1613,7 +1613,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/community-research")
     async def community_research(request:Request):
-        body=await request.json();p=await ensure_project(body.get("session_id",""));existing=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0});
+        body=await request.json();p=await ensure_project(body.get("session_id",""));existing=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
         if existing:return existing
         token=secrets.token_urlsafe(32);posts=[f"We are reviewing the future direction of {p['organization_name']} and want to hear directly from the community. Share what you believe the real need is and what would make the strongest difference.",f"What does our community need most in relation to {p.get('mission') or 'our mission'}? We are listening before we finalize our next strategic plan.",f"Help shape the next chapter of {p['organization_name']}. Tell us what is working, what is missing and what approach you believe would create the greatest impact.",f"Good strategy starts by listening. If you have lived experience, professional insight or community knowledge connected to our mission, we would value your perspective.",f"Our Board is preparing its next strategic plan. Take a few minutes to tell us about the need, the best way to address it and how you or others could help."]
         doc={"project_id":p["project_id"],"token":token,"social_posts":posts,"response_count":0,"created_at":now_iso()};await db.sp_community_research.insert_one(doc.copy());return doc
@@ -1642,7 +1642,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         context=(f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\n"
                  f"LEAD USER INTAKE (starting organizational reality to be reviewed, not automatically treated as a Board decision):\n{intake_answers}\n\n"
                  "BOARD RESPONSES:\n"+ "\n\n".join(f"{x.get('name','Board Member')}: {x.get('response',{})}" for x in responses))
-        research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0});
+        research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
         if research: context+="\n\nCOMMUNITY NEED RESEARCH:\n"+str(research.get("responses",[]))
         structured=await generate_structured("strategic_planning_foundational",context,"Create the first Strategic Plan Draft from the lead-user starting context and the Board's actual review responses. The draft must explicitly cover Mission, Goals, Objectives, Programs, Team Building, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Organizational Priorities and Action Planning. Preserve supplied facts and Board ideas, reflect changes or disagreements rather than inventing consensus, and do not invent Board decisions.")
         display=plan_display(structured,p["organization_name"]);areas=[]
