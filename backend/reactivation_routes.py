@@ -341,14 +341,13 @@ def create_reactivation_router(db) -> APIRouter:
     BASE_OUTCOMES = ["Continuing as an Active Board Member", "Follow-Up Conversation Needed"]
 
     def allowed_outcomes(transition_options: list) -> list:
-        outcomes = list(BASE_OUTCOMES)
-        if ADVISORY_OPTION in transition_options:
-            outcomes.append("Transitioning to an Advisory Role")
-        if SUPPORT_OPTION in transition_options:
-            outcomes.append("Transitioning to Another Support Role")
-        if "Step Down From the Board" in transition_options:
-            outcomes.append("Stepping Down From the Board")
-        return outcomes
+        # The streamlined Recommitment product no longer asks the founder to pre-authorize
+        # transition choices in intake. The one-on-one conversation determines the right outcome.
+        return list(BASE_OUTCOMES) + [
+            "Transitioning to an Advisory Role",
+            "Transitioning to Another Support Role",
+            "Stepping Down From the Board",
+        ]
 
     async def user_intake(user_id: str) -> dict:
         intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)]) or {}
