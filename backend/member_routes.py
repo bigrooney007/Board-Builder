@@ -65,6 +65,12 @@ class GameFreeStartRequest(BaseModel):
     goal_amount: int = Field(gt=0, le=1_000_000_000_000)
 
 
+class GuidedFreeStartRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+
+
 class CompleteGuestAccountRequest(BaseModel):
     password: str = Field(min_length=8)
     confirm_password: str
@@ -304,6 +310,30 @@ def public_member(member: dict) -> dict:
 
 def create_member_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/members")
+
+    @router.post("/guided-free-start", status_code=201)
+    async def guided_free_start(payload: GuidedFreeStartRequest, response: Response):
+        """Create/reuse the lightweight member session required by paid guided workspaces."""
+        email = str(payload.email).lower()
+        existing = await db.members.find_one({"email": email}, {"_id": 0})
+        if existing:
+            token = create_member_token(existing["user_id"], email)
+            set_member_cookie(response, token)
+            return {"existing_account": True, "token": token}
+        parts = payload.name.strip().split(None, 1)
+        now = datetime.now(timezone.utc).isoformat()
+        user_id = new_uuid()
+        member = {
+            "user_id": user_id, "email": email, "first_name": parts[0],
+            "last_name": parts[1] if len(parts) > 1 else "",
+            "password_hash": hash_member_password(secrets.token_urlsafe(48)),
+            "entitlements": [], "lead_ids": [], "stripe_customer_id": "",
+            "account_status": "guided_guest", "created_at": now, "updated_at": now,
+        }
+        await db.members.insert_one(member.copy())
+        token = create_member_token(user_id, email)
+        set_member_cookie(response, token)
+        return {"existing_account": False, "token": token}
 
     @router.post("/game-free-start", status_code=201)
     async def game_free_start(payload: GameFreeStartRequest, response: Response):

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowRight, CheckCircle2, Map, RefreshCw, Video } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
+import { memberApi, storeMemberToken } from "@/member/api";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
@@ -73,7 +74,7 @@ const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null
 export function GuidedLandingPage({ product: explicitProduct }){
  const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
  useEffect(()=>{document.title=`${c.eyebrow} | Nonprofit Board Builder`},[c]);
- const start=async()=>{if(!form.name||!form.email||!form.board_count){setError("Complete your name, email and number of board members.");return}setBusy(true);setError("");try{let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count)});nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
+ const start=async()=>{if(!form.name||!form.email||!form.board_count){setError("Complete your name, email and number of board members.");return}setBusy(true);setError("");try{if(product==="board-recommitment"){const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token)}let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count)});nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
  return <BfgShell><main className="guided-page">
   <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><a className="bfg-btn bfg-btn-primary" href="#guided-start">SHOW ME THE PROCESS <ArrowRight size={17}/></a></section>
   <section className="guided-principle"><h2>{c.promise}</h2></section>
@@ -114,7 +115,9 @@ export function GuidedIntakePage({ product: explicitProduct }){
 }
 
 export function GuidedDashboardPage({ product: explicitProduct }){
- const [product]=useProduct(explicitProduct);
+ const [product]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const allowed=usePaidFlow(sid,product);
+ if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
+ if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
  if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;
  return <StrategicPlanningDashboard/>;
 }

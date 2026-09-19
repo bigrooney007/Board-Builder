@@ -51,7 +51,7 @@ export default function GameSituationPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!member) { navigate("/game/signup?mode=login", { replace: true }); return; }
+    if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
     (async () => {
       try {
         const situation = (await memberApi.get("/game/situation")).data;
@@ -65,7 +65,7 @@ export default function GameSituationPage() {
         setAnything(saved.anything_else || "");
         let selfToken = "";
         try { selfToken = (await memberApi.post("/game/self-play")).data.token; }
-        catch { navigate("/game/start", { replace: true }); return; }
+        catch { navigate("/board-fundraising-game", { replace: true }); return; }
         setToken(selfToken);
         const context = (await axios.get(`${API}/game/play/${selfToken}`)).data;
         setCtx(context);
