@@ -130,9 +130,10 @@ export function GuidedIntakePage({ product: explicitProduct }){
 }
 
 export function GuidedDashboardPage({ product: explicitProduct }){
- const [product]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const allowed=usePaidFlow(sid,product);
+ const [product]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const {member,loading}=useMemberAuth();const allowed=usePaidFlow(sid,product);
  if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
+ if(product==="board-recommitment"&&!loading&&!member)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>Log In To Open Your Board Recommitment Dashboard.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav("/login?next="+encodeURIComponent(`/board-recommitment/dashboard?session_id=${sid}`))}>LOG IN</button></section></main></BfgShell>;
  if(product==="board-recommitment") return <BoardRecommitmentDashboard/>;
  return <StrategicPlanningDashboard/>;
 }
