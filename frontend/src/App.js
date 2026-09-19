@@ -75,6 +75,7 @@ import AreaPackPage from "@/funnels/AreaPackPage";
 import PublicStrategicPlanPage, { PublicActionPlanPage } from "@/funnels/PublicStrategicPlanPage";
 import { PAGE_META, usePageMeta } from "@/seo";
 import GameHomePage from "@/game/GameHomePage";
+import GameDemonstrationPage from "@/game/GameDemonstrationPage";
 import GameAuthCallback from "@/game/GameAuthCallback";
 import GameSituationPage from "@/game/GameSituationPage";
 import GameWelcomePage from "@/game/GameWelcomePage";
@@ -150,6 +151,7 @@ export default function App() {
           <Route path="/" element={<MainHomePage />} />
           <Route path="/board-fundraising-game" element={<GameHomePage />} />
           <Route path="/fundraising-system" element={<Navigate to="/" replace />} />
+          <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
           <Route path="/game/signup" element={<Navigate to="/board-fundraising-game" replace />} />
           <Route path="/game/start" element={<Navigate to="/board-fundraising-game" replace />} />
           <Route path="/game/welcome" element={<GameWelcomePage />} />
