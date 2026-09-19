@@ -1,8 +1,9 @@
 import secrets
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from member_auth import authenticate_member
 
 class GuidedLead(BaseModel):
     product: str
@@ -36,7 +37,7 @@ def create_guided_product_router(db):
         return doc
 
     @router.post("/intake")
-    async def save_intake(payload: GuidedIntake):
+    async def save_intake(payload: GuidedIntake, request: Request):
         tx=await db.payment_transactions.find_one({"session_id":payload.session_id},{"_id":0})
         expected={"strategic-planning":"strategic_planning_497","board-recommitment":"board_recommitment_497"}.get(payload.product)
         if not tx or tx.get("payment_status")!="paid" or tx.get("purchase_source")!=expected:
@@ -48,6 +49,9 @@ def create_guided_product_router(db):
             member=await db.members.find_one({"email":(lead or {}).get("email","")},{"_id":0})
             if not member:
                 raise HTTPException(409,"Your Board Recommitment workspace session could not be linked")
+            authenticated = await authenticate_member(request, db)
+            if authenticated.get("user_id") != member.get("user_id"):
+                raise HTTPException(401,"Log in with the email used for this Board Recommitment purchase before continuing")
             await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"reactivation_self_guided"},"$set":{"updated_at":now}})
             await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","mission":payload.answers.get("mission",""),"organization_goals":payload.answers.get("goals",""),"guided_session_id":payload.session_id,"guided_answers":payload.answers,"submitted_at":now}},upsert=True)
         return {"saved":True,"dashboard_url":f"/{payload.product}/dashboard?session_id={payload.session_id}"}
