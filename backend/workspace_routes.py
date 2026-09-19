@@ -109,7 +109,7 @@ def create_workspace_router(db) -> APIRouter:
         if lead:
             answers = lead.get("answers", {})
             prefill = {
-                "organization_name": lead.get("organization", ""), "website": lead.get("website", ""),
+                "organization_name": lead.get("organization", ""), "mission": answers.get("mission", ""), "website": lead.get("website", ""),
                 "city": lead.get("city", ""), "state_region": lead.get("state_region", ""),
                 "country": lead.get("country", ""), "present_board": answers.get("present_board", ""),
                 "active_board": answers.get("active_board", ""), "new_members_count": answers.get("new_members_needed", ""),
