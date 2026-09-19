@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
 
 class GuidedLead(BaseModel):
     product: str
@@ -9,6 +10,7 @@ class GuidedLead(BaseModel):
     email: EmailStr
     organization: str = ""
     board_count: int = Field(ge=1, le=200)
+    origin_url: Optional[str] = ""
 
 class GuidedIntake(BaseModel):
     session_id: str = Field(min_length=1)
