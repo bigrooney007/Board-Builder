@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
 
 export default function GameDemonstrationPage() {
-  const navigate = useNavigate();
   const video = useFlowVideo("game_homepage");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
