@@ -43,6 +43,10 @@ export default function GameHomePage() {
         name: lead.name.trim(), email: lead.email.trim(),
         organization: lead.org.trim(), goal_amount: Number(digits),
       });
+      if (response.data.login_required || !response.data.token) {
+        navigate("/login?next=" + encodeURIComponent("/board-fundraising-game"), { replace: true });
+        return;
+      }
       storeMemberToken(response.data.token);
       const play = await memberApi.post("/game/self-play");
       navigate(`/play/${play.data.token}`);
