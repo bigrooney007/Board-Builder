@@ -1641,4 +1641,21 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"]];areas=[a["area"] for a in owned];text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."
             token=secrets.token_urlsafe(24);rows.append({"participant_id":person["participant_id"],"name":person["name"],"areas":areas,"text":text,"token":token,"url":f"/strategic-leadership-portfolio/{token}"})
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"leadership_portfolios":rows}});return {"status":"created","count":len(rows)}
+
+    @router.get("/leadership-portfolio/{token}")
+    async def leadership_portfolio(token:str):
+        plan=await db.sp_plans.find_one({"leadership_portfolios.token":token,"final_status":"Approved"},{"_id":0})
+        if not plan: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
+        if not row: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        project=await owned_project(plan["project_id"])
+        return {"title":"Board Member Leadership Portfolio","organization_name":project["organization_name"],"member_name":row.get("name",""),"areas":row.get("areas",[]),"display_text":row.get("text",""),"issued_by":project.get("founder_name","")}
+
+    @router.get("/leadership-portfolio/{token}/pdf")
+    async def leadership_portfolio_pdf(token:str):
+        plan=await db.sp_plans.find_one({"leadership_portfolios.token":token,"final_status":"Approved"},{"_id":0})
+        if not plan: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
+        row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
+        project=await owned_project(plan["project_id"])
+        return build_portfolio_pdf("BOARD MEMBER LEADERSHIP PORTFOLIO",row.get("name",""),{"organization_name":project["organization_name"],"issued_by":project.get("founder_name","")},row.get("text",""))
     return router
