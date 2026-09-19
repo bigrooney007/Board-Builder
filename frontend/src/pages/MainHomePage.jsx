@@ -69,7 +69,7 @@ export default function MainHomePage() {
         <section className="nBB-home-problem">
           <p>You do need another expensive consultant.</p>
           <h2>What you need is the right board members providing you the right kind of support.</h2>
-          <p>At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs and work with them to raise money and scale your organization.</p>
+          <p>At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs so you can work with them to raise money exponentially and scale your organization.</p>
         </section>
 
         <section id="choose-path" className="nBB-home-paths">
