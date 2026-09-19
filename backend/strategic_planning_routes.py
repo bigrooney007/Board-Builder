@@ -931,10 +931,17 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     async def area_by_pack_token(token: str):
         plan = await db.sp_plans.find_one({"areas.pack_token": token}, {"_id": 0})
-        if not plan:
-            raise HTTPException(status_code=404, detail="This link is not valid")
-        area = next(a for a in plan["areas"] if a["pack_token"] == token)
-        return plan, area
+        if plan:
+            area = next(a for a in plan["areas"] if a.get("pack_token") == token)
+            return plan, area
+        participant=await db.sp_participants.find_one({"area_assignment_tokens":{"$exists":True}},{"_id":0})
+        if participant:
+            for area_key,assignment_token in (participant.get("area_assignment_tokens") or {}).items():
+                if assignment_token==token:
+                    plan=await db.sp_plans.find_one({"project_id":participant["project_id"]},{"_id":0})
+                    area=next((a for a in (plan or {}).get("areas",[]) if a.get("area_key")==area_key),None)
+                    if plan and area:return plan,area
+        raise HTTPException(status_code=404, detail="This link is not valid")
 
     @router.get("/area-pack/{token}")
     async def public_pack(token: str):
@@ -1625,12 +1632,17 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def area_assignment(request:Request):
         body=await request.json();sid=body.get("session_id","");key=body.get("area_key","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};area=next((x for x in plan.get("areas",[]) if x.get("area_key")==key),None)
         if not area or not area.get("owner_participant_id"):raise HTTPException(409,"Assign this strategic area first")
-        owner=await db.sp_participants.find_one({"project_id":p["project_id"],"participant_id":area["owner_participant_id"]},{"_id":0});token=area.get("pack_token") or secrets.token_urlsafe(32);area["pack_token"]=token;area["pack_status"]="Approved";area["pack_text"]=pack_display({"mission_direction":area.get("direction",""),"foundational_priorities":area.get("proposed_priorities",[]),"ideas":area.get("ideas_shared",[]),"development_instruction":"Build the detailed plan for this strategic area. Define exactly what must be done, the people and technology required, your role in leading and overseeing it, the full cost of executing it at 100%, and a step-by-step action plan for the planning period."},area["area"],p["organization_name"]);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":plan["areas"]}})
-        link=f"{origin_of(request)}/area-pack/{token}";e=pack_email(p,area,owner,link);await send_email(owner["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent=1
-        for pid in area.get("collaborator_participant_ids",[]):
-            collaborator=await db.sp_participants.find_one({"project_id":p["project_id"],"participant_id":pid},{"_id":0})
-            if collaborator:
-                ce=pack_email(p,area,collaborator,link);await send_email(collaborator["email"],ce["subject"],ce["body"],ce["button_label"],ce["form_link"],reply_to=p.get("founder_email",""));sent+=1
+        recipients=[area["owner_participant_id"]]+area.get("collaborator_participant_ids",[]);sent=0
+        for pid in recipients:
+            person=await db.sp_participants.find_one({"project_id":p["project_id"],"participant_id":pid},{"_id":0})
+            if not person: continue
+            assignments=person.get("area_assignment_tokens") or {};token=assignments.get(key) or secrets.token_urlsafe(32);assignments[key]=token
+            await db.sp_participants.update_one({"participant_id":pid},{"$set":{"area_assignment_tokens":assignments}})
+            if pid==area["owner_participant_id"]:
+                area["pack_token"]=token
+            area["pack_status"]="Approved";area["pack_text"]=pack_display({"mission_direction":area.get("direction",""),"foundational_priorities":area.get("proposed_priorities",[]),"ideas":area.get("ideas_shared",[]),"development_instruction":"Build the detailed plan for this strategic area. Define exactly what must be done, the people and technology required, your role in leading and overseeing it, the full cost of executing it at 100%, and a step-by-step action plan for the planning period."},area["area"],p["organization_name"])
+            link=f"{origin_of(request)}/area-pack/{token}";e=pack_email(p,area,person,link);await send_email(person["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":plan["areas"]}})
         return {"status":"sent","count":sent}
 
     @router.post("/final-plan")
