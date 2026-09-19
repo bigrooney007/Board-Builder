@@ -35,8 +35,8 @@ const PlanView = ({ endpoint, testid }) => {
   );
 };
 
-export default function PublicStrategicPlanPage() {
-  return <PlanView endpoint="strategic-plan" testid="public-strategic-plan" />;
+export default function PublicStrategicPlanPage({ endpoint = "strategic-plan" }) {
+  return <PlanView endpoint={endpoint} testid={endpoint === "strategic-draft" ? "public-strategic-draft" : "public-strategic-plan"} />;
 }
 
 export function PublicActionPlanPage() {
