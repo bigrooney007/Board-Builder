@@ -54,13 +54,13 @@ export default function GameWelcomePage() {
           <div className="bfg-card" style={{ textAlign: "center" }} data-testid="bfg-welcome-login">
             <h1>Log In to Continue</h1>
             <p style={{ marginTop: 12 }}>Please log in to the account you created before payment to unlock your game.</p>
-            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to={`/game/signup?mode=login`} data-testid="bfg-welcome-login-link">Log In</Link>
+            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to={`/login?next=${encodeURIComponent(`/game/welcome?session_id=${sessionId}`)}`} data-testid="bfg-welcome-login-link">Log In</Link>
           </div>
         ) : state === "error" ? (
           <div className="bfg-card" style={{ textAlign: "center" }} data-testid="bfg-welcome-error">
             <h1>We Could Not Confirm Your Payment</h1>
             <p className="bfg-error" style={{ marginTop: 16 }}>{detail}</p>
-            <Link className="bfg-btn bfg-btn-ghost" style={{ marginTop: 18 }} to="/game/start">Back to My Game Profile</Link>
+            <Link className="bfg-btn bfg-btn-ghost" style={{ marginTop: 18 }} to="/board-fundraising-game">Back to My Board Fundraising Game</Link>
           </div>
         ) : (
           <div data-testid="bfg-welcome-content">
