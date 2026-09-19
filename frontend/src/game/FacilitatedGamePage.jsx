@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { BfgShell } from "./gameShared";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const steps = [
   ["1", "We Prepare The Game", "We learn your fundraising goal, current reality and board, then prepare the experience around your organization."],
   ["2", "Your Board Plays", "Board members contribute their own ideas before the meeting so the strategy is built with them, not handed to them."],
@@ -20,13 +19,9 @@ const outcomes = [
 ];
 
 export default function FacilitatedGamePage() {
-  const [busy,setBusy]=useState(false); const [error,setError]=useState("");
+  const navigate=useNavigate();
   useEffect(()=>{document.title="Facilitated Board Fundraising Game";},[]);
-  const buy=async()=>{setBusy(true);setError("");try{const r=await axios.post(`${API}/payments/facilitated-game-checkout`,{origin_url:window.location.origin,cancel_path:"/organize-board-fundraising-game"});window.location.href=r.data.checkout_url;}catch{setError("We could not open checkout. Please try again.");setBusy(false);}};
-  const Cta=({id,label="ORGANIZE MY BOARD FUNDRAISING GAME — $3,497"})=><>
-    <button className="bfg-btn bfg-btn-primary facilitated-cta" disabled={busy} onClick={buy} data-testid={id}>{busy?"Opening Secure Checkout…":label}</button>
-    {error&&<p className="bfg-error" style={{marginTop:12}}>{error}</p>}
-  </>;
+  const Cta=({id,label="APPLY TO ORGANIZE YOUR BOARD FUNDRAISING GAME"})=><button className="bfg-btn bfg-btn-primary facilitated-cta" onClick={()=>navigate("/organize-board-fundraising-game/apply")} data-testid={id}>{label}</button>;
 
   return <BfgShell><main className="facilitated-page" data-testid="bfg-facilitated-page">
     <section className="facilitated-hero">
@@ -36,7 +31,7 @@ export default function FacilitatedGamePage() {
       <div className="facilitated-price-card">
         <p className="facilitated-price">$3,497</p><p className="facilitated-kicker">ONE-TIME ENGAGEMENT</p>
         <Cta id="facilitated-cta-hero"/>
-        <small>After payment, complete your intake and book your first meeting with Rooney Akpesiri.</small>
+        <small>Apply first. After submitting your application, book a call with Rooney Akpesiri.</small>
       </div>
     </section>
 
@@ -78,14 +73,14 @@ export default function FacilitatedGamePage() {
         <p>We prepare the process, guide your board through the game, facilitate your Board Fundraising Day/Night and turn the decisions into the final strategy and execution materials.</p>
         <p className="facilitated-price">$3,497</p><p className="facilitated-kicker">ONE-TIME ENGAGEMENT</p>
         <Cta id="facilitated-cta-pricing"/>
-        <small>Complete Board Fundraising Game access and facilitation for your organization.</small>
+        <small>Apply to see if the facilitated Board Fundraising Game is the right fit for your organization.</small>
       </div>
     </section>
 
     <section className="facilitated-final">
       <h2>Stop Carrying Fundraising Alone.</h2>
       <p>Bring your board into the process and leave your next Board Fundraising Day/Night with a strategy everyone helped build and clear ways for each person to participate.</p>
-      <Cta id="facilitated-cta-final" label="YES, ORGANIZE THE GAME FOR US — $3,497"/>
+      <Cta id="facilitated-cta-final" label="YES, I WANT YOU TO ORGANIZE OUR GAME — APPLY NOW"/>
     </section>
   </main></BfgShell>;
 }
