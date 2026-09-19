@@ -62,7 +62,7 @@ def create_guided_product_router(db):
                 await db.sp_projects.insert_one({"project_id":project_id,"guided_session_id":payload.session_id,"organization_name":lead.get("organization") or "Organization","founder_name":lead.get("name") or "Organization Leader","founder_email":lead.get("email") or "","founder_title":"","mission":payload.answers.get("mission",""),"status":"Active","generic_form_token":secrets.token_urlsafe(32),"created_at":now})
             project=existing or await db.sp_projects.find_one({"guided_session_id":payload.session_id},{"_id":0})
             participant_id=secrets.token_hex(16)
-            await db.sp_participants.update_one({"project_id":project["project_id"],"email":str(lead.get("email") or "").lower()},{"$setOnInsert":{"participant_id":participant_id,"project_id":project["project_id"],"name":lead.get("name") or "Organization Leader","email":str(lead.get("email") or "").lower(),"role":"Lead User","status":"INVITED","created_at":now}},upsert=True)
+            await db.sp_participants.update_one({"project_id":project["project_id"],"email":str(lead.get("email") or "").lower()},{"$setOnInsert":{"participant_id":participant_id,"project_id":project["project_id"],"name":lead.get("name") or "Organization Leader","email":str(lead.get("email") or "").lower(),"role":"Lead User","status":"INVITED","form_token":secrets.token_urlsafe(32),"review_status":"NOT SENT","review_token":secrets.token_urlsafe(32),"created_at":now}},upsert=True)
         return {"saved":True,"dashboard_url":f"/{payload.product}/dashboard?session_id={payload.session_id}"}
 
     @router.get("/dashboard")
