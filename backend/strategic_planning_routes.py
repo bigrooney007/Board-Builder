@@ -929,19 +929,24 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     # ---------------- PUBLIC: AREA PACK + PLAN SUBMISSION ----------------
 
-    async def area_by_pack_token(token: str):
+    async def area_assignment_by_token(token: str):
         plan = await db.sp_plans.find_one({"areas.pack_token": token}, {"_id": 0})
         if plan:
             area = next(a for a in plan["areas"] if a.get("pack_token") == token)
-            return plan, area
+            participant=await db.sp_participants.find_one({"project_id":plan["project_id"],"participant_id":area.get("owner_participant_id","")},{"_id":0}) or {}
+            return plan,area,participant
         cursor=db.sp_participants.find({"area_assignment_tokens":{"$exists":True}},{"_id":0})
         async for participant in cursor:
             for area_key,assignment_token in (participant.get("area_assignment_tokens") or {}).items():
                 if assignment_token==token:
                     plan=await db.sp_plans.find_one({"project_id":participant["project_id"]},{"_id":0})
                     area=next((a for a in (plan or {}).get("areas",[]) if a.get("area_key")==area_key),None)
-                    if plan and area:return plan,area
+                    if plan and area:return plan,area,participant
         raise HTTPException(status_code=404, detail="This link is not valid")
+
+    async def area_by_pack_token(token: str):
+        plan,area,_=await area_assignment_by_token(token)
+        return plan,area
 
     @router.get("/area-pack/{token}")
     async def public_pack(token: str):
@@ -957,11 +962,11 @@ def create_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/area-pack/{token}/generate")
     async def generate_area_plan(token: str):
-        plan, area = await area_by_pack_token(token)
+        plan, area, assignment_person = await area_assignment_by_token(token)
         if area.get("pack_status") != "Approved":
             raise HTTPException(status_code=409, detail="This Area Development Pack is not available yet")
         project = await owned_project(plan["project_id"])
-        owner = await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {}
+        owner = assignment_person or (await owned_participant(plan["project_id"], area["owner_participant_id"]) if area.get("owner_participant_id") else {})
         context = (
             f"ORGANIZATION: {project['organization_name']}\nMISSION: {project.get('mission','')}\n"
             f"BOARD MEMBER: {owner.get('name','')}\nSTRATEGIC AREA: {area.get('area','')}\n"
