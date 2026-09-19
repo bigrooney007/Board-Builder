@@ -46,7 +46,7 @@ def create_guided_product_router(db):
             if not member:
                 raise HTTPException(409,"Your Board Recommitment workspace session could not be linked")
             await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"reactivation_self_guided"},"$set":{"updated_at":now}})
-            await db.board_reactivation_intakes.insert_one({"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","guided_session_id":payload.session_id,"guided_answers":payload.answers,"submitted_at":now})
+            await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","guided_session_id":payload.session_id,"guided_answers":payload.answers,"submitted_at":now}},upsert=True)
         return {"saved":True,"dashboard_url":f"/{payload.product}/dashboard?session_id={payload.session_id}"}
 
     @router.get("/dashboard")
