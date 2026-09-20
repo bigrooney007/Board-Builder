@@ -976,7 +976,14 @@ def create_reactivation_router(db) -> APIRouter:
             if context["founder_email"]:
                 first = payload.full_name.split(" ")[0]
                 founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
-                view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/3?member={record['member_record_id']}"
+                guided = await db.board_reactivation_intakes.find_one(
+                    {"user_id": record["user_id"], "guided_session_id": {"$exists": True, "$ne": ""}},
+                    {"_id": 0, "guided_session_id": 1}, sort=[("submitted_at", -1)]) or {}
+                if guided.get("guided_session_id"):
+                    view_url = (f"{origin_of(request)}/board-recommitment/dashboard?"
+                                f"session_id={guided['guided_session_id']}&member={record['member_record_id']}#recommitment-responses")
+                else:
+                    view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/3?member={record['member_record_id']}"
                 body = (
                     f"Hi {founder_first},\n\n"
                     f"{payload.full_name} has completed their Board Member Profile & Recommitment Form for {context['organization']}.\n\n"
@@ -990,8 +997,14 @@ def create_reactivation_router(db) -> APIRouter:
                     "subject": f"Board Member Recommitment Received | {payload.full_name}",
                     "html": email_html(body, f"VIEW {first.upper()}'S RESPONSE", view_url),
                 })
+                await db.reactivation_board_members.update_one(
+                    {"member_record_id": record["member_record_id"]},
+                    {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now}})
         except Exception:
             logger.exception("Founder recommitment notification failed for %s", record["member_record_id"])
+            await db.reactivation_board_members.update_one(
+                {"member_record_id": record["member_record_id"]},
+                {"$set": {"owner_notification_status": "Failed"}})
         return {"status": "submitted", "organization_name": context["organization"]}
 
     # ---------------- STEP 2: RECOMMITMENT FORM WORKFLOW ----------------

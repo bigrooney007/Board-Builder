@@ -11,8 +11,10 @@ import FounderBoardAudit from "./FounderBoardAudit";
 import "./sgr.css";
 
 const MemberResponse = ({ row }) => {
-  const [open,setOpen]=useState(false); const [response,setResponse]=useState(null); const [error,setError]=useState("");
-  const toggle=async()=>{const next=!open;setOpen(next);if(next&&row.status==="COMPLETED"&&!response){try{setResponse((await memberApi.get(`/reactivation/board-members/${row.member_record_id}/response`)).data)}catch{setError("We could not load this response.")}}};
+  const requested=new URLSearchParams(window.location.search).get("member");
+  const [open,setOpen]=useState(requested===row.member_record_id); const [response,setResponse]=useState(null); const [error,setError]=useState("");
+  useEffect(()=>{if(open&&row.status==="COMPLETED"&&!response)memberApi.get(`/reactivation/board-members/${row.member_record_id}/response`).then(r=>setResponse(r.data)).catch(()=>setError("We could not load this response."))},[open,response,row.member_record_id,row.status]);
+  const toggle=()=>setOpen(!open);
   return <article className="member-card" style={{marginTop:12}} data-testid={`recommitment-person-${row.member_record_id}`}>
     <button type="button" onClick={toggle} style={{width:"100%",border:0,background:"transparent",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",padding:0,textAlign:"left"}}>
       <div><h3 style={{margin:0}}>{row.name}</h3><p style={{margin:"5px 0 0"}}>{row.role||"Board Member"} · <strong>{row.status==="COMPLETED"?"Response received":"Waiting for response"}</strong></p></div>{open?<ChevronUp/>:<ChevronDown/>}
@@ -31,6 +33,7 @@ export default function BoardRecommitmentDashboard(){
  const [roster,setRoster]=useState(null);
  const load=useCallback(()=>memberApi.get("/reactivation/roster").then(r=>setRoster(r.data)).catch(()=>setRoster({members:[]})),[]);
  useEffect(()=>{load()},[load]);
+ useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("member");if(requested)setTimeout(()=>document.querySelector(`[data-testid="recommitment-person-${requested}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),150)},[roster]);
  return <MemberShell><main className="member-page sgr" data-testid="board-recommitment-dashboard">
    <header className="member-page-heading"><p className="eyebrow">Nonprofit Board Builder</p><h1>BOARD RECOMMITMENT</h1><p><strong>Get clear answers from disengaged board members, have the right one-on-one conversation, and move forward with people who are ready to serve.</strong></p></header>
 
@@ -46,7 +49,7 @@ export default function BoardRecommitmentDashboard(){
     <FounderBoardAudit/>
    </section>
 
-   <section className="member-card" style={{marginTop:26}} data-testid="recommitment-responses">
+   <section id="recommitment-responses" className="member-card" style={{marginTop:26}} data-testid="recommitment-responses">
     <p className="eyebrow">2. BOARD MEMBER RESPONSES</p><h2>Everyone Who Completes The Form Appears Here</h2><p>Click a person's name to see their response. Then use the workflow immediately below to interpret what they told you and prepare the conversation.</p>
     {!roster?<p>Loading board members…</p>:roster.members.length===0?<p>No board members have been added yet. Your completed generic Recommitment Form responses will appear here.</p>:roster.members.map(row=><MemberResponse key={row.member_record_id} row={row}/>)}
    </section>

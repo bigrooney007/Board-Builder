@@ -515,11 +515,25 @@ def create_strategic_planning_router(db) -> APIRouter:
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
         if result.modified_count:
             origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
-            await notify_owner(
-                f"Strategic Planning Response Received | {payload.full_name}",
-                f"{payload.full_name} has completed their Strategic Planning Form for {project['organization_name']}.\n\n"
-                "Their original response is available in the Strategic Planning workspace.\n\n[OPEN STRATEGIC PLANNING]",
-                "OPEN STRATEGIC PLANNING", f"{origin}/admin")
+            try:
+                if project.get("founder_email"):
+                    await send_email(
+                        project["founder_email"],
+                        f"Strategic Planning Response Received | {payload.full_name}",
+                        f"Hi {str(project.get('founder_name') or 'there').split(' ')[0]},\n\n"
+                        f"{payload.full_name} has completed their Strategic Planning Form for {project['organization_name']}.\n\n"
+                        "Open their response to review every answer before your Strategic Planning Session.\n\n"
+                        "Nonprofit Board Builder",
+                        f"VIEW {payload.full_name.split(' ')[0].upper()}'S RESPONSE",
+                        f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}")
+                    await db.sp_participants.update_one(
+                        {"participant_id": record["participant_id"]},
+                        {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now_iso()}})
+            except Exception as exc:
+                logger.exception("Strategic Planning purchaser notification failed for %s", record["participant_id"])
+                await db.sp_participants.update_one(
+                    {"participant_id": record["participant_id"]},
+                    {"$set": {"owner_notification_status": "Failed", "owner_notification_error": str(exc)[:300]}})
         return {"status": "submitted", "organization_name": project["organization_name"]}
 
     @router.get("/strategic-planning-response/{participant_id}")

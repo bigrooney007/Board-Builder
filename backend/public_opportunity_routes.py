@@ -2,9 +2,11 @@
 No applicant accounts required. CVs stay private (GridFS only, never public URLs).
 """
 import json
+import logging
 import os
 from typing import Optional
 
+import resend
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
@@ -14,6 +16,9 @@ from ai_service import extract_cv_text
 from opportunity_emails import send_application_receipt
 from workspace_service import CORE_QUESTIONS, new_id, now_iso
 from opportunity_emails import send_signature_confirmations
+from reactivation_routes import email_html
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_CV_EXTENSIONS = {".pdf", ".doc", ".docx"}
 MAX_CV_BYTES = 8 * 1024 * 1024
@@ -103,6 +108,35 @@ def create_public_opportunity_router(db) -> APIRouter:
             await db.opportunity_applications.update_one({"application_id": application["application_id"]}, {"$set": {"receipt_email_status": "Sent"}})
         except Exception as exc:
             await db.opportunity_applications.update_one({"application_id": application["application_id"]}, {"$set": {"receipt_email_status": "Failed", "receipt_email_error": str(exc)[:300]}})
+        try:
+            owner = await db.members.find_one(
+                {"user_id": opportunity["user_id"]}, {"_id": 0, "email": 1, "first_name": 1, "name": 1}) or {}
+            owner_email = str(owner.get("email") or "").strip().lower()
+            if owner_email:
+                owner_name = owner.get("first_name") or str(owner.get("name") or "").split(" ")[0] or "there"
+                applicant_name = snapshot.get("full_name") or email
+                origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+                view_url = f"{origin}/app/board-recruitment?application_id={application['application_id']}#br-section-applicants"
+                body = (
+                    f"Hi {owner_name},\n\n"
+                    f"{applicant_name} has completed your Board Member Application Form for {opportunity['organization_name']}.\n\n"
+                    "Open their application to review every response and continue the recruitment process.\n\n"
+                    "Nonprofit Board Builder"
+                )
+                resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+                result = await resend.Emails.send_async({
+                    "from": os.environ["NONPROFIT_SENDER"], "to": [owner_email],
+                    "subject": f"Board Application Received | {applicant_name}",
+                    "html": email_html(body, f"VIEW {str(applicant_name).split(' ')[0].upper()}'S APPLICATION", view_url),
+                })
+                await db.opportunity_applications.update_one(
+                    {"application_id": application["application_id"]},
+                    {"$set": {"owner_notification_status": "Sent", "owner_notification_email_id": str(getattr(result, "id", ""))}})
+        except Exception as exc:
+            logger.exception("Recruitment owner notification failed for %s", application["application_id"])
+            await db.opportunity_applications.update_one(
+                {"application_id": application["application_id"]},
+                {"$set": {"owner_notification_status": "Failed", "owner_notification_error": str(exc)[:300]}})
         application.pop("cv_text", None)
         return application
 

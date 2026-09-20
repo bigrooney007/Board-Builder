@@ -114,6 +114,10 @@ export const BoardMembersSection = () => {
   const [notice, setNotice] = useState("");
   const [copiedId, setCopiedId] = useState("");
   const [postgame, setPostgame] = useState(null);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("response") || "";
+    if (requested) setViewingId(requested);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -183,7 +187,7 @@ export const BoardMembersSection = () => {
     member.invitation_status === "invited" && member.sections_completed < member.total_sections && !remainingText(member.reminder_available_at)).length;
 
   return (
-    <section className="bfg-panel" data-testid="bfg-board-members-section">
+    <section id="bfg-board-members-section" className="bfg-panel" data-testid="bfg-board-members-section">
       <div className="bfg-panel-head">
         <div>
           <h2>Invite Board Members And Others In Your Organization</h2>

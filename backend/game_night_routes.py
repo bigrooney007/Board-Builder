@@ -1,5 +1,6 @@
 """Board Fundraising Game Phase 2: Game Night setup, board members, invitations, reminders, individual game play."""
 import html
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -13,6 +14,9 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import EDITABLE_FIELDS, merged_sections
 from game_content_v3 import GAME_V3
 from game_response_quality import is_meaningful_game_response, response_input_hash, response_texts
+from reactivation_routes import email_html
+
+logger = logging.getLogger(__name__)
 
 GAME_ENTITLEMENT = "board_fundraising_game"
 REMINDER_HOURS = 48
@@ -593,9 +597,40 @@ def create_game_night_router(db) -> APIRouter:
         completed_count = await db.game_section_responses.count_documents(
             {"board_member_id": record["member_id"], "completed": True})
         member_sets = {"updated_at": now}
-        if completed_count >= (record.get("total_sections") or TOTAL_SECTIONS):
+        total_sections = record.get("total_sections") or TOTAL_SECTIONS
+        newly_completed = completed_count >= total_sections and not record.get("completed_at")
+        if completed_count >= total_sections:
             member_sets["completed_at"] = now
         await db.game_board_members.update_one({"member_id": record["member_id"]}, {"$set": member_sets})
+        if newly_completed and not record.get("is_primary"):
+            try:
+                owner = await db.members.find_one(
+                    {"user_id": record["user_id"]}, {"_id": 0, "email": 1, "first_name": 1, "name": 1}) or {}
+                owner_email = str(owner.get("email") or "").strip().lower()
+                if owner_email:
+                    profile = await get_profile(record["user_id"])
+                    owner_name = owner.get("first_name") or str(owner.get("name") or "").split(" ")[0] or "there"
+                    participant_name = record.get("full_name") or record.get("email") or "A participant"
+                    origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+                    view_url = f"{origin}/game/dashboard?response={record['member_id']}#bfg-board-members-section"
+                    resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+                    await resend.Emails.send_async({
+                        "from": os.environ["NONPROFIT_SENDER"], "to": [owner_email],
+                        "subject": f"Board Fundraising Game Response Received | {participant_name}",
+                        "html": email_html(
+                            f"Hi {owner_name},\n\n{participant_name} has completed their Board Fundraising Game for "
+                            f"{(profile.get('organization') or {}).get('name') or 'your organization'}.\n\n"
+                            "Open their response to review every idea and participation choice.\n\nNonprofit Board Builder",
+                            f"VIEW {str(participant_name).split(' ')[0].upper()}'S RESPONSE", view_url),
+                    })
+                    await db.game_board_members.update_one(
+                        {"member_id": record["member_id"]},
+                        {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now}})
+            except Exception as exc:
+                logger.exception("Game owner notification failed for %s", record["member_id"])
+                await db.game_board_members.update_one(
+                    {"member_id": record["member_id"]},
+                    {"$set": {"owner_notification_status": "Failed", "owner_notification_error": str(exc)[:300]}})
         return completed_count
 
     @router.put("/game/play/{token}/section/{section_id}")

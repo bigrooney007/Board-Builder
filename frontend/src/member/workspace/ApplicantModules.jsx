@@ -194,6 +194,10 @@ export const Module4Applicants = () => {
   const { applications, statuses, refresh } = useApplications();
   const [branding] = useBranding();
   const [openId, setOpenId] = useState("");
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("application_id") || "";
+    if (requested && applications.some((application) => application.application_id === requested)) setOpenId(requested);
+  }, [applications]);
   const interviewLabel = (application) => application.interview_completed ? "Interview Completed"
     : application.emails_sent?.interview_invitation ? "Interview Invited"
     : application.status === "Not Moving to Interview" ? "Not Moving to Interview" : "New";
