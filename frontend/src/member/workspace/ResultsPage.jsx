@@ -85,7 +85,7 @@ const PortfolioActions = ({ application, portfolio, refresh }) => {
   );
 };
 
-export const BoardMemberResultCard = ({ application, branding, onChanged }) => {
+export const BoardMemberResultCard = ({ application, branding, onChanged, portfolioOnly = false }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const snapshot = application.profile_snapshot || {};
   const portfolio = byType.board_member_portfolio;
@@ -94,12 +94,12 @@ export const BoardMemberResultCard = ({ application, branding, onChanged }) => {
     <div className="board-member-result" data-testid={`board-member-${application.application_id}`}>
       <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">Board Member</span></h3>
       <p className="material-meta">{[snapshot.profession, snapshot.employer, snapshot.location].filter(Boolean).join(" · ")}{application.board_role ? ` · Role: ${application.board_role}` : ""}{application.formal_appointment_date ? ` · Joined ${new Date(application.formal_appointment_date).toLocaleDateString()}` : ""}</p>
-      <MaterialCard type="board_member_engagement_guide" title={resultsPageText.boardMemberEngagementGuide} buttonLabel="Generate Engagement Guide"
+      {!portfolioOnly && <MaterialCard type="board_member_engagement_guide" title={resultsPageText.boardMemberEngagementGuide} buttonLabel="Generate Engagement Guide"
         description="A one-page internal guide for you: where this member's expertise creates the most value, how to engage them, strong early responsibilities, relationships and fundraising, leadership alignment and their first 90 days. Built only from their application, CV and Board Member Profile — never from confidential references or background checks. This stays internal and is never sent to the member."
         applicationId={application.application_id} material={engagement} refresh={refresh} approvable
         extraActions={engagement ? (
           <button className="button button-back" onClick={() => downloadMaterialPdf(engagement)} data-testid={`engagement-pdf-${application.application_id}`}><Download size={14} /> Download Branded PDF</button>
-        ) : null} />
+        ) : null} />}
       <MaterialCard type="board_member_portfolio" title={resultsPageText.boardMemberPortfolio} buttonLabel="Generate Board Member Portfolio"
         description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included. Generate it, edit anything you want changed, approve it, then share it with the member using the secure link, PDF or portfolio email."
         applicationId={application.application_id} material={portfolio} refresh={refresh} approvable />

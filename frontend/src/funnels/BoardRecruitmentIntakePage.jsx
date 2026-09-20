@@ -55,6 +55,7 @@ export default function BoardRecruitmentIntakePage() {
   const location = useLocation();
   const sessionId = useMemo(() => new URLSearchParams(location.search).get("session_id") || "", [location.search]);
   const boardFixMode = useMemo(() => new URLSearchParams(location.search).get("bf") === "1", [location.search]);
+  const dashboardMode = useMemo(() => new URLSearchParams(location.search).get("dashboard") === "1", [location.search]);
   const [gate, setGate] = useState(sessionId || boardFixMode ? "checking" : "blocked");
   const [calendlyUrl, setCalendlyUrl] = useState("https://calendly.com/boardbuilder/recruitboard");
   const [purchaseSource, setPurchaseSource] = useState("");
@@ -167,9 +168,10 @@ export default function BoardRecruitmentIntakePage() {
       });
       if (form.max_board_size_unknown) payload.max_board_size = "Not Specified / I Don't Know";
       const response = await axios.post(`${API}/board-recruitment-intake/submit`, payload, { withCredentials: true });
-      setNextUrl(response.data.redirect_url);
+      const destination = dashboardMode ? "/app/board-recruitment" : response.data.redirect_url;
+      setNextUrl(destination);
       setGate("done");
-      setTimeout(() => window.location.replace(response.data.redirect_url), 1500);
+      setTimeout(() => window.location.replace(destination), 1500);
     } catch (error) {
       setSubmitError(error.response?.data?.detail || "We could not save your information. Please try again.");
       setBusy(false);
@@ -210,7 +212,13 @@ export default function BoardRecruitmentIntakePage() {
         {gate === "done" && (
           <div className="intake-card" data-testid="intake-done">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Information saved</p>
-            {purchaseSource === "board_fix_system_497" ? (
+            {dashboardMode ? (
+              <>
+                <h2>Your Board Recruitment intake is saved</h2>
+                <p>Taking you back to your Board Recruitment dashboard.</p>
+                <a className="button" href={nextUrl || "/app/board-recruitment"} data-testid="intake-dashboard-continue">Return To My Dashboard</a>
+              </>
+            ) : purchaseSource === "board_fix_system_497" ? (
               <>
                 <h2>Your Board Recruitment information is saved</h2>
                 <p>Taking you into Board Recruitment…</p>

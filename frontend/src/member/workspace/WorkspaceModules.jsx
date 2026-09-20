@@ -62,7 +62,7 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved }) => {
   );
 };
 
-export const Module3Launch = () => {
+export const Module3Launch = ({ mode = "all" }) => {
   const { byType, refresh } = useMaterials();
   const [opportunity, setOpportunity] = useState(null);
   const [coreQuestions, setCoreQuestions] = useState([]);
@@ -104,17 +104,20 @@ export const Module3Launch = () => {
 
   return (
     <div data-testid="module3-workspace">
-      <ApplicationPanel opportunity={opportunity} coreQuestions={coreQuestions} applicationSaved={!!readiness.application_saved} />
+      {mode !== "launch" && (
+        <>
+          <ApplicationPanel opportunity={opportunity} coreQuestions={coreQuestions} applicationSaved={!!readiness.application_saved} />
+          <section className="workspace-panel" data-testid="campaign-materials">
+            <h2>{recruitmentModulesText.h_yourRecruitmentCampaignMaterials}</h2>
+            <p className="material-description">{recruitmentModulesText.d_eachResourceIsCreatedFrom}</p>
+          </section>
+          {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
+            <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
+          ))}
+        </>
+      )}
 
-      <section className="workspace-panel" data-testid="campaign-materials">
-        <h2>{recruitmentModulesText.h_yourRecruitmentCampaignMaterials}</h2>
-        <p className="material-description">{recruitmentModulesText.d_eachResourceIsCreatedFrom}</p>
-      </section>
-      {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
-        <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
-      ))}
-
-      <section className="workspace-panel publish-panel" data-testid="publish-panel">
+      {mode !== "materials" && <section className="workspace-panel publish-panel" data-testid="publish-panel">
         <h2>{recruitmentModulesText.h_launchMyRecruitmentCampaign}</h2>
         <p className="material-description">{recruitmentModulesText.d_launchingIsTheOnlyAction}</p>
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{launched ? "Live" : opportunity?.status || "Draft"}</strong></p>
@@ -141,7 +144,10 @@ export const Module3Launch = () => {
           {opportunity?.status === "Closed" && <p className="workspace-note">{recruitmentModulesText.n_thisCampaignIsClosedApplications}</p>}
         </div>
         <p className="material-meta">{workspaceModulesText.launchingMakesTheApplicationPublic}<Link to={publicUrl}>{publicUrl || "…"}</Link>{workspaceModulesText.launchAnnouncementNote}</p>
-      </section>
+      </section>}
     </div>
   );
 };
+
+export const RecruitmentMaterials = () => <Module3Launch mode="materials" />;
+export const RecruitmentCampaignLaunch = () => <Module3Launch mode="launch" />;

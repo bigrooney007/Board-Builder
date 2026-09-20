@@ -183,6 +183,8 @@ def create_workspace_router(db) -> APIRouter:
 
     GOVERNANCE_BYLAWS_TYPES = {"formal_appointment_letter", "formal_appointment_email", "board_manual",
                                "board_member_agreement", "conflict_of_interest_agreement", "confidentiality_agreement", "onboarding_script"}
+    MANUAL_REFERENCE_MATERIAL_TYPES = {"candidate_referee_request", "reference_request_email",
+                                       "referee_confirmation_email", "reference_call_script", "reference_evaluation_form"}
 
     async def bylaws_context(user_id: str) -> str:
         intake = await db.board_reactivation_intakes.find_one(
@@ -212,6 +214,8 @@ def create_workspace_router(db) -> APIRouter:
     async def generate(payload: GenerateRequest, request: Request):
         member = await current_member(request)
         user_id = member["user_id"]
+        if payload.type in MANUAL_REFERENCE_MATERIAL_TYPES:
+            raise HTTPException(status_code=410, detail="Manual reference materials have been replaced by the automated reference-check process.")
         if payload.type not in GENERATION_TYPES:
             raise HTTPException(status_code=422, detail="Unknown generation type")
         meta = GENERATION_TYPES[payload.type]
@@ -373,17 +377,72 @@ def create_workspace_router(db) -> APIRouter:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
             reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
-            background = (application.get("background_check") or {}).get("status", "")
-            context += ("\n\nAPPOINTMENT REQUIREMENT STATUS (read-only facts — state ONLY genuinely outstanding requirements as conditions; never alter these statuses):"
-                        f"\nREFERENCE CHECK STATUS: {reference_status} — if Completed, do NOT list references as a condition; if submitted but not yet completed, "
-                        "say the organization's reference process remains outstanding; never ask the candidate to provide references again if already submitted."
-                        f"\nBACKGROUND CHECK STATUS: {background or 'Not recorded'} — if 'Not Required', blank, unknown or not recorded, do NOT mention a "
-                        "background check at all; only where the organization actually requires it and it is not Completed, state it as an outstanding requirement.")
+            if reference_status != "Completed":
+                raise HTTPException(status_code=409, detail="Complete the automated reference check before preparing the Conditional Appointment Email.")
+            required_types = ["organization_overview", "board_manual", "board_member_agreement",
+                              "confidentiality_agreement", "conflict_of_interest_agreement"]
+            missing = []
+            for doc_type in required_types:
+                document = await db.generated_materials.find_one(
+                    {"user_id": user_id, "type": doc_type, "application_id": "", "status": "Approved"},
+                    {"_id": 0, "material_id": 1})
+                if not document:
+                    missing.append(GENERATION_TYPES[doc_type]["title"])
+            session = profile.get("onboarding_session") or {}
+            if not session.get("date") or not session.get("time") or not session.get("timezone"):
+                missing.append("Onboarding date, time and timezone")
+            if missing:
+                raise HTTPException(status_code=409, detail="Prepare and approve every onboarding item first: " + ", ".join(missing))
+
+            links = []
+            overview_token = await ensure_share_token(user_id, "organization_overview")
+            manual_token = await ensure_share_token(user_id, "board_manual")
+            links.append(f"Organization Overview (View): {origin}/shared/{overview_token}")
+            links.append(f"Board Manual (View): {origin}/shared/{manual_token}")
+            for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
+                request_record = await db.signature_requests.find_one(
+                    {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}},
+                    {"_id": 0, "token": 1})
+                if not request_record:
+                    agreement_material = await get_current_material(db, user_id, agreement_type, "")
+                    token = secrets.token_urlsafe(24)
+                    await db.signature_requests.insert_one({
+                        "request_id": new_id(), "token": token, "owner_user_id": user_id,
+                        "application_id": application_id, "agreement_type": agreement_type,
+                        "agreement_title": GENERATION_TYPES[agreement_type]["title"],
+                        "material_id": agreement_material["material"]["material_id"],
+                        "agreement_version": agreement_material["current"]["version"],
+                        "document_snapshot": agreement_material["current"]["display_text"],
+                        "organization_name": (await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", ""),
+                        "board_member_name": application.get("profile_snapshot", {}).get("full_name", ""),
+                        "board_member_email": application.get("applicant_email", ""),
+                        "status": "Ready for Signature", "created_at": now_iso(), "updated_at": now_iso(),
+                    })
+                    request_record = {"token": token}
+                links.append(f"{GENERATION_TYPES[agreement_type]['title']} (Review and Sign): {origin}/sign/{request_record['token']}")
+
+            profile_link = await db.board_profile_links.find_one(
+                {"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
+            if not profile_link:
+                profile_link = {"token": secrets.token_urlsafe(24)}
+                snapshot = application.get("profile_snapshot", {})
+                await db.board_profile_links.insert_one({
+                    "token": profile_link["token"], "user_id": user_id, "application_id": application_id,
+                    "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
+                                "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
+                                "linkedin": snapshot.get("linkedin", ""), "location": f"{snapshot.get('city', '')} {snapshot.get('state_region', '')}".strip()},
+                    "status": "Created", "created_at": now_iso(),
+                })
+            links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
+            context += ("\n\nCONDITIONAL APPOINTMENT FLOW (authoritative):"
+                        "\nThe automated reference check is complete. This email conditionally appoints the candidate and prepares them for onboarding. "
+                        "The appointment becomes final only after they complete the onboarding documents and the organization confirms the final appointment."
+                        "\n\nBOARD ONBOARDING SESSION (use these exact details):\n"
+                        + "\n".join(f"{key}: {value}" for key, value in session.items() if value)
+                        + "\n\nLINKS TO INCLUDE under a clear 'Complete Before Onboarding' section. Copy every URL exactly:\n"
+                        + "\n".join(links))
             if application.get("board_role"):
                 context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
-            if reference_status == "Completed" and (background in {"Completed", "Not Required"} or not background):
-                context += ("\nNOTE: No applicable appointment requirement appears to remain outstanding. Do NOT fabricate a condition — the founder "
-                            "should normally use the Formal Appointment instead.")
         if payload.type in {"formal_appointment_letter", "formal_appointment_email"}:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})

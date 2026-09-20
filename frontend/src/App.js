@@ -208,7 +208,7 @@ export default function App() {
           <Route path="/board-recruitment-proposal/confirmed" element={<Navigate to="/" replace />} />
           <Route path="/about-rooney" element={<Navigate to="/" replace />} />
           <Route path="/recruit-your-board-yourself" element={<Navigate to="/" replace />} />
-          <Route path="/board-recruitment-intake" element={<Navigate to="/" replace />} />
+          <Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />
           <Route path="/recruitment-start-here" element={<Navigate to="/" replace />} />
           <Route path="/reactivate" element={<Navigate to="/" replace />} />
           <Route path="/reactivate-with-rooney" element={<Navigate to="/" replace />} />

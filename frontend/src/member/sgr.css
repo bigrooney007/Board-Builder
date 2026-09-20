@@ -56,3 +56,26 @@
 }
 .sgr-help-footer { margin-top: 18px; border-top: 1px dashed #e5e7eb; padding-top: 14px; }
 .sgr-help-footer p { font-weight: 700; color: #111827; margin: 0 0 8px; font-size: 14px; }
+
+.sgr-flow-map {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px;
+  margin: 22px 0 4px; padding: 16px; background: #ffffff; border: 1px solid #e5e7eb;
+  border-radius: 18px; box-shadow: 0 10px 34px rgba(17, 24, 39, 0.05);
+}
+.sgr-flow-map a {
+  display: flex; align-items: center; gap: 9px; min-height: 46px; padding: 9px 11px;
+  border: 1px solid #e0e7ff; border-radius: 12px; background: #f8faff; color: #1e1b4b;
+  font-family: "Outfit", system-ui, sans-serif; font-size: 13px; font-weight: 700; text-decoration: none;
+}
+.sgr-flow-map a:hover { border-color: #6366f1; background: #eef2ff; }
+.sgr-flow-map a span, .sgr-step-heading > span {
+  display: inline-grid; place-items: center; flex: 0 0 auto; width: 28px; height: 28px;
+  border-radius: 999px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff;
+  font-family: "Outfit", system-ui, sans-serif; font-size: 13px; font-weight: 800;
+}
+.sgr-flow-section { scroll-margin-top: 20px; border-left: 4px solid #6366f1 !important; }
+.sgr-step-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sgr-step-heading h2 { margin: 0; }
+.sgr-flow-section > .workspace-panel, .sgr-flow-section > div > .workspace-panel {
+  box-shadow: none; border-color: #e9eaf3; background: #fcfcff;
+}

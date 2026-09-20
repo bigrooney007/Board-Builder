@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
@@ -6,24 +6,42 @@ import { memberApi } from "./api";
 import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
-import { Module3Launch } from "./workspace/WorkspaceModules";
-import { Module4Applicants, Module5References, Module6Onboarding, useApplications, useBranding } from "./workspace/ApplicantModules";
+import { RecruitmentCampaignLaunch, RecruitmentMaterials } from "./workspace/WorkspaceModules";
+import { AutomatedReferenceChecks, FirstBoardMeetingWorkspace, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
 import { BoardMemberResultCard } from "./workspace/ResultsPage";
 import { RecruitmentTutorial } from "./RecruitmentTutorial";
 import "./sgr.css";
 
-const scrollToSupport = () => document.getElementById("sgr-support")?.scrollIntoView({ behavior: "smooth", block: "start" });
+const FLOW_STEPS = [
+  ["br-section-intake", "Fill Intake"], ["br-section-identify", "Identify Board Members"],
+  ["br-section-materials", "Generate Materials"], ["br-section-campaign", "Launch Campaign"],
+  ["br-section-applicants", "Manage Applicants"], ["br-section-references", "Reference Check"],
+  ["br-section-onboarding", "Prepare Onboarding"], ["br-section-facilitation", "Facilitate Onboarding"],
+  ["br-section-portfolio", "Appointment & Portfolio"], ["br-section-support", "Ask For Help"],
+  ["br-section-first-meeting", "First Board Meeting"],
+];
 
 const Section = ({ number, title, children, testId }) => (
-  <section className="member-card" data-testid={testId} style={{ marginTop: 26 }}>
-    <h2 style={{ marginTop: 0 }}>{number}. {title}</h2>
+  <section id={testId} className="member-card sgr-flow-section" data-testid={testId} style={{ marginTop: 26 }}>
+    <div className="sgr-step-heading"><span>{number}</span><h2>{title}</h2></div>
     {children}
-    <div className="sgr-help-footer">
-      <p>NEED HELP WITH THIS STEP?</p>
-      <button className="button" onClick={scrollToSupport} data-testid={`sgr-request-help-${testId}`}>REQUEST HELP</button>
-    </div>
   </section>
 );
+
+const IntakeStep = () => {
+  const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+    memberApi.get("/board-recruitment-intake/context").then((response) => setSubmitted(Boolean(response.data.submitted))).catch(() => {});
+  }, []);
+  return (
+    <>
+      <p>Tell us about your organization, your present board, the board members you want to recruit and your board logistics.</p>
+      <p>The information you provide here powers every recommendation and recruitment material in the sections that follow.</p>
+      {submitted && <p className="member-success" data-testid="br-intake-complete">Intake completed. You can reopen it whenever your organization or recruitment needs change.</p>}
+      <a className="button" href="/board-recruitment-intake?bf=1&dashboard=1" data-testid="br-open-intake-button">{submitted ? "REVIEW OR UPDATE MY INTAKE" : "FILL MY INTAKE FORM"}</a>
+    </>
+  );
+};
 
 const PortfolioSection = () => {
   const { applications, refresh } = useApplications();
@@ -33,7 +51,7 @@ const PortfolioSection = () => {
     <>
       {joined.length === 0 && <p data-testid="br-no-board-members"><em>Board members who complete their agreements and Board Member Profile Form will appear here.</em></p>}
       {joined.map((application) => (
-        <BoardMemberResultCard key={application.application_id} application={application} branding={branding} onChanged={refresh} />
+        <BoardMemberResultCard key={application.application_id} application={application} branding={branding} onChanged={refresh} portfolioOnly />
       ))}
     </>
   );
@@ -76,55 +94,74 @@ export default function BoardRecruitmentPage() {
               <p><strong>Follow the process below.</strong></p>
             </section>
 
-            <Section number={1} title="IDENTIFY THE BOARD MEMBERS YOU NEED" testId="br-section-identify">
+            <nav className="sgr-flow-map" aria-label="Board Recruitment Process" data-testid="br-flow-map">
+              {FLOW_STEPS.map(([target, label], index) => (
+                <a href={`#${target}`} key={target}><span>{index + 1}</span>{label}</a>
+              ))}
+            </nav>
+
+            <Section number={1} title="FILL THE INTAKE FORM" testId="br-section-intake">
+              <IntakeStep />
+            </Section>
+
+            <Section number={2} title="IDENTIFY THE EXACT TYPE OF BOARD MEMBERS NEEDED" testId="br-section-identify">
               <p>Start by identifying the people your organization should be recruiting.</p>
               <p>We will use the information you provided about your organization to help you determine the skills and experience that could strengthen your board.</p>
               <p>Review the recommendations. Edit them based on what you already know about your present board and your organization's needs. You decide who you want to recruit.</p>
               <Module1Profile />
             </Section>
 
-            <Section number={2} title="CREATE YOUR APPLICATION FORM AND RECRUITMENT CAMPAIGN" testId="br-section-campaign">
-              <p>Now create the application potential board members will complete when they are interested in joining your organization, and generate the content you can use to begin attracting potential board members.</p>
-              <p>Review your application form before launching your recruitment campaign. Then review and use the campaign content across the channels you believe are appropriate for your organization — your board application link is automatically included in the recruitment materials where appropriate.</p>
-              <Module3Launch />
+            <Section number={3} title="GENERATE THE RECRUITMENT MATERIALS" testId="br-section-materials">
+              <p>Create your Board Member Application Form and the finished materials you will use to attract the exact type of people your organization needs.</p>
+              <RecruitmentMaterials />
             </Section>
 
-            <Section number={3} title="YOUR BOARD APPLICANTS AND INTERVIEWS" testId="br-section-applicants">
+            <Section number={4} title="LAUNCH THE RECRUITMENT CAMPAIGN" testId="br-section-campaign">
+              <p>Review the application and approved recruitment materials, then launch the campaign when you are ready to begin receiving applicants.</p>
+              <RecruitmentCampaignLaunch />
+            </Section>
+
+            <Section number={5} title="VIEW AND ADD APPLICANTS" testId="br-section-applicants">
               <p>Everyone who completes your Board Member Application Form will automatically appear below.</p>
-              <p>You can also manually add people you discover through referrals, LinkedIn, networking, your existing relationships or any other source — including uploading their CV/resume.</p>
+              <p>You can also add people you discover through referrals, LinkedIn, networking, your existing relationships or another source, including uploading their CV or résumé.</p>
               <p>When you decide you want to interview an applicant, generate an interview guide specifically for that person. It uses their application, their CV or resume if available, what your organization is looking for and the board role being considered. You make the final decision about whether they are right for your board.</p>
               <Module4Applicants />
             </Section>
 
-            <Section number={4} title="REFERENCE CHECKS, AGREEMENTS AND BOARD MEMBER PROFILE" testId="br-section-references">
-              <p>If you decide to move an applicant forward, use the resources below to conduct their reference checks. The system does not automatically contact anyone — you decide when and how to use the materials.</p>
-              <p>Once you have decided to bring someone onto your board, generate the agreements and documents you want them to review and sign, and send them the Board Member Profile Form so you understand how they want to contribute to the organization.</p>
-              <Module5References />
+            <Section number={6} title="COMPLETE THE AUTOMATED REFERENCE CHECK" testId="br-section-references">
+              <p>Move the right applicant forward and run the complete reference process through the automated reference-check system.</p>
+              <AutomatedReferenceChecks />
             </Section>
 
-            <Section number={5} title="PREPARE FOR ONBOARDING" testId="br-section-onboarding">
-              <p>Before officially bringing the new board member into the organization, generate your onboarding facilitation guide.</p>
-              <p>It will help you lead the onboarding conversation and ensure the new board member understands the organization, why they were recruited, their role, the expectations attached to board service, the contribution they have agreed to make and how they can begin supporting the organization.</p>
-              <Module6Onboarding />
+            <Section number={7} title="PREPARE THE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" testId="br-section-onboarding">
+              <p>Set the onboarding date, prepare the Organization Overview and Board Manual, generate all three agreements, create the Board Member Profile Form and send one conditional appointment email carrying every secure link.</p>
+              <OnboardingPreparation />
             </Section>
 
-            <Section number={6} title="CREATE THEIR BOARD MEMBER PORTFOLIO" testId="br-section-portfolio">
-              <p>Once the board member has completed the necessary agreements and Board Member Profile Form, you can generate their individual Board Member Portfolio.</p>
+            <Section number={8} title="GENERATE THE ONBOARDING FACILITATION GUIDE" testId="br-section-facilitation">
+              <p>Use the guide to lead the onboarding conversation, clarify expectations and record exactly what the new board member has agreed to contribute.</p>
+              <OnboardingFacilitationGuide />
+            </Section>
+
+            <Section number={9} title="GENERATE THE FINAL APPOINTMENT LETTER AND BOARD MEMBER PORTFOLIO" testId="br-section-portfolio">
+              <p>Confirm the final appointment after the reference check, agreements and Board Member Profile are complete. Record the onboarding conclusion, generate the formal appointment letter and create the individual Board Member Portfolio.</p>
+              <FormalAppointmentWorkspace />
               <p>The portfolio brings together the reason they were recruited, the skills and experience they bring, the areas where they want to contribute, their board responsibilities, their agreed commitments, the priorities they can support and the role they can play in strengthening the organization.</p>
               <PortfolioSection />
             </Section>
 
-            <section className="member-card" data-testid="br-closing" style={{ marginTop: 26 }}>
-              <h2>YOUR BOARD RECRUITMENT PROCESS CONTINUES</h2>
-              <p>Repeat this process for every applicant you want to consider and every new board member you decide to bring into the organization.</p>
-              <p>The goal is not simply to fill board seats.</p>
-              <p>The goal is to intentionally build the board your organization needs to raise money, grow and accomplish its mission.</p>
-            </section>
-
-            <div id="sgr-support">
+            <Section number={10} title="ASK FOR HELP" testId="br-section-support">
+              <p>Request support whenever you need help using the platform or executing the recruitment process.</p>
+              <div id="sgr-support">
               <SupportBox productKey="recruitment_self_guided" moduleNumber={1}
                 supportTypes={["I have a question about this step", "I need help using the platform", "I need help executing this step", "I would like someone to help me complete this step"]} />
-            </div>
+              </div>
+            </Section>
+
+            <Section number={11} title="ORGANIZE THE FIRST BOARD MEETING" testId="br-section-first-meeting">
+              <p>Set the meeting details, generate the invitation and send it to the board members who have completed the recruitment and appointment process.</p>
+              <FirstBoardMeetingWorkspace />
+            </Section>
           </>
         )}
       </main>

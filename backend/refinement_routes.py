@@ -347,12 +347,42 @@ def create_refinement_router(db) -> APIRouter:
         structured = material["current"].get("structured") or {}
         subject = structured.get("subject") or GENERATION_TYPES[payload.type]["title"]
         body_text = structured.get("body") or material["current"]["display_text"]
+        if payload.type == "conditional_offer":
+            process = await db.reference_processes.find_one(
+                {"owner_user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0, "status": 1})
+            if (process or {}).get("status") != "Completed":
+                raise HTTPException(status_code=409, detail="Complete the automated reference check before sending the Conditional Appointment Email.")
+            expected_tokens = []
+            for doc_type in ["organization_overview", "board_manual"]:
+                document = await db.generated_materials.find_one(
+                    {"user_id": member["user_id"], "type": doc_type, "application_id": "", "status": "Approved"},
+                    {"_id": 0, "material_id": 1})
+                share = await db.share_links.find_one({"material_id": (document or {}).get("material_id", "")}, {"_id": 0, "share_token": 1})
+                if not share:
+                    raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
+                expected_tokens.append(share["share_token"])
+            signatures = await db.signature_requests.find(
+                {"owner_user_id": member["user_id"], "application_id": payload.application_id,
+                 "agreement_type": {"$in": ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]},
+                 "status": {"$ne": "Void"}}, {"_id": 0, "token": 1}).to_list(10)
+            profile_link = await db.board_profile_links.find_one(
+                {"user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0, "token": 1})
+            if len(signatures) != 3 or not profile_link:
+                raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
+            expected_tokens.extend(record["token"] for record in signatures)
+            expected_tokens.append(profile_link["token"])
+            if any(token not in body_text for token in expected_tokens):
+                raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
         if payload.type == "portfolio_email":
             portfolio = await get_current_material(db, member["user_id"], "board_member_portfolio", payload.application_id)
             if portfolio and portfolio["current"]:
                 body_text += "\n\n----------------------------\n" + portfolio["current"]["display_text"]
         import html as _html
-        html_body = "".join(f"<p>{_html.escape(line)}</p>" if line.strip() else "<br/>" for line in body_text.split("\n"))
+        def email_line(line: str) -> str:
+            escaped = _html.escape(line)
+            linked = re.sub(r"(https?://[^\s]+)", r'<a href="\1">\1</a>', escaped)
+            return f"<p>{linked}</p>" if line.strip() else "<br/>"
+        html_body = "".join(email_line(line) for line in body_text.split("\n"))
         try:
             await _send("NONPROFIT_SENDER", email, subject, _wrap(subject, html_body))
         except Exception as exc:

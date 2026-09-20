@@ -55,3 +55,58 @@ def test_facilitated_game_never_falls_back_to_recruitment_booking():
     assert "calendly.com/boardbuilder/recruitboard" not in route
     assert "booking_url" not in route
     assert '@router.post("/facilitated-game-checkout")' not in payments
+
+
+def test_recruitment_dashboard_follows_the_single_forward_flow():
+    dashboard = source("frontend/src/member/BoardRecruitmentPage.jsx")
+    ordered_ids = [
+        "br-section-intake", "br-section-identify", "br-section-materials", "br-section-campaign",
+        "br-section-applicants", "br-section-references", "br-section-onboarding",
+        "br-section-facilitation", "br-section-portfolio", "br-section-support", "br-section-first-meeting",
+    ]
+    positions = [dashboard.index(test_id) for test_id in ordered_ids]
+    assert positions == sorted(positions)
+    assert "RecruitmentMaterials" in dashboard
+    assert "RecruitmentCampaignLaunch" in dashboard
+    assert "AutomatedReferenceChecks" in dashboard
+    assert "FirstBoardMeetingWorkspace" in dashboard
+
+
+def test_recruitment_reference_check_has_one_automated_path():
+    modules = source("frontend/src/member/workspace/ApplicantModules.jsx")
+    workspace = source("backend/workspace_routes.py")
+    assert 'data-testid="automated-reference-workspace"' in modules
+    assert "Generate Candidate Referee Request Email" not in modules
+    assert "Generate Reference Check Email" not in modules
+    assert "Generate Reference Call Guide" not in modules
+    assert "Generate Reference Record & Evaluation Form" not in modules
+    assert "MANUAL_REFERENCE_MATERIAL_TYPES" in workspace
+    assert "Manual reference materials have been replaced by the automated reference-check process." in workspace
+
+
+def test_conditional_appointment_carries_every_onboarding_link():
+    workspace = source("backend/workspace_routes.py")
+    refinement = source("backend/refinement_routes.py")
+    start = workspace.index('if payload.type == "conditional_offer"')
+    end = workspace.index('if payload.type in {"formal_appointment_letter", "formal_appointment_email"}', start)
+    conditional = workspace[start:end]
+    assert "Complete the automated reference check" in conditional
+    assert "organization_overview" in conditional
+    assert "board_manual" in conditional
+    assert "board_member_agreement" in conditional
+    assert "confidentiality_agreement" in conditional
+    assert "conflict_of_interest_agreement" in conditional
+    assert "Board Member Profile Form" in conditional
+    assert "BOARD ONBOARDING SESSION" in conditional
+    assert "expected_tokens" in refinement
+    assert "Regenerate the Conditional Appointment Email so it carries every approved onboarding link." in refinement
+
+
+def test_recruitment_purchase_enters_dashboard_before_intake():
+    success = source("frontend/src/member/PurchaseSuccessPage.jsx")
+    app = source("frontend/src/App.js")
+    dashboard = source("frontend/src/member/BoardRecruitmentPage.jsx")
+    assert 'claimed_source === "recruitment_497"' in success
+    assert 'navigate("/app/board-recruitment")' in success
+    assert '<Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />' in app
+    assert '/board-recruitment-intake?bf=1&dashboard=1' in dashboard

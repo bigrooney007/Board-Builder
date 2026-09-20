@@ -7,12 +7,15 @@ const BASE = process.env.REACT_APP_BACKEND_URL;
 
 const ITEMS = [
   { clip: "rct_how_this_works", label: "HOW THIS WORKS", target: "fbb-recruitment-heading" },
+  { clip: "rct_intake", label: "Fill The Intake Form", target: "br-section-intake" },
   { clip: "rct_identify", label: "Identify Board Members Needed", target: "br-section-identify" },
-  { clip: "rct_strategy", label: "Build Recruitment Strategy", target: "br-section-campaign" },
+  { clip: "rct_strategy", label: "Generate Recruitment Materials", target: "br-section-materials" },
   { clip: "rct_launch", label: "Launch Recruitment Campaign", target: "br-section-campaign" },
-  { clip: "rct_review", label: "Review Applicants / Introductory Calls", target: "br-section-applicants" },
-  { clip: "rct_references", label: "References / Background Checks / Conditional Appointment", target: "br-section-references" },
-  { clip: "rct_onboarding", label: "Onboarding / First Board Meeting", target: "br-section-onboarding" },
+  { clip: "rct_review", label: "View Applicants And Interviews", target: "br-section-applicants" },
+  { clip: "rct_references", label: "Automated Reference Check", target: "br-section-references" },
+  { clip: "rct_onboarding", label: "Onboarding And Conditional Appointment", target: "br-section-onboarding" },
+  { clip: "rct_onboarding", label: "Final Appointment And Portfolio", target: "br-section-portfolio" },
+  { clip: "rct_onboarding", label: "First Board Meeting", target: "br-section-first-meeting" },
 ];
 
 export const RecruitmentTutorial = () => {
@@ -84,7 +87,7 @@ export const RecruitmentTutorial = () => {
               {ITEMS.map((item) => {
                 const ready = clips[item.clip]?.ready;
                 return (
-                  <button key={item.clip} className="sgr-tutorial-item" onClick={() => select(item)} data-testid={`sgr-tutorial-item-${item.clip}`}>
+                  <button key={`${item.clip}-${item.target}`} className="sgr-tutorial-item" onClick={() => select(item)} data-testid={`sgr-tutorial-item-${item.target}`}>
                     <span>{item.label}</span>
                     {!ready && <em>audio coming soon</em>}
                   </button>
