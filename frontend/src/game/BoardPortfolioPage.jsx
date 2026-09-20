@@ -125,6 +125,7 @@ export default function BoardPortfolioPage() {
             {approved && (
               <button className="bfg-pf-btn ghost" onClick={() => window.print()} data-testid="bfg-bp-print-btn">Print / Save As PDF</button>
             )}
+            {approved && <a className="bfg-pf-btn" href={`/board-assistant/${token}`} data-testid="bfg-bp-assistant-btn">Let's Help You Execute</a>}
           </div>
           {approved && (
             <p className="bfg-pf-note" style={{ marginTop: 12, color: "#059669", fontWeight: 700 }} data-testid="bfg-bp-approved-badge">

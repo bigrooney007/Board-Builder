@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { RoundProgress, RoundResults } from "./groupShared";
-import { GroupReviewStage } from "./GroupReviewStage";
+import { RoundProgress } from "./groupShared";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -19,7 +18,6 @@ export default function GroupPlayPage() {
   const [state, setState] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState("");
-  const [ranking, setRanking] = useState([]);
   const [busy, setBusy] = useState(false);
   const lastRound = useRef(0);
 
@@ -38,7 +36,7 @@ export default function GroupPlayPage() {
         params: { slot: identity.slot_id, device: identity.device_id } });
       setState(response.data);
       const roundNumber = response.data.current_round?.round_number || 0;
-      if (roundNumber !== lastRound.current) { lastRound.current = roundNumber; setRanking([]); }
+      if (roundNumber !== lastRound.current) lastRound.current = roundNumber;
     } catch { /* keep last state */ }
   }, [identity, token]);
 
@@ -67,28 +65,6 @@ export default function GroupPlayPage() {
     setBusy(false);
   };
 
-  const toggleRank = (ideaId) => {
-    if (!round || round.status !== "open" || round.my_submitted) return;
-    setRanking((current) => current.includes(ideaId)
-      ? current.filter((id) => id !== ideaId)
-      : current.length < round.required_rank ? [...current, ideaId] : current);
-  };
-
-  const submit = async () => {
-    setBusy(true); setError("");
-    try {
-      await axios.post(`${API}/game/group/play/${token}/submit`, {
-        slot_id: identity.slot_id, device_id: identity.device_id,
-        round_number: round.round_number, rankings: ranking,
-      });
-      await poll();
-    } catch (err) {
-      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not submit your ranking. Please try again.");
-      await poll();
-    }
-    setBusy(false);
-  };
-
   if (notFound) {
     return (
       <div className="bfg bfg-gg" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
@@ -102,7 +78,6 @@ export default function GroupPlayPage() {
   if (!entry) return <div className="bfg bfg-gg" style={{ minHeight: "100vh" }} />;
 
   const round = state?.current_round;
-  const ideasById = Object.fromEntries((round?.ideas || []).map((idea) => [idea.idea_id, idea]));
   const myName = identity ? (entry.players.find((player) => player.slot_id === identity.slot_id)?.name || "") : "";
 
   return (
@@ -119,7 +94,7 @@ export default function GroupPlayPage() {
             <h1>Welcome To Game Night</h1>
             <p style={{ marginTop: 12 }}>
               {entry.organization_name} is working toward a fundraising goal of {entry.goal_display}.
-              {" "}Tonight, your board will review the ideas contributed before Game Night and identify the strongest priorities for your fundraising strategy.
+              {" "}Tonight, your board will review the complete set of ideas together and agree on the direction for your fundraising strategy.
             </p>
             <h2 style={{ marginTop: 24 }}>Who Are You?</h2>
             <div className="bfg-gg-names">
@@ -149,7 +124,7 @@ export default function GroupPlayPage() {
             <p style={{ marginTop: 12 }}>Waiting for {state.host_first_name} to start the Board Fundraising Review Game.</p>
             <p className="bfg-gg-goal" style={{ marginTop: 16 }}>Fundraising Goal: {state.goal_display}</p>
             <p style={{ marginTop: 14 }}>
-              Tonight you will review the ideas your board contributed and help identify the strongest priorities for your fundraising strategy.
+              The host controls the meeting. Your screen will automatically show the same section and ideas the host is discussing.
             </p>
           </div>
         )}
@@ -157,74 +132,27 @@ export default function GroupPlayPage() {
         {identity && state?.status === "in_progress" && round && (
           <>
             <RoundProgress current={round.round_number} total={state.total_rounds} />
-            {round.status === "open" && !round.my_submitted && (
-              <div className="bfg-gg-card" data-testid="bfg-gg-ranking">
+            {round.status === "open" && (
+              <div className="bfg-gg-card" data-testid="bfg-gg-shared-review">
                 <h1>{round.title}</h1>
                 <p style={{ marginTop: 10 }}>{round.instruction}</p>
-                {round.required_rank > 0 ? (
-                  <>
-                    <p className="bfg-gg-rule" data-testid="bfg-gg-rank-rule">Choose and rank your top {round.required_rank} ideas.</p>
-                    {ranking.length > 0 && (
-                      <div className="bfg-gg-myranking" data-testid="bfg-gg-my-ranking">
-                        <p className="bfg-gg-eyebrow">Your Ranking</p>
-                        {ranking.map((ideaId, index) => (
-                          <button type="button" key={ideaId} className="bfg-gg-ranked" onClick={() => toggleRank(ideaId)}>
-                            <span className="bfg-gg-pos">#{index + 1}</span> {ideasById[ideaId]?.text}
-                            <span className="bfg-gg-remove">Remove</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="bfg-gg-ideas">
-                      {(round.ideas || []).map((idea) => {
-                        const position = ranking.indexOf(idea.idea_id);
-                        return (
-                          <button type="button" key={idea.idea_id}
-                            className={`bfg-gg-idea ${position >= 0 ? "ranked" : ""}`}
-                            onClick={() => toggleRank(idea.idea_id)}
-                            data-testid={`bfg-gg-idea-${idea.idea_id}`}>
-                            {position >= 0 && <span className="bfg-gg-pos">#{position + 1}</span>}
-                            <span className="bfg-gg-idea-text">{idea.text}</span>
-                            <small>Suggested by: {idea.suggested_by}</small>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {error && <p className="bfg-error">{error}</p>}
-                    <button className="bfg-btn bfg-btn-primary" style={{ width: "100%", marginTop: 18 }}
-                      disabled={ranking.length !== round.required_rank || busy}
-                      onClick={submit} data-testid="bfg-gg-submit-btn">
-                      {busy ? "Submitting…" : "Submit My Ranking"}
-                    </button>
-                  </>
-                ) : (
-                  <p style={{ marginTop: 16 }}>No ideas were contributed for this strategy area. Waiting for the host to continue.</p>
-                )}
-              </div>
-            )}
-            {round.status === "open" && round.my_submitted && (
-              <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gg-submitted">
-                <h1>Ranking Submitted</h1>
-                <p style={{ marginTop: 12 }}>Waiting for the rest of the board.</p>
-                <p className="bfg-gg-rule" data-testid="bfg-gg-submit-count">{round.submitted_count} of {state.joined_count} players have submitted.</p>
+                <div className="bfg-gg-ideas" style={{ marginTop: 18 }}>
+                  {(round.ideas || []).map((idea) => <div className="bfg-gg-idea" key={idea.idea_id}><span className="bfg-gg-idea-text">{idea.text}</span><small>Source: {idea.suggested_by}</small></div>)}
+                </div>
+                {!round.ideas?.length && <p style={{ marginTop: 16 }}>No earlier information was supplied for this screen. Join the discussion so the board can establish its direction.</p>}
+                <p className="bfg-gg-rule">Discuss this screen with the board. It will advance automatically when the host continues.</p>
               </div>
             )}
             {round.status === "closed" && (
-              <div className="bfg-gg-card" data-testid="bfg-gg-round-results">
-                <h1>Your Board's Priorities</h1>
-                <p style={{ marginTop: 8 }}>{round.title}</p>
-                <RoundResults results={round.results || []} />
-                <p style={{ marginTop: 16 }}>
-                  These are the ideas your board collectively prioritized. The remaining ideas have been saved and can still be considered when your fundraising strategy is created.
-                </p>
-                <p className="bfg-gg-rule">Waiting for the host to continue.</p>
+              <div className="bfg-gg-card" data-testid="bfg-gg-advancing">
+                <h1>Moving To The Next Review</h1><p>The host is advancing the board to the next screen.</p>
               </div>
             )}
           </>
         )}
 
         {identity && state?.status === "completed" && (
-          <GroupReviewStage token={token} identity={identity} />
+          <div className="bfg-gg-card" style={{ textAlign: "center" }}><h1>The Group Game Is Complete</h1><p style={{ marginTop: 12 }}>The host will now create and share the final fundraising strategy from everything the organization and board contributed.</p></div>
         )}
       </main>
     </div>

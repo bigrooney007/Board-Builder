@@ -1,4 +1,4 @@
-"""Board Fundraising Game Phase 3: Group Review Game (host-controlled ranking rounds, shared secure link, polling-based updates)."""
+"""Board Fundraising Game group meeting: one host-controlled screen shared by the whole board."""
 import re
 import secrets
 from datetime import datetime, timezone
@@ -10,27 +10,31 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 
 GAME_ENTITLEMENT = "board_fundraising_game"
-TOTAL_ROUNDS = 6
+TOTAL_ROUNDS = 9
 
 ROUND_DEFS = [
-    {"round_number": 1, "section_key": "who_should_fund_individuals", "source_key": "who_should_fund", "audience_type": "individual",
-     "title": "Strategic Area 1A: The Exact Individuals Meant To Fund Our Mission",
-     "instruction": "Your board identified the exact types of people with the greatest reason to fund {organization}'s mission. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
-    {"round_number": 2, "section_key": "who_should_fund_businesses", "source_key": "who_should_fund", "audience_type": "business",
-     "title": "Strategic Area 1B: The Exact Businesses Meant To Fund Our Mission",
-     "instruction": "Your board identified the exact types of businesses with a real reason to see {organization}'s mission succeed. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
-    {"round_number": 3, "section_key": "who_should_fund_grantors", "source_key": "who_should_fund", "audience_type": "grantor",
-     "title": "Strategic Area 1C: The Exact Grantors Meant To Fund Our Mission",
-     "instruction": "Your board identified the grantors whose funding focus connects directly with {organization}'s mission. Review every profile and rank the ones you believe should be your organization's highest fundraising priorities."},
-    {"round_number": 4, "section_key": "where_to_find", "source_key": "where_to_find",
-     "title": "Strategic Area 2: Where We Can Consistently Find Them",
-     "instruction": "Your board identified where the funders you prioritized can be consistently found. Each idea keeps the audience it belongs to. Rank the places and channels you believe should receive the greatest attention."},
-    {"round_number": 5, "section_key": "attract_attention", "source_key": "attract_attention",
-     "title": "Strategic Area 3: How We Will Attract Their Attention",
-     "instruction": "Your board identified what {organization} can offer to attract each audience's attention. Each idea keeps the audience it belongs to. Rank the approaches you believe should be prioritized."},
-    {"round_number": 6, "section_key": "fundraising_process", "source_key": "fundraising_process",
-     "title": "Strategic Area 4: The Exact Process We Will Use To Raise Money",
-     "instruction": "Your board contributed ideas for moving potential funders through KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD. Rank the ideas you believe are most important to your organization's fundraising process."},
+    {"round_number": 1, "section_key": "who_should_fund", "source_key": "who_should_fund",
+     "title": "Who Should Fund Our Mission",
+     "instruction": "Review every funding-audience idea together, including the organization's present donor, business and grantor reality. Discuss what the board agrees should move forward."},
+    {"round_number": 2, "section_key": "where_to_find", "source_key": "where_to_find",
+     "title": "Where We Can Consistently Find Them",
+     "instruction": "Review the places, networks and channels suggested by the board. Discuss what is realistic for {organization}."},
+    {"round_number": 3, "section_key": "attract_attention", "source_key": "attract_attention",
+     "title": "How We Will Attract Their Attention",
+     "instruction": "Review the board's attraction ideas and agree on the approaches that fit the audiences and the mission."},
+    {"round_number": 4, "section_key": "fundraising_process", "source_key": "fundraising_process",
+     "title": "The Process We Will Use To Raise Money",
+     "instruction": "Discuss how potential funders will move through know, like, trust, ask, follow up and stewardship."},
+    {"round_number": 5, "section_key": "team", "situation_key": "team", "title": "Team",
+     "instruction": "Discuss who will lead, support and remain accountable for executing the fundraising strategy."},
+    {"round_number": 6, "section_key": "technology", "situation_key": "technology", "title": "Technology",
+     "instruction": "Discuss the technology and tracking systems required to execute the strategy consistently."},
+    {"round_number": 7, "section_key": "materials", "situation_key": "materials", "title": "Materials",
+     "instruction": "Discuss the messages, proof, presentations and other fundraising materials the strategy requires."},
+    {"round_number": 8, "section_key": "budget", "situation_key": "financial", "title": "Budget",
+     "instruction": "Discuss the realistic resources and budget required to put the fundraising system in place."},
+    {"round_number": 9, "section_key": "execution", "situation_key": "reflections", "title": "Execution And Accountability",
+     "instruction": "Agree on the immediate sequence, timeline, ownership and accountability needed to begin execution."},
 ]
 
 AREA_DEFS = [
@@ -44,6 +48,18 @@ AUDIENCE_BUCKETS = {"individual": "people", "business": "businesses", "grantor":
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
 STAGE_LABELS = {section["key"]: {stage["key"]: stage["label"] for stage in section.get("stages", [])}
                 for section in GAME_SECTION_DEFAULTS if section.get("stages")}
+
+ROONEY_RECOMMENDATIONS = {
+    "who_should_fund": ["Prioritize people whose lived experience, values or personal story connects directly to the mission.", "Identify businesses whose customers, employees, location or social-impact priorities connect to the people the organization serves.", "Focus grant research on funders whose stated priorities, geography and eligible costs match the mission and the purpose of the fundraising goal."],
+    "where_to_find": ["Map the Board's existing personal, professional, business and community networks before starting cold outreach.", "Use trusted places where each priority audience already gathers, learns or makes decisions.", "Build a repeatable prospect-research routine instead of relying on occasional searches."],
+    "attract_attention": ["Create useful mission-connected content or experiences that give potential funders a reason to engage before an ask.", "Use credible impact evidence, stories and leadership visibility to build attention and trust.", "Create a clear corporate or grantor-facing value proposition for each priority audience."],
+    "fundraising_process": ["Use the relationship pathway KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD for every priority audience.", "Define the next action, owner and follow-up point for every prospect relationship.", "Treat stewardship as the beginning of the next gift or partnership rather than the end of the process."],
+    "team": ["Name one person responsible for coordinating the fundraising system and give Board Members roles that fit their strengths.", "Separate Board-level leadership, introductions and accountability from day-to-day staff work."],
+    "technology": ["Use one reliable system to track prospects, relationships, next actions, asks, follow-up and stewardship.", "Choose the smallest technology stack the team can maintain consistently."],
+    "materials": ["Prepare a clear case for support, impact evidence, audience-specific messages and follow-up templates before outreach begins.", "Create only the materials required by the chosen audiences and fundraising process."],
+    "budget": ["Budget for people, technology, content, design, events, prospect research and stewardship required by the strategy.", "Connect each budget item to a specific execution activity and owner."],
+    "execution": ["Start by building the system, then run consistent visibility and relationship activity before concentrated asks.", "Use a 60, 90 or 120-day execution cycle with named owners, deadlines and a recurring Board accountability review."],
+}
 
 
 def now_iso() -> str:
@@ -174,16 +190,20 @@ def create_group_game_router(db) -> APIRouter:
         members = await board_members(user_id)
         member_names = {record["member_id"]: record["full_name"].split(" ")[0] for record in members}
         member_ids = list(member_names.keys())
+        situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        situation_sections = situation.get("sections") or {}
         for definition in ROUND_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition["source_key"])
-            responses = await db.game_section_responses.find(
-                {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id},
-                {"_id": 0}).to_list(300)
+            section_id = SECTION_ID_BY_KEY.get(definition.get("source_key", ""))
+            responses = []
+            if section_id:
+                responses = await db.game_section_responses.find(
+                    {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id},
+                    {"_id": 0}).to_list(300)
             pool = {}
             order = 0
             for response in responses:
                 name = member_names.get(response["board_member_id"], "Board Member")
-                for raw in area_ideas(response, definition["source_key"], definition.get("audience_type", "")):
+                for raw in area_ideas(response, definition.get("source_key", ""), definition.get("audience_type", "")):
                     text = str(raw).strip()[:400]
                     key = normalise(text)
                     if not key:
@@ -198,6 +218,29 @@ def create_group_game_router(db) -> APIRouter:
                     if response["board_member_id"] not in pool[key]["contributor_ids"]:
                         pool[key]["contributor_ids"].append(response["board_member_id"])
                         pool[key]["contributor_names"].append(name)
+            reality = situation_sections.get(definition.get("situation_key", ""), {})
+            if definition["section_key"] == "who_should_fund":
+                reality = {key: situation_sections.get(key, {}) for key in ("donors", "corporate", "grantors")}
+            def add_reality(value, label="Organization reality"):
+                nonlocal order
+                if isinstance(value, dict):
+                    for child in value.values(): add_reality(child, label)
+                elif isinstance(value, list):
+                    for child in value: add_reality(child, label)
+                elif str(value).strip():
+                    text = str(value).strip()[:400]
+                    key = normalise(text)
+                    if key and key not in pool:
+                        pool[key] = {"idea_id": new_uuid(), "session_id": session_id,
+                                     "round_number": definition["round_number"], "section_key": definition["section_key"],
+                                     "text": text, "normalized": key, "contributor_names": [label],
+                                     "contributor_ids": [], "order": order}
+                        order += 1
+            add_reality(reality)
+            for recommendation in ROONEY_RECOMMENDATIONS.get(definition["section_key"], []):
+                key=normalise(recommendation)
+                if key not in pool:
+                    pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":recommendation,"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation"],"contributor_ids":[],"order":order};order+=1
             ideas = sorted(pool.values(), key=lambda item: item["order"])
             if ideas:
                 await db.group_game_ideas.insert_many([idea.copy() for idea in ideas])
@@ -206,7 +249,7 @@ def create_group_game_router(db) -> APIRouter:
                 "round_number": definition["round_number"], "section_key": definition["section_key"],
                 "title": definition["title"],
                 "instruction": definition["instruction"].replace("{organization}", organization),
-                "status": "waiting", "required_rank": required_rank_for(len(ideas)),
+                "status": "waiting", "required_rank": 0,
                 "idea_count": len(ideas), "started_at": "", "closed_at": "", "created_at": now_iso(),
             })
 
@@ -267,7 +310,7 @@ def create_group_game_router(db) -> APIRouter:
         completed = 0
         in_progress = 0
         ideas_ready = 0
-        strategy_ids = list({SECTION_ID_BY_KEY[definition["source_key"]] for definition in ROUND_DEFS})
+        strategy_ids = list({SECTION_ID_BY_KEY[definition["source_key"]] for definition in ROUND_DEFS if definition.get("source_key")})
         for record in members:
             done = await db.game_section_responses.count_documents(
                 {"board_member_id": record["member_id"], "completed": True})
@@ -333,14 +376,13 @@ def create_group_game_router(db) -> APIRouter:
         rounds = await session_rounds(session["session_id"])
         current_number = session.get("current_round", 0)
         current = next((item for item in rounds if item["round_number"] == current_number), None)
-        submitted = await submitted_slots(session["session_id"], current_number) if current else set()
         player_status = []
         for record in members:
             row = joined.get(record["member_id"])
             player_status.append({
                 "name": record["full_name"].split(" ")[0],
                 "joined": bool(row),
-                "submitted": bool(row and row["slot_id"] in submitted),
+                "submitted": False,
             })
         closed_rounds = []
         for item in rounds:
@@ -359,7 +401,7 @@ def create_group_game_router(db) -> APIRouter:
                 "instruction": current["instruction"], "status": current["status"],
                 "required_rank": current["required_rank"], "idea_count": current["idea_count"],
                 "ideas": await round_ideas(session["session_id"], current["round_number"]),
-                "submitted_count": len(submitted),
+                "submitted_count": 0,
                 "results": (await round_results(session["session_id"], current["round_number"])).get("results", []) if current["status"] == "closed" else [],
             },
             "closed_rounds": closed_rounds,
@@ -401,12 +443,10 @@ def create_group_game_router(db) -> APIRouter:
                     stat["first_place_count"] += 1
         ordered = sorted(stats.values(), key=lambda item: (
             -item["total_score"], -item["first_place_count"], -item["selection_count"], item["order"]))
-        required = round_doc["required_rank"]
         results = []
         for index, stat in enumerate(ordered):
             rank = index + 1
-            prioritised = rank <= required and stat["total_score"] > 0
-            results.append({**stat, "rank": rank, "prioritised": prioritised, "additional": not prioritised})
+            results.append({**stat, "rank": rank, "prioritised": True, "additional": False})
         await db.group_game_results.update_one(
             {"session_id": session_id, "round_number": round_doc["round_number"]},
             {"$set": {"session_id": session_id, "round_number": round_doc["round_number"],
@@ -440,7 +480,7 @@ def create_group_game_router(db) -> APIRouter:
         current_doc = await db.group_game_rounds.find_one(
             {"session_id": session["session_id"], "round_number": current}, {"_id": 0})
         if current_doc and current_doc["status"] != "closed":
-            raise HTTPException(status_code=409, detail="Close voting on the current round first")
+            raise HTTPException(status_code=409, detail="Complete the discussion on the current screen first")
         if current >= TOTAL_ROUNDS:
             await db.group_game_sessions.update_one(
                 {"session_id": session["session_id"]},
@@ -549,7 +589,6 @@ def create_group_game_router(db) -> APIRouter:
         if me and current:
             my_submitted = bool(await db.group_game_rankings.find_one(
                 {"session_id": session["session_id"], "round_number": current_number, "slot_id": slot}, {"_id": 0, "slot_id": 1}))
-        submitted = await submitted_slots(session["session_id"], current_number) if current else set()
         return {
             "status": session["status"],
             "organization_name": (profile.get("organization") or {}).get("name", ""),
@@ -563,8 +602,8 @@ def create_group_game_router(db) -> APIRouter:
                 "instruction": current["instruction"], "status": current["status"],
                 "required_rank": current["required_rank"],
                 "ideas": await round_ideas(session["session_id"], current_number) if current["status"] in {"open", "closed"} else [],
-                "submitted_count": len(submitted),
-                "my_submitted": my_submitted,
+                "submitted_count": 0,
+                "my_submitted": False,
                 "results": (await round_results(session["session_id"], current_number)).get("results", []) if current["status"] == "closed" else [],
             },
         }

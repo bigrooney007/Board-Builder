@@ -100,9 +100,7 @@ def create_host_tools_router(db) -> APIRouter:
         return member
 
     async def merged_content() -> dict:
-        doc = await db.marketing_settings.find_one({"key": "game_host_tools_content"}, {"_id": 0}) or {}
-        stored = doc.get("content")
-        return sanitize_content(stored) if isinstance(stored, dict) else copy.deepcopy(DEFAULT_HOST_TOOLS)
+        return copy.deepcopy(DEFAULT_HOST_TOOLS)
 
     async def get_night(user_id: str) -> dict:
         return await db.game_nights.find_one({"user_id": user_id}, {"_id": 0}) or {}
@@ -184,10 +182,7 @@ def create_host_tools_router(db) -> APIRouter:
     @router.put("/admin/game/host-tools-content")
     async def admin_save_host_tools(payload: dict, request: Request):
         await authenticate_admin(request, db)
-        content = sanitize_content(payload if isinstance(payload, dict) else {})
-        await db.marketing_settings.update_one(
-            {"key": "game_host_tools_content"},
-            {"$set": {"content": content, "updated_at": now_iso()}}, upsert=True)
-        return {"content": content}
+        from fastapi import HTTPException
+        raise HTTPException(status_code=409,detail="Board Fundraising Game facilitation content is version-controlled in source and cannot be overridden from the database.")
 
     return router

@@ -46,7 +46,7 @@ export default function GameWelcomePage() {
 
   const playGame = async () => {
     if (member?.account_status !== "free_game_guest") {
-      navigate("/game/setup");
+      navigate("/game/dashboard");
       return;
     }
     if (password.password.length < 8 || password.password !== password.confirm_password) {
@@ -57,7 +57,7 @@ export default function GameWelcomePage() {
     try {
       await memberApi.post("/members/complete-guest-account", password);
       await refresh();
-      navigate("/game/setup");
+      navigate("/game/dashboard");
     } catch (err) {
       setDetail(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not secure your account. Please try again.");
       setSecuring(false);
@@ -108,9 +108,9 @@ export default function GameWelcomePage() {
               {detail && <p className="bfg-error" style={{ marginBottom: 14 }}>{detail}</p>}
               <button className="bfg-btn bfg-btn-primary" data-testid="bfg-play-game-btn"
                 disabled={securing} onClick={playGame}>
-                {securing ? "Securing My Account…" : "Play My Board Fundraising Game"}
+                {securing ? "Securing My Account…" : "CONTINUE TO MY DASHBOARD"}
               </button>
-              <p style={{ fontSize: 13.5, marginTop: 14 }}>Next: play the game. When you finish, we will take you into your dashboard.</p>
+              <p style={{ fontSize: 13.5, marginTop: 14 }}>Your complete Board Fundraising Game begins inside your dashboard.</p>
             </div>
           </div>
         )}

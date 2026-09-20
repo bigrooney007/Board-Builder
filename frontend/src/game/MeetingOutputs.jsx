@@ -6,7 +6,7 @@ import { useWakeLock } from "./useWakeLock";
 
 const Recognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
-const LiveMeetingRecorder = ({ onFinished }) => {
+export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false }) => {
   const [status, setStatus] = useState("idle"); // idle | recording | paused | finishing
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -92,19 +92,21 @@ const LiveMeetingRecorder = ({ onFinished }) => {
     }
   };
 
+  useEffect(() => { if (autoStart) start(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => () => stopAll("idle"), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
 
   return (
     <div style={{ marginTop: 14, border: "1px solid #E5E7EB", borderRadius: 14, padding: 18 }} data-testid="bfg-live-recorder">
-      <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>Record The Rest Of My Board Meeting</p>
+      <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>{title}</p>
       <p className="bfg-note" style={{ marginTop: 8 }}>
         Before recording, make sure everyone in the meeting knows the discussion is being recorded and transcribed for the purpose of completing your organization's fundraising strategy.
       </p>
       {status === "idle" && (
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 12 }} onClick={start} data-testid="bfg-record-meeting-btn">
-          <Mic size={15} /> RECORD THE REST OF MY BOARD MEETING
+          <Mic size={15} /> {startLabel}
         </button>
       )}
       {(status === "recording" || status === "paused") && (
@@ -239,8 +241,6 @@ const OUTPUT_CARDS = [
     text: "Your organization's information, board ideas, priorities and meeting decisions in one fundraising strategy.", action: "View Final Strategy" },
   { key: "board_portfolios", tour: "board-portfolios", title: "Board Portfolios",
     text: "A personal portfolio for every board member showing exactly how they will participate.", action: "Open Board Portfolios" },
-  { key: "execution_materials", tour: "execution-materials", title: "Execution Materials",
-    text: "The tools and materials each board member needs to carry out their responsibilities.", action: "Open Execution Materials" },
   { key: "relationship_mapping", tour: "relationship-mapping", title: "Relationship Mapping",
     text: "Board members identify people, businesses and grantors in their networks who match your funder profiles.", action: "Open Relationship Mapping" },
 ];
@@ -260,7 +260,6 @@ export const FinalOutputsSection = ({ overview }) => {
   const destinations = {
     final_strategy: finalId ? `/game/strategy/view/${finalId}` : "",
     board_portfolios: "/game/portfolios",
-    execution_materials: "/game/execution-materials",
     relationship_mapping: "/game/relationships",
   };
   return (

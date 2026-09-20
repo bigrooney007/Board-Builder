@@ -17,18 +17,6 @@ export const MemberShell = ({ children }) => {
       <ReviewModeBanner />
       <nav className="site-nav member-nav" data-testid="member-navigation">
         <Link className="brand" to="/" data-testid="member-home-logo"><img src={logoUrl} alt={memberShellText.nonprofitBoardBuilder} /></Link>
-        <div className="nav-links">
-          <Link to="/app" data-testid="member-dashboard-link">{memberShellText.t_myBoardBuilder}</Link>
-          {(member?.entitlements || []).some((e) => ["fundraising_board_builder", "fbb_activation", "fbb_recruitment"].includes(e)) && (
-            <>
-              <Link to="/app/fundraising-activation" data-testid="member-fbb-activation-link">Board Fundraising Activation</Link>
-              <Link to="/app/board-recruitment" data-testid="member-fbb-recruitment-link">Board Recruitment</Link>
-            </>
-          )}
-          {member?.entitlements?.includes("board_fix_system") && (
-            <Link to="/board-fix-roadmap" data-testid="member-board-fix-roadmap-link">Board Fix</Link>
-          )}
-        </div>
         {member ? (
           <div className="member-nav-right">
             <span className="member-nav-name" data-testid="member-nav-name">{member.first_name}</span>

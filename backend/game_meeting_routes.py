@@ -547,6 +547,15 @@ def create_game_meeting_router(db) -> APIRouter:
             {"user_id": member["user_id"]}, {"_id": 0}).sort("created_at", 1).to_list(1000)
         return {"entries": [{**entry_view(row), "member_name": row.get("member_name", "")} for row in rows]}
 
+    @router.get("/game/relationships/export.csv")
+    async def export_relationships(request: Request):
+        import csv
+        import io
+        from fastapi.responses import Response as HttpResponse
+        member=await game_member(request);rows=await db.game_relationships.find({"user_id":member["user_id"]},{"_id":0}).sort("created_at",1).to_list(5000);stream=io.StringIO();fields=["funder_type","name","organization","email","phone","other_contact","member_name","how_know","why_match","willing_intro","willing_participate","willing_ask","willing_org_ask"];writer=csv.DictWriter(stream,fieldnames=fields);writer.writeheader()
+        for row in rows:writer.writerow({key:row.get(key,"") for key in fields})
+        return HttpResponse(content=stream.getvalue(),media_type="text/csv",headers={"Content-Disposition":'attachment; filename="board-relationship-map.csv"'})
+
     # ---------- Board member final strategy journey ----------
 
     @router.get("/game/final/{token}")

@@ -241,6 +241,10 @@ class RespondPayload(BaseModel):
 class GeneratePayload(BaseModel):
     origin_url: str = Field(default="")
 
+class AssistantPayload(BaseModel):
+    message: str = Field(min_length=1, max_length=8000)
+    material_type: str = Field(default="", max_length=160)
+
 
 def create_portfolio_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
@@ -504,6 +508,7 @@ def create_portfolio_router(db) -> APIRouter:
         organization = (profile.get("organization") or {}).get("name", "your organisation")
         first_name = portfolio["member_name"].split(" ")[0]
         link = f"{origin.rstrip('/')}/board-portfolio/{portfolio['token']}"
+        assistant_link = f"{origin.rstrip('/')}/board-assistant/{portfolio['token']}"
         body = (
             f"<p>Hi {html.escape(first_name)},</p>"
             f"<p>Thank you for helping {html.escape(organization)} build and adopt its fundraising strategy.</p>"
@@ -512,6 +517,8 @@ def create_portfolio_router(db) -> APIRouter:
             f"<p>Please review your portfolio and confirm that it accurately reflects how you want to participate.</p>"
             f"{game_button(link, 'Review My Board Fundraising Portfolio')}"
             f"<p>You can also view the fundraising strategy your board adopted during Game Night from inside your portfolio.</p>"
+            f"<p>After you approve your portfolio, bookmark your personal fundraising assistant. It will help you execute your agreed role and create the materials you need.</p>"
+            f"{game_button(assistant_link, 'Bookmark My Fundraising Assistant')}"
             f"<div style='margin-top:26px;'>{signature_html(profile, member)}</div>"
         )
         subject = f"Your Board Fundraising Portfolio For {organization} Is Ready"
@@ -758,6 +765,7 @@ def create_portfolio_router(db) -> APIRouter:
                 organization = (profile_doc.get("organization") or {}).get("name", "your organisation")
                 first_name = portfolio["member_name"].split(" ")[0]
                 link = f"{origin.rstrip('/')}/board-portfolio/{portfolio['token']}"
+                assistant_link = f"{origin.rstrip('/')}/board-assistant/{portfolio['token']}"
                 primary = profile_doc.get("primary_user") or {}
                 lines = [primary.get("full_name", ""), primary.get("job_title", ""), organization]
                 signature = "".join(f"<p style='margin:2px 0;'>{html.escape(line)}</p>" for line in lines if line and line.strip())
@@ -766,6 +774,8 @@ def create_portfolio_router(db) -> APIRouter:
                     f"<p>Your fundraising execution materials for {html.escape(organization)} are ready.</p>"
                     f"<p>These resources were created around the fundraising responsibilities you approved in your Board Fundraising Portfolio.</p>"
                     f"{game_button(link, 'Open My Execution Toolkit')}"
+                    f"<p>Your personal fundraising assistant is also ready. Bookmark this secure link so you can return whenever you need a message, script, checklist or guidance.</p>"
+                    f"{game_button(assistant_link, 'Open And Bookmark My Fundraising Assistant')}"
                     f"<div style='margin-top:26px;'>{signature}</div>"
                 )
                 await send_game_email(portfolio["member_email"], member.get("email", ""),
@@ -821,5 +831,40 @@ def create_portfolio_router(db) -> APIRouter:
         return {"status": status,
                 "toolkit": toolkit.get("data") if status == "ready" else None,
                 "generated_at": toolkit.get("generated_at", "")}
+
+    async def assistant_context(portfolio: dict) -> dict:
+        profile = await get_profile(portfolio["user_id"])
+        strategy = await db.game_strategies.find_one({"strategy_id": portfolio["strategy_id"]}, {"_id": 0}) or {}
+        relationships = await db.game_relationships.find({"user_id": portfolio["user_id"], "board_member_id": portfolio["board_member_id"]}, {"_id": 0}).to_list(200)
+        snapshot = portfolio.get("approved_snapshot") or portfolio
+        return {"organization": profile.get("organization") or {}, "fundraising_goal": profile.get("goal") or {},
+                "adopted_strategy": strategy.get("data") or {}, "board_member": portfolio.get("member_name", ""),
+                "approved_roles": snapshot.get("system_roles") or [], "approved_activities": snapshot.get("direct_activities") or [],
+                "additional_commitments": snapshot.get("additional_commitments") or [], "this_member_relationships": relationships}
+
+    @router.get("/board-assistant/{token}")
+    async def board_assistant(token: str):
+        portfolio = await portfolio_by_token(token)
+        if portfolio.get("status") not in {"approved", "materials_ready"}:raise HTTPException(409,"Approve the Board Fundraising Portfolio before starting execution")
+        profile = await get_profile(portfolio["user_id"]);snapshot=portfolio.get("approved_snapshot") or portfolio;suggestions=[]
+        for item in (snapshot.get("system_roles") or [])+(snapshot.get("direct_activities") or []):
+            key=item.get("role_key") or item.get("activity_key") or "custom"
+            for title in MATERIALS_MAP.get(key,CUSTOM_MATERIALS)[:4]:
+                if title not in suggestions:suggestions.append(title)
+        history=await db.board_assistant_messages.find({"portfolio_id":portfolio["portfolio_id"]},{"_id":0}).sort("created_at",1).to_list(200)
+        return {"member_name":portfolio["member_name"],"organization_name":(profile.get("organization") or {}).get("name",""),"suggested_materials":suggestions[:12],"messages":[{"role":x["role"],"text":x["text"]} for x in history]}
+
+    @router.post("/board-assistant/{token}")
+    async def use_board_assistant(token: str,payload:AssistantPayload):
+        portfolio=await portfolio_by_token(token)
+        if portfolio.get("status") not in {"approved","materials_ready"}:raise HTTPException(409,"Approve the Board Fundraising Portfolio before starting execution")
+        context=await assistant_context(portfolio);request_text=(f"Create this ready-to-use fundraising material: {payload.material_type}.\n\nAdditional instruction: {payload.message}" if payload.material_type else payload.message)
+        api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
+        system=("You are one Board Member's secure fundraising execution assistant. Use only the supplied organization, adopted strategy, approved portfolio, this member's relationships and conversation. Give practical, ready-to-use help. Never invent facts, people, relationships, commitments, results or authority. Never assign work outside the approved portfolio. Use clear placeholders when missing facts are required. Do not mention AI.")
+        history=await db.board_assistant_messages.find({"portfolio_id":portfolio["portfolio_id"]},{"_id":0}).sort("created_at",-1).limit(12).to_list(12);history.reverse()
+        prompt=f"AUTHORITATIVE CONTEXT:\n{json.dumps(context,default=str)}\n\nRECENT CONVERSATION:\n{json.dumps(history,default=str)}\n\nBOARD MEMBER REQUEST:\n{request_text}"
+        chat=LlmChat(api_key=api_key,session_id=f"board-assistant-{portfolio['portfolio_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model);response=await chat.send_message(UserMessage(text=prompt));answer=response if isinstance(response,str) else getattr(response,"text",str(response));now=now_iso()
+        await db.board_assistant_messages.insert_many([{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"user","text":request_text,"created_at":now},{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"assistant","text":answer,"created_at":now_iso()}])
+        return {"answer":answer}
 
     return router

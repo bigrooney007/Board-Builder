@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import StrategicLeadershipPortfolioPage from "./funnels/StrategicLeadershipPortfolioPage";
+import StrategicLeadershipAssistantPage from "./funnels/StrategicLeadershipAssistantPage";
+import StrategicSessionWatchPage from "./funnels/StrategicSessionWatchPage";
 import axios from "axios";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "@/App.css";
@@ -84,23 +86,18 @@ import GamePlayPage from "@/game/GamePlayPage";
 import GroupGamePage from "@/game/GroupGamePage";
 import StrategyPage from "@/game/StrategyPage";
 import SharedStrategyPage from "@/game/SharedStrategyPage";
-import PriorityReviewPage from "@/game/PriorityReviewPage";
 import GroupPlayPage from "@/game/GroupPlayPage";
-import MeetingReviewPage from "@/game/MeetingReviewPage";
-import MeetingDecisionsPage from "@/game/MeetingDecisionsPage";
-import FinalStrategyPage from "@/game/FinalStrategyPage";
 import PortfoliosPage from "@/game/PortfoliosPage";
 import PortfolioEditPage from "@/game/PortfolioEditPage";
 import PortfolioToolkitPage from "@/game/PortfolioToolkitPage";
 import BoardPortfolioPage from "@/game/BoardPortfolioPage";
+import BoardExecutionAssistantPage from "@/game/BoardExecutionAssistantPage";
 import HostCallScriptPage from "@/game/HostCallScriptPage";
 import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
 import FacilitatedGamePage from "@/game/FacilitatedGamePage";
 import FacilitatedGameApplicationPage from "@/game/FacilitatedGameApplicationPage";
-import BoardStrategyReviewPage from "@/game/BoardStrategyReviewPage";
-import ExecutionMaterialsPage from "@/game/ExecutionMaterialsPage";
 import RelationshipMapDashboardPage from "@/game/RelationshipMapDashboardPage";
 import RelationshipMappingPage from "@/game/RelationshipMappingPage";
 import FinalStrategyMemberPage from "@/game/FinalStrategyMemberPage";
@@ -159,25 +156,26 @@ export default function App() {
           <Route path="/play/:token" element={<GamePlayPage />} />
           <Route path="/game/group" element={<GroupGamePage />} />
           <Route path="/group-game/:token" element={<GroupPlayPage />} />
-          <Route path="/game/strategy/priorities" element={<PriorityReviewPage />} />
+          <Route path="/game/strategy/priorities" element={<Navigate to="/game/dashboard" replace />} />
           <Route path="/game/strategy/view/:strategyId" element={<StrategyPage />} />
-          <Route path="/game/meeting-review" element={<MeetingReviewPage />} />
-          <Route path="/game/meeting-review/decisions" element={<MeetingDecisionsPage />} />
-          <Route path="/game/meeting-review/final" element={<FinalStrategyPage />} />
+          <Route path="/game/meeting-review" element={<Navigate to="/game/dashboard" replace />} />
+          <Route path="/game/meeting-review/decisions" element={<Navigate to="/game/dashboard" replace />} />
+          <Route path="/game/meeting-review/final" element={<Navigate to="/game/dashboard" replace />} />
           <Route path="/game/portfolios" element={<PortfoliosPage />} />
           <Route path="/game/portfolios/:portfolioId" element={<PortfolioEditPage />} />
           <Route path="/game/portfolios/:portfolioId/toolkit" element={<PortfolioToolkitPage />} />
           <Route path="/board-portfolio/:token" element={<BoardPortfolioPage />} />
+          <Route path="/board-assistant/:token" element={<BoardExecutionAssistantPage />} />
           <Route path="/game/host/call-script" element={<HostCallScriptPage />} />
           <Route path="/game/host/facilitation" element={<HostFacilitationPage />} />
           <Route path="/game/host/checklist" element={<HostChecklistPage />} />
           <Route path="/game/complete" element={<GameNightCompletePage />} />
           <Route path="/game/upgrade" element={<Navigate to="/game/demonstration" replace />} />
           <Route path="/game/unlock" element={<Navigate to="/game/demonstration" replace />} />
-          <Route path="/game/board-review" element={<BoardStrategyReviewPage />} />
+          <Route path="/game/board-review" element={<Navigate to="/game/dashboard" replace />} />
           <Route path="/organize-board-fundraising-game" element={<FacilitatedGamePage />} />
           <Route path="/organize-board-fundraising-game/apply" element={<FacilitatedGameApplicationPage />} />
-          <Route path="/game/execution-materials" element={<ExecutionMaterialsPage />} />
+          <Route path="/game/execution-materials" element={<Navigate to="/game/portfolios" replace />} />
           <Route path="/game/relationships" element={<RelationshipMapDashboardPage />} />
           <Route path="/game/final/:token" element={<FinalStrategyMemberPage />} />
           <Route path="/relationship-mapping/:token" element={<RelationshipMappingPage />} />
@@ -281,6 +279,7 @@ export default function App() {
           <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
           <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
+          <Route path="/strategic-session/:token" element={<StrategicSessionWatchPage />} />
           <Route path="/community-need-research/:token" element={<CommunityNeedResearchPage />} />
           <Route path="/strategic-planning-response/:participantId" element={<StrategicPlanningResponsePage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />
@@ -289,6 +288,7 @@ export default function App() {
           <Route path="/strategic-draft/:token" element={<PublicStrategicPlanPage endpoint="strategic-draft" />} />
           <Route path="/strategic-action-plan/:token" element={<PublicActionPlanPage />} />
           <Route path="/strategic-leadership-portfolio/:token" element={<StrategicLeadershipPortfolioPage />} />
+          <Route path="/strategic-leadership-assistant/:token" element={<StrategicLeadershipAssistantPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

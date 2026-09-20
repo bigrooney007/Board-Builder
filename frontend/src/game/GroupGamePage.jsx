@@ -4,6 +4,7 @@ import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
 import { RoundProgress, RoundResults } from "./groupShared";
+import { LiveMeetingRecorder } from "./MeetingOutputs";
 
 const fmtDate = (raw) => {
   if (!raw) return "";
@@ -27,8 +28,8 @@ const ResultsSummary = () => {
         <p className="bfg-panel-sub">{data.rounds_completed} of {data.total_rounds} rounds completed · {data.participants} board members participated</p>
         {data.status === "completed" && (
           <div style={{ marginTop: 14 }}>
-            <Link className="bfg-btn bfg-btn-primary bfg-btn-sm" to="/game/strategy/priorities" data-testid="bfg-gg-results-generate-strategy-btn">
-              Generate Our Complete Fundraising Strategy
+            <Link className="bfg-btn bfg-btn-primary bfg-btn-sm" to="/game/dashboard" data-testid="bfg-gg-results-generate-strategy-btn">
+              Return To Dashboard And Create Final Strategy
             </Link>
             <p className="bfg-note" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
           </div>
@@ -64,8 +65,6 @@ export default function GroupGamePage() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
-  const [showPrevious, setShowPrevious] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => { document.title = "Group Review Game | Board Fundraising Game"; }, []);
@@ -109,9 +108,16 @@ export default function GroupGamePage() {
     setCopied(true); setTimeout(() => setCopied(false), 2500);
   };
 
-  const closeVoting = () => {
-    if (round && round.submitted_count < (session?.joined_count || 0)) { setConfirmClose(true); return; }
-    run("close", () => memberApi.post("/game/group/close-round", { round_number: round.round_number }));
+  const continueMeeting = async () => {
+    await memberApi.post("/game/group/close-round", { round_number: round.round_number });
+    await memberApi.post("/game/group/next-round");
+  };
+  const startMeeting = async () => {
+    if (navigator.mediaDevices?.getUserMedia) {
+      try { const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(track=>track.stop()); }
+      catch { /* The recorder shows the transcript alternatives when microphone access is unavailable. */ }
+    }
+    return memberApi.post("/game/group/start");
   };
 
   return (
@@ -166,101 +172,50 @@ export default function GroupGamePage() {
                 </div>
                 <h3 style={{ marginTop: 22, fontSize: 18 }}>Now Let's Bring The Board's Ideas Together</h3>
                 <p className="bfg-panel-sub" style={{ marginTop: 8, textAlign: "left" }}>
-                  Everyone has already shared their thinking individually. Now your job as a board is to review the ideas, identify what you believe should become priorities and use your collective wisdom to strengthen the fundraising strategy.
-                  {" "}The ideas that receive the strongest board support will become Board Priorities. The other valid ideas will remain available as Additional Board Ideas in the final strategy.
+                  Everyone has already shared their thinking individually. The host controls one shared review screen, and every participant sees the same ideas at the same time. Discuss what should move forward while the meeting transcript captures the board's actual decisions.
                 </p>
                 <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "start"}
-                  onClick={() => run("start", () => memberApi.post("/game/group/start"))} data-testid="bfg-gg-start-btn">
+                  onClick={() => run("start", startMeeting)} data-testid="bfg-gg-start-btn">
                   {busy === "start" ? "Starting…" : "Start Group Game"}
                 </button>
               </div>
             )}
 
             {status === "in_progress" && round && (
+              <>
+              <LiveMeetingRecorder autoStart title="Transcribe The Complete Board Fundraising Meeting" startLabel="ALLOW MICROPHONE AND START TRANSCRIPTION" onFinished={() => { loadSession(); loadOverview(); }} />
               <div className="bfg-panel" data-testid="bfg-gg-host-round">
                 <RoundProgress current={round.round_number} total={session.total_rounds} />
                 <h2>{round.title}</h2>
                 <p className="bfg-panel-sub">{round.instruction}</p>
+                <div className="bfg-gg-ideas" style={{ marginTop: 18 }}>
+                  {(round.ideas || []).map((idea) => <div className="bfg-gg-idea" key={idea.idea_id}><span className="bfg-gg-idea-text">{idea.text}</span><small>Source: {idea.suggested_by}</small></div>)}
+                  {!round.ideas?.length && <p className="bfg-note">No earlier information was supplied for this screen. Use the discussion to establish the board's direction.</p>}
+                </div>
                 {round.status === "open" && (
                   <>
-                    <p className="bfg-note" style={{ marginTop: 14 }} data-testid="bfg-gg-host-submit-count">
-                      {round.submitted_count} of {session.joined_count} rankings submitted
-                    </p>
-                    <div className="bfg-gg-playerlist">
-                      {session.players.filter((player) => player.joined).map((player) => (
-                        <div key={player.name} className="bfg-summary-row">
-                          <span>{player.name}</span>
-                          <strong className={player.submitted ? "bfg-success" : ""}>{player.submitted ? "Submitted" : "Waiting"}</strong>
-                        </div>
-                      ))}
-                    </div>
-                    {round.idea_count === 0 && (
-                      <p className="bfg-note" style={{ marginTop: 12 }}>No ideas were contributed for this strategy area. You can close this round and continue.</p>
-                    )}
-                    {confirmClose ? (
-                      <div className="bfg-error" style={{ marginTop: 16 }} data-testid="bfg-gg-close-confirm">
-                        Not everyone has submitted their ranking. Do you want to close voting anyway?
-                        <div className="bfg-bm-actions">
-                          <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => setConfirmClose(false)} data-testid="bfg-gg-keep-voting-btn">Keep Voting Open</button>
-                          <button className="bfg-btn bfg-btn-primary bfg-btn-sm" data-testid="bfg-gg-close-anyway-btn"
-                            onClick={() => { setConfirmClose(false); run("close", () => memberApi.post("/game/group/close-round", { round_number: round.round_number })); }}>
-                            Close Voting
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "close"}
-                        onClick={closeVoting} data-testid="bfg-gg-close-voting-btn">
-                        {busy === "close" ? "Closing…" : "Close Voting & Show Results"}
-                      </button>
-                    )}
-                  </>
-                )}
-                {round.status === "closed" && (
-                  <>
-                    <h3 style={{ marginTop: 20, fontSize: 18 }}>Your Board's Priorities</h3>
-                    <RoundResults results={round.results || []} />
-                    <p className="bfg-note" style={{ marginTop: 14 }}>
-                      These are the ideas your board collectively prioritized. The remaining ideas have been saved and can still be considered when your fundraising strategy is created.
-                    </p>
-                    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} disabled={busy === "next"}
-                      onClick={() => run("next", () => memberApi.post("/game/group/next-round"))} data-testid="bfg-gg-next-round-btn">
-                      {busy === "next" ? "Please wait…" : round.round_number >= session.total_rounds ? "Finish Review Game" : "Continue To Next Round"}
+                    <p className="bfg-note" style={{ marginTop: 14 }}>When the board has finished discussing this screen, continue. Every participant screen will advance with yours.</p>
+                    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "next"}
+                      onClick={() => run("next", continueMeeting)} data-testid="bfg-gg-next-round-btn">
+                      {busy === "next" ? "Please wait…" : round.round_number >= session.total_rounds ? "END GROUP GAME" : "CONTINUE TO NEXT REVIEW"}
                     </button>
                   </>
                 )}
               </div>
-            )}
-
-            {status === "in_progress" && session?.closed_rounds?.length > 0 && (
-              <div className="bfg-panel" data-testid="bfg-gg-previous-rounds">
-                <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => setShowPrevious(!showPrevious)} data-testid="bfg-gg-previous-toggle">
-                  {showPrevious ? "Hide Previous Rounds" : "Previous Rounds"}
-                </button>
-                {showPrevious && session.closed_rounds.map((item) => (
-                  <div key={item.round_number} style={{ marginTop: 16 }}>
-                    <h3 style={{ fontSize: 16 }}>{item.title}</h3>
-                    <RoundResults results={item.results} compact />
-                  </div>
-                ))}
-              </div>
+              </>
             )}
 
             {status === "completed" && (
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
                 <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  You have identified your board's fundraising priorities.
-                  {" "}Now continue your board discussion. Talk about what needs to change, what needs to be added, who will take responsibility and how the strategy should be executed.
-                  {" "}After the meeting, add the meeting transcript to your dashboard so those decisions can be reflected in the Final Board Fundraising Strategy.
+                  Your board reviewed the complete fundraising strategy and execution system together. Return to the dashboard to finish the transcript if needed and create the Final Board Fundraising Strategy from the organization's information, every individual contribution and the board's meeting decisions.
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
-                  <h3 style={{ fontSize: 17 }}>Generate Our Complete Fundraising Strategy</h3>
-                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
-                  <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/strategy/priorities" data-testid="bfg-gg-generate-strategy-btn">
-                    Generate Our Complete Fundraising Strategy
-                  </Link>
+                  <h3 style={{ fontSize: 17 }}>Create Your Final Fundraising Strategy</h3>
+                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>The final strategy is created from the complete upward stream of organization information, board ideas and meeting decisions.</p>
+                  <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/dashboard" data-testid="bfg-gg-generate-strategy-btn">RETURN TO DASHBOARD</Link>
                 </div>
                 <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 18 }}>
                   <Link className="bfg-btn bfg-btn-ghost" to="/game/group?results=1" data-testid="bfg-gg-view-results-btn">View Group Game Results</Link>

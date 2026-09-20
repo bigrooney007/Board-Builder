@@ -35,12 +35,12 @@ const GroupGameCard = () => {
           <h2>Group Review Game</h2>
           <p className="bfg-panel-sub">
             {completed
-              ? "Completed — 8 of 8 rounds completed"
+              ? "Completed — 9 of 9 review screens completed"
               : session?.status === "in_progress"
                 ? "In progress — continue running your Board Fundraising Day/Night with your board."
                 : session
                   ? "Ready — your Group Game link is prepared and waiting."
-                  : "Bring your board together to review and rank the ideas contributed before your meeting."}
+                  : "Bring your board together on one shared screen to review every idea and agree on the complete fundraising system."}
           </p>
           {completed && <p className="bfg-note">{session.participants_joined} board members participated</p>}
         </div>
@@ -61,25 +61,6 @@ const GroupGameCard = () => {
   );
 };
 
-const BoardReviewCard = ({ meeting }) => {
-  const navigate = useNavigate();
-  if (!meeting?.group_completed) return null;
-  return (
-    <section className="bfg-panel" data-tour="board-review" data-testid="bfg-board-review-card">
-      <div className="bfg-panel-head">
-        <div>
-          <h2>Board Strategy Review</h2>
-          <p className="bfg-panel-sub">Review your Group Game priorities, additional board ideas and Rooney's recommendations with your board before adding your meeting transcript.</p>
-        </div>
-        <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 0 }}
-          onClick={() => navigate("/game/board-review")} data-testid="bfg-open-board-review-btn">
-          Open Board Strategy Review
-        </button>
-      </div>
-    </section>
-  );
-};
-
 export default function GameDashboardPage() {
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
@@ -88,6 +69,7 @@ export default function GameDashboardPage() {
   const [meeting, setMeeting] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [denied, setDenied] = useState(false);
+  const [openingGame, setOpeningGame] = useState(false);
   const meetingPoller = useRef(null);
 
   useEffect(() => { document.title = "Your Game Dashboard | Board Fundraising Game"; }, []);
@@ -141,6 +123,16 @@ export default function GameDashboardPage() {
   }
 
   const goalAmount = Number(data.goal?.amount || 0);
+  const openIndividualGame = async () => {
+    setOpeningGame(true);
+    try {
+      const situation = (await memberApi.get("/game/situation")).data;
+      if (situation.completed) {
+        const token = (await memberApi.post("/game/self-play")).data.token;
+        navigate(`/play/${token}`);
+      } else navigate("/game/setup");
+    } catch { navigate("/game/setup"); }
+  };
 
   return (
     <BfgShell nav={
@@ -154,6 +146,19 @@ export default function GameDashboardPage() {
           </div>
           <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/board-fundraising-game" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
         </div>
+
+        <section className="bfg-panel" data-tour="play-individual-game" data-testid="bfg-play-individual-game">
+          <div className="bfg-panel-head">
+            <div>
+              <p className="bfg-eyebrow">STEP 1</p>
+              <h2>Play Your Board Fundraising Game</h2>
+              <p className="bfg-panel-sub">Complete the four fundraising strategy areas, tell us about your organization's present fundraising reality, and choose how you want to participate. Your answers become the foundation used throughout the dashboard.</p>
+            </div>
+            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
+              {openingGame ? "OPENING…" : data.situation_completed ? "REVIEW MY INDIVIDUAL GAME" : "PLAY MY INDIVIDUAL GAME"}
+            </button>
+          </div>
+        </section>
 
         <div data-tour="working-strategy">
           <WorkingStrategyCard />
@@ -171,7 +176,6 @@ export default function GameDashboardPage() {
           <HostToolsSection />
         </div>
         <GroupGameCard />
-        <BoardReviewCard meeting={meeting} />
         <div data-tour="complete-meeting">
           <CompleteBoardMeetingSection overview={meeting} onRefresh={loadMeeting} />
         </div>

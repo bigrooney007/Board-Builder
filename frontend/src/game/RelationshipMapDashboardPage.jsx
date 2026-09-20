@@ -31,6 +31,9 @@ export default function RelationshipMapDashboardPage() {
       navigate(`/relationship-mapping/${token}`);
     } catch { setBusy(false); }
   };
+  const exportCsv = async () => {
+    const response=await memberApi.get("/game/relationships/export.csv",{responseType:"blob"});const url=URL.createObjectURL(response.data);const link=document.createElement("a");link.href=url;link.download="board-relationship-map.csv";link.click();URL.revokeObjectURL(url);
+  };
 
   if (loading || entries === null) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
@@ -49,6 +52,7 @@ export default function RelationshipMapDashboardPage() {
               onClick={addMine} data-testid="bfg-rm-add-my-relationships-btn">
               {busy ? "Opening…" : "Add My Relationships"}
             </button>
+            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={exportCsv} data-testid="bfg-rm-export-btn">Download Excel-Ready CSV</button>
           </div>
         </div>
 
