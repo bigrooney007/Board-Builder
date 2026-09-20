@@ -110,3 +110,28 @@ def test_recruitment_purchase_enters_dashboard_before_intake():
     assert 'navigate("/app/board-recruitment")' in success
     assert '<Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />' in app
     assert '/board-recruitment-intake?bf=1&dashboard=1' in dashboard
+
+
+def test_admin_can_open_all_four_isolated_product_dashboards_without_a_customer_login():
+    route = source("backend/admin_dashboard_preview_routes.py")
+    admin = source("frontend/src/admin/DashboardPreviewSection.jsx")
+    server = source("backend/server.py")
+    assert 'admin = await authenticate_admin(request, db)' in route
+    assert 'set_member_cookie(response, create_member_token' in route
+    assert '"internal_preview": True' in route
+    assert '"internal_admin_entitlement": True' in route
+    for product in ["recruitment", "board-fundraising-game", "strategic-planning", "board-recommitment"]:
+        assert f'"{product}"' in route
+        assert f'key: "{product}"' in admin
+    assert "create_admin_dashboard_preview_router(db)" in server
+
+
+def test_admin_dashboard_preview_records_are_hidden_from_customer_reporting():
+    contacts = source("backend/admin_contacts_routes.py")
+    game = source("backend/game_routes.py")
+    strategic = source("backend/strategic_planning_routes.py")
+    fbb = source("backend/fbb_routes.py")
+    assert '"internal_dashboard_preview": {"$ne": True}' in contacts
+    assert '"internal_preview": {"$ne": True}' in game
+    assert '"internal_preview": {"$ne": True}' in strategic
+    assert '"internal_preview": {"$ne": True}' in fbb

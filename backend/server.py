@@ -259,6 +259,8 @@ app.include_router(create_strategic_planning_router(db))
 app.include_router(create_guided_strategic_planning_router(db))
 from guided_product_routes import create_guided_product_router
 app.include_router(create_guided_product_router(db))
+from admin_dashboard_preview_routes import create_admin_dashboard_preview_router
+app.include_router(create_admin_dashboard_preview_router(db))
 from facilitated_game_application_routes import create_facilitated_game_application_router
 app.include_router(create_facilitated_game_application_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router

@@ -233,7 +233,9 @@ def create_strategic_planning_router(db) -> APIRouter:
     @router.get("/admin/sp/projects")
     async def list_projects(request: Request):
         await admin(request)
-        projects = await db.sp_projects.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+        projects = await db.sp_projects.find(
+            {"internal_preview": {"$ne": True}}, {"_id": 0}
+        ).sort("created_at", -1).to_list(200)
         rows = []
         for project in projects:
             participants = await db.sp_participants.count_documents({"project_id": project["project_id"]})

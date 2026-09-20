@@ -56,7 +56,9 @@ def create_admin_contacts_router(db) -> APIRouter:
     async def list_contacts(request: Request):
         await authenticate_admin(request, db)
         contacts = {}
-        members = await db.members.find({}, {"_id": 0, "password_hash": 0}).to_list(4000)
+        members = await db.members.find(
+            {"internal_dashboard_preview": {"$ne": True}}, {"_id": 0, "password_hash": 0}
+        ).to_list(4000)
         for member in members:
             email = (member.get("email") or "").lower()
             if not email:

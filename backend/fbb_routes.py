@@ -94,7 +94,7 @@ def create_fbb_router(db) -> APIRouter:
         rows = []
         paid_emails = set()
         txns = await db.payment_transactions.find(
-            {"purchase_source": {"$in": FBB_PURCHASE_SOURCES}},
+            {"purchase_source": {"$in": FBB_PURCHASE_SOURCES}, "internal_preview": {"$ne": True}},
             {"_id": 0, "session_id": 1, "payment_status": 1, "lead_name": 1, "lead_email": 1,
              "claimed_by_user_id": 1, "created_at": 1},
         ).sort("created_at", -1).to_list(300)

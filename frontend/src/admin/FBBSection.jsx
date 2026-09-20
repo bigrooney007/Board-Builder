@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { setAdminPreview } from "../adminPreview";
+import { DashboardPreviewSection } from "./DashboardPreviewSection";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -190,6 +191,7 @@ const JourneyTable = () => {
 
 export const FBBSection = () => (
   <section data-testid="admin-fbb-section">
+    <DashboardPreviewSection />
     <ReviewCustomerFlow />
     <FlowVideosManager />
     <JourneyTable />

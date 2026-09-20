@@ -401,7 +401,9 @@ def create_game_router(db) -> APIRouter:
     async def game_customers(request: Request):
         await authenticate_admin(request, db)
         rows = []
-        profiles = await db.game_profiles.find({}, {"_id": 0}).sort("updated_at", -1).to_list(300)
+        profiles = await db.game_profiles.find(
+            {"internal_preview": {"$ne": True}}, {"_id": 0}
+        ).sort("updated_at", -1).to_list(300)
         for profile in profiles:
             member = await db.members.find_one(
                 {"user_id": profile["user_id"]},
