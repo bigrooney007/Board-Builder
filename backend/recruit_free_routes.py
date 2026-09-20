@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ai_service import generate_structured
-from member_auth import authenticate_member, new_uuid
+from member_auth import authenticate_member, new_uuid, require_entitlement
 
 
 ASSESSMENT_COLLECTION_NAMES = (
@@ -164,6 +164,42 @@ def create_recruit_free_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/recruit/free")
     primary = assessment_collections(db)[0]
 
+    async def member_assessment(member: dict):
+        collection, doc = await find_assessment(db, {"member_user_id": member["user_id"]})
+        if doc:
+            return collection, doc
+        query = {"lead_id": {"$in": member.get("lead_ids", [])}} if member.get("lead_ids") else {"email": member["email"]}
+        collection, doc = await find_assessment(db, query)
+        if doc:
+            await collection.update_one(
+                {"token": doc["token"]},
+                {"$set": {"member_user_id": member["user_id"], "state.paid": True, "updated_at": now_iso()}},
+            )
+            doc["member_user_id"] = member["user_id"]
+            doc.setdefault("state", {})["paid"] = True
+            return collection, doc
+        lead = await db.funnel_leads.find_one(
+            {"$or": [{"lead_id": {"$in": member.get("lead_ids", [])}}, {"email": member["email"]}]}, {"_id": 0}
+        ) or {}
+        timestamp = now_iso()
+        doc = {
+            "token": secrets.token_urlsafe(32), "lead_id": lead.get("lead_id") or new_uuid(),
+            "name": lead.get("name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
+            "email": member["email"], "organization": lead.get("organization") or "Your Organization",
+            "desired_count": None, "answers": {}, "state": {"paid": True, "result_generated": False},
+            "result": None, "member_user_id": member["user_id"], "created_at": timestamp, "updated_at": timestamp,
+        }
+        await primary.insert_one(doc.copy())
+        await sync_funnel_lead(db, doc)
+        return primary, doc
+
+    @router.get("/member-assessment/current")
+    async def current_member_assessment(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"fundraising_board_builder", "fbb_recruitment", "recruitment_self_guided"})
+        _, doc = await member_assessment(member)
+        return public_assessment(doc)
+
     @router.post("/start", status_code=201)
     async def start(payload: RecruitFreeStart):
         email = str(payload.email).lower()
@@ -295,6 +331,7 @@ def create_recruit_free_router(db) -> APIRouter:
         )
         doc["result"] = generated
         await sync_funnel_lead(db, doc)
+        await attach_free_assessment_to_member(db, doc["lead_id"], member)
         return {"result": generated}
 
     @router.post("/{token}/event")

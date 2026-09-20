@@ -250,6 +250,7 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": price_id, "quantity": 1}], "mode": "payment",
             "customer_email": lead["email"],
+            "phone_number_collection": {"enabled": True},
             "success_url": success_url,
             "cancel_url": f"{payload.origin_url}{option_path}?checkout=cancelled",
             "metadata": {
@@ -293,6 +294,7 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": os.environ["STRIPE_RECRUIT_WITH_ROONEY_997_PRICE_ID"], "quantity": 1}],
             "mode": "payment",
+            "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}/recruit-with-rooney?checkout=cancelled",
             "metadata": {
@@ -328,6 +330,7 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": resolve_direct_project_price_id(), "quantity": 1}],
             "mode": "payment",
+            "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}/board-recruitment-intake?session_id={{CHECKOUT_SESSION_ID}}&dfy=1",
             "cancel_url": resolve_cancel_url(payload, "/board-recruitment"),
             "metadata": {
@@ -645,6 +648,8 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price_data": {"currency": "usd", "unit_amount": 49700, "product_data": {"name": product_name}}, "quantity": 1}],
             "mode": "payment",
+            "customer_email": lead.get("email", ""),
+            "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}{base_path}/payment-confirmed?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}{base_path}/video?token={payload.result_token}&checkout=cancelled",
             "metadata": {"offer_source": product.replace("-", "_"), "selected_tier": "497", "purchase_source": purchase_source, "offer": product_name, "guided_lead_token": payload.result_token},
@@ -673,6 +678,7 @@ def create_payment_router(db) -> APIRouter:
         kwargs = {
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
+            "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
@@ -940,9 +946,10 @@ def create_payment_router(db) -> APIRouter:
                 session = stripe.checkout.Session.retrieve(session_id)
                 if session.payment_status == "paid" or session.status == "complete":
                     now = datetime.now(timezone.utc).isoformat()
+                    details = session.customer_details if session.customer_details else None
                     await db.payment_transactions.update_one(
                         {"session_id": session_id, "payment_status": {"$ne": "paid"}},
-                        {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}},
+                        {"$set": {"status": "completed", "payment_status": "paid", "payment_email": (details.email if details else "") or "", "payment_phone": (details.phone if details else "") or "", "updated_at": now}},
                     )
                     transaction.update({"status": "completed", "payment_status": "paid"})
                     try:
@@ -983,9 +990,11 @@ def create_stripe_webhook_router(db) -> APIRouter:
         event_type = event["type"]
         now = datetime.now(timezone.utc).isoformat()
         if event_type == "checkout.session.completed":
+            customer_details = item.get("customer_details") or {}
             await db.payment_transactions.update_one(
                 {"session_id": item["id"], "payment_status": {"$ne": "paid"}},
                 {"$set": {"status": "completed", "payment_status": item.get("payment_status", "paid"),
+                          "payment_email": customer_details.get("email", ""), "payment_phone": customer_details.get("phone", ""),
                           "stripe_payment_intent_id": item.get("payment_intent", ""), "updated_at": now}},
             )
             if item.get("payment_status", "paid") == "paid":

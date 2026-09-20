@@ -168,6 +168,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         "amount": session.amount_total,
         "currency": session.currency,
         "payment_status": session.payment_status,
+        "payment_email": ((session.customer_details or {}).get("email", "") if isinstance(session.customer_details, dict) else getattr(session.customer_details, "email", "")) or member.get("email", ""),
+        "payment_phone": ((session.customer_details or {}).get("phone", "") if isinstance(session.customer_details, dict) else getattr(session.customer_details, "phone", "")) or "",
         "purchased_at": existing["purchased_at"] if existing else now,
         "updated_at": now,
     }

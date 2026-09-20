@@ -7,6 +7,7 @@ import ReactivationStep2, { ResponseView } from "./ReactivationStep2";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
 import ReactivationStep5 from "./ReactivationStep5";
+import FounderBoardAudit from "./FounderBoardAudit";
 import "./sgr.css";
 
 const MemberResponse = ({ row }) => {
@@ -42,6 +43,7 @@ export default function BoardRecommitmentDashboard(){
    <section style={{marginTop:26}} data-testid="recommitment-form-email">
     <div className="member-card"><p className="eyebrow">1. SEND THE RECOMMITMENT FORM</p><h2>Your Recommitment Form & Email</h2><p>Your form is the first thing you need. Send the same form link to each board member you need to recommit. Their completed responses will automatically appear below.</p></div>
     <ReactivationStep2/>
+    <FounderBoardAudit/>
    </section>
 
    <section className="member-card" style={{marginTop:26}} data-testid="recommitment-responses">

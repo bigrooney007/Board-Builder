@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from member_auth import authenticate_member
+from member_auth import authenticate_member, require_entitlement
 
 class GuidedLead(BaseModel):
     product: str
@@ -18,8 +18,51 @@ class GuidedIntake(BaseModel):
     product: str
     answers: dict
 
+class FounderAuditSubmission(BaseModel):
+    answers: dict
+
 def create_guided_product_router(db):
     router = APIRouter(prefix="/api/guided")
+    audit_dimensions = {
+        "co_leader": "Co-Leader", "co_facilitator": "Co-Facilitator", "co_architect": "Co-Architect",
+        "co_mobilizer": "Co-Mobilizer", "co_evaluator": "Co-Evaluator", "co_reporter": "Co-Reporter",
+    }
+
+    @router.get("/founder-board-audit")
+    async def founder_board_audit(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"reactivation_self_guided"})
+        saved = await db.founder_board_audits.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        return {"audit": saved}
+
+    @router.post("/founder-board-audit")
+    async def save_founder_board_audit(payload: FounderAuditSubmission, request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {"reactivation_self_guided"})
+        answers = {str(k): int(v) for k, v in payload.answers.items() if str(v).isdigit() and 1 <= int(v) <= 4}
+        required = {f"{key}_{number}" for key in audit_dimensions for number in (1, 2)}
+        if set(answers) != required:
+            raise HTTPException(422, "Answer every audit question before seeing your result")
+        dimensions = []
+        for key, label in audit_dimensions.items():
+            score = answers[f"{key}_1"] + answers[f"{key}_2"]
+            level = "Embedded" if score >= 7 else "Developing" if score >= 5 else "Limited"
+            dimensions.append({"key": key, "label": label, "score": score, "maximum": 8, "level": level})
+        total = sum(row["score"] for row in dimensions)
+        stage = "Board Partnership Is Embedded" if total >= 42 else "Board Partnership Is Developing" if total >= 30 else "The Board Is Being Underused"
+        weakest = sorted(dimensions, key=lambda row: row["score"])[:2]
+        report = {
+            "score": total, "maximum": 48, "stage": stage, "dimensions": dimensions,
+            "summary": "This audit measures how fully you involve the board as partners in leadership, facilitation, organizational design, resource mobilization, evaluation and reporting.",
+            "priority": "Your immediate opportunity is to strengthen " + " and ".join(row["label"] for row in weakest) + ".",
+        }
+        now = datetime.now(timezone.utc).isoformat()
+        await db.founder_board_audits.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"user_id": member["user_id"], "answers": answers, "result": report, "updated_at": now}, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        return {"result": report}
     @router.post("/lead")
     async def create_lead(payload: GuidedLead):
         if payload.product not in {"strategic-planning","board-recommitment"}:
@@ -50,14 +93,16 @@ def create_guided_product_router(db):
             if not member: raise HTTPException(409,"Your Board Recommitment workspace session could not be linked")
             authenticated=await authenticate_member(request,db)
             if authenticated.get("user_id")!=member.get("user_id"): raise HTTPException(401,"Log in with the email used for this Board Recommitment purchase before continuing")
-        await db.guided_product_intakes.update_one({"session_id":payload.session_id},{"$set":{"session_id":payload.session_id,"product":payload.product,"answers":payload.answers,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
+        lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
+        payment_contact={"email":tx.get("payment_email") or lead.get("email", ""),"phone":tx.get("payment_phone", "")}
+        await db.guided_product_intakes.update_one({"session_id":payload.session_id},{"$set":{"session_id":payload.session_id,"product":payload.product,"answers":payload.answers,"payment_contact":payment_contact,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         if payload.product=="board-recommitment":
             lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0})
             member=await db.members.find_one({"email":(lead or {}).get("email","")},{"_id":0})
             if not member:
                 raise HTTPException(409,"Your Board Recommitment workspace session could not be linked")
             await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"reactivation_self_guided"},"$set":{"updated_at":now}})
-            await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","mission":payload.answers.get("mission",""),"organization_goals":payload.answers.get("goals",""),"guided_session_id":payload.session_id,"guided_answers":payload.answers,"submitted_at":now}},upsert=True)
+            await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":member["user_id"],"organization_name":(lead or {}).get("organization",""),"founder_title":"","mission":payload.answers.get("mission",""),"organization_goals":payload.answers.get("goals",""),"guided_session_id":payload.session_id,"guided_answers":payload.answers,"payment_contact":payment_contact,"submitted_at":now}},upsert=True)
         elif payload.product=="strategic-planning":
             lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
             existing=await db.sp_projects.find_one({"guided_session_id":payload.session_id},{"_id":0})

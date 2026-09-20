@@ -78,8 +78,9 @@ export default function StrategicPlanningFormPage() {
 
   return (
     <main className="legal-page" data-testid="sp-public-form" style={{ maxWidth: "760px", margin: "0 auto", padding: "32px 16px" }}>
-      <p className="eyebrow">{data.organization_name}</p>
-      <h1>{F.title}</h1>
+      {data.logo_data_url && <img src={data.logo_data_url} alt={`${data.organization_name} logo`} style={{display:"block",maxWidth:180,maxHeight:120,objectFit:"contain",margin:"0 auto 18px"}}/>}
+      <p className="eyebrow" style={{textAlign:"center"}}>{data.organization_name}</p>
+      <h1 style={{textAlign:"center"}}>{F.title}</h1>
       <div className="progress-copy" style={{ marginTop: "10px" }}>
         <span data-testid="sp-public-progress">{F.stepLabel(step + 1, totalSteps)}{section ? ` — ${section.title}` : ""}</span>
         <span>{Math.round(((step + 1) / totalSteps) * 100)}%</span>

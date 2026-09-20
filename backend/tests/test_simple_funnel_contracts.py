@@ -102,14 +102,42 @@ def test_conditional_appointment_carries_every_onboarding_link():
     assert "Regenerate the Conditional Appointment Email so it carries every approved onboarding link." in refinement
 
 
-def test_recruitment_purchase_enters_dashboard_before_intake():
+def test_recruitment_purchase_enters_dashboard_and_game_is_the_intake():
     success = source("frontend/src/member/PurchaseSuccessPage.jsx")
     app = source("frontend/src/App.js")
     dashboard = source("frontend/src/member/BoardRecruitmentPage.jsx")
     assert 'claimed_source === "recruitment_497"' in success
     assert 'navigate("/app/board-recruitment")' in success
-    assert '<Route path="/board-recruitment-intake" element={<BoardRecruitmentIntakePage />} />' in app
-    assert '/board-recruitment-intake?bf=1&dashboard=1' in dashboard
+    game = source("frontend/src/member/RecruitmentGameIntake.jsx")
+    assert '<Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />' in app
+    assert 'title="PLAY THE BOARD RECRUITMENT GAME"' in dashboard
+    assert 'RecruitmentGameIntake' in dashboard
+    assert 'QUESTION {step + 1} OF 4' in game
+
+
+def test_guided_products_keep_intake_and_execution_inside_the_dashboard():
+    guided = source("frontend/src/funnels/GuidedProductPages.jsx")
+    strategic = source("frontend/src/funnels/StrategicPlanningDashboard.jsx")
+    recommitment = source("frontend/src/member/BoardRecommitmentDashboard.jsx")
+    assert "GO TO MY DASHBOARD" in guided
+    assert "<Navigate replace" in guided
+    assert "Tell Us About Your Organization" in guided
+    assert "START MICROPHONE TRANSCRIPTION" in strategic
+    assert "END SESSION AND START DELEGATION" in strategic
+    assert "FounderBoardAudit" in recommitment
+    audit = source("backend/guided_product_routes.py")
+    assert 'require_entitlement(member, {"reactivation_self_guided"})' in audit
+
+
+def test_strategic_form_uses_two_questions_per_section_and_individual_programs():
+    route = source("backend/strategic_planning_routes.py")
+    assert 'return [f"Review the organization\'s present {label}' in route
+    assert '"What would you do differently in this area?' in route
+    assert 'for program in program_lines:' in route
+    assert '@router.post("/session/complete")' in route
+    assert '"meeting_transcript":transcript' in route
+    assert '@router.post("/send-delegation")' in route
+    assert 'following section{\'s\' if len(links)>1 else \'\'}' in route
 
 
 def test_admin_can_open_all_four_isolated_product_dashboards_without_a_customer_login():

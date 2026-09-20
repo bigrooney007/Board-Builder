@@ -10,10 +10,11 @@ import { RecruitmentCampaignLaunch, RecruitmentMaterials } from "./workspace/Wor
 import { AutomatedReferenceChecks, FirstBoardMeetingWorkspace, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
 import { BoardMemberResultCard } from "./workspace/ResultsPage";
 import { RecruitmentTutorial } from "./RecruitmentTutorial";
+import { RecruitmentGameIntake } from "./RecruitmentGameIntake";
 import "./sgr.css";
 
 const FLOW_STEPS = [
-  ["br-section-intake", "Fill Intake"], ["br-section-identify", "Identify Board Members"],
+  ["br-section-intake", "Play Recruitment Game"], ["br-section-identify", "Identify Board Members"],
   ["br-section-materials", "Generate Materials"], ["br-section-campaign", "Launch Campaign"],
   ["br-section-applicants", "Manage Applicants"], ["br-section-references", "Reference Check"],
   ["br-section-onboarding", "Prepare Onboarding"], ["br-section-facilitation", "Facilitate Onboarding"],
@@ -27,21 +28,6 @@ const Section = ({ number, title, children, testId }) => (
     {children}
   </section>
 );
-
-const IntakeStep = () => {
-  const [submitted, setSubmitted] = useState(false);
-  useEffect(() => {
-    memberApi.get("/board-recruitment-intake/context").then((response) => setSubmitted(Boolean(response.data.submitted))).catch(() => {});
-  }, []);
-  return (
-    <>
-      <p>Tell us about your organization, your present board, the board members you want to recruit and your board logistics.</p>
-      <p>The information you provide here powers every recommendation and recruitment material in the sections that follow.</p>
-      {submitted && <p className="member-success" data-testid="br-intake-complete">Intake completed. You can reopen it whenever your organization or recruitment needs change.</p>}
-      <a className="button" href="/board-recruitment-intake?bf=1&dashboard=1" data-testid="br-open-intake-button">{submitted ? "REVIEW OR UPDATE MY INTAKE" : "FILL MY INTAKE FORM"}</a>
-    </>
-  );
-};
 
 const PortfolioSection = () => {
   const { applications, refresh } = useApplications();
@@ -100,8 +86,9 @@ export default function BoardRecruitmentPage() {
               ))}
             </nav>
 
-            <Section number={1} title="FILL THE INTAKE FORM" testId="br-section-intake">
-              <IntakeStep />
+            <Section number={1} title="PLAY THE BOARD RECRUITMENT GAME" testId="br-section-intake">
+              <p>Answer four questions about your mission, present board and the needs of your entire organization. Your answers become the intake used throughout the recruitment process.</p>
+              <RecruitmentGameIntake />
             </Section>
 
             <Section number={2} title="IDENTIFY THE EXACT TYPE OF BOARD MEMBERS NEEDED" testId="br-section-identify">
