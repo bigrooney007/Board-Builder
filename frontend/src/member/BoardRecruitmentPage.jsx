@@ -13,15 +13,21 @@ import "./sgr.css";
 
 const FLOW_STEPS = [
   ["br-section-intake", "Play Recruitment Game"], ["br-section-identify", "Identify Board Members"],
-  ["br-section-materials", "Generate Materials"], ["br-section-campaign", "Launch Campaign"],
-  ["br-section-applicants", "Manage Applicants"], ["br-section-references", "Reference Check"],
-  ["br-section-onboarding", "Prepare Onboarding"], ["br-section-facilitation", "Facilitate Onboarding"],
-  ["br-section-portfolio", "Appointment & Portfolio"], ["br-section-first-meeting", "First Board Meeting"],
+  ["br-section-materials", "Application & Campaign Materials"], ["br-section-campaign", "Launch Campaign"],
+  ["br-section-applicants", "Applicants & Interviews"], ["br-section-references", "References & Background Checks"],
+  ["br-section-onboarding", "Onboarding & Conditional Appointment"], ["br-section-facilitation", "Facilitate Onboarding"],
+  ["br-section-portfolio", "Final Appointment & Portfolio"], ["br-section-first-meeting", "First Board Meeting"],
   ["br-section-support", "Ask For Help"],
 ];
 
 const Section = ({ number, title, summary, children, testId, defaultOpen = false }) => {
   const [open,setOpen]=useState(defaultOpen);
+  useEffect(() => {
+    const syncHash = () => { if (window.location.hash === `#${testId}`) setOpen(true); };
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, [testId]);
   return <section id={testId} className={`member-card sgr-flow-section ${open?"is-open":""}`} data-testid={testId} style={{ marginTop: 18 }}>
     <button type="button" className="sgr-section-toggle" onClick={()=>setOpen(!open)} aria-expanded={open}>
       <span className="sgr-step-number">{number}</span><span><strong>{title}</strong>{summary&&<small>{summary}</small>}</span><b>{open?"CLOSE":"OPEN"}</b>
@@ -99,7 +105,7 @@ export default function BoardRecruitmentPage() {
               <Module1Profile />
             </Section>
 
-            <Section number={3} title="GENERATE THE RECRUITMENT MATERIALS" summary="Application form, job post, emails and campaign content." testId="br-section-materials">
+            <Section number={3} title="GENERATE THE BOARD APPLICATION AND RECRUITMENT MATERIALS" summary="Create the branded application first, then the job post, emails and campaign content." testId="br-section-materials">
               <p>Create your Board Member Application Form and the finished materials you will use to attract the exact type of people your organization needs.</p>
               <RecruitmentMaterials />
             </Section>
@@ -109,19 +115,19 @@ export default function BoardRecruitmentPage() {
               <RecruitmentCampaignLaunch />
             </Section>
 
-            <Section number={5} title="VIEW AND ADD APPLICANTS" summary="Review applications and create individual interview guides." testId="br-section-applicants">
+            <Section number={5} title="VIEW APPLICANTS AND RUN INTERVIEWS" summary="Review applications, add external candidates and create the interview tools for each person." testId="br-section-applicants">
               <p>Everyone who completes your Board Member Application Form will automatically appear below.</p>
               <p>You can also add people you discover through referrals, LinkedIn, networking, your existing relationships or another source, including uploading their CV or résumé.</p>
               <p>When you decide you want to interview an applicant, generate an interview guide specifically for that person. It uses their application, their CV or resume if available, what your organization is looking for and the board role being considered. You make the final decision about whether they are right for your board.</p>
               <Module4Applicants />
             </Section>
 
-            <Section number={6} title="COMPLETE THE AUTOMATED REFERENCE CHECK" summary="Run the secure automated reference process." testId="br-section-references">
-              <p>Move the right applicant forward and run the complete reference process through the automated reference-check system.</p>
+            <Section number={6} title="COMPLETE REFERENCES AND BACKGROUND CHECKS" summary="Run the automated reference process and record any required background check." testId="br-section-references">
+              <p>Move the right applicant forward, run the automated reference process and, where your organization requires it, use the background-check finder and record the check status for that candidate.</p>
               <AutomatedReferenceChecks />
             </Section>
 
-            <Section number={7} title="PREPARE THE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" summary="Set the meeting, generate onboarding materials and send every secure link." testId="br-section-onboarding">
+            <Section number={7} title="PREPARE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" summary="Set the onboarding session, generate the materials and send the candidate every secure link." testId="br-section-onboarding">
               <p>Set the onboarding date, prepare the Organization Overview and Board Manual, generate all three agreements, create the Board Member Profile Form and send one conditional appointment email carrying every secure link.</p>
               <OnboardingPreparation />
             </Section>
@@ -131,7 +137,7 @@ export default function BoardRecruitmentPage() {
               <OnboardingFacilitationGuide />
             </Section>
 
-            <Section number={9} title="GENERATE THE FINAL APPOINTMENT LETTER AND BOARD MEMBER PORTFOLIO" summary="Confirm the appointment and create the individual portfolio." testId="br-section-portfolio">
+            <Section number={9} title="CONFIRM THE FINAL APPOINTMENT AND CREATE THE BOARD MEMBER PORTFOLIO" summary="Complete the checks, confirm the appointment and create the individual portfolio." testId="br-section-portfolio">
               <p>Confirm the final appointment after the reference check, agreements and Board Member Profile are complete. Record the onboarding conclusion, generate the formal appointment letter and create the individual Board Member Portfolio.</p>
               <FormalAppointmentWorkspace />
               <p>The portfolio brings together the reason they were recruited, the skills and experience they bring, the areas where they want to contribute, their board responsibilities, their agreed commitments, the priorities they can support and the role they can play in strengthening the organization.</p>
