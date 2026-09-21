@@ -137,10 +137,17 @@ export default function GroupPlayPage() {
                 <h1>{round.title}</h1>
                 <p style={{ marginTop: 10 }}>{round.instruction}</p>
                 <div className="bfg-gg-ideas" style={{ marginTop: 18 }}>
-                  {(round.ideas || []).map((idea) => <div className="bfg-gg-idea" key={idea.idea_id}><span className="bfg-gg-idea-text">{idea.text}</span><small>Source: {idea.suggested_by}</small></div>)}
+                  {(round.ideas || []).map((idea) => {
+                    const selected=(round.selected_idea_ids||[]).includes(idea.idea_id);
+                    return <div className={`bfg-gg-idea ${selected?"selected":""}`} key={idea.idea_id} style={selected?{border:"2px solid #4f46e5"}:{}}>
+                      <span className="bfg-gg-idea-text">{idea.text}</span>
+                      <small>Source: {idea.suggested_by}{selected?" · BOARD AGREED":""}</small>
+                    </div>;
+                  })}
                 </div>
-                {!round.ideas?.length && <p style={{ marginTop: 16 }}>No earlier information was supplied for this screen. Join the discussion so the board can establish its direction.</p>}
-                <p className="bfg-gg-rule">Discuss this screen with the board. It will advance automatically when the host continues.</p>
+                {(round.additional_agreed_ideas||[]).length>0&&<div className="bfg-gg-card" style={{marginTop:14,padding:14}}><strong>Agreed during this discussion</strong><ul>{round.additional_agreed_ideas.map((idea,index)=><li key={index}>{idea}</li>)}</ul></div>}
+                {!round.ideas?.length && !(round.additional_agreed_ideas||[]).length && <p style={{ marginTop: 16 }}>No earlier information was supplied for this screen. Join the discussion so the Board can establish its direction.</p>}
+                <p className="bfg-gg-rule">Discuss this screen with the Board. The Lead User will check the ideas the Board agrees with, and your screen will update automatically.</p>
               </div>
             )}
             {round.status === "closed" && (
@@ -152,7 +159,7 @@ export default function GroupPlayPage() {
         )}
 
         {identity && state?.status === "completed" && (
-          <div className="bfg-gg-card" style={{ textAlign: "center" }}><h1>The Group Game Is Complete</h1><p style={{ marginTop: 12 }}>The host will now create and share the final fundraising strategy from everything the organization and board contributed.</p></div>
+          <div className="bfg-gg-card" style={{ textAlign: "center" }}><h1>The Group Game Is Complete</h1><p style={{ marginTop: 12 }}>The host will now create and share the final fundraising strategy from the Board's checked decisions, the ideas added during the discussion and the meeting transcript.</p></div>
         )}
       </main>
     </div>
