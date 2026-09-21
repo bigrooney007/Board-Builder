@@ -844,11 +844,6 @@ def create_workspace_router(db) -> APIRouter:
     async def read_opportunity(request: Request):
         member = await current_member(request)
         opportunity = await ensure_opportunity(member["user_id"], member)
-        if not opportunity.get("application_saved"):
-            await db.opportunities.update_one(
-                {"user_id": member["user_id"]},
-                {"$set": {"custom_questions": [], "application_saved": True, "updated_at": now_iso()}})
-            opportunity = await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0})
         readiness = await opportunity_readiness(member["user_id"], opportunity)
         applications = await db.opportunity_applications.count_documents({"owner_user_id": member["user_id"]})
         return {"opportunity": opportunity, "core_questions": CORE_QUESTIONS, "readiness": readiness,
