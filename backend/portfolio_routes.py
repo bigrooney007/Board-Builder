@@ -1,6 +1,7 @@
 """Board Fundraising Game Phase 6: Board Fundraising Portfolios and Execution Materials.
 Portfolios assembled deterministically (no AI). One AI call per approved portfolio version = full Execution Pack."""
 import asyncio
+import calendar
 import html
 import json
 import os
@@ -67,6 +68,37 @@ SYSTEM_ROLE_BY_OPTION = {option: (key, label) for key, option, label in SYSTEM_R
 SYSTEM_ROLE_BY_OPTION.update({label: (key, label) for key, _, label in SYSTEM_ROLES})
 DIRECT_BY_OPTION = {option: (key, label) for key, option, label in DIRECT_ACTIVITIES}
 DIRECT_BY_OPTION.update({label: (key, label) for key, _, label in DIRECT_ACTIVITIES})
+
+V3_BUILD_ROLE_MAP = {
+    "Identify potential funders": "research_funders",
+    "Research potential funders": "research_funders",
+    "Recruit people to help with fundraising": "recruit_team",
+    "Manage or coordinate the fundraising team": "manage_team",
+    "Build or manage the CRM / donor database": "crm_oversight",
+    "Set up or manage fundraising technology": "improve_technology",
+    "Create or improve fundraising materials": "develop_materials",
+    "Create fundraising content": "communications",
+    "Manage follow-up and relationship tracking": "develop_processes",
+    "Help organize fundraising events": "plan_events",
+    "Track fundraising activity and results": "review_performance",
+    "Help improve the fundraising strategy and process": "develop_processes",
+}
+V3_RAISE_ACTIVITY_MAP = {
+    "Introduce the organization to people I know": "make_introductions",
+    "Introduce the organization to businesses I know": "make_introductions",
+    "Introduce the organization to grantmakers or funders I know": "make_introductions",
+    "Identify potential individual donors": "identify_donors",
+    "Identify potential business partners or sponsors": "identify_corporate",
+    "Identify potential grant opportunities": "identify_grants",
+    "Attend donor or funder meetings": "attend_donor_meetings",
+    "Make fundraising asks": "make_ask",
+    "Follow up with potential funders": "follow_up",
+    "Build relationships with potential funders": "cultivate_relationships",
+    "Steward and thank existing funders": "steward_donors",
+    "Invite people to fundraising events": "invite_funders",
+    "Share fundraising campaigns and content with my network": "share_campaigns",
+    "Host a small gathering or introduction meeting": "host_gathering",
+}
 SYSTEM_KEYS = {key for key, _, _ in SYSTEM_ROLES}
 DIRECT_KEYS = {key for key, _, _ in DIRECT_ACTIVITIES}
 
@@ -170,6 +202,15 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def months_from_now_iso(months: int = 6) -> str:
+    current = datetime.now(timezone.utc)
+    month_index = current.month - 1 + months
+    year = current.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(current.day, calendar.monthrange(year, month)[1])
+    return current.replace(year=year, month=month, day=day).isoformat()
+
+
 def fmt_goal(profile: dict) -> str:
     amount = (profile.get("goal") or {}).get("amount") or 0
     return f"${int(amount):,}" if amount else ""
@@ -203,7 +244,7 @@ def clean_item(item: dict, kind: str) -> dict:
     cleaned = {
         ("role_key" if kind == "system" else "activity_key"): key,
         "label": str(item.get("label", "")).strip()[:200],
-        "source": item.get("source") if item.get("source") in {"individual_game", "meeting_commitment", "organisation_added"} else "organisation_added",
+        "source": item.get("source") if item.get("source") in {"individual_game", "individual_game_v3", "meeting_commitment", "organisation_added"} else "organisation_added",
         "member_note": str(item.get("member_note", ""))[:4000],
         "commitment": str(item.get("commitment", ""))[:4000],
         "deadline": str(item.get("deadline", ""))[:120],
@@ -257,6 +298,30 @@ def create_portfolio_router(db) -> APIRouter:
     async def get_profile(user_id: str) -> dict:
         return await db.game_profiles.find_one({"user_id": user_id}, {"_id": 0}) or {}
 
+    async def ensure_execution_access(user_id: str) -> dict:
+        scope_id=f"fundraising:{user_id}"
+        existing=await db.executive_assistant_access.find_one({"scope_id":scope_id},{"_id":0})
+        if existing:return existing
+        profile=await get_profile(user_id);primary=profile.get("primary_user") or {};organization=profile.get("organization") or {};started=now_iso()
+        record={"scope_id":scope_id,"product":"board-fundraising-game","user_id":user_id,"organization_name":organization.get("name",""),
+            "leader_name":primary.get("full_name",""),"leader_email":primary.get("email",""),"started_at":started,
+            "included_until":months_from_now_iso(6),"subscription_status":"included","created_at":started,"updated_at":started}
+        await db.executive_assistant_access.insert_one(record.copy());return record
+
+    def execution_access_state(access: dict) -> str:
+        if access.get("subscription_status")=="active":return "active"
+        try:
+            if datetime.fromisoformat(str(access.get("included_until","")).replace("Z","+00:00"))>datetime.now(timezone.utc):
+                return "included"
+        except Exception:
+            pass
+        return "renewal_required"
+
+    async def meter_assistant(scope_id: str, portfolio: dict, request_text: str, answer: str, material: str=""):
+        await db.executive_assistant_usage.insert_one({"usage_id":new_uuid(),"scope_id":scope_id,"product":"board-fundraising-game",
+            "portfolio_id":portfolio.get("portfolio_id",""),"member_name":portfolio.get("member_name",""),"material_type":material,
+            "input_characters":len(request_text),"output_characters":len(answer),"created_at":now_iso()})
+
     async def adopted_strategy(user_id: str) -> dict:
         strategy = await db.game_strategies.find_one(
             {"user_id": user_id, "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
@@ -295,6 +360,9 @@ def create_portfolio_router(db) -> APIRouter:
             {"user_id": user_id, "board_member_id": member_id, "section_id": 9}, {"_id": 0}) or {}
         direct_response = await db.game_section_responses.find_one(
             {"user_id": user_id, "board_member_id": member_id, "section_id": 10}, {"_id": 0}) or {}
+        participation_response = await db.game_section_responses.find_one(
+            {"user_id": user_id, "board_member_id": member_id, "section_id": 5}, {"_id": 0}) or {}
+        participation = participation_response.get("extras") or {}
         system_roles = []
         for pref in system_response.get("preferences") or []:
             mapping = SYSTEM_ROLE_BY_OPTION.get(str(pref.get("option", "")).strip())
@@ -306,6 +374,14 @@ def create_portfolio_router(db) -> APIRouter:
                 "involvement": str(pref.get("involvement", "")), "member_note": str(pref.get("note", "")),
                 "commitment": "", "deadline": "", "requires_confirmation": False, "active": True,
             })
+        if not system_roles:
+            for option in participation.get("build") or []:
+                option=str(option).strip()
+                if not option:continue
+                key=V3_BUILD_ROLE_MAP.get(option,"custom")
+                label=option if key!="custom" else (str(participation.get("build_other","")).strip() or option)
+                system_roles.append({"item_id":new_uuid(),"role_key":key,"label":label,"source":"individual_game_v3",
+                    "involvement":"","member_note":"","commitment":"","deadline":"","requires_confirmation":False,"active":True})
         direct_activities = []
         for pref in direct_response.get("preferences") or []:
             mapping = DIRECT_BY_OPTION.get(str(pref.get("option", "")).strip())
@@ -318,6 +394,15 @@ def create_portfolio_router(db) -> APIRouter:
                 "audiences": audiences if key in AUDIENCE_RELEVANT_KEYS else [],
                 "requires_confirmation": False, "active": True,
             })
+        if not direct_activities:
+            for option in participation.get("raise") or []:
+                option=str(option).strip()
+                if not option:continue
+                key=V3_RAISE_ACTIVITY_MAP.get(option,"custom")
+                label=option if key!="custom" else (str(participation.get("raise_other","")).strip() or option)
+                direct_activities.append({"item_id":new_uuid(),"activity_key":key,"label":label,"source":"individual_game_v3",
+                    "member_note":"","commitment":"","deadline":"","audiences":audiences if key in AUDIENCE_RELEVANT_KEYS else [],
+                    "requires_confirmation":False,"active":True})
         do_not_want = [str(item) for item in (direct_response.get("do_not_want") or [])]
         member_commitments = [c for c in commitments if c.get("board_member_id") == member_id]
         additional = []
@@ -345,6 +430,8 @@ def create_portfolio_router(db) -> APIRouter:
                             break
             if not attached:
                 additional.append({"text": text, "deadline": str(commitment.get("deadline", ""))})
+        if str(participation.get("additional_idea","")).strip():
+            additional.append({"text":str(participation.get("additional_idea","")).strip(),"deadline":""})
         return {
             "portfolio_id": new_uuid(), "user_id": user_id,
             "board_member_id": member_id, "member_name": record["full_name"],
@@ -355,6 +442,7 @@ def create_portfolio_router(db) -> APIRouter:
             "system_roles": system_roles, "direct_activities": direct_activities,
             "additional_commitments": additional,
             "do_not_want": do_not_want,
+            "availability": str(participation.get("time","")),
             "org_note": "", "change_request": "",
             "sent_at": "", "approved_at": "", "approved_snapshot": None,
             "created_at": now_iso(), "updated_at": now_iso(),
@@ -408,12 +496,14 @@ def create_portfolio_router(db) -> APIRouter:
                 "toolkit_status": toolkit.get("status", "not_generated"),
                 "sent_at": row.get("sent_at", ""), "approved_at": row.get("approved_at", ""),
             })
+        access=await ensure_execution_access(member["user_id"]) if approved>=1 else {}
         return {
             "goal_display": fmt_goal(profile), "goal_deadline": fmt_deadline(profile),
             "strategy_id": strategy["strategy_id"],
             "portfolios": portfolios,
             "total": len(portfolios), "approved_count": approved, "toolkit_ready_count": toolkit_ready,
             "execution_ready": approved >= 1,
+            "executive_assistant_access":{"status":execution_access_state(access) if access else "not_started","included_until":access.get("included_until","") if access else ""},
         }
 
     @router.get("/game/portfolios/{portfolio_id}")
@@ -668,6 +758,7 @@ def create_portfolio_router(db) -> APIRouter:
                 {"$set": {"status": "approved", "approved_at": now_iso(),
                           "approved_version": portfolio.get("version", 1),
                           "approved_snapshot": snapshot, "change_request": "", "updated_at": now_iso()}})
+            await ensure_execution_access(portfolio["user_id"])
             return {"status": "approved"}
         if payload.action == "request_change":
             if not payload.comment.strip():
@@ -846,25 +937,29 @@ def create_portfolio_router(db) -> APIRouter:
     async def board_assistant(token: str):
         portfolio = await portfolio_by_token(token)
         if portfolio.get("status") not in {"approved", "materials_ready"}:raise HTTPException(409,"Approve the Board Fundraising Portfolio before starting execution")
-        profile = await get_profile(portfolio["user_id"]);snapshot=portfolio.get("approved_snapshot") or portfolio;suggestions=[]
+        profile=await get_profile(portfolio["user_id"]);access=await ensure_execution_access(portfolio["user_id"]);state=execution_access_state(access);snapshot=portfolio.get("approved_snapshot") or portfolio;suggestions=[]
         for item in (snapshot.get("system_roles") or [])+(snapshot.get("direct_activities") or []):
             key=item.get("role_key") or item.get("activity_key") or "custom"
             for title in MATERIALS_MAP.get(key,CUSTOM_MATERIALS)[:4]:
                 if title not in suggestions:suggestions.append(title)
         history=await db.board_assistant_messages.find({"portfolio_id":portfolio["portfolio_id"]},{"_id":0}).sort("created_at",1).to_list(200)
-        return {"member_name":portfolio["member_name"],"organization_name":(profile.get("organization") or {}).get("name",""),"suggested_materials":suggestions[:12],"messages":[{"role":x["role"],"text":x["text"]} for x in history]}
+        return {"member_name":portfolio["member_name"],"organization_name":(profile.get("organization") or {}).get("name",""),"suggested_materials":suggestions[:12],
+            "messages":[{"role":x["role"],"text":x["text"]} for x in history],"access_status":state,"included_until":access.get("included_until",""),
+            "leader_name":access.get("leader_name",""),"renewal_message":"Your organization's included Executive Assistant access has ended. Please ask your organization leader to renew Board Execution Support." if state=="renewal_required" else ""}
 
     @router.post("/board-assistant/{token}")
     async def use_board_assistant(token: str,payload:AssistantPayload):
         portfolio=await portfolio_by_token(token)
         if portfolio.get("status") not in {"approved","materials_ready"}:raise HTTPException(409,"Approve the Board Fundraising Portfolio before starting execution")
+        access=await ensure_execution_access(portfolio["user_id"])
+        if execution_access_state(access)=="renewal_required":raise HTTPException(402,"Your organization's included Executive Assistant access has ended. Please ask your organization leader to renew Board Execution Support.")
         context=await assistant_context(portfolio);request_text=(f"Create this ready-to-use fundraising material: {payload.material_type}.\n\nAdditional instruction: {payload.message}" if payload.material_type else payload.message)
-        api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
-        system=("You are one Board Member's secure fundraising execution assistant. Use only the supplied organization, adopted strategy, approved portfolio, this member's relationships and conversation. Give practical, ready-to-use help. Never invent facts, people, relationships, commitments, results or authority. Never assign work outside the approved portfolio. Use clear placeholders when missing facts are required. Do not mention AI.")
+        api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("EXECUTIVE_ASSISTANT_MODEL") or os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6");provider=os.environ.get("EXECUTIVE_ASSISTANT_PROVIDER","anthropic")
+        system=("You are one delegated leader's secure fundraising execution assistant. Use only the supplied organization, adopted strategy, approved portfolio, this person's relationships and conversation. Give practical, ready-to-use help only for responsibilities this person actually approved or was delegated. Never invent facts, people, relationships, commitments, results or authority. Use clear placeholders when missing facts are required. Do not mention AI.")
         history=await db.board_assistant_messages.find({"portfolio_id":portfolio["portfolio_id"]},{"_id":0}).sort("created_at",-1).limit(12).to_list(12);history.reverse()
-        prompt=f"AUTHORITATIVE CONTEXT:\n{json.dumps(context,default=str)}\n\nRECENT CONVERSATION:\n{json.dumps(history,default=str)}\n\nBOARD MEMBER REQUEST:\n{request_text}"
-        chat=LlmChat(api_key=api_key,session_id=f"board-assistant-{portfolio['portfolio_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model);response=await chat.send_message(UserMessage(text=prompt));answer=response if isinstance(response,str) else getattr(response,"text",str(response));now=now_iso()
-        await db.board_assistant_messages.insert_many([{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"user","text":request_text,"created_at":now},{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"assistant","text":answer,"created_at":now_iso()}])
+        prompt=f"AUTHORITATIVE CONTEXT:\n{json.dumps(context,default=str)}\n\nRECENT CONVERSATION:\n{json.dumps(history,default=str)}\n\nDELEGATED LEADER REQUEST:\n{request_text}"
+        chat=LlmChat(api_key=api_key,session_id=f"board-assistant-{portfolio['portfolio_id']}-{uuid.uuid4()}",system_message=system).with_model(provider,model);response=await chat.send_message(UserMessage(text=prompt));answer=response if isinstance(response,str) else getattr(response,"text",str(response));now=now_iso()
+        await db.board_assistant_messages.insert_many([{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"user","text":request_text,"created_at":now},{"message_id":new_uuid(),"portfolio_id":portfolio["portfolio_id"],"role":"assistant","text":answer,"created_at":now_iso()}]);await meter_assistant(access["scope_id"],portfolio,request_text,answer,payload.material_type)
         return {"answer":answer}
 
     return router
