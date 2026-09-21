@@ -58,7 +58,7 @@ export const WorkingStrategyCard = () => {
         <div style={{ marginTop: 14 }} data-testid="bfg-working-generating">
           <p style={{ fontWeight: 700, color: "#111827" }}>Building Your Working Fundraising Strategy</p>
           <p className="bfg-note">We are bringing together the information currently available from your organization and board.</p>
-          <p className="bfg-note">This usually takes a few minutes. You can continue using your dashboard while we work.</p>
+          <p className="bfg-note">This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes. You can continue using your dashboard while we work.</p>
           <div className="bfg-doc-loading"><span /><span /><span /></div>
         </div>
       ) : phase === "failed" ? (
