@@ -194,7 +194,7 @@ export const Module3Launch = ({ mode = "all" }) => {
             <p>{workspaceModulesText.yourBoardApplicationIsReady}</p>
             <p>Launched {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "delivered as an internal preview to the program owner" : "delivered to eligible Applicant Network members"}).
               <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a></p>
-            <Link className="button" to="/app/recruitment/self-guided/module/4" data-testid="continue-to-step-3">{workspaceModulesText.continueToStep4Select}</Link>
+            <Link className="button" to="/app/board-recruitment#br-section-applicants" data-testid="continue-to-applicants">CONTINUE TO APPLICANTS</Link>
           </div>
         )}
         {message && <p className="member-success">{message}</p>}
