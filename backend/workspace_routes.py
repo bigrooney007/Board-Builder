@@ -987,11 +987,18 @@ def create_workspace_router(db) -> APIRouter:
         member = await selection_member(request)
         application = await owned_application(member["user_id"], application_id)
         if not application.get("cv_file_id"):
+            if application.get("internal_preview") and application.get("cv_text"):
+                filename = (application.get("profile_snapshot", {}).get("full_name") or "Applicant").replace(" ", "-") + "-Preview-CV.txt"
+                return StreamingResponse(
+                    io.BytesIO(application["cv_text"].encode("utf-8")),
+                    media_type="text/plain",
+                    headers={"Content-Disposition": f'inline; filename="{filename}"'},
+                )
             raise HTTPException(status_code=404, detail="No CV on this application")
         stream = await cv_bucket.open_download_stream(ObjectId(application["cv_file_id"]))
         content = await stream.read()
         return StreamingResponse(io.BytesIO(content), media_type=application.get("cv_content_type", "application/octet-stream"),
-                                 headers={"Content-Disposition": f'attachment; filename="{application.get("cv_filename", "cv")}"'})
+                                 headers={"Content-Disposition": f'inline; filename="{application.get("cv_filename", "cv")}"'})
 
     @router.post("/applications/{application_id}/interview-guide/retry")
     async def retry_guide(application_id: str, request: Request):
