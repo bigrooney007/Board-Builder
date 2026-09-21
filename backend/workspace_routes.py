@@ -835,12 +835,23 @@ def create_workspace_router(db) -> APIRouter:
     CAMPAIGN_TYPES = ["board_recruitment_job_post", "recruitment_emails", "social_posts", "referral_request_email"]
 
     async def opportunity_readiness(user_id, opportunity):
-        generated = await db.generated_materials.count_documents(
-            {"user_id": user_id, "type": {"$in": CAMPAIGN_TYPES}, "application_id": ""})
+        material_types = await db.generated_materials.distinct(
+            "type",
+            {
+                "user_id": user_id,
+                "type": {"$in": CAMPAIGN_TYPES},
+                "$or": [
+                    {"application_id": ""},
+                    {"application_id": None},
+                    {"application_id": {"$exists": False}},
+                ],
+            },
+        )
+        generated_types = {item for item in material_types if item in CAMPAIGN_TYPES}
         return {
             "application_saved": bool(opportunity.get("application_saved")),
-            "materials_generated": generated >= len(CAMPAIGN_TYPES),
-            "materials_count": min(generated, len(CAMPAIGN_TYPES)),
+            "materials_generated": all(item in generated_types for item in CAMPAIGN_TYPES),
+            "materials_count": len(generated_types),
             "materials_total": len(CAMPAIGN_TYPES),
         }
 
