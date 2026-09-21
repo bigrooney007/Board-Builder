@@ -106,10 +106,10 @@ const CandidateActions = ({ application, refresh, branding }) => {
   );
 };
 
-export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }) => {
+export const ApplicantDetail = ({ applicationId, onChanged, branding, initialShowApplication = false }) => {
   const [detail, setDetail] = useState(null);
   const [notes, setNotes] = useState("");
-  const [showApplication, setShowApplication] = useState(false);
+  const [showApplication, setShowApplication] = useState(initialShowApplication);
   const { byType: byTypeApp, refresh: refreshApp } = useMaterials(applicationId);
   const refresh = useCallback(async () => {
     const response = await memberApi.get(`/workspace/applications/${applicationId}`);
@@ -121,7 +121,6 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
   const application = detail.application;
   const snapshot = application.profile_snapshot || {};
   const hasAnswers = Object.keys(application.answers || {}).length > 0;
-  const setStatus = async (status) => { await memberApi.patch(`/workspace/applications/${applicationId}`, { status }); await refresh(); if (onChanged) onChanged(); };
   const saveNotes = async () => { await memberApi.patch(`/workspace/applications/${applicationId}`, { notes }); };
   return (
     <div className="applicant-detail" data-testid="applicant-detail">
@@ -129,11 +128,6 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
         <h3>{recruitmentWorkspaceText.h_applicantProfile}</h3>
         <dl>{Object.entries(snapshot).filter(([, value]) => value).map(([key, value]) => <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{value}</dd></div>)}</dl>
         <div className="material-actions">
-          <label className="field status-field"><span>Application status</span>
-            <select value={application.status} onChange={(event) => setStatus(event.target.value)} data-testid="applicant-status-select">
-              {statuses.map((status) => <option key={status}>{status}</option>)}
-            </select>
-          </label>
           {hasAnswers && <button className="button button-back" onClick={() => setShowApplication(!showApplication)} data-testid="view-application-button"><FileText size={14} /> {showApplication ? "Hide Application" : "View Application"}</button>}
           {application.cv_file_id && <button className="button button-back" onClick={() => downloadCv(application)} data-testid="download-cv-button"><FileText size={14} /> View CV ({application.cv_filename})</button>}
         </div>
@@ -194,9 +188,10 @@ const ExternalApplicantForm = ({ refresh }) => {
 };
 
 export const Module4Applicants = () => {
-  const { applications, statuses, refresh } = useApplications();
+  const { applications, refresh } = useApplications();
   const [branding] = useBranding();
   const [openId, setOpenId] = useState("");
+  const [openApplication, setOpenApplication] = useState(false);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("application_id") || "";
     if (requested && applications.some((application) => application.application_id === requested)) setOpenId(requested);
@@ -211,20 +206,51 @@ export const Module4Applicants = () => {
         <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
         <p className="material-description">{recruitmentWorkspaceText.d_everyoneWhoAppliesThroughYour}</p>
         {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">{applicantModulesText.noApplicationsYetWhenYour}</p>}
-        {applications.map((application) => (
-          <div className={`applicant-row ${openId === application.application_id ? "open" : ""}`} key={application.application_id} data-testid={`applicant-row-${application.application_id}`}>
-            <button className="applicant-row-head" onClick={() => setOpenId(openId === application.application_id ? "" : application.application_id)}>
-              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
-              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
-              <span>{application.profile_snapshot?.location || application.profile_snapshot?.city || ""}</span>
-              <span className="source-tag">{application.source}</span>
-              <span>CV: {application.cv_filename ? "Yes" : "No"}</span>
-              <span data-testid={`interview-label-${application.application_id}`}>{interviewLabel(application)}</span>
-              <span className={`status-pill status-${application.status.replace(/\s/g, "-").toLowerCase()}`}>{application.status}</span>
-            </button>
-            {openId === application.application_id && <ApplicantDetail applicationId={application.application_id} statuses={statuses} onChanged={refresh} branding={branding} />}
-          </div>
-        ))}
+        {applications.map((application) => {
+          const hasApplication = Object.keys(application.answers || {}).length > 0
+            && !(application.source || "").toLowerCase().includes("external");
+          const hasCv = Boolean(application.cv_file_id || application.cv_filename);
+          const openRecord = (showApplication) => {
+            setOpenApplication(Boolean(showApplication));
+            setOpenId(openId === application.application_id && openApplication === Boolean(showApplication) ? "" : application.application_id);
+          };
+          return (
+            <div className={`applicant-row ${openId === application.application_id ? "open" : ""}`} key={application.application_id} data-testid={`applicant-row-${application.application_id}`}>
+              <div className="applicant-row-head">
+                <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
+                <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
+                <span>{application.profile_snapshot?.location || application.profile_snapshot?.city || ""}</span>
+                <span className="source-tag">{application.source}</span>
+                <div className="material-actions">
+                  {hasApplication && (
+                    <button className="button button-back button-small" onClick={() => openRecord(true)} data-testid={`view-full-application-${application.application_id}`}>
+                      <FileText size={14} /> View Full Application
+                    </button>
+                  )}
+                  {hasCv && (
+                    <button className="button button-back button-small" onClick={() => { setOpenApplication(false); setOpenId(application.application_id); downloadCv(application); }} data-testid={`view-cv-${application.application_id}`}>
+                      <FileText size={14} /> View CV
+                    </button>
+                  )}
+                  {!hasApplication && (
+                    <button className="button button-back button-small" onClick={() => openRecord(false)} data-testid={`open-interview-tools-${application.application_id}`}>
+                      Open Interview Tools
+                    </button>
+                  )}
+                </div>
+              </div>
+              {openId === application.application_id && (
+                <ApplicantDetail
+                  applicationId={application.application_id}
+                  onChanged={refresh}
+                  branding={branding}
+                  initialShowApplication={openApplication}
+                  key={`${application.application_id}-${openApplication ? "application" : "tools"}`}
+                />
+              )}
+            </div>
+          );
+        })}
       </section>
     </div>
   );
@@ -331,20 +357,23 @@ const ReferenceProcessPanel = ({ application }) => {
 
   if (!loaded) return <p>Loading reference check…</p>;
   const waitingForCandidate = process && (!process.references || process.references.length === 0);
+  const cvReferences = process?.reference_source === "cv";
+  const refereeContactStarted = Boolean((process?.references || []).some((reference) => ["Sent", "Completed"].includes(reference.status)));
+  const canAskCandidate = process && (waitingForCandidate || (cvReferences && !refereeContactStarted));
 
   return (
     <div className="detail-section" data-testid="reference-process-panel">
       <h3>Reference Check — {name}</h3>
-      <p className="material-description">Collect and verify two professional references for this candidate before making your final board appointment decision. {name} receives a secure form asking for two references. When they submit, you are notified and the references appear below marked Ready to Contact — no reference is emailed until you click Email Reference for Confirmation. Each reference then receives their own secure five-question form, and you are notified as each response comes in. You make every decision — the platform only records the information.</p>
+      <p className="material-description">The platform first checks this candidate’s CV for people explicitly listed as professional references. If references are found, review them and email each referee for confirmation. If the CV does not contain usable references, ask the applicant to provide two references through the secure form. The check is marked complete only after both referees respond.</p>
       {!process && (
-        <button className="button" disabled={busy} onClick={start} data-testid="start-reference-check-button">{busy ? "Starting…" : "START REFERENCING"}</button>
+        <button className="button" disabled={busy} onClick={start} data-testid="start-reference-check-button">{busy ? "Checking CV…" : "START REFERENCE CHECK"}</button>
       )}
       {process && (
         <>
           <p>Reference Check Status: <strong data-testid="reference-process-status">{process.status}</strong>
             {process.candidate_sent_at && <span className="material-meta"> · Candidate form sent to {process.candidate_sent_to || process.candidate_email} on {new Date(process.candidate_sent_at).toLocaleString()}</span>}
           </p>
-          {waitingForCandidate && process.status === "Not Started" && (
+          {canAskCandidate && !["Waiting for Candidate"].includes(process.status) && (
             <>
               {isHosted && hostedEmail ? (
                 <p className="workspace-note" data-testid="hosted-email-note">Candidate Email: <strong>{hostedEmail}</strong>{applicantModulesText.fromTheirBoardApplication}</p>
@@ -368,7 +397,7 @@ const ReferenceProcessPanel = ({ application }) => {
                 <p className="workspace-note">Candidate Email: <strong>{email}</strong></p>
               )}
               {(emailConfirmed || (isHosted && hostedEmail)) && !showPreview && (
-                <button className="button" onClick={() => { const template = defaultEmail(); if (!subject) setSubject(template.subject); if (!body) setBody(template.body); setShowPreview(true); }} data-testid="email-reference-form-button">Email Reference Form to {name}</button>
+                <button className="button" onClick={() => { const template = defaultEmail(); if (!subject) setSubject(template.subject); if (!body) setBody(template.body); setShowPreview(true); }} data-testid="email-reference-form-button">ASK {name.toUpperCase()} FOR REFERENCES</button>
               )}
               {showPreview && (
                 <div className="material-edit" data-testid="candidate-email-preview">
@@ -412,8 +441,11 @@ const ReferenceProcessPanel = ({ application }) => {
                 <span>{reference.position}{reference.organization ? `, ${reference.organization}` : ""} · {reference.relationship} · Known {reference.duration}</span>
               </div>
               <span className={`blog-status-badge ${reference.status === "Completed" ? "published" : "pending"}`} data-testid={`reference-status-${index + 1}`}>{reference.status}</span>
-              {reference.status !== "Completed" && (
-                <button className="button button-back" disabled={busy} onClick={() => resendReferee(reference.reference_id)} data-testid={`resend-referee-${index + 1}`}>{["Not Sent", "Ready to Contact"].includes(reference.status) ? "Email Reference for Confirmation" : "Resend Reference Request"}</button>
+              {reference.status !== "Completed" && reference.email && (
+                <button className="button button-back" disabled={busy} onClick={() => resendReferee(reference.reference_id)} data-testid={`resend-referee-${index + 1}`}>{["Not Sent", "Ready to Contact", "References Found in CV"].includes(reference.status) ? "EMAIL REFEREE FOR CONFIRMATION" : "RESEND REFERENCE REQUEST"}</button>
+              )}
+              {reference.status !== "Completed" && !reference.email && (
+                <span className="workspace-note">Referee contact details are incomplete. Ask the applicant to confirm their references.</span>
               )}
               <RefereeResponse reference={reference} />
             </div>
@@ -426,22 +458,56 @@ const ReferenceProcessPanel = ({ application }) => {
   );
 };
 
-const BackgroundCheckPanel = ({ application }) => {
-  const [check, setCheck] = useState(application.background_check || { status: "Not started" });
+const BackgroundCheckPanel = ({ application, location = "" }) => {
+  const initial = application.background_check || { status: "Not started" };
+  const normalizedRequired = initial.required === true || initial.required === "Yes" ? "Yes"
+    : initial.required === false || initial.required === "No" || initial.status === "Not Required" ? "No" : "";
+  const [check, setCheck] = useState({ ...initial, required: normalizedRequired });
   const [message, setMessage] = useState("");
-  const saveCheck = async () => { await memberApi.patch(`/workspace/applications/${application.application_id}`, { background_check: check }); setMessage("Background check record saved."); };
+
+  const chooseRequired = (value) => {
+    if (value === "No") setCheck({ ...check, required: "No", status: "Not Required", requested_date: "", completed_date: "" });
+    else if (value === "Yes") setCheck({ ...check, required: "Yes", status: check.status === "Not Required" ? "Not started" : (check.status || "Not started") });
+    else setCheck({ ...check, required: "" });
+  };
+
+  const saveCheck = async () => {
+    await memberApi.patch(`/workspace/applications/${application.application_id}`, { background_check: check });
+    setMessage("Background check decision saved.");
+  };
+
+  const search = (query) => window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank", "noopener");
+
   return (
     <div className="detail-section" data-testid="background-check-panel">
-      <h3>{recruitmentWorkspaceText.h_backgroundCheckRecord}</h3>
-      <p style={{ fontSize: 14, color: "#555" }}>Your organization decides whether a background check or specific clearance is required and carries out its own process. This record simply tracks the status of that process — nothing here performs a check, and no status is ever interpreted as a pass or fail. "References Submitted" means referee details were provided, not that reference checks are complete.</p>
-      <p className="workspace-note">{recruitmentWorkspaceText.n_nonprofitBoardBuilderDoesNot}</p>
-      <div className="two-col-fields">
-        <label className="field"><span>Background check</span><select value={check.status || "Not started"} onChange={(event) => setCheck({ ...check, status: event.target.value })} data-testid="background-status">{["Not Required", "Not started", "Pending", "In progress", "Completed", "Follow-up required"].map((option) => <option key={option}>{option}</option>)}</select></label>
-        <label className="field"><span>Requested date</span><input value={check.requested_date || ""} onChange={(event) => setCheck({ ...check, requested_date: event.target.value })} /></label>
-        <label className="field"><span>Completed date</span><input value={check.completed_date || ""} onChange={(event) => setCheck({ ...check, completed_date: event.target.value })} /></label>
-      </div>
-      <label className="field"><span>Notes</span><textarea rows="2" value={check.notes || ""} onChange={(event) => setCheck({ ...check, notes: event.target.value })} /></label>
-      <button className="button button-back" onClick={saveCheck} data-testid="save-background-button">{applicantModulesText.saveBackgroundCheckRecord}</button>
+      <h3>Background Check — {application.profile_snapshot?.full_name || application.applicant_email}</h3>
+      <p className="material-description">Your organization decides whether this Board candidate needs a background check or local clearance. Nonprofit Board Builder does not perform or interpret the check.</p>
+      <label className="field">
+        <span>Does this person need a background check?</span>
+        <select value={check.required || ""} onChange={(event) => chooseRequired(event.target.value)} data-testid="background-required">
+          <option value="">Select</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </label>
+
+      {check.required === "Yes" && (
+        <>
+          <div className="material-actions">
+            <button className="button button-back" onClick={() => search(`background check providers near ${location || "me"}`)} data-testid="background-provider-search">Find Background Check Providers Near Me</button>
+            <button className="button button-back" onClick={() => search(`local sheriff police background check near ${location || "me"}`)} data-testid="background-law-enforcement-search">Find Local Sheriff / Police Background Check</button>
+          </div>
+          <div className="two-col-fields">
+            <label className="field"><span>Status</span><select value={check.status || "Not started"} onChange={(event) => setCheck({ ...check, status: event.target.value })} data-testid="background-status">{["Not started", "In progress", "Completed", "Follow-up required"].map((option) => <option key={option}>{option}</option>)}</select></label>
+            <label className="field"><span>Requested date</span><input type="date" value={check.requested_date || ""} onChange={(event) => setCheck({ ...check, requested_date: event.target.value })} /></label>
+            <label className="field"><span>Completed date</span><input type="date" value={check.completed_date || ""} onChange={(event) => setCheck({ ...check, completed_date: event.target.value })} /></label>
+          </div>
+          <label className="field"><span>Notes</span><textarea rows="2" value={check.notes || ""} onChange={(event) => setCheck({ ...check, notes: event.target.value })} /></label>
+        </>
+      )}
+
+      {check.required === "No" && <p className="member-success">No background check is required for this candidate.</p>}
+      <button className="button button-back" disabled={!check.required} onClick={saveCheck} data-testid="save-background-button">SAVE BACKGROUND CHECK DECISION</button>
       {message && <p className="member-success">{message}</p>}
     </div>
   );
@@ -738,10 +804,52 @@ export const Module5References = () => {
 };
 
 export const AutomatedReferenceChecks = () => {
-  const { applications, refresh: refreshApps } = useApplications();
+  const { applications } = useApplications();
   const [selectedId, setSelectedId] = useState("");
-  const [detail, setDetail] = useState(null);
-  const [busyId, setBusyId] = useState("");
+  const [startingId, setStartingId] = useState("");
+
+  const startReference = async (application) => {
+    setStartingId(application.application_id);
+    try {
+      await memberApi.post("/workspace/reference-process", { application_id: application.application_id });
+      setSelectedId(application.application_id);
+    } catch (error) {
+      window.alert(error.response?.data?.detail || "The reference check could not be started.");
+    }
+    setStartingId("");
+  };
+
+  const selected = applications.find((application) => application.application_id === selectedId);
+
+  return (
+    <div data-testid="automated-reference-workspace">
+      <section className="workspace-panel">
+        <h2>Reference Checks</h2>
+        <p className="material-description">Every applicant appears here. Click Start Reference Check and the platform first checks the candidate's CV for explicit referee details. If the CV does not contain usable references, you can immediately ask the applicant to provide them.</p>
+        {applications.length === 0 && <p className="workspace-note">Applicants will appear here as they enter your recruitment process.</p>}
+        {applications.map((application) => (
+          <div className="candidate-card" key={application.application_id} data-testid={`reference-candidate-${application.application_id}`}>
+            <div className="candidate-card-info">
+              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
+              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
+              <span>Reference Check: <b>{application.reference_check_status || "Not Started"}</b></span>
+            </div>
+            <div className="candidate-card-actions">
+              <button className="button button-small" disabled={startingId === application.application_id} onClick={() => startReference(application)} data-testid={`start-reference-${application.application_id}`}>
+                {startingId === application.application_id ? "CHECKING CV…" : application.reference_check_status === "Completed" ? "VIEW COMPLETED REFERENCE CHECK" : "START REFERENCE CHECK"}
+              </button>
+            </div>
+          </div>
+        ))}
+        {selected && <ReferenceProcessPanel application={selected} key={`reference-panel-${selected.application_id}`} />}
+      </section>
+    </div>
+  );
+};
+
+export const BackgroundChecksWorkspace = () => {
+  const { applications } = useApplications();
+  const [selectedId, setSelectedId] = useState("");
   const [location, setLocation] = useState("");
 
   useEffect(() => {
@@ -751,53 +859,27 @@ export const AutomatedReferenceChecks = () => {
     }).catch(() => {});
   }, []);
 
-  const loadDetail = useCallback(() => {
-    if (!selectedId) { setDetail(null); return; }
-    memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
-  }, [selectedId]);
-
-  useEffect(() => { loadDetail(); }, [loadDetail]);
-
-  const decide = async (applicationId, decision) => {
-    setBusyId(applicationId);
-    try {
-      await memberApi.post(`/workspace/applications/${applicationId}/decision`, { decision });
-      setSelectedId(applicationId);
-      await refreshApps();
-      loadDetail();
-    } catch { window.alert("The decision could not be saved."); }
-    setBusyId("");
-  };
-
-  const sorted = [...applications].sort((a, b) => Number(Boolean(b.interview_completed)) - Number(Boolean(a.interview_completed)));
-  const eligible = detail && !["Not Moving Forward", "Not Selected"].includes(detail.status);
+  const selected = applications.find((application) => application.application_id === selectedId);
 
   return (
-    <div data-testid="automated-reference-workspace">
-      <section className="workspace-panel" data-testid="reference-and-background-intro">
-        <h2>References And Background Checks</h2>
-        <p className="material-description">Run the automated reference process for the candidates you decide to move forward. If your organization requires a background check or local clearance, use the search below to find providers near you and record the status for that candidate.</p>
-        <div className="material-actions">
-          <button className="button button-back" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">
-            Find Background Check Providers Near Me
-          </button>
-        </div>
-      </section>
-
+    <div data-testid="background-check-workspace">
       <section className="workspace-panel">
-        <h2>Automated Reference Check</h2>
-        <p className="material-description">Choose the applicant you want to move forward. The platform emails the secure reference form, collects two professional referees, sends each referee the confirmation form when you instruct it to and records every response here.</p>
-        {sorted.length === 0 && <p className="workspace-note" data-testid="no-reference-candidates">Applicants appear here after they enter your recruitment process.</p>}
-        {sorted.map((application) => (
-          <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
-        ))}
-        {detail && eligible && (
-          <div className="candidate-progress">
-            <ReferenceProcessPanel application={detail} key={`automated-ref-${detail.application_id}`} />
-            <BackgroundCheckPanel application={detail} key={`background-${detail.application_id}-${detail.updated_at || ""}`} />
+        <h2>Background Checks</h2>
+        <p className="material-description">Every applicant appears here. Choose a person, decide whether your organization requires a background check, and if it does, use the local search tools to find an appropriate provider or law-enforcement option in your area.</p>
+        {applications.length === 0 && <p className="workspace-note">Applicants will appear here as they enter your recruitment process.</p>}
+        {applications.map((application) => (
+          <div className="candidate-card" key={application.application_id} data-testid={`background-candidate-${application.application_id}`}>
+            <div className="candidate-card-info">
+              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
+              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
+              <span>Background Check: <b>{application.background_check?.status || "Not decided"}</b></span>
+            </div>
+            <div className="candidate-card-actions">
+              <button className="button button-small" onClick={() => setSelectedId(application.application_id)} data-testid={`open-background-${application.application_id}`}>BACKGROUND CHECK</button>
+            </div>
           </div>
-        )}
-        {detail && !eligible && <p className="workspace-note">This applicant is not moving forward, so reference and background-check actions are not required.</p>}
+        ))}
+        {selected && <BackgroundCheckPanel application={selected} location={location} key={`background-panel-${selected.application_id}-${selected.updated_at || ""}`} />}
       </section>
     </div>
   );
