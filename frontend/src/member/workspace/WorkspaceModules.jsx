@@ -38,7 +38,7 @@ const CAMPAIGN_TOOLS = [
   ["referral_request_email", "Referral Email", "Generate My Referral Email", "A ready-to-forward message your board members, supporters, partners and colleagues can send to people who may be a strong fit — with your application link included."],
 ];
 
-const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved }) => {
+const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, onGenerate, busy }) => {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState(false);
   const publicUrl = opportunity ? `/board-opportunities/${opportunity.slug}/apply` : "";
@@ -47,6 +47,14 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved }) => {
     <section className="workspace-panel" data-testid="application-editor">
       <h2>{recruitmentModulesText.h_yourBoardApplication}</h2>
       <p className="material-description">{recruitmentModulesText.d_yourHostedBoardApplicationIs}</p>
+      {!applicationSaved && (
+        <div className="material-actions">
+          <button className="button" disabled={busy} onClick={onGenerate} data-testid="generate-board-application">
+            {busy ? "GENERATING…" : "GENERATE MY BOARD APPLICATION FORM"}
+          </button>
+          <p className="workspace-note">Your saved organization name and logo are applied automatically to the public application.</p>
+        </div>
+      )}
       {applicationSaved && (
         <>
           {publicUrl && (
@@ -94,6 +102,18 @@ export const Module3Launch = ({ mode = "all" }) => {
 
   const refreshAll = async () => { await refresh(); await loadOpportunity(); };
 
+  const generateApplication = async () => {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await memberApi.post("/workspace/opportunity/application/generate");
+      setMessage("Your Board Application is ready. Review the public form, then generate the four recruitment campaign materials below.");
+      await loadOpportunity();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not generate the Board Application.");
+    }
+    setBusy(false);
+  };
+
   const publish = async () => {
     if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.\n\nLaunch My Recruitment Campaign?")) return;
     setBusy(true); setError(""); setMessage("");
@@ -117,14 +137,22 @@ export const Module3Launch = ({ mode = "all" }) => {
     <div data-testid="module3-workspace">
       {mode !== "launch" && (
         <>
-          <ApplicationPanel opportunity={opportunity} coreQuestions={coreQuestions} applicationSaved={!!readiness.application_saved} />
-          <section className="workspace-panel" data-testid="campaign-materials">
-            <h2>{recruitmentModulesText.h_yourRecruitmentCampaignMaterials}</h2>
-            <p className="material-description">{recruitmentModulesText.d_eachResourceIsCreatedFrom}</p>
-          </section>
-          {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
-            <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
-          ))}
+          <ApplicationPanel opportunity={opportunity} coreQuestions={coreQuestions} applicationSaved={!!readiness.application_saved} onGenerate={generateApplication} busy={busy} />
+          {readiness.application_saved ? (
+            <>
+              <section className="workspace-panel" data-testid="campaign-materials">
+                <h2>{recruitmentModulesText.h_yourRecruitmentCampaignMaterials}</h2>
+                <p className="material-description">{recruitmentModulesText.d_eachResourceIsCreatedFrom}</p>
+              </section>
+              {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
+                <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
+              ))}
+            </>
+          ) : (
+            <section className="workspace-panel">
+              <p className="workspace-note">Generate your Board Application first. Your job post, recruitment email, social media post and referral email will then use the same application link.</p>
+            </section>
+          )}
         </>
       )}
 
