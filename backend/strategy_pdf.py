@@ -20,7 +20,7 @@ V2_SECTIONS = [
     ("fundraising_audiences", "Ideal Funding Audiences"), ("where_to_find", "Where To Find Potential Funders"),
     ("attraction", "Attraction Strategy"), ("fundraising_process", "Fundraising Process"),
     ("board_fundraising_process", "Board Fundraising Process"), ("team_roles", "Team, Roles & Responsibilities"),
-    ("execution_resources", "Technology, Materials, Resources & Content"), ("execution_timeline", "Execution Timeline"),
+    ("execution_resources", "Technology, Materials, Resources & Content"), ("execution_budget", "Lean Execution Budget"), ("execution_timeline", "Execution Timeline"),
     ("board_priorities", "Board Priorities"), ("additional_board_ideas", "Additional Board Ideas"),
     ("next_step", "Next Step"),
 ]
@@ -115,6 +115,37 @@ def section_blocks(key: str, data, schema_version: int) -> list:
                 blocks.append(("sub", label.upper()))
                 for item in items:
                     blocks.append(("bullet", _item_text(item)))
+        return blocks
+    if key == "execution_budget":
+        required = data.get("required_now") or []
+        if required:
+            blocks.append(("sub", "REQUIRED NOW"))
+            for item in required:
+                text = str(item.get("item", "")).strip()
+                if item.get("why_needed"):
+                    text += f" — {item['why_needed']}"
+                if item.get("lowest_cost_approach"):
+                    text += f" — Lean approach: {item['lowest_cost_approach']}"
+                text += f" — Cost: {item.get('cost') or 'PRICE TO CONFIRM'}"
+                blocks.append(("bullet", text))
+        later = data.get("later_or_optional") or []
+        if later:
+            blocks.append(("sub", "LATER / OPTIONAL"))
+            for item in later:
+                text = str(item.get("item", "")).strip()
+                if item.get("why_later"):
+                    text += f" — {item['why_later']}"
+                if item.get("lowest_cost_approach"):
+                    text += f" — Lean approach: {item['lowest_cost_approach']}"
+                text += f" — Cost: {item.get('cost') or 'PRICE TO CONFIRM'}"
+                blocks.append(("bullet", text))
+        reductions = data.get("cost_reduction_options") or []
+        if reductions:
+            blocks.append(("sub", "WAYS TO REDUCE THE COST"))
+            for item in reductions:
+                blocks.append(("bullet", _item_text(item)))
+        if data.get("budget_summary"):
+            blocks.append(("body", str(data["budget_summary"])))
         return blocks
     if key == "execution_timeline" and schema_version >= 2:
         for field, label in V2_TIMELINE:
