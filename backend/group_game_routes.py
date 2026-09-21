@@ -104,6 +104,43 @@ def dedupe_texts(items: list) -> list:
     return out
 
 
+def strategy_item_text(item) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        return " — ".join(str(item.get(key, "")).strip() for key in ("title", "explanation", "focus") if str(item.get(key, "")).strip())
+    return str(item or "").strip()
+
+
+def working_strategy_ideas(data: dict, section_key: str) -> list:
+    if not isinstance(data, dict):
+        return []
+    if section_key == "who_should_fund":
+        return [strategy_item_text(item) for item in ((data.get("fundraising_audiences") or {}).get("priorities") or []) if strategy_item_text(item)]
+    if section_key in {"where_to_find", "attract_attention", "technology", "materials"}:
+        source_key={"attract_attention":"attraction"}.get(section_key,section_key)
+        return [strategy_item_text(item) for item in ((data.get(source_key) or {}).get("priorities") or []) if strategy_item_text(item)]
+    if section_key == "fundraising_process":
+        process=data.get("fundraising_process") or [];ideas=[]
+        if isinstance(process, dict):
+            for stage in ("know","like","trust","ask","follow_up","steward"):
+                for item in process.get(stage) or []:
+                    text=strategy_item_text(item)
+                    if text:ideas.append(f"{stage.replace('_',' ').upper()}: {text}")
+        return ideas
+    if section_key == "team":
+        return [strategy_item_text(item) for item in ((data.get("fundraising_team") or {}).get("priorities") or []) if strategy_item_text(item)]
+    if section_key == "execution":
+        timeline=data.get("execution_timeline") or {};ideas=[]
+        if isinstance(timeline, dict):
+            for stage in ("set_up","launch","execute","review_and_improve"):
+                for item in timeline.get(stage) or []:
+                    text=strategy_item_text(item)
+                    if text:ideas.append(f"{stage.replace('_',' ').upper()}: {text}")
+        return ideas
+    return []
+
+
 def extract_ideas(response: dict, section_key: str) -> list:
     """Return individual idea strings from an Individual Game response document.
     V2 responses carry a deterministic flat group_game_ideas list; use it when present."""
@@ -199,6 +236,8 @@ def create_group_game_router(db) -> APIRouter:
         member_ids = list(member_names.keys())
         situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
         situation_sections = situation.get("sections") or {}
+        working = await db.game_strategies.find_one({"user_id":user_id,"mode":"working"},{"_id":0},sort=[("generated_at",-1)]) or {}
+        working_data=working.get("data") or {}
         for definition in ROUND_DEFS:
             section_id = SECTION_ID_BY_KEY.get(definition.get("source_key", ""))
             responses = []
@@ -274,6 +313,11 @@ def create_group_game_router(db) -> APIRouter:
                         key=normalise(text)
                         if key and key not in pool:
                             pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
+            for recommendation in working_strategy_ideas(working_data,definition["section_key"]):
+                key=normalise(recommendation)
+                if key not in pool:
+                    pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],
+                        "text":recommendation[:800],"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation based on your working strategy"],"contributor_ids":[],"order":order};order+=1
             for recommendation in ROONEY_RECOMMENDATIONS.get(definition["section_key"], []):
                 key=normalise(recommendation)
                 if key not in pool:
