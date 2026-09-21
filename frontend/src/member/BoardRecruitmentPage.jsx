@@ -7,7 +7,7 @@ import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { RecruitmentCampaignLaunch, RecruitmentMaterials } from "./workspace/WorkspaceModules";
-import { AutomatedReferenceChecks, FirstBoardMeetingWorkspace, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
+import { AutomatedReferenceChecks, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
 import { BoardMemberResultCard } from "./workspace/ResultsPage";
 import "./sgr.css";
 
@@ -15,8 +15,8 @@ const FLOW_STEPS = [
   ["br-section-intake", "Play Recruitment Game"], ["br-section-identify", "Identify Board Members"],
   ["br-section-materials", "Application & Campaign Materials"], ["br-section-campaign", "Launch Campaign"],
   ["br-section-applicants", "Applicants & Interviews"], ["br-section-references", "References & Background Checks"],
-  ["br-section-onboarding", "Onboarding & Conditional Appointment"], ["br-section-facilitation", "Facilitate Onboarding"],
-  ["br-section-portfolio", "Final Appointment & Portfolio"], ["br-section-first-meeting", "First Board Meeting"],
+  ["br-section-onboarding", "Onboarding & Conditional Appointment"],
+  ["br-section-portfolio", "Final Appointment & Portfolio"],
   ["br-section-support", "Ask For Help"],
 ];
 
@@ -127,29 +127,24 @@ export default function BoardRecruitmentPage() {
               <AutomatedReferenceChecks />
             </Section>
 
-            <Section number={7} title="PREPARE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" summary="Set the onboarding session, generate the materials and send the candidate every secure link." testId="br-section-onboarding">
+            <Section number={7} title="PREPARE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" summary="Set the onboarding session, generate the materials, prepare the meeting and send the candidate every secure link." testId="br-section-onboarding">
               <p>Set the onboarding date, prepare the Organization Overview and Board Manual, generate all three agreements, create the Board Member Profile Form and send one conditional appointment email carrying every secure link.</p>
               <OnboardingPreparation />
+              <div style={{ marginTop: 18 }}>
+                <h3>Prepare To Facilitate The Onboarding Conversation</h3>
+                <p>Use the facilitation guide during onboarding to clarify expectations and record exactly what the new board member agrees to contribute. Those agreed responsibilities become the basis for their final Board Member Portfolio.</p>
+                <OnboardingFacilitationGuide />
+              </div>
             </Section>
 
-            <Section number={8} title="GENERATE THE ONBOARDING FACILITATION GUIDE" summary="Open the tools for facilitating the onboarding meeting." testId="br-section-facilitation">
-              <p>Use the guide to lead the onboarding conversation, clarify expectations and record exactly what the new board member has agreed to contribute.</p>
-              <OnboardingFacilitationGuide />
-            </Section>
-
-            <Section number={9} title="CONFIRM THE FINAL APPOINTMENT AND CREATE THE BOARD MEMBER PORTFOLIO" summary="Complete the checks, confirm the appointment and create the individual portfolio." testId="br-section-portfolio">
-              <p>Confirm the final appointment after the reference check, agreements and Board Member Profile are complete. Record the onboarding conclusion, generate the formal appointment letter and create the individual Board Member Portfolio.</p>
+            <Section number={8} title="CONFIRM THE FINAL APPOINTMENT AND CREATE THE BOARD MEMBER PORTFOLIO" summary="Complete the checks, confirm the appointment and create the individual portfolio." testId="br-section-portfolio">
+              <p>Once the reference process is complete, any required background check is completed or marked Not Required, the agreements are signed and the Board Member Profile is complete, confirm the final appointment. Record the onboarding conclusion, generate the formal appointment letter and create the individual Board Member Portfolio.</p>
               <FormalAppointmentWorkspace />
               <p>The portfolio brings together the reason they were recruited, the skills and experience they bring, the areas where they want to contribute, their board responsibilities, their agreed commitments, the priorities they can support and the role they can play in strengthening the organization.</p>
               <PortfolioSection />
             </Section>
 
-            <Section number={10} title="ORGANIZE THE FIRST BOARD MEETING" summary="Enter the meeting details and send the invitation." testId="br-section-first-meeting">
-              <p>Set the meeting details, generate the invitation and send it to the board members who have completed the recruitment and appointment process.</p>
-              <FirstBoardMeetingWorkspace />
-            </Section>
-
-            <Section number={11} title="ASK FOR HELP" summary="Request support inside the platform." testId="br-section-support">
+            <Section number={9} title="ASK FOR HELP" summary="Request support inside the platform." testId="br-section-support">
               <p>Request support whenever you need help using the platform or executing the recruitment process.</p>
               <div id="sgr-support"><SupportBox productKey="recruitment_self_guided" moduleNumber={1}
                 supportTypes={["I have a question about this step", "I need help using the platform", "I need help executing this step", "I would like someone to help me complete this step"]} /></div>
