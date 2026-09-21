@@ -132,6 +132,7 @@ const MemberUnderstanding = ({ row, reload }) => {
         {ready && <button type="button" className="button" onClick={generateScript} disabled={busy} data-testid={`understand-generate-script-${id}`}><FileText size={15}/> {row.script||script?"REGENERATE CALL SCRIPT":"GENERATE INDIVIDUAL CALL SCRIPT"}</button>}
         {(row.script||script)&&!busy&&<><button type="button" className="button button-outline" onClick={openScript} data-testid={`understand-view-script-${id}`}>VIEW CALL SCRIPT</button><button type="button" className="button button-outline" onClick={downloadScript} data-testid={`understand-download-script-${id}`}><Download size={15}/> DOWNLOAD</button></>}
       </div>
+      {busy && <p className="workspace-note" data-testid={`understand-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
       {analysisStatus === "Failed" && !busy && <p style={{ marginTop: 8 }} data-testid={`understand-failed-${id}`}>{C.failedLabel}</p>}
       {viewing && material && (
         <Modal onClose={() => setViewing(false)} testId={`understand-modal-${id}`}>
