@@ -220,6 +220,22 @@ Do not invent anything about the applicant's experience, qualifications or appli
 No subject line. Keep it to approximately 3-5 natural sentences.
 NEVER mention AI."""},
     "general_rejection_email": {"module": 4, "title": "Application Rejection Email", "per_application": True, "schema": {"subject": "string", "body": "string — respectful, concise email for an applicant the organization has decided not to invite to interview"}},
+    "cv_reference_extraction": {"module": 4, "title": "CV Reference Extraction", "per_application": True, "schema": {
+        "references": [{
+            "name": "string — full referee name exactly as explicitly written in the CV/reference section",
+            "position": "string — referee job title exactly as supplied, otherwise empty string",
+            "organization": "string — referee organization exactly as supplied, otherwise empty string",
+            "relationship": "string — relationship to candidate only when explicitly stated, otherwise empty string",
+            "duration": "string — how long they have known/worked with candidate only when explicitly stated, otherwise empty string",
+            "email": "string — referee email exactly as supplied, otherwise empty string",
+            "phone": "string — referee phone exactly as supplied, otherwise empty string"
+        }]
+    }, "note": """This is an INTERNAL extraction task, not customer-facing copy.
+Read the supplied candidate CV/resume and extract at most TWO people ONLY when the document explicitly presents them as a professional reference/referee, for example under a References/Referees section or with unambiguous wording such as 'Reference:'.
+Do NOT infer that a former manager, colleague, supervisor, employer contact, recommender or named person is a referee merely because they appear in employment history or another section.
+Do NOT invent missing names, roles, relationships, emails, phones or organizations.
+Return an empty references array when the CV does not explicitly provide professional referees.
+Copy contact details exactly where supplied. Never mention AI."""},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {
         "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual Board terminology]",
         "body": "string — a finished candidate-specific Conditional Board Appointment Email. Clearly state that the founder has selected the candidate for conditional appointment; briefly connect their verified experience to the organization's actual Board need; state ONLY the actual outstanding Reference Check and/or required Background Check conditions supplied by the system; explain that formal appointment and onboarding follow only after applicable conditions are completed and the organization confirms appointment; do not include onboarding documents, profile forms, agreements, signature links or invented requirements.",
