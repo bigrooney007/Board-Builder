@@ -30,7 +30,7 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v3"
-RECRUITMENT_FIXTURE_VERSION = "v4"
+RECRUITMENT_FIXTURE_VERSION = "v5"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -469,7 +469,11 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "cv_text": (
                     "Jordan Ellis. Director of Corporate Partnerships. Twelve years of business development and partnership experience. "
                     "Led employer engagement, sponsorship proposals, executive relationship management and community-investment partnerships. "
-                    "Previous volunteer development-committee experience with a youth mentoring nonprofit."
+                    "Previous volunteer development-committee experience with a youth mentoring nonprofit. "
+                    "PROFESSIONAL REFERENCES: Elena Foster, Senior Vice President, Fictional Growth Partners, former supervisor, "
+                    "elena.foster.preview@nonprofitboardbuilder.internal, +1 555 010 5101. "
+                    "David Okoro, Executive Director, Fictional Youth Mentoring Collaborative, nonprofit partner, "
+                    "david.okoro.preview@nonprofitboardbuilder.internal, +1 555 010 5102."
                 ),
             },
             {
