@@ -377,7 +377,30 @@ def create_workspace_router(db) -> APIRouter:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
             reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
-            background_status = (application.get("background_check") or {}).get("status") or "Not started"
+            background_status = (application.get("background_check") or {}).get("status") or "Not decided"
+            context += (
+                "\n\nCONDITIONAL APPOINTMENT STATUS (authoritative):"
+                f"\nREFERENCE PROCESS STATUS: {reference_status}."
+                f"\nBACKGROUND CHECK STATUS: {background_status}."
+                "\nThe founder is choosing a CONDITIONAL appointment offer. State only the actual conditions that remain outstanding. "
+                "If the reference process is not Completed, it may be stated as an outstanding condition. "
+                "If a background check is explicitly required and not Completed, it may be stated as an outstanding condition. "
+                "If Background Check is Not Required, do not mention it as a condition. "
+                "Onboarding is a separate next stage after this appointment offer."
+            )
+            if application.get("board_role"):
+                context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
+
+        if payload.type == "unconditional_offer":
+            context += (
+                "\n\nUNCONDITIONAL APPOINTMENT OFFER (authoritative): "
+                "The founder has chosen to offer this candidate the Board position without making reference or background-check completion a condition of the offer. "
+                "Do not claim those checks were completed if they were not. Onboarding is the next stage."
+            )
+            if application.get("board_role"):
+                context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
+
+        if payload.type == "onboarding_email":
             required_types = ["organization_overview", "board_manual", "board_member_agreement",
                               "confidentiality_agreement", "conflict_of_interest_agreement"]
             missing = []
@@ -391,13 +414,14 @@ def create_workspace_router(db) -> APIRouter:
             if not session.get("date") or not session.get("time") or not session.get("timezone"):
                 missing.append("Onboarding date, time and timezone")
             if missing:
-                raise HTTPException(status_code=409, detail="Prepare and approve every onboarding item first: " + ", ".join(missing))
+                raise HTTPException(status_code=409, detail="Prepare and approve the onboarding items first: " + ", ".join(missing))
 
             links = []
             overview_token = await ensure_share_token(user_id, "organization_overview")
             manual_token = await ensure_share_token(user_id, "board_manual")
             links.append(f"Organization Overview (View): {origin}/shared/{overview_token}")
             links.append(f"Board Manual (View): {origin}/shared/{manual_token}")
+
             for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
                 request_record = await db.signature_requests.find_one(
                     {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}},
@@ -433,30 +457,24 @@ def create_workspace_router(db) -> APIRouter:
                     "status": "Created", "created_at": now_iso(),
                 })
             links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
-            context += ("\n\nCONDITIONAL APPOINTMENT FLOW (authoritative):"
-                        f"\nREFERENCE PROCESS STATUS: {reference_status}."
-                        f"\nBACKGROUND CHECK STATUS: {background_status}."
-                        "\nThis email is a CONDITIONAL Board appointment and prepares the candidate for onboarding. "
-                        "If the reference process is not Completed, state clearly that successful completion of the reference process remains a condition. "
-                        "If the background check is neither Completed nor Not Required, state clearly that any required background check remains a condition. "
-                        "The appointment becomes final only after the reference process is Completed, any required background check is Completed or marked Not Required, "
-                        "the onboarding requirements are completed and the organization explicitly confirms the final appointment."
-                        "\n\nBOARD ONBOARDING SESSION (use these exact details):\n"
-                        + "\n".join(f"{key}: {value}" for key, value in session.items() if value)
-                        + "\n\nLINKS TO INCLUDE under a clear 'Complete Before Onboarding' section. Copy every URL exactly:\n"
-                        + "\n".join(links))
-            if application.get("board_role"):
-                context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
+
+            context += (
+                "\n\nBOARD ONBOARDING SESSION (use these exact details):\n"
+                + "\n".join(f"{key}: {value}" for key, value in session.items() if value)
+                + "\n\nONBOARDING LINKS (copy every URL exactly):\n"
+                + "\n".join(links)
+            )
         if payload.type in {"formal_appointment_letter", "formal_appointment_email"}:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
             reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
             background = (application.get("background_check") or {}).get("status", "")
             context += ("\n\nFORMAL APPOINTMENT STATUS (read-only facts):"
-                        "\nThe founder has confirmed this candidate's FORMAL APPOINTMENT. The appointment is no longer conditional."
-                        f"\nREFERENCE PROCESS STATUS: {reference_status} — note: 'References Submitted' only means referee details were submitted, "
-                        "NOT that the reference process is complete; only 'Completed' means the process is complete. Never describe the appointment as subject to references."
-                        f"\nBACKGROUND CHECK STATUS: {background or 'Not recorded'} — 'Not Required' or no recorded requirement means no background check applies; never invent one and never call the appointment subject to background checks.")
+                        "\nThe founder has confirmed this candidate's FINAL FORMAL APPOINTMENT after onboarding. The appointment is no longer conditional."
+                        f"\nREFERENCE PROCESS STATUS: {reference_status}."
+                        f"\nBACKGROUND CHECK STATUS: {background or 'Not recorded'}."
+                        "\nThese statuses are informational only. The founder deliberately controls whether reference/background checks are used and has already made the final appointment decision. "
+                        "Never describe the final appointment as subject to a check that the founder chose not to require.")
             if application.get("board_role"):
                 context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
         if payload.type == "formal_appointment_letter":
@@ -976,30 +994,12 @@ def create_workspace_router(db) -> APIRouter:
             if payload.status not in APPLICATION_STATUSES:
                 raise HTTPException(status_code=422, detail="Invalid applicant status")
             if payload.status == "Selected" and application.get("status") != "Selected":
-                process = await db.reference_processes.find_one(
-                    {"owner_user_id": member["user_id"], "application_id": application_id}, {"_id": 0, "status": 1})
-                reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
-                background_status = (application.get("background_check") or {}).get("status") or "Not started"
-                signed = await db.signature_requests.find(
-                    {"owner_user_id": member["user_id"], "application_id": application_id,
-                     "agreement_type": {"$in": ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]},
-                     "status": "Signed"},
-                    {"_id": 0, "agreement_type": 1}).to_list(10)
-                signed_types = {item.get("agreement_type") for item in signed}
-                profile_response = await db.board_profile_responses.find_one(
-                    {"user_id": member["user_id"], "application_id": application_id}, {"_id": 0, "response_id": 1})
-                missing = []
-                if reference_status != "Completed": missing.append("completed reference process")
-                if background_status not in {"Completed", "Not Required"}: missing.append("background check completed or marked Not Required")
-                for agreement_type, title in [
-                    ("board_member_agreement", "signed Board Member Agreement"),
-                    ("confidentiality_agreement", "signed Confidentiality Agreement"),
-                    ("conflict_of_interest_agreement", "signed Conflict of Interest Agreement"),
-                ]:
-                    if agreement_type not in signed_types: missing.append(title)
-                if not profile_response: missing.append("completed Board Member Profile")
-                if missing:
-                    raise HTTPException(status_code=409, detail="Complete these items before confirming the Final Board Appointment: " + ", ".join(missing))
+                conclusion = application.get("onboarding_conclusion") or {}
+                if not conclusion.get("saved_at"):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Record this person's Onboarding Conclusion / Role Agreement before confirming the Final Board Appointment."
+                    )
             updates["status"] = payload.status
         if payload.notes is not None:
             updates["notes"] = payload.notes
