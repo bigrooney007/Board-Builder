@@ -8,10 +8,18 @@ export const Module1Profile = ({ onConfirmed }) => {
   const { byType, refresh } = useMaterials();
   const saveAndConfirm = async () => {
     const assessment = (await memberApi.get("/recruit/free/member-assessment/current")).data;
-    if (!assessment?.result || Object.keys(assessment.answers || {}).length < 4) throw new Error("Complete the Board Recruitment Game first.");
+    const answers = assessment?.answers || {};
+    const required = ["mission", "current_board", "important_areas", "support_needs"];
+    if (required.some((key) => !String(answers[key] || "").trim())) throw new Error("Complete all four Board Recruitment Game questions first.");
+
+    await memberApi.post(`/recruit/free/${assessment.token}/result`);
     await memberApi.post("/workspace/profile/confirm");
+    await refresh();
     if (onConfirmed) onConfirmed();
-    return true;
+
+    // The result endpoint creates the Board Member profiles from the exact four
+    // Recruitment Game answers, so do not trigger a second AI generation.
+    return false;
   };
 
   return (
