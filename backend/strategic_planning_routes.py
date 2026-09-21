@@ -2005,19 +2005,38 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan:raise HTTPException(404,"This presentation meeting link is not valid")
         p=await owned_project(plan["project_id"]);areas=plan.get("areas") or [];meeting=plan.get("presentation_meeting") or {};index=min(meeting.get("current_area_index",0),max(0,len(areas)-1))
         area=areas[index] if areas else None
-        return {"organization_name":p["organization_name"],"status":meeting.get("status","SCHEDULED"),"current_area_index":index,"total_areas":len(areas),"area":area,"present_plan":plan.get("final_display_text","")}
+        return {"organization_name":p["organization_name"],"status":meeting.get("status","SCHEDULED"),"current_area_index":index,"total_areas":len(areas),"area":area,"present_plan":plan.get("final_display_text",""),"approved_area_keys":meeting.get("approved_area_keys",[])}
 
     @router.post("/presentation-meeting/guide")
     async def presentation_guide(request: Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not plan.get("areas"):raise HTTPException(409,"Complete the detailed strategic area plans first")
         guide=(f"STRATEGIC PLAN PRESENTATION AND DELEGATION MEETING GUIDE\n{p['organization_name']}\n\n"
-               "1. OPEN THE MEETING\nExplain that each delegated person will present the section they developed and the Board will agree any final modifications and continuing leadership responsibility. Ask permission before starting transcription.\n\n"
-               "2. PRESENT ONE SECTION AT A TIME\nOpen the shared meeting screen. Invite the assigned Board Member to present the agreed direction, detailed plan, resources required, cost, action sequence and decisions needed.\n\n"
-               "3. CAPTURE BOARD MODIFICATIONS\nInvite questions and recommendations. State the final modification aloud so it is captured in the transcript. The application does not treat discussion as approval until the lead user completes the meeting.\n\n"
-               "4. DELEGATE LEADERSHIP\nConfirm who will lead or oversee the section, the first action, support required and the reporting rhythm.\n\n"
-               "5. CLOSE THE MEETING\nReview every delegated responsibility, stop transcription and explain that the transcript will be used to prepare the editable Final Strategic Plan and Board Leadership Portfolios.")
+               "THIS IS THE SECOND HALF OF THE SAME BOARD STRATEGIC PLANNING SESSION. Do not schedule another meeting unless your Board chooses to.\n\n"
+               "1. KEEP TRANSCRIPTION RUNNING\nRemind everyone that the discussion is being transcribed with consent so the final plan and delegation reflect what the Board actually agrees.\n\n"
+               "2. PRESENT ONE SECTION AT A TIME\nOpen the shared plan. Invite the person who built the section to present the agreed ideas, detailed plan, people and technology required, cost, action sequence and unresolved decisions.\n\n"
+               "3. DISCUSS AND ADOPT THE SECTION\nInvite questions, corrections and additional ideas. Say every final change aloud. When the Board agrees, click BOARD AGREES WITH THIS SECTION before moving forward. The transcript explains the discussion; the approval click confirms that the Board adopted that section.\n\n"
+               "4. DELEGATE EXECUTION OUT LOUD\nFor every adopted section, explicitly state who will lead, support or own each execution responsibility, the first action, support required and reporting rhythm. A responsibility may go to the person who built the section, another participant, the Lead User, or somebody who did not fill the form. If someone who is not already in the platform receives work, say their name clearly; their email can be added before the delegation is sent.\n\n"
+               "5. REVIEW THE COMPLETE DELEGATION\nBefore closing, read back every person's name and responsibility so the transcript contains an unambiguous final delegation record.\n\n"
+               "6. CLOSE THE SESSION\nStop transcription only after the Board has adopted every section and confirmed the execution delegation. The application will use the adopted sections and transcript to prepare the editable Final Strategic Plan, delegation emails, Leadership Portfolios and Executive Assistants.")
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting.guide":guide,"updated_at":now_iso()}});return {"guide":guide}
+
+    @router.post("/presentation-meeting/start-now")
+    async def start_presentation_now(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if not plan.get("final_display_text"):raise HTTPException(409,"Generate the Present Strategic Plan first")
+        meeting=plan.get("presentation_meeting") or {};token=meeting.get("share_token") or secrets.token_urlsafe(32)
+        meeting.update({"share_token":token,"current_area_index":meeting.get("current_area_index",0),"status":"IN PROGRESS",
+                        "started_at":meeting.get("started_at") or now_iso(),"approved_area_keys":meeting.get("approved_area_keys") or []})
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting":meeting,"updated_at":now_iso()}})
+        return {"status":"IN PROGRESS","share_token":token,"current_area_index":meeting.get("current_area_index",0),"approved_area_keys":meeting.get("approved_area_keys",[])}
+
+    @router.post("/presentation-meeting/approve-area")
+    async def approve_presentation_area(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));area_key=str(body.get("area_key","")).strip();plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};areas=plan.get("areas") or []
+        if not area_key or not any(str(area.get("area_key",""))==area_key for area in areas):raise HTTPException(422,"Choose a valid strategic area")
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$addToSet":{"presentation_meeting.approved_area_keys":area_key},"$set":{"presentation_meeting.status":"IN PROGRESS","updated_at":now_iso()}})
+        return {"status":"approved","area_key":area_key}
 
     @router.post("/presentation-meeting/send")
     async def send_presentation_meeting(request: Request):
@@ -2032,9 +2051,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/presentation-meeting/complete")
     async def complete_presentation_meeting(request: Request):
-        body=await request.json();sid=body.get("session_id","");transcript=str(body.get("transcript","")).strip()[:60000];p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
-        if not transcript:raise HTTPException(422,"Record or paste the presentation meeting transcript before completing the meeting")
-        context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nPRESENT STRATEGIC PLAN:\n{plan.get('final_display_text','')}\n\nDETAILED AREAS:\n{json.dumps(plan.get('areas') or [],default=str)}\n\nPRESENTATION AND DELEGATION MEETING TRANSCRIPT:\n{transcript}"
+        body=await request.json();sid=body.get("session_id","");transcript=str(body.get("transcript","")).strip()[:60000];p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};areas=plan.get("areas") or [];meeting=plan.get("presentation_meeting") or {};approved_keys=set(meeting.get("approved_area_keys") or []);required_keys={str(area.get("area_key","")) for area in areas if str(area.get("area_key",""))}
+        if not transcript:raise HTTPException(422,"Record or paste the Board session transcript before completing the meeting")
+        if required_keys and not required_keys.issubset(approved_keys):raise HTTPException(409,"Have the Board adopt every strategic section before completing the session")
+        context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nPRESENT STRATEGIC PLAN:\n{plan.get('final_display_text','')}\n\nBOARD-ADOPTED AREA KEYS:\n{json.dumps(sorted(approved_keys))}\n\nDETAILED AREAS:\n{json.dumps(areas,default=str)}\n\nPRESENTATION AND DELEGATION MEETING TRANSCRIPT:\n{transcript}"
         generated=await generate_structured("strategic_final_plan",context,"Update the Present Strategic Plan using only modifications, approvals and delegation decisions supported by the presentation meeting transcript. Preserve everything not changed by the Board. Do not invent decisions.")
         display=final_display(generated,p["organization_name"])
         people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
