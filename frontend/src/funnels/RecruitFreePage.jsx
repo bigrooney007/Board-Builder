@@ -61,14 +61,6 @@ export default function RecruitFreePage() {
     audio.play().catch(() => {});
   }, [clips]);
 
-  const resumeFrom = useCallback((doc) => {
-    setAssessment(doc);
-    setAnswers(doc.answers || {});
-    if (doc.result) { setStage("result"); return; }
-    const idx = QUESTIONS.findIndex((q) => !(doc.answers || {})[q.key]);
-    setStage(idx === -1 ? "generating" : `q${idx}`);
-  }, []);
-
   // The four-question Recruitment Game lives inside the paid dashboard.
   // Legacy onboarding links must never reopen the old pre-dashboard assessment journey.
   useEffect(() => {
