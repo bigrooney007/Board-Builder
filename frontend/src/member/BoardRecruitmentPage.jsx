@@ -63,6 +63,8 @@ export default function BoardRecruitmentPage() {
   }, [loading, member, navigate]);
 
   const allowed = member && (member.entitlements || []).some((e) => ["fundraising_board_builder", "fbb_recruitment", "recruitment_self_guided"].includes(e));
+  const gameAnswers = assessment?.answers || {};
+  const gameCompleted = ["mission", "current_board", "important_areas", "support_needs"].every((key) => String(gameAnswers[key] || "").trim());
 
   return (
     <MemberShell>
@@ -96,8 +98,8 @@ export default function BoardRecruitmentPage() {
 
             <Section number={1} title="PLAY THE BOARD RECRUITMENT GAME" summary="Answer four questions in one clean step-by-step game." testId="br-section-intake" defaultOpen>
               <p>Click Start Game to open Question 1. You will answer Questions 1 to 4 on separate game screens and return here when the game is complete.</p>
-              <button className="button" onClick={()=>navigate("/app/board-recruitment/game")} data-testid="start-recruitment-game">{assessment?.result?"REVIEW MY BOARD RECRUITMENT GAME":"START THE GAME"}</button>
-              {assessment?.result&&<p className="member-success" style={{marginTop:14}}>Game completed. Your answers are ready to identify the exact Board Members your organization needs.</p>}
+              <button className="button" onClick={()=>navigate("/app/board-recruitment/game")} data-testid="start-recruitment-game">{gameCompleted?"REVIEW MY BOARD RECRUITMENT GAME":"START THE GAME"}</button>
+              {gameCompleted&&<p className="member-success" style={{marginTop:14}}>Recruitment Game completed. Your four answers are saved. Continue to Step 2 to identify the exact Board Members your organization needs.</p>}
             </Section>
 
             <Section number={2} title="IDENTIFY THE EXACT TYPE OF BOARD MEMBERS NEEDED" summary="Generate the profiles directly from your Recruitment Game." testId="br-section-identify">
