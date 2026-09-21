@@ -742,11 +742,22 @@ export const AutomatedReferenceChecks = () => {
   const [selectedId, setSelectedId] = useState("");
   const [detail, setDetail] = useState(null);
   const [busyId, setBusyId] = useState("");
+  const [location, setLocation] = useState("");
+
+  useEffect(() => {
+    memberApi.get("/workspace/profile").then((response) => {
+      const data = { ...(response.data.prefill || {}), ...(response.data.profile || {}) };
+      setLocation([data.city, data.state_region, data.country].filter(Boolean).join(", "));
+    }).catch(() => {});
+  }, []);
+
   const loadDetail = useCallback(() => {
     if (!selectedId) { setDetail(null); return; }
     memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
   }, [selectedId]);
+
   useEffect(() => { loadDetail(); }, [loadDetail]);
+
   const decide = async (applicationId, decision) => {
     setBusyId(applicationId);
     try {
@@ -757,10 +768,22 @@ export const AutomatedReferenceChecks = () => {
     } catch { window.alert("The decision could not be saved."); }
     setBusyId("");
   };
+
   const sorted = [...applications].sort((a, b) => Number(Boolean(b.interview_completed)) - Number(Boolean(a.interview_completed)));
   const eligible = detail && !["Not Moving Forward", "Not Selected"].includes(detail.status);
+
   return (
     <div data-testid="automated-reference-workspace">
+      <section className="workspace-panel" data-testid="reference-and-background-intro">
+        <h2>References And Background Checks</h2>
+        <p className="material-description">Run the automated reference process for the candidates you decide to move forward. If your organization requires a background check or local clearance, use the search below to find providers near you and record the status for that candidate.</p>
+        <div className="material-actions">
+          <button className="button button-back" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`background check providers near ${location || "me"}`)}`, "_blank", "noopener")} data-testid="background-check-search-button">
+            Find Background Check Providers Near Me
+          </button>
+        </div>
+      </section>
+
       <section className="workspace-panel">
         <h2>Automated Reference Check</h2>
         <p className="material-description">Choose the applicant you want to move forward. The platform emails the secure reference form, collects two professional referees, sends each referee the confirmation form when you instruct it to and records every response here.</p>
@@ -768,8 +791,13 @@ export const AutomatedReferenceChecks = () => {
         {sorted.map((application) => (
           <CandidateDecisionCard key={application.application_id} application={application} selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId} />
         ))}
-        {detail && eligible && <ReferenceProcessPanel application={detail} key={`automated-ref-${detail.application_id}`} />}
-        {detail && !eligible && <p className="workspace-note">This applicant is not moving forward, so a reference check is not required.</p>}
+        {detail && eligible && (
+          <div className="candidate-progress">
+            <ReferenceProcessPanel application={detail} key={`automated-ref-${detail.application_id}`} />
+            <BackgroundCheckPanel application={detail} key={`background-${detail.application_id}-${detail.updated_at || ""}`} />
+          </div>
+        )}
+        {detail && !eligible && <p className="workspace-note">This applicant is not moving forward, so reference and background-check actions are not required.</p>}
       </section>
     </div>
   );
