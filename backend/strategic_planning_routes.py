@@ -1610,8 +1610,23 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.get("/workspace")
     async def workspace(session_id:str):
-        _,lead,_=await paid(session_id);p=await ensure_project(session_id);research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
-        return {"organization_name":lead.get("organization",""),"project":await detail(p),"community_research":research}
+        _,lead,intake=await paid(session_id);p=await ensure_project(session_id);research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
+        return {"organization_name":p.get("organization_name") or lead.get("organization",""),"organization_answers":intake.get("answers") or {},"project":await detail(p),"community_research":research}
+
+    @router.put("/organization")
+    async def save_organization(request: Request):
+        body=await request.json();sid=str(body.get("session_id", ""));name=str(body.get("organization_name", "")).strip();answers=body.get("answers") or {};logo=str(body.get("logo_data_url", ""))
+        if not name or not str(answers.get("mission", "")).strip():raise HTTPException(422,"Enter the organization name and mission statement")
+        if logo and (not logo.startswith("data:image/") or len(logo)>2_500_000):raise HTTPException(422,"Upload a PNG, JPG or WebP logo smaller than 1.8 MB")
+        p=await ensure_project(sid);now=now_iso()
+        await db.guided_product_intakes.update_one({"session_id":sid,"product":"strategic-planning"},{"$set":{"answers":answers,"updated_at":now}})
+        updates={"organization_name":name,"mission":str(answers.get("mission", "")).strip(),"organization_details_saved_at":now,"updated_at":now}
+        if logo:updates["logo_data_url"]=logo
+        await db.sp_projects.update_one({"project_id":p["project_id"]},{"$set":updates})
+        await db.sp_forms.update_one({"project_id":p["project_id"]},{"$set":{"status":"Needs Regeneration","updated_at":now}})
+        research_posts=[f"We are reviewing the future direction of {name} and want to hear directly from the community. Share what you believe the real need is and what would make the strongest difference.",f"What does our community need most in relation to {answers.get('mission') or 'our mission'}? We are listening before we finalize our next strategic plan.",f"Help shape the next chapter of {name}. Tell us what is working, what is missing and what approach you believe would create the greatest impact.","Good strategy starts by listening. If you have lived experience, professional insight or community knowledge connected to our mission, we would value your perspective.","Our Board is preparing its next strategic plan. Take a few minutes to tell us about the need, the best way to address it and how you or others could help."]
+        await db.sp_community_research.update_one({"project_id":p["project_id"]},{"$set":{"social_posts":research_posts,"updated_at":now}})
+        return {"saved":True}
 
     @router.post("/prepare-form")
     async def prepare_form(request:Request):

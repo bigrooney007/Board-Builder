@@ -275,7 +275,7 @@ export const FinalOutputsSection = ({ overview }) => {
               </span>
               <h4>{card.title}</h4>
               <p>{card.text}</p>
-              <button className={`bfg-btn bfg-btn-sm ${state==="ready"?"bfg-btn-primary":"bfg-btn-ghost"}`} disabled={state!=="ready"||!destinations[card.key]} style={{ marginTop: 10 }}
+              <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={state!=="ready"||!destinations[card.key]} style={{ marginTop: 10 }}
                 onClick={() => state==="ready"&&navigate(destinations[card.key])} data-testid={`bfg-output-open-${card.key}`}>
                 {state!=="ready"&&<Lock size={14}/>} {card.action}
               </button>

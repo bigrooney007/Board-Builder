@@ -190,6 +190,53 @@ def test_board_participant_pages_do_not_advertise_other_products():
     assert "<FunnelLayout restrained isolated>" in review
 
 
+def test_recommitment_dashboard_keeps_each_person_in_one_forward_workflow():
+    dashboard = source("frontend/src/member/BoardRecommitmentDashboard.jsx")
+    understand = source("frontend/src/member/ReactivationUnderstand.jsx")
+    conclusions = source("frontend/src/member/ReactivationStep3.jsx")
+    assert 'title="Enter Organization Details"' in dashboard
+    assert 'title="Invite Your Board Members"' in dashboard
+    assert "Summarize The Board" not in dashboard
+    assert "ReactivationStep5" not in dashboard
+    assert "GENERATE INDIVIDUAL CALL SCRIPT" in understand
+    assert "REANALYZE RESPONSE" in understand
+    routes = source("backend/reactivation_routes.py")
+    assert '{"user_id": user_id, "type": {"$in": [ANALYSIS_TYPE, "reactivation_conversation_script"]}}' in routes
+    assert '"type": 1, "status": 1' in routes
+    assert "<ReactivationStep3 conclusionsOnly/>" in dashboard
+    assert "GENERATE ADVISORY BOARD TRANSITION EMAIL" in conclusions
+    assert "GENERATE BOARD DEPARTURE EMAIL" in conclusions
+
+
+def test_recommitment_has_distinct_full_and_continue_serving_forms():
+    invite = source("frontend/src/member/RecommitmentInviteBoardMembers.jsx")
+    form = source("frontend/src/funnels/BoardRecommitmentFormPage.jsx")
+    backend = source("backend/reactivation_routes.py")
+    assert "Full Recommitment Form, including graceful transition options" in invite
+    assert "Continue-Serving Form, without the step-down option" in invite
+    assert "generalVersion ? [YES, UNSURE]" in form
+    assert 'form_variant: str = "full"' in backend
+    assert 'record.get("form_variant") == "standard"' in backend
+
+
+def test_strategic_organization_information_drives_forms_and_research():
+    dashboard = source("frontend/src/funnels/StrategicPlanningDashboard.jsx")
+    routes = source("backend/strategic_planning_routes.py")
+    research = source("frontend/src/funnels/CommunityNeedResearchPage.jsx")
+    assert "TELL US ABOUT YOUR ORGANIZATION" in dashboard
+    assert "SAVE ORGANIZATION INFORMATION" in dashboard
+    assert "LAUNCH COMMUNITY NEED RESEARCH" in dashboard
+    assert "Community Research Promotion Kit" in dashboard
+    assert '@router.put("/organization")' in routes
+    assert '"status":"Needs Regeneration"' in routes
+    assert 'data-testid="community-research-mission"' in research
+
+
+def test_locked_game_outputs_keep_their_primary_button_colors():
+    outputs = source("frontend/src/game/MeetingOutputs.jsx")
+    assert 'className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={state!=="ready"' in outputs
+
+
 def test_admin_dashboard_preview_records_are_hidden_from_customer_reporting():
     contacts = source("backend/admin_contacts_routes.py")
     game = source("backend/game_routes.py")

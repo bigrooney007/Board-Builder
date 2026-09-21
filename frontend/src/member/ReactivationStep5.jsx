@@ -17,7 +17,7 @@ const Modal = ({ children, onClose, testId, wide }) => (
   </div>
 );
 
-const PortfolioWorkflow = ({ row, reload }) => {
+export const PortfolioWorkflow = ({ row, reload }) => {
   const id = row.member_record_id;
   const [busy, setBusy] = useState("");
   const [material, setMaterial] = useState(null);
@@ -152,7 +152,7 @@ const PortfolioWorkflow = ({ row, reload }) => {
   );
 };
 
-const OutcomeEmailWorkflow = ({ row, label, reload }) => {
+export const OutcomeEmailWorkflow = ({ row, label, reload }) => {
   const id = row.member_record_id;
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState(null);

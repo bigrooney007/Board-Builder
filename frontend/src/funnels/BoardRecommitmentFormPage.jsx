@@ -170,7 +170,7 @@ export default function BoardRecommitmentFormPage() {
 
               <Radios
                 legend={`Are you ready to recommit and continue serving as an active Board Member of ${org}?`}
-                name="recommitment" options={context.recommitment_options || [YES, NO, UNSURE]} form={form} setValue={setValue} testPrefix="recommit"
+                name="recommitment" options={generalVersion ? [YES, UNSURE] : (context.recommitment_options || [YES, NO, UNSURE])} form={form} setValue={setValue} testPrefix="recommit"
               />
 
               {form.recommitment === YES && (

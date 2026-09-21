@@ -40,6 +40,7 @@ class BoardMemberCreate(BaseModel):
     email: EmailStr
     phone: str = ""
     role: str = ""
+    form_variant: str = "full"
 
 class RecommitmentBrandingUpdate(BaseModel):
     organization_name: str = Field(min_length=1)
@@ -278,7 +279,8 @@ def create_reactivation_router(db) -> APIRouter:
             "member_record_id": str(uuid.uuid4()), "user_id": member["user_id"],
             "name": payload.name, "email": email, "phone": payload.phone, "role": payload.role,
             "source": "manual", "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
-            "call_notes": "", "created_at": datetime.now(timezone.utc).isoformat(),
+            "call_notes": "", "form_variant": "standard" if payload.form_variant == "standard" else "full",
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.reactivation_board_members.insert_one({**record})
         return {"status": "created", "member": public_record(record)}
@@ -313,7 +315,8 @@ def create_reactivation_router(db) -> APIRouter:
         member = await reactivation_member(request)
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
-        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
+        suffix = "?general=1" if record.get("form_variant") == "standard" else ""
+        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}{suffix}"
         email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         return {"to_name": record["name"], "to_email": record["email"], **email}
 
@@ -322,7 +325,8 @@ def create_reactivation_router(db) -> APIRouter:
         member = await reactivation_member(request)
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
-        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}"
+        suffix = "?general=1" if record.get("form_variant") == "standard" else ""
+        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}{suffix}"
         email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
         message = {
@@ -721,7 +725,7 @@ def create_reactivation_router(db) -> APIRouter:
         by_member = {m["application_id"]: m for m in materials}
         email_materials = await db.generated_materials.find(
             {"user_id": user_id, "type": {"$in": ["reactivation_stepped_down_followup", "reactivation_advisory_confirmation", "reactivation_recommitment_confirmation"]}},
-            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1}).to_list(300)
+            {"_id": 0, "material_id": 1, "application_id": 1, "type": 1, "status": 1, "updated_at": 1}).to_list(300)
         emails_by_member = {m["application_id"]: m for m in email_materials}
         analyses = await db.generated_materials.find(
             {"user_id": user_id, "type": "reactivation_response_analysis", "status": {"$nin": ["Generating", "Failed"]}},
@@ -1152,9 +1156,10 @@ def create_reactivation_router(db) -> APIRouter:
         user_id = member["user_id"]
         records = await db.reactivation_board_members.find({"user_id": user_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
         materials = await db.generated_materials.find(
-            {"user_id": user_id, "type": ANALYSIS_TYPE},
-            {"_id": 0, "material_id": 1, "application_id": 1, "status": 1, "updated_at": 1}).to_list(300)
-        by_member = {m["application_id"]: m for m in materials}
+            {"user_id": user_id, "type": {"$in": [ANALYSIS_TYPE, "reactivation_conversation_script"]}},
+            {"_id": 0, "material_id": 1, "application_id": 1, "type": 1, "status": 1, "updated_at": 1}).to_list(300)
+        by_member = {m["application_id"]: m for m in materials if m.get("type") == ANALYSIS_TYPE}
+        scripts_by_member = {m["application_id"]: m for m in materials if m.get("type") == "reactivation_conversation_script"}
         rows = []
         analyzed = 0
         for record in records:
@@ -1168,7 +1173,8 @@ def create_reactivation_router(db) -> APIRouter:
                          "expertise": response.get("expertise", []), "contribution_interests": response.get("contribution_interests", []),
                          "monthly_availability": response.get("monthly_availability", ""),
                          "conversation_direction": record.get("conversation_direction", ""),
-                         "analysis": analysis})
+                         "analysis": analysis,
+                         "script": material_summary(scripts_by_member.get(record["member_record_id"]))})
         completed = sum(1 for r in records if r["status"] == "COMPLETED")
         return {"members": rows, "directions": CONVERSATION_DIRECTIONS,
                 "progress": {"total": len(records), "responded": completed, "analyzed": analyzed,

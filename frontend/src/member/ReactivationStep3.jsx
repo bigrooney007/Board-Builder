@@ -4,6 +4,7 @@ import { Download, FileText, RefreshCw, X } from "lucide-react";
 import { memberApi } from "./api";
 import { ResponseView } from "./ReactivationStep2";
 import { reactivationContent, reactivationStep3Text } from "../content/appContent";
+import { OutcomeEmailWorkflow, PortfolioWorkflow } from "./ReactivationStep5";
 
 const C = reactivationContent.step4;
 
@@ -26,7 +27,7 @@ const Modal = ({ children, onClose, testId, wide }) => (
   </div>
 );
 
-const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
+const MemberConversation = ({ row, outcomeOptions, directions, reload, conclusionsOnly = false }) => {
   const [busy, setBusy] = useState("");
   const [material, setMaterial] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -167,20 +168,20 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
         <p className="eyebrow" style={{ margin: 0 }}>Recommitment Response</p>
         <p style={{ margin: "4px 0 0", fontWeight: 700 }}>{row.recommitment}</p>
       </div>
-      <div style={{ margin: "6px 0 12px" }} data-testid={`step3-direction-block-${id}`}>
+      {!conclusionsOnly && <div style={{ margin: "6px 0 12px" }} data-testid={`step3-direction-block-${id}`}>
         <h3 style={{ marginBottom: 4 }}>{C.directionLabel}</h3>
         <p style={{ marginTop: 0 }}>{C.directionHint}</p>
         <select value={direction} onChange={(e) => saveDirection(e.target.value)} data-testid={`step3-direction-${id}`} style={{ maxWidth: 420 }}>
           <option value="">{C.directionPlaceholder}</option>
           {directions.map((option) => <option key={option}>{option}</option>)}
         </select>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      </div>}
+      {!conclusionsOnly && <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="button button-outline" onClick={openResponse} data-testid={`step3-view-response-${id}`}>VIEW RECOMMITMENT RESPONSE</button>
         {row.analysis && !["Generating", "Failed"].includes(row.analysis.status) && (
           <button type="button" className="button button-outline" onClick={openUnderstanding} data-testid={`step3-view-understanding-${id}`}>VIEW UNDERSTANDING</button>
         )}
-        <button type="button" className="button" onClick={generate} disabled={busy === "generate" || !direction} title={!direction ? C.directionPlaceholder : ""} data-testid={`step3-generate-${id}`}>
+        <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`step3-generate-${id}`}>
           {busy === "generate" ? "Generating…" : row.script ? <><RefreshCw size={15} /> {C.regenerateScript}</> : <><FileText size={15} /> {C.generateScript}</>}
         </button>
         {(row.script || material) && !["Generating", "Failed"].includes(scriptStatus) && busy !== "generate" && (
@@ -191,7 +192,7 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
             <button type="button" className="button button-outline" onClick={download} data-testid={`step3-download-${id}`}><Download size={15} /> DOWNLOAD</button>
           </>
         )}
-      </div>
+      </div>}
       {scriptStatus === "Failed" && busy !== "generate" && (
         <p style={{ marginTop: 8 }} data-testid={`step3-generation-failed-${id}`}>{reactivationStep3Text.scriptGenerationDidNotComplete}</p>
       )}
@@ -212,6 +213,11 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
           {outcomeOptions.map((option) => <option key={option}>{option}</option>)}
         </select>
       </div>
+
+      {conclusionsOnly && conclusion.trim() && outcome === "Continuing as an Active Board Member" && <div style={{ marginTop: 18 }}><PortfolioWorkflow row={{...row,conversation_conclusion:conclusion,conversation_outcome:outcome}} reload={reload}/><OutcomeEmailWorkflow row={row} label="GENERATE RECOMMITMENT CONFIRMATION EMAIL" reload={reload}/></div>}
+      {conclusionsOnly && conclusion.trim() && outcome === "Transitioning to an Advisory Role" && <OutcomeEmailWorkflow row={row} label="GENERATE ADVISORY BOARD TRANSITION EMAIL" reload={reload}/>}
+      {conclusionsOnly && conclusion.trim() && outcome === "Transitioning to Another Support Role" && <><PortfolioWorkflow row={{...row,conversation_conclusion:conclusion,conversation_outcome:outcome}} reload={reload}/><OutcomeEmailWorkflow row={row} label="GENERATE SUPPORT ROLE CONFIRMATION EMAIL" reload={reload}/></>}
+      {conclusionsOnly && conclusion.trim() && outcome === "Stepping Down From the Board" && <OutcomeEmailWorkflow row={row} label="GENERATE BOARD DEPARTURE EMAIL" reload={reload}/>}
 
       {viewing && material && (
         <Modal onClose={() => setViewing(false)} testId={`step3-view-modal-${id}`} wide>
@@ -242,11 +248,15 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload }) => {
   );
 };
 
-export default function ReactivationStep3() {
+export default function ReactivationStep3({ conclusionsOnly = false }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const load = useCallback(() => {
-    memberApi.get("/reactivation/step3").then((res) => setData(res.data)).catch(() => setError("We could not load this step."));
+    Promise.all([memberApi.get("/reactivation/step3"), memberApi.get("/reactivation/my-board")]).then(([step, board]) => {
+      const resourceRows = Object.values(board.data.groups || {}).flat();
+      const byId = Object.fromEntries(resourceRows.map((row) => [row.member_record_id, row]));
+      setData({ ...step.data, members: step.data.members.map((row) => ({ ...row, ...(byId[row.member_record_id] || {}) })) });
+    }).catch(() => setError("We could not load this step."));
   }, []);
   useEffect(load, [load]);
 
@@ -255,10 +265,10 @@ export default function ReactivationStep3() {
 
   return (
     <div data-testid="reactivation-step3">
-      <section className="member-card" data-testid="step3-intro">
+      {!conclusionsOnly && <section className="member-card" data-testid="step3-intro">
         <h2>{C.heading}</h2>
         {C.intro.map((p) => <p key={p}>{p}</p>)}
-      </section>
+      </section>}
 
       <section className="member-card" data-testid="step3-progress">
         <h2>Difficult Conversation Progress</h2>
@@ -277,7 +287,7 @@ export default function ReactivationStep3() {
       )}
 
       {data.members.map((row) => (
-        <MemberConversation key={row.member_record_id} row={row} outcomeOptions={data.outcome_options} directions={data.directions || ["Remain and Step Up", "Step Down", "Move to Advisory Board"]} reload={load} />
+        <MemberConversation key={row.member_record_id} row={row} outcomeOptions={data.outcome_options} directions={data.directions || ["Remain and Step Up", "Step Down", "Move to Advisory Board"]} reload={load} conclusionsOnly={conclusionsOnly} />
       ))}
     </div>
   );
