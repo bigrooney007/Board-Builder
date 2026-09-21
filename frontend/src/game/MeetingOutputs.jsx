@@ -190,7 +190,7 @@ export const CompleteBoardMeetingSection = ({ overview, onRefresh }) => {
         <div style={{ marginTop: 14 }} data-testid="bfg-final-compiling">
           <p style={{ fontWeight: 700, color: "#111827" }}>Compiling Your Final Fundraising Strategy</p>
           <p className="bfg-note">We are bringing together your organization's information, board ideas, Group Game priorities and meeting decisions.</p>
-          <p className="bfg-note">This usually takes a few minutes. You can continue using your dashboard while we work.</p>
+          <p className="bfg-note">This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes. You can continue using your dashboard while we work.</p>
           <div className="bfg-doc-loading"><span /><span /><span /></div>
         </div>
       )}
@@ -257,7 +257,7 @@ const OUTPUT_CARDS = [
 const STATUS_TEXT = {
   locked: "Locked — Complete Your Group Game First",
   meeting: "Complete Your Board Meeting To Unlock",
-  generating: "Generating",
+  generating: "Generating — check back in about 5 minutes",
   ready: "Ready",
 };
 const STATUS_COLOR = { locked: "#6B7280", meeting: "#b45309", generating: "#818cf8", ready: "#059669" };
