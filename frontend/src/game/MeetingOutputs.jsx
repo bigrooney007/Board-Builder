@@ -6,7 +6,7 @@ import { useWakeLock } from "./useWakeLock";
 
 const Recognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
-export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false }) => {
+export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false, controllerRef = null }) => {
   const [status, setStatus] = useState("idle"); // idle | recording | paused | finishing
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -91,6 +91,15 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
       setStatus("idle");
     }
   };
+
+  useEffect(() => {
+    if (!controllerRef) return undefined;
+    controllerRef.current = {
+      finish,
+      isActive: () => ["recording", "paused"].includes(statusRef.current),
+    };
+    return () => { if (controllerRef.current?.finish === finish) controllerRef.current = null; };
+  }, [controllerRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { if (autoStart) start(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
