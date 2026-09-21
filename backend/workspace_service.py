@@ -31,7 +31,7 @@ CORE_QUESTIONS = [
 APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview Invited", "Not Moving to Interview", "Interview", "Moving Forward", "Not Moving Forward", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
 OPPORTUNITY_STATUSES = ["Draft", "Ready to Publish", "Published", "Closed"]
 REFERENCE_OUTCOMES = ["Positive", "Mixed", "Concern", "Unable to verify", "Not completed"]
-BACKGROUND_STATUSES = ["Not required", "Not started", "In progress", "Completed", "Follow-up required"]
+BACKGROUND_STATUSES = ["Not Required", "Not started", "In progress", "Completed", "Follow-up required"]
 
 
 def now_iso() -> str:
