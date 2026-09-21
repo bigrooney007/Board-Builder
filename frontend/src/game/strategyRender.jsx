@@ -25,6 +25,7 @@ export const V2_STRATEGY_SECTIONS = [
   { key: "board_fundraising_process", title: "Board Fundraising Process", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
   { key: "team_roles", title: "Team, Roles & Responsibilities", v2: "team" },
   { key: "execution_resources", title: "Technology, Materials, Resources & Content", v2: "resources" },
+  { key: "execution_budget", title: "Lean Execution Budget", v2: "budget" },
   { key: "execution_timeline", title: "Execution Timeline", stages: [["phase_1_build_the_system", "PHASE 1: BUILD THE SYSTEM"], ["phase_2_build_know_like_trust", "PHASE 2: BUILD KNOW, LIKE AND TRUST"], ["phase_3_ask_campaign", "PHASE 3: ASK CAMPAIGN"], ["follow_up_and_steward", "FOLLOW UP AND STEWARD"], ["business_timeline", "BUSINESS TIMELINE"], ["grantor_timeline", "GRANTOR TIMELINE"]] },
   { key: "board_priorities", title: "Board Priorities", v2: "grouped" },
   { key: "additional_board_ideas", title: "Additional Board Ideas", v2: "grouped" },
@@ -95,6 +96,7 @@ const isEmptySection = (section, data) => {
   if (section.v2 === "process") return AUDIENCE_LABELS.every(([field]) => !hasStageContent(data[field]));
   if (section.v2 === "team") return !(Array.isArray(data) && data.length);
   if (section.v2 === "resources") return RESOURCE_LABELS.every(([field]) => !(data[field] || []).length);
+  if (section.v2 === "budget") return !(data.required_now || []).length && !(data.later_or_optional || []).length && !(data.cost_reduction_options || []).length && !String(data.budget_summary || "").trim();
   if (section.v2 === "grouped") return !(Array.isArray(data) && data.some((group) => (group.items || []).length));
   if (section.stages) return section.stages.every(([stageKey]) => !(data[stageKey] || []).length);
   if (section.priorityLabel) return !(data.priorities || []).length && !(data.additional_ideas || []).length;
