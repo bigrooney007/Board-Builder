@@ -1872,6 +1872,10 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
         return _flush_left(str(structured.get("post_text", "")).strip())
     if generation_type == "referral_request_email":
         return _flush_left(str(structured.get("message", "")).strip())
+    if generation_type in {"conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "interview_invitation", "before_interview_rejection", "after_interview_thank_you", "after_interview_email", "after_interview_rejection"}:
+        subject = str(structured.get("subject", "")).strip()
+        body = str(structured.get("body", "")).strip()
+        return _flush_left("\n\n".join(part for part in [f"Subject: {subject}" if subject else "", body] if part))
     lines = [meta["title"].upper(), ""]
     lines.extend(_format_value(structured))
     if meta.get("agreement"):
