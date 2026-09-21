@@ -265,7 +265,7 @@ def create_refinement_router(db) -> APIRouter:
         await db.opportunity_applications.update_one({"application_id": process["application_id"]},
             {"$set": {"reference_check_status": "References Submitted"}})
         candidate = process.get("candidate_name") or "Your candidate"
-        review_url = f"{origin_of(request)}/app/recruitment/self-guided/module/5"
+        review_url = f"{origin_of(request)}/app/board-recruitment#br-section-references"
         await notify_owner(process["owner_user_id"], f"References Submitted | {candidate}",
                            f"<p><strong>{candidate}</strong> has submitted their reference information.</p>"
                            f"<p>Review who they listed, then email each reference for confirmation when you are ready — nothing is sent to the references until you choose to contact them.</p>"
@@ -348,10 +348,6 @@ def create_refinement_router(db) -> APIRouter:
         subject = structured.get("subject") or GENERATION_TYPES[payload.type]["title"]
         body_text = structured.get("body") or material["current"]["display_text"]
         if payload.type == "conditional_offer":
-            process = await db.reference_processes.find_one(
-                {"owner_user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0, "status": 1})
-            if (process or {}).get("status") != "Completed":
-                raise HTTPException(status_code=409, detail="Complete the automated reference check before sending the Conditional Appointment Email.")
             expected_tokens = []
             for doc_type in ["organization_overview", "board_manual"]:
                 document = await db.generated_materials.find_one(
