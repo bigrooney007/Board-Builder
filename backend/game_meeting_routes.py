@@ -21,15 +21,16 @@ SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_D
 FUNDER_TYPES = {"Individual", "Business", "Grantor"}
 
 FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
-The board has completed Individual Games, prioritised ideas together in a Group Game and held a board meeting captured in the supplied transcript.
+The board has completed Individual Games, explicitly selected the ideas it agreed with across the Group Game and held the complete discussion captured in the supplied transcript.
 Reconcile all supplied information into one execution-ready fundraising strategy.
 Where the board changed something during the meeting, the meeting decision overrides earlier drafts and ideas.
-Where there is no meeting decision, use the prioritised and approved strategy information.
+Where the transcript does not change a decision, treat the ideas explicitly selected by the Lead User during the Group Game as the Board's adopted direction.
 Where ideas genuinely conflict and no resolution exists in the transcript, present the unresolved difference clearly rather than silently choosing one.
 Divide the fundraising process by audience (Individuals, Businesses, Grantors) and only include audience categories the organisation actually identified. Do not invent Businesses or Grantors the board did not identify.
-Board Priorities are only the ideas actually ranked by the board in the Group Game. Additional Board Ideas are valid contributed ideas that were not prioritised — preserve them separately, never discard them and never misrepresent them as priorities.
+Board Priorities are only the ideas the Board explicitly selected with the Group Game checkboxes or added as agreed ideas during the discussion. Additional Board Ideas are valid contributed ideas that were visible but not selected. Preserve them separately, never discard them and never misrepresent them as adopted priorities.
 For team roles, use the supplied team, participation choices, time commitments and responsibilities from the transcript. Assign a person only where they explicitly indicated they want to help or accepted a responsibility. Where a required responsibility has nobody available, set assigned to exactly "ROLE / CAPACITY NEEDED". Never invent commitments.
 The execution timeline must start with building the fundraising system, then roughly 30 to 60 days of Know/Like/Trust activity for individuals, then roughly a 30-day concentrated ask campaign, with follow up and stewardship continuing. Businesses and grantors are worked one relationship or one funder at a time on their own timelines built from the organisation's actual strategy.
+For the execution budget, preserve any amounts the Board actually discussed. Do not invent vendor prices. Separate what is REQUIRED NOW from what can wait. For every meaningful cost, identify the lowest-cost practical route supported by the context: reuse existing staff/Board capacity, existing subscriptions, free tiers, simple templates, structured spreadsheets/low-cost CRM, AI-assisted drafting or public research before recommending new paid capacity. If a price was not supplied, say "PRICE TO CONFIRM" instead of inventing an amount.
 Do not invent facts, funders, organisations, relationships, commitments, amounts or deadlines. Do not invent specific entities such as named businesses, foundations, LinkedIn or Facebook groups, associations, conferences or directories — where a specific entity was not supplied, give the exact search method instead.
 Inspect the organisation's present fundraising processes (Current Reality). Never discard an existing approach simply because the framework offers another: preserve what the organisation says is working, strengthen weaknesses, fill missing pieces and add better processes where needed. Where useful distinguish what they are already doing, what should be strengthened and what should be added. Do not claim something is proven to work unless the organisation indicated it produces results.
 Every fundraising_process audience MUST begin with how_this_process_works — a short organisation-specific explanation (not generic boilerplate, never one copied paragraph reused across audiences).
@@ -54,6 +55,12 @@ FINAL_V2_SCHEMA = {
     },
     "team_roles": [{"role": "Role title", "assigned": "Person's name where explicitly committed, otherwise exactly 'ROLE / CAPACITY NEEDED'", "responsibility": "string"}],
     "execution_resources": {"people": ["string"], "technology": ["string"], "materials": ["string"], "resources": ["string"], "content": ["string"]},
+    "execution_budget": {
+        "required_now": [{"item": "string", "why_needed": "string", "lowest_cost_approach": "string", "cost": "exact Board-supplied amount or exactly 'PRICE TO CONFIRM'"}],
+        "later_or_optional": [{"item": "string", "why_later": "string", "lowest_cost_approach": "string", "cost": "exact Board-supplied amount or exactly 'PRICE TO CONFIRM'"}],
+        "cost_reduction_options": ["string — concrete ways to execute with existing capacity, current subscriptions, free tiers, templates, AI-assisted drafting or public research"],
+        "budget_summary": "string — the smallest realistic launch-budget logic supported by the Board's decisions; do not invent a total",
+    },
     "execution_timeline": {
         "phase_1_build_the_system": ["string — confirm team, assign roles, set up tracking, create materials and attraction content, prepare outreach lists, complete board relationship mapping, prepare follow-up systems"],
         "phase_2_build_know_like_trust": ["string — approximately 30 to 60 days of Know/Like/Trust activity for individuals"],
@@ -62,8 +69,8 @@ FINAL_V2_SCHEMA = {
         "business_timeline": ["string — business relationships worked one at a time, built from the actual business strategy; empty if no businesses identified"],
         "grantor_timeline": ["string — grantors worked one at a time around research, cultivation, deadlines, applications, follow-up and reporting; empty if no grantors identified"],
     },
-    "board_priorities": [{"area": "Strategic area title", "items": ["string — only ideas actually ranked by the board"]}],
-    "additional_board_ideas": [{"area": "Strategic area title", "items": ["string — contributed but not prioritised"]}],
+    "board_priorities": [{"area": "Strategic area title", "items": ["string — only ideas explicitly selected or added as agreed by the Board during the Group Game"]}],
+    "additional_board_ideas": [{"area": "Strategic area title", "items": ["string — contributed ideas shown to the Board but not explicitly adopted"]}],
     "next_step": "string — exactly: 'Your final fundraising strategy is ready. Review it with your board, send it to every participant and move into execution using the Board Portfolios, Execution Materials and Relationship Mapping.'",
 }
 
@@ -223,10 +230,13 @@ def create_game_meeting_router(db) -> APIRouter:
             return {}
         rows = await db.group_game_results.find(
             {"session_id": session["session_id"]}, {"_id": 0}).sort("round_number", 1).to_list(20)
-        return {row["title"]: {
-            "board_priorities_in_rank_order": [item["text"] for item in row["results"] if item.get("prioritised")],
-            "additional_board_ideas_not_prioritised": [item["text"] for item in row["results"] if not item.get("prioritised")],
-        } for row in rows}
+        output={}
+        for row in rows:
+            selected=sorted([item for item in row.get("results",[]) if item.get("prioritised")],key=lambda item:(item.get("rank") or 999,item.get("order") or 999))
+            additional=sorted([item for item in row.get("results",[]) if not item.get("prioritised")],key=lambda item:item.get("order") or 999)
+            output[row["title"]]={"board_agreed_ideas":[item["text"] for item in selected],
+                                  "additional_board_ideas_not_adopted":[item["text"] for item in additional]}
+        return output
 
     async def review_decisions_context(user_id: str) -> dict:
         review = await db.game_board_reviews.find_one({"user_id": user_id}, {"_id": 0}) or {}
@@ -273,7 +283,7 @@ def create_game_meeting_router(db) -> APIRouter:
             prompt = (
                 "FINAL STRATEGY CONTEXT (the only information you may use):\n"
                 f"{json.dumps(context, indent=1)}\n\n"
-                "Use the meeting transcript to identify final board decisions, changes to strategy, additional ideas, "
+                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions. Use the meeting transcript to identify clarifications, changes to those decisions, additional ideas, "
                 "assignments, responsibilities, clarifications, execution decisions, timing decisions and decisions about "
                 "who will make introductions or asks. Integrate those decisions into the relevant strategy sections. "
                 "Do not invent decisions that are not present.\n\n"
