@@ -1759,11 +1759,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};valid_keys={x.get("key") for x in (form.get("content") or {}).get("sections",[])}
         if key not in valid_keys:raise HTTPException(422,"Choose a valid strategic section")
         if isinstance(decision,list):
-            people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0,"participant_id":1}).to_list(300);valid_ids={x["participant_id"] for x in people};clean=[] 
+            people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0,"participant_id":1}).to_list(300);valid_ids={x["participant_id"] for x in people};clean=[]
             for pid in decision:
                 pid=str(pid)
                 if pid in valid_ids and pid not in clean:clean.append(pid)
-            if not clean:raise HTTPException(422,"Choose at least one Board idea")
+            if not clean:
+                await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"updated_at":now_iso()},"$unset":{f"decisions.{key}":""}},upsert=True)
+                return {"section_key":key,"decision":[]}
             stored=clean
         elif decision in {"__keep_current__","__use_all_ideas__"}:
             stored=decision
