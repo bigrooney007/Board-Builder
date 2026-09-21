@@ -109,6 +109,7 @@ export const PortfolioWorkflow = ({ row, reload }) => {
         <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-generate-portfolio-${id}`}>
           {busy === "generate" ? "Generating…" : status === "NOT GENERATED" ? <><FileText size={15} />{reactivationStep5Text.generateBoardMemberPortfolio}</> : <><RefreshCw size={15} /> REGENERATE</>}
         </button>
+        {busy === "generate" && <p className="workspace-note" data-testid={`portfolio-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
         {status !== "NOT GENERATED" && (
           <>
             <button type="button" className="button button-outline" onClick={openEdit} data-testid={`myboard-edit-${id}`}>EDIT</button>
@@ -194,6 +195,7 @@ export const OutcomeEmailWorkflow = ({ row, label, reload }) => {
         <button type="button" className="button" onClick={generate} disabled={busy} data-testid={`outcome-email-generate-${id}`}>
           <Mail size={15} /> {busy ? "Generating…" : exists ? D.regenerateEmailButton : label}
         </button>
+        {busy && <p className="workspace-note" data-testid={`outcome-email-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
         {exists && <button type="button" className="button button-outline" onClick={open} data-testid={`outcome-email-view-${id}`}>{D.viewEmailButton}</button>}
       </div>
       {exists && <p className="eyebrow" style={{ marginTop: 6 }}>{D.emailReadyLabel}</p>}
