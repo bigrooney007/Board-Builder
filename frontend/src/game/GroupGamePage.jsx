@@ -65,6 +65,7 @@ export default function GroupGamePage() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [newAgreedIdea, setNewAgreedIdea] = useState("");
   const timer = useRef(null);
 
   useEffect(() => { document.title = "Group Review Game | Board Fundraising Game"; }, []);
@@ -108,9 +109,41 @@ export default function GroupGamePage() {
     setCopied(true); setTimeout(() => setCopied(false), 2500);
   };
 
+  const saveDecision = async (selectedIds, additions = round?.additional_agreed_ideas || []) => {
+    if (!round) return;
+    await memberApi.post("/game/group/decision", {
+      round_number: round.round_number,
+      selected_idea_ids: selectedIds,
+      additional_agreed_ideas: additions,
+    });
+    await loadSession();
+  };
+
+  const toggleIdea = async (ideaId) => {
+    const current = round?.selected_idea_ids || [];
+    const next = current.includes(ideaId) ? current.filter((id) => id !== ideaId) : [...current, ideaId];
+    setBusy(`decision-${ideaId}`);
+    setError("");
+    try { await saveDecision(next); }
+    catch (err) { setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save that Board decision."); }
+    setBusy("");
+  };
+
+  const addDiscussionIdea = async () => {
+    const text = newAgreedIdea.trim();
+    if (!text || !round) return;
+    const additions = [...(round.additional_agreed_ideas || []), text];
+    setBusy("add-agreed-idea");
+    setError("");
+    try { await saveDecision(round.selected_idea_ids || [], additions); setNewAgreedIdea(""); }
+    catch (err) { setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save that agreed idea."); }
+    setBusy("");
+  };
+
   const continueMeeting = async () => {
     await memberApi.post("/game/group/close-round", { round_number: round.round_number });
     await memberApi.post("/game/group/next-round");
+    setNewAgreedIdea("");
   };
   const startMeeting = async () => {
     if (navigator.mediaDevices?.getUserMedia) {
@@ -188,16 +221,38 @@ export default function GroupGamePage() {
                 <RoundProgress current={round.round_number} total={session.total_rounds} />
                 <h2>{round.title}</h2>
                 <p className="bfg-panel-sub">{round.instruction}</p>
+                <p className="bfg-note" style={{ marginTop: 14 }}>
+                  Discuss every idea. As the Board agrees, check every idea that should become part of the strategy. The checkboxes are the Board's explicit decision; the microphone transcript preserves the discussion, changes and delegation behind those choices.
+                </p>
                 <div className="bfg-gg-ideas" style={{ marginTop: 18 }}>
-                  {(round.ideas || []).map((idea) => <div className="bfg-gg-idea" key={idea.idea_id}><span className="bfg-gg-idea-text">{idea.text}</span><small>Source: {idea.suggested_by}</small></div>)}
-                  {!round.ideas?.length && <p className="bfg-note">No earlier information was supplied for this screen. Use the discussion to establish the board's direction.</p>}
+                  {(round.ideas || []).map((idea) => {
+                    const selected=(round.selected_idea_ids||[]).includes(idea.idea_id);
+                    return <label className={`bfg-gg-idea ${selected?"selected":""}`} key={idea.idea_id} style={{display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer"}}>
+                      <input type="checkbox" checked={selected} disabled={busy===`decision-${idea.idea_id}`} onChange={()=>toggleIdea(idea.idea_id)} style={{marginTop:4}}/>
+                      <span style={{display:"block",flex:1}}><span className="bfg-gg-idea-text">{idea.text}</span><small>Source: {idea.suggested_by}{selected?" · BOARD AGREED":""}</small></span>
+                    </label>;
+                  })}
+                  {!round.ideas?.length && <p className="bfg-note">No earlier information was supplied for this screen. Use the discussion to establish the Board's direction, then add the agreed idea below.</p>}
+                </div>
+                {(round.additional_agreed_ideas||[]).length>0&&<div className="bfg-panel" style={{marginTop:14,padding:14}}>
+                  <strong>Agreed ideas added during this meeting</strong>
+                  <ul>{round.additional_agreed_ideas.map((idea,index)=><li key={index}>{idea}</li>)}</ul>
+                </div>}
+                <div className="bfg-panel" style={{marginTop:14,padding:14}}>
+                  <label className="bfg-field"><span>Add an idea the Board agreed during the discussion</span>
+                    <textarea rows={3} value={newAgreedIdea} onChange={e=>setNewAgreedIdea(e.target.value)} placeholder="Type the Board's agreed wording as closely as possible."/>
+                  </label>
+                  <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={!newAgreedIdea.trim()||busy==="add-agreed-idea"} onClick={addDiscussionIdea}>
+                    {busy==="add-agreed-idea"?"SAVING…":"ADD AGREED IDEA"}
+                  </button>
                 </div>
                 {round.status === "open" && (
                   <>
-                    <p className="bfg-note" style={{ marginTop: 14 }}>When the board has finished discussing this screen, continue. Every participant screen will advance with yours.</p>
-                    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "next"}
+                    {round.round_number===5&&<p className="bfg-note" style={{ marginTop: 14 }}><strong>Team discussion:</strong> Confirm what each person already said they are willing to do, change it if the person changes their mind, identify any role nobody can take, and say the final delegation aloud so the transcript captures it.</p>}
+                    <p className="bfg-note" style={{ marginTop: 14 }}>Continue only after the Board has checked at least one agreed idea or added its agreed wording from the discussion. Every participant screen will advance with yours.</p>
+                    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "next"||(!(round.selected_idea_ids||[]).length&&!(round.additional_agreed_ideas||[]).length)}
                       onClick={() => run("next", continueMeeting)} data-testid="bfg-gg-next-round-btn">
-                      {busy === "next" ? "Please wait…" : round.round_number >= session.total_rounds ? "END GROUP GAME" : "CONTINUE TO NEXT REVIEW"}
+                      {busy === "next" ? "Please wait…" : round.round_number >= session.total_rounds ? "ADOPT THESE DECISIONS & END GROUP GAME" : "ADOPT THESE DECISIONS & CONTINUE"}
                     </button>
                   </>
                 )}
@@ -209,7 +264,7 @@ export default function GroupGamePage() {
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
                 <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board reviewed the complete fundraising strategy and execution system together. Return to the dashboard to finish the transcript if needed and create the Final Board Fundraising Strategy from the organization's information, every individual contribution and the board's meeting decisions.
+                  Your board has now made explicit decisions across the complete fundraising strategy and execution system. The checked ideas, ideas added during discussion and the meeting transcript will now be combined into the Final Board Fundraising Strategy.
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
