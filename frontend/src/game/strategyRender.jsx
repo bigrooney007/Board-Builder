@@ -196,6 +196,16 @@ export const SectionBody = ({ section, data, mode }) => {
       </div>
     );
   }
+  if (section.v2 === "budget") {
+    return (
+      <div>
+        {(data.required_now || []).length > 0 && <div className="bfg-doc-stage"><h4>REQUIRED NOW</h4><div className="bfg-doc-cards">{data.required_now.map((item, index) => <div className="bfg-doc-card" key={index}><div className="bfg-doc-card-head"><strong>{item.item}</strong></div>{item.why_needed && <p><strong>Why needed:</strong> {item.why_needed}</p>}{item.lowest_cost_approach && <p className="bfg-doc-focus"><strong>Lean approach:</strong> {item.lowest_cost_approach}</p>}{item.cost && <p><strong>Cost:</strong> {item.cost}</p>}</div>)}</div></div>}
+        {(data.later_or_optional || []).length > 0 && <div className="bfg-doc-stage"><h4>LATER / OPTIONAL</h4><div className="bfg-doc-cards">{data.later_or_optional.map((item, index) => <div className="bfg-doc-card" key={index}><div className="bfg-doc-card-head"><strong>{item.item}</strong></div>{item.why_later && <p><strong>Why later:</strong> {item.why_later}</p>}{item.lowest_cost_approach && <p className="bfg-doc-focus"><strong>Lean approach:</strong> {item.lowest_cost_approach}</p>}{item.cost && <p><strong>Cost:</strong> {item.cost}</p>}</div>)}</div></div>}
+        {(data.cost_reduction_options || []).length > 0 && <div className="bfg-doc-stage"><h4>WAYS TO REDUCE THE COST</h4><Bullets items={data.cost_reduction_options} /></div>}
+        {data.budget_summary && <p className="bfg-doc-text">{data.budget_summary}</p>}
+      </div>
+    );
+  }
   if (section.v2 === "grouped") {
     return (
       <div>
