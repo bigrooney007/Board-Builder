@@ -21,6 +21,16 @@ export const useMaterials = (applicationId = "") => {
   return { byType, refresh, loaded };
 };
 
+const RECRUITMENT_LAUNCH_VIDEO_URL = "https://youtu.be/tESJV4jJVWs?is=ftNkIqtbgfOZxb8s";
+const RECRUITMENT_TRAINING_VIDEOS = [
+  ["1. Understanding the Board Recruitment Process", "https://youtu.be/MADZN-LqAvA"],
+  ["2. Identifying the People Your Board Needs", "https://youtu.be/ZDudgx9O1Vg"],
+  ["3. Launch Your Recruitment Campaign", "https://youtu.be/tESJV4jJVWs"],
+  ["4. Select and Interview Your Applicants", "https://youtu.be/w4-kn3tayRQ"],
+  ["5. Complete References and Background Checks", "https://youtu.be/0G9NC6A7vTE"],
+  ["6. Onboard Your New Board Members", "https://youtu.be/T_JBGaSBX6M"],
+];
+
 const CAMPAIGN_TOOLS = [
   ["board_recruitment_job_post", "Recruitment Job Post", "Generate My Recruitment Job Post", "Your primary professional board opportunity, ready for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch. Your application link is inserted automatically."],
   ["recruitment_emails", "Recruitment Email", "Generate My Recruitment Email", "A professional email to send to your network, supporters, colleagues and community contacts inviting qualified people to consider the board opportunity."],
@@ -70,6 +80,7 @@ export const Module3Launch = ({ mode = "all" }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showTrainingVideos, setShowTrainingVideos] = useState(false);
 
   const loadOpportunity = useCallback(async () => {
     try {
@@ -120,6 +131,30 @@ export const Module3Launch = ({ mode = "all" }) => {
       {mode !== "materials" && <section className="workspace-panel publish-panel" data-testid="publish-panel">
         <h2>{recruitmentModulesText.h_launchMyRecruitmentCampaign}</h2>
         <p className="material-description">{recruitmentModulesText.d_launchingIsTheOnlyAction}</p>
+        <div className="application-preview" data-testid="recruitment-training-help">
+          <h3>Watch How To Launch Your Board Recruitment Campaign</h3>
+          <p>Before you publish, watch Rooney launch the campaign using LinkedIn, email and the social media recruitment post. This is the part of the process that is most useful to see done live.</p>
+          <div className="material-actions">
+            <a className="button" href={RECRUITMENT_LAUNCH_VIDEO_URL} target="_blank" rel="noreferrer" data-testid="watch-recruitment-launch-video">
+              WATCH THE CAMPAIGN LAUNCH VIDEO <ExternalLink size={12} />
+            </a>
+            <button type="button" className="button button-back" onClick={() => setShowTrainingVideos((current) => !current)} data-testid="toggle-recruitment-training-library">
+              {showTrainingVideos ? "HIDE FULL RECRUITMENT TRAINING" : "VIEW FULL RECRUITMENT TRAINING"}
+            </button>
+          </div>
+          {showTrainingVideos && (
+            <div data-testid="recruitment-training-library">
+              <p className="workspace-note">These are the original six Board Recruitment training videos. The older platform may look different from the current dashboard, but the videos remain useful when you want to see the full recruitment process handled step by step.</p>
+              <div className="material-actions">
+                {RECRUITMENT_TRAINING_VIDEOS.map(([title, url]) => (
+                  <a key={url} className="button button-back" href={url} target="_blank" rel="noreferrer">
+                    {title} <ExternalLink size={12} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{launched ? "Live" : opportunity?.status || "Draft"}</strong></p>
         <ul className="readiness-list">
           <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
