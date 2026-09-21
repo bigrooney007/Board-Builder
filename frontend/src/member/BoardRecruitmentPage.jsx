@@ -7,16 +7,22 @@ import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
 import { RecruitmentCampaignLaunch, RecruitmentMaterials } from "./workspace/WorkspaceModules";
-import { AutomatedReferenceChecks, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
+import { AppointmentOffersWorkspace, AutomatedReferenceChecks, BackgroundChecksWorkspace, FormalAppointmentWorkspace, Module4Applicants, OnboardingFacilitationGuide, OnboardingPreparation, useApplications, useBranding } from "./workspace/ApplicantModules";
 import { BoardMemberResultCard } from "./workspace/ResultsPage";
 import "./sgr.css";
 
 const FLOW_STEPS = [
-  ["br-section-intake", "Play Recruitment Game"], ["br-section-identify", "Identify Board Members"],
-  ["br-section-materials", "Application & Campaign Materials"], ["br-section-campaign", "Launch Campaign"],
-  ["br-section-applicants", "Applicants & Interviews"], ["br-section-references", "References & Background Checks"],
-  ["br-section-onboarding", "Onboarding & Conditional Appointment"],
-  ["br-section-portfolio", "Final Appointment & Portfolio"],
+  ["br-section-intake", "Play Recruitment Game"],
+  ["br-section-identify", "Identify Board Members"],
+  ["br-section-materials", "Application & Campaign Materials"],
+  ["br-section-campaign", "Launch Campaign"],
+  ["br-section-applicants", "Applicants & Interviews"],
+  ["br-section-references", "Reference Checks"],
+  ["br-section-background", "Background Checks"],
+  ["br-section-offers", "Appointment Offers"],
+  ["br-section-onboarding", "Onboarding"],
+  ["br-section-final-appointment", "Final Appointment"],
+  ["br-section-team", "My Team"],
   ["br-section-support", "Ask For Help"],
 ];
 
@@ -124,29 +130,42 @@ export default function BoardRecruitmentPage() {
               <Module4Applicants />
             </Section>
 
-            <Section number={6} title="COMPLETE REFERENCES AND BACKGROUND CHECKS" summary="Run the automated reference process and record any required background check." testId="br-section-references">
-              <p>Move the right applicant forward, run the automated reference process and, where your organization requires it, use the background-check finder and record the check status for that candidate.</p>
+            <Section number={6} title="COMPLETE REFERENCE CHECKS" summary="Start the automated reference process for any applicant." testId="br-section-references">
+              <p>Every applicant appears here automatically. Start a reference check and the platform first checks the candidate's CV for explicit referee details. If no usable references are found, ask the applicant to provide them through the secure form.</p>
               <AutomatedReferenceChecks />
             </Section>
 
-            <Section number={7} title="PREPARE ONBOARDING AND SEND THE CONDITIONAL APPOINTMENT" summary="Set the onboarding session, generate the materials, prepare the meeting and send the candidate every secure link." testId="br-section-onboarding">
-              <p>Set the onboarding date, prepare the Organization Overview and Board Manual, generate all three agreements, create the Board Member Profile Form and send one conditional appointment email carrying every secure link.</p>
+            <Section number={7} title="COMPLETE BACKGROUND CHECKS" summary="Decide whether each applicant needs a background check and record the result." testId="br-section-background">
+              <p>Every applicant appears here. Choose whether a background check is required for that person. If it is, use the local search tools to find an appropriate provider or local sheriff/police background-check option.</p>
+              <BackgroundChecksWorkspace />
+            </Section>
+
+            <Section number={8} title="SEND THE APPOINTMENT OFFER" summary="Choose a conditional or unconditional Board appointment offer." testId="br-section-offers">
+              <p>You decide how to appoint each person. Use a Conditional Appointment when you want an outstanding reference or required background check to remain a condition. Use an Unconditional Appointment Offer when you have decided those checks will not be conditions of the offer.</p>
+              <AppointmentOffersWorkspace />
+            </Section>
+
+            <Section number={9} title="ONBOARD THE NEW BOARD MEMBER" summary="Set the onboarding session, send the onboarding pack and record what was agreed." testId="br-section-onboarding">
+              <p>Set the onboarding date, prepare the Organization Overview, Board Manual, agreements and Board Member Profile Form, then send the onboarding email with the secure links.</p>
               <OnboardingPreparation />
               <div style={{ marginTop: 18 }}>
                 <h3>Prepare To Facilitate The Onboarding Conversation</h3>
-                <p>Use the facilitation guide during onboarding to clarify expectations and record exactly what the new board member agrees to contribute. Those agreed responsibilities become the basis for their final Board Member Portfolio.</p>
+                <p>Use the facilitation guide during the session to clarify expectations and agree exactly how this person will contribute.</p>
                 <OnboardingFacilitationGuide />
               </div>
             </Section>
 
-            <Section number={8} title="CONFIRM THE FINAL APPOINTMENT AND CREATE THE BOARD MEMBER PORTFOLIO" summary="Complete the checks, confirm the appointment and create the individual portfolio." testId="br-section-portfolio">
-              <p>Once the reference process is complete, any required background check is completed or marked Not Required, the agreements are signed and the Board Member Profile is complete, confirm the final appointment. Record the onboarding conclusion, generate the formal appointment letter and create the individual Board Member Portfolio.</p>
+            <Section number={10} title="CONFIRM THE FINAL BOARD APPOINTMENT" summary="After onboarding, formally confirm the appointment and send the final appointment documents." testId="br-section-final-appointment">
+              <p>After the onboarding conversation is complete and you have saved the Onboarding Conclusion / Role Agreement, confirm the person's final Board appointment. Reference and background-check statuses remain visible to you but do not make the decision for you.</p>
               <FormalAppointmentWorkspace />
-              <p>The portfolio brings together the reason they were recruited, the skills and experience they bring, the areas where they want to contribute, their board responsibilities, their agreed commitments, the priorities they can support and the role they can play in strengthening the organization.</p>
+            </Section>
+
+            <Section number={11} title="MY TEAM" summary="Create and manage the individual Board Member Portfolios for the people who joined your Board." testId="br-section-team">
+              <p>Each formally appointed Board Member appears here. Their Portfolio is built from their application, experience, Board Member Profile and, most importantly, what you actually agreed together during onboarding.</p>
               <PortfolioSection />
             </Section>
 
-            <Section number={9} title="ASK FOR HELP" summary="Request support inside the platform." testId="br-section-support">
+            <Section number={12} title="ASK FOR HELP" summary="Request support inside the platform." testId="br-section-support">
               <p>Request support whenever you need help using the platform or executing the recruitment process.</p>
               <div id="sgr-support"><SupportBox productKey="recruitment_self_guided" moduleNumber={1}
                 supportTypes={["I have a question about this step", "I need help using the platform", "I need help executing this step", "I would like someone to help me complete this step"]} /></div>
