@@ -430,6 +430,38 @@ def create_portfolio_router(db) -> APIRouter:
                             break
             if not attached:
                 additional.append({"text": text, "deadline": str(commitment.get("deadline", ""))})
+        final_team_roles=(strategy.get("data") or {}).get("team_roles") or []
+        full_name=str(record.get("full_name","")).strip()
+        full_key=re.sub(r"[^a-z0-9 ]","",full_name.lower()).strip()
+        first_key=(full_key.split() or [""])[0]
+        for final_role in final_team_roles:
+            if not isinstance(final_role,dict):continue
+            assigned=str(final_role.get("assigned","")).strip()
+            assigned_key=re.sub(r"[^a-z0-9 ]","",assigned.lower()).strip()
+            if not assigned_key or assigned_key=="role capacity needed":continue
+            if assigned_key!=full_key and assigned_key!=first_key and full_key not in assigned_key:continue
+            role_title=str(final_role.get("role","")).strip() or "Board fundraising responsibility"
+            responsibility=str(final_role.get("responsibility","")).strip()
+            combined=(role_title+(f": {responsibility}" if responsibility else "")).strip()
+            matched=match_commitment_keys(combined,available);attached=False
+            if matched:
+                for role in system_roles:
+                    if role.get("role_key")==matched:
+                        role["commitment"]=responsibility or role.get("commitment","")
+                        role["label"]=role.get("label") or role_title
+                        role["source"]="meeting_commitment";attached=True;break
+                if not attached:
+                    for activity in direct_activities:
+                        if activity.get("activity_key")==matched:
+                            activity["commitment"]=responsibility or activity.get("commitment","")
+                            activity["label"]=activity.get("label") or role_title
+                            activity["source"]="meeting_commitment";attached=True;break
+            if not attached:
+                role_key_text=re.sub(r"[^a-z0-9 ]","",role_title.lower()).strip()
+                if not any(re.sub(r"[^a-z0-9 ]","",str(role.get("label","")).lower()).strip()==role_key_text and str(role.get("commitment","")).strip()==responsibility for role in system_roles):
+                    system_roles.append({"item_id":new_uuid(),"role_key":"custom","label":role_title,"source":"meeting_commitment",
+                        "involvement":"Board-agreed responsibility","member_note":"","commitment":responsibility,"deadline":"",
+                        "requires_confirmation":False,"active":True})
         if str(participation.get("additional_idea","")).strip():
             additional.append({"text":str(participation.get("additional_idea","")).strip(),"deadline":""})
         return {
