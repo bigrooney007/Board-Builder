@@ -565,7 +565,7 @@ const ConditionalPanel = ({ application, orgMaterials, session, onChanged, profi
     <div className="detail-section" data-testid="conditional-panel">
       <h3>Prepare Conditional Appointment — {application.profile_snapshot?.full_name}</h3>
       <MaterialCard type="conditional_offer" title={applicantModulesText.conditionalBoardAppointmentEmail} buttonLabel="Generate Conditional Board Appointment Email"
-        description="One professional conditional appointment email containing the onboarding date, Organization Overview, Board Manual, three secure agreement links and the Board Member Profile Form link. The reference check must be complete and every onboarding resource must be approved before this email can be generated."
+        description="One professional conditional appointment email containing the onboarding date, Organization Overview, Board Manual, three secure agreement links and the Board Member Profile Form link. If references or a required background check are still pending, the email makes clear that the appointment remains conditional until those checks are complete and the organization confirms the final appointment."
         applicationId={application.application_id} material={byType.conditional_offer} refresh={refresh} approvable
         extraActions={byType.conditional_offer?.status === "Approved" ? (
           <SendMaterialButton type="conditional_offer" applicationId={application.application_id}
@@ -817,8 +817,8 @@ export const OnboardingPreparation = () => {
     if (!selectedId) { setDetail(null); return; }
     memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
   }, [selectedId]);
-  const candidates = applications.filter((application) => application.reference_check_status === "Completed"
-    || ["Conditional Appointment", "Selected"].includes(application.status)
+  const candidates = applications.filter((application) =>
+    ["Moving Forward", "Conditional Appointment", "Selected"].includes(application.status)
     || application.final_outcome === "Joined Board");
   const onChanged = () => memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
   return (
@@ -846,8 +846,8 @@ export const OnboardingPreparation = () => {
       </section>
       <section className="workspace-panel" data-testid="conditional-offer-section">
         <h2>Send The Conditional Appointment Email</h2>
-        <p className="material-description">Select a candidate whose automated reference check is complete. Their email will carry every approved onboarding link and the saved onboarding date.</p>
-        {candidates.length === 0 && <p className="workspace-note">Candidates appear here when their automated reference check is complete.</p>}
+        <p className="material-description">Select a candidate you have decided to move forward. Their email carries every approved onboarding link and the saved onboarding date. If references or a required background check are still pending, the appointment remains conditional until those checks are complete.</p>
+        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you decide they are moving forward from the interview stage.</p>}
         {candidates.map((application) => (
           <button className={`button ${selectedId === application.application_id ? "" : "button-back"}`} style={{ marginRight: 8, marginBottom: 8 }} key={application.application_id} onClick={() => setSelectedId(application.application_id)} data-testid={`select-onboarding-candidate-${application.application_id}`}>
             {application.profile_snapshot?.full_name || application.applicant_email}
@@ -925,9 +925,11 @@ const MemberReadiness = ({ application, onChanged }) => {
   const joined = application.final_outcome === "Joined Board";
   const confirmed = joined || application.status === "Selected";
   const refsDone = application.reference_check_status === "Completed";
+  const backgroundStatus = application.background_check?.status || "Not started";
+  const backgroundReady = ["Completed", "Not Required"].includes(backgroundStatus);
   const agreementsSigned = AGREEMENTS.every(([type]) => signatureStatus(type) === "Signed");
   const profileDone = Boolean(profileLink?.response);
-  const readyForAppointment = refsDone && agreementsSigned && profileDone;
+  const readyForAppointment = refsDone && backgroundReady && agreementsSigned && profileDone;
   const confirmFormal = async () => {
     if (!window.confirm(`Formally confirm ${application.profile_snapshot?.full_name}'s appointment to the Board? You control this decision — it is never automatic.`)) return;
     try {
@@ -940,13 +942,14 @@ const MemberReadiness = ({ application, onChanged }) => {
       <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}{!joined && confirmed && <span className="blog-status-badge published">Formal Appointment Confirmed</span>}</h3>
       <ul className="readiness-list" data-testid="member-readiness">
         <li className={refsDone ? "done" : ""}>Reference Process: {application.reference_check_status || "Not Started"}{application.reference_check_status === "References Submitted" ? " (submitted is not completed — finish the reference process)" : ""}</li>
+        <li className={backgroundReady ? "done" : ""}>Background Check: {backgroundStatus}</li>
         {AGREEMENTS.map(([type, title]) => <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>{title}: {signatureStatus(type)}</li>)}
         <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Sent" : "Not Sent"}</li>
       </ul>
       {!confirmed && (
         <>
           <button className="button" disabled={!readyForAppointment} onClick={confirmFormal} data-testid="confirm-ready-button">Confirm Formal Appointment</button>
-          {!readyForAppointment && <p className="workspace-note" data-testid="formal-appointment-blocked-note">Formal Appointment becomes available after the automated reference check is complete, all three agreements are signed and the Board Member Profile Form is completed.</p>}
+          {!readyForAppointment && <p className="workspace-note" data-testid="formal-appointment-blocked-note">Formal Appointment becomes available after the automated reference check is complete, the background check is completed or marked Not Required, all three agreements are signed and the Board Member Profile Form is completed.</p>}
         </>
       )}
       {confirmed && (
