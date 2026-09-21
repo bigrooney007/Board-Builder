@@ -24,10 +24,9 @@ const downloadCv = async (application) => {
   try {
     const response = await memberApi.get(`/workspace/applications/${application.application_id}/cv`, { responseType: "blob" });
     const url = URL.createObjectURL(response.data);
-    const link = document.createElement("a");
-    link.href = url; link.download = application.cv_filename || "cv"; link.click();
-    URL.revokeObjectURL(url);
-  } catch { window.alert("CV could not be downloaded."); }
+    window.open(url, "_blank", "noopener");
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch { window.alert("CV could not be opened."); }
 };
 
 const CandidateActions = ({ application, refresh, branding }) => {
@@ -789,7 +788,7 @@ export const Module5References = () => {
               <button className="button button-back" onClick={() => printBranded(title, currentVersion(orgMaterials[type]).display_text, branding)} data-testid={`design-${type}`}><Download size={14} /> {type.includes("agreement") ? "Create Final Agreement PDF" : `Design ${title} PDF`}</button>
             ) : null} />
         ))}
-        <BoardProfilePanel />
+        <p className="workspace-note">The candidate-specific Board Member Profile link is created automatically when you generate that person’s Onboarding Email.</p>
       </section>
 
       <section className="workspace-panel" data-testid="module5-decide-section">
