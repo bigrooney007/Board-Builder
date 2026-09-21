@@ -1743,6 +1743,20 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             elif decision=="__use_all_ideas__":selected="Board direction: develop this section from the complete Board discussion, every submitted idea and the meeting transcript."
             areas.append({"area_key":section["key"],"area":section["title"],"direction":selected,"proposed_priorities":board_builder_recommendations(section["title"],p.get("mission","")),"ideas_shared":all_ideas,"owner_participant_id":owner["participant_id"],"collaborator_participant_ids":[],"status":"ASSIGNED","meeting_transcript":transcript,"decision_mode":decision})
             display.append(f"{section['title']}\nAgreed direction:\n{selected}")
+        if p.get("internal_preview"):
+            for area in areas:
+                area["detailed_plan_status"]="Approved"
+                area["submitted_plan"]=(f"ADMIN PREVIEW DETAILED PLAN — {area['area']}\n\n"
+                    f"BOARD-AGREED DIRECTION\n{area.get('direction', '')}\n\n"
+                    "EXECUTION APPROACH\nConvert the agreed direction into a 90-day implementation cycle with a named owner, "
+                    "specific milestones, required people and technology, a realistic budget, measurable evidence of progress "
+                    "and a recurring Board accountability review. Preserve the Board ideas and meeting decisions already recorded.\n\n"
+                    "FIRST 90 DAYS\n1. Confirm the owner, scope, success measure and required resources.\n"
+                    "2. Build the people, systems, materials and relationships required for execution.\n"
+                    "3. Complete the first execution cycle and bring evidence, barriers and decisions required back to the Board.\n\n"
+                    "BOARD LEADERSHIP RESPONSIBILITY\nThe delegated Board Member provides leadership, introductions, oversight and accountability while staff carries appropriate day-to-day execution.")
+                area["plan_submitted_at"]=now_iso()
+                area["pack_status"]="Approved"
         now=now_iso();await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"decisions":decisions,"transcript":transcript,"status":"COMPLETED","completed_at":now}},upsert=True);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","display_text":"\n\n".join(display),"finalized_text":"\n\n".join(display),"areas":areas,"share_token":secrets.token_urlsafe(32),"meeting_transcript":transcript,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         return {"status":"COMPLETED","area_count":len(areas)}
 
