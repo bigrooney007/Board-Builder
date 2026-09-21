@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -52,6 +53,13 @@ export const GameProgress = ({ steps, current }) => (
 
 export const BfgShell = ({ children, nav, shellClass = "" }) => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { member, loading, logout } = useMemberAuth();
+  const defaultAuthNav = loading ? null : member ? (
+    <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={async () => { await logout(); navigate("/login"); }} data-testid="bfg-default-logout-btn">Log Out</button>
+  ) : (
+    <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login" data-testid="bfg-default-login-btn">Log In</Link>
+  );
   const identity = pathname.startsWith("/recruit") || pathname.startsWith("/app/board-recruitment")
     ? { mark: "NB", label: "Board Recruitment", home: "/recruit" }
     : pathname.startsWith("/strategic") || pathname.startsWith("/community-need") || pathname.startsWith("/area-pack")
@@ -68,7 +76,7 @@ export const BfgShell = ({ children, nav, shellClass = "" }) => {
           <span className="bfg-logo-mark">{identity.mark}</span>
           <span><strong>Nonprofit Board Builder</strong><em>{identity.label}</em></span>
         </Link>
-        <div className="bfg-nav-actions">{nav}</div>
+        <div className="bfg-nav-actions">{nav ?? defaultAuthNav}</div>
       </header>
       {children}
       <footer className="bfg-footer">
