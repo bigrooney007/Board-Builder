@@ -62,7 +62,7 @@ def test_recruitment_dashboard_follows_the_single_forward_flow():
     ordered_ids = [
         "br-section-intake", "br-section-identify", "br-section-materials", "br-section-campaign",
         "br-section-applicants", "br-section-references", "br-section-onboarding",
-        "br-section-facilitation", "br-section-portfolio", "br-section-support", "br-section-first-meeting",
+        "br-section-facilitation", "br-section-portfolio", "br-section-first-meeting", "br-section-support",
     ]
     positions = [dashboard.index(test_id) for test_id in ordered_ids]
     assert positions == sorted(positions)
@@ -111,7 +111,8 @@ def test_recruitment_purchase_enters_dashboard_and_game_is_the_intake():
     game = source("frontend/src/member/RecruitmentGameIntake.jsx")
     assert '<Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />' in app
     assert 'title="PLAY THE BOARD RECRUITMENT GAME"' in dashboard
-    assert 'RecruitmentGameIntake' in dashboard
+    assert 'navigate("/app/board-recruitment/game")' in dashboard
+    assert '<Route path="/app/board-recruitment/game" element={<RecruitmentGamePage />} />' in app
     assert 'QUESTION {step + 1} OF 4' in game
 
 
@@ -123,8 +124,11 @@ def test_guided_products_keep_intake_and_execution_inside_the_dashboard():
     assert "<Navigate replace" in guided
     assert "Tell Us About Your Organization" in guided
     assert "START MICROPHONE TRANSCRIPTION" in strategic
-    assert "END SESSION AND START DELEGATION" in strategic
+    assert "COMPLETE STRATEGIC PLANNING SESSION" in strategic
+    assert "COMPLETE PRESENTATION MEETING" in strategic
+    assert "Watch The Strategic Planning Tutorial" not in strategic
     assert "FounderBoardAudit" in recommitment
+    assert "recommitment-tutorial" not in recommitment
     audit = source("backend/guided_product_routes.py")
     assert 'require_entitlement(member, {"reactivation_self_guided"})' in audit
 

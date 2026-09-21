@@ -147,6 +147,10 @@ export default function GameDashboardPage() {
           <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/board-fundraising-game" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
         </div>
 
+        <section className="bfg-panel bfg-tour-panel" data-testid="bfg-dashboard-tutorial-card">
+          <div className="bfg-panel-head"><div><p className="bfg-eyebrow">START HERE</p><h2>Take A Guided Tour Of Your Dashboard</h2><p className="bfg-panel-sub">See how to play your individual game, prepare the Board, run the Group Game and move into execution.</p></div><button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => setShowTour(true)} data-testid="bfg-watch-tutorial-btn">START GUIDED TOUR</button></div>
+        </section>
+
         <section className="bfg-panel" data-tour="play-individual-game" data-testid="bfg-play-individual-game">
           <div className="bfg-panel-head">
             <div>
@@ -188,39 +192,6 @@ export default function GameDashboardPage() {
             <p className="bfg-big">{goalAmount ? money(goalAmount) : "Not set yet"}</p>
             {data.goal?.deadline && <p className="bfg-sub">by {formatDate(data.goal.deadline)}</p>}
             {data.organization?.name && <p className="bfg-sub">{data.organization.name}</p>}
-          </div>
-          <div className="bfg-dash-card" data-testid="bfg-dashboard-status-card">
-            <h3>Game Status</h3>
-            {data.situation_completed ? (
-              <>
-                <p className="bfg-big" style={{ fontSize: 22 }} data-testid="bfg-journey-status">{postgame?.journey_status || "Set Up Your Board Fundraising Game"}</p>
-                <p className="bfg-sub">{{
-                  "Setting Up": "Complete your setup and add the board members who will play.",
-                  "Board Preparing": "Invitations are out and your board members are playing their Individual Games.",
-                  "Ready For Game Night": "Your Board Fundraising Day/Night is scheduled and your board is preparing.",
-                  "Game Night In Progress": "Your board is playing the Group Review Game together.",
-                  "Strategy Review": "Your board is reviewing its fundraising strategy.",
-                  "Strategy Adopted": "Your board has adopted its fundraising strategy.",
-                  "Moving Into Execution": "Board Fundraising Portfolios are being prepared and sent.",
-                  "Execution Ready": "Approved board members can now access their execution resources.",
-                }[postgame?.journey_status] || "Your game setup is complete. Prepare your board for your Board Fundraising Day/Night."}</p>
-              </>
-            ) : (
-              <>
-                <p className="bfg-big" style={{ fontSize: 22 }}>Complete Your Game Setup</p>
-                <p className="bfg-sub">Tell us about your current fundraising situation so your game fits your organization.</p>
-                <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 14 }} onClick={() => navigate("/game/setup")} data-testid="bfg-dashboard-complete-setup-btn">
-                  Complete My Game Setup
-                </button>
-              </>
-            )}
-          </div>
-          <div className="bfg-dash-card" data-testid="bfg-dashboard-tutorial-card">
-            <h3>Tutorial</h3>
-            <p className="bfg-sub">Take a guided tour of your dashboard — how to prepare your board, run the meeting and build your strategy.</p>
-            <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 14 }} onClick={() => setShowTour(true)} data-testid="bfg-watch-tutorial-btn">
-              Tutorial
-            </button>
           </div>
         </div>
 

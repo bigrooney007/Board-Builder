@@ -74,8 +74,18 @@
   font-family: "Outfit", system-ui, sans-serif; font-size: 13px; font-weight: 800;
 }
 .sgr-flow-section { scroll-margin-top: 20px; border-left: 4px solid #6366f1 !important; }
+.sgr-section-toggle { width:100%; display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; text-align:left; border:0; background:transparent; padding:0; cursor:pointer; color:#111827; }
+.sgr-section-toggle > span:nth-child(2) { display:grid; gap:4px; }
+.sgr-section-toggle strong { font:800 clamp(16px,2vw,20px)/1.25 "Outfit",system-ui,sans-serif; }
+.sgr-section-toggle small { color:#6b7280; font-size:13px; line-height:1.4; }
+.sgr-section-toggle > b { font-size:11px; letter-spacing:.08em; color:#4f46e5; border:1px solid #c7d2fe; border-radius:999px; padding:7px 11px; }
+.sgr-step-number { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:999px; background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; font-weight:800; }
+.sgr-section-body { border-top:1px solid #e5e7eb; margin-top:18px; padding-top:20px; }
+.sgr-game-page { max-width:820px; margin:auto; }
+.sgr-game-card { margin-top:24px; }
 .sgr-step-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .sgr-step-heading h2 { margin: 0; }
 .sgr-flow-section > .workspace-panel, .sgr-flow-section > div > .workspace-panel {
   box-shadow: none; border-color: #e9eaf3; background: #fcfcff;
 }
+.compact-flow-section{margin-top:16px!important;padding:18px!important}.compact-flow-toggle{width:100%;border:0;background:transparent;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;color:#111}.compact-flow-toggle>span{display:grid;place-items:center;min-width:34px;height:34px;border-radius:999px;background:#111;color:#fff;font-weight:900}.compact-flow-toggle>strong{flex:1;font-size:1.05rem}.compact-flow-body{border-top:1px solid #ddd;margin-top:16px;padding-top:16px}.compact-flow-body>.member-card,.compact-flow-body>div>.member-card{box-shadow:none}

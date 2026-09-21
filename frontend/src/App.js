@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import StrategicLeadershipPortfolioPage from "./funnels/StrategicLeadershipPortfolioPage";
 import StrategicLeadershipAssistantPage from "./funnels/StrategicLeadershipAssistantPage";
 import StrategicSessionWatchPage from "./funnels/StrategicSessionWatchPage";
+import StrategicPresentationWatchPage from "./funnels/StrategicPresentationWatchPage";
 import axios from "axios";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "@/App.css";
@@ -59,6 +60,7 @@ import FundraisingBoardBuilderOfferPage from "@/funnels/FundraisingBoardBuilderO
 import WelcomePage from "@/member/WelcomePage";
 import FundraisingActivationPage from "@/member/FundraisingActivationPage";
 import BoardRecruitmentPage from "@/member/BoardRecruitmentPage";
+import RecruitmentGamePage from "@/member/RecruitmentGamePage";
 import BoardFixRoadmapPage from "@/member/BoardFixRoadmapPage";
 import BoardFixOrientationPage from "@/member/BoardFixOrientationPage";
 import RecruitmentResultsPage from "@/member/workspace/ResultsPage";
@@ -254,6 +256,7 @@ export default function App() {
           <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
           <Route path="/app/fundraising-activation" element={<FundraisingActivationPage />} />
           <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
+          <Route path="/app/board-recruitment/game" element={<RecruitmentGamePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
@@ -280,6 +283,7 @@ export default function App() {
           <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/strategic-session/:token" element={<StrategicSessionWatchPage />} />
+          <Route path="/strategic-presentation/:token" element={<StrategicPresentationWatchPage />} />
           <Route path="/community-need-research/:token" element={<CommunityNeedResearchPage />} />
           <Route path="/strategic-planning-response/:participantId" element={<StrategicPlanningResponsePage />} />
           <Route path="/strategic-plan-review/:token" element={<StrategicPlanReviewPage />} />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
 import { memberApi } from "./api";
@@ -31,42 +31,34 @@ const MemberResponse = ({ row }) => {
 
 export default function BoardRecommitmentDashboard(){
  const [roster,setRoster]=useState(null);
+ const [open,setOpen]=useState("1");
  const load=useCallback(()=>memberApi.get("/reactivation/roster").then(r=>setRoster(r.data)).catch(()=>setRoster({members:[]})),[]);
  useEffect(()=>{load()},[load]);
  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("member");if(requested)setTimeout(()=>document.querySelector(`[data-testid="recommitment-person-${requested}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),150)},[roster]);
  return <MemberShell><main className="member-page sgr" data-testid="board-recommitment-dashboard">
    <header className="member-page-heading"><p className="eyebrow">Nonprofit Board Builder</p><h1>BOARD RECOMMITMENT</h1><p><strong>Get clear answers from disengaged board members, have the right one-on-one conversation, and move forward with people who are ready to serve.</strong></p></header>
 
-   <section className="member-card" data-testid="recommitment-tutorial">
-    <p className="eyebrow">START HERE</p><h2><PlayCircle size={20}/> Watch The Board Recommitment Tutorial</h2>
-    <p>Watch this first. It shows you how to send the form, review each response, prepare the conversation, record the conclusion and create the Board Member Portfolio.</p>
-    <div style={{aspectRatio:"16/9",background:"#0f172a",color:"#fff",borderRadius:12,display:"grid",placeItems:"center",marginTop:16}}><div style={{textAlign:"center"}}><PlayCircle size={42}/><p style={{color:"#cbd5e1"}}>Tutorial video will appear here when the final video URL is added.</p></div></div>
-   </section>
+   <CompactSection n="1" title="Generate The Recommitment Form And Email" open={open==="1"} onOpen={()=>setOpen(open==="1"?"":"1")}><p>Generate the form first, then generate the matching email and send its link to each Board Member.</p><ReactivationStep2/></CompactSection>
+   <CompactSection n="2" title="Complete The Founder / Executive Director Audit" open={open==="2"} onOpen={()=>setOpen(open==="2"?"":"2")}><FounderBoardAudit/></CompactSection>
 
-   <section style={{marginTop:26}} data-testid="recommitment-form-email">
-    <div className="member-card"><p className="eyebrow">1. SEND THE RECOMMITMENT FORM</p><h2>Your Recommitment Form & Email</h2><p>Your form is the first thing you need. Send the same form link to each board member you need to recommit. Their completed responses will automatically appear below.</p></div>
-    <ReactivationStep2/>
-    <FounderBoardAudit/>
-   </section>
-
-   <section id="recommitment-responses" className="member-card" style={{marginTop:26}} data-testid="recommitment-responses">
+   <CompactSection n="3" title="See Everyone Who Has Completed The Form" open={open==="3"} onOpen={()=>setOpen(open==="3"?"":"3")}><div id="recommitment-responses" data-testid="recommitment-responses">
     <p className="eyebrow">2. BOARD MEMBER RESPONSES</p><h2>Everyone Who Completes The Form Appears Here</h2><p>Click a person's name to see their response. Then use the workflow immediately below to interpret what they told you and prepare the conversation.</p>
     {!roster?<p>Loading board members…</p>:roster.members.length===0?<p>No board members have been added yet. Your completed generic Recommitment Form responses will appear here.</p>:roster.members.map(row=><MemberResponse key={row.member_record_id} row={row}/>)}
-   </section>
+   </div></CompactSection>
 
-   <section style={{marginTop:26}} data-testid="recommitment-interpret-conversation">
-    <div className="member-card"><p className="eyebrow">3. INTERPRET & HAVE THE CONVERSATION</p><h2>Understand Their Response. Prepare The Call. Record What You Agreed.</h2><p>For each person who responded, interpret their answers, generate the one-on-one call script, have the conversation, then save the conclusion and final outcome. Saving what was actually agreed becomes the authoritative basis for their portfolio.</p></div>
+   <CompactSection n="4" title="Interpret Each Response And Prepare The Conversation" open={open==="4"} onOpen={()=>setOpen(open==="4"?"":"4")}><div data-testid="recommitment-interpret-conversation"><p>For each person, use their response and organization information to interpret what they said, generate the one-on-one script, then record what was actually agreed.</p>
     <ReactivationUnderstand/>
     <ReactivationStep3/>
-   </section>
+   </div></CompactSection>
 
-   <section style={{marginTop:26}} data-testid="recommitment-portfolios">
-    <div className="member-card"><p className="eyebrow">4. CREATE THEIR BOARD MEMBER PORTFOLIO</p><h2>Turn The Recommitment Conversation Into Clear Responsibility</h2><p>Once the conversation conclusion and outcome are saved, generate the Board Member Portfolio for anyone continuing in an active or eligible support role. Review it, approve it, then prepare and send the portfolio email.</p></div>
+   <CompactSection n="5" title="Summarize The Board And Create The Correct Next-Step Resources" open={open==="5"} onOpen={()=>setOpen(open==="5"?"":"5")}><div data-testid="recommitment-portfolios"><p>The summary shows who is stepping up, stepping down or moving to an advisory role. Each person then receives only the email or portfolio appropriate to the confirmed outcome.</p>
     <ReactivationStep5/>
-   </section>
+   </div></CompactSection>
 
    <div id="recommitment-support" style={{marginTop:26}} data-testid="recommitment-support">
     <SupportBox productKey="reactivation_self_guided" moduleNumber={1} supportTypes={["I have a question about Board Recommitment","I need help interpreting a board member response","I need help preparing for a conversation","I need help using the platform"]}/>
    </div>
  </main></MemberShell>
 }
+
+const CompactSection=({n,title,open,onOpen,children})=><section className="member-card compact-flow-section"><button type="button" className="compact-flow-toggle" onClick={onOpen}><span>{n}</span><strong>{title}</strong>{open?<ChevronUp/>:<ChevronDown/>}</button>{open&&<div className="compact-flow-body">{children}</div>}</section>;

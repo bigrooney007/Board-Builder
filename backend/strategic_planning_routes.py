@@ -1601,7 +1601,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def detail(p):
         participants=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};by={x["participant_id"]:x for x in participants};areas=[]
         for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name",""),"collaborator_names":[by.get(pid,{}).get("name","") for pid in a.get("collaborator_participant_ids",[]) if by.get(pid)]})
-        return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text","")},"portfolios":plan.get("leadership_portfolios",[]),"active_delegation":plan.get("active_delegation",{}),"follow_up_meeting":plan.get("follow_up_meeting",{})}
+        return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text","")},"portfolios":plan.get("leadership_portfolios",[]),"presentation_meeting":plan.get("presentation_meeting",{}),"active_delegation":plan.get("active_delegation",{}),"follow_up_meeting":plan.get("follow_up_meeting",{})}
 
     @router.get("/workspace")
     async def workspace(session_id:str):
@@ -1635,6 +1635,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         ]
         for title,key,label in review_sections:
             qs.append((title,review_pair(label,a.get(key))))
+        qs.append(("Board Leadership And Support",[
+            "Which parts of the organization would you be willing to lead at Board level? Explain where you believe your experience, relationships or perspective would be most useful.",
+            "Which other areas would you be willing to support, and which committees or working groups would you be willing to join?",
+        ]))
         sections=[]
         for i,(title,prompts) in enumerate(qs,1):sections.append({"key":f"s{i}","title":title,"questions":[{"id":f"s{i}_q{j}","prompt":q,"type":"long","options":[],"required":True} for j,q in enumerate(prompts,1)]})
         goal=a.get("goals") or a.get("priorities") or "build a clear, practical direction for the organization"
@@ -1792,6 +1796,21 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
               "6. CLOSE THE SESSION\nConfirm every selection, stop transcription, explain the submission deadline, and remind the Board that the Final Strategic Plan is consolidated only after all delegated plans are submitted.")
         now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True);return {"status":"Approved"}
 
+    @router.post("/session-plan")
+    async def generate_session_plan(request: Request):
+        sid=(await request.json()).get("session_id","");p=await ensure_project(sid)
+        session=await db.sp_sessions.find_one({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}) or {}
+        plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if not session or not plan.get("areas"):raise HTTPException(409,"Complete the Strategic Planning Session first")
+        _,_,intake=await paid(sid);people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        context=(f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nORGANIZATION INTAKE:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
+                 f"AGREED STRATEGIC AREAS AND EVERY IDEA:\n{json.dumps(plan.get('areas'),default=str)}\n\nSESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+                 f"BOARD RESPONSES:\n{json.dumps([{ 'name':x.get('name'), 'response':x.get('response')} for x in people],default=str)}")
+        generated=await generate_structured("strategic_planning_foundational",context,"Create the foundational Strategic Plan from the Board's completed session. Preserve every agreed direction, clearly separate Board decisions from recommendations, and do not invent consensus or facts.")
+        display=plan_display(generated,p["organization_name"])
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","structured":generated,"display_text":display,"foundational_generated_at":now_iso(),"updated_at":now_iso()}})
+        return {"status":"Approved"}
+
     @router.post("/auto-delegate")
     async def auto_delegate(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);areas=plan.get("areas",[])
@@ -1842,7 +1861,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             area["pack_text"]=pack_display({"mission_direction":area.get("direction",""),"foundational_priorities":area.get("proposed_priorities",[]),"ideas":area.get("ideas_shared",[]),"development_instruction":"Use the agreed idea, every other idea shared for this section, and the Strategic Planning Session transcript below to build the first draft. Define exactly what must be done, the people and technology required, your role in leading and overseeing it, the full cost of executing it at 100%, and a step-by-step action plan for the planning period.\n\nSESSION TRANSCRIPT:\n"+area.get("meeting_transcript","")},area["area"],p["organization_name"])
             links.append((area["area"],f"{origin_of(request)}/area-pack/{token}"))
         await db.sp_participants.update_one({"participant_id":pid},{"$set":{"area_assignment_tokens":assignments}});await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":plan["areas"]}})
-        first=(person.get("name") or "Board Member").split()[0];listing="\n\n".join(f"{title}:\n{link}" for title,link in links);body_text=f"Dear {first},\n\nDuring our Strategic Planning Session, the Board selected your contribution and delegated the following section{'s' if len(links)>1 else ''} to you. Each link contains the agreed direction, every idea shared by other participants, the meeting context and instructions for building the detailed plan you will present at our next meeting.\n\n{listing}\n\nThank you for accepting responsibility for helping build this part of {p['organization_name']}'s future."
+        first=(person.get("name") or "Board Member").split()[0];listing="\n\n".join(f"{title}:\n{link}" for title,link in links);foundation_link=f"{origin_of(request)}/strategic-draft/{plan.get('share_token')}";body_text=f"Dear {first},\n\nDuring our Strategic Planning Session, the Board selected your contribution and delegated the following section{'s' if len(links)>1 else ''} to you. Review the Board's foundational strategy first, then open each assigned section. Every section contains the agreed direction, every idea shared by other participants, the meeting context and instructions for building the detailed plan you will present at our next meeting.\n\nBOARD FOUNDATIONAL STRATEGY:\n{foundation_link}\n\nYOUR DELEGATED SECTION{'S' if len(links)>1 else ''}:\n{listing}\n\nThank you for accepting responsibility for helping build this part of {p['organization_name']}'s future."
         await send_email(person["email"],f"Your Strategic Planning Delegation | {p['organization_name']}",body_text,"OPEN MY FIRST DELEGATED SECTION",links[0][1],reply_to=p.get("founder_email",""))
         return {"status":"sent","section_count":len(links)}
 
@@ -1852,6 +1871,63 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not areas or any(a.get("detailed_plan_status")!="Approved" or not a.get("submitted_plan") for a in areas):raise HTTPException(409,"Every delegated strategic area needs an approved detailed plan before consolidation")
         context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nFOUNDATIONAL PLAN:\n{plan.get('display_text','')}\n\nEVERY AREA'S AGREED DIRECTION, EVERY SUBMITTED IDEA, NONPROFIT BOARD BUILDER RECOMMENDATIONS AND MEETING CONTEXT:\n{json.dumps(areas,default=str)}\n\nAPPROVED DETAILED AREA PLANS:\n"+"\n\n".join(f"{a['area']}:\n{a['submitted_plan']}" for a in areas);g=await generate_structured("strategic_final_plan",context,"Consolidate the agreed directions and approved detailed plans into one coherent final Strategic Plan. Use the supplied ideas, recommendations and meeting context to preserve the Board's actual thinking. Do not invent new Board decisions.")
         display=final_display(g,p["organization_name"]);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Draft","final_display_text":display,"final_share_token":"","updated_at":now_iso()}});return {"status":"Draft"}
+
+    @router.post("/presentation-meeting")
+    async def save_presentation_meeting(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        required=["meeting_date","start_time","timezone_name","meeting_format"]
+        if any(not str(body.get(k,"")).strip() for k in required):raise HTTPException(422,"Enter the presentation meeting date, time, time zone and format")
+        meeting={k:str(body.get(k,"")).strip()[:500] for k in required+["meeting_link","meeting_location","note"]}
+        meeting.update({"share_token":(plan.get("presentation_meeting") or {}).get("share_token") or secrets.token_urlsafe(32),"current_area_index":0,"status":"SCHEDULED","saved_at":now_iso()})
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting":meeting,"updated_at":now_iso()}})
+        return meeting
+
+    @router.post("/presentation-meeting/progress")
+    async def presentation_progress(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));index=max(0,int(body.get("current_area_index",0)))
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting.current_area_index":index,"presentation_meeting.status":"IN PROGRESS","updated_at":now_iso()}})
+        return {"current_area_index":index}
+
+    @router.get("/presentation-meeting/watch/{token}")
+    async def watch_presentation(token: str):
+        plan=await db.sp_plans.find_one({"presentation_meeting.share_token":token},{"_id":0})
+        if not plan:raise HTTPException(404,"This presentation meeting link is not valid")
+        p=await owned_project(plan["project_id"]);areas=plan.get("areas") or [];meeting=plan.get("presentation_meeting") or {};index=min(meeting.get("current_area_index",0),max(0,len(areas)-1))
+        area=areas[index] if areas else None
+        return {"organization_name":p["organization_name"],"status":meeting.get("status","SCHEDULED"),"current_area_index":index,"total_areas":len(areas),"area":area,"present_plan":plan.get("final_display_text","")}
+
+    @router.post("/presentation-meeting/guide")
+    async def presentation_guide(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if not plan.get("areas"):raise HTTPException(409,"Complete the detailed strategic area plans first")
+        guide=(f"STRATEGIC PLAN PRESENTATION AND DELEGATION MEETING GUIDE\n{p['organization_name']}\n\n"
+               "1. OPEN THE MEETING\nExplain that each delegated person will present the section they developed and the Board will agree any final modifications and continuing leadership responsibility. Ask permission before starting transcription.\n\n"
+               "2. PRESENT ONE SECTION AT A TIME\nOpen the shared meeting screen. Invite the assigned Board Member to present the agreed direction, detailed plan, resources required, cost, action sequence and decisions needed.\n\n"
+               "3. CAPTURE BOARD MODIFICATIONS\nInvite questions and recommendations. State the final modification aloud so it is captured in the transcript. The application does not treat discussion as approval until the lead user completes the meeting.\n\n"
+               "4. DELEGATE LEADERSHIP\nConfirm who will lead or oversee the section, the first action, support required and the reporting rhythm.\n\n"
+               "5. CLOSE THE MEETING\nReview every delegated responsibility, stop transcription and explain that the transcript will be used to prepare the editable Final Strategic Plan and Board Leadership Portfolios.")
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting.guide":guide,"updated_at":now_iso()}});return {"guide":guide}
+
+    @router.post("/presentation-meeting/send")
+    async def send_presentation_meeting(request: Request):
+        sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};meeting=plan.get("presentation_meeting") or {}
+        if not plan.get("final_display_text"):raise HTTPException(409,"Generate the Present Strategic Plan first")
+        if not meeting.get("meeting_date"):raise HTTPException(409,"Save the presentation meeting details first")
+        people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);link=f"{origin_of(request)}/strategic-presentation/{meeting['share_token']}";sent=0
+        for person in people:
+            first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nThe Present Strategic Plan for {p['organization_name']} is ready for our Board presentation and delegation meeting.\n\nDate: {meeting['meeting_date']}\nTime: {meeting['start_time']} {meeting['timezone_name']}\nFormat: {meeting['meeting_format']}\nMeeting link/location: {meeting.get('meeting_link') or meeting.get('meeting_location') or 'The organization will confirm this directly.'}\n\nOpen the shared plan below and prepare to present the section you developed.\n\n{link}"
+            await send_email(person["email"],f"Strategic Plan Presentation Meeting | {p['organization_name']}",body,"OPEN PRESENT STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"presentation_meeting.sent_at":now_iso(),"presentation_meeting.sent_count":sent}});return {"status":"sent","count":sent}
+
+    @router.post("/presentation-meeting/complete")
+    async def complete_presentation_meeting(request: Request):
+        body=await request.json();sid=body.get("session_id","");transcript=str(body.get("transcript","")).strip()[:60000];p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if not transcript:raise HTTPException(422,"Record or paste the presentation meeting transcript before completing the meeting")
+        context=f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nPRESENT STRATEGIC PLAN:\n{plan.get('final_display_text','')}\n\nDETAILED AREAS:\n{json.dumps(plan.get('areas') or [],default=str)}\n\nPRESENTATION AND DELEGATION MEETING TRANSCRIPT:\n{transcript}"
+        generated=await generate_structured("strategic_final_plan",context,"Update the Present Strategic Plan using only modifications, approvals and delegation decisions supported by the presentation meeting transcript. Preserve everything not changed by the Board. Do not invent decisions.")
+        display=final_display(generated,p["organization_name"])
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Draft","final_display_text":display,"final_share_token":"","presentation_meeting.status":"COMPLETED","presentation_meeting.transcript":transcript,"presentation_meeting.completed_at":now_iso(),"updated_at":now_iso()}})
+        return {"status":"Draft"}
 
     @router.put("/final-plan/draft")
     async def edit_final_plan_draft(request:Request):
@@ -1886,7 +1962,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);rows=[]
-        active=plan.get("active_delegation") or {};manual=active.get("assignments") or {};meeting_context=active.get("transcript","")
+        active=plan.get("active_delegation") or {};manual=active.get("assignments") or {};meeting_context=active.get("transcript","") or (plan.get("presentation_meeting") or {}).get("transcript","")
         for person in people:
             owned=[a for a in plan.get("areas",[]) if a.get("owner_participant_id")==person["participant_id"] or person["participant_id"] in a.get("collaborator_participant_ids",[])];areas=[a["area"] for a in owned];responsibility=str(manual.get(person["participant_id"],"")).strip();authority=(f"\n\nACTIVE DELEGATED RESPONSIBILITY\n{responsibility}" if responsibility else ("\n\nACTIVE DELEGATION MEETING CONTEXT\nThe founder supplied the meeting transcript as the authoritative record for active delegation. Confirm the exact responsibility with the founder before execution.\n"+meeting_context[:4000] if meeting_context else ""));text=f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{person['name']}\n{p['organization_name']}\n\nYOUR STRATEGIC LEADERSHIP AREAS\n"+("\n".join(f"- {x}" for x in areas) or "- No strategic area assigned") +"\n\nYOUR RESPONSIBILITY\nProvide Board-level leadership and oversight for these areas. Work with the organization's leader to build the people, technology, materials, systems and execution structure required by the adopted Strategic Plan. As the execution structure becomes established, your role moves increasingly toward leadership and oversight rather than doing the day-to-day work."+authority
             token=secrets.token_urlsafe(24);rows.append({"participant_id":person["participant_id"],"name":person["name"],"areas":areas,"text":text,"token":token,"url":f"/strategic-leadership-portfolio/{token}"})
@@ -1907,6 +1983,22 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not assignments and not transcript:raise HTTPException(422,"Enter at least one delegated responsibility or provide the delegation meeting transcript")
         record={"assignments":assignments,"transcript":transcript,"manual_assignments_authoritative":bool(assignments),"saved_at":now_iso(),"next_meeting_guide":"Ask each Board Member to present what they completed, evidence of progress, decisions required, barriers and the next action. Review one responsibility at a time. Record or upload the transcript with consent. Do not change the Strategic Plan automatically. The founder reviews the transcript and confirms every update before it changes the plan or a delegation."}
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"active_delegation":record,"updated_at":now_iso()}});return {"status":"saved"}
+
+    @router.post("/support")
+    async def guided_support(request: Request):
+        body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);support_type=str(body.get("support_type","")).strip()[:200];message=str(body.get("message","")).strip()[:10000]
+        if not support_type or not message:raise HTTPException(422,"Choose what you need help with and enter your message")
+        record={"support_request_id":str(uuid.uuid4()),"project_id":p["project_id"],"session_id":sid,"name":p.get("founder_name",""),"organization":p.get("organization_name",""),"email":p.get("founder_email",""),"product":"Strategic Planning","support_type":support_type,"message":message,"created_at":now_iso(),"delivery_status":"Pending"}
+        await db.support_requests.insert_one(record.copy());owner=os.environ.get("OWNER_NOTIFICATION_EMAIL") or os.environ.get("OWNER_EMAIL")
+        if owner:
+            try:
+                resend.api_key=os.environ["RESEND_API_KEY"].strip('"');html="<h2>Strategic Planning Support Request</h2>"+"".join(f"<p><strong>{k}:</strong> {str(v)}</p>" for k,v in {"Name":record["name"],"Organization":record["organization"],"Email":record["email"],"Support type":support_type,"Message":message}.items());email_message={"from":os.environ["NONPROFIT_SENDER"],"to":[owner],"subject":f"Strategic Planning support request | {p['organization_name']}","html":html};
+                if p.get("founder_email"):email_message["reply_to"]=[p["founder_email"]]
+                await resend.Emails.send_async(email_message);await db.support_requests.update_one({"support_request_id":record["support_request_id"]},{"$set":{"delivery_status":"Sent"}})
+            except Exception:
+                logger.exception("Strategic Planning support notification failed")
+                await db.support_requests.update_one({"support_request_id":record["support_request_id"]},{"$set":{"delivery_status":"Failed"}})
+        return {"message":"Your support request has been received. We will be in touch through email."}
 
     @router.post("/follow-up-meeting")
     async def save_follow_up_meeting(request:Request):

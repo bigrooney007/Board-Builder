@@ -194,6 +194,13 @@
 .bfg .support-box .button { display: inline-flex; margin-top: 18px; border: none; cursor: pointer; border-radius: 999px; padding: 12px 24px; font-family: "Outfit"; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; }
 .bfg .support-box .submit-error { color: #fda4af; font-size: 14px; }
 .bfg .support-box .member-success { color: var(--bfg-emerald); }
+.bfg .support-box, .bfg .support-box p, .bfg .support-box h2, .bfg .support-box label, .bfg .support-box .field span { color:#111827; }
+.bfg-tour-panel { border:2px solid #c7d2fe !important; background:linear-gradient(135deg,#fff,#eef2ff) !important; margin-bottom:18px; }
+.bfg-output-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+.bfg-output-card { margin:0 !important; display:flex; flex-direction:column; align-items:flex-start; }
+.bfg-output-card h4 { font-size:20px; margin:12px 0 6px; }
+.bfg-output-card p { flex:1; }
+.bfg-output-card.is-locked { background:#f8fafc; }
 
 @media (max-width: 640px) {
   .bfg-nav { padding: 14px 18px; }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mic, Pause, Play, Square } from "lucide-react";
+import { Lock, Mic, Pause, Play, Square } from "lucide-react";
 import { memberApi } from "@/member/api";
 import { useWakeLock } from "./useWakeLock";
 
@@ -265,23 +265,21 @@ export const FinalOutputsSection = ({ overview }) => {
   return (
     <>
       <p className="bfg-eyebrow" style={{ marginTop: 30 }}>After Your Board Meeting</p>
-      <div className="bfg-areas" data-testid="bfg-final-outputs">
+      <div className="bfg-output-grid" data-testid="bfg-final-outputs">
         {OUTPUT_CARDS.map((card) => {
           const state = outputs[card.key] || "locked";
           return (
-            <div className="bfg-area" key={card.key} data-tour={card.tour} data-testid={`bfg-output-${card.key}`}>
+            <section className={`bfg-panel bfg-output-card ${state!=="ready"?"is-locked":""}`} key={card.key} data-tour={card.tour} data-testid={`bfg-output-${card.key}`}>
               <span className="bfg-lock-badge" style={{ color: STATUS_COLOR[state] }} data-testid={`bfg-output-status-${card.key}`}>
                 {STATUS_TEXT[state]}
               </span>
               <h4>{card.title}</h4>
               <p>{card.text}</p>
-              {state === "ready" && destinations[card.key] && (
-                <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 10 }}
-                  onClick={() => navigate(destinations[card.key])} data-testid={`bfg-output-open-${card.key}`}>
-                  {card.action}
-                </button>
-              )}
-            </div>
+              <button className={`bfg-btn bfg-btn-sm ${state==="ready"?"bfg-btn-primary":"bfg-btn-ghost"}`} disabled={state!=="ready"||!destinations[card.key]} style={{ marginTop: 10 }}
+                onClick={() => state==="ready"&&navigate(destinations[card.key])} data-testid={`bfg-output-open-${card.key}`}>
+                {state!=="ready"&&<Lock size={14}/>} {card.action}
+              </button>
+            </section>
           );
         })}
       </div>

@@ -8,7 +8,7 @@ const QUESTIONS = [
   ["support_needs", "Identify Where New Board Members Must Support You", "Which areas do you specifically need new board members to help your organization with right now, and why?"],
 ];
 
-export const RecruitmentGameIntake = ({ onComplete }) => {
+export const RecruitmentGameIntake = ({ onComplete, returnOnComplete = false }) => {
   const [assessment, setAssessment] = useState(null);
   const [answers, setAnswers] = useState({});
   const [step, setStep] = useState(0);
@@ -30,7 +30,8 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
       if (step < 3) setStep(step + 1);
       else {
         const response = await memberApi.post(`/recruit/free/${assessment.token}/result`);
-        setAssessment({ ...assessment, result: response.data.result }); setStep(4); onComplete?.();
+        setAssessment({ ...assessment, result: response.data.result });
+        if (returnOnComplete) onComplete?.(); else setStep(4);
       }
     } catch (e) { setError(e.response?.data?.detail || "We could not save this answer."); }
     setBusy(false);

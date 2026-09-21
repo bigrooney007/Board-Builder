@@ -109,6 +109,8 @@ def create_guided_product_router(db):
             if not existing:
                 project_id=secrets.token_hex(16)
                 await db.sp_projects.insert_one({"project_id":project_id,"guided_session_id":payload.session_id,"organization_name":lead.get("organization") or "Organization","founder_name":lead.get("name") or "Organization Leader","founder_email":lead.get("email") or "","founder_title":"","mission":payload.answers.get("mission",""),"status":"Active","generic_form_token":secrets.token_urlsafe(32),"created_at":now})
+            else:
+                await db.sp_projects.update_one({"project_id":existing["project_id"]},{"$set":{"organization_name":lead.get("organization") or existing.get("organization_name") or "Organization","founder_name":lead.get("name") or existing.get("founder_name") or "Organization Leader","founder_email":lead.get("email") or existing.get("founder_email") or "","mission":payload.answers.get("mission",existing.get("mission","")),"updated_at":now}})
             project=existing or await db.sp_projects.find_one({"guided_session_id":payload.session_id},{"_id":0})
             participant_id=secrets.token_hex(16)
             await db.sp_participants.update_one({"project_id":project["project_id"],"email":str(lead.get("email") or "").lower()},{"$setOnInsert":{"participant_id":participant_id,"project_id":project["project_id"],"name":lead.get("name") or "Organization Leader","email":str(lead.get("email") or "").lower(),"role":"Lead User","status":"INVITED","form_token":secrets.token_urlsafe(32),"review_status":"NOT SENT","review_token":secrets.token_urlsafe(32),"created_at":now}},upsert=True)
