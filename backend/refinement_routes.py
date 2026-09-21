@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 import resend
 from auth_service import authenticate_admin
-from ai_service import GENERATION_TYPES
+from ai_service import GENERATION_TYPES, generate_structured
 from member_auth import authenticate_member, require_entitlement
 from opportunity_emails import _send, _wrap
 from workspace_service import get_current_material, new_id, now_iso
@@ -136,19 +136,64 @@ def create_refinement_router(db) -> APIRouter:
             {"owner_user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0})
         if existing:
             return existing
+
         email = (payload.candidate_email or application.get("applicant_email") or "").strip().lower()
-        extracted = ""
+        extracted_email = ""
         if not email and application.get("cv_text"):
             match = EMAIL_RE.search(application["cv_text"])
-            extracted = match.group(0).lower() if match else ""
+            extracted_email = match.group(0).lower() if match else ""
+
+        extracted_references = []
+        cv_text = (application.get("cv_text") or "").strip()
+        if cv_text:
+            try:
+                extracted = await generate_structured(
+                    "cv_reference_extraction",
+                    "CANDIDATE CV / RESUME:\n" + cv_text[:16000],
+                    "Extract only people explicitly identified as professional references/referees. Never infer a referee from employment history.",
+                )
+                for item in (extracted.get("references") or [])[:2]:
+                    name = str(item.get("name") or "").strip()
+                    if not name:
+                        continue
+                    referee_email = str(item.get("email") or "").strip().lower()
+                    extracted_references.append({
+                        "reference_id": new_id(),
+                        "referee_token": secrets.token_urlsafe(24),
+                        "name": name[:200],
+                        "position": str(item.get("position") or "")[:200],
+                        "organization": str(item.get("organization") or "")[:200],
+                        "relationship": str(item.get("relationship") or "")[:300],
+                        "duration": str(item.get("duration") or "")[:200],
+                        "email": referee_email if EMAIL_RE.fullmatch(referee_email or "") else "",
+                        "phone": str(item.get("phone") or "")[:50],
+                        "status": "Ready to Contact" if EMAIL_RE.fullmatch(referee_email or "") else "Needs Contact Details",
+                        "response": None,
+                        "source": "CV",
+                    })
+            except Exception:
+                logger.exception("CV reference extraction failed for %s", payload.application_id)
+
+        process_status = "References Found in CV" if extracted_references else "Not Started"
         process = {
-            "process_id": new_id(), "owner_user_id": member["user_id"], "application_id": payload.application_id,
+            "process_id": new_id(),
+            "owner_user_id": member["user_id"],
+            "application_id": payload.application_id,
             "candidate_name": application.get("profile_snapshot", {}).get("full_name", ""),
-            "candidate_email": email, "extracted_email": extracted,
-            "candidate_token": secrets.token_urlsafe(24), "status": "Not Started",
-            "references": [], "created_at": now_iso(), "updated_at": now_iso(),
+            "candidate_email": email,
+            "extracted_email": extracted_email,
+            "candidate_token": secrets.token_urlsafe(24),
+            "status": process_status,
+            "references": extracted_references,
+            "reference_source": "cv" if extracted_references else "",
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
         }
         await db.reference_processes.insert_one(process.copy())
+        await db.opportunity_applications.update_one(
+            {"application_id": payload.application_id},
+            {"$set": {"reference_check_status": process_status, "updated_at": now_iso()}},
+        )
         return process
 
     @router.get("/workspace/reference-process/{application_id}")
@@ -209,6 +254,9 @@ def create_refinement_router(db) -> APIRouter:
         return {"status": "Sent"}
 
     async def email_referee(request: Request, process: dict, reference: dict):
+        referee_email = str(reference.get("email") or "").strip().lower()
+        if not EMAIL_RE.fullmatch(referee_email or ""):
+            raise HTTPException(status_code=422, detail="This referee does not have a valid email address yet. Ask the applicant to confirm or complete their reference details first.")
         org = await org_name_of(process["owner_user_id"])
         candidate = process.get("candidate_name") or "A candidate"
         url = f"{origin_of(request)}/referee-form/{reference['referee_token']}"
@@ -219,7 +267,7 @@ def create_refinement_router(db) -> APIRouter:
                 f"<p><a href='{url}' style='display:inline-block;background:#087e5b;color:#fff;padding:13px 22px;border-radius:6px;text-decoration:none;font-weight:bold;'>Provide Reference</a></p>"
                 f"<p>Your response will be shared with the organization reviewing the candidate.</p>"
                 f"<p>Thank you for your time.</p>")
-        await _send("BOARD_APPLICANT_SENDER", reference["email"], f"Reference Request | {candidate} — {org} Board Application", _wrap("Reference Request", body))
+        await _send("BOARD_APPLICANT_SENDER", referee_email, f"Reference Request | {candidate} — {org} Board Application", _wrap("Reference Request", body))
         await db.reference_processes.update_one(
             {"process_id": process["process_id"], "references.reference_id": reference["reference_id"]},
             {"$set": {"references.$.status": "Sent", "references.$.sent_at": now_iso(), "updated_at": now_iso()}})
@@ -242,8 +290,12 @@ def create_refinement_router(db) -> APIRouter:
         process = await db.reference_processes.find_one({"candidate_token": token}, {"_id": 0})
         if not process:
             raise HTTPException(status_code=404, detail="This form is not available")
-        if process.get("references"):
+        existing_references = process.get("references") or []
+        contacted = any(item.get("status") in {"Sent", "Completed"} for item in existing_references)
+        if existing_references and process.get("reference_source") != "cv":
             raise HTTPException(status_code=409, detail="References have already been provided")
+        if existing_references and process.get("reference_source") == "cv" and contacted:
+            raise HTTPException(status_code=409, detail="Reference confirmation is already in progress. Contact the organization if reference details need to change.")
         if not payload.get("permission_confirmed"):
             raise HTTPException(status_code=422, detail="Please confirm you have permission to share the referees' contact information")
         references = []
@@ -261,7 +313,7 @@ def create_refinement_router(db) -> APIRouter:
         if len(references) != 2:
             raise HTTPException(status_code=422, detail="Please provide two references")
         await db.reference_processes.update_one({"candidate_token": token},
-            {"$set": {"references": references, "status": "References Submitted", "references_submitted_at": now_iso(), "updated_at": now_iso()}})
+            {"$set": {"references": references, "reference_source": "candidate", "status": "References Submitted", "references_submitted_at": now_iso(), "updated_at": now_iso()}})
         await db.opportunity_applications.update_one({"application_id": process["application_id"]},
             {"$set": {"reference_check_status": "References Submitted"}})
         candidate = process.get("candidate_name") or "Your candidate"
