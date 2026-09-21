@@ -885,34 +885,120 @@ export const BackgroundChecksWorkspace = () => {
   );
 };
 
+export const AppointmentOffersWorkspace = () => {
+  const { applications, refresh } = useApplications();
+  const [selectedId, setSelectedId] = useState("");
+  const selected = applications.find((application) => application.application_id === selectedId);
+
+  return (
+    <div data-testid="appointment-offers-workspace">
+      <section className="workspace-panel">
+        <h2>Conditional Or Unconditional Appointment Offer</h2>
+        <p className="material-description">Choose the person you want to appoint. You decide whether the offer should remain conditional while reference/background checks are outstanding, or whether you want to make the Board appointment offer without those checks being conditions.</p>
+        {applications.length === 0 && <p className="workspace-note">Applicants will appear here as they enter your recruitment process.</p>}
+        {applications.map((application) => (
+          <div className="candidate-card" key={application.application_id}>
+            <div className="candidate-card-info">
+              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
+              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
+              <span>References: <b>{application.reference_check_status || "Not Started"}</b> · Background: <b>{application.background_check?.status || "Not decided"}</b></span>
+            </div>
+            <div className="candidate-card-actions">
+              <button className="button button-small" onClick={() => setSelectedId(application.application_id)} data-testid={`appointment-offer-${application.application_id}`}>APPOINTMENT OPTIONS</button>
+            </div>
+          </div>
+        ))}
+        {selected && <AppointmentOfferPanel application={selected} onChanged={refresh} key={`offer-${selected.application_id}-${selected.updated_at || ""}`} />}
+      </section>
+    </div>
+  );
+};
+
+const AppointmentOfferPanel = ({ application, onChanged }) => {
+  const { byType, refresh } = useMaterials(application.application_id);
+  const name = application.profile_snapshot?.full_name || application.applicant_email;
+  const refreshAll = async () => { await refresh(); if (onChanged) await onChanged(); };
+
+  return (
+    <div className="detail-section" data-testid="appointment-offer-panel">
+      <h3>Appointment Offer — {name}</h3>
+      <MaterialCard
+        type="conditional_offer"
+        title="Conditional Board Appointment Email"
+        buttonLabel="Generate Conditional Appointment Email"
+        description="Use this when you want to offer the Board position but keep an outstanding reference check and/or required background check as a condition."
+        applicationId={application.application_id}
+        material={byType.conditional_offer}
+        refresh={refreshAll}
+        approvable
+        extraActions={byType.conditional_offer?.status === "Approved" ? (
+          <SendMaterialButton
+            type="conditional_offer"
+            applicationId={application.application_id}
+            recipientEmail={application.applicant_email || ""}
+            label={application.emails_sent?.conditional_offer ? "Send Updated Conditional Offer" : "Send Conditional Appointment"}
+            sentAt={application.emails_sent?.conditional_offer}
+            onSent={refreshAll}
+          />
+        ) : null}
+      />
+
+      <MaterialCard
+        type="unconditional_offer"
+        title="Unconditional Board Appointment Offer Email"
+        buttonLabel="Generate Unconditional Appointment Offer"
+        description="Use this when you have decided to offer the Board position without making reference or background-check completion a condition of the offer. Onboarding still follows as its own stage."
+        applicationId={application.application_id}
+        material={byType.unconditional_offer}
+        refresh={refreshAll}
+        approvable
+        extraActions={byType.unconditional_offer?.status === "Approved" ? (
+          <SendMaterialButton
+            type="unconditional_offer"
+            applicationId={application.application_id}
+            recipientEmail={application.applicant_email || ""}
+            label={application.emails_sent?.unconditional_offer ? "Send Updated Unconditional Offer" : "Send Unconditional Appointment Offer"}
+            sentAt={application.emails_sent?.unconditional_offer}
+            onSent={refreshAll}
+          />
+        ) : null}
+      />
+    </div>
+  );
+};
+
 export const OnboardingPreparation = () => {
-  const { applications } = useApplications();
+  const { applications, refresh: refreshApps } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   const [branding] = useBranding();
   const [session, setSession] = useState({});
   const [selectedId, setSelectedId] = useState("");
-  const [detail, setDetail] = useState(null);
+
   useEffect(() => {
     memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
   }, []);
-  useEffect(() => {
-    if (!selectedId) { setDetail(null); return; }
-    memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
-  }, [selectedId]);
+
   const candidates = applications.filter((application) =>
-    ["Moving Forward", "Conditional Appointment", "Selected"].includes(application.status)
-    || application.final_outcome === "Joined Board");
-  const onChanged = () => memberApi.get(`/workspace/applications/${selectedId}`).then((response) => setDetail(response.data.application));
+    application.emails_sent?.conditional_offer
+    || application.emails_sent?.unconditional_offer
+    || application.appointment_offer_type
+    || application.status === "Conditional Appointment"
+    || application.status === "Selected"
+    || application.final_outcome === "Joined Board"
+  );
+  const selected = candidates.find((application) => application.application_id === selectedId);
+
   return (
     <div data-testid="onboarding-preparation-workspace">
       <section className="workspace-panel" data-testid="onboarding-date-section">
         <h2>Set The Onboarding Date</h2>
-        <p className="material-description">Save the date and delivery details once. These details are inserted into the conditional appointment email automatically.</p>
+        <p className="material-description">Set the date, time and format for the onboarding conversation.</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
       </section>
+
       <section className="workspace-panel" data-testid="onboarding-materials-section">
         <h2>Generate The Onboarding Materials</h2>
-        <p className="material-description">Generate and approve the Organization Overview, Board Manual, three agreements and Board Member Profile Form before preparing the conditional appointment email.</p>
+        <p className="material-description">Prepare the Organization Overview, Board Manual, agreements and Board Member Profile Form that the new Board Member will receive for onboarding.</p>
         <ul className="readiness-list" data-testid="prepare-status-list">
           {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
         </ul>
@@ -926,17 +1012,57 @@ export const OnboardingPreparation = () => {
         ))}
         <BoardProfilePanel />
       </section>
-      <section className="workspace-panel" data-testid="conditional-offer-section">
-        <h2>Send The Conditional Appointment Email</h2>
-        <p className="material-description">Select a candidate you have decided to move forward. Their email carries every approved onboarding link and the saved onboarding date. If references or a required background check are still pending, the appointment remains conditional until those checks are complete.</p>
-        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you decide they are moving forward from the interview stage.</p>}
+
+      <section className="workspace-panel" data-testid="onboarding-candidate-section">
+        <h2>Onboard The New Board Member</h2>
+        <p className="material-description">Choose someone who has received an appointment offer. Generate their onboarding email, send the secure onboarding links, facilitate the session and then record exactly what was agreed.</p>
+        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you send a conditional or unconditional appointment offer.</p>}
         {candidates.map((application) => (
           <button className={`button ${selectedId === application.application_id ? "" : "button-back"}`} style={{ marginRight: 8, marginBottom: 8 }} key={application.application_id} onClick={() => setSelectedId(application.application_id)} data-testid={`select-onboarding-candidate-${application.application_id}`}>
             {application.profile_snapshot?.full_name || application.applicant_email}
           </button>
         ))}
-        {detail && <ConditionalPanel application={detail} orgMaterials={orgMaterials} session={session} onChanged={onChanged} profileReady key={`conditional-${detail.application_id}`} />}
+
+        {selected && (
+          <CandidateOnboardingPanel
+            application={selected}
+            onChanged={refreshApps}
+            key={`candidate-onboarding-${selected.application_id}-${selected.updated_at || ""}`}
+          />
+        )}
       </section>
+    </div>
+  );
+};
+
+const CandidateOnboardingPanel = ({ application, onChanged }) => {
+  const { byType, refresh } = useMaterials(application.application_id);
+  const refreshAll = async () => { await refresh(); if (onChanged) await onChanged(); };
+
+  return (
+    <div className="detail-section" data-testid="candidate-onboarding-panel">
+      <h3>Onboarding — {application.profile_snapshot?.full_name || application.applicant_email}</h3>
+      <MaterialCard
+        type="onboarding_email"
+        title="Board Onboarding Email"
+        buttonLabel="Generate Board Onboarding Email"
+        description="Creates one practical email with the saved onboarding date and the secure Organization Overview, Board Manual, agreements and Board Member Profile links."
+        applicationId={application.application_id}
+        material={byType.onboarding_email}
+        refresh={refreshAll}
+        approvable
+        extraActions={byType.onboarding_email?.status === "Approved" ? (
+          <SendMaterialButton
+            type="onboarding_email"
+            applicationId={application.application_id}
+            recipientEmail={application.applicant_email || ""}
+            label={application.emails_sent?.onboarding_email ? "Send Updated Onboarding Email" : "Send Onboarding Email"}
+            sentAt={application.emails_sent?.onboarding_email}
+            onSent={refreshAll}
+          />
+        ) : null}
+      />
+      <OnboardingConclusionPanel application={application} />
     </div>
   );
 };
@@ -997,58 +1123,53 @@ const OnboardingConclusionPanel = ({ application }) => {
 
 const MemberReadiness = ({ application, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
-  const [signatures, setSignatures] = useState([]);
-  const [profileLink, setProfileLink] = useState(null);
-  useEffect(() => {
-    memberApi.get("/workspace/signatures", { params: { application_id: application.application_id } }).then((r) => setSignatures(r.data.signatures)).catch(() => {});
-    memberApi.get(`/workspace/board-profile-link/${application.application_id}`).then((r) => setProfileLink(r.data)).catch(() => {});
-  }, [application.application_id]);
-  const signatureStatus = (type) => (signatures.find((s) => s.agreement_type === type) || {}).status || "Not Sent";
   const joined = application.final_outcome === "Joined Board";
   const confirmed = joined || application.status === "Selected";
-  const refsDone = application.reference_check_status === "Completed";
-  const backgroundStatus = application.background_check?.status || "Not started";
-  const backgroundReady = ["Completed", "Not Required"].includes(backgroundStatus);
-  const agreementsSigned = AGREEMENTS.every(([type]) => signatureStatus(type) === "Signed");
-  const profileDone = Boolean(profileLink?.response);
-  const readyForAppointment = refsDone && backgroundReady && agreementsSigned && profileDone;
+  const conclusionSaved = Boolean(application.onboarding_conclusion?.saved_at);
+  const referenceStatus = application.reference_check_status || "Not Started";
+  const backgroundStatus = application.background_check?.status || "Not decided";
+
   const confirmFormal = async () => {
-    if (!window.confirm(`Formally confirm ${application.profile_snapshot?.full_name}'s appointment to the Board? You control this decision — it is never automatic.`)) return;
+    if (!window.confirm(`Formally confirm ${application.profile_snapshot?.full_name}'s final appointment to the Board? This is your decision and is never made automatically by the platform.`)) return;
     try {
       await memberApi.patch(`/workspace/applications/${application.application_id}`, { status: "Selected" });
       if (onChanged) onChanged();
-    } catch { window.alert("The confirmation could not be saved. Please try again."); }
+    } catch (error) {
+      window.alert(error.response?.data?.detail || "The confirmation could not be saved. Please try again.");
+    }
   };
+
   return (
     <div className="onboarding-applicant" data-testid={`onboarding-${application.application_id}`}>
-      <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}{!joined && confirmed && <span className="blog-status-badge published">Formal Appointment Confirmed</span>}</h3>
+      <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}{!joined && confirmed && <span className="blog-status-badge published">Final Appointment Confirmed</span>}</h3>
+
       <ul className="readiness-list" data-testid="member-readiness">
-        <li className={refsDone ? "done" : ""}>Reference Process: {application.reference_check_status || "Not Started"}{application.reference_check_status === "References Submitted" ? " (submitted is not completed — finish the reference process)" : ""}</li>
-        <li className={backgroundReady ? "done" : ""}>Background Check: {backgroundStatus}</li>
-        {AGREEMENTS.map(([type, title]) => <li key={type} className={signatureStatus(type) === "Signed" ? "done" : ""}>{title}: {signatureStatus(type)}</li>)}
-        <li className={profileLink?.response ? "done" : ""}>Board Member Profile: {profileLink?.response ? "Completed" : profileLink?.link ? "Sent" : "Not Sent"}</li>
+        <li className={conclusionSaved ? "done" : ""}>Onboarding Conclusion / Role Agreement: {conclusionSaved ? "Completed" : "Not Completed"}</li>
+        <li>Reference Check: {referenceStatus}</li>
+        <li>Background Check: {backgroundStatus}</li>
       </ul>
+
       {!confirmed && (
         <>
-          <button className="button" disabled={!readyForAppointment} onClick={confirmFormal} data-testid="confirm-ready-button">Confirm Formal Appointment</button>
-          {!readyForAppointment && <p className="workspace-note" data-testid="formal-appointment-blocked-note">Formal Appointment becomes available after the automated reference check is complete, the background check is completed or marked Not Required, all three agreements are signed and the Board Member Profile Form is completed.</p>}
+          <button className="button" disabled={!conclusionSaved} onClick={confirmFormal} data-testid="confirm-ready-button">CONFIRM FINAL BOARD APPOINTMENT</button>
+          {!conclusionSaved && <p className="workspace-note">Complete the onboarding conversation and save the Onboarding Conclusion / Role Agreement before confirming the final appointment. Reference and background checks are shown for your information but do not control your appointment decision.</p>}
         </>
       )}
+
       {confirmed && (
         <>
-          <OnboardingConclusionPanel application={application} />
           <MaterialCard type="formal_appointment_letter" title="Formal Board Appointment Letter" buttonLabel="Generate Formal Appointment Letter"
-            description="The organization's formal written confirmation of this appointment — a professional letter with your organization details, the issue date, the member's details and an authorized signatory block. Approve it and its secure view link is included in the Final Appointment Email."
+            description="The formal written confirmation of the person's final Board appointment after onboarding."
             applicationId={application.application_id} material={byType.formal_appointment_letter} refresh={refresh} approvable
             extraActions={byType.formal_appointment_letter ? (
               <button className="button button-back" onClick={() => downloadMaterialPdf(byType.formal_appointment_letter)} data-testid={`letter-pdf-${application.application_id}`}><Download size={14} /> Download PDF</button>
             ) : null} />
           <MaterialCard type="formal_appointment_email" title={applicantModulesText.formalBoardAppointmentEmail} buttonLabel="Generate Final Board Appointment Email"
-            description="Formally confirms the appointment, welcomes them to the board and delivers the approved onboarding resources — the Formal Appointment Letter link, documents to review and agreements to sign. Only APPROVED documents are linked; unapproved ones are omitted until you approve them."
+            description="Confirms the final appointment after onboarding and delivers the approved Formal Board Appointment Letter."
             applicationId={application.application_id} material={byType.formal_appointment_email} refresh={refresh} approvable
             extraActions={byType.formal_appointment_email?.status === "Approved" ? (
               <SendMaterialButton type="formal_appointment_email" applicationId={application.application_id}
-                label={application.emails_sent?.formal_appointment_email ? "Send Updated" : `Send to ${application.applicant_email || "candidate"}`}
+                label={application.emails_sent?.formal_appointment_email ? "Send Updated Final Appointment" : `Send Final Appointment to ${application.applicant_email || "candidate"}`}
                 sentAt={application.emails_sent?.formal_appointment_email} onSent={onChanged} />
             ) : null} />
         </>
@@ -1162,12 +1283,14 @@ export const Module6Onboarding = () => {
 
 export const FormalAppointmentWorkspace = () => {
   const { applications, refresh } = useApplications();
-  const candidates = applications.filter((application) => application.reference_check_status === "Completed"
-    || ["Conditional Appointment", "Selected"].includes(application.status)
-    || application.final_outcome === "Joined Board");
+  const candidates = applications.filter((application) =>
+    application.onboarding_conclusion?.saved_at
+    || application.status === "Selected"
+    || application.final_outcome === "Joined Board"
+  );
   return (
     <div data-testid="formal-appointment-workspace">
-      {candidates.length === 0 && <p className="workspace-note">Candidates appear here after their automated reference check is complete.</p>}
+      {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you complete onboarding and save their Onboarding Conclusion / Role Agreement.</p>}
       {candidates.map((application) => <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />)}
     </div>
   );
