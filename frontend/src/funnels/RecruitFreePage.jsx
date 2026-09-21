@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
-import { useMemberAuth } from "@/member/MemberAuthContext";
 import { memberApi } from "@/member/api";
 import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
@@ -38,7 +37,6 @@ const QUESTIONS = [
 
 export default function RecruitFreePage() {
   const navigate = useNavigate();
-  const { member, loading } = useMemberAuth();
   const [stage, setStage] = useState("landing"); // landing | q0..q3 | generating | result
   const [lead, setLead] = useState({ name: "", email: "", organization: "", count: "", notSure: false });
   const [assessment, setAssessment] = useState(null);
@@ -71,20 +69,16 @@ export default function RecruitFreePage() {
     setStage(idx === -1 ? "generating" : `q${idx}`);
   }, []);
 
-  // Public visits start clean. Paid onboarding deliberately resumes the lead created before checkout.
+  // The four-question Recruitment Game lives inside the paid dashboard.
+  // Legacy onboarding links must never reopen the old pre-dashboard assessment journey.
   useEffect(() => {
     const onboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
-    if (!onboarding) { localStorage.removeItem("recruitFreeToken"); return; }
-    if (!loading && !member) {
-      const sid = new URLSearchParams(window.location.search).get("session_id") || "";
-      const next = "/recruit?onboarding=1" + (sid ? `&session_id=${encodeURIComponent(sid)}` : "");
-      navigate("/login?next=" + encodeURIComponent(next), { replace: true });
+    if (onboarding) {
+      navigate("/app/board-recruitment", { replace: true });
       return;
     }
-    const token = localStorage.getItem("recruitFreeToken");
-    if (!token) { setError("We could not find your Recruitment setup. Please sign in or contact support."); return; }
-    axios.get(API + "/recruit/free/" + token).then((r) => resumeFrom(r.data)).catch(() => setError("We could not reopen your Recruitment setup."));
-  }, [resumeFrom, loading, member, navigate]);
+    localStorage.removeItem("recruitFreeToken");
+  }, [navigate]);
 
   useEffect(() => {
     if (stage === "landing") play("recruitment-free-entry");
