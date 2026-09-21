@@ -36,7 +36,7 @@ export default function StrategicPlanningDashboard(){
  const stop=()=>{recognition.current?.stop();presentationRecognition.current?.stop();setListening(false)};
  const decisionReady=value=>Array.isArray(value)?value.length>0:Boolean(value);
  const saveSessionDecision=async(key,value)=>{setDecisions(current=>({...current,[key]:value}));try{await axios.post(`${API}/guided/strategic-planning/session/decision`,{session_id:sid,section_key:key,decision:value})}catch(e){setMsg(e.response?.data?.detail||"We could not save that Board decision.")}};
- const toggleSessionIdea=(key,participantId)=>{const current=Array.isArray(decisions[key])?decisions[key]:[];const next=current.includes(participantId)?current.filter(x=>x!==participantId):[...current,participantId];if(next.length)saveSessionDecision(key,next);else setDecisions(value=>({...value,[key]:[]}))};
+ const toggleSessionIdea=(key,participantId)=>{const current=Array.isArray(decisions[key])?decisions[key]:[];const next=current.includes(participantId)?current.filter(x=>x!==participantId):[...current,participantId];saveSessionDecision(key,next)};
  const updateDelegate=(id,field,value)=>setDelegates(current=>current.map(item=>item.delegation_id===id?{...item,[field]:value}:item));
  const saveDelegates=()=>act("save-delegates",()=>axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates}));
  const moveSession=async i=>{setSessionStep(i);await axios.post(`${API}/guided/strategic-planning/session/progress`,{session_id:sid,current_section_index:i})};
