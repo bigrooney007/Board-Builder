@@ -31,7 +31,7 @@ RECOMMEND_QUESTION = "Based on your direct experience with {candidate}, would yo
 REFEREE_IDENTITY_FIELDS = ["name", "position", "organization", "relationship", "duration"]
 RECOMMEND_OPTIONS = ["Yes", "No", "I would need more information to say"]
 
-SENDABLE_TYPES = {"after_interview_thank_you", "before_interview_rejection", "conditional_offer", "formal_appointment_email", "portfolio_email", "after_interview_rejection", "general_rejection_email", "interview_invitation"}
+SENDABLE_TYPES = {"after_interview_thank_you", "before_interview_rejection", "conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "portfolio_email", "after_interview_rejection", "general_rejection_email", "interview_invitation"}
 
 
 class SendCandidateForm(BaseModel):
@@ -399,28 +399,6 @@ def create_refinement_router(db) -> APIRouter:
         structured = material["current"].get("structured") or {}
         subject = structured.get("subject") or GENERATION_TYPES[payload.type]["title"]
         body_text = structured.get("body") or material["current"]["display_text"]
-        if payload.type == "conditional_offer":
-            expected_tokens = []
-            for doc_type in ["organization_overview", "board_manual"]:
-                document = await db.generated_materials.find_one(
-                    {"user_id": member["user_id"], "type": doc_type, "application_id": "", "status": "Approved"},
-                    {"_id": 0, "material_id": 1})
-                share = await db.share_links.find_one({"material_id": (document or {}).get("material_id", "")}, {"_id": 0, "share_token": 1})
-                if not share:
-                    raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
-                expected_tokens.append(share["share_token"])
-            signatures = await db.signature_requests.find(
-                {"owner_user_id": member["user_id"], "application_id": payload.application_id,
-                 "agreement_type": {"$in": ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]},
-                 "status": {"$ne": "Void"}}, {"_id": 0, "token": 1}).to_list(10)
-            profile_link = await db.board_profile_links.find_one(
-                {"user_id": member["user_id"], "application_id": payload.application_id}, {"_id": 0, "token": 1})
-            if len(signatures) != 3 or not profile_link:
-                raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
-            expected_tokens.extend(record["token"] for record in signatures)
-            expected_tokens.append(profile_link["token"])
-            if any(token not in body_text for token in expected_tokens):
-                raise HTTPException(status_code=409, detail="Regenerate the Conditional Appointment Email so it carries every approved onboarding link.")
         if payload.type == "portfolio_email":
             portfolio = await get_current_material(db, member["user_id"], "board_member_portfolio", payload.application_id)
             if portfolio and portfolio["current"]:
@@ -442,6 +420,12 @@ def create_refinement_router(db) -> APIRouter:
             updates["status"] = "Not Moving to Interview"
         if payload.type == "conditional_offer" and application.get("status") not in {"Selected"}:
             updates["status"] = "Conditional Appointment"
+            updates["appointment_offer_type"] = "Conditional"
+        if payload.type == "unconditional_offer":
+            updates["appointment_offer_type"] = "Unconditional"
+            updates["appointment_offer_sent_at"] = now_iso()
+        if payload.type == "onboarding_email":
+            updates["onboarding_email_sent_at"] = now_iso()
         if payload.type == "formal_appointment_email":
             updates["status"] = "Selected"
             updates["final_outcome"] = "Joined Board"
