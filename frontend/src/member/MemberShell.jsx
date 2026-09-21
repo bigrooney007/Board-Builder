@@ -5,7 +5,6 @@ import { ReviewModeBanner } from "@/reviewMode";
 import { AdminPreviewBanner } from "@/adminPreview";
 import { memberShellText } from "../content/appContent";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 
 export const MemberShell = ({ children }) => {
   const { member, logout } = useMemberAuth();
@@ -15,8 +14,7 @@ export const MemberShell = ({ children }) => {
     <div className="member-shell">
       <AdminPreviewBanner />
       <ReviewModeBanner />
-      <nav className="site-nav member-nav" data-testid="member-navigation">
-        <Link className="brand" to="/" data-testid="member-home-logo"><img src={logoUrl} alt={memberShellText.nonprofitBoardBuilder} /></Link>
+      <nav className="site-nav member-nav" data-testid="member-navigation" style={{ justifyContent: "flex-end" }}>
         {member ? (
           <div className="member-nav-right">
             <span className="member-nav-name" data-testid="member-nav-name">{member.first_name}</span>
