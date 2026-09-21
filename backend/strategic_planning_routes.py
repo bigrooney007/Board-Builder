@@ -1992,7 +1992,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         await db.support_requests.insert_one(record.copy());owner=os.environ.get("OWNER_NOTIFICATION_EMAIL") or os.environ.get("OWNER_EMAIL")
         if owner:
             try:
-                resend.api_key=os.environ["RESEND_API_KEY"].strip('"');html="<h2>Strategic Planning Support Request</h2>"+"".join(f"<p><strong>{k}:</strong> {str(v)}</p>" for k,v in {"Name":record["name"],"Organization":record["organization"],"Email":record["email"],"Support type":support_type,"Message":message}.items());email_message={"from":os.environ["NONPROFIT_SENDER"],"to":[owner],"subject":f"Strategic Planning support request | {p['organization_name']}","html":html};
+                resend.api_key=os.environ["RESEND_API_KEY"].strip('"');html="<h2>Strategic Planning Support Request</h2>"+"".join(f"<p><strong>{k}:</strong> {str(v)}</p>" for k,v in {"Name":record["name"],"Organization":record["organization"],"Email":record["email"],"Support type":support_type,"Message":message}.items());email_message={"from":os.environ["NONPROFIT_SENDER"],"to":[owner],"subject":f"Strategic Planning support request | {p['organization_name']}","html":html}
                 if p.get("founder_email"):email_message["reply_to"]=[p["founder_email"]]
                 await resend.Emails.send_async(email_message);await db.support_requests.update_one({"support_request_id":record["support_request_id"]},{"$set":{"delivery_status":"Sent"}})
             except Exception:
