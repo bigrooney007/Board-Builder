@@ -30,6 +30,7 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v3"
+RECRUITMENT_FIXTURE_VERSION = "v4"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -272,10 +273,10 @@ def applicant_answers() -> dict:
 def create_admin_dashboard_preview_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/admin/dashboard-preview")
 
-    async def preview_member(admin: dict) -> dict:
+    async def preview_member(admin: dict, fixture_version: str = FIXTURE_VERSION) -> dict:
         fingerprint = hashlib.sha256(admin["user_id"].encode("utf-8")).hexdigest()[:16]
-        user_id = f"admin-dashboard-preview-{FIXTURE_VERSION}-{fingerprint}"
-        email = f"dashboard-preview-{FIXTURE_VERSION}-{fingerprint}@nonprofitboardbuilder.internal"
+        user_id = f"admin-dashboard-preview-{fixture_version}-{fingerprint}"
+        email = f"dashboard-preview-{fixture_version}-{fingerprint}@nonprofitboardbuilder.internal"
         now = now_iso()
         await db.members.update_one(
             {"user_id": user_id},
@@ -287,7 +288,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "internal_admin_entitlement": True,
                     "internal_dashboard_preview": True,
                     "review_mode": True,
-                    "admin_preview_fixture_version": FIXTURE_VERSION,
+                    "admin_preview_fixture_version": fixture_version,
                     "updated_at": now,
                 },
                 "$setOnInsert": {
@@ -1500,7 +1501,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         config = PRODUCTS.get(product)
         if not config:
             raise HTTPException(status_code=404, detail="Unknown product dashboard")
-        member = await preview_member(admin)
+        member = await preview_member(
+            admin,
+            RECRUITMENT_FIXTURE_VERSION if product == "recruitment" else FIXTURE_VERSION,
+        )
         if config["entitlements"]:
             await db.members.update_one(
                 {"user_id": member["user_id"]},
