@@ -488,7 +488,7 @@ NEVER mention AI."""},
     "portfolio_email": {"module": 6, "title": "Board Member Portfolio Email", "per_application": True, "schema": {"subject": "string", "body": "string — a short professional email to the board member sharing their completed Board Member Portfolio"}},
     "formal_appointment_email": {"module": 6, "title": "Final Board Appointment Email", "per_application": True, "schema": {
         "subject": "Exactly: Congratulations! Your Appointment to the Board — [actual organization name]",
-        "body": "The complete candidate-specific Final Board Appointment Email. Clearly confirm the formal appointment, welcome the person to the actual Board, briefly connect their verified experience to the mission/Board need, explain that onboarding now begins, and include only actual supplied Formal Appointment Letter/onboarding-document/session links. Never describe the appointment as conditional.",
+        "body": "The complete candidate-specific Final Board Appointment Email sent AFTER onboarding. Clearly confirm the final formal appointment, welcome the person to the actual Board, briefly connect their verified experience and the onboarding agreement to the mission/Board need, and include the actual supplied Formal Appointment Letter link where available. Never describe the appointment as conditional and never tell them onboarding is still ahead.",
     }, "note": """You are writing the FINAL BOARD APPOINTMENT EMAIL from a nonprofit founder/executive director to ONE person whose Board appointment has now been formally confirmed.
 The appointment decision has already been made by the founder.
 The applicable pre-appointment reference/background steps are complete or not required according to the supplied status.
@@ -498,13 +498,13 @@ The email should:
 2. Clearly state that the organization is pleased to FORMALLY CONFIRM their appointment to the actual Board.
 3. Include 1-2 concise candidate-specific sentences connecting their VERIFIED experience to the organization's actual mission/Board priorities.
 4. Welcome them into Board service.
-5. Explain that the next step is onboarding.
+5. Acknowledge that onboarding has been completed and that the organization is now confirming the final appointment.
 6. Provide the actual Formal Appointment Letter link ONLY if an exact secure link is supplied in context.
 7. Provide the approved onboarding-resource links actually supplied in context:
 REVIEW: Organization Overview; Board Member Manual.
 COMPLETE / SIGN: Board Member Profile Form; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement.
 Omit any document that is not applicable or for which no approved/current link exists. Never invent links. Do not ask the recipient to sign an agreement already marked Signed.
-8. If actual onboarding-session details are supplied, include those exact details. If no onboarding session details are supplied, say naturally that the organization will confirm onboarding arrangements separately.
+8. Do not invite the person to onboarding again. Onboarding is already complete at this stage.
 9. Close with a warm organization-specific welcome and the founder's actual contact details.
 NEVER say: conditional appointment; subject to references; subject to background checks — when those conditions are already complete/not applicable.
 Do not expose reference responses or background-check details. Do not assign detailed individual Board responsibilities in this email. Do not invent term lengths, officer titles, meeting schedules, deadlines or legal requirements.
@@ -527,7 +527,7 @@ Professional, celebratory, clear and human."""},
         "why_your_contribution_matters": "string — one concise candidate-specific paragraph connecting verified experience to the actual mission/Board need without invented praise.",
         "appointment_details": ["string — only verified appointment details such as Board title, effective date, term or officer position. Never invent. Empty array when no additional formal details are known."],
         "board_service": "string — concise high-level statement of the organization's actual Board-service expectations, pointing naturally toward the Board Member Agreement/Manual rather than reproducing them.",
-        "what_happens_next": "string — concise explanation that formal onboarding and the organization's onboarding documents/process now follow.",
+        "what_happens_next": "string — concise explanation of what follows after final appointment, such as receiving their Board Member Portfolio, beginning agreed responsibilities and joining the organization's Board work. Do not say onboarding is still ahead.",
         "welcome": "string — short professional welcome to the Board connected to the organization's actual mission.",
         "signatory": {
             "name": "string — actual founder/authorized signatory",
@@ -549,7 +549,7 @@ FORMAL LETTER STRUCTURE:
 7. One concise personalized paragraph explaining why their verified experience can make a meaningful contribution to this organization's mission/Board.
 8. Appointment details only where verified.
 9. Concise high-level statement of Board service expectations.
-10. Explanation that onboarding now follows.
+10. Explanation of what follows after final appointment, based only on supplied information.
 11. Warm formal welcome.
 12. Authorized signatory block.
 DO NOT invent: addresses; effective dates; term lengths; officer positions; compensation; employment status; legal obligations; bylaws; voting rights; meeting frequency; fundraising minimums; donation requirements; responsibilities not supplied.
