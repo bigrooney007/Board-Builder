@@ -253,6 +253,24 @@ DO NOT include: Board onboarding-session details; Board Manual; Organization Ove
 Do not assign detailed Board responsibilities (no committee chairs, organizational functions, donors, fundraising targets, teams or officer positions unless that exact appointment was formally established and supplied). Do not invent deadlines. Do not invent links. Do not invent legal conditions. Do not expose confidential due-diligence information. Do not ask the candidate to provide references again if the status shows they were already submitted. Do not tell the candidate that a background check is required unless the supplied organization/candidate status establishes that it is.
 Never mention AI.
 Keep the email approximately 225-350 words. Professional, warm, significant and clear."""},
+    "unconditional_offer": {"module": 5, "title": "Unconditional Board Appointment Offer Email", "per_application": True, "schema": {
+        "subject": "string — professional subject confirming the organization is offering the person a Board appointment without making reference/background completion a condition",
+        "body": "string — concise candidate-specific appointment-offer email. Clearly state that the organization is offering the Board position without reference/background completion being a condition of the offer; connect the candidate's verified experience to the mission/Board need; explain that onboarding is the next stage; do not call this the final appointment letter and do not include onboarding links unless supplied."
+    }, "note": """The founder/organization has deliberately chosen to make an UNCONDITIONAL Board appointment offer to this candidate.
+Do not evaluate or select the person. The human already made the decision.
+Write a professional, warm email that: confirms the organization is offering the person the Board position; makes clear that the offer itself is not conditional on completing reference/background checks; briefly connects verified candidate experience to the organization's actual mission or Board need; explains that onboarding is the next stage; and signs with the founder's actual supplied details.
+Do not imply that reference/background checks were completed when they were not. Do not expose reference responses or background-check details. Do not invent legal requirements, terms, officer titles, responsibilities, dates or links.
+This is the organization's appointment OFFER before onboarding. It is not the final post-onboarding appointment letter/email.
+Never mention AI. Keep it concise and professional."""},
+    "onboarding_email": {"module": 5, "title": "Board Onboarding Email", "per_application": True, "schema": {
+        "subject": "string — professional onboarding subject using the actual organization name",
+        "body": "string — complete candidate-specific onboarding email using the supplied onboarding date/time/session details and every exact secure link supplied for Organization Overview, Board Manual, Board Member Agreement, Confidentiality Agreement, Conflict of Interest Agreement and Board Member Profile Form. Do not invent or omit supplied links."
+    }, "note": """Write the practical onboarding email sent after the organization has chosen to proceed with this candidate.
+This email is about ONBOARDING, not selection and not due diligence.
+Use the exact onboarding date/time/timezone/format supplied. Include only real supplied meeting details.
+Include every exact secure link supplied by the backend for the Organization Overview, Board Manual, Board Member Agreement, Confidentiality Agreement, Conflict of Interest Agreement and Board Member Profile Form. Never invent a URL and never replace a supplied secure URL.
+Explain what the person should review/complete before the onboarding conversation. Keep it clear, organized and professional. Sign with the founder's actual details.
+Do not expose reference/background information. Never mention AI."""},
     "after_interview_rejection": {"module": 5, "title": "After-Interview Rejection Email", "per_application": True, "schema": {
         "subject": "Exactly: Thank You for Meeting With Us",
         "body": "The complete candidate-specific post-interview rejection email. Clearly and respectfully communicate that the candidate will not move forward, thank them for their application and interview time, preserve the relationship, and never invent or expose a rejection reason.",
