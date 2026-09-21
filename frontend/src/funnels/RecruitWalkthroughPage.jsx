@@ -11,6 +11,7 @@ export default function RecruitWalkthroughPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [videoId, setVideoId] = useState("");
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -18,6 +19,10 @@ export default function RecruitWalkthroughPage() {
     const token = localStorage.getItem("recruitFreeToken");
     if (!token) { navigate("/recruit", { replace: true }); return undefined; }
     axios.post(`${API}/recruit/free/${token}/event`, { event: "video_page_viewed" }).catch(() => {});
+    axios.get(`${API}/flow-videos`).then((r) => {
+      const video = (r.data.videos || []).find((item) => item.key === "recruitment_demonstration");
+      setVideoId(video?.youtube_id || "");
+    }).catch(() => {});
     axios.get(`${API}/game/voice/tutorial/recruitment-free`).then((r) => {
       const clip = (r.data.clips || {})["recruitment-free-video-page"];
       if (clip?.ready) {
@@ -60,7 +65,18 @@ export default function RecruitWalkthroughPage() {
         <p style={{ marginTop: 18, fontWeight: 800, fontSize: 18, color: "#111827" }}>Press Play and Watch The Short Video</p>
         <div style={{ marginTop: 18, aspectRatio: "16 / 9", background: "#0F172A", borderRadius: 16, display: "grid", placeItems: "center", overflow: "hidden" }}
           data-testid="recruit-walkthrough-video-slot">
-          <p style={{ color: "#94A3B8", fontSize: 14 }}>Walkthrough video coming soon</p>
+          {videoId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+              title="Board Recruitment Demonstration"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{ width: "100%", height: "100%", border: 0 }}
+              data-testid="recruit-walkthrough-video"
+            />
+          ) : (
+            <p style={{ color: "#94A3B8", fontSize: 14 }}>Demonstration video has not been added yet.</p>
+          )}
         </div>
 
         <h2 style={{ marginTop: 36, fontSize: "clamp(24px, 4vw, 32px)" }}>Start Recruiting The Board Members Your Organization Needs</h2>
