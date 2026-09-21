@@ -820,7 +820,10 @@ def create_workspace_router(db) -> APIRouter:
         await db.opportunities.insert_one(opportunity.copy())
         return opportunity
 
-    CAMPAIGN_TYPES = ["board_recruitment_job_post", "linkedin_post", "recruitment_emails", "social_posts", "referral_request_email"]
+    # These are the four materials the customer can actually generate in the
+    # Recruitment dashboard.  Do not gate launch on hidden/legacy material
+    # types that have no corresponding customer control.
+    CAMPAIGN_TYPES = ["board_recruitment_job_post", "recruitment_emails", "social_posts", "referral_request_email"]
 
     async def opportunity_readiness(user_id, opportunity):
         generated = await db.generated_materials.count_documents(
@@ -876,7 +879,7 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This recruitment campaign is already published")
         readiness = await opportunity_readiness(user_id, opportunity)
         if not (readiness["application_saved"] and readiness["materials_generated"]):
-            raise HTTPException(status_code=409, detail="Generate all five recruitment campaign materials before launching your campaign")
+            raise HTTPException(status_code=409, detail="Generate all four recruitment campaign materials before launching your campaign")
         board_opportunity = await get_current_material(db, user_id, "board_opportunity")
         structured = (board_opportunity["current"].get("structured") or {}) if (board_opportunity and board_opportunity["current"]) else {}
         profile = await get_profile(db, user_id)

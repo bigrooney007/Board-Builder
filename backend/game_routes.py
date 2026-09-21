@@ -315,6 +315,10 @@ def create_game_router(db) -> APIRouter:
             origin = html.escape((payload.origin_url or "").rstrip("/"))
             video_block = f"<p><a href='{html.escape(video_url)}'>Watch your tutorial video</a></p>" if video_url else ""
             dashboard_link = f"<p>You can return to your game anytime at <a href='{origin}/game/dashboard'>{origin}/game/dashboard</a>.</p>" if origin else ""
+            access_block = (f"<p><strong>Account email:</strong> {html.escape(member['email'])}</p>"
+                            f"<p><a href='{origin}/login?next=%2Fgame%2Fdashboard'>Log in to your Board Fundraising Game</a></p>"
+                            f"<p>If you forget your password, use <a href='{origin}/forgot-password'>Forgot Password</a>.</p>"
+                            f"<p>Save this email so you can return to your work later.</p>") if origin else ""
             try:
                 resend.api_key = os.environ["RESEND_API_KEY"]
                 await resend.Emails.send_async({
@@ -324,7 +328,7 @@ def create_game_router(db) -> APIRouter:
                             f"<h2>Welcome to Your Board Fundraising Game</h2>"
                             f"<p>Hello {html.escape(member.get('first_name', ''))},</p>"
                             f"<p>Your Board Fundraising Game is unlocked. Your tutorial video explains how to use the platform, prepare your board and run the game.</p>"
-                            f"{video_block}{dashboard_link}"
+                            f"{video_block}{dashboard_link}{access_block}"
                             f"<p>Next step: play your Board Fundraising Game. When you finish, continue into your dashboard.</p></div>",
                 })
                 await db.game_profiles.update_one(

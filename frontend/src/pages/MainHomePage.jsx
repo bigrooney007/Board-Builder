@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Users, Gamepad2, Map, RefreshCw } from "lucide-react";
+import { ArrowRight, Users, Gamepad2, Map, RefreshCw, Handshake } from "lucide-react";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
@@ -45,6 +45,16 @@ const products = [
     to: "/board-recommitment",
     image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80",
     imageAlt: "Professionals recommitting through a handshake",
+  },
+  {
+    icon: Handshake,
+    eyebrow: "FACILITATED WITH ROONEY",
+    title: "Let Us Organize And Facilitate Your Board Fundraising Game",
+    text: "Apply to have Rooney organize the process, prepare your board and facilitate the Board Fundraising Game with your organization.",
+    cta: "APPLY FOR THE FACILITATED GAME",
+    to: "/organize-board-fundraising-game",
+    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80",
+    imageAlt: "A nonprofit board meeting with a facilitator",
   },
 ];
 

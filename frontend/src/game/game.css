@@ -340,7 +340,7 @@
 .bfg-gg { background: #f1f5f9; color: #0f172a; }
 .bfg-gg h1, .bfg-gg h2, .bfg-gg h3 { color: #0f172a; }
 .bfg-gg p { color: #334155; }
-.bfg-gg-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #0f172a; color: #111827; font-size: 13.5px; position: sticky; top: 0; z-index: 30; }
+.bfg-gg-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #0f172a; color: #ffffff; font-size: 13.5px; position: sticky; top: 0; z-index: 30; }
 .bfg-gg-nav strong { font-family: "Outfit"; }
 .bfg-gg-me { padding: 4px 12px; border-radius: 999px; background: rgba(99, 102, 241, 0.3); font-weight: 700; }
 .bfg-gg-main { max-width: 640px; margin: 0 auto; padding: 22px 16px 70px; }

@@ -123,7 +123,7 @@ export const Module3Launch = ({ mode = "all" }) => {
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{launched ? "Live" : opportunity?.status || "Draft"}</strong></p>
         <ul className="readiness-list">
           <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
-          <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials generated ({readiness.materials_count || 0} of {readiness.materials_total || 5})</li>
+          <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials generated ({readiness.materials_count || 0} of {readiness.materials_total || 4})</li>
         </ul>
         {launched && (
           <div className="member-success" data-testid="published-info">

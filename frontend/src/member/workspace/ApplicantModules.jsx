@@ -157,6 +157,7 @@ export const ApplicantDetail = ({ applicationId, statuses, onChanged, branding }
 
 const ExternalApplicantForm = ({ refresh }) => {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [cvFile, setCvFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -168,9 +169,10 @@ const ExternalApplicantForm = ({ refresh }) => {
     try {
       const payload = new FormData();
       payload.append("name", name);
+      payload.append("email", email.trim());
       payload.append("cv", cvFile);
-      await memberApi.post("/workspace/applications/external", payload, { headers: { "Content-Type": "multipart/form-data" } });
-      setName(""); setCvFile(null);
+      await memberApi.post("/workspace/applications/external", payload);
+      setName(""); setEmail(""); setCvFile(null);
       setMessage("Applicant added. They now use the exact same interview actions as your hosted applicants.");
       refresh();
     } catch (err) { setMessage(err.response?.data?.detail || "Could not add the applicant."); }
@@ -182,6 +184,7 @@ const ExternalApplicantForm = ({ refresh }) => {
       <p className="material-description">{recruitmentWorkspaceText.d_applicantsMayAlsoComeTo}</p>
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
+        <label className="field"><span>Applicant Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
         <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add Applicant"}</button>

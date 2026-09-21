@@ -455,6 +455,11 @@ def create_strategic_planning_router(db) -> APIRouter:
         versions = form.get("approved_versions", [])
         if versions:
             return versions[-1]["content"]
+        # The guided Strategic Planning journey stores its approved form as
+        # the current content document.  This is authoritative when approved
+        # and must be readable by both the lead-user and generic form links.
+        if form.get("status") == "Approved" and form.get("content"):
+            return form["content"]
         raise HTTPException(status_code=409, detail="This planning form is not available yet")
 
     @router.get("/strategic-planning-form/{token}")

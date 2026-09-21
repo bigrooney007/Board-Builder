@@ -51,24 +51,29 @@ export const GameProgress = ({ steps, current }) => (
 );
 
 export const BfgShell = ({ children, nav, shellClass = "" }) => {
-  const content = useGameContent();
   const { pathname } = useLocation();
-  const isRecruitment = pathname === "/recruit" || pathname.startsWith("/recruit/");
+  const identity = pathname.startsWith("/recruit") || pathname.startsWith("/app/board-recruitment")
+    ? { mark: "NB", label: "Board Recruitment", home: "/recruit" }
+    : pathname.startsWith("/strategic") || pathname.startsWith("/community-need") || pathname.startsWith("/area-pack")
+      ? { mark: "SP", label: "Strategic Planning", home: "/strategic-planning" }
+      : pathname.startsWith("/board-recommitment")
+        ? { mark: "BR", label: "Board Recommitment", home: "/board-recommitment" }
+        : pathname.startsWith("/organize-board-fundraising-game")
+          ? { mark: "FG", label: "Facilitated Board Fundraising Game", home: "/organize-board-fundraising-game" }
+          : { mark: "BG", label: "The Board Fundraising Game", home: "/board-fundraising-game" };
   return (
     <div className={`bfg ${shellClass}`.trim()}>
       <header className="bfg-nav">
-        <Link to={isRecruitment ? "/recruit" : "/"} className="bfg-logo" data-testid="bfg-logo-link">
-          <span className="bfg-logo-mark">{isRecruitment ? "NB" : "BG"}</span>
-          <span><strong>Nonprofit Board Builder</strong><em>{isRecruitment ? "Board Recruitment" : "The Board Fundraising Game"}</em></span>
+        <Link to={identity.home} className="bfg-logo" data-testid="bfg-logo-link">
+          <span className="bfg-logo-mark">{identity.mark}</span>
+          <span><strong>Nonprofit Board Builder</strong><em>{identity.label}</em></span>
         </Link>
         <div className="bfg-nav-actions">{nav}</div>
       </header>
       {children}
       <footer className="bfg-footer">
         <p>© {new Date().getFullYear()} Nonprofit Board Builders, LLC. All rights reserved.</p>
-        <a href={content?.footer_recruit_url || "/recruit"} data-testid="bfg-footer-recruit-link">
-          {content?.footer_recruit_label || "Recruit Board Members With Fundraising Experience"}
-        </a>
+        <Link to="/" data-testid="bfg-footer-home-link">Nonprofit Board Builder Home</Link>
       </footer>
     </div>
   );

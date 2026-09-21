@@ -353,20 +353,6 @@ export default function ReactivationStep5() {
         </section>
       )}
 
-      <section style={{ marginTop: 34 }} data-testid="myboard-crosssell">
-        <div className="ar-offer-grid">
-          <article className="ar-offer-card" data-testid="myboard-recruit-cta">
-            <h3>{reactivationStep5Text.stillMissingTheRightPeople}</h3>
-            <p className="ar-offer-copy">{reactivationStep5Text.reactivatingYourCurrentBoardShows}</p>
-            <Link className="button" to="/recruit-your-board-yourself" data-testid="myboard-recruit-button">{reactivationStep5Text.recruitNewBoardMembers}</Link>
-          </article>
-          <article className="ar-offer-card" data-testid="myboard-activate-cta">
-            <h3>{reactivationStep5Text.yourBoardIsBackAt}</h3>
-            <p className="ar-offer-copy">{reactivationStep5Text.theNextStepIsTo}</p>
-            <Link className="button" to="/activate-your-board-yourself" data-testid="myboard-activate-button">ACTIVATE MY BOARD</Link>
-          </article>
-        </div>
-      </section>
     </div>
   );
 }

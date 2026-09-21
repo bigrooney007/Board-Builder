@@ -41,6 +41,10 @@ class BoardMemberCreate(BaseModel):
     phone: str = ""
     role: str = ""
 
+class RecommitmentBrandingUpdate(BaseModel):
+    organization_name: str = Field(min_length=1)
+    logo_data_url: str = ""
+
 
 class ImportRequest(BaseModel):
     application_id: str
@@ -199,7 +203,36 @@ def create_reactivation_router(db) -> APIRouter:
             "transition_options": [ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"],
             "mission": (intake or {}).get("mission", ""),
             "organization_goals": (intake or {}).get("organization_goals", ""),
+            "logo_data_url": (intake or {}).get("logo_data_url", ""),
         }
+
+    @router.get("/reactivation/branding")
+    async def get_recommitment_branding(request: Request):
+        member = await reactivation_member(request)
+        context = await founder_context(member["user_id"])
+        return {"organization_name": context["organization"], "logo_data_url": context.get("logo_data_url", "")}
+
+    @router.put("/reactivation/branding")
+    async def save_recommitment_branding(payload: RecommitmentBrandingUpdate, request: Request):
+        member = await reactivation_member(request)
+        logo = payload.logo_data_url.strip()
+        if logo and (not logo.startswith("data:image/") or len(logo) > 2_500_000):
+            raise HTTPException(422, "Upload a PNG, JPG or WebP logo smaller than 1.8 MB")
+        existing = await db.board_reactivation_intakes.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0}, sort=[("submitted_at", -1)]
+        )
+        now = datetime.now(timezone.utc).isoformat()
+        if existing:
+            await db.board_reactivation_intakes.update_one(
+                {"user_id": member["user_id"], "guided_session_id": existing.get("guided_session_id", "")},
+                {"$set": {"organization_name": payload.organization_name.strip(), "logo_data_url": logo, "submitted_at": now}},
+            )
+        else:
+            await db.board_reactivation_intakes.insert_one({
+                "user_id": member["user_id"], "organization_name": payload.organization_name.strip(),
+                "logo_data_url": logo, "mission": "", "organization_goals": "", "submitted_at": now,
+            })
+        return {"saved": True, "organization_name": payload.organization_name.strip(), "logo_data_url": logo}
 
     async def owned_board_member(user_id: str, member_record_id: str) -> dict:
         record = await db.reactivation_board_members.find_one({"user_id": user_id, "member_record_id": member_record_id}, {"_id": 0})
@@ -353,6 +386,9 @@ def create_reactivation_router(db) -> APIRouter:
 
     async def user_intake(user_id: str) -> dict:
         intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)]) or {}
+        audit = await db.founder_board_audits.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        intake["founder_desired_outcomes"] = audit.get("desired_outcomes", "")
+        intake["founder_board_support_needed"] = audit.get("board_support_needed", "")
         master = await get_master_record(db, user_id=user_id)
         if master:
             for field, value in master_prefill("reactivation", master.get("data", {})).items():
@@ -481,6 +517,7 @@ def create_reactivation_router(db) -> APIRouter:
             "strategic_plan", "board_participated_planning", "planning_involvement",
             "disengage_reason", "disengage_when", "disengagement_signs", "reactivation_attempts", "attempts_outcome",
             "meeting_frequency", "typical_meeting", "clear_responsibilities_after_meetings",
+            "founder_desired_outcomes", "founder_board_support_needed",
         ]}
         context = "ORGANIZATION CONTEXT AND BOARD REACTIVATION INTAKE (provided by the founder):\n" + json.dumps(org_context, indent=1, default=str)
         context += "\n\nORGANIZATION-PERMITTED TRANSITION OPTIONS (the ONLY transitions that may be mentioned): "
@@ -902,6 +939,7 @@ def create_reactivation_router(db) -> APIRouter:
             form = await db.reactivation_forms.find_one({"user_id": record["user_id"]}, {"_id": 0, "intro_text": 1, "status": 1})
             return {
                 "organization_name": context["organization"],
+                "logo_data_url": context.get("logo_data_url", ""),
                 "founder_name": context["founder_name"],
                 "founder_title": context["founder_title"],
                 "introduction": (form or {}).get("intro_text", "") if (form or {}).get("status") == "Approved" else "",
@@ -918,6 +956,7 @@ def create_reactivation_router(db) -> APIRouter:
         context = await founder_context(form["user_id"])
         return {
             "organization_name": context["organization"],
+            "logo_data_url": context.get("logo_data_url", ""),
             "founder_name": context["founder_name"],
             "founder_title": context["founder_title"],
             "introduction": form.get("intro_text", ""),
@@ -1148,7 +1187,8 @@ def create_reactivation_router(db) -> APIRouter:
         intake = await user_intake(member["user_id"])
         org_context = {key: intake.get(key, "") for key in [
             "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
-            "disengage_reason", "expected_contribution", "actually_happening"]}
+            "disengage_reason", "expected_contribution", "actually_happening",
+            "founder_desired_outcomes", "founder_board_support_needed"]}
         context = ("ORGANIZATION CONTEXT:\n" + json.dumps(org_context, indent=1, default=str)
                    + "\n\nTHIS BOARD MEMBER'S ACTUAL PROFILE & RECOMMITMENT FORM RESPONSE:\n"
                    + json.dumps({"name": record["name"], "current_board_role": record.get("role", ""), **record["response"]}, indent=1, default=str))
@@ -1271,7 +1311,8 @@ def create_reactivation_router(db) -> APIRouter:
         intake = await user_intake(user_id)
         org_context = {key: intake.get(key, "") for key in [
             "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
-            "current_skills", "missing_skills", "disengage_reason", "expected_contribution", "actually_happening"]}
+            "current_skills", "missing_skills", "disengage_reason", "expected_contribution", "actually_happening",
+            "founder_desired_outcomes", "founder_board_support_needed"]}
 
         def roster_entry(record: dict) -> dict:
             response = record.get("response") or {}

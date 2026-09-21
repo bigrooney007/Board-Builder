@@ -27,7 +27,7 @@ export default function RecruitWalkthroughPage() {
       }
     }).catch(() => {});
     return () => { if (audioRef.current) audioRef.current.pause(); };
-  }, []);
+  }, [navigate]);
 
   const buy = async () => {
     setBusy(true); setError("");

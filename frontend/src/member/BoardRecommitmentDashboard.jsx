@@ -31,12 +31,27 @@ const MemberResponse = ({ row }) => {
 
 export default function BoardRecommitmentDashboard(){
  const [roster,setRoster]=useState(null);
+ const [branding,setBranding]=useState({organization_name:"",logo_data_url:""});
+ const [brandingMessage,setBrandingMessage]=useState("");
  const [open,setOpen]=useState("1");
  const load=useCallback(()=>memberApi.get("/reactivation/roster").then(r=>setRoster(r.data)).catch(()=>setRoster({members:[]})),[]);
  useEffect(()=>{load()},[load]);
+ useEffect(()=>{memberApi.get("/reactivation/branding").then(r=>setBranding(r.data)).catch(()=>{})},[]);
+ const uploadLogo=file=>{if(!file)return;const reader=new FileReader();reader.onload=()=>setBranding({...branding,logo_data_url:reader.result});reader.readAsDataURL(file)};
+ const saveBranding=async()=>{setBrandingMessage("");try{const r=await memberApi.put("/reactivation/branding",branding);setBranding(r.data);setBrandingMessage("Your organization name and logo are ready for the Recommitment Form.")}catch(e){setBrandingMessage(e.response?.data?.detail||"We could not save your organization branding.")}};
  useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("member");if(requested)setTimeout(()=>document.querySelector(`[data-testid="recommitment-person-${requested}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),150)},[roster]);
  return <MemberShell><main className="member-page sgr" data-testid="board-recommitment-dashboard">
    <header className="member-page-heading"><p className="eyebrow">Nonprofit Board Builder</p><h1>BOARD RECOMMITMENT</h1><p><strong>Get clear answers from disengaged board members, have the right one-on-one conversation, and move forward with people who are ready to serve.</strong></p></header>
+
+   <section className="member-card recommitment-branding" data-testid="recommitment-branding">
+    <h2>Personalize Your Board Recommitment Form</h2>
+    <p>Add your organization name and logo before generating the form. They will appear on the form your Board Members receive.</p>
+    {branding.logo_data_url&&<img src={branding.logo_data_url} alt={`${branding.organization_name||"Organization"} logo`} style={{maxWidth:180,maxHeight:100,objectFit:"contain",margin:"8px auto 18px",display:"block"}}/>}
+    <label className="field"><span>Organization Name <b>*</b></span><input value={branding.organization_name||""} onChange={e=>setBranding({...branding,organization_name:e.target.value})}/></label>
+    <label className="field"><span>Organization Logo</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>uploadLogo(e.target.files?.[0])}/></label>
+    <button className="button" disabled={!branding.organization_name?.trim()} onClick={saveBranding}>SAVE ORGANIZATION BRANDING</button>
+    {brandingMessage&&<p className="member-success">{brandingMessage}</p>}
+   </section>
 
    <CompactSection n="1" title="Generate The Recommitment Form And Email" open={open==="1"} onOpen={()=>setOpen(open==="1"?"":"1")}><p>Generate the form first, then generate the matching email and send its link to each Board Member.</p><ReactivationStep2/></CompactSection>
    <CompactSection n="2" title="Complete The Founder / Executive Director Audit" open={open==="2"} onOpen={()=>setOpen(open==="2"?"":"2")}><FounderBoardAudit/></CompactSection>

@@ -143,6 +143,7 @@ export default function BoardRecommitmentFormPage() {
         {gate === "ready" && (
           <>
             <section className="funnel-hero-banner brp-hero intake-hero" data-testid="recommit-hero">
+              {context.logo_data_url && <img src={context.logo_data_url} alt={`${org} logo`} style={{maxWidth:190,maxHeight:110,objectFit:"contain",margin:"0 auto 18px",display:"block"}} />}
               <h1>Board Member Profile & Recommitment Form</h1>
               <i aria-hidden="true" />
             </section>

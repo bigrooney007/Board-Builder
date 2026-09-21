@@ -1,8 +1,8 @@
 """Batch 2 verification tests — Module 1 (blueprint count) + Module 2 (auto-app,
 campaign generators, publish, tenant isolation, regression).
 
-Budget: 1 (Module 1) + 2 (count variations 7 and Not Sure) + 5 (campaign types)
-= 8 Claude calls total.
+Budget: 1 (Module 1) + 2 (count variations 7 and Not Sure) + 4 (campaign types)
+= 7 Claude calls total.
 """
 import os
 import re
@@ -41,7 +41,6 @@ STRATEGY_INTAKE = {
 
 CAMPAIGN_TYPES = [
     "board_recruitment_job_post",
-    "linkedin_post",
     "recruitment_emails",
     "social_posts",
     "referral_request_email",
@@ -218,7 +217,7 @@ class TestModule2AutoApplication:
         # readiness
         readiness = data["readiness"]
         assert readiness["application_saved"] is True
-        assert readiness["materials_total"] == 5
+        assert readiness["materials_total"] == 4
         assert readiness["materials_count"] == 0
         assert readiness["materials_generated"] is False
         # core_questions returned
@@ -233,10 +232,10 @@ class TestModule2AutoApplication:
         assert "harbor" in opp["slug"].lower()
 
 
-# ---------- Campaign generation (5 Claude calls) ----------
+# ---------- Campaign generation (4 Claude calls) ----------
 @pytest.fixture(scope="session")
 def generated_campaign(member):
-    """Generate all 5 campaign materials. Runs once."""
+    """Generate all four customer-facing campaign materials. Runs once."""
     results = {}
     # ensure opportunity exists + reset count back to 3
     DB.recruitment_profiles.update_one(
@@ -254,7 +253,7 @@ def generated_campaign(member):
 
 
 class TestCampaignGeneration:
-    def test_all_five_generated(self, generated_campaign):
+    def test_all_four_generated(self, generated_campaign):
         assert set(generated_campaign.keys()) == set(CAMPAIGN_TYPES)
 
     def test_apply_url_substituted_and_no_placeholders(self, member, generated_campaign):
@@ -290,7 +289,7 @@ class TestCampaignGeneration:
         assert "[First Name]" not in body
 
     def test_material_edit_persists_after_reload(self, member, generated_campaign):
-        material = generated_campaign["linkedin_post"]
+        material = generated_campaign["social_posts"]
         material_id = material["material_id"]
         edited = "MANUAL EDIT SENTINEL — " + uuid.uuid4().hex[:6]
         r = requests.put(f"{BASE_URL}/api/workspace/materials/{material_id}",
@@ -315,8 +314,8 @@ class TestLaunch:
         readiness = r.json()["readiness"]
         assert readiness["application_saved"] is True
         assert readiness["materials_generated"] is True
-        assert readiness["materials_count"] == 5
-        assert readiness["materials_total"] == 5
+        assert readiness["materials_count"] == 4
+        assert readiness["materials_total"] == 4
 
     def test_publish_success(self, member, generated_campaign):
         r = requests.post(f"{BASE_URL}/api/workspace/opportunity/publish",
@@ -369,7 +368,7 @@ class TestTenantIsolation:
             assert m["user_id"] == other_member["user_id"]
 
     def test_other_member_cannot_fetch_first_members_material_by_id(self, member, other_member, generated_campaign):
-        material_id = generated_campaign["linkedin_post"]["material_id"]
+        material_id = generated_campaign["social_posts"]["material_id"]
         r = requests.get(f"{BASE_URL}/api/workspace/materials/{material_id}",
                          headers=auth(other_member["token"]))
         assert r.status_code == 404
