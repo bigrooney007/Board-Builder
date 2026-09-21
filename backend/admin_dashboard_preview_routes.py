@@ -305,7 +305,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
     async def seed_recruitment_preview(member: dict) -> None:
         now = now_iso()
-        tag = suffix(member)
+        tag = f"{RECRUITMENT_FIXTURE_VERSION}-{suffix(member)}"
         token = f"admin-preview-recruitment-{tag}"
         lead_id = f"admin-preview-recruitment-lead-{tag}"
         answers = recruitment_answers()
