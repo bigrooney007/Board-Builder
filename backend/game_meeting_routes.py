@@ -26,6 +26,7 @@ Reconcile all supplied information into one execution-ready fundraising strategy
 Where the board changed something during the meeting, the meeting decision overrides earlier drafts and ideas.
 Where the transcript does not change a decision, treat the ideas explicitly selected by the Lead User during the Group Game as the Board's adopted direction.
 Where ideas genuinely conflict and no resolution exists in the transcript, present the unresolved difference clearly rather than silently choosing one.
+The Board's explicitly selected ideas, Board-added agreed wording and explicit meeting decisions are the primary authority. Preserve their distinctive language, logic, examples and intended meaning wherever practical. Do not average multiple contributions into vague generic fundraising language simply to make the document sound polished. Organize, connect and operationalize what the Board chose while keeping the Board able to recognize its own thinking. Nonprofit Board Builder recommendations remain subordinate unless the Board explicitly selected or adopted them.
 Divide the fundraising process by audience (Individuals, Businesses, Grantors) and only include audience categories the organisation actually identified. Do not invent Businesses or Grantors the board did not identify.
 Board Priorities are only the ideas the Board explicitly selected with the Group Game checkboxes or added as agreed ideas during the discussion. Additional Board Ideas are valid contributed ideas that were visible but not selected. Preserve them separately, never discard them and never misrepresent them as adopted priorities.
 For team roles, use the supplied team, participation choices, time commitments and responsibilities from the transcript. Assign a person only where they explicitly indicated they want to help or accepted a responsibility. Where a required responsibility has nobody available, set assigned to exactly "ROLE / CAPACITY NEEDED". Never invent commitments.
@@ -283,7 +284,7 @@ def create_game_meeting_router(db) -> APIRouter:
             prompt = (
                 "FINAL STRATEGY CONTEXT (the only information you may use):\n"
                 f"{json.dumps(context, indent=1)}\n\n"
-                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions. Use the meeting transcript to identify clarifications, changes to those decisions, additional ideas, "
+                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. Use the meeting transcript to identify clarifications, changes to those decisions, additional ideas, "
                 "assignments, responsibilities, clarifications, execution decisions, timing decisions and decisions about "
                 "who will make introductions or asks. Integrate those decisions into the relevant strategy sections. "
                 "Do not invent decisions that are not present.\n\n"
