@@ -443,6 +443,26 @@ def create_game_meeting_router(db) -> APIRouter:
         await save_transcript(member["user_id"], text, "uploaded", file.filename or "")
         return {"status": "saved", "characters": len(text.strip())}
 
+    @router.post("/game/meeting/recording/chunk")
+    async def save_recording_chunk(payload: TranscriptPaste, request: Request):
+        member=await game_member(request);text=str(payload.text).strip()
+        if not text:raise HTTPException(status_code=422,detail="The transcript chunk is empty")
+        await db.game_meeting_live_recordings.update_one(
+            {"user_id":member["user_id"]},
+            {"$push":{"chunks":{"text":text[:12000],"captured_at":now_iso()}},"$set":{"status":"recording","updated_at":now_iso()},
+             "$setOnInsert":{"recording_id":new_uuid(),"user_id":member["user_id"],"created_at":now_iso()}},upsert=True)
+        return {"status":"saved"}
+
+    @router.post("/game/meeting/recording/finish")
+    async def finish_live_recording(request: Request):
+        member=await game_member(request);record=await db.game_meeting_live_recordings.find_one({"user_id":member["user_id"]},{"_id":0}) or {}
+        chunks=[str(item.get("text","")).strip() for item in (record.get("chunks") or []) if str(item.get("text","")).strip()]
+        text=" ".join(chunks).strip()
+        if not text:raise HTTPException(status_code=422,detail="No live transcript was captured. Paste or upload the meeting transcript instead.")
+        await save_transcript(member["user_id"],text,"live_recording")
+        await db.game_meeting_live_recordings.update_one({"user_id":member["user_id"]},{"$set":{"status":"finished","finished_at":now_iso(),"updated_at":now_iso()}})
+        return {"status":"saved","characters":len(text)}
+
     @router.post("/game/meeting/compile-final")
     async def compile_final(request: Request):
         member = await game_member(request)
