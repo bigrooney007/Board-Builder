@@ -287,6 +287,7 @@ def create_recruit_free_router(db) -> APIRouter:
         if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
             raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before generating your result")
         if doc.get("result"):
+            await attach_free_assessment_to_member(db, doc["lead_id"], member)
             return {"result": doc["result"]}
         answers = doc.get("answers") or {}
         missing = [key for key in QUESTION_KEYS.values() if not str(answers.get(key) or "").strip()]
