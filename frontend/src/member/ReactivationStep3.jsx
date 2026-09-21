@@ -193,6 +193,7 @@ const MemberConversation = ({ row, outcomeOptions, directions, reload, conclusio
           </>
         )}
       </div>}
+      {busy === "generate" && <p className="workspace-note" data-testid={`conversation-script-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
       {scriptStatus === "Failed" && busy !== "generate" && (
         <p style={{ marginTop: 8 }} data-testid={`step3-generation-failed-${id}`}>{reactivationStep3Text.scriptGenerationDidNotComplete}</p>
       )}
