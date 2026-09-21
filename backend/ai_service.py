@@ -491,7 +491,7 @@ NEVER mention AI."""},
         "body": "The complete candidate-specific Final Board Appointment Email sent AFTER onboarding. Clearly confirm the final formal appointment, welcome the person to the actual Board, briefly connect their verified experience and the onboarding agreement to the mission/Board need, and include the actual supplied Formal Appointment Letter link where available. Never describe the appointment as conditional and never tell them onboarding is still ahead.",
     }, "note": """You are writing the FINAL BOARD APPOINTMENT EMAIL from a nonprofit founder/executive director to ONE person whose Board appointment has now been formally confirmed.
 The appointment decision has already been made by the founder.
-The applicable pre-appointment reference/background steps are complete or not required according to the supplied status.
+Reference/background checks may have been completed, skipped, or treated as non-conditions according to the founder's own process. The final appointment decision has already been made by the founder.
 Do not evaluate or select the person.
 The email should:
 1. Congratulate the recipient warmly.
@@ -500,10 +500,7 @@ The email should:
 4. Welcome them into Board service.
 5. Acknowledge that onboarding has been completed and that the organization is now confirming the final appointment.
 6. Provide the actual Formal Appointment Letter link ONLY if an exact secure link is supplied in context.
-7. Provide the approved onboarding-resource links actually supplied in context:
-REVIEW: Organization Overview; Board Member Manual.
-COMPLETE / SIGN: Board Member Profile Form; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement.
-Omit any document that is not applicable or for which no approved/current link exists. Never invent links. Do not ask the recipient to sign an agreement already marked Signed.
+7. Do not resend onboarding resources, agreements or profile forms. Those belong to the completed onboarding stage.
 8. Do not invite the person to onboarding again. Onboarding is already complete at this stage.
 9. Close with a warm organization-specific welcome and the founder's actual contact details.
 NEVER say: conditional appointment; subject to references; subject to background checks — when those conditions are already complete/not applicable.
