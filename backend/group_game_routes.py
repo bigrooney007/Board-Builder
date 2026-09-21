@@ -54,11 +54,11 @@ ROONEY_RECOMMENDATIONS = {
     "where_to_find": ["Map the Board's existing personal, professional, business and community networks before starting cold outreach.", "Use trusted places where each priority audience already gathers, learns or makes decisions.", "Build a repeatable prospect-research routine instead of relying on occasional searches."],
     "attract_attention": ["Create useful mission-connected content or experiences that give potential funders a reason to engage before an ask.", "Use credible impact evidence, stories and leadership visibility to build attention and trust.", "Create a clear corporate or grantor-facing value proposition for each priority audience."],
     "fundraising_process": ["Use the relationship pathway KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD for every priority audience.", "Define the next action, owner and follow-up point for every prospect relationship.", "Treat stewardship as the beginning of the next gift or partnership rather than the end of the process."],
-    "team": ["Name one person responsible for coordinating the fundraising system and give Board Members roles that fit their strengths.", "Separate Board-level leadership, introductions and accountability from day-to-day staff work."],
-    "technology": ["Use one reliable system to track prospects, relationships, next actions, asks, follow-up and stewardship.", "Choose the smallest technology stack the team can maintain consistently."],
-    "materials": ["Prepare a clear case for support, impact evidence, audience-specific messages and follow-up templates before outreach begins.", "Create only the materials required by the chosen audiences and fundraising process."],
-    "budget": ["Budget for people, technology, content, design, events, prospect research and stewardship required by the strategy.", "Connect each budget item to a specific execution activity and owner."],
-    "execution": ["Start by building the system, then run consistent visibility and relationship activity before concentrated asks.", "Use a 60, 90 or 120-day execution cycle with named owners, deadlines and a recurring Board accountability review."],
+    "team": ["Fundraising coordination / accountability: one named person keeps the strategy moving, tracks next actions and brings progress back to the Board.", "Prospect research and relationship mapping: identify the right individuals, businesses and grantors and connect them to people already in the organization's network.", "Fundraising communications and materials: prepare the case for support, audience messages, partnership materials and campaign content the agreed strategy actually requires.", "Relationship development and asks: use Board and organizational relationships to make introductions, attend meetings, cultivate, ask, follow up and steward according to each person's stated willingness.", "Where nobody present has accepted a required responsibility, mark it as ROLE / CAPACITY NEEDED instead of silently assigning it."],
+    "technology": ["Use one reliable prospect / donor tracking system for names, relationships, next actions, asks, follow-up and stewardship. Start with the smallest CRM or structured tracker the team can consistently maintain.", "Use an email and contact system the organization already understands before adding another platform.", "Use shared cloud files for the case for support, partnership materials, scripts, templates and Board execution resources.", "Use an AI writing / research tool only to accelerate drafts, research structure and execution support; people remain responsible for facts, relationships and final decisions.", "Use the smallest meeting, scheduling, design and reporting stack that supports the chosen fundraising process; reuse existing paid tools or free tiers before buying new software."],
+    "materials": ["Case for Support: one clear explanation of the need, solution, evidence, funding goal and what support makes possible.", "Audience-specific outreach messages for individuals, businesses and grantors actually chosen by the Board.", "Corporate partnership / sponsorship material only where businesses are a chosen audience.", "Grant research / application materials only where grantors are a chosen audience.", "Follow-up, thank-you and stewardship messages so relationships do not stop after the first conversation or ask.", "Impact evidence, stories, simple presentation material and campaign content required by the Board's chosen attraction strategy."],
+    "budget": ["People: use existing staff, Board leadership and volunteers for responsibilities they explicitly accept; budget only for capacity that is genuinely missing.", "Technology: start with existing subscriptions, free tiers or one low-cost tracking system before paying for a large fundraising stack.", "Content and design: use existing brand assets, templates and AI-assisted drafting before outsourcing routine materials.", "Prospect research: begin with Board networks, public sources and structured search methods before paying for expensive databases.", "Events and outreach: choose only activities the Board's strategy requires and cost each one against the fundraising goal.", "Keep a separate REQUIRED NOW versus LATER list so the Board can see the smallest realistic launch budget."],
+    "execution": ["Days 1–30: confirm owners, fill only the capacity gaps the strategy requires, complete relationship mapping, set up tracking and create the essential fundraising materials.", "Days 31–60: launch the agreed visibility, introductions, prospect research and Know / Like / Trust activity; begin business and grantor cultivation on their actual timelines.", "Days 61–90: move ready relationships into meetings, proposals and asks while continuing follow-up and stewardship.", "Days 91–120: review results, repair weak parts of the system, repeat what is working and set the next execution cycle.", "At every Board meeting, review each delegated responsibility, evidence of progress, barriers, decisions required and the next action."],
 }
 
 
@@ -163,6 +163,12 @@ class CloseRoundPayload(BaseModel):
     round_number: int = Field(ge=1, le=TOTAL_ROUNDS)
 
 
+class HostDecisionPayload(BaseModel):
+    round_number: int = Field(ge=1, le=TOTAL_ROUNDS)
+    selected_idea_ids: list = Field(default_factory=list)
+    additional_agreed_ideas: list = Field(default_factory=list)
+
+
 def create_group_game_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -187,6 +193,7 @@ def create_group_game_router(db) -> APIRouter:
         await db.group_game_ideas.delete_many({"session_id": session_id})
         await db.group_game_rankings.delete_many({"session_id": session_id})
         await db.group_game_results.delete_many({"session_id": session_id})
+        await db.group_game_host_decisions.delete_many({"session_id": session_id})
         members = await board_members(user_id)
         member_names = {record["member_id"]: record["full_name"].split(" ")[0] for record in members}
         member_ids = list(member_names.keys())
@@ -219,8 +226,17 @@ def create_group_game_router(db) -> APIRouter:
                         pool[key]["contributor_ids"].append(response["board_member_id"])
                         pool[key]["contributor_names"].append(name)
             reality = situation_sections.get(definition.get("situation_key", ""), {})
+            v3_reality=situation_sections.get("current_reality") or {}
             if definition["section_key"] == "who_should_fund":
                 reality = {key: situation_sections.get(key, {}) for key in ("donors", "corporate", "grantors")}
+                if not any(reality.values()):
+                    reality={"current_individual_donors":v3_reality.get("current_individual_donors",""),
+                             "current_businesses":v3_reality.get("current_businesses",""),
+                             "current_grantors":v3_reality.get("current_grantors","")}
+            elif definition["section_key"]=="team" and v3_reality.get("current_team"):
+                reality={"current_team":v3_reality.get("current_team","")}
+            elif definition["section_key"] in {"technology","materials","budget","execution"} and v3_reality.get("current_resources"):
+                reality={"current_resources":v3_reality.get("current_resources","")}
             def add_reality(value, label="Organization reality"):
                 nonlocal order
                 if isinstance(value, dict):
@@ -237,6 +253,27 @@ def create_group_game_router(db) -> APIRouter:
                                      "contributor_ids": [], "order": order}
                         order += 1
             add_reality(reality)
+            if definition["section_key"]=="team":
+                participation_rows=await db.game_section_responses.find(
+                    {"user_id":user_id,"board_member_id":{"$in":member_ids},"section_id":5,"completed":True},{"_id":0}).to_list(300)
+                for row in participation_rows:
+                    name=member_names.get(row.get("board_member_id"),"Board Member");extras=row.get("extras") or {};time=str(extras.get("time","")).strip()
+                    suffix=f" ({time} per month)" if time else ""
+                    for option in extras.get("build") or []:
+                        text=f"{name} — help build/manage: {str(option).strip()}{suffix}"
+                        key=normalise(text)
+                        if key and key not in pool:
+                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
+                    for option in extras.get("raise") or []:
+                        text=f"{name} — help raise money: {str(option).strip()}{suffix}"
+                        key=normalise(text)
+                        if key and key not in pool:
+                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
+                    if str(extras.get("additional_idea","")).strip():
+                        text=f"{name} — additional role / contribution: {str(extras.get('additional_idea')).strip()}"
+                        key=normalise(text)
+                        if key and key not in pool:
+                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
             for recommendation in ROONEY_RECOMMENDATIONS.get(definition["section_key"], []):
                 key=normalise(recommendation)
                 if key not in pool:
@@ -292,12 +329,12 @@ def create_group_game_router(db) -> APIRouter:
         return {row["slot_id"] for row in rows}
 
     async def round_results(session_id: str, round_number: int) -> dict:
-        doc = await db.group_game_results.find_one(
+        return await db.group_game_results.find_one(
             {"session_id": session_id, "round_number": round_number}, {"_id": 0}) or {}
-        if doc.get("results"):
-            # Only ideas that were actually ranked are shown; unranked ideas stay stored for the final strategy.
-            doc = {**doc, "results": [row for row in doc["results"] if row.get("selection_count", 0) > 0]}
-        return doc
+
+    async def host_decision(session_id: str, round_number: int) -> dict:
+        return await db.group_game_host_decisions.find_one(
+            {"session_id":session_id,"round_number":round_number},{"_id":0}) or {}
 
     # ---------- Host endpoints ----------
 
@@ -402,6 +439,8 @@ def create_group_game_router(db) -> APIRouter:
                 "required_rank": current["required_rank"], "idea_count": current["idea_count"],
                 "ideas": await round_ideas(session["session_id"], current["round_number"]),
                 "submitted_count": 0,
+                "selected_idea_ids":(await host_decision(session["session_id"],current["round_number"])).get("selected_idea_ids",[]),
+                "additional_agreed_ideas":(await host_decision(session["session_id"],current["round_number"])).get("additional_agreed_ideas",[]),
                 "results": (await round_results(session["session_id"], current["round_number"])).get("results", []) if current["status"] == "closed" else [],
             },
             "closed_rounds": closed_rounds,
@@ -425,34 +464,61 @@ def create_group_game_router(db) -> APIRouter:
     async def compute_results(session_id: str, round_doc: dict):
         ideas = await db.group_game_ideas.find(
             {"session_id": session_id, "round_number": round_doc["round_number"]}, {"_id": 0}).sort("order", 1).to_list(400)
-        rankings = await db.group_game_rankings.find(
-            {"session_id": session_id, "round_number": round_doc["round_number"]}, {"_id": 0}).to_list(300)
-        unique, alias = dedupe_idea_docs(ideas)
-        stats = {idea["idea_id"]: {"idea_id": idea["idea_id"], "text": idea["text"],
-                                   "suggested_by": contributor_names(idea["contributor_names"]),
-                                   "total_score": 0, "first_place_count": 0,
-                                   "selection_count": 0, "order": idea["order"]} for idea in unique}
-        for row in rankings:
-            for entry in row.get("rankings", []):
-                stat = stats.get(alias.get(entry.get("idea_id"), entry.get("idea_id")))
-                if not stat:
-                    continue
-                stat["total_score"] += entry.get("points", 0)
-                stat["selection_count"] += 1
-                if entry.get("position") == 1:
-                    stat["first_place_count"] += 1
-        ordered = sorted(stats.values(), key=lambda item: (
-            -item["total_score"], -item["first_place_count"], -item["selection_count"], item["order"]))
-        results = []
-        for index, stat in enumerate(ordered):
-            rank = index + 1
-            results.append({**stat, "rank": rank, "prioritised": True, "additional": False})
+        unique,_=dedupe_idea_docs(ideas);decision=await host_decision(session_id,round_doc["round_number"])
+        if decision:
+            selected=[str(x) for x in decision.get("selected_idea_ids") or []];selected_order={idea_id:index for index,idea_id in enumerate(selected)}
+            results=[]
+            for idea in unique:
+                chosen=idea["idea_id"] in selected
+                results.append({"idea_id":idea["idea_id"],"text":idea["text"],"suggested_by":contributor_names(idea["contributor_names"]),
+                    "total_score":1 if chosen else 0,"first_place_count":1 if chosen and selected_order.get(idea["idea_id"])==0 else 0,
+                    "selection_count":1 if chosen else 0,"order":idea["order"],"rank":selected_order.get(idea["idea_id"],999)+1 if chosen else 0,
+                    "prioritised":chosen,"additional":not chosen,"decision_source":"board_checkbox"})
+            for index,text_value in enumerate(decision.get("additional_agreed_ideas") or []):
+                text_value=str(text_value).strip()
+                if text_value:
+                    results.append({"idea_id":f"discussion-{new_uuid()}","text":text_value[:1200],"suggested_by":"Board discussion",
+                        "total_score":1,"first_place_count":0,"selection_count":1,"order":len(unique)+index,"rank":len(selected)+index+1,
+                        "prioritised":True,"additional":False,"decision_source":"board_discussion"})
+        else:
+            rankings = await db.group_game_rankings.find(
+                {"session_id": session_id, "round_number": round_doc["round_number"]}, {"_id": 0}).to_list(300)
+            alias={idea["idea_id"]:idea["idea_id"] for idea in unique};stats={idea["idea_id"]:{"idea_id":idea["idea_id"],"text":idea["text"],
+                "suggested_by":contributor_names(idea["contributor_names"]),"total_score":0,"first_place_count":0,"selection_count":0,"order":idea["order"]} for idea in unique}
+            for row in rankings:
+                for entry in row.get("rankings",[]):
+                    stat=stats.get(alias.get(entry.get("idea_id"),entry.get("idea_id")))
+                    if not stat:continue
+                    stat["total_score"]+=entry.get("points",0);stat["selection_count"]+=1
+                    if entry.get("position")==1:stat["first_place_count"]+=1
+            ordered=sorted(stats.values(),key=lambda item:(-item["total_score"],-item["first_place_count"],-item["selection_count"],item["order"]))
+            results=[{**stat,"rank":index+1 if stat.get("selection_count") else 0,"prioritised":bool(stat.get("selection_count")),"additional":not bool(stat.get("selection_count"))} for index,stat in enumerate(ordered)]
         await db.group_game_results.update_one(
-            {"session_id": session_id, "round_number": round_doc["round_number"]},
-            {"$set": {"session_id": session_id, "round_number": round_doc["round_number"],
-                      "round_id": round_doc["round_id"], "section_key": round_doc["section_key"],
-                      "title": round_doc["title"], "results": results, "computed_at": now_iso()}},
-            upsert=True)
+            {"session_id":session_id,"round_number":round_doc["round_number"]},
+            {"$set":{"session_id":session_id,"round_number":round_doc["round_number"],"round_id":round_doc["round_id"],
+                     "section_key":round_doc["section_key"],"title":round_doc["title"],"results":results,"computed_at":now_iso()}},upsert=True)
+
+    @router.post("/game/group/decision")
+    async def save_host_decision(payload: HostDecisionPayload, request: Request):
+        member=await game_member(request);session=await active_session(member["user_id"])
+        if not session or session["status"]!="in_progress" or session.get("current_round")!=payload.round_number:
+            raise HTTPException(status_code=409,detail="This review screen is no longer open")
+        round_doc=await db.group_game_rounds.find_one({"session_id":session["session_id"],"round_number":payload.round_number},{"_id":0})
+        if not round_doc or round_doc.get("status")!="open":raise HTTPException(status_code=409,detail="This review screen is not open")
+        valid_rows=await db.group_game_ideas.find({"session_id":session["session_id"],"round_number":payload.round_number},{"_id":0,"idea_id":1}).to_list(500);valid={row["idea_id"] for row in valid_rows};selected=[]
+        for idea_id in payload.selected_idea_ids:
+            idea_id=str(idea_id)
+            if idea_id in valid and idea_id not in selected:selected.append(idea_id)
+        additions=[];seen=set()
+        for item in payload.additional_agreed_ideas:
+            clean=str(item).strip()[:1200];key=normalise(clean)
+            if clean and key not in seen:seen.add(key);additions.append(clean)
+        await db.group_game_host_decisions.update_one(
+            {"session_id":session["session_id"],"round_number":payload.round_number},
+            {"$set":{"session_id":session["session_id"],"round_number":payload.round_number,"selected_idea_ids":selected,
+                     "additional_agreed_ideas":additions,"updated_at":now_iso()},"$setOnInsert":{"created_at":now_iso()}},upsert=True)
+        return {"status":"saved","selected_idea_ids":selected,"additional_agreed_ideas":additions}
+
 
     @router.post("/game/group/close-round")
     async def close_round(payload: CloseRoundPayload, request: Request):
@@ -464,6 +530,9 @@ def create_group_game_router(db) -> APIRouter:
             {"session_id": session["session_id"], "round_number": payload.round_number}, {"_id": 0})
         if not round_doc or round_doc["status"] != "open":
             raise HTTPException(status_code=409, detail="This round is not open")
+        decision=await host_decision(session["session_id"],payload.round_number)
+        if not decision or (not decision.get("selected_idea_ids") and not decision.get("additional_agreed_ideas")):
+            raise HTTPException(status_code=422, detail="Select at least one idea the Board agrees with, or add the Board's agreed idea from the discussion")
         await compute_results(session["session_id"], round_doc)
         await db.group_game_rounds.update_one(
             {"session_id": session["session_id"], "round_number": payload.round_number},
@@ -602,6 +671,8 @@ def create_group_game_router(db) -> APIRouter:
                 "instruction": current["instruction"], "status": current["status"],
                 "required_rank": current["required_rank"],
                 "ideas": await round_ideas(session["session_id"], current_number) if current["status"] in {"open", "closed"} else [],
+                "selected_idea_ids":(await host_decision(session["session_id"],current_number)).get("selected_idea_ids",[]),
+                "additional_agreed_ideas":(await host_decision(session["session_id"],current_number)).get("additional_agreed_ideas",[]),
                 "submitted_count": 0,
                 "my_submitted": False,
                 "results": (await round_results(session["session_id"], current_number)).get("results", []) if current["status"] == "closed" else [],
