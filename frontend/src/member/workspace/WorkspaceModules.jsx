@@ -52,6 +52,7 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, onGene
           <button className="button" disabled={busy} onClick={onGenerate} data-testid="generate-board-application">
             {busy ? "GENERATING…" : "GENERATE MY BOARD APPLICATION FORM"}
           </button>
+          {busy && <p className="workspace-note" data-testid="application-generation-wait">This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
           <p className="workspace-note">Your saved organization name and logo are applied automatically to the public application.</p>
         </div>
       )}
