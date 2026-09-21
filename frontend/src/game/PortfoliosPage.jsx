@@ -71,6 +71,12 @@ export default function PortfoliosPage() {
                 {data.goal_display && <>Fundraising Goal: <strong>{data.goal_display}</strong> · </>}
                 Strategy: <strong style={{ color: "#059669" }}>Adopted</strong>
               </p>
+              {data.executive_assistant_access?.status !== "not_started" && (
+                <p className="bfg-note" style={{ marginTop: 8 }}>
+                  Executive Assistants: <strong>{data.executive_assistant_access?.status === "renewal_required" ? "Renewal required" : "Included"}</strong>
+                  {data.executive_assistant_access?.included_until && <> · Included through {new Date(data.executive_assistant_access.included_until).toLocaleDateString()}</>}
+                </p>
+              )}
               {data.total === 0 ? (
                 <>
                   <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
