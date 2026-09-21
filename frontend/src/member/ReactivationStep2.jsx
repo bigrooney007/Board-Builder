@@ -108,6 +108,7 @@ export default function ReactivationStep2() {
           <button type="button" className="button" disabled={busy} onClick={() => act(() => memberApi.post("/reactivation/recommitment-form/generate"))} data-testid="step2-generate-form-button">
             <Sparkles size={16} /> {busy ? "Generating…" : C.generateFormButton}
           </button>
+          {busy && <p className="workspace-note" data-testid="recommitment-form-generation-wait">This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
         </section>
       )}
 
