@@ -20,8 +20,6 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-
 from ai_service import generate_structured, parse_json_response
 from content_templates import (
     sp_form_invitation_email,
@@ -1807,8 +1805,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 if not selected_ids:raise HTTPException(422,f"Choose at least one available idea for {section['title']}")
                 owner=by[selected_ids[0]];agreed=[idea_by_person[pid] for pid in selected_ids if pid in idea_by_person];selected="\n\n".join(agreed)
             elif decision=="__keep_current__" and "mission" in section["title"].lower():
-                if not lead:raise HTTPException(422,"The Lead User is not available")
-                owner=lead;selected=p.get("mission","");agreed=[f"Board decision: keep the present mission statement: {selected}"];decision_mode="keep_current"
+                selected=p.get("mission","");agreed=[f"Board decision: keep the present mission statement: {selected}"];decision_mode="keep_current";owner=None
             elif decision=="__use_all_ideas__":
                 if not lead:raise HTTPException(422,"The Lead User is not available")
                 owner=lead;agreed=list(all_ideas);selected="Board direction: develop this section from the complete Board discussion, every submitted idea and the meeting transcript.";decision_mode="use_all_ideas"
@@ -1816,9 +1813,12 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 owner=by.get(str(decision)) or lead
                 if not owner:raise HTTPException(422,f"The selected contributor for {section['title']} is not available")
                 selected_ids=[owner["participant_id"]];agreed=[idea_by_person.get(owner["participant_id"],"")];selected="\n\n".join(x for x in agreed if x)
-            areas.append({"area_key":section["key"],"area":section["title"],"direction":selected,"agreed_ideas":agreed,"selected_idea_participant_ids":selected_ids,
+            area={"area_key":section["key"],"area":section["title"],"direction":selected,"agreed_ideas":agreed,"selected_idea_participant_ids":selected_ids,
                 "proposed_priorities":board_builder_recommendations(section["title"],p.get("mission","")),"ideas_shared":all_ideas,
-                "owner_participant_id":owner["participant_id"],"collaborator_participant_ids":[],"status":"ASSIGNED","meeting_transcript":transcript,"decision_mode":decision_mode})
+                "owner_participant_id":owner["participant_id"] if owner else "","collaborator_participant_ids":[],"status":"ASSIGNED" if owner else "READY FOR BOARD","meeting_transcript":transcript,"decision_mode":decision_mode}
+            if decision_mode=="keep_current":
+                area.update({"detailed_plan_status":"Approved","submitted_plan":selected,"detailed_plan_text":selected,"plan_submitted_at":now_iso(),"pack_status":"Not Required"})
+            areas.append(area)
             display.append(f"{section['title']}\nAgreed direction:\n{selected}")
         if p.get("internal_preview"):
             for area in areas:
@@ -2099,7 +2099,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text") or not plan.get("final_share_token"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);link=f"{origin_of(request)}/strategic-plan/{plan['final_share_token']}";sent=0
         for person in people:
-            first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nOur complete Strategic Plan for {p['organization_name']} is ready. It combines the directions agreed during our Strategic Planning Session with the detailed plans submitted for every delegated section.\n\n[VIEW THE STRATEGIC PLAN]\n\nThank you for helping build the plan and accepting responsibility for carrying it forward.\n\n{p.get('founder_name','')}\n{p['organization_name']}";await send_email(person["email"],f"Our Strategic Plan | {p['organization_name']}",body,"VIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
+            first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nOur complete Strategic Plan for {p['organization_name']} is ready. It combines the directions agreed during our Strategic Planning Session with the detailed plans submitted for every delegated section.\n\n[VIEW THE STRATEGIC PLAN]\n\nThank you for helping build the plan.\n\n{p.get('founder_name','')}\n{p['organization_name']}";await send_email(person["email"],f"Our Strategic Plan | {p['organization_name']}",body,"VIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
         return {"status":"sent","count":sent}
 
     @router.put("/active-delegation/people")
@@ -2161,7 +2161,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan.get("final_display_text"):raise HTTPException(409,"Generate the Final Strategic Plan before active delegation")
         assignments={str(k):str(v).strip()[:6000] for k,v in (body.get("assignments") or {}).items() if str(v).strip()};transcript=str(body.get("transcript","")).strip()[:30000]
         if not assignments and not transcript:raise HTTPException(422,"Enter at least one delegated responsibility or provide the delegation meeting transcript")
-        record={"assignments":assignments,"transcript":transcript,"manual_assignments_authoritative":bool(assignments),"saved_at":now_iso(),"next_meeting_guide":"Ask each Board Member to present what they completed, evidence of progress, decisions required, barriers and the next action. Review one responsibility at a time. Record or upload the transcript with consent. Do not change the Strategic Plan automatically. The founder reviews the transcript and confirms every update before it changes the plan or a delegation."}
+        existing_active=plan.get("active_delegation") or {}
+        record={"assignments":assignments,"delegates":existing_active.get("delegates",[]),"transcript":transcript,"manual_assignments_authoritative":bool(assignments),"saved_at":now_iso(),"next_meeting_guide":"Ask each Board Member to present what they completed, evidence of progress, decisions required, barriers and the next action. Review one responsibility at a time. Record or upload the transcript with consent. Do not change the Strategic Plan automatically. The founder reviews the transcript and confirms every update before it changes the plan or a delegation."}
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"active_delegation":record,"updated_at":now_iso()}});return {"status":"saved"}
 
     @router.post("/support")
