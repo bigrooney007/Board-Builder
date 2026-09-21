@@ -163,11 +163,11 @@ Write a finished professional network email announcing the Board opportunity. Th
     }},
     "board_recruitment_job_post": {"module": 3, "title": "Recruitment Job Post", "per_application": False, "schema": {
         "title": "string — a professional opportunity title using the organization's actual board terminology, e.g. 'Founding Board Member | Help Shape [Mission Area]' or 'Board Member Opportunity | Help Build [Meaningful Outcome]'. No clickbait.",
-        "post_body": "string — the organization's PRIMARY professional board recruitment opportunity, suitable for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch (never claim it has already been published anywhere). Written for a professional who may never have heard of the nonprofit. Use these exact section headings in this order, each on its own line in UPPERCASE, omitting a section only when no supporting data exists: OPENING (2-4 strong sentences — why the organization is building/recruiting its board and the opportunity for capable professionals, specific to this organization); ABOUT THE ORGANIZATION (what it does, who it serves, its mission, relevant direction — concise and factual); THE OPPORTUNITY (what board service means within THIS organization — strategy, governance, expertise, relationships, partnerships, fundraising, growth, leadership, committee work only where supported); WHO WE ARE LOOKING FOR (translate the approved Module 1 priority profiles into outward-facing professional expertise — never paste internal phrases like 'Why this role is important'; where appropriate note that candidates bringing experience across several areas are welcome); BOARD MEMBER EXPECTATIONS (only actually-supported items); PRACTICAL DETAILS (only KNOWN meeting frequency, format, location, time commitment, term, deadline — omit unknown items entirely, never write 'Not provided'); CALL TO ACTION (a strong direct invitation containing the application link placeholder [APPLICATION LINK]). 450-750 words depending on available information. Professional, credible, specific, human, purpose-driven. Clearly represent the actual nature of the board opportunity; NEVER describe an unpaid nonprofit board role as salaried employment.",
+        "post_body": "string — the organization's PRIMARY professional board recruitment opportunity, suitable for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch (never claim it has already been published anywhere). Written for a professional who may never have heard of the nonprofit. 450-750 words depending on available information. Organize it naturally around the mission, the Board opportunity, the professional experience being sought, verified expectations/practical details, and a direct invitation to apply using [APPLICATION LINK]. Use only reader-facing headings that sound natural for this specific organization where headings help. NEVER output internal production labels such as OPENING, MAIN BODY, BODY, CALL TO ACTION, TEST, BACKEND, PROMPT, SECTION PURPOSE or similar drafting labels. Professional, credible, specific, human and purpose-driven. Clearly represent the actual nature of the board opportunity; NEVER describe an unpaid nonprofit board role as salaried employment.",
     }, "note": RECRUITMENT_POSITIONING + CAMPAIGN_STANDARD + """
 
 CHANNEL BRIEF — RECRUITMENT JOB POST (primary long-form professional listing; must work where someone has never heard of the organization):
-Write the organization's primary professional Board recruitment listing. This is not an ordinary vacancy notice. Position the organization first. The opening must immediately establish why the work matters and why this is an important opportunity for accomplished professionals. Where the organization has a compelling verified mission outcome or ambition, consider building the title and opening around it. The reader must understand the significance of the mission before being given a list of qualifications. Use the organization-specific structure: OPENING — make the opportunity feel consequential using the strongest verified mission, direction, stage or future outcome. ABOUT THE ORGANIZATION — explain clearly what the organization exists to do, who it serves and the meaningful direction it is building toward. THE OPPORTUNITY — explain what joining this Board allows a strong professional to help shape and strengthen. WHO WE ARE LOOKING FOR — use ONLY the priority recruitment profiles from the approved Powerhouse Board Blueprint; focus on the most important professional capability areas; where one candidate could naturally bring experience across several requested areas, say so naturally. HOW BOARD MEMBERS WILL CONTRIBUTE — show meaningful Board-level contribution, not unpaid staff work. BOARD MEMBER EXPECTATIONS — include only verified expectations. PRACTICAL DETAILS — include only supplied details; omit unknown information completely. CALL TO ACTION — invite the right professional to apply and include the supplied application link. The writing should make a capable professional feel: "I can see what they are building, why it matters, and how my experience could help shape it." Never use internal gap-analysis language. Never mention weakness in the existing Board. Never sound desperate for applicants."""},
+Write the organization's primary professional Board recruitment listing. This is not an ordinary vacancy notice. Position the organization first. The opening must immediately establish why the work matters and why this is an important opportunity for accomplished professionals. Where the organization has a compelling verified mission outcome or ambition, consider building the title and opening around it. The reader must understand the significance of the mission before being given a list of qualifications. Use the organization-specific structure: OPENING — make the opportunity feel consequential using the strongest verified mission, direction, stage or future outcome. ABOUT THE ORGANIZATION — explain clearly what the organization exists to do, who it serves and the meaningful direction it is building toward. THE OPPORTUNITY — explain what joining this Board allows a strong professional to help shape and strengthen. WHO WE ARE LOOKING FOR — use ONLY the priority recruitment profiles from the approved Powerhouse Board Blueprint; focus on the most important professional capability areas; where one candidate could naturally bring experience across several requested areas, say so naturally. HOW BOARD MEMBERS WILL CONTRIBUTE — show meaningful Board-level contribution, not unpaid staff work. BOARD MEMBER EXPECTATIONS — include only verified expectations. PRACTICAL DETAILS — include only supplied details; omit unknown information completely. APPLICATION — end naturally with a direct invitation to apply and include the supplied application link. Never print the phrase "CALL TO ACTION" or other internal drafting labels. The writing should make a capable professional feel: "I can see what they are building, why it matters, and how my experience could help shape it." Never use internal gap-analysis language. Never mention weakness in the existing Board. Never sound desperate for applicants."""},
     "personal_invitation_email": {"module": 3, "title": "Personal Invitation Email", "per_application": False, "schema": {
         "subject": "string", "body": "string — a warm personal email inviting someone the founder already knows to consider the board opportunity, includes the application link placeholder [APPLICATION LINK]",
     }, "note": RECRUITMENT_POSITIONING + CAMPAIGN_STANDARD + """
@@ -1814,53 +1814,30 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
         lines.extend(["", STRATEGY_TIMELINE_TEXT, "", STRATEGY_ROADMAP_TEXT, "", STRATEGY_NEXT_STEP_TEXT])
         return _flush_left("\n".join(line.rstrip() for line in lines))
     if generation_type == "powerhouse_board_blueprint":
-        lines = ["THE BOARD MEMBERS YOUR ORGANIZATION NEEDS", ""]
-        if structured.get("powerhouse_board_overview") or structured.get("powerhouse_board_matrix"):
-            lines.extend(["WHAT A POWERHOUSE BOARD FOR YOUR ORGANIZATION LOOKS LIKE", ""])
-            if structured.get("powerhouse_board_overview"):
-                lines.extend([structured["powerhouse_board_overview"], ""])
-            for item in structured.get("powerhouse_board_matrix", []):
-                lines.append(f"{item.get('capability', '')}")
-                if item.get("why_this_organization_needs_it"):
-                    lines.append(f"Why This Organization Needs It: {item['why_this_organization_needs_it']}")
-                if item.get("what_it_helps_the_organization_do"):
-                    lines.append(f"What It Helps the Organization Do: {item['what_it_helps_the_organization_do']}")
-                lines.append("")
-        if structured.get("present_board_overview") or structured.get("present_board_capability_map"):
-            lines.extend(["WHAT YOUR PRESENT BOARD ALREADY BRINGS", ""])
-            if structured.get("present_board_overview"):
-                lines.extend([structured["present_board_overview"], ""])
-            for item in structured.get("present_board_capability_map", []):
-                lines.append(f"- {item.get('capability', '')} — {item.get('representation_status', '')}: {item.get('current_coverage', '')}")
-            lines.append("")
-        if structured.get("board_gap"):
-            lines.extend(["YOUR BOARD GAP", ""])
-            for item in structured["board_gap"]:
-                lines.append(f"- {item.get('gap', '')} ({item.get('priority', '')} PRIORITY): {item.get('why_it_is_a_gap', '')}")
-            lines.append("")
-        if structured.get("recommended_count_statement"):
-            lines.extend(["RECOMMENDED NUMBER OF NEW BOARD MEMBERS", structured["recommended_count_statement"], ""])
-        lines.extend(["THE BOARD MEMBERS TO RECRUIT", ""])
+        lines = []
         for index, role in enumerate(structured.get("priority_roles", []), 1):
-            if role.get("summary"):
-                lines.extend([f"{index}. {role.get('role_name', '')}", role.get("summary", ""), ""])
-                continue
-            lines.append(f"{index}. {role.get('role_name', '')}")
-            if role.get("gap_this_role_fills"):
-                lines.extend(["", "The Gap This Person Fills"])
-                lines.extend([f"- {item}" for item in role["gap_this_role_fills"]])
-            lines.extend(["", "Why This Person Is Important", role.get("why_this_person_is_important", ""), "",
-                          "How This Person Can Support You and the Organization", role.get("how_this_person_can_support", ""), "",
-                          "What To Look For"])
-            lines.extend([f"- {item}" for item in role.get("what_to_look_for", [])])
-            lines.append("")
-        if structured.get("remaining_gaps_after_this_recruitment"):
-            lines.extend(["AREAS TO STRENGTHEN LATER"])
-            lines.extend([f"- {item}" for item in structured["remaining_gaps_after_this_recruitment"]])
-            lines.append("")
-        if structured.get("how_the_new_members_complete_the_board"):
-            lines.extend(["HOW THESE NEW BOARD MEMBERS COMPLEMENT YOUR PRESENT BOARD", structured["how_the_new_members_complete_the_board"], ""])
-        return _flush_left("\n".join(lines))
+            role_name = str(role.get("role_name", "")).strip()
+            why = str(role.get("why_this_person_is_important", "")).strip()
+            support = str(role.get("how_this_person_can_support", "")).strip()
+            explanation = " ".join(part for part in [why, support] if part).strip()
+            lines.append(f"{index}. {role_name}")
+            if explanation:
+                lines.append(explanation)
+            if index < len(structured.get("priority_roles", [])):
+                lines.append("")
+        return _flush_left("\n".join(lines).strip())
+    if generation_type == "board_recruitment_job_post":
+        title = str(structured.get("title", "")).strip()
+        body = str(structured.get("post_body", "")).strip()
+        return _flush_left("\n\n".join(part for part in [title, body] if part))
+    if generation_type == "recruitment_emails":
+        subject = str(structured.get("subject", "")).strip()
+        body = str(structured.get("body", "")).strip()
+        return _flush_left("\n\n".join(part for part in [f"Subject: {subject}" if subject else "", body] if part))
+    if generation_type == "social_posts":
+        return _flush_left(str(structured.get("post_text", "")).strip())
+    if generation_type == "referral_request_email":
+        return _flush_left(str(structured.get("message", "")).strip())
     lines = [meta["title"].upper(), ""]
     lines.extend(_format_value(structured))
     if meta.get("agreement"):
