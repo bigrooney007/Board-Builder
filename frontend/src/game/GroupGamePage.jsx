@@ -67,6 +67,7 @@ export default function GroupGamePage() {
   const [copied, setCopied] = useState(false);
   const [newAgreedIdea, setNewAgreedIdea] = useState("");
   const timer = useRef(null);
+  const recorderController = useRef(null);
 
   useEffect(() => { document.title = "Group Review Game | Board Fundraising Game"; }, []);
 
@@ -141,8 +142,12 @@ export default function GroupGamePage() {
   };
 
   const continueMeeting = async () => {
+    const isFinalRound = round.round_number >= session.total_rounds;
     await memberApi.post("/game/group/close-round", { round_number: round.round_number });
     await memberApi.post("/game/group/next-round");
+    if (isFinalRound && recorderController.current?.isActive?.()) {
+      await recorderController.current.finish();
+    }
     setNewAgreedIdea("");
   };
   const startMeeting = async () => {
@@ -216,7 +221,7 @@ export default function GroupGamePage() {
 
             {status === "in_progress" && round && (
               <>
-              <LiveMeetingRecorder autoStart title="Transcribe The Complete Board Fundraising Meeting" startLabel="ALLOW MICROPHONE AND START TRANSCRIPTION" onFinished={() => { loadSession(); loadOverview(); }} />
+              <LiveMeetingRecorder autoStart controllerRef={recorderController} title="Transcribe The Complete Board Fundraising Meeting" startLabel="ALLOW MICROPHONE AND START TRANSCRIPTION" onFinished={() => { loadSession(); loadOverview(); }} />
               <div className="bfg-panel" data-testid="bfg-gg-host-round">
                 <RoundProgress current={round.round_number} total={session.total_rounds} />
                 <h2>{round.title}</h2>
