@@ -29,7 +29,7 @@ PRODUCTS = {
     },
 }
 
-FIXTURE_VERSION = "v2"
+FIXTURE_VERSION = "v3"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -38,6 +38,17 @@ MISSION = (
 GOALS = (
     "Serve 1,000 young people over the next 24 months, strengthen the board, diversify revenue, "
     "build a repeatable corporate partnership pipeline and improve how outcomes are measured and communicated."
+)
+
+PREVIEW_LOGO_DATA = (
+    "data:image/svg+xml;utf8,"
+    "%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='640'%20height='180'%20viewBox='0%200%20640%20180'%3E"
+    "%3Crect%20width='640'%20height='180'%20rx='28'%20fill='%234F46E5'/%3E"
+    "%3Ccircle%20cx='86'%20cy='90'%20r='46'%20fill='%23FFFFFF'/%3E"
+    "%3Cpath%20d='M63%2092l18%2018%2032-42'%20fill='none'%20stroke='%234F46E5'%20stroke-width='12'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E"
+    "%3Ctext%20x='155'%20y='79'%20font-family='Arial,sans-serif'%20font-size='34'%20font-weight='700'%20fill='%23FFFFFF'%3EBrightPath%20Youth%3C/text%3E"
+    "%3Ctext%20x='155'%20y='120'%20font-family='Arial,sans-serif'%20font-size='30'%20font-weight='700'%20fill='%23E0E7FF'%3EAlliance%3C/text%3E"
+    "%3C/svg%3E"
 )
 
 
@@ -297,6 +308,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         token = f"admin-preview-recruitment-{tag}"
         lead_id = f"admin-preview-recruitment-lead-{tag}"
         answers = recruitment_answers()
+        opportunity_id = f"admin-preview-recruitment-opportunity-{tag}"
+        opportunity_slug = f"brightpath-youth-alliance-preview-{tag}"
+
         await db.recruitment_free_assessments.update_one(
             {"token": token},
             {"$setOnInsert": {
@@ -329,11 +343,13 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
+
         await db.funnel_leads.update_one(
             {"lead_id": lead_id},
             {"$setOnInsert": {
                 "lead_id": lead_id,
                 "result_token": token,
+                "member_user_id": member["user_id"],
                 "offer_source": "recruitment",
                 "lead_source": "internal_admin_preview",
                 "name": "Rooney Akpesiri",
@@ -358,10 +374,12 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
+
         await db.members.update_one(
             {"user_id": member["user_id"]},
             {"$addToSet": {"lead_ids": lead_id}},
         )
+
         await db.recruitment_profiles.update_one(
             {"user_id": member["user_id"]},
             {"$setOnInsert": {
@@ -375,6 +393,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "priorities": answers["support_needs"],
                     "important_areas": answers["important_areas"],
                     "founder_title": "Founder and Executive Director",
+                    "city": "Atlanta",
+                    "state_region": "Georgia",
+                    "country": "United States",
                 },
                 "strategy_intake": {
                     "meeting_frequency": "Monthly board meeting with committee work between meetings.",
@@ -382,6 +403,21 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "network": "Existing relationships with schools, youth-service organizations, employers and local business leaders.",
                     "recruitment_channels": "LinkedIn, professional associations, referrals, employer networks and nonprofit board-matching platforms.",
                     "time_expectation": "Approximately 5 hours per month plus board meetings.",
+                },
+                "branding": {
+                    "logo_data": PREVIEW_LOGO_DATA,
+                    "primary_color": "#4F46E5",
+                    "secondary_color": "#F8FAFC",
+                },
+                "onboarding_session": {
+                    "date": "2026-10-08",
+                    "time": "18:00",
+                    "timezone": "Eastern Time (ET)",
+                    "format": "Virtual",
+                    "link": "https://example.org/brightpath-onboarding",
+                    "location": "",
+                    "prepare": "Please review the Organization Overview, Board Manual and agreements before the session.",
+                    "status": "Scheduled",
                 },
                 "confirmed": False,
                 "recruitment_profile_confirmed": False,
@@ -391,48 +427,379 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        application_id = f"admin-preview-applicant-{tag}"
-        await db.opportunity_applications.update_one(
-            {"application_id": application_id},
+
+        await db.opportunities.update_one(
+            {"opportunity_id": opportunity_id},
             {"$setOnInsert": {
-                "application_id": application_id,
-                "owner_user_id": member["user_id"],
-                "opportunity_id": "",
-                "applicant_email": "jordan.ellis@nonprofitboardbuilder.internal",
-                "source": "Board Application Form",
-                "status": "Applied",
-                "profile_snapshot": {
-                    "full_name": "Jordan Ellis",
-                    "email": "jordan.ellis@nonprofitboardbuilder.internal",
-                    "phone": "+1 555 010 2040",
-                    "linkedin": "https://www.linkedin.com/in/jordan-ellis-preview",
-                    "profession": "Director of Corporate Partnerships",
-                    "city": "Atlanta",
-                    "state_region": "Georgia",
-                },
-                "answers": applicant_answers(),
-                "notes": (
-                    "PRELOADED TEST INTERVIEW NOTES:\n"
-                    "Jordan described building multi-year employer partnerships and said they are comfortable making warm introductions, "
-                    "joining selected sponsor conversations and owning a defined corporate partnership target. Jordan asked for clear expectations, "
-                    "a written role and access to current impact evidence before representing the organization externally."
-                ),
-                "cv_file_id": "",
-                "cv_filename": "",
-                "cv_text": (
-                    "Jordan Ellis. Director of Corporate Partnerships. Twelve years of business development and partnership experience. "
-                    "Led employer engagement, sponsorship proposals, executive relationship management and community-investment partnerships. "
-                    "Previous volunteer development-committee experience with a youth mentoring nonprofit."
-                ),
-                "interview_guide": {"status": "Pending"},
-                "references": [],
-                "background_check": {"status": "Not started"},
+                "opportunity_id": opportunity_id,
+                "user_id": member["user_id"],
+                "slug": opportunity_slug,
+                "organization_name": ORG_NAME,
+                "status": "Draft",
+                "custom_questions": [],
+                "application_saved": False,
+                "email_content": {},
+                "broadcast_initiated": False,
+                "broadcast_id": "",
                 "internal_preview": True,
                 "created_at": now,
                 "updated_at": now,
             }},
             upsert=True,
         )
+
+        applicants = [
+            {
+                "application_id": f"admin-preview-applicant-jordan-{tag}",
+                "email": "jordan.ellis@nonprofitboardbuilder.internal",
+                "name": "Jordan Ellis",
+                "profession": "Director of Corporate Partnerships",
+                "employer": "Fictional Growth Partners",
+                "source": "Board Application Form",
+                "status": "Applied",
+                "interview_completed": False,
+                "reference_check_status": "Not started",
+                "background_check": {"status": "Not started"},
+                "answers": applicant_answers(),
+                "notes": (
+                    "PRELOADED TEST NOTES: Jordan has strong corporate partnership experience and previous youth-nonprofit committee service. "
+                    "Use this candidate to test the interview invitation, candidate-specific interview guide, interview completion and decision controls."
+                ),
+                "cv_text": (
+                    "Jordan Ellis. Director of Corporate Partnerships. Twelve years of business development and partnership experience. "
+                    "Led employer engagement, sponsorship proposals, executive relationship management and community-investment partnerships. "
+                    "Previous volunteer development-committee experience with a youth mentoring nonprofit."
+                ),
+            },
+            {
+                "application_id": f"admin-preview-applicant-priya-{tag}",
+                "email": "priya.mensah@nonprofitboardbuilder.internal",
+                "name": "Priya Mensah",
+                "profession": "Major Gifts and Development Director",
+                "employer": "Fictional Community Foundation",
+                "source": "LinkedIn",
+                "status": "Moving Forward",
+                "interview_completed": True,
+                "reference_check_status": "In Progress",
+                "background_check": {
+                    "status": "In progress",
+                    "required": "Yes",
+                    "requested_date": "2026-09-18",
+                    "completed_date": "",
+                    "notes": "Local provider contacted. Verification is still in progress.",
+                },
+                "answers": {
+                    "full_name": "Priya Mensah",
+                    "email": "priya.mensah@nonprofitboardbuilder.internal",
+                    "phone": "+1 555 010 2050",
+                    "city": "Atlanta",
+                    "state_region": "Georgia",
+                    "country": "United States",
+                    "profession": "Major Gifts and Development Director",
+                    "employer": "Fictional Community Foundation",
+                    "linkedin": "https://www.linkedin.com/in/priya-mensah-preview",
+                    "board_experience": "Four years on a community arts board, including service on the development committee.",
+                    "why_interested": "I want to help a youth-serving organization build a stronger fundraising system and donor relationships.",
+                    "skills_experience": "Major gifts, donor strategy, stewardship, grant fundraising, campaign planning and Board fundraising coaching.",
+                    "fundraising_support": "Prospect strategy, donor introductions, cultivation, selected asks, stewardship and fundraising coaching.",
+                    "relationships": "Philanthropic advisors, foundation staff, major donors and nonprofit development professionals.",
+                    "monthly_time": "4 to 5 hours per month",
+                    "attend_meetings": "Yes",
+                    "accept_responsibility": "Yes",
+                    "causes": "Youth opportunity, education and economic mobility.",
+                },
+                "notes": "PRELOADED TEST NOTES: Interview completed. Priya is moving forward. Use this candidate to test the automated reference process and background-check record.",
+                "cv_text": "Priya Mensah. Major Gifts and Development Director. Fifteen years in nonprofit fundraising, donor stewardship, campaigns and Board development.",
+            },
+            {
+                "application_id": f"admin-preview-applicant-marcus-{tag}",
+                "email": "marcus.chen@nonprofitboardbuilder.internal",
+                "name": "Marcus Chen",
+                "profession": "Vice President of Marketing",
+                "employer": "Fictional Impact Brands",
+                "source": "Referral",
+                "status": "Conditional Appointment",
+                "interview_completed": True,
+                "reference_check_status": "Completed",
+                "background_check": {
+                    "status": "Not Required",
+                    "required": "No",
+                    "requested_date": "",
+                    "completed_date": "",
+                    "notes": "The organization documented that no background check is required for this Board role.",
+                },
+                "answers": {
+                    "full_name": "Marcus Chen",
+                    "email": "marcus.chen@nonprofitboardbuilder.internal",
+                    "phone": "+1 555 010 2060",
+                    "city": "Atlanta",
+                    "state_region": "Georgia",
+                    "country": "United States",
+                    "profession": "Vice President of Marketing",
+                    "employer": "Fictional Impact Brands",
+                    "linkedin": "https://www.linkedin.com/in/marcus-chen-preview",
+                    "board_experience": "Served on a nonprofit communications advisory committee and led pro bono campaigns.",
+                    "why_interested": "I want to help BrightPath become more visible to employers, funders and families.",
+                    "skills_experience": "Brand strategy, communications, digital marketing, campaign planning, storytelling and executive communications.",
+                    "fundraising_support": "Campaign messaging, case-for-support development, partner stories and introductions to business contacts.",
+                    "relationships": "Marketing leaders, agency executives, local business owners and corporate communications teams.",
+                    "monthly_time": "4 hours per month",
+                    "attend_meetings": "Yes",
+                    "accept_responsibility": "Yes",
+                    "causes": "Youth development, employment pathways and education.",
+                },
+                "notes": "PRELOADED TEST NOTES: References are complete, no background check is required, agreements are signed and the Board Member Profile is complete. Use this candidate to test Final Appointment, Onboarding Conclusion, Appointment Letter and Portfolio.",
+                "cv_text": "Marcus Chen. Vice President of Marketing. Eighteen years leading brand, communications and growth campaigns. Pro bono nonprofit campaign experience.",
+                "emails_sent": {"conditional_offer": now},
+                "onboarding_conclusion": {
+                    "board_role": "Board Member — Marketing and Communications",
+                    "agreed_primary_contribution_area": "Marketing, visibility and partner storytelling",
+                    "agreed_responsibility": "Provide board-level leadership for the annual communications plan and help turn program evidence into credible fundraising and partnership content.",
+                    "agreed_leadership": "Lead quarterly Board review of visibility, messaging and campaign performance.",
+                    "how_their_experience_will_be_used": "Use brand strategy and executive communications experience to strengthen the case for support, digital visibility and partner communications.",
+                    "organization_support_agreed": "Provide timely impact data, participant stories with consent, campaign priorities and access to the staff contact responsible for communications.",
+                    "immediate_next_steps": "Review the current case for support, propose the first 90-day communications priorities and identify two partner-story opportunities.",
+                    "private_notes": "Admin preview fixture. Click Save Onboarding Conclusion to test the real save action.",
+                },
+            },
+        ]
+
+        for row in applicants:
+            snapshot = {
+                "full_name": row["name"],
+                "email": row["email"],
+                "phone": row["answers"].get("phone", ""),
+                "linkedin": row["answers"].get("linkedin", ""),
+                "profession": row["profession"],
+                "employer": row["employer"],
+                "city": row["answers"].get("city", ""),
+                "state_region": row["answers"].get("state_region", ""),
+                "country": row["answers"].get("country", ""),
+            }
+            doc = {
+                "application_id": row["application_id"],
+                "owner_user_id": member["user_id"],
+                "opportunity_id": opportunity_id,
+                "applicant_email": row["email"],
+                "source": row["source"],
+                "status": row["status"],
+                "profile_snapshot": snapshot,
+                "answers": row["answers"],
+                "notes": row["notes"],
+                "cv_file_id": "",
+                "cv_filename": f"{row['name'].replace(' ', '-')}-Preview-CV.pdf",
+                "cv_text": row["cv_text"],
+                "interview_guide": {"status": "Pending"},
+                "interview_completed": row["interview_completed"],
+                "reference_check_status": row["reference_check_status"],
+                "references": [],
+                "background_check": row["background_check"],
+                "internal_preview": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+            if row.get("emails_sent"):
+                doc["emails_sent"] = row["emails_sent"]
+            if row.get("onboarding_conclusion"):
+                doc["onboarding_conclusion"] = row["onboarding_conclusion"]
+            await db.opportunity_applications.update_one(
+                {"application_id": row["application_id"]},
+                {"$setOnInsert": doc},
+                upsert=True,
+            )
+
+        priya_id = f"admin-preview-applicant-priya-{tag}"
+        await db.reference_processes.update_one(
+            {"owner_user_id": member["user_id"], "application_id": priya_id},
+            {"$setOnInsert": {
+                "process_id": f"admin-preview-reference-priya-{tag}",
+                "owner_user_id": member["user_id"],
+                "application_id": priya_id,
+                "candidate_name": "Priya Mensah",
+                "candidate_email": "priya.mensah@nonprofitboardbuilder.internal",
+                "candidate_token": f"admin-preview-priya-candidate-{tag}",
+                "status": "In Progress",
+                "references": [
+                    {
+                        "reference_id": f"admin-preview-priya-ref-1-{tag}",
+                        "name": "Elena Ruiz",
+                        "position": "Chief Development Officer",
+                        "organization": "Fictional Civic Trust",
+                        "relationship": "Former supervisor",
+                        "duration": "5 years",
+                        "email": f"elena.ruiz-{tag}@nonprofitboardbuilder.internal",
+                        "phone": "+1 555 010 4101",
+                        "referee_token": f"admin-preview-priya-ref-token-1-{tag}",
+                        "status": "Completed",
+                        "response": {
+                            "capacity": "I supervised Priya directly for five years while she led major-gift strategy and donor stewardship.",
+                            "reliability": "Priya is highly reliable, prepares thoroughly and consistently follows through on commitments.",
+                            "strengths": "Relationship building, strategic thinking, calm leadership and the ability to translate fundraising goals into practical action.",
+                            "teamwork": "I have no conduct concerns. Priya works well across teams and communicates directly when expectations need clarification.",
+                            "recommendation": "Yes. I would be comfortable recommending Priya for nonprofit Board service.",
+                        },
+                        "completed_at": now,
+                    },
+                    {
+                        "reference_id": f"admin-preview-priya-ref-2-{tag}",
+                        "name": "Samuel Okafor",
+                        "position": "Executive Director",
+                        "organization": "Fictional Youth Futures Network",
+                        "relationship": "Nonprofit partner",
+                        "duration": "3 years",
+                        "email": f"samuel.okafor-{tag}@nonprofitboardbuilder.internal",
+                        "phone": "+1 555 010 4102",
+                        "referee_token": f"admin-preview-priya-ref-token-2-{tag}",
+                        "status": "Sent",
+                    },
+                ],
+                "internal_preview": True,
+                "created_at": now,
+                "updated_at": now,
+            }},
+            upsert=True,
+        )
+
+        marcus_id = f"admin-preview-applicant-marcus-{tag}"
+        await db.reference_processes.update_one(
+            {"owner_user_id": member["user_id"], "application_id": marcus_id},
+            {"$setOnInsert": {
+                "process_id": f"admin-preview-reference-marcus-{tag}",
+                "owner_user_id": member["user_id"],
+                "application_id": marcus_id,
+                "candidate_name": "Marcus Chen",
+                "candidate_email": "marcus.chen@nonprofitboardbuilder.internal",
+                "candidate_token": f"admin-preview-marcus-candidate-{tag}",
+                "status": "Completed",
+                "references": [
+                    {
+                        "reference_id": f"admin-preview-marcus-ref-1-{tag}",
+                        "name": "Diana Lee",
+                        "position": "Chief Executive Officer",
+                        "organization": "Fictional Impact Brands",
+                        "relationship": "Current colleague",
+                        "duration": "7 years",
+                        "email": f"diana.lee-{tag}@nonprofitboardbuilder.internal",
+                        "phone": "+1 555 010 4201",
+                        "referee_token": f"admin-preview-marcus-ref-token-1-{tag}",
+                        "status": "Completed",
+                        "response": {
+                            "capacity": "Marcus and I have worked together for seven years in senior leadership.",
+                            "reliability": "He is dependable, clear about commitments and follows through.",
+                            "strengths": "Strategic communications, executive judgement, collaboration and brand leadership.",
+                            "teamwork": "I have no concerns relevant to a position of responsibility.",
+                            "recommendation": "Yes. I recommend Marcus for Board service.",
+                        },
+                        "completed_at": now,
+                    },
+                    {
+                        "reference_id": f"admin-preview-marcus-ref-2-{tag}",
+                        "name": "Tanya Brooks",
+                        "position": "Executive Director",
+                        "organization": "Fictional Community Arts Alliance",
+                        "relationship": "Pro bono nonprofit client",
+                        "duration": "4 years",
+                        "email": f"tanya.brooks-{tag}@nonprofitboardbuilder.internal",
+                        "phone": "+1 555 010 4202",
+                        "referee_token": f"admin-preview-marcus-ref-token-2-{tag}",
+                        "status": "Completed",
+                        "response": {
+                            "capacity": "Marcus led a pro bono communications campaign for our organization and continued advising us after launch.",
+                            "reliability": "He was consistent, practical and responsive throughout the work.",
+                            "strengths": "He listens carefully, simplifies complex messaging and brings strong professional networks.",
+                            "teamwork": "No concerns. He was respectful with staff, volunteers and Board Members.",
+                            "recommendation": "Yes. I would confidently recommend him.",
+                        },
+                        "completed_at": now,
+                    },
+                ],
+                "internal_preview": True,
+                "created_at": now,
+                "updated_at": now,
+            }},
+            upsert=True,
+        )
+
+        profile_token = f"admin-preview-board-profile-marcus-{tag}"
+        await db.board_profile_links.update_one(
+            {"user_id": member["user_id"], "application_id": marcus_id},
+            {"$setOnInsert": {
+                "token": profile_token,
+                "user_id": member["user_id"],
+                "application_id": marcus_id,
+                "status": "Completed",
+                "prefill": {
+                    "full_name": "Marcus Chen",
+                    "email": "marcus.chen@nonprofitboardbuilder.internal",
+                    "professional_title": "Vice President of Marketing",
+                    "employer": "Fictional Impact Brands",
+                    "linkedin": "https://www.linkedin.com/in/marcus-chen-preview",
+                    "location": "Atlanta, Georgia",
+                },
+                "internal_preview": True,
+                "created_at": now,
+            }},
+            upsert=True,
+        )
+        await db.board_profile_responses.update_one(
+            {"user_id": member["user_id"], "application_id": marcus_id},
+            {"$setOnInsert": {
+                "response_id": f"admin-preview-board-profile-response-marcus-{tag}",
+                "user_id": member["user_id"],
+                "application_id": marcus_id,
+                "data": {
+                    "full_name": "Marcus Chen",
+                    "email": "marcus.chen@nonprofitboardbuilder.internal",
+                    "professional_title": "Vice President of Marketing",
+                    "employer": "Fictional Impact Brands",
+                    "skills": "Brand strategy, communications, digital marketing, executive messaging and partnership storytelling",
+                    "desired_contribution": "Lead board-level communications strategy and help strengthen fundraising and partner-facing materials.",
+                    "monthly_capacity": "4 hours per month",
+                    "leadership_interest": "Yes — marketing and communications",
+                    "networks": "Marketing executives, agency leaders, local businesses and corporate communications teams.",
+                },
+                "submitted_at": now,
+                "internal_preview": True,
+            }},
+            upsert=True,
+        )
+
+        for agreement_type, title in [
+            ("board_member_agreement", "Board Member Agreement"),
+            ("confidentiality_agreement", "Confidentiality Agreement"),
+            ("conflict_of_interest_agreement", "Conflict of Interest Agreement"),
+        ]:
+            await db.signature_requests.update_one(
+                {"owner_user_id": member["user_id"], "application_id": marcus_id, "agreement_type": agreement_type},
+                {"$setOnInsert": {
+                    "request_id": f"admin-preview-{agreement_type}-{tag}",
+                    "token": f"admin-preview-sign-{agreement_type}-{tag}",
+                    "owner_user_id": member["user_id"],
+                    "application_id": marcus_id,
+                    "agreement_type": agreement_type,
+                    "agreement_title": title,
+                    "material_id": f"admin-preview-material-{agreement_type}-{tag}",
+                    "agreement_version": 1,
+                    "document_snapshot": f"{title}\n\nThis is a realistic Admin Preview agreement for BrightPath Youth Alliance. Use the live generator in Step 7 to test creation of the organization's actual document.",
+                    "board_member_name": "Marcus Chen",
+                    "board_member_email": "marcus.chen@nonprofitboardbuilder.internal",
+                    "organization_name": ORG_NAME,
+                    "status": "Signed",
+                    "signed": {
+                        "typed_signature": "Marcus Chen",
+                        "email": "marcus.chen@nonprofitboardbuilder.internal",
+                        "date": "2026-09-20",
+                        "signed_at": now,
+                        "method": "typed",
+                        "signature_image": "",
+                    },
+                    "internal_preview": True,
+                    "created_at": now,
+                    "updated_at": now,
+                }},
+                upsert=True,
+            )
+
 
     async def seed_guided_product(member: dict, product: str, config: dict) -> str:
         now = now_iso()
