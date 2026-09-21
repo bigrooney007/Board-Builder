@@ -15,6 +15,8 @@ FLOW_VIDEO_DEFS = [
     {"key": "post_payment_welcome", "name": "Post-Payment Welcome Page", "default_url": ""},
     {"key": "fundraising_activation", "name": "Board Fundraising Activation Page", "default_url": "https://www.youtube.com/watch?v=Aw751ZtIIks"},
     {"key": "board_recruitment", "name": "Board Recruitment Page", "default_url": "https://www.youtube.com/watch?v=4aLqppruUvs"},
+    {"key": "recruitment_demonstration", "name": "Recruitment — Pre-Payment Demonstration Video", "default_url": ""},
+    {"key": "recruitment_welcome", "name": "Recruitment — Post-Payment Onboarding Video", "default_url": ""},
     {"key": "board_recruitment_offer", "name": "Board Recruitment Sales Page Video", "default_url": "https://www.youtube.com/watch?v=4aLqppruUvs"},
     {"key": "fundraising_activation_offer", "name": "Board Fundraising Activation Sales Page Video", "default_url": "https://www.youtube.com/watch?v=Aw751ZtIIks"},
     {"key": "game_homepage", "name": "Fundraising Game — Homepage Explainer Video", "default_url": ""},
