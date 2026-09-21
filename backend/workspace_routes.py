@@ -377,8 +377,7 @@ def create_workspace_router(db) -> APIRouter:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
             reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
-            if reference_status != "Completed":
-                raise HTTPException(status_code=409, detail="Complete the automated reference check before preparing the Conditional Appointment Email.")
+            background_status = (application.get("background_check") or {}).get("status") or "Not started"
             required_types = ["organization_overview", "board_manual", "board_member_agreement",
                               "confidentiality_agreement", "conflict_of_interest_agreement"]
             missing = []
@@ -435,8 +434,13 @@ def create_workspace_router(db) -> APIRouter:
                 })
             links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
             context += ("\n\nCONDITIONAL APPOINTMENT FLOW (authoritative):"
-                        "\nThe automated reference check is complete. This email conditionally appoints the candidate and prepares them for onboarding. "
-                        "The appointment becomes final only after they complete the onboarding documents and the organization confirms the final appointment."
+                        f"\nREFERENCE PROCESS STATUS: {reference_status}."
+                        f"\nBACKGROUND CHECK STATUS: {background_status}."
+                        "\nThis email is a CONDITIONAL Board appointment and prepares the candidate for onboarding. "
+                        "If the reference process is not Completed, state clearly that successful completion of the reference process remains a condition. "
+                        "If the background check is neither Completed nor Not Required, state clearly that any required background check remains a condition. "
+                        "The appointment becomes final only after the reference process is Completed, any required background check is Completed or marked Not Required, "
+                        "the onboarding requirements are completed and the organization explicitly confirms the final appointment."
                         "\n\nBOARD ONBOARDING SESSION (use these exact details):\n"
                         + "\n".join(f"{key}: {value}" for key, value in session.items() if value)
                         + "\n\nLINKS TO INCLUDE under a clear 'Complete Before Onboarding' section. Copy every URL exactly:\n"
