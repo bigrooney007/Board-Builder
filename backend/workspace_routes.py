@@ -959,11 +959,36 @@ def create_workspace_router(db) -> APIRouter:
     @router.patch("/applications/{application_id}")
     async def update_application(application_id: str, payload: ApplicationUpdate, request: Request):
         member = await selection_member(request)
-        await owned_application(member["user_id"], application_id)
+        application = await owned_application(member["user_id"], application_id)
         updates = {"updated_at": now_iso()}
         if payload.status is not None:
             if payload.status not in APPLICATION_STATUSES:
                 raise HTTPException(status_code=422, detail="Invalid applicant status")
+            if payload.status == "Selected" and application.get("status") != "Selected":
+                process = await db.reference_processes.find_one(
+                    {"owner_user_id": member["user_id"], "application_id": application_id}, {"_id": 0, "status": 1})
+                reference_status = (process or {}).get("status") or application.get("reference_check_status") or "Not started"
+                background_status = (application.get("background_check") or {}).get("status") or "Not started"
+                signed = await db.signature_requests.find(
+                    {"owner_user_id": member["user_id"], "application_id": application_id,
+                     "agreement_type": {"$in": ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]},
+                     "status": "Signed"},
+                    {"_id": 0, "agreement_type": 1}).to_list(10)
+                signed_types = {item.get("agreement_type") for item in signed}
+                profile_response = await db.board_profile_responses.find_one(
+                    {"user_id": member["user_id"], "application_id": application_id}, {"_id": 0, "response_id": 1})
+                missing = []
+                if reference_status != "Completed": missing.append("completed reference process")
+                if background_status not in {"Completed", "Not Required"}: missing.append("background check completed or marked Not Required")
+                for agreement_type, title in [
+                    ("board_member_agreement", "signed Board Member Agreement"),
+                    ("confidentiality_agreement", "signed Confidentiality Agreement"),
+                    ("conflict_of_interest_agreement", "signed Conflict of Interest Agreement"),
+                ]:
+                    if agreement_type not in signed_types: missing.append(title)
+                if not profile_response: missing.append("completed Board Member Profile")
+                if missing:
+                    raise HTTPException(status_code=409, detail="Complete these items before confirming the Final Board Appointment: " + ", ".join(missing))
             updates["status"] = payload.status
         if payload.notes is not None:
             updates["notes"] = payload.notes
