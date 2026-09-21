@@ -18,7 +18,7 @@ export const RecruitmentGameIntake = ({ onComplete, returnOnComplete = false }) 
     memberApi.get("/recruit/free/member-assessment/current").then(({ data }) => {
       setAssessment(data); setAnswers(data.answers || {});
       const first = QUESTIONS.findIndex(([key]) => !(data.answers || {})[key]);
-      setStep(first < 0 ? 4 : first);
+      setStep(first < 0 ? (data.result ? 4 : 0) : first);
     }).catch((e) => setError(e.response?.data?.detail || "We could not open your Recruitment Game."));
   }, []);
   const save = async () => {
