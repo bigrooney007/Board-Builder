@@ -158,6 +158,38 @@ def test_admin_can_open_all_four_isolated_product_dashboards_without_a_customer_
     assert "create_admin_dashboard_preview_router(db)" in server
 
 
+def test_admin_dashboard_launcher_uses_the_seeded_member_identity_for_reads_and_writes():
+    launcher = source("frontend/src/admin/DashboardPreviewSection.jsx")
+    preview = source("frontend/src/adminPreview.jsx")
+    assert 'import { clearAdminPreview } from "@/adminPreview"' in launcher
+    clear_position = launcher.index("clearAdminPreview();")
+    navigate_position = launcher.index("window.location.assign(response.data.dashboard_url)")
+    assert clear_position < navigate_position
+    assert 'sessionStorage.removeItem("adminPreview")' in preview
+
+
+def test_external_applicant_upload_accepts_only_supported_cv_formats():
+    frontend = source("frontend/src/member/workspace/ApplicantModules.jsx")
+    backend = source("backend/workspace_routes.py")
+    assert 'accept=".pdf,.doc,.docx"' in frontend
+    assert 'extension not in {".pdf", ".doc", ".docx"}' in backend
+    assert "The uploaded CV file is empty" in backend
+
+
+def test_board_participant_pages_do_not_advertise_other_products():
+    layout = source("frontend/src/funnels/FunnelLayout.jsx")
+    recommitment = source("frontend/src/funnels/BoardRecommitmentFormPage.jsx")
+    planning = source("frontend/src/funnels/PlanningFormPage.jsx")
+    plan = source("frontend/src/funnels/StrategyPlanPage.jsx")
+    review = source("frontend/src/funnels/StrategyReviewPage.jsx")
+    assert 'isolated ? <footer' in layout
+    assert "Nonprofit Board Builder Home" in layout
+    assert "<FunnelLayout restrained isolated>" in recommitment
+    assert "<FunnelLayout restrained isolated>" in planning
+    assert "<FunnelLayout restrained isolated>" in plan
+    assert "<FunnelLayout restrained isolated>" in review
+
+
 def test_admin_dashboard_preview_records_are_hidden_from_customer_reporting():
     contacts = source("backend/admin_contacts_routes.py")
     game = source("backend/game_routes.py")

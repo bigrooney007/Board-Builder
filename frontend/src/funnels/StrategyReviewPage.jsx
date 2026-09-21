@@ -60,13 +60,13 @@ export default function StrategyReviewPage() {
     }
   };
 
-  if (state === "loading") return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-loading"><h2>{strategyReviewText.h_loading}</h2></div></main></FunnelLayout>;
+  if (state === "loading") return <FunnelLayout restrained isolated><main><div className="intake-card" data-testid="sr-loading"><h2>{strategyReviewText.h_loading}</h2></div></main></FunnelLayout>;
   if (state === "invalid") {
-    return <FunnelLayout restrained><main><div className="intake-card" data-testid="sr-invalid"><h2>{strategyReviewText.h_thisReviewLinkIsNot}</h2><p>{strategyReviewPageText.pleaseContactThePersonWho}</p></div></main></FunnelLayout>;
+    return <FunnelLayout restrained isolated><main><div className="intake-card" data-testid="sr-invalid"><h2>{strategyReviewText.h_thisReviewLinkIsNot}</h2><p>{strategyReviewPageText.pleaseContactThePersonWho}</p></div></main></FunnelLayout>;
   }
   if (state === "done") {
     return (
-      <FunnelLayout restrained>
+      <FunnelLayout restrained isolated>
         <main>
           <div className="intake-card" data-testid="sr-thank-you">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Review submitted</p>
@@ -80,7 +80,7 @@ export default function StrategyReviewPage() {
   }
 
   return (
-    <FunnelLayout restrained>
+    <FunnelLayout restrained isolated>
       <main data-testid="sr-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="sr-hero">
           <h1 data-testid="sr-title">{strategyReviewText.h_fundraisingStrategyPlan}</h1>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { clearAdminPreview } from "@/adminPreview";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -18,6 +19,10 @@ export const DashboardPreviewSection = () => {
     setOpening(product); setError("");
     try {
       const response = await client.post(`/admin/dashboard-preview/${product}`);
+      // These launchers create a real, isolated preview-member session. A stale
+      // public-funnel preview header would otherwise override that member cookie
+      // and split reads and writes between two different preview identities.
+      clearAdminPreview();
       window.location.assign(response.data.dashboard_url);
     } catch (err) {
       setError(err.response?.data?.detail || "The dashboard preview could not be opened.");

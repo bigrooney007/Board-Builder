@@ -687,7 +687,12 @@ def create_workspace_router(db) -> APIRouter:
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
         if cv is not None and cv.filename:
+            extension = os.path.splitext(cv.filename)[1].lower()
+            if extension not in {".pdf", ".doc", ".docx"}:
+                raise HTTPException(status_code=422, detail="Upload the applicant's CV as a PDF, DOC, or DOCX file")
             content = await cv.read()
+            if not content:
+                raise HTTPException(status_code=422, detail="The uploaded CV file is empty")
             if len(content) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=413, detail="CV file is too large (10MB maximum)")
             file_id = await cv_bucket.upload_from_stream(cv.filename, content)

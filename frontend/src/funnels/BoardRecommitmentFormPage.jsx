@@ -125,7 +125,7 @@ export default function BoardRecommitmentFormPage() {
   const prefilled = Boolean(context?.prefill?.full_name && context?.prefill?.email);
 
   return (
-    <FunnelLayout restrained>
+    <FunnelLayout restrained isolated>
       <main data-testid="recommit-page">
         {gate === "loading" && <div className="intake-card"><p>Loading…</p></div>}
         {gate === "invalid" && (

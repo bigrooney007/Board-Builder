@@ -185,7 +185,7 @@ const ExternalApplicantForm = ({ refresh }) => {
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
         <label className="field"><span>Applicant Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
-        <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
+        <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add Applicant"}</button>
       {message && <p className="member-success" data-testid="external-applicant-message">{message}</p>}

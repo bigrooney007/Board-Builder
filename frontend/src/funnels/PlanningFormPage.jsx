@@ -69,18 +69,18 @@ export default function PlanningFormPage() {
   };
 
   if (state === "loading") {
-    return <FunnelLayout restrained><main><div className="intake-card" data-testid="pf-loading"><h2>{planningFormText.h_loading}</h2></div></main></FunnelLayout>;
+    return <FunnelLayout restrained isolated><main><div className="intake-card" data-testid="pf-loading"><h2>{planningFormText.h_loading}</h2></div></main></FunnelLayout>;
   }
   if (state === "invalid") {
     return (
-      <FunnelLayout restrained>
+      <FunnelLayout restrained isolated>
         <main><div className="intake-card" data-testid="pf-invalid"><h2>{planningFormText.h_thisFormLinkIsNot}</h2><p>{planningFormPageText.pleaseContactThePersonWho}</p></div></main>
       </FunnelLayout>
     );
   }
   if (state === "done") {
     return (
-      <FunnelLayout restrained>
+      <FunnelLayout restrained isolated>
         <main>
           <div className="intake-card" data-testid="pf-thank-you">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Response submitted</p>
@@ -95,7 +95,7 @@ export default function PlanningFormPage() {
 
   const form = context.form;
   return (
-    <FunnelLayout restrained>
+    <FunnelLayout restrained isolated>
       <main data-testid="pf-page">
         <section className="funnel-hero-banner brp-hero intake-hero" data-testid="pf-hero">
           <h1 data-testid="pf-title">{form.title}</h1>
