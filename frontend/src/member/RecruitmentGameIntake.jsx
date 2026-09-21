@@ -18,7 +18,7 @@ export const RecruitmentGameIntake = ({ onComplete, returnOnComplete = false }) 
     memberApi.get("/recruit/free/member-assessment/current").then(({ data }) => {
       setAssessment(data); setAnswers(data.answers || {});
       const first = QUESTIONS.findIndex(([key]) => !(data.answers || {})[key]);
-      setStep(first < 0 ? (data.result ? 4 : 0) : first);
+      setStep(first < 0 ? 4 : first);
     }).catch((e) => setError(e.response?.data?.detail || "We could not open your Recruitment Game."));
   }, []);
   const save = async () => {
@@ -27,26 +27,29 @@ export const RecruitmentGameIntake = ({ onComplete, returnOnComplete = false }) 
     setBusy(true); setError("");
     try {
       await memberApi.put(`/recruit/free/${assessment.token}/answer`, { question: step + 1, text });
-      if (step < 3) setStep(step + 1);
-      else {
-        const response = await memberApi.post(`/recruit/free/${assessment.token}/result`);
-        setAssessment({ ...assessment, result: response.data.result });
-        if (returnOnComplete) onComplete?.(); else setStep(4);
+      if (step < 3) {
+        setStep(step + 1);
+      } else if (returnOnComplete) {
+        onComplete?.();
+      } else {
+        setStep(4);
       }
     } catch (e) { setError(e.response?.data?.detail || "We could not save this answer."); }
     setBusy(false);
   };
   if (!assessment) return <p>{error || "Opening your Recruitment Game…"}</p>;
   if (step === 4) return <div data-testid="recruitment-game-complete">
-    <p className="member-success"><strong>Your Recruitment Game is complete.</strong> Your answers now power the board-member profiles and recruitment materials below.</p>
-    {(assessment.result?.priority_roles || []).map((role, index) => <article className="sgr-result-item" key={index}><h3>{role.role_name}</h3><p>{role.why_this_person_is_important} {role.how_this_person_can_support}</p></article>)}
-    <button className="button button-small button-outline" onClick={() => setStep(0)}>REVIEW MY ANSWERS</button>
+    <p className="member-success"><strong>Your four Recruitment Game answers are saved.</strong> Return to the dashboard and continue to Step 2 to identify the exact Board Members your organization needs.</p>
+    <div className="sgr-row-actions">
+      <button className="button button-small button-outline" onClick={() => setStep(0)}>REVIEW MY ANSWERS</button>
+      {onComplete && <button className="button button-small" onClick={onComplete}>RETURN TO DASHBOARD</button>}
+    </div>
   </div>;
   const [key, heading, question] = QUESTIONS[step];
   return <div data-testid={`recruitment-game-question-${step + 1}`}>
     <p className="eyebrow">QUESTION {step + 1} OF 4</p><h3>{heading}</h3><p><strong>{question}</strong></p>
     <textarea rows={7} value={answers[key] || ""} onChange={(e) => setAnswers({ ...answers, [key]: e.target.value })} placeholder="Type your answer in your own words…" />
     {error && <p className="submit-error">{error}</p>}
-    <div className="sgr-row-actions">{step > 0 && <button className="button button-small button-outline" onClick={() => setStep(step - 1)}>BACK</button>}<button className="button button-small" disabled={busy || !String(answers[key] || "").trim()} onClick={save}>{busy ? "SAVING…" : step === 3 ? "SHOW ME WHO WE NEED TO RECRUIT" : "CONTINUE"}</button></div>
+    <div className="sgr-row-actions">{step > 0 && <button className="button button-small button-outline" onClick={() => setStep(step - 1)}>BACK</button>}<button className="button button-small" disabled={busy || !String(answers[key] || "").trim()} onClick={save}>{busy ? "SAVING…" : step === 3 ? (returnOnComplete ? "SAVE AND RETURN TO DASHBOARD" : "SAVE MY ANSWERS") : "CONTINUE"}</button></div>
   </div>;
 };
