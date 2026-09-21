@@ -485,74 +485,24 @@ def create_workspace_router(db) -> APIRouter:
                 {"user_id": user_id, "type": "formal_appointment_letter", "application_id": application_id, "status": "Approved"},
                 {"_id": 0, "material_id": 1})
             if letter_material:
-                letter_link = await db.share_links.find_one({"material_id": letter_material["material_id"]}, {"_id": 0, "share_token": 1})
+                letter_link = await db.share_links.find_one(
+                    {"material_id": letter_material["material_id"]},
+                    {"_id": 0, "share_token": 1})
                 if not letter_link:
                     letter_link = {"share_token": secrets.token_urlsafe(24)}
-                    await db.share_links.insert_one({"share_token": letter_link["share_token"], "material_id": letter_material["material_id"], "user_id": user_id, "created_at": now_iso()})
-                links.append(f"Formal Board Appointment Letter (View): {origin}/shared/{letter_link['share_token']}")
-            overview_token = await ensure_share_token(user_id, "organization_overview")
-            manual_token = await ensure_share_token(user_id, "board_manual")
-            if overview_token:
-                links.append(f"Organization Overview (View): {origin}/shared/{overview_token}")
-            if manual_token:
-                links.append(f"Board Manual (View): {origin}/shared/{manual_token}")
-            unapproved = []
-            for doc_type in ["organization_overview", "board_manual"]:
-                approved_doc = await db.generated_materials.find_one({"user_id": user_id, "type": doc_type, "application_id": "", "status": "Approved"}, {"_id": 0, "material_id": 1})
-                if not approved_doc:
-                    unapproved.append(GENERATION_TYPES[doc_type]["title"])
-            # candidate-specific signature links — created ONLY from the current APPROVED master version (idempotent per agreement + candidate)
-            for agreement_type in ["board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"]:
-                existing_request = await db.signature_requests.find_one(
-                    {"owner_user_id": user_id, "application_id": application_id, "agreement_type": agreement_type, "status": {"$ne": "Void"}},
-                    {"_id": 0, "token": 1, "status": 1})
-                if existing_request and existing_request.get("status") == "Signed":
-                    continue
-                if not existing_request:
-                    approved_master = await db.generated_materials.find_one(
-                        {"user_id": user_id, "type": agreement_type, "application_id": "", "status": "Approved"}, {"_id": 0, "material_id": 1})
-                    if not approved_master:
-                        unapproved.append(GENERATION_TYPES[agreement_type]["title"])
-                        continue
-                    agreement_material = await get_current_material(db, user_id, agreement_type, "")
-                    token = secrets.token_urlsafe(24)
-                    await db.signature_requests.insert_one({
-                        "request_id": new_id(), "token": token, "owner_user_id": user_id,
-                        "application_id": application_id, "agreement_type": agreement_type,
-                        "agreement_title": GENERATION_TYPES[agreement_type]["title"],
-                        "material_id": agreement_material["material"]["material_id"],
-                        "agreement_version": agreement_material["current"]["version"],
-                        "document_snapshot": agreement_material["current"]["display_text"],
-                        "organization_name": (await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}).get("organization_name", ""),
-                        "board_member_name": application.get("profile_snapshot", {}).get("full_name", ""),
-                        "board_member_email": application.get("applicant_email", ""),
-                        "status": "Ready for Signature", "created_at": now_iso(), "updated_at": now_iso(),
+                    await db.share_links.insert_one({
+                        "share_token": letter_link["share_token"],
+                        "material_id": letter_material["material_id"],
+                        "user_id": user_id,
+                        "created_at": now_iso(),
                     })
-                    existing_request = {"token": token}
-                links.append(f"{GENERATION_TYPES[agreement_type]['title']} (Review and Sign): {origin}/sign/{existing_request['token']}")
-            if unapproved:
-                context += ("\n\nONBOARDING DOCUMENTS NOT YET APPROVED (omit these from the email entirely — never invent a link; the founder still needs to prepare/approve them): "
-                            + ", ".join(unapproved))
-            # candidate-specific profile form link (idempotent)
-            profile_link = await db.board_profile_links.find_one({"user_id": user_id, "application_id": application_id}, {"_id": 0, "token": 1})
-            if not profile_link:
-                profile_link = {"token": secrets.token_urlsafe(24)}
-                snapshot = application.get("profile_snapshot", {})
-                await db.board_profile_links.insert_one({
-                    "token": profile_link["token"], "user_id": user_id, "application_id": application_id,
-                    "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
-                                "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
-                                "linkedin": snapshot.get("linkedin", ""), "location": f"{snapshot.get('city', '')} {snapshot.get('state_region', '')}".strip()},
-                    "status": "Created", "created_at": now_iso(),
-                })
-            links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
-            background = (application.get("background_check") or {}).get("status", "")
-            context += f"\n\nBACKGROUND CHECK STATUS FOR THIS CANDIDATE: {background or 'Not recorded'} — never state a background check is required if it is marked Not Required."
-            session = profile.get("onboarding_session") or {}
-            if session:
-                context += "\n\nBOARD ONBOARDING SESSION (invite the candidate to this session using these exact details):\n" + "\n".join(f"{k}: {v}" for k, v in session.items() if v)
+                links.append(f"Formal Board Appointment Letter (View): {origin}/shared/{letter_link['share_token']}")
+            context += (
+                "\n\nFINAL APPOINTMENT EMAIL: Onboarding has already been completed. "
+                "Do not ask the new Board Member to repeat onboarding, re-sign documents or redo their Board Member Profile."
+            )
             if links:
-                context += ("\n\nLINKS TO INCLUDE IN THE EMAIL under a clear 'Before the Onboarding Session' section (use these exact URLs on their own lines; already-signed agreements are intentionally omitted — do not ask for them again):\n" + "\n".join(links))
+                context += "\n\nFINAL APPOINTMENT LINK TO INCLUDE:\n" + "\n".join(links)
         if payload.type == "first_board_meeting_invitation":
             meeting = profile.get("first_meeting") or {}
             if meeting:
