@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import { useMemberAuth } from "@/member/MemberAuthContext";
+import { memberApi } from "@/member/api";
 import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import "@/game/game.css";
