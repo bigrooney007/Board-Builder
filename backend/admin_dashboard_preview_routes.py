@@ -189,11 +189,24 @@ Daniel: I will help set up the dashboard and review the pipeline numbers.
 Rooney: Agreed. Our first 90 days are system setup, warm introductions, visibility and cultivation. Concentrated asks begin after the strongest relationships have moved through the pathway. We will review the pipeline at every board meeting."""
     
 
-def recommitment_conclusion(name: str, role: str) -> str:
+def recommitment_conclusion(name: str, role: str, direction: str) -> str:
+    if direction == "Move to Advisory Board":
+        return (
+            f"{name} confirmed that active Board service is no longer realistic at the level the organization now requires. "
+            "We agreed to move them from the active Board into an advisory relationship focused on marketing and communications. "
+            "They can contribute one to two hours per month when a specific request is made and will not carry recurring governance "
+            "or execution responsibility. The founder will send the advisory transition confirmation and clarify how future requests will work."
+        )
+    if direction == "Step Down":
+        return (
+            f"{name} confirmed that they are not able to recommit to active Board service because of changed work and family commitments. "
+            "We agreed on a respectful departure from the Board with no continuing governance obligation. They are willing to remain supportive "
+            "of the mission and may make an occasional introduction when appropriate. The founder will send the departure confirmation and complete the transition."
+        )
     return (
         f"{name} confirmed that they want to continue serving as {role}. We agreed that their primary contribution "
         "will be a defined board-level responsibility rather than general support. They can commit four to six hours "
-        "per month, will attend scheduled board meetings, and will report progress on the responsibility they accept. "
+        "per month, will attend scheduled Board meetings, and will report progress on the responsibility they accept. "
         "The organization will provide clear information, deadlines, access to the right staff contact and the materials needed to execute."
     )
 
@@ -814,7 +827,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                             f"Rooney: We agreed to record the conclusion clearly and use it as the authority for the next step."
                         ),
                         "conversation_direction": row["direction"],
-                        "conversation_conclusion": recommitment_conclusion(row["name"], row["role"]),
+                        "conversation_conclusion": recommitment_conclusion(row["name"], row["role"], row["direction"]),
                         "internal_preview": True,
                         "created_at": now,
                     }},
