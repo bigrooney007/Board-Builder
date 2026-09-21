@@ -296,6 +296,14 @@ export const sectionToText = (section, data) => {
     return RESOURCE_LABELS.map(([field, label]) =>
       (data[field] || []).length ? `${label.toUpperCase()}\n${data[field].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
   }
+  if (section.v2 === "budget") {
+    const parts = [];
+    if ((data.required_now || []).length) parts.push("REQUIRED NOW\n" + data.required_now.map((item) => "- " + item.item + (item.why_needed ? " — " + item.why_needed : "") + (item.lowest_cost_approach ? " — Lean approach: " + item.lowest_cost_approach : "") + " — Cost: " + (item.cost || "PRICE TO CONFIRM")).join("\n"));
+    if ((data.later_or_optional || []).length) parts.push("LATER / OPTIONAL\n" + data.later_or_optional.map((item) => "- " + item.item + (item.why_later ? " — " + item.why_later : "") + (item.lowest_cost_approach ? " — Lean approach: " + item.lowest_cost_approach : "") + " — Cost: " + (item.cost || "PRICE TO CONFIRM")).join("\n"));
+    if ((data.cost_reduction_options || []).length) parts.push("WAYS TO REDUCE THE COST\n" + data.cost_reduction_options.map((item) => "- " + item).join("\n"));
+    if (data.budget_summary) parts.push(data.budget_summary);
+    return parts.join("\n\n");
+  }
   if (section.v2 === "grouped") {
     return (Array.isArray(data) ? data : []).map((group) =>
       (group.items || []).length ? `${group.area}\n${group.items.map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
