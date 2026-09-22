@@ -30,7 +30,7 @@ export const FunnelLayout = ({ children, restrained = false, isolated = false })
       <AdminPreviewBanner />
       <ReviewModeBanner />
 
-      {!publicTask && (
+      {!publicTask && !isolated && (
         <nav className="site-nav funnel-nav" data-testid="funnel-navigation" style={{ justifyContent: "flex-end" }}>
           {!loading && (
             member ? (
