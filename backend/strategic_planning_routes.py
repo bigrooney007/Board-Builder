@@ -507,8 +507,11 @@ def create_strategic_planning_router(db) -> APIRouter:
         if record:
             project = await owned_project(record["project_id"])
             content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
+            is_lead = record.get("role") == "Lead User"
             return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""),
-                    "submitted": record["status"] == "COMPLETED",
+                    "submitted": record["status"] == "COMPLETED" and not is_lead,
+                    "is_lead_user": is_lead,
+                    "existing_answers": record.get("response", {}) if is_lead else {},
                     "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
                     "form": content}
         project = await db.sp_projects.find_one({"generic_form_token": token}, {"_id": 0})
@@ -536,7 +539,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                     "created_at": now_iso(), "joined_via": "form_link",
                 }
                 await db.sp_participants.insert_one({**record})
-        if record["status"] == "COMPLETED":
+        if record["status"] == "COMPLETED" and record.get("role") != "Lead User":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         project = await owned_project(record["project_id"])
         content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
@@ -552,8 +555,9 @@ def create_strategic_planning_router(db) -> APIRouter:
                 raise HTTPException(status_code=422, detail=f"Please answer: {question['prompt']}")
             answers[question["id"]] = value
         now = now_iso()
+        update_filter = {"participant_id": record["participant_id"]} if record.get("role") == "Lead User" else {"participant_id": record["participant_id"], "status": {"$ne": "COMPLETED"}}
         result = await db.sp_participants.update_one(
-            {"participant_id": record["participant_id"], "status": {"$ne": "COMPLETED"}},
+            update_filter,
             {"$set": {"status": "COMPLETED", "response": answers, "submitted_at": now,
                       "name": payload.full_name, "email": str(payload.email).lower(),
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
@@ -587,10 +591,15 @@ def create_strategic_planning_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
         project = await owned_project(record["project_id"])
         prompts = {q["id"]: q for q in record.get("response_questions", [])}
+        if not prompts:
+            form = await db.sp_forms.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
+            for section in (form.get("content") or {}).get("sections", []):
+                for q in section.get("questions", []):
+                    prompts[q.get("id","")] = {**q, "section": section.get("title","")}
         rows = []
         for qid, value in (record.get("response") or {}).items():
             q = prompts.get(qid, {})
-            rows.append({"section": q.get("section", ""), "question": q.get("prompt", qid), "answer": value})
+            rows.append({"section": q.get("section", ""), "question": q.get("prompt") or "Strategic Planning Question", "answer": value})
         return {"organization_name": project["organization_name"], "name": record.get("name", ""), "submitted_at": record.get("submitted_at", ""), "responses": rows}
 
     @router.get("/strategic-planning-response/{participant_id}/pdf")
