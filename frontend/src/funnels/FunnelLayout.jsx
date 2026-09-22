@@ -26,7 +26,7 @@ export const FunnelLayout = ({ children, restrained = false, isolated = false })
   };
 
   return (
-    <div className="funnel-page-shell">
+    <div className={`funnel-page-shell${restrained ? " funnel-restrained" : ""}`}>
       <AdminPreviewBanner />
       <ReviewModeBanner />
 
