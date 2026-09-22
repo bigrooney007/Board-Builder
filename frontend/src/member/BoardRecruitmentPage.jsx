@@ -155,13 +155,13 @@ export default function BoardRecruitmentPage() {
               </div>
             </Section>
 
-            <Section number={10} title="CONFIRM THE FINAL BOARD APPOINTMENT" summary="After onboarding, formally confirm the appointment and send the final appointment documents." testId="br-section-final-appointment">
-              <p>After the onboarding conversation is complete and you have saved the Onboarding Conclusion / Role Agreement, confirm the person's final Board appointment. Reference and background-check statuses remain visible to you but do not make the decision for you.</p>
+            <Section number={10} title="CONFIRM THE FINAL BOARD APPOINTMENT" summary="Confirm the appointment once the Board Member Profile is complete." testId="br-section-final-appointment">
+              <p>The Board Member Profile is the handoff into appointment and personalization. Once it is complete, you can confirm the person's final Board appointment. If you agreed a more specific responsibility during onboarding, you can record that conclusion as an optional refinement. Reference and background-check statuses remain visible to you but do not make the decision for you.</p>
               <FormalAppointmentWorkspace />
             </Section>
 
             <Section number={11} title="MY TEAM" summary="Create and manage the individual Board Member Portfolios for the people who joined your Board." testId="br-section-team">
-              <p>Each formally appointed Board Member appears here. Their Portfolio is built from their application, experience, Board Member Profile and, most importantly, what you actually agreed together during onboarding.</p>
+              <p>Each formally appointed Board Member appears here. Their first Portfolio is built from the information already collected through recruitment: their application, CV, Board Member Profile, skills, interests, capacity, networks, the role they were recruited to strengthen and the organization's real needs. If you recorded a specific onboarding agreement, that agreement refines the Portfolio rather than being required to create it.</p>
               <PortfolioSection />
             </Section>
 
