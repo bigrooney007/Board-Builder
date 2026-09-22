@@ -12,7 +12,7 @@ V1_SECTIONS = [
     ("fundraising_audiences", "Ideal Funding Audiences"), ("where_to_find", "Where To Find Potential Funders"),
     ("attraction", "Attraction Strategy"), ("fundraising_process", "Fundraising Process"),
     ("technology", "Technology We Need To Execute"), ("fundraising_team", "The Fundraising Team We Need"),
-    ("materials", "Fundraising Materials We Need"), ("execution_timeline", "Execution Timeline"),
+    ("materials", "Fundraising Materials We Need"), ("execution_budget", "Execution Budget"), ("execution_timeline", "Execution Timeline"),
     ("additional_board_ideas", "Additional Board Ideas"), ("next_step", "Next Step"),
 ]
 V2_SECTIONS = [
