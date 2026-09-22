@@ -4,6 +4,7 @@ import { Copy } from "lucide-react";
 import { MemberShell } from "./MemberShell";
 import { memberApi } from "./api";
 import "./sgr.css";
+import "../funnels/strategic-planning-dashboard.css";
 
 export default function RecruitmentOnboardingSessionPage() {
   const navigate = useNavigate();
