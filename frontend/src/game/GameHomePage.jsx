@@ -5,13 +5,15 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money, useGameContent } from "./gameShared";
+import { trackPlatformEvent, useHomepageContent } from "@/clean/platform";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
 
 export default function GameHomePage() {
   const navigate = useNavigate();
   const { member, loading: authLoading, refresh } = useMemberAuth();
-  const content = useGameContent();
+  const sourceContent = useGameContent();
+  const content = useHomepageContent("board-fundraising-game", sourceContent || {});
   const [goal, setGoal] = useState("");
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
   const [starting, setStarting] = useState(false);
@@ -19,7 +21,7 @@ export default function GameHomePage() {
 
   useEffect(() => { document.title = "The Board Fundraising Game | Nonprofit Board Builder"; }, []);
 
-  if (!content) return <div className="bfg" style={{ minHeight: "100vh" }} />;
+  if (!sourceContent) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
   const startDemonstration = async () => {
     const digits = String(goal).replace(/[^0-9]/g, "");
@@ -40,6 +42,7 @@ export default function GameHomePage() {
           goal: { amount: Number(digits), purpose: "Reach our fundraising goal" },
           primary_user: { full_name: lead.name.trim(), email: member.email || lead.email.trim() },
         });
+        trackPlatformEvent("board-fundraising-game", "contact_entered");
         navigate("/game/demonstration");
         return;
       }
@@ -55,6 +58,7 @@ export default function GameHomePage() {
         navigate("/login?next=" + encodeURIComponent("/game/demonstration"), { replace: true });
         return;
       }
+      trackPlatformEvent("board-fundraising-game", "contact_entered");
       storeMemberToken(response.data.token);
       await refresh();
       navigate("/game/demonstration");
