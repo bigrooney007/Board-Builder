@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { ApplicantStepFour, ApplicantStepOne, ApplicantStepThree, ApplicantStepTwo } from "./ApplicantFormSteps";
+import { trackPlatformEvent } from "@/clean/platform";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -68,6 +69,7 @@ export const ApplicantForm = ({ onComplete }) => {
       form.append("payload", JSON.stringify(payload));
       if (data.resume) form.append("resume", data.resume);
       const response = await axios.post(`${API}/applicants`, form);
+      trackPlatformEvent("board-applicant-network", "contact_entered");
       onComplete(response.data);
     } catch (error) {
       const detail = error.response?.data?.detail;
