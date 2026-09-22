@@ -129,7 +129,7 @@ function ApplicantsSection({ applicants, filters, setFilters, selected, setSelec
     </tr></thead><tbody>{applicants.map(item=><tr key={item.applicant_id}>
       <td><input type="checkbox" checked={selected.includes(item.applicant_id)} onChange={()=>setSelected(current=>current.includes(item.applicant_id)?current.filter(id=>id!==item.applicant_id):[...current,item.applicant_id])}/></td>
       <td><button className="table-link" onClick={()=>openProfile(item.applicant_id)}>{item.applicant_id}</button></td>
-      <td>{item.first_name} {item.last_name}</td><td>{item.email}</td><td>{item.country}<small>{item.city}</small></td><td>{item.job_title}</td><td>{item.professional_field}</td><td>{item.skills?.[0]}</td><td>{item.causes?.[0]}</td><td>{item.board_types?.[0]}</td><td>{item.availability}</td><td>{item.status}</td><td><span className={`sync-badge ${item.resend_segment_status?.toLowerCase()}`}>{item.resend_segment_status}</span></td><td>{item.created_at?.slice(0,10)}</td>
+      <td>{item.first_name} {item.last_name}</td><td>{item.email}</td><td>{item.phone}</td><td>{item.country}<small>{item.city}</small></td><td>{item.job_title}</td><td>{item.professional_field}</td><td>{item.skills?.[0]}</td><td>{item.causes?.[0]}</td><td>{item.board_types?.[0]}</td><td>{item.availability}</td><td>{item.status}</td><td><span className={`sync-badge ${item.resend_segment_status?.toLowerCase()}`}>{item.resend_segment_status}</span></td><td>{item.created_at?.slice(0,10)}</td>
     </tr>)}</tbody></table></div>
   </section>;
 }
