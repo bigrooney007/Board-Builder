@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { BfgShell } from "./gameShared";
+import { trackPlatformEvent } from "@/clean/platform";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const READY = [
@@ -16,6 +17,7 @@ export default function FacilitatedGameApplicationPage() {
   const set=(key)=>(e)=>setForm(v=>({...v,[key]:e.target.value}));
   const submit=async(e)=>{e.preventDefault();setBusy(true);setError("");try{
     const r=await axios.post(`${API}/facilitated-game-application`,{...form,board_members:Number(form.board_members)});
+    trackPlatformEvent("facilitated-game", "contact_entered");
     setSubmitted(true);
   }catch(err){setError(err.response?.data?.detail || "We could not submit your application. Please try again.");setBusy(false);}};
 
