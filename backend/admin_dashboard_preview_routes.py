@@ -30,8 +30,8 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v3"
-RECRUITMENT_FIXTURE_VERSION = "v5"
-STRATEGIC_FIXTURE_VERSION = "v4"
+RECRUITMENT_FIXTURE_VERSION = "v6"
+STRATEGIC_FIXTURE_VERSION = "v5"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -122,15 +122,120 @@ def strategic_response(lens: str) -> dict:
         ),
         (
             "The immediate priorities should be revenue diversification, board capacity, program outcome evidence and operating discipline. I would turn those priorities into 90-day actions with named owners, clear resources and a Board review point.",
-            "I am willing to lead corporate partnerships and support fundraising strategy, communications and board recruitment. I would take responsibility for opening qualified corporate conversations from my network and reporting progress back to the Board.",
+            "In the first 90 days I would finalize the scorecard, establish the fundraising and partnership pipelines, assign clear owners, and review progress at every Board meeting.",
         ),
     ]
+    role_options = {
+        "Founder perspective:": (
+            "I would participate in the Strategic Execution and Board Development working groups.",
+            "I am willing to lead overall strategic execution, staff coordination and Board accountability for the plan.",
+            "I am happy to support fundraising strategy, Board recruitment and partnership development where founder leadership is useful.",
+        ),
+        "Board Chair perspective:": (
+            "I would join or help shape a Partnerships and Board Development working group.",
+            "I am willing to lead corporate partnerships, employer engagement and Board accountability at Board level.",
+            "I am happy to support fundraising strategy, Board recruitment and relationship development.",
+        ),
+        "Treasurer perspective:": (
+            "I would join or help shape a Finance and Resource Development working group.",
+            "I am willing to lead Board-level budget oversight, cash visibility and financial performance reporting.",
+            "I am happy to support fundraising pipeline reporting, risk review and operational discipline.",
+        ),
+        "Marketing perspective:": (
+            "I would join or help shape a Marketing, Visibility and Partnerships working group.",
+            "I am willing to lead Board-level marketing, communications and visibility review.",
+            "I am happy to support fundraising messaging, corporate-partner storytelling and digital outreach.",
+        ),
+    }
+    rows.append(role_options.get(lens, (
+        "I would like to join a working group connected to the areas where my experience can be useful.",
+        "I am willing to lead in an area that matches my experience and that I explicitly agree to take responsibility for.",
+        "I am happy to support other strategic areas where my expertise, relationships or perspective can help.",
+    )))
     response = {}
-    for index, (first, second) in enumerate(rows, 1):
-        response[f"s{index}_q1"] = f"{lens} {first}"
-        response[f"s{index}_q2"] = f"{lens} {second}"
+    for index, answers in enumerate(rows, 1):
+        for question_index, answer in enumerate(answers, 1):
+            response[f"s{index}_q{question_index}"] = f"{lens} {answer}"
     return response
 
+
+
+def strategic_preview_form_content(answers: dict) -> dict:
+    programs=[x.strip() for x in str(answers.get("programs") or "").split("\n") if x.strip()]
+    rows=[
+        ("Mission",[
+            f"From your view, does our present mission still clearly explain who we serve, how we serve them and the change we are trying to create? What would you keep or change, and why?\n\nPresent mission: {answers.get('mission','')}",
+            "What wording, focus or emphasis would make the mission more useful for guiding the organization's decisions over the next few years?",
+        ]),
+        ("Goals",[
+            f"Looking at our present goals for the next 12 to 24 months, which goals feel most important, which should change, and what goal do you believe we are missing?\n\nPresent goals: {answers.get('goals','')}",
+            "From what you know about the organization and the people we serve, what do you believe we should realistically be trying to achieve during this planning period?",
+        ]),
+        ("Objectives",[
+            f"Our objectives should help us achieve our goals. Looking at what we presently have, which objectives are useful, which need to change, and what specific objectives should we add?\n\nPresent objectives: {answers.get('objectives','')}",
+            "What evidence or result would make you say that these objectives are actually being achieved?",
+        ]),
+    ]
+    for program in programs:
+        rows.append((f"Program: {program}",[
+            f"Thinking specifically about {program}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?",
+            f"From what you have observed, what would make {program} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
+        ]))
+    rows.extend([
+        ("Team & Capacity",[
+            f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {answers.get('team_building','')}",
+            "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
+        ]),
+        ("Operations",[
+            f"From what you have observed, which internal systems or processes help the organization work well and which ones make execution harder?\n\nPresent information: {answers.get('operations','')}",
+            "What operational change would make the biggest practical difference to our ability to deliver the strategy consistently?",
+        ]),
+        ("Marketing & Visibility",[
+            f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {answers.get('marketing','')}",
+            "From what you have seen, where should we be more visible and what would help the right people notice, trust and engage with the organization?",
+        ]),
+        ("Partnerships",[
+            f"Which types of organizations, institutions, businesses or community groups could materially strengthen our mission, and what could a useful partnership actually help us accomplish?\n\nPresent information: {answers.get('partnerships','')}",
+            "Are there relationships or partnership opportunities you believe we should prioritize because of what you know or have observed?",
+        ]),
+        ("Fundraising",[
+            f"From your perspective, what is working and not working about how we presently raise money?\n\nPresent information: {answers.get('fundraising','')}",
+            "Who do you believe is most likely to care about funding this work, where can we reach them, and what should we do to build enough trust to ask for support?",
+        ]),
+        ("Technology",[
+            f"What work do we need technology to make easier, faster or more reliable, and where are our present tools getting in the way?\n\nPresent information: {answers.get('technology','')}",
+            "What technology capability do you believe the organization genuinely needs in order to execute this strategy well?",
+        ]),
+        ("Budget & Resources",[
+            f"Looking at the direction we are considering, where do you believe the organization will need to spend, invest or secure additional resources?\n\nPresent information: {answers.get('budget','')}",
+            "What budget or resource decisions do you believe the Board needs to understand before committing to the strategy?",
+        ]),
+        ("Action Planning",[
+            f"Based on everything above, what do you believe the organization should do first, next and after that to begin executing this strategy?\n\nPresent actions already planned or underway: {answers.get('action_planning','')}",
+            "What practical actions, decisions or resources do you believe are most important in the first 90 days after this Strategic Plan is adopted?",
+        ]),
+        ("Roles We Will Play",[
+            "Which Board committee, working group or recurring area of Board work would you genuinely be interested in joining or helping shape? If no formal committee exists yet, describe the kind of group or area you would be happy to participate in.",
+            "Which areas of this Strategic Plan would you personally be willing to LEAD at Board level? Only name areas you would genuinely be comfortable accepting responsibility for.",
+            "Which areas would you be happy to SUPPORT without being the lead? Describe the kind of contribution, expertise, relationships or help you would be comfortable providing.",
+        ]),
+    ])
+    sections=[]
+    for index,(title,prompts) in enumerate(rows,1):
+        sections.append({
+            "key":f"s{index}",
+            "title":title,
+            "questions":[{"id":f"s{index}_q{q_index}","prompt":prompt,"type":"long","options":[],"required":True}
+                         for q_index,prompt in enumerate(prompts,1)],
+        })
+    return {
+        "introduction":(
+            f"{ORG_NAME} is preparing its next Strategic Plan. We want your own thinking before the Board meets together. "
+            "There are no right or wrong answers. Speak from what you have observed, what you know, and what you genuinely believe would help the organization. "
+            "Your ideas remain attributable to you during the live Board session so the group can review every contribution together."
+        ),
+        "sections":sections,
+    }
 
 def strategic_transcript() -> str:
     return """Rooney: Thank you everyone. We are going section by section and agreeing the starting direction the Board wants carried forward.
