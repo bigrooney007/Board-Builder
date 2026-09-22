@@ -120,13 +120,11 @@ export default function StrategicPlanningSessionPage(){
   <div className="sp-session-topline"><span>Section {index+1} of {session.sections.length}</span><span>{listening?"● TRANSCRIPTION ON":"TRANSCRIPTION OFF"}</span></div>
   <p className="bfg-eyebrow">LIVE STRATEGIC PLANNING SESSION</p><h1>{section.title}</h1>
   {section.current_context&&<div className="sp-current-context"><span>WHERE THE ORGANIZATION IS STARTING</span><p>{section.current_context}</p></div>}
-  <div className="sp-facilitator-prompt">
-    <strong>{section.is_role_planning ? "Discuss the roles people said they would genuinely be willing to play." : section.is_action_planning ? "Turn the strategy into an execution sequence." : "Discuss this with the Board."}</strong>
-    <p>{section.is_role_planning
-      ? "These cards come from each person's own stated willingness before the meeting. They are not assignments. Ask the person to confirm, change or narrow what they are comfortable leading or supporting. Say any final agreement aloud so the transcript can capture it."
-      : section.is_action_planning
-        ? "Review what people believe should happen first, next and after that. Select the actions the Board agrees should shape the first execution cycle."
-        : "Review the ideas shared before the meeting. Let people explain what they mean, then click every idea the Board agrees should shape this section."}</p>
+  <div className="sp-facilitator-prompt" data-testid="section-facilitator-prompt">
+    <strong>{section.facilitator_prompt?.title || "Discuss this with the Board."}</strong>
+    <p>{section.facilitator_prompt?.say || "Review the ideas shared before the meeting. Let people explain what they mean, then click every idea the Board agrees should shape this section."}</p>
+    {(section.facilitator_prompt?.questions||[]).length>0&&<ul>{section.facilitator_prompt.questions.map((question,index)=><li key={index}>{question}</li>)}</ul>}
+    {section.facilitator_prompt?.decision&&<p><strong>Before you move on:</strong> {section.facilitator_prompt.decision}</p>}
   </div>
   <div className="sp-idea-grid">{section.ideas.map(idea=>{const chosen=selected.includes(idea.idea_id);return <button type="button" className={`sp-idea-card ${chosen?"selected":""}`} key={idea.idea_id} onClick={()=>toggleIdea(section,idea.idea_id)}><span className="sp-idea-person">{idea.participant_name}</span><p>{idea.idea}</p><small>{chosen?"SELECTED BY THE BOARD":"CLICK IF THE BOARD AGREES"}</small></button>})}</div>
   {section.allow_keep_current_mission&&<button className={`sp-keep-current ${value==="__keep_current__"?"selected":""}`} onClick={()=>saveDecision(section.key,"__keep_current__")}>LEAVE THE MISSION STATEMENT THE WAY IT IS</button>}
