@@ -32,6 +32,7 @@ PRODUCTS = {
 FIXTURE_VERSION = "v3"
 RECRUITMENT_FIXTURE_VERSION = "v6"
 STRATEGIC_FIXTURE_VERSION = "v5"
+RECOMMITMENT_FIXTURE_VERSION = "v4"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -907,7 +908,11 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
     async def seed_guided_product(member: dict, product: str, config: dict) -> str:
         now = now_iso()
         tag = suffix(member)
-        fixture_version = STRATEGIC_FIXTURE_VERSION if product == "strategic-planning" else FIXTURE_VERSION
+        fixture_version = (
+            STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
+            else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
+            else FIXTURE_VERSION
+        )
         session_id = f"admin_preview_{fixture_version}_{product.replace('-', '_')}_{tag}"
         lead_token = f"admin-preview-{fixture_version}-{product}-{tag}"
         await db.guided_product_leads.update_one(
@@ -1610,6 +1615,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             admin,
             RECRUITMENT_FIXTURE_VERSION if product == "recruitment"
             else STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
+            else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
             else FIXTURE_VERSION,
         )
         if config["entitlements"]:
