@@ -52,6 +52,35 @@ def board_builder_recommendations(title: str, mission: str = "") -> list:
     return ["Review this area against the mission, community need, present capacity, required resources, measurable results and the Board leadership needed to execute it."]
 
 
+def strategic_research_posts(name: str, mission: str = "") -> list:
+    mission_text = mission or "our mission"
+    return [
+        f"""We are reviewing the future direction of {name}, and we do not want to build our next Strategic Plan only from inside the organization. We want to hear from people who experience, work around, or understand the needs connected to our mission.
+
+Please share what you believe the real need is, who is most affected, and what would make the strongest difference. Your perspective will help our Board test its assumptions before agreeing the organization's next direction.""",
+        f"""What does our community need most in relation to {mission_text}? We are asking this before our Board finalizes the next Strategic Plan because community experience should help us understand whether the priorities we see internally match what people are actually experiencing.
+
+Tell us what you have observed personally: what is working, what is not working, what is missing, and what change you believe would matter most.""",
+        f"""Help shape the next chapter of {name}. We are gathering community insight before our Board agrees the organization's future priorities, programs and approach.
+
+From what you have seen or experienced, tell us which needs deserve greater attention, what approaches could work better, and what the organization should understand before making its next strategic decisions.""",
+        f"""Good strategy starts by listening. If you have lived experience, professional knowledge, community relationships or another useful perspective connected to our work, we would value your input.
+
+Please tell us what you believe the organization should protect, change, strengthen or begin doing so that its next Strategic Plan responds to real needs rather than assumptions.""",
+        f"""{name}'s Board is preparing its next Strategic Plan. Before we agree the direction, we want to hear from the people and communities who can see things we may not see from inside the organization.
+
+Take a few minutes to tell us about the need, the people most affected, the approaches you believe could make a difference, what is currently missing, and how people or organizations in the community could help.""",
+    ]
+
+
+def compact_session_idea(value: str, limit: int = 280) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= limit:
+        return text
+    shortened = text[:limit].rsplit(" ", 1)[0].rstrip(" ,.;:")
+    return shortened + "…"
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
