@@ -452,6 +452,125 @@ def create_refinement_router(db) -> APIRouter:
             {"$set": {"onboarding_session": session, "updated_at": now_iso()}}, upsert=True)
         return {"status": "saved", "session": session}
 
+    # ---------- Live onboarding facilitation ----------
+    async def onboarding_manual(user_id: str) -> dict:
+        material = await get_current_material(db, user_id, "board_manual", "")
+        if not material or not material.get("current"):
+            raise HTTPException(status_code=409, detail="Generate the Board Member Manual before starting the live onboarding session")
+        if material["material"].get("status") != "Approved":
+            raise HTTPException(status_code=409, detail="Approve the Board Member Manual before starting the live onboarding session")
+        current = material["current"]
+        structured = current.get("structured") or {}
+        sections = []
+        for index, section in enumerate(structured.get("sections") or [], 1):
+            title = str(section.get("title") or f"Onboarding Section {index}").strip()
+            content = str(section.get("content") or "").strip()
+            if title or content:
+                sections.append({"index": index - 1, "title": title, "content": content})
+        if not sections and str(current.get("display_text") or "").strip():
+            sections = [{"index": 0, "title": "Board Member Manual", "content": str(current.get("display_text") or "").strip()}]
+        if not sections:
+            raise HTTPException(status_code=409, detail="The approved Board Member Manual does not contain onboarding content yet")
+        return {"sections": sections, "material_id": material["material"].get("material_id", "")}
+
+    @router.get("/workspace/onboarding-live")
+    async def get_live_onboarding(request: Request):
+        member = await selection_member(request)
+        manual = await onboarding_manual(member["user_id"])
+        profile = await db.recruitment_profiles.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0, "data.organization_name": 1, "onboarding_live": 1}
+        ) or {}
+        session = profile.get("onboarding_live") or {}
+        return {
+            "organization_name": (profile.get("data") or {}).get("organization_name", ""),
+            "session": session,
+            "sections": manual["sections"],
+            "manual_material_id": manual["material_id"],
+        }
+
+    @router.post("/workspace/onboarding-live/share")
+    async def create_live_onboarding_share(request: Request):
+        member = await selection_member(request)
+        manual = await onboarding_manual(member["user_id"])
+        profile = await db.recruitment_profiles.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0, "onboarding_live": 1}
+        ) or {}
+        existing = profile.get("onboarding_live") or {}
+        token = existing.get("share_token") or secrets.token_urlsafe(32)
+        session = {
+            **existing,
+            "share_token": token,
+            "manual_material_id": manual["material_id"],
+            "current_section_index": int(existing.get("current_section_index") or 0),
+            "status": existing.get("status") if existing.get("status") in {"IN PROGRESS", "COMPLETED"} else "NOT STARTED",
+            "updated_at": now_iso(),
+        }
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"onboarding_live": session, "updated_at": now_iso()}},
+            upsert=True,
+        )
+        return {"share_token": token, "status": session["status"]}
+
+    @router.post("/workspace/onboarding-live/start")
+    async def start_live_onboarding(request: Request):
+        member = await selection_member(request)
+        manual = await onboarding_manual(member["user_id"])
+        profile = await db.recruitment_profiles.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0, "onboarding_live": 1}
+        ) or {}
+        existing = profile.get("onboarding_live") or {}
+        if not existing.get("share_token"):
+            raise HTTPException(status_code=409, detail="Create the shared onboarding screen link first")
+        session = {
+            **existing,
+            "manual_material_id": manual["material_id"],
+            "status": "IN PROGRESS",
+            "current_section_index": min(int(existing.get("current_section_index") or 0), max(0, len(manual["sections"]) - 1)),
+            "started_at": existing.get("started_at") or now_iso(),
+            "updated_at": now_iso(),
+        }
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"onboarding_live": session, "updated_at": now_iso()}},
+            upsert=True,
+        )
+        return {"status": "IN PROGRESS"}
+
+    @router.post("/workspace/onboarding-live/progress")
+    async def update_live_onboarding_progress(request: Request):
+        member = await selection_member(request)
+        manual = await onboarding_manual(member["user_id"])
+        body = await request.json()
+        index = max(0, min(int(body.get("current_section_index", 0)), len(manual["sections"]) - 1))
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "onboarding_live.current_section_index": index,
+                "onboarding_live.status": "IN PROGRESS",
+                "onboarding_live.updated_at": now_iso(),
+                "updated_at": now_iso(),
+            }},
+            upsert=True,
+        )
+        return {"current_section_index": index}
+
+    @router.post("/workspace/onboarding-live/complete")
+    async def complete_live_onboarding(request: Request):
+        member = await selection_member(request)
+        # Deliberately does not change appointment status or onboarding-conclusion readiness.
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "onboarding_live.status": "COMPLETED",
+                "onboarding_live.completed_at": now_iso(),
+                "onboarding_live.updated_at": now_iso(),
+                "updated_at": now_iso(),
+            }},
+            upsert=True,
+        )
+        return {"status": "COMPLETED"}
+
     # ---------- First board meeting invitation send ----------
     @router.put("/workspace/first-meeting")
     async def save_first_meeting(payload: FirstMeetingDetails, request: Request):
