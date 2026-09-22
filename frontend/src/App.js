@@ -62,6 +62,8 @@ import WelcomePage from "@/member/WelcomePage";
 import FundraisingActivationPage from "@/member/FundraisingActivationPage";
 import BoardRecruitmentPage from "@/member/BoardRecruitmentPage";
 import RecruitmentGamePage from "@/member/RecruitmentGamePage";
+import RecruitmentOnboardingSessionPage from "@/member/RecruitmentOnboardingSessionPage";
+import RecruitmentOnboardingWatchPage from "@/public/RecruitmentOnboardingWatchPage";
 import BoardFixRoadmapPage from "@/member/BoardFixRoadmapPage";
 import BoardFixOrientationPage from "@/member/BoardFixOrientationPage";
 import RecruitmentResultsPage from "@/member/workspace/ResultsPage";
@@ -258,6 +260,8 @@ export default function App() {
           <Route path="/app/fundraising-activation" element={<FundraisingActivationPage />} />
           <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
           <Route path="/app/board-recruitment/game" element={<RecruitmentGamePage />} />
+          <Route path="/app/board-recruitment/onboarding-session" element={<RecruitmentOnboardingSessionPage />} />
+          <Route path="/onboarding-session/:token" element={<RecruitmentOnboardingWatchPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
