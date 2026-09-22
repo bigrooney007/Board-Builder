@@ -996,6 +996,27 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
+            preview_form = strategic_preview_form_content(answers)
+            await db.sp_forms.update_one(
+                {"project_id": project_id},
+                {"$setOnInsert": {
+                    "form_id": f"admin-preview-sp-form-record-{tag}",
+                    "project_id": project_id,
+                    "status": "Approved",
+                    "content": preview_form,
+                    "approved_version": 1,
+                    "approved_at": now,
+                    "internal_preview": True,
+                    "created_at": now,
+                    "updated_at": now,
+                }},
+                upsert=True,
+            )
+            response_questions = [
+                {"id": question["id"], "prompt": question["prompt"], "section": section["title"]}
+                for section in preview_form["sections"]
+                for question in section["questions"]
+            ]
             people = [
                 (
                     f"admin-preview-sp-lead-{tag}",
@@ -1041,13 +1062,15 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "expertise": expertise,
                     "status": "INVITED" if is_lead else "COMPLETED",
                     "form_token": f"{participant_id}-form",
+                    "form_version": 1,
                     "review_status": "NOT SENT",
                     "review_token": f"{participant_id}-review",
+                    "response": strategic_response(lens),
+                    "response_questions": response_questions,
                     "internal_preview": True,
                     "created_at": now,
                 }
                 if not is_lead:
-                    participant_doc["response"] = strategic_response(lens)
                     participant_doc["submitted_at"] = now
                 await db.sp_participants.update_one(
                     {"participant_id": participant_id},
