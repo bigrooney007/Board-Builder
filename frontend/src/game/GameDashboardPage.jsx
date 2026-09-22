@@ -8,7 +8,7 @@ import { HostToolsSection } from "./HostToolsSection";
 import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
 import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
-import { CompleteBoardMeetingSection, FinalOutputsSection } from "./MeetingOutputs";
+import { FinalOutputsSection } from "./MeetingOutputs";
 import { DashboardTour } from "./DashboardTour";
 import { BfgShell, formatDate, money } from "./gameShared";
 
@@ -79,6 +79,23 @@ export default function GameDashboardPage() {
       const overview = (await memberApi.get("/game/meeting/overview")).data;
       setMeeting(overview);
       clearInterval(meetingPoller.current);
+      if (overview.group_completed && !["running", "done"].includes(overview.final?.status || "")) {
+        try {
+          await memberApi.post("/game/meeting/compile-final");
+          const refreshed = (await memberApi.get("/game/meeting/overview")).data;
+          setMeeting(refreshed);
+          if (refreshed.final?.status === "running") {
+            meetingPoller.current = setInterval(async () => {
+              try {
+                const next = (await memberApi.get("/game/meeting/overview")).data;
+                setMeeting(next);
+                if (next.final?.status !== "running") clearInterval(meetingPoller.current);
+              } catch { /* keep polling */ }
+            }, 5000);
+          }
+          return;
+        } catch { /* the output cards will show the current state */ }
+      }
       if (overview.final?.status === "running") {
         meetingPoller.current = setInterval(async () => {
           try {
@@ -156,16 +173,16 @@ export default function GameDashboardPage() {
             <div>
               <p className="bfg-eyebrow">STEP 1</p>
               <h2>Play Your Board Fundraising Game</h2>
-              <p className="bfg-panel-sub">Complete the four fundraising strategy areas, tell us about your organization's present fundraising reality, and choose how you want to participate. Your answers become the foundation used throughout the dashboard.</p>
+              <p className="bfg-panel-sub">Answer one strategic question at a time. After each answer, the platform makes your idea sharper and more actionable for you to approve before moving forward. Your game also captures your present fundraising reality and how you want to participate.</p>
             </div>
             <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
-              {openingGame ? "OPENING…" : data.situation_completed ? "REVIEW MY INDIVIDUAL GAME" : "PLAY MY INDIVIDUAL GAME"}
+              {openingGame ? "OPENING…" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>
           </div>
         </section>
 
         <div data-tour="working-strategy">
-          <WorkingStrategyCard />
+          <WorkingStrategyCard autoGenerate={data.situation_completed} />
         </div>
 
         <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
@@ -180,9 +197,6 @@ export default function GameDashboardPage() {
           <HostToolsSection />
         </div>
         <GroupGameCard />
-        <div data-tour="complete-meeting">
-          <CompleteBoardMeetingSection overview={meeting} onRefresh={loadMeeting} />
-        </div>
         <FinalOutputsSection overview={meeting} />
         <CompleteGameNightSection overview={postgame} />
 
