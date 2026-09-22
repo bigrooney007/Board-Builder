@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import "../member/sgr.css";
+import "../funnels/strategic-planning-dashboard.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
