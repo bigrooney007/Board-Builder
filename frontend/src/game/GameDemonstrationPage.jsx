@@ -3,6 +3,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
+import { trackPlatformEvent } from "@/clean/platform";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 
 export default function GameDemonstrationPage() {
@@ -30,6 +31,7 @@ export default function GameDemonstrationPage() {
           primary_user: { full_name: fullName, email: member.email || "" },
         });
       }
+      trackPlatformEvent("board-fundraising-game", "checkout_started");
       const response = await memberApi.post("/payments/game-checkout", {
         origin_url: window.location.origin,
         cancel_path: "/game/demonstration",
