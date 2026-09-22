@@ -2084,15 +2084,18 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         if not people:raise HTTPException(409,"At least one completed Strategic Planning Form is required")
-        titles=[s.get("title","") for s in (form.get("content") or {}).get("sections",[])]
+        titles=[section.get("title","") for section in (form.get("content") or {}).get("sections",[])]
         text=(f"STRATEGIC PLANNING SESSION FACILITATION GUIDE\n{p['organization_name']}\n\n"
-              "1. OPEN THE SESSION\nExplain that the Board is reviewing the organization's present reality and building one shared direction. There are no perfect answers. Every participant should speak honestly. Ask permission before starting microphone transcription.\n\n"
-              "2. REVIEW EACH SECTION\nFor every section, read the lead user's starting information, then show every Board Member's review and new idea. Invite clarification and discussion. Do not rush to rewrite the ideas.\n\n"
-              "3. SELECT THE IDEAS THE BOARD AGREES WITH\nThe Lead User clicks every contribution the Board agrees should shape the section. The first contribution selected becomes the first person delegated to develop that section. Additional selected ideas remain part of the agreed direction. For Mission, the Board may explicitly keep the present mission statement. The transcript remains the supporting record of why the Board made those choices.\n\n"
-              "4. MOVE THROUGH THE SESSION\nUse the shared participant link so everyone sees the same section as the facilitator. Complete the sections in this order:\n- "+"\n- ".join(titles)+"\n\n"
-              "5. START THE FIRST DELEGATION IN THE ROOM\nOnce every section has an agreed direction, generate the foundational plan and send each first-selected contributor their secure section link while everyone remains in the meeting. Give the builders about 15 minutes. AI prepopulates their section from the Board-agreed ideas and transcript; they edit it in their own words, approve it and return it to the shared plan.\n\n"
-              "6. CONTINUE INTO PRESENTATION, ADOPTION AND FINAL DELEGATION\nDo not end the Board session just because the first selection stage is complete. Once the detailed sections return, generate the Present Strategic Plan. Each builder presents their section, the Board discusses and explicitly adopts it, and the Lead User records every final change and execution delegation through the live transcript. The session ends only after the Board has adopted every section and read back who is responsible for what.")
-        now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True);return {"status":"Approved"}
+              "PURPOSE\nThis is one live Board Strategic Planning Session. Board Members have already contributed their individual thinking. The purpose of the session is to review those ideas together, decide which ideas should shape the organization\'s direction, discuss what execution will require, and agree who will help carry the work forward.\n\n"
+              "1. PREPARE THE ROOM\nCreate the shared Board screen link and place it in the meeting chat so everyone can follow the same strategic section. Explain that only the Lead User clicks selections; everyone else discusses. Ask everyone for consent before starting microphone transcription. Keep transcription running until the Action Planning and delegation discussion is complete.\n\n"
+              "2. REVIEW ONE STRATEGIC SECTION AT A TIME\nFor each section, begin with the organization\'s present information, then review the concise idea cards contributed before the meeting. Invite the people who shared ideas to explain or clarify them in their own words. Do not rush the conversation and do not let the system replace what people actually mean.\n\n"
+              "3. CLICK THE IDEAS THE BOARD AGREES SHOULD SHAPE THE PLAN\nThe Lead User selects every idea the Board agrees should influence that section. More than one idea may be selected. The order of selection does NOT assign ownership. For Mission, the Board may explicitly choose to leave the present Mission Statement as it is. The full original responses remain preserved behind the concise cards.\n\n"
+              "4. MOVE THROUGH THE COMPLETE STRATEGY\nReview the sections in this order:\n- "+"\n- ".join(titles)+"\n\n"
+              "5. USE ACTION PLANNING TO AGREE EXECUTION AND RESPONSIBILITY\nAt the Action Planning section, discuss what should happen first, next and after that. Then say clearly who will help lead or support each responsibility. State names and responsibilities aloud so the transcript contains an unambiguous delegation record. People may receive responsibility even if they did not complete the original form; say their name clearly and their email can be added afterward.\n\n"
+              "6. READ BACK THE AGREEMENT BEFORE ENDING\nBefore ending the session, summarize the major decisions and read back who has agreed to help with what. Correct anything that is unclear while everyone is still present.\n\n"
+              "7. END THE SESSION\nEnd the Strategic Planning Session only after every strategic section has an agreed direction and the Action Planning discussion is complete. Return to the dashboard and generate the Strategic Plan. The system will use only the Board-selected ideas, the preserved original responses, the organization context and the live transcript. The Lead User will review, edit and approve the plan and every delegation before anything is sent.")
+        now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
+        return {"status":"Approved","guide":text}
 
     @router.post("/session-plan")
     async def generate_session_plan(request: Request):
@@ -2100,14 +2103,75 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         session=await db.sp_sessions.find_one({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}) or {}
         plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not session or not plan.get("areas"):raise HTTPException(409,"Complete the Strategic Planning Session first")
-        _,_,intake=await paid(sid);people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
-        context=(f"ORGANIZATION: {p['organization_name']}\nMISSION: {p.get('mission','')}\n\nORGANIZATION INTAKE:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
-                 f"AGREED STRATEGIC AREAS AND EVERY IDEA:\n{json.dumps(plan.get('areas'),default=str)}\n\nSESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-                 f"BOARD RESPONSES:\n{json.dumps([{ 'name':x.get('name'), 'response':x.get('response')} for x in people],default=str)}")
-        generated=await generate_structured("strategic_planning_foundational",context,"Create the foundational Strategic Plan from the Board\'s completed session. The Board\'s explicitly selected ideas and agreed wording are the primary authority. Preserve their distinctive reasoning, phrasing and intent wherever practical instead of averaging contributions into generic consensus language. The transcript may clarify why the Board selected an idea, add conditions or record a change. Nonprofit Board Builder recommendations are supporting ideas only and must never override a Board-selected idea unless the transcript explicitly shows the Board adopted that recommendation. Clearly separate Board decisions from recommendations and do not invent consensus, facts or commitments.")
-        display=plan_display(generated,p["organization_name"])
-        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","structured":generated,"display_text":display,"foundational_generated_at":now_iso(),"updated_at":now_iso()}})
-        return {"status":"Approved"}
+        _,_,intake=await paid(sid)
+        people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
+        research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+
+        context=(
+            f"ORGANIZATION: {p['organization_name']}\n"
+            f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
+            f"ORGANIZATION INTAKE / STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
+            f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+            f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+            f"COMMUNITY NEED RESEARCH (context/evidence only, not Board authority):\n{json.dumps(research.get('responses') or [],default=str)}"
+        )
+        generated=await generate_structured(
+            "strategic_session_final_plan",
+            context,
+            "Build the professional Strategic Plan exactly from the Board's selected ideas and live session conclusions. Do not attribute the final plan to individual contributors. Do not introduce a second planning or adoption process."
+        )
+        display=final_display(generated,p["organization_name"])
+
+        known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
+        if not any((x.get("email") or "").lower()==(p.get("founder_email") or "").lower() for x in known):
+            known.append({"participant_id":"","name":p.get("founder_name",""),"email":p.get("founder_email",""),"role":"Organization Leader"})
+
+        api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
+        system=("You extract execution responsibilities that people explicitly agreed to during one nonprofit Board Strategic Planning Session. "
+                "Use only explicit delegation supported by the transcript. A person may receive multiple responsibilities. "
+                "Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
+                "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, or is knowledgeable about it. "
+                "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
+        prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
+                f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+                f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+                '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}]}\n'
+                "Return that exact JSON shape. Include only people explicitly given execution responsibility in the session.")
+        try:
+            chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
+            raw=await chat.send_message(UserMessage(text=prompt))
+            parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
+            extracted=parsed.get("delegations") or []
+        except Exception:
+            logger.exception("Strategic session delegation extraction failed for %s",p["project_id"]);extracted=[]
+
+        by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
+        by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
+        delegates=[]
+        for item in extracted:
+            if not isinstance(item,dict):continue
+            name=str(item.get("name","")).strip();responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
+            if not name or not responsibilities:continue
+            known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
+            delegates.append({
+                "delegation_id":str(uuid.uuid4()),"participant_id":known_person.get("participant_id",""),
+                "name":known_person.get("name") or name,"email":known_person.get("email",""),"role":known_person.get("role",""),
+                "responsibilities":responsibilities[:20],"areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
+                "first_action":str(item.get("first_action","")).strip()[:2000],
+                "support_needed":str(item.get("support_needed","")).strip()[:2000],
+                "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
+            })
+        assignments={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in delegates}
+        active={"delegates":delegates,"assignments":assignments,"transcript":session.get("transcript",""),
+                "source":"strategic_planning_session_transcript","manual_assignments_authoritative":False,
+                "saved_at":now_iso(),"next_meeting_guide":"Ask each delegated leader to report progress, evidence, barriers, decisions required and the next action."}
+
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{
+            "status":"PLAN READY","structured":generated,"display_text":display,
+            "final_status":"Draft","final_display_text":display,"final_share_token":"",
+            "active_delegation":active,"generated_from_session_at":now_iso(),"updated_at":now_iso()
+        }})
+        return {"status":"Draft","delegation_count":len(delegates)}
 
     @router.post("/auto-delegate")
     async def auto_delegate(request:Request):
