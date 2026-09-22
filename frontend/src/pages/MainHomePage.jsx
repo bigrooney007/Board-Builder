@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { ArrowRight, Users, Gamepad2, Map, RefreshCw, Handshake } from "lucide-react";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -59,14 +60,20 @@ const products = [
 ];
 
 export default function MainHomePage() {
+  const navigate = useNavigate();
+  const { member, loading, logout } = useMemberAuth();
+  const handleLogout = async () => { await logout(); navigate("/login"); };
+
   return (
     <div className="nBB-home">
-      <header className="nBB-home-nav">
-        <Link to="/" className="nBB-home-brand">
-          <span>NB</span>
-          <div><strong>NONPROFIT BOARD BUILDER</strong><small>Build the board. Build the strategy. Build the organization.</small></div>
-        </Link>
-        <Link to="/login" className="nBB-home-login">LOGIN</Link>
+      <header className="nBB-home-nav" style={{ justifyContent: "flex-end" }}>
+        {!loading && (
+          member ? (
+            <button type="button" className="nBB-home-login" onClick={handleLogout} data-testid="home-logout-button">LOG OUT</button>
+          ) : (
+            <Link to="/login" className="nBB-home-login" data-testid="home-login-button">LOG IN</Link>
+          )
+        )}
       </header>
       <main>
         <section className="nBB-home-hero">
