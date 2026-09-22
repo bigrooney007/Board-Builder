@@ -1,8 +1,60 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ReviewModeBanner } from "@/reviewMode";
 import { AdminPreviewBanner } from "@/adminPreview";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { funnelLayoutText } from "../content/appContent";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+const PUBLIC_TASK_PREFIXES = [
+  "/board-opportunities/",
+  "/apply/",
+  "/reference-form/",
+  "/referee-form/",
+  "/board-profile/",
+  "/sign/",
+  "/shared/",
+];
 
-export const FunnelLayout = ({ children, restrained = false, isolated = false }) => <div className="funnel-page-shell"><AdminPreviewBanner /><ReviewModeBanner /><nav className="site-nav funnel-nav" data-testid="funnel-navigation"><Link className="brand" to="/" data-testid="funnel-home-logo"><img src={logoUrl} alt={funnelLayoutText.nonprofitBoardBuilder} /></Link>{!restrained && !isolated && <div className="nav-links"><Link to="/reactivate">{funnelLayoutText.t_reactivate}</Link><Link to="/recruit">{funnelLayoutText.t_recruit}</Link><Link to="/activate">{funnelLayoutText.t_fundraisingActivation}</Link><Link to="/join-a-board">{funnelLayoutText.t_joinABoard}</Link></div>}<Link className={restrained || isolated ? "nav-login-restrained" : "button button-small"} to="/login" data-testid="funnel-login-link">{funnelLayoutText.t_logIn}</Link>{!restrained && !isolated && <Link className="button button-small" to="/#how-it-works" data-testid="funnel-choose-offer-link">{funnelLayoutText.t_chooseYourBoardSolution}</Link>}</nav>{children}{isolated ? <footer className="footer" data-testid="funnel-footer"><Link className="brand footer-brand" to="/"><img src={logoUrl} alt={funnelLayoutText.nonprofitBoardBuilder2} /></Link><div className="footer-links"><Link to="/">Nonprofit Board Builder Home</Link><Link to="/privacy-policy">{funnelLayoutText.t_privacyPolicy}</Link><Link to="/terms">Terms</Link></div></footer> : <footer className="footer" data-testid="funnel-footer"><Link className="brand footer-brand" to="/"><img src={logoUrl} alt={funnelLayoutText.nonprofitBoardBuilder2} /></Link><p>{funnelLayoutText.nonprofitBoardBuilderHelpsNonprofits}</p><div className="footer-links"><Link to="/">About</Link><Link to="/join-a-board">{funnelLayoutText.t_joinABoard}</Link><Link to="/login" data-testid="footer-login-link">{funnelLayoutText.t_logIn}</Link><Link to="/privacy-policy">{funnelLayoutText.t_privacyPolicy}</Link><Link to="/terms">Terms</Link></div></footer>}</div>;
+export const FunnelLayout = ({ children, restrained = false, isolated = false }) => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { member, loading, logout } = useMemberAuth();
+  const publicTask = PUBLIC_TASK_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  return (
+    <div className="funnel-page-shell">
+      <AdminPreviewBanner />
+      <ReviewModeBanner />
+
+      {!publicTask && (
+        <nav className="site-nav funnel-nav" data-testid="funnel-navigation" style={{ justifyContent: "flex-end" }}>
+          {!loading && (
+            member ? (
+              <button className="button button-small" onClick={handleLogout} data-testid="funnel-logout-button">
+                {funnelLayoutText.t_logOut || "Log Out"}
+              </button>
+            ) : (
+              <Link className="button button-small" to="/login" data-testid="funnel-login-link">
+                {funnelLayoutText.t_logIn}
+              </Link>
+            )
+          )}
+        </nav>
+      )}
+
+      {children}
+
+      <footer className="footer" data-testid="funnel-footer">
+        {!isolated && <p>{funnelLayoutText.nonprofitBoardBuilderHelpsNonprofits}</p>}
+        <div className="footer-links">
+          <Link to="/privacy-policy">{funnelLayoutText.t_privacyPolicy}</Link>
+          <Link to="/terms">Terms</Link>
+        </div>
+      </footer>
+    </div>
+  );
+};
