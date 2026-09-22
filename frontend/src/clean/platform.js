@@ -71,6 +71,22 @@ export const flowForPath = (pathname) => {
 
 export const dashboardForPath = (pathname) => Object.entries(FLOW_ROUTES).find(([, value]) => value.dashboard && value.dashboard === pathname)?.[0] || "";
 
+export const platformUseFlowForPath = (pathname) => {
+  if (pathname.startsWith("/app/board-recruitment") || pathname.startsWith("/app/recruitment/")) return "recruitment";
+  if (
+    pathname === "/game/dashboard" || pathname === "/game/setup" || pathname === "/game/group" ||
+    pathname.startsWith("/play/") || pathname.startsWith("/group-game/") ||
+    pathname.startsWith("/game/strategy/") || pathname.startsWith("/game/portfolios") ||
+    pathname.startsWith("/board-portfolio/") || pathname.startsWith("/board-assistant/") ||
+    pathname.startsWith("/game/host/") || pathname.startsWith("/game/relationships") ||
+    pathname.startsWith("/relationship-mapping/") || pathname.startsWith("/game/final/") ||
+    pathname === "/game/complete"
+  ) return "board-fundraising-game";
+  if (pathname === "/strategic-planning/dashboard" || pathname === "/strategic-planning/session") return "strategic-planning";
+  if (pathname === "/board-recommitment/dashboard") return "board-recommitment";
+  return "";
+};
+
 export const useHomepageContent = (pageKey, defaults = {}) => {
   const [remote, setRemote] = useState({});
   useEffect(() => {
