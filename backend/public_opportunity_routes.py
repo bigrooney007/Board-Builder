@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from ai_service import extract_cv_text
 from opportunity_emails import send_application_receipt
-from workspace_service import CORE_QUESTIONS, new_id, now_iso
+from workspace_service import CORE_QUESTIONS, get_current_material, new_id, now_iso
 from opportunity_emails import send_signature_confirmations
 from reactivation_routes import email_html
 
@@ -334,5 +334,36 @@ def create_public_opportunity_router(db) -> APIRouter:
         except Exception:
             pass
         return {"status": "Signed", "message": "Your signature has been recorded. Both you and the organization will receive a confirmation email."}
+
+    @router.get("/onboarding-session/{token}")
+    async def public_onboarding_session(token: str):
+        profile = await db.recruitment_profiles.find_one(
+            {"onboarding_live.share_token": token},
+            {"_id": 0, "user_id": 1, "data.organization_name": 1, "onboarding_live": 1},
+        )
+        if not profile:
+            raise HTTPException(status_code=404, detail="This onboarding session link is not available")
+        material = await get_current_material(db, profile["user_id"], "board_manual", "")
+        if not material or not material.get("current"):
+            raise HTTPException(status_code=404, detail="The Board Member Manual is not available for this onboarding session")
+        current = material["current"]
+        structured = current.get("structured") or {}
+        sections = []
+        for index, section in enumerate(structured.get("sections") or [], 1):
+            title = str(section.get("title") or f"Onboarding Section {index}").strip()
+            content = str(section.get("content") or "").strip()
+            if title or content:
+                sections.append({"title": title, "content": content})
+        if not sections and str(current.get("display_text") or "").strip():
+            sections = [{"title": "Board Member Manual", "content": str(current.get("display_text") or "").strip()}]
+        live = profile.get("onboarding_live") or {}
+        index = min(max(int(live.get("current_section_index") or 0), 0), max(0, len(sections) - 1))
+        return {
+            "organization_name": (profile.get("data") or {}).get("organization_name", ""),
+            "status": live.get("status", "NOT STARTED"),
+            "current_section_index": index,
+            "total_sections": len(sections),
+            "section": sections[index] if sections else None,
+        }
 
     return router
