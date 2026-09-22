@@ -1112,7 +1112,7 @@ const OnboardingConclusionPanel = ({ application }) => {
     try {
       const response = await memberApi.put(`/workspace/applications/${application.application_id}/onboarding-conclusion`, form);
       setSavedAt(response.data.saved_at || new Date().toISOString());
-      setMessage("Onboarding conclusion saved. The Board Member Portfolio can now use the responsibilities you agreed together.");
+      setMessage("Onboarding conclusion saved. Any specific responsibilities recorded here will refine the Board Member Portfolio.");
     } catch (error) { setMessage(error.response?.data?.detail || "The onboarding conclusion could not be saved."); }
   };
   const field = (name, label) => (
@@ -1121,7 +1121,7 @@ const OnboardingConclusionPanel = ({ application }) => {
   return (
     <div className="detail-section" data-testid={`onboarding-conclusion-${application.application_id}`}>
       <h3>Record The Onboarding Conclusion</h3>
-      <p className="material-description">Save what you and this board member agreed during onboarding. This becomes the authoritative basis for their Board Member Portfolio.</p>
+      <p className="material-description">Optional. If you and this Board Member agree specific responsibilities during onboarding, record them here. Their Board Member Profile, application, CV and recruited role already provide the foundation for their first Portfolio; anything saved here simply makes that Portfolio more specific.</p>
       <label className="field"><span>Board Role</span><input value={form.board_role} onChange={(event) => setForm({ ...form, board_role: event.target.value })} data-testid="onboarding-conclusion-board-role" /></label>
       {field("agreed_primary_contribution_area", "Primary Contribution Area")}
       {field("agreed_responsibility", "Responsibility Agreed")}
@@ -1141,6 +1141,7 @@ const MemberReadiness = ({ application, onChanged }) => {
   const joined = application.final_outcome === "Joined Board";
   const confirmed = joined || application.status === "Selected";
   const conclusionSaved = Boolean(application.onboarding_conclusion?.saved_at);
+  const profileComplete = Boolean(application.board_profile_completed);
   const referenceStatus = application.reference_check_status || "Not Started";
   const backgroundStatus = application.background_check?.status || "Not decided";
 
@@ -1159,15 +1160,17 @@ const MemberReadiness = ({ application, onChanged }) => {
       <h3><UserCheck size={17} /> {application.profile_snapshot?.full_name} {joined && <span className="blog-status-badge published">Board Member</span>}{!joined && confirmed && <span className="blog-status-badge published">Final Appointment Confirmed</span>}</h3>
 
       <ul className="readiness-list" data-testid="member-readiness">
-        <li className={conclusionSaved ? "done" : ""}>Onboarding Conclusion / Role Agreement: {conclusionSaved ? "Completed" : "Not Completed"}</li>
+        <li className={profileComplete ? "done" : ""}>Board Member Profile: {profileComplete ? "Completed" : "Not Completed"}</li>
+        <li className={conclusionSaved ? "done" : ""}>Optional Onboarding Conclusion: {conclusionSaved ? "Recorded" : "Not Recorded"}</li>
         <li>Reference Check: {referenceStatus}</li>
         <li>Background Check: {backgroundStatus}</li>
       </ul>
 
       {!confirmed && (
         <>
-          <button className="button" disabled={!conclusionSaved} onClick={confirmFormal} data-testid="confirm-ready-button">CONFIRM FINAL BOARD APPOINTMENT</button>
-          {!conclusionSaved && <p className="workspace-note">Complete the onboarding conversation and save the Onboarding Conclusion / Role Agreement before confirming the final appointment. Reference and background checks are shown for your information but do not control your appointment decision.</p>}
+          <button className="button" disabled={!profileComplete} onClick={confirmFormal} data-testid="confirm-ready-button">CONFIRM FINAL BOARD APPOINTMENT</button>
+          {!profileComplete && <p className="workspace-note">Ask this person to complete the Board Member Profile first. That profile captures the skills, interests, capacity and contribution preferences used to tailor their first Board Member Portfolio. Reference and background checks remain your choice and do not make the appointment decision for you.</p>}
+          {profileComplete && !conclusionSaved && <p className="workspace-note">The Board Member Profile is complete, so you can confirm the appointment now. Recording an Onboarding Conclusion is optional and is only needed if you want to preserve a more specific responsibility agreed during onboarding.</p>}
         </>
       )}
 
@@ -1299,13 +1302,14 @@ export const Module6Onboarding = () => {
 export const FormalAppointmentWorkspace = () => {
   const { applications, refresh } = useApplications();
   const candidates = applications.filter((application) =>
-    application.onboarding_conclusion?.saved_at
+    application.board_profile_completed
+    || application.onboarding_conclusion?.saved_at
     || application.status === "Selected"
     || application.final_outcome === "Joined Board"
   );
   return (
     <div data-testid="formal-appointment-workspace">
-      {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you complete onboarding and save their Onboarding Conclusion / Role Agreement.</p>}
+      {candidates.length === 0 && <p className="workspace-note">Candidates appear here once their Board Member Profile is completed or their appointment has already been confirmed.</p>}
       {candidates.map((application) => <MemberReadiness application={application} onChanged={refresh} key={application.application_id} />)}
     </div>
   );
