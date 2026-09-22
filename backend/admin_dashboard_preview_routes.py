@@ -32,7 +32,7 @@ PRODUCTS = {
 FIXTURE_VERSION = "v3"
 RECRUITMENT_FIXTURE_VERSION = "v6"
 STRATEGIC_FIXTURE_VERSION = "v5"
-RECOMMITMENT_FIXTURE_VERSION = "v4"
+RECOMMITMENT_FIXTURE_VERSION = "v5"
 FUNDRAISING_FIXTURE_VERSION = "v4"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
@@ -1123,6 +1123,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "organization_name": ORG_NAME,
                     "founder_title": "Founder and Executive Director",
                     "phone": "+44 7700 900123",
+                    "logo_data_url": PREVIEW_LOGO_DATA,
                     "mission": MISSION,
                     "organization_goals": GOALS,
                     "direction_12_24": "Grow program reach, diversify revenue and build a board that carries strategic leadership responsibility.",
@@ -1173,6 +1174,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "name": "Maya Thompson",
                     "email": f"maya.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Board Chair",
+                    "form_variant": "standard",
                     "direction": "Remain and Step Up",
                     "response": {
                         "full_name": "Maya Thompson",
@@ -1201,6 +1203,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "name": "Daniel Brooks",
                     "email": f"daniel.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Treasurer",
+                    "form_variant": "standard",
                     "direction": "Remain and Step Up",
                     "response": {
                         "full_name": "Daniel Brooks",
@@ -1229,6 +1232,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "name": "Aisha Patel",
                     "email": f"aisha.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Board Member",
+                    "form_variant": "full",
                     "direction": "Move to Advisory Board",
                     "response": {
                         "full_name": "Aisha Patel",
@@ -1257,6 +1261,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "name": "Marcus Reed",
                     "email": f"marcus.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Board Member",
+                    "form_variant": "full",
                     "direction": "Step Down",
                     "response": {
                         "full_name": "Marcus Reed",
@@ -1294,7 +1299,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                         "role": row["role"],
                         "source": "internal_admin_preview",
                         "status": "COMPLETED",
+                        "form_variant": row.get("form_variant", "full"),
                         "form_token": f"{row['id']}-form",
+                        "last_sent_at": now,
                         "response": response,
                         "submitted_at": now,
                         "call_notes": (
