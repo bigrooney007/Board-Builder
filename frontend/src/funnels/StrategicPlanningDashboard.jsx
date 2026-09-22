@@ -144,7 +144,7 @@ export default function StrategicPlanningDashboard(){
 
   const approvePlan=()=>act("approve-plan",async()=>{
     await axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:finalDraft});
-    await axios.post(`${API}/guided/strategic-planning/final-plan/approve`,{session_id:sid});
+    await axios.post(`${API}/guided/strategic-planning/final-plan/approve`,{session_id:sid});\n    trackPlatformEvent("strategic-planning", "platform_completed");
     setEditingPlan(false);
   });
 
@@ -192,7 +192,7 @@ export default function StrategicPlanningDashboard(){
         <p>Use the public research link to hear directly from people who experience, understand or work around the need your organization exists to address.</p>
         {!community?<Button disabled={busy==="research"} onClick={()=>act("research",()=>axios.post(`${API}/guided/strategic-planning/community-research`,{session_id:sid}))}><Search size={15}/> LAUNCH COMMUNITY NEED RESEARCH</Button>:<>
           <div className="sp-linkbox"><span>{researchLink}</span><button onClick={()=>copy(researchLink)}>COPY SURVEY LINK</button></div>
-          <div className="sp-contentbox"><h3>Community Research Promotion Kit</h3>{(community.social_posts||[]).map((post,index)=><div className="sp-promotion-post" key={index}><p>{post}</p><button onClick={()=>copy(`${post}\n\n${researchLink}`)}>COPY POST {index+1}</button></div>)}</div>
+          <div className="sp-contentbox"><h3>Community Research Promotion Kit</h3>{(community.social_posts||[]).map((post,index)=><div className="sp-promotion-post" key={index}><p>{post}</p><button onClick={()=>copy(`${post}\nimport { trackPlatformEvent } from "@/clean/platform";\n\n${researchLink}`)}>COPY POST {index+1}</button></div>)}</div>
           <p><strong>{community.response_count||0}</strong> public responses received.</p>
         </>}
       </>)}
