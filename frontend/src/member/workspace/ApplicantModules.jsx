@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Download, FileText, UserCheck } from "lucide-react";
-import { memberApi } from "../api";\nimport { trackPlatformEvent } from "@/clean/platform";
+import { memberApi } from "../api";
+import { trackPlatformEvent } from "@/clean/platform";
 import { MaterialCard, SendMaterialButton, currentVersion, downloadMaterialPdf, printBranded } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { recruitmentWorkspaceText, applicantModulesText } from "../../content/appContent";
