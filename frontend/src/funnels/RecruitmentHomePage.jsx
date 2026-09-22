@@ -2,12 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
-import { recruitmentHomeContent as copy } from "@/content/siteContent";
+import { recruitmentHomeContent as defaultCopy } from "@/content/siteContent";
+import { useHomepageContent } from "@/clean/platform";
 import "../game/game.css";
 import "./recruitment-home.css";
 
 export default function RecruitmentHomePage({ form }) {
   const navigate = useNavigate();
+  const copy = useHomepageContent("recruitment", defaultCopy);
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
