@@ -159,7 +159,7 @@ export function PlatformAnalyticsSection(){
         {["Flow","Home/Page Visitors","Contact Details","Checkout Clicks","Stripe Sessions","Paid","Dashboard Entries","Completed","Avg. Platform Use"].map(x=><th key={x}>{x}</th>)}
       </tr></thead><tbody>{flows.map(row=><tr key={row.flow}>
         <td><strong>{LABELS[row.flow]||row.flow}</strong></td>
-        <td>{row.page_views}</td><td>{row.contacts_entered}</td><td>{row.checkout_started}</td><td>{row.stripe_sessions}</td><td>{row.purchases}</td><td>{row.dashboard_entered}</td><td>{row.platform_completed}</td><td>{duration(row.average_use_seconds)}</td>
+        <td>{row.homepage_visitors}</td><td>{row.contacts_entered}</td><td>{row.checkout_started}</td><td>{row.stripe_sessions}</td><td>{row.purchases}</td><td>{row.dashboard_entered}</td><td>{row.platform_completed}</td><td>{duration(row.average_use_seconds)}</td>
       </tr>)}</tbody></table></div>
 
       <h3 style={{marginTop:32}}>Video Watch Rates</h3>
