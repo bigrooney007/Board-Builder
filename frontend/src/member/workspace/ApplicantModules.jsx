@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Download, FileText, UserCheck } from "lucide-react";
-import { memberApi } from "../api";
+import { memberApi } from "../api";\nimport { trackPlatformEvent } from "@/clean/platform";
 import { MaterialCard, SendMaterialButton, currentVersion, downloadMaterialPdf, printBranded } from "./MaterialCard";
 import { useMaterials } from "./WorkspaceModules";
 import { recruitmentWorkspaceText, applicantModulesText } from "../../content/appContent";
@@ -1149,6 +1149,7 @@ const MemberReadiness = ({ application, onChanged }) => {
     if (!window.confirm(`Formally confirm ${application.profile_snapshot?.full_name}'s final appointment to the Board? This is your decision and is never made automatically by the platform.`)) return;
     try {
       await memberApi.patch(`/workspace/applications/${application.application_id}`, { status: "Selected" });
+      trackPlatformEvent("recruitment", "platform_completed");
       if (onChanged) onChanged();
     } catch (error) {
       window.alert(error.response?.data?.detail || "The confirmation could not be saved. Please try again.");
