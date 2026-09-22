@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import "./game.css";
 
@@ -52,7 +52,6 @@ export const GameProgress = ({ steps, current }) => (
 );
 
 export const BfgShell = ({ children, nav, shellClass = "" }) => {
-  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
   const defaultAuthNav = loading ? null : member ? (
@@ -60,22 +59,9 @@ export const BfgShell = ({ children, nav, shellClass = "" }) => {
   ) : (
     <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login" data-testid="bfg-default-login-btn">Log In</Link>
   );
-  const identity = pathname.startsWith("/recruit") || pathname.startsWith("/app/board-recruitment")
-    ? { mark: "NB", label: "Board Recruitment", home: "/recruit" }
-    : pathname.startsWith("/strategic") || pathname.startsWith("/community-need") || pathname.startsWith("/area-pack")
-      ? { mark: "SP", label: "Strategic Planning", home: "/strategic-planning" }
-      : pathname.startsWith("/board-recommitment")
-        ? { mark: "BR", label: "Board Recommitment", home: "/board-recommitment" }
-        : pathname.startsWith("/organize-board-fundraising-game")
-          ? { mark: "FG", label: "Facilitated Board Fundraising Game", home: "/organize-board-fundraising-game" }
-          : { mark: "BG", label: "The Board Fundraising Game", home: "/board-fundraising-game" };
   return (
     <div className={`bfg ${shellClass}`.trim()}>
-      <header className="bfg-nav">
-        <Link to={identity.home} className="bfg-logo" data-testid="bfg-logo-link">
-          <span className="bfg-logo-mark">{identity.mark}</span>
-          <span><strong>Nonprofit Board Builder</strong><em>{identity.label}</em></span>
-        </Link>
+      <header className="bfg-nav" style={{ justifyContent: "flex-end" }}>
         <div className="bfg-nav-actions">{nav ?? defaultAuthNav}</div>
       </header>
       {children}
