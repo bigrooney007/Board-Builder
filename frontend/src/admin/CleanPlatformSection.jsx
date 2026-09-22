@@ -156,7 +156,7 @@ export function PlatformAnalyticsSection(){
     {error&&<p className="submit-error">{error}</p>}
     {!data?<p>Loading analytics…</p>:<>
       <div className="admin-table-wrap"><table className="admin-table"><thead><tr>
-        {["Flow","Home/Page Visitors","Contact Details","Checkout Clicks","Stripe Sessions","Paid","Dashboard Entries","Completed","Avg. Platform Use"].map(x=><th key={x}>{x}</th>)}
+        {["Flow","Unique Home Visitors","Contact Details","Checkout Clicks","Stripe Sessions","Paid","Dashboard Entries","Completed","Avg. Platform Use"].map(x=><th key={x}>{x}</th>)}
       </tr></thead><tbody>{flows.map(row=><tr key={row.flow}>
         <td><strong>{LABELS[row.flow]||row.flow}</strong></td>
         <td>{row.homepage_visitors}</td><td>{row.contacts_entered}</td><td>{row.checkout_started}</td><td>{row.stripe_sessions}</td><td>{row.purchases}</td><td>{row.dashboard_entered}</td><td>{row.platform_completed}</td><td>{duration(row.average_use_seconds)}</td>
