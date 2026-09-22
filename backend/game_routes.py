@@ -392,12 +392,26 @@ def create_game_router(db) -> APIRouter:
         require_entitlement(member, {GAME_ENTITLEMENT})
         profile = await get_profile_doc(member["user_id"])
         situation_completed = bool(profile.get("situation_completed"))
+        primary = await db.game_board_members.find_one(
+            {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}},
+            {"_id": 0, "member_id": 1})
+        individual_game_completed = False
+        if primary:
+            rows = await db.game_section_responses.find(
+                {"board_member_id": primary["member_id"], "section_id": {"$in": [1, 2, 3, 4]}},
+                {"_id": 0, "section_id": 1, "fine_tuning.completed": 1}).to_list(10)
+            completed_sections = {
+                row.get("section_id") for row in rows
+                if (row.get("fine_tuning") or {}).get("completed")
+            }
+            individual_game_completed = all(section_id in completed_sections for section_id in [1, 2, 3, 4])
         return {
             "first_name": member.get("first_name", ""),
             "organization": profile.get("organization", {}),
             "goal": profile.get("goal", {}),
             "situation_completed": situation_completed,
-            "status": "set_up_board" if situation_completed else "complete_setup",
+            "individual_game_completed": individual_game_completed,
+            "status": "set_up_board" if situation_completed and individual_game_completed else "complete_setup",
             "areas": [{**area, "locked": True} for area in GAME_AREAS],
         }
 
