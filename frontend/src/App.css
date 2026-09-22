@@ -1353,3 +1353,34 @@ body.public-centered table td {
 .admin-preview-dashboard-grid .button {
   margin-top: auto;
 }
+
+
+/* Clean Board Applicant Network brand layer */
+.join-page .join-hero {
+  background: radial-gradient(circle at 0 100%, rgba(79,70,229,.14), transparent 28%), var(--brand-off-white);
+}
+.join-page .network-orbit {
+  border-color: #c7d2fe;
+  background: radial-gradient(circle, #eef2ff 0 34%, transparent 35%);
+}
+.join-page .network-orbit:before,
+.join-page .network-orbit:after { border-color: #a5b4fc; }
+.join-page .network-orbit > div { background: var(--brand-navy); box-shadow: 0 20px 45px rgba(15,23,42,.22); }
+.join-page .network-orbit > div svg,
+.join-page .network-orbit > span { color: var(--brand-primary); }
+.join-page .network-orbit > i:nth-of-type(1) { background: #818cf8; }
+.join-page .network-orbit > i:nth-of-type(3) { background: #a5b4fc; }
+.join-page .network-orbit > i:nth-of-type(4) { background: #4f46e5; }
+.join-page .who-should-join { background: var(--brand-navy); color: #e2e8f0; }
+.join-page .who-heading > p:last-child { color: #cbd5e1; }
+.join-page .profession-grid > div { border-color: #334155; color: #f8fafc; }
+.join-page .profession-grid svg { color: #a5b4fc; }
+.join-page .who-final { border-top-color: #334155; }
+.join-page .join-form-section {
+  background: radial-gradient(circle at 100% 0, #e0e7ff, transparent 24%), var(--brand-off-white);
+}
+.join-page .network-notice,
+.join-page .safe-sender-message { background: #eef2ff; border-color: #c7d2fe; color: #334155; }
+.applicant-confirmation {
+  background: radial-gradient(circle at 50% 0, #e0e7ff, transparent 34%), var(--brand-off-white);
+}
