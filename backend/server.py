@@ -30,6 +30,7 @@ from review_routes import create_review_router
 from reference_routes import create_reference_router
 from marketing_service import marketing_loop
 from recruit_free_routes import create_recruit_free_router
+from clean_platform_routes import create_clean_platform_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -206,6 +207,7 @@ app.include_router(create_payment_router(db))
 app.include_router(create_stripe_webhook_router(db))
 app.include_router(create_member_router(db))
 app.include_router(create_recruit_free_router(db))
+app.include_router(create_clean_platform_router(db))
 app.include_router(create_course_router(db))
 app.include_router(create_workspace_router(db))
 from refinement_routes import create_refinement_router
@@ -300,6 +302,8 @@ async def startup_tasks():
     await db.funnel_leads.create_index("result_token", unique=True)
     await db.funnel_leads.create_index([("offer_source", 1), ("created_at", -1)])
     await db.payment_transactions.create_index("session_id", unique=True)
+    await db.platform_analytics.create_index([("flow", 1), ("event", 1), ("recorded_at", -1)])
+    await db.platform_analytics.create_index([("video_key", 1), ("visitor_id", 1)])
     await db.members.create_index("email", unique=True)
     await db.members.create_index("user_id", unique=True)
     await db.purchases.create_index("session_id", unique=True)
