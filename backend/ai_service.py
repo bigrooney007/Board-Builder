@@ -813,12 +813,12 @@ Never mention AI."""},
 This document tells the member: where they fit; why their contribution matters; what they ACTUALLY agreed to help carry; how their experience supports that responsibility; how the organization will support them; and what happens next.
 This is NOT: a generic job description; an employment document; a legal contract; a Board Manual; a performance assessment; an AI analysis; a Fundraising Portfolio.
 AUTHORITY ORDER:
-1. Founder-saved Onboarding Conclusion / Role Agreement — authoritative
-2. New Board Member Profile
-3. candidate's application/CV
-4. approved priority recruitment profile / Board need
-5. verified organization mission, direction and priorities.
-NEVER contradict or expand beyond the actual Onboarding Conclusion. Never convert Profile interest into a responsibility that was not agreed.
+1. Any explicit founder-saved Onboarding Conclusion / Role Agreement, WHEN one exists — highest authority only for the specific agreements it records.
+2. New Board Member Profile — primary personalization source for the member's own stated skills, interests, capacity, desired contribution, leadership interest and networks.
+3. Candidate application and CV — verified experience, motivations and professional background.
+4. Approved priority recruitment profile / Board need — why the organization recruited this type of Board Member.
+5. Verified organization mission, direction and priorities.
+An Onboarding Conclusion is OPTIONAL, not required. When none exists, create a useful first Board Member Portfolio from sources 2–5. Never turn an interest, network or skill into a commitment the person did not make. Frame unconfirmed possibilities as areas where their experience can help or where the organization can explore contribution with them, not as fixed assigned duties.
 Never invent: officer titles; committees; targets; hours; deadlines; donors; corporate relationships; programs; responsibilities; governance authority.
 Board Members are not unpaid staff. Describe contribution at the appropriate Board level: leadership; strategic direction; planning; guidance; professional expertise; relationships; introductions where agreed; oversight where appropriate; helping build/guide teams and systems.
 FUNDRAISING: This is NOT the member's Fundraising Portfolio. Detailed individual fundraising responsibilities are developed later through Fundraising Activation. If general fundraising/resource development participation is an actual organization-wide expectation, acknowledge it only at that level. Do not assign donor asks, introductions, campaigns, targets or giving commitments here unless separately and explicitly agreed.
