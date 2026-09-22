@@ -14,7 +14,7 @@ import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
-const CONFIG={
+export const GUIDED_PRODUCT_CONFIG={
   "strategic-planning":{
     eyebrow:"STRATEGIC PLANNING WITH YOUR BOARD", icon:Map,
     headline:"Have Your Strategic Plan Reviewed And Adopted By Your Next Board Meeting.",
@@ -79,6 +79,7 @@ const CONFIG={
     ],
   }
 };
+const CONFIG=GUIDED_PRODUCT_CONFIG;
 const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); const content=useHomepageContent(p,CONFIG[p]); return [p,content]};
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
