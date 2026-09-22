@@ -7,7 +7,7 @@ import { GameNightSection } from "./GameNightSection";
 import { HostToolsSection } from "./HostToolsSection";
 import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
-import { WorkingStrategyCard, StrategiesHistoryCard, AdoptedStrategyCard } from "./StrategyCards";
+import { WorkingStrategyCard, StrategiesHistoryCard } from "./StrategyCards";
 import { FinalOutputsSection } from "./MeetingOutputs";
 import { DashboardTour } from "./DashboardTour";
 import { BfgShell, formatDate, money } from "./gameShared";
@@ -32,7 +32,7 @@ const GroupGameCard = () => {
     <section className="bfg-panel" data-tour="group-game" data-testid="bfg-group-game-card">
       <div className="bfg-panel-head">
         <div>
-          <h2>Group Review Game</h2>
+          <><p className="bfg-eyebrow">STEP 6</p><h2>Group Review Game</h2></>
           <p className="bfg-panel-sub">
             {completed
               ? "Completed — 9 of 9 review screens completed"
@@ -182,10 +182,9 @@ export default function GameDashboardPage() {
         </section>
 
         <div data-tour="working-strategy">
-          <WorkingStrategyCard autoGenerate={data.situation_completed} />
+          <WorkingStrategyCard autoGenerate={data.situation_completed && data.individual_game_completed} />
         </div>
 
-        <AdoptedStrategyCard goalDisplay={goalAmount ? money(goalAmount) : ""} />
 
         <div data-tour="prepare-meeting">
           <GameNightSection />
