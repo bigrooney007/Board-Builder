@@ -2151,18 +2151,58 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 if not any((x.get("email") or "").lower()==(p.get("founder_email") or "").lower() for x in known):
                     known.append({"participant_id":"","name":p.get("founder_name",""),"email":p.get("founder_email",""),"role":"Organization Leader"})
 
+                # Participant-stated willingness is the baseline proposal.
+                # It is never sent or treated as a final assignment until the Lead User confirms it.
+                form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+                role_section=next((section for section in (form.get("content") or {}).get("sections",[])
+                                   if "roles we will play" in str(section.get("title","")).lower()),None)
+                role_questions=(role_section or {}).get("questions",[])
+                preference_delegates={}
+                for person in people:
+                    response=person.get("response") or {}
+                    committee=str(response.get(role_questions[0]["id"],"")).strip() if len(role_questions)>0 else ""
+                    lead_pref=str(response.get(role_questions[1]["id"],"")).strip() if len(role_questions)>1 else ""
+                    support_pref=str(response.get(role_questions[2]["id"],"")).strip() if len(role_questions)>2 else ""
+                    if not any([committee,lead_pref,support_pref]):
+                        continue
+                    responsibilities=[]
+                    if lead_pref:
+                        responsibilities.append(f"Willing to lead: {lead_pref}")
+                    if support_pref:
+                        responsibilities.append(f"Willing to support: {support_pref}")
+                    preference_delegates[person["participant_id"]]={
+                        "delegation_id":str(uuid.uuid4()),
+                        "participant_id":person["participant_id"],
+                        "name":person.get("name",""),
+                        "email":person.get("email",""),
+                        "role":person.get("role",""),
+                        "responsibilities":responsibilities,
+                        "areas":[committee] if committee else [],
+                        "first_action":"",
+                        "support_needed":"",
+                        "reporting_rhythm":"",
+                        "source":"Participant-stated willingness from Strategic Planning Form",
+                        "declared_preferences":{
+                            "committee_or_group":committee,
+                            "willing_to_lead":lead_pref,
+                            "willing_to_support":support_pref,
+                        },
+                    }
+
                 api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","")
                 model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
-                system=("You extract execution responsibilities that people explicitly agreed to during one nonprofit Board Strategic Planning Session. "
-                        "Use only explicit delegation supported by the transcript. A person may receive multiple responsibilities. "
-                        "Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
-                        "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, or is knowledgeable about it. "
+                system=("You extract execution responsibilities that people EXPLICITLY AGREED TO during one nonprofit Board Strategic Planning Session. "
+                        "The planning-form preferences supplied separately are statements of willingness, not assignments. "
+                        "Use the transcript only to identify explicit live-session agreements, changes or additions. "
+                        "A person may receive multiple responsibilities. Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
+                        "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, is knowledgeable about it, or said before the meeting that they might be willing to help. "
                         "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
                 prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
+                        f"PARTICIPANT-STATED WILLINGNESS FROM THEIR OWN FORMS (context only; NOT automatically agreed roles):\n{json.dumps(list(preference_delegates.values()),default=str)}\n\n"
                         f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
                         f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
                         '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}]}\n'
-                        "Return that exact JSON shape. Include only people explicitly given execution responsibility in the session.")
+                        "Return that exact JSON shape. Include only responsibilities explicitly agreed in the live session.")
                 try:
                     chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
                     raw=await chat.send_message(UserMessage(text=prompt))
@@ -2174,22 +2214,36 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
                 by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
                 by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
-                delegates=[]
+                delegates=list(preference_delegates.values())
+                delegate_index={d.get("participant_id"):index for index,d in enumerate(delegates) if d.get("participant_id")}
                 for item in extracted:
-                    if not isinstance(item,dict):continue
+                    if not isinstance(item,dict):
+                        continue
                     name=str(item.get("name","")).strip()
                     responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
-                    if not name or not responsibilities:continue
+                    if not name or not responsibilities:
+                        continue
                     known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
-                    delegates.append({
-                        "delegation_id":str(uuid.uuid4()),"participant_id":known_person.get("participant_id",""),
-                        "name":known_person.get("name") or name,"email":known_person.get("email",""),"role":known_person.get("role",""),
+                    participant_id=known_person.get("participant_id","")
+                    live_delegate={
+                        "delegation_id":delegates[delegate_index[participant_id]]["delegation_id"] if participant_id in delegate_index else str(uuid.uuid4()),
+                        "participant_id":participant_id,
+                        "name":known_person.get("name") or name,
+                        "email":known_person.get("email",""),
+                        "role":known_person.get("role",""),
                         "responsibilities":responsibilities[:20],
                         "areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
                         "first_action":str(item.get("first_action","")).strip()[:2000],
                         "support_needed":str(item.get("support_needed","")).strip()[:2000],
                         "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
-                    })
+                        "source":"Explicit Strategic Planning Session agreement",
+                        "declared_preferences":preference_delegates.get(participant_id,{}).get("declared_preferences",{}),
+                    }
+                    if participant_id in delegate_index:
+                        delegates[delegate_index[participant_id]]=live_delegate
+                    else:
+                        delegates.append(live_delegate)
+
                 assignments={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in delegates}
                 active={"delegates":delegates,"assignments":assignments,"transcript":session.get("transcript",""),
                         "source":"strategic_planning_session_transcript","manual_assignments_authoritative":False,
@@ -2422,7 +2476,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "email":str(item.get("email") or known.get("email","")).strip().lower(),"role":str(item.get("role") or known.get("role","")).strip(),
                 "responsibilities":responsibilities[:20],"areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
                 "first_action":str(item.get("first_action","")).strip()[:2000],"support_needed":str(item.get("support_needed","")).strip()[:2000],
-                "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000]})
+                "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
+                "source":str(item.get("source","Lead User confirmed"))[:300],
+                "declared_preferences":item.get("declared_preferences") if isinstance(item.get("declared_preferences"),dict) else {}})
         if not clean:raise HTTPException(422,"Keep at least one person with a delegated responsibility")
         active=plan.get("active_delegation") or {};active["delegates"]=clean;active["assignments"]={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in clean};active["manual_assignments_authoritative"]=True;active["saved_at"]=now_iso()
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"active_delegation":active,"updated_at":now_iso()}});return {"status":"saved","count":len(clean)}
