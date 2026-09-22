@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import StrategicLeadershipPortfolioPage from "./funnels/StrategicLeadershipPortfolioPage";
 import StrategicLeadershipAssistantPage from "./funnels/StrategicLeadershipAssistantPage";
 import StrategicSessionWatchPage from "./funnels/StrategicSessionWatchPage";
+import StrategicPlanningSessionPage from "./funnels/StrategicPlanningSessionPage";
 import StrategicPresentationWatchPage from "./funnels/StrategicPresentationWatchPage";
 import axios from "axios";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
@@ -283,6 +284,7 @@ export default function App() {
           <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
           <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
           <Route path="/strategic-session/:token" element={<StrategicSessionWatchPage />} />
+          <Route path="/strategic-planning/session" element={<StrategicPlanningSessionPage />} />
           <Route path="/strategic-presentation/:token" element={<StrategicPresentationWatchPage />} />
           <Route path="/community-need-research/:token" element={<CommunityNeedResearchPage />} />
           <Route path="/strategic-planning-response/:participantId" element={<StrategicPlanningResponsePage />} />
