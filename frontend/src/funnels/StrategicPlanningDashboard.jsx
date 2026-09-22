@@ -223,14 +223,13 @@ export default function StrategicPlanningDashboard(){
         <p className="workspace-note">The response page shows the real question wording and the person's full original answer. Internal IDs such as S1 Q1 are never customer-facing labels.</p>
       </>)}
 
-      {card(7,"Run The Strategic Planning Session","Use one live Board session to review ideas, agree direction and discuss execution responsibility.",completed.length>0,<>
+      {card(7,"Run The Strategic Planning Session","Use one live Board session to review ideas, agree direction and discuss execution responsibility.",Boolean(leadDone&&boardResponses.length>0),<>
         <p>Generate the facilitation guide first. Then open the live session workspace. There you will create the Board's shared screen link, start microphone transcription with consent, and move through Mission, Goals, Objectives, each Program, Team, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Action Planning and Roles We Will Play one screen at a time.</p>
         <div className="sp-actions">
           <Button disabled={busy==="guide"} onClick={generateGuide}><FileText size={15}/> {guideReady?"REGENERATE FACILITATION GUIDE":"GENERATE FACILITATION GUIDE"}</Button>
           <Button disabled={!guideReady} onClick={()=>navigate(`/strategic-planning/session?session_id=${encodeURIComponent(sid)}`)}>{sessionDone?"VIEW COMPLETED SESSION":"OPEN STRATEGIC PLANNING SESSION"}</Button>
         </div>
         {guideReady&&<details className="sp-guide"><summary>View Facilitation Guide</summary><pre>{p.meeting_guide_text}</pre></details>}
-        {!leadDone&&<p className="workspace-note">Your own form is not yet complete. You can still prepare the session, but completing your form first ensures your ideas are reviewed with everyone else's.</p>}
         {sessionDone&&<p className="member-success"><CheckCircle2 size={16}/> The Strategic Planning Session is complete. Board selections and the live transcript are saved.</p>}
       </>)}
 
