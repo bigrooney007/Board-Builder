@@ -1700,7 +1700,6 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         await db.sp_community_research.update_one(
             {"project_id":p["project_id"]},
             {"$set":{"social_posts":strategic_research_posts(name, str(answers.get("mission") or "")),"updated_at":now}},
-            upsert=True,
         )
         return {"saved":True}
 
@@ -2017,10 +2016,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def community_research(request:Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));existing=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
         if existing:
-            if not existing.get("social_posts"):
-                posts=strategic_research_posts(p["organization_name"],p.get("mission",""))
-                await db.sp_community_research.update_one({"project_id":p["project_id"]},{"$set":{"social_posts":posts,"updated_at":now_iso()}})
-                existing["social_posts"]=posts
+            updates={}
+            if not existing.get("social_posts"):updates["social_posts"]=strategic_research_posts(p["organization_name"],p.get("mission",""))
+            if not existing.get("token"):updates["token"]=secrets.token_urlsafe(32)
+            if updates:
+                updates["updated_at"]=now_iso()
+                await db.sp_community_research.update_one({"project_id":p["project_id"]},{"$set":updates})
+                existing.update(updates)
             return existing
         token=secrets.token_urlsafe(32);posts=strategic_research_posts(p["organization_name"],p.get("mission",""))
         doc={"project_id":p["project_id"],"token":token,"social_posts":posts,"response_count":0,"created_at":now_iso()};await db.sp_community_research.insert_one(doc.copy());return doc
@@ -2370,7 +2372,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text") or not plan.get("final_share_token"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);link=f"{origin_of(request)}/strategic-plan/{plan['final_share_token']}";sent=0
         for person in people:
-            first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nOur complete Strategic Plan for {p['organization_name']} is ready. It combines the directions agreed during our Strategic Planning Session with the detailed plans submitted for every delegated section.\n\n[VIEW THE STRATEGIC PLAN]\n\nThank you for helping build the plan.\n\n{p.get('founder_name','')}\n{p['organization_name']}";await send_email(person["email"],f"Our Strategic Plan | {p['organization_name']}",body,"VIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
+            first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nOur complete Strategic Plan for {p['organization_name']} is ready. It reflects the directions agreed during our Strategic Planning Session and the final plan approved by the organization.\n\n[VIEW THE STRATEGIC PLAN]\n\nThank you for helping build the plan.\n\n{p.get('founder_name','')}\n{p['organization_name']}";await send_email(person["email"],f"Our Strategic Plan | {p['organization_name']}",body,"VIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
         return {"status":"sent","count":sent}
 
     @router.put("/active-delegation/people")
@@ -2395,7 +2397,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text") or not plan.get("final_share_token"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
         delegates=(plan.get("active_delegation") or {}).get("delegates") or []
-        if not delegates:raise HTTPException(409,"Complete the presentation and delegation meeting so delegated responsibilities can be identified first")
+        if not delegates:raise HTTPException(409,"Confirm at least one responsibility agreed during the Strategic Planning Session before creating execution portfolios")
         access=await ensure_execution_access(p);existing={x.get("delegation_id"):x for x in (plan.get("leadership_portfolios") or [])};rows=[]
         for delegate in delegates:
             delegation_id=delegate.get("delegation_id") or str(uuid.uuid4());previous=existing.get(delegation_id) or {};areas=delegate.get("areas") or [];responsibility="\n".join(f"- {x}" for x in delegate.get("responsibilities") or [])
@@ -2418,7 +2420,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not row:raise HTTPException(404,"This delegation is not available")
         if not row.get("email"):raise HTTPException(422,"Add this person's email address before sending their delegation")
         origin=origin_of(request);portfolio_link=f"{origin}/strategic-leadership-portfolio/{token}";assistant_link=f"{origin}/strategic-leadership-assistant/{token}";plan_link=f"{origin}/strategic-plan/{plan.get('final_share_token')}";first=(row.get("name") or "Board Member").split()[0];responsibility="\n".join(f"- {x}" for x in row.get("responsibilities") or [])
-        body_text=f"Dear {first},\n\nDuring our Strategic Plan presentation and delegation meeting, the Board delegated the following responsibility to you:\n\n{responsibility}\n\nReview the approved Strategic Plan here:\n{plan_link}\n\nYour personal Leadership Portfolio explains your role and how to get started:\n{portfolio_link}\n\nYour Executive Assistant is ready to help you execute this responsibility. Bookmark it and return whenever you need guidance, a plan, message, checklist, resource or Board update:\n{assistant_link}\n\nIncluded Executive Assistant access is available for six months from activation.\n\n{p.get('founder_name','')}\n{p['organization_name']}"
+        body_text=f"Dear {first},\n\nDuring our Strategic Planning Session, the Board agreed the following responsibility with you:\n\n{responsibility}\n\nReview the approved Strategic Plan here:\n{plan_link}\n\nYour personal Leadership Portfolio explains your role and how to get started:\n{portfolio_link}\n\nYour Executive Assistant is ready to help you execute this responsibility. Bookmark it and return whenever you need guidance, a plan, message, checklist, resource or Board update:\n{assistant_link}\n\nIncluded Executive Assistant access is available for six months from activation.\n\n{p.get('founder_name','')}\n{p['organization_name']}"
         await send_email(row["email"],f"Your Strategic Plan Delegation | {p['organization_name']}",body_text,"OPEN MY LEADERSHIP PORTFOLIO",portfolio_link,reply_to=p.get("founder_email",""))
         for item in rows:
             if item.get("token")==token:item["sent_at"]=now_iso()
