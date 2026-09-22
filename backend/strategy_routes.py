@@ -80,6 +80,18 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def generation_job_stale(job: dict, minutes: int = 10) -> bool:
+    if not job or job.get("status") != "running" or not job.get("started_at"):
+        return False
+    try:
+        started = datetime.fromisoformat(str(job["started_at"]).replace("Z", "+00:00"))
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - started).total_seconds() > minutes * 60
+    except (TypeError, ValueError):
+        return False
+
+
 class GeneratePayload(BaseModel):
     mode: str = Field(min_length=1)
 
@@ -303,7 +315,7 @@ def create_strategy_router(db) -> APIRouter:
         if payload.mode not in MODES:
             raise HTTPException(status_code=422, detail="Unknown strategy mode")
         job = await db.game_strategy_jobs.find_one({"user_id": member["user_id"], "mode": payload.mode}, {"_id": 0})
-        if job and job.get("status") == "running":
+        if job and job.get("status") == "running" and not generation_job_stale(job):
             return {"status": "running"}
         if payload.mode == "board_prioritized":
             session = await completed_group_session(member["user_id"])
@@ -323,7 +335,12 @@ def create_strategy_router(db) -> APIRouter:
         job = await db.game_strategy_jobs.find_one({"user_id": member["user_id"], "mode": mode}, {"_id": 0})
         if not job:
             return {"status": "idle"}
-        return {"status": job.get("status", "idle"), "strategy_id": job.get("strategy_id", "")}
+        if generation_job_stale(job):
+            await db.game_strategy_jobs.update_one(
+                {"user_id": member["user_id"], "mode": mode, "status": "running"},
+                {"$set": {"status": "failed", "error": "generation_timed_out", "finished_at": now_iso()}})
+            return {"status": "failed", "strategy_id": "", "error": "generation_timed_out"}
+        return {"status": job.get("status", "idle"), "strategy_id": job.get("strategy_id", ""), "error": job.get("error", "")}
 
     @router.get("/game/strategies")
     async def list_strategies(request: Request):
