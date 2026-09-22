@@ -180,6 +180,13 @@ export default function GameHomePage() {
           </div>
         </section>
 
+        {content.footer_recruit_url && content.footer_recruit_label && (
+          <section className="bfg-section" style={{ textAlign: "center", paddingTop: 0 }} data-testid="bfg-recruitment-link">
+            <p>Need to strengthen your board first?</p>
+            <a className="bfg-btn bfg-btn-ghost" href={content.footer_recruit_url}>{content.footer_recruit_label}</a>
+          </section>
+        )}
+
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
