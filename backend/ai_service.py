@@ -734,17 +734,16 @@ Never invent: statutory citations; penalties; governing law; legal remedies; man
 Never mention AI."""},
     "ninety_day_plan": {"module": 6, "title": "New Board Member 90-Day Plan", "per_application": True, "schema": {
         "member_name": "string — actual member name",
-        "your_agreed_focus": "string — concise explanation of the responsibility/focus actually agreed during onboarding",
-        "first_30_days": ["string — practical actions grounded in actual onboarding agreement"],
-        "days_31_60": ["string — practical actions building into the agreed Board responsibility"],
-        "days_61_90": ["string — practical actions establishing ownership/working rhythm around the agreed Board-level contribution"],
-        "support_you_can_expect": ["string — support/resources the organization actually agreed to provide"],
-        "what_success_at_90_days_looks_like": "string — realistic qualitative description grounded in the actual agreement; no invented numeric targets",
-        "moving_forward": "string — short closing about continuing the agreed contribution beyond the first 90 days",
+        "your_agreed_focus": "string — use an explicit agreed responsibility when supplied; otherwise state the member's initial Board contribution focus from their Profile and recruited role without pretending it is a binding assignment",
+        "first_30_days": ["string — practical orientation and first contribution actions supported by verified Profile/application information and any explicit agreement"],
+        "days_31_60": ["string — practical Board-level actions that deepen contribution without inventing duties"],
+        "days_61_90": ["string — practical actions that help the member establish a useful working rhythm around confirmed or clearly stated contribution areas"],
+        "support_you_can_expect": ["string — verified support/resources the member requested or the organization actually provides/agreed"],
+        "what_success_at_90_days_looks_like": "string — realistic qualitative description grounded in verified role/profile information and any explicit agreement; no invented numeric targets",
+        "moving_forward": "string — short closing about continuing to refine the member's role through Strategic Planning and Board decisions",
     }, "note": """You are an experienced nonprofit Board-development consultant creating a practical NEW BOARD MEMBER 90-DAY PLAN for ONE newly appointed Board Member.
-The member has completed onboarding. The founder has saved the Onboarding Conclusion / Role Agreement. That saved agreement is authoritative.
-Use: 1. Onboarding Conclusion / Role Agreement; 2. New Board Member Profile; 3. actual application/CV; 4. priority Board profile they were recruited to strengthen; 5. verified organization priorities.
-Never assign responsibilities that were not agreed.
+Use the same simple information chain as the Board Member Portfolio: 1. any explicit Onboarding Conclusion when it exists; 2. New Board Member Profile; 3. actual application/CV; 4. priority Board profile they were recruited to strengthen; 5. verified organization priorities.
+An Onboarding Conclusion is optional. Never assign responsibilities that were not explicitly agreed. Where a responsibility is not yet fixed, frame the 90-day plan around orientation, relationship-building, understanding the organization and beginning contribution in areas the member themselves identified, while Strategic Planning can later establish more specific responsibilities.
 The 90-Day Plan should help the member move from orientation into meaningful contribution.
 FIRST 30 DAYS: focus on understanding the organization, Board context, agreed contribution area, key information/people/resources and beginning the immediate next steps actually agreed.
 DAYS 31-60: begin taking meaningful action on the agreed responsibility, participating in relevant planning and establishing the relationships/support required to move the work forward.
@@ -797,20 +796,20 @@ Never mention AI."""},
     "board_member_portfolio": {"module": 6, "title": "Board Member Portfolio", "per_application": True, "schema": {
         "member": "string — actual Board Member name",
         "portfolio_type": "string — actual Board/Advisory terminology (copy the PORTFOLIO TYPE supplied in context verbatim where provided)",
-        "your_role_on_the_board": "string — clear explanation of the person's agreed role/focus without invented officer title",
-        "why_your_role_matters": "string — organization-specific explanation of why their agreed contribution matters",
-        "what_you_will_help_us_accomplish": ["string — meaningful outcomes supported by the actual Onboarding Conclusion and verified organization direction"],
-        "your_areas_of_responsibility": ["string — only responsibilities actually agreed"],
-        "how_your_experience_can_help": "string — connect actual verified expertise/experience to the agreed role",
-        "relationships_and_resources": "string — only broad relationships/resources the person actually identified and which are relevant; never assume introductions",
-        "how_we_will_work_together": "string — actual working relationship supported by organization expectations/onboarding agreement",
-        "support_and_resources": ["string — organizational support actually agreed"],
-        "your_immediate_priorities": ["string — immediate actions actually supported by the Onboarding Conclusion"],
-        "your_first_90_days": ["string — concise directions consistent with the approved New Board Member 90-Day Plan and actual agreement"],
+        "your_role_on_the_board": "string — clear explanation of the person's Board role/focus grounded in the recruited role, their Profile and any later explicit agreement; never invent an officer title or binding duty",
+        "why_your_role_matters": "string — organization-specific explanation of why this person's verified strengths and intended contribution matter to the mission and Board need",
+        "what_you_will_help_us_accomplish": ["string — meaningful organization outcomes this person's verified skills/interests can help advance; where no explicit responsibility has been agreed yet, phrase these as contribution focus rather than binding commitments"],
+        "your_areas_of_responsibility": ["string — explicit agreed responsibilities where supplied; otherwise concise initial contribution areas drawn from the member's own Profile and recruited role, clearly framed as a starting focus rather than a fixed assignment"],
+        "how_your_experience_can_help": "string — connect actual verified expertise/experience from the application, CV and Profile to the Board role/focus",
+        "relationships_and_resources": "string — only broad relationships/resources the person actually identified and which are relevant; never assume introductions or access",
+        "how_we_will_work_together": "string — practical working relationship supported by verified organization expectations, the member's stated capacity/support needs and any explicit later agreement",
+        "support_and_resources": ["string — support/resources the member said would help, plus verified organization support actually available or explicitly agreed; do not invent"],
+        "your_immediate_priorities": ["string — safe first priorities supported by the member's Profile, recruited role, organization need and any explicit agreement; never turn an interest into an obligation"],
+        "your_first_90_days": ["string — concise orientation and contribution steps consistent with the member's verified capacity and role; use explicit agreed actions where supplied and otherwise keep the plan exploratory/Board-level rather than inventing commitments"],
         "fundraising_and_resource_development": "string — only high-level Board expectation where applicable; detailed personal fundraising responsibility is reserved for Fundraising Activation. Empty string where not applicable.",
         "moving_forward_together": "string — concise professional closing",
-    }, "note": """You are an experienced nonprofit Board-development consultant creating a finished, person-specific BOARD MEMBER PORTFOLIO for ONE newly appointed Board Member after onboarding.
-This document tells the member: where they fit; why their contribution matters; what they ACTUALLY agreed to help carry; how their experience supports that responsibility; how the organization will support them; and what happens next.
+    }, "note": """You are an experienced nonprofit Board-development consultant creating a finished, person-specific BOARD MEMBER PORTFOLIO for ONE newly appointed Board Member.
+This first Portfolio should make intelligent use of information already gathered instead of forcing another meeting or form. It tells the member: where their verified experience fits; why their contribution matters; the contribution areas they themselves identified; how the role they were recruited to strengthen connects to the organization; what support/capacity information they supplied; and what happens next. When a later explicit Onboarding Conclusion exists, use it to make the Portfolio more specific.
 This is NOT: a generic job description; an employment document; a legal contract; a Board Manual; a performance assessment; an AI analysis; a Fundraising Portfolio.
 AUTHORITY ORDER:
 1. Any explicit founder-saved Onboarding Conclusion / Role Agreement, WHEN one exists — highest authority only for the specific agreements it records.
@@ -823,7 +822,7 @@ Never invent: officer titles; committees; targets; hours; deadlines; donors; cor
 Board Members are not unpaid staff. Describe contribution at the appropriate Board level: leadership; strategic direction; planning; guidance; professional expertise; relationships; introductions where agreed; oversight where appropriate; helping build/guide teams and systems.
 FUNDRAISING: This is NOT the member's Fundraising Portfolio. Detailed individual fundraising responsibilities are developed later through Fundraising Activation. If general fundraising/resource development participation is an actual organization-wide expectation, acknowledge it only at that level. Do not assign donor asks, introductions, campaigns, targets or giving commitments here unless separately and explicitly agreed.
 Write in the organization's voice directly to the member.
-The member should finish thinking: 'I understand exactly where I fit, what I agreed to help carry, why it matters and how we will work together.'
+The member should finish thinking: 'I understand where my experience fits, why it matters, the contribution areas I said I am interested in, and how I can begin contributing while we continue making responsibilities more specific through the Board's planning work.'
 Never mention AI."""},
     "reactivation_engagement_plan": {"module": 0, "title": "Board Reactivation / Engagement Plan", "per_application": False, "schema": {
         "document_title": "string — Use the actual organization name followed naturally by 'Board Reactivation & Engagement Plan' or 'Board Engagement Plan'. No placeholders.",
