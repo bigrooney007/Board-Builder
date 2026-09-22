@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { MODE_LABELS } from "./strategyRender";
 
-export const WorkingStrategyCard = () => {
+export const WorkingStrategyCard = ({ autoGenerate = false }) => {
   const navigate = useNavigate();
   const [strategies, setStrategies] = useState(null);
   const [phase, setPhase] = useState("idle");
@@ -14,9 +14,21 @@ export const WorkingStrategyCard = () => {
       const rows = (await memberApi.get("/game/strategies")).data.strategies || [];
       setStrategies(rows);
       const status = (await memberApi.get("/game/strategy/status", { params: { mode: "working" } })).data;
-      if (status.status === "running") { setPhase("generating"); startPolling(); }
+      const workingRows = rows.filter((row) => row.mode === "working");
+      if (status.status === "running") {
+        setPhase("generating");
+        startPolling();
+      } else if (autoGenerate && workingRows.length === 0) {
+        setPhase("generating");
+        try {
+          await memberApi.post("/game/strategy/generate", { mode: "working" });
+          startPolling();
+        } catch {
+          setPhase("failed");
+        }
+      }
     } catch { setStrategies([]); }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoGenerate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startPolling = () => {
     clearInterval(timer.current);
@@ -50,13 +62,13 @@ export const WorkingStrategyCard = () => {
     <section className="bfg-panel" data-testid="bfg-working-strategy-card">
       <div className="bfg-panel-head">
         <div>
-          <h2>Working Fundraising Strategy</h2>
-          <p className="bfg-panel-sub">Generate a working fundraising strategy at any time using the information currently available from your organization and board.</p>
+          <><p className="bfg-eyebrow">STEP 2</p><h2>Generate Your Working Fundraising Strategy</h2></>
+          <p className="bfg-panel-sub">Your first working strategy uses the ideas from your individual game, your present fundraising reality and the role you said you want to play. We start preparing it in the background as soon as your game is complete.</p>
         </div>
       </div>
       {phase === "generating" ? (
         <div style={{ marginTop: 14 }} data-testid="bfg-working-generating">
-          <p style={{ fontWeight: 700, color: "#111827" }}>Building Your Working Fundraising Strategy</p>
+          <p style={{ fontWeight: 700, color: "#111827" }}>Generating Your Working Fundraising Strategy</p>
           <p className="bfg-note">We are bringing together the information currently available from your organization and board.</p>
           <p className="bfg-note">This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes. You can continue using your dashboard while we work.</p>
           <div className="bfg-doc-loading"><span /><span /><span /></div>
@@ -77,7 +89,7 @@ export const WorkingStrategyCard = () => {
         </div>
       ) : (
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} onClick={generate} data-testid="bfg-generate-working-btn">
-          Generate Working Strategy
+          Generate My Working Strategy
         </button>
       )}
     </section>
