@@ -2038,6 +2038,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if section:
             selected=set(section.get("selected_idea_ids") or [])
             section={**section,"ideas":[{**idea,"selected":idea["idea_id"] in selected} for idea in section["ideas"]]}
+            section.pop("facilitator_prompt",None)
         return {"organization_name":p.get("organization_name",""),"status":saved.get("status","NOT STARTED"),
                 "current_section_index":index,"section":section,"total_sections":len(sections)}
 
