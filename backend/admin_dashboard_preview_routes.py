@@ -33,6 +33,7 @@ FIXTURE_VERSION = "v3"
 RECRUITMENT_FIXTURE_VERSION = "v6"
 STRATEGIC_FIXTURE_VERSION = "v5"
 RECOMMITMENT_FIXTURE_VERSION = "v4"
+FUNDRAISING_FIXTURE_VERSION = "v4"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -1346,10 +1347,15 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         situation_sections = {
             "current_reality": {
                 "current_individual_donors": "We have about 35 recurring or repeat individual donors, mostly personal contacts and former volunteers. There is no formal major-donor pipeline yet.",
+                "individual_fundraising_process": "Most individual gifts come through personal outreach, year-end emails and occasional event follow-up. We do not yet have a consistent cultivation, ask, follow-up and stewardship rhythm.",
                 "current_businesses": "We have three small business sponsors and several warm employer relationships, but no structured corporate partnership pipeline.",
+                "business_fundraising_process": "Business support usually begins through a warm introduction from the founder or a Board Member. We send a short overview, hold a conversation and follow up manually, but there is no shared pipeline or standard partnership process yet.",
                 "current_grantors": "About 55% of current revenue comes from foundation and government grants. Grant prospecting is mostly reactive.",
-                "current_team": "The founder leads fundraising with support from one part-time coordinator. Board participation is inconsistent and usually request-based.",
-                "current_resources": "We have participant stories, basic outcome data, a website, email list and presentation deck, but no unified case for support or prospect CRM.",
+                "grant_fundraising_process": "Staff monitor familiar funders and public opportunities, then prepare applications when a relevant deadline appears. We need a more proactive research, cultivation, calendar and follow-up process.",
+                "current_team": "The founder leads fundraising with support from one part-time coordinator. The Board Chair helps with selected corporate relationships and the Treasurer reviews fundraising performance. Board participation is otherwise inconsistent and request-based.",
+                "current_technology": "We use spreadsheets, our email platform and basic website forms. We do not yet have one prospect CRM that shows relationship owner, stage and next action.",
+                "current_materials": "We have participant stories, basic outcome data, a website, email list and presentation deck. We still need a unified case for support, corporate partnership one-pager, donor conversation guide and consistent follow-up templates.",
+                "current_budget": "There is no large dedicated fundraising systems budget yet. We can fund essential CRM, prospect research, communications support and selected cultivation activities, but we want to start lean and confirm prices before committing.",
             },
             "participation": {
                 "build": ["Make introductions", "Research potential funders", "Help build fundraising materials"],
@@ -1413,24 +1419,12 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             upsert=True,
         )
         primary_answers = {
-            1: (
-                "Individuals who care about youth opportunity, workforce mobility and mentoring; local business owners; employers that hire early-career talent; and grant funders focused on education, workforce development and economic mobility.",
-                "Prioritize warm prospects whose values, lived experience, customer base, workforce needs or giving priorities directly connect to the young people we serve. Start with people and institutions where a board or staff relationship already exists.",
-            ),
-            2: (
-                "Board and staff networks, employer associations, chambers of commerce, professional groups, alumni networks, community foundations, local business events and funder databases filtered for youth and workforce priorities.",
-                "Create a weekly prospecting routine. Each board member maps ten relationships, staff researches aligned grantors and businesses, and every qualified prospect enters one shared pipeline with an owner and next action.",
-            ),
-            3: (
-                "Use credible youth outcomes, employer stories, practical insight about youth employment, small mission-connected events and warm introductions to earn attention before asking for money.",
-                "Build a content and engagement rhythm around useful insight, proof of impact and direct relationship-building. Every visibility activity should give the right funder a reason to respond, attend, meet or learn more.",
-            ),
-            4: (
-                "Move each prospect through Know, Like, Trust, Ask, Follow Up and Steward. Record the relationship owner, current stage, next action and planned ask in the CRM.",
-                "Run a monthly pipeline review. Warm introductions happen first, cultivation has a clear purpose, asks are specific, follow-up is scheduled before the meeting ends and stewardship begins immediately after a commitment.",
-            ),
+            1: "Individuals who care about youth opportunity, workforce mobility and mentoring; local business owners; employers that hire early-career talent; and grant funders focused on education, workforce development and economic mobility.",
+            2: "Board and staff networks, employer associations, chambers of commerce, professional groups, alumni networks, community foundations, local business events and funder databases filtered for youth and workforce priorities.",
+            3: "Use credible youth outcomes, employer stories, practical insight about youth employment, small mission-connected events and warm introductions to earn attention before asking for money.",
+            4: "Move each prospect through a clear relationship process: help them know us, stay connected, see proof of impact, build trust, receive an appropriate ask, get consistent follow-up and then be stewarded after they give.",
         }
-        for section_id, (first, second) in primary_answers.items():
+        for section_id, first in primary_answers.items():
             await db.game_section_responses.update_one(
                 {"board_member_id": primary_id, "section_id": section_id},
                 {"$setOnInsert": {
@@ -1446,7 +1440,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "preferences": [],
                     "do_not_want": [],
                     "group_game_ideas": [],
-                    "extras": {"second_response": second},
+                    "extras": {},
                     "fine_tuning": {},
                     "approved_entries": [],
                     "approved_display": "",
@@ -1590,20 +1584,6 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        await db.game_meeting_transcripts.update_one(
-            {"user_id": member["user_id"]},
-            {"$setOnInsert": {
-                "transcript_id": f"admin-preview-game-transcript-{tag}",
-                "user_id": member["user_id"],
-                "text": fundraising_meeting_transcript(),
-                "source": "pasted",
-                "filename": "",
-                "internal_preview": True,
-                "created_at": now,
-                "submitted_at": now,
-            }},
-            upsert=True,
-        )
 
     @router.post("/{product}")
     async def launch_dashboard_preview(product: str, request: Request, response: Response):
@@ -1616,6 +1596,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             RECRUITMENT_FIXTURE_VERSION if product == "recruitment"
             else STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
             else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
+            else FUNDRAISING_FIXTURE_VERSION if product == "board-fundraising-game"
             else FIXTURE_VERSION,
         )
         if config["entitlements"]:
