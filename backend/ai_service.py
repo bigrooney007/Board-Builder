@@ -949,6 +949,51 @@ NEVER mention AI."""},
     "strategic_final_plan": {"module": 0, "title": "Final Strategic Plan", "per_application": False, "schema": {
         "sections": "list of objects — the complete organization Strategic Plan combining the adopted area plans. Each object: {heading: string (section heading — begin with an executive summary section, then one section per adopted strategic area in the order supplied), content: string (the section content: for area sections, faithfully present that area's ADOPTED detailed plan and the Board's adoption conclusion — preserve the Area Owner's actual submitted substance; for the executive summary, briefly summarize the direction across areas using only supplied content)}",
     }, "note": "You are combining a nonprofit Board's adopted strategic-area plans into ONE organization Strategic Plan document. Every area section must faithfully reflect the Area Owner's submitted plan as adopted, including the recorded Board adoption conclusion where supplied. Do NOT rewrite strategy, add priorities, or invent content. NEVER mention AI."},
+    "strategic_session_final_plan": {"module": 0, "title": "Strategic Plan", "per_application": False, "schema": {
+        "sections": "list of objects — one polished organization-level Strategic Plan. Each object: {heading: string, content: string}. Use the exact professional structure required in the note and include one separate Program section for EACH program supplied/reviewed by the Board."
+    }, "note": """You are an experienced nonprofit strategic-planning facilitator preparing the organization's professional Strategic Plan AFTER one live Board Strategic Planning Session.
+
+AUTHORITY AND ORIGINAL THOUGHT:
+- The Board's explicitly selected ideas are primary authority.
+- The full original source answers behind those selected ideas and the live session transcript are authoritative context.
+- The organization intake describes the starting reality; it is not automatically a final Board decision.
+- Community research is evidence/context, not Board authority.
+- Preserve the substance, distinctive reasoning, priorities and conditions actually expressed by the people involved.
+- Organize and clarify the Board's thinking. Do not replace it with generic strategy language.
+- Do not invent consensus, programs, people, statistics, partners, costs, dates, targets or commitments.
+
+CUSTOMER-FACING DOCUMENT:
+- Do NOT write "Jane said", "John suggested", "Board Member X proposed" or otherwise attribute the final strategy to individual contributors.
+- Do NOT expose question IDs, internal labels, prompts, JSON fields, AI instructions or drafting notes.
+- Do NOT describe the process of collecting ideas.
+- Write the plan as the organization's strategy, based on what the Board actually selected and agreed.
+
+REQUIRED PROFESSIONAL STRUCTURE, IN THIS ORDER:
+1. Executive Summary — a concise synthesis of the organization's direction and what this plan is designed to accomplish.
+2. Mission Statement — the existing mission if the Board explicitly kept it, otherwise the mission direction supported by the selected ideas and transcript.
+3. Strategic Goals — the Board-agreed goals for the planning period. Keep them distinct and clear.
+4. Strategic Objectives — objectives that directly support the agreed goals. Do not invent measures or dates that were not supplied.
+5. Programs — create ONE clearly titled section for EACH program the organization supplied/reviewed. For every program explain, only where supported:
+   - Program purpose / objective
+   - Who it serves / intended result
+   - What the Board agreed should continue, change or improve
+   - How the organization intends to execute or strengthen it
+   Never merge different programs merely for neatness.
+6. Team & Capacity — present people currently available, capacity gaps and people/capabilities the strategy requires.
+7. Operations — the systems/processes the Board agreed are needed to support execution.
+8. Marketing & Visibility — agreed audiences, visibility/communications direction and practical execution priorities.
+9. Partnerships — agreed partnership direction, types of partners and relationship priorities.
+10. Fundraising — agreed fundraising direction, audiences/process/capacity where actually supported.
+11. Technology — technology/tools/workflows required or agreed, without inventing products/vendors.
+12. Budget & Resources — known resources/cost considerations and decisions still required. Never fabricate numbers.
+13. Action Plan — practical next actions and clearly agreed execution responsibilities supported by the live transcript. Include named responsibility only when the Board explicitly delegated it. Do not turn Board Members into staff or expand a person's role beyond what was agreed.
+
+STYLE:
+Professional, substantial, useful and ready for an Executive Director or Board to download and use.
+Use clear headings and paragraphs/bullets where appropriate.
+Do not create a transcript summary.
+Do not mention AI.
+Do not add unsupported recommendations simply to make the plan sound more complete."""},
     "strategic_plan_synchronized": {"module": 0, "title": "Synchronized Foundational Strategic Plan", "per_application": False, "schema": {
         "areas": "list of objects — one per strategic area of the plan after synchronizing the Board's asynchronous review. Each object: {area: string (short area title — keep the existing area titles wherever the area is preserved), direction: string (the refined direction for that area incorporating the Board's accepted refinement), ideas_shared: list of strings (the ideas with accurate attribution of who shared them, updated with accepted additions from the review), proposed_priorities: list of strings (the refined priorities after incorporating the Board's review choices and comments — never invent unsupported priorities)}",
     }, "note": "You are synchronizing a Board's asynchronous review into the Foundational Strategic Plan. Inputs: the original Board Member responses, the generated draft plan, and every Board review choice and comment. Where the Board supported an area as written, preserve it. Where members suggested changes or added ideas, incorporate them faithfully with attribution. Where members flagged an area for Board discussion, keep the area and note the open question rather than resolving it yourself. The result remains FOUNDATIONAL — the organization's agreed strategic direction, not a detailed departmental execution plan. NEVER invent content. NEVER mention AI."},
