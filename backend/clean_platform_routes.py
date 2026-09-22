@@ -49,6 +49,16 @@ HOME_PAGE_KEYS = {
     "facilitated-game",
 }
 
+HOME_PATHS = {
+    "main": "/",
+    "recruitment": "/recruit",
+    "board-fundraising-game": "/board-fundraising-game",
+    "strategic-planning": "/strategic-planning",
+    "board-recommitment": "/board-recommitment",
+    "facilitated-game": "/organize-board-fundraising-game",
+    "board-applicant-network": "/join-a-board",
+}
+
 PAYMENT_FLOW_SOURCES = {
     "recruitment": {
         "offer_source": {"recruitment"},
@@ -190,8 +200,15 @@ def create_clean_platform_router(db) -> APIRouter:
     async def event_count(flow: str, event: str) -> int:
         return await db.platform_analytics.count_documents({"flow": flow, "event": event})
 
-    async def page_views(flow: str) -> int:
-        return await db.platform_analytics.count_documents({"flow": flow, "event": "page_view"})
+    async def unique_event_count(flow: str, event: str, page: str = "") -> int:
+        query = {"flow": flow, "event": event}
+        if page:
+            query["page"] = page
+        values = await db.platform_analytics.distinct("visitor_id", query)
+        return len([value for value in values if value])
+
+    async def homepage_visitors(flow: str) -> int:
+        return await unique_event_count(flow, "page_view", HOME_PATHS.get(flow, ""))
 
     async def payment_counts(flow: str) -> dict:
         contract = PAYMENT_FLOW_SOURCES.get(flow)
@@ -264,13 +281,14 @@ def create_clean_platform_router(db) -> APIRouter:
             payments = await payment_counts(flow)
             flows.append({
                 "flow": flow,
-                "page_views": await page_views(flow),
-                "contacts_entered": await event_count(flow, "contact_entered"),
+                "homepage_visitors": await homepage_visitors(flow),
+                "page_views": await event_count(flow, "page_view"),
+                "contacts_entered": await unique_event_count(flow, "contact_entered"),
                 "checkout_started": await event_count(flow, "checkout_started"),
                 "stripe_sessions": payments["stripe_sessions"],
                 "purchases": payments["purchases"],
-                "dashboard_entered": await event_count(flow, "dashboard_entered"),
-                "platform_completed": await event_count(flow, "platform_completed"),
+                "dashboard_entered": await unique_event_count(flow, "dashboard_entered"),
+                "platform_completed": await unique_event_count(flow, "platform_completed"),
                 "average_use_seconds": activity.get(flow, {}).get("average_seconds", 0),
                 "active_users": activity.get(flow, {}).get("users", 0),
             })
