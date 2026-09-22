@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { dashboardForPath, flowForPath, trackPlatformEvent } from "./platform";
+import { dashboardForPath, flowForPath, platformUseFlowForPath, trackPlatformEvent } from "./platform";
 
 export default function PlatformAnalytics() {
   const location = useLocation();
@@ -12,7 +12,9 @@ export default function PlatformAnalytics() {
     trackPlatformEvent(flow, "page_view");
     const dashboardFlow = dashboardForPath(location.pathname);
     if (dashboardFlow) trackPlatformEvent(dashboardFlow, "dashboard_entered");
-    activeRef.current = { flow: dashboardFlow, started: Date.now(), sent: 0 };
+    const useFlow = platformUseFlowForPath(location.pathname);
+    activeRef.current = { flow: useFlow, started: Date.now(), sent: 0 };
+    if (location.pathname === "/game/complete") trackPlatformEvent("board-fundraising-game", "platform_completed");
 
     const flush = () => {
       const state = activeRef.current;
@@ -23,7 +25,7 @@ export default function PlatformAnalytics() {
       state.sent = total;
       trackPlatformEvent(state.flow, "platform_active", { active_seconds: Math.min(delta, 3600) });
     };
-    const timer = dashboardFlow ? window.setInterval(flush, 30000) : null;
+    const timer = useFlow ? window.setInterval(flush, 30000) : null;
     window.addEventListener("pagehide", flush);
     return () => {
       if (timer) window.clearInterval(timer);
