@@ -32,7 +32,7 @@ When strategy_mode is board_prioritized, Board Priorities represent the stronges
 When strategy_mode is working, create the best working strategy possible from all information currently available. Do not describe any idea as board-approved, board-prioritised or adopted unless the supplied data explicitly establishes that status.
 Do not invent facts, funders, organisations, relationships, commitments, results or financial information.
 Where strategic information is missing, you may provide a concise recommendation, but clearly identify it as a recommendation rather than something supplied by the organisation or board.
-The board supplies only four human decisions: the exact type of people, businesses and grantors meant to fund the mission, where to consistently find them, how to attract their attention, and the exact process to raise money. YOU must derive the fundraising team, technology, materials, resources, execution timeline and any budget guidance needed to execute those decisions — grounded in the organisation's current reality (current donors, business supporters, grantors, team, tools and resources) and the stated participation choices and time commitments of the people involved. Mark every derived item with "source": "recommendation".
+The board supplies only four human strategic decisions: the exact type of people, businesses and grantors meant to fund the mission, where to consistently find them, how to attract their attention, and the exact process to raise money. YOU must turn those decisions into the complete execution system: fundraising team, technology, materials, resources, execution budget and execution timeline — grounded in the organisation's current reality (current donors, business supporters, grantors, team, technology, materials and budget) and the stated participation choices and time commitments of the people involved. Mark every derived item that supports the human decisions with "source": "recommendation" where that field exists.
 Write for nonprofit leaders and board members. Use clear, direct, execution-ready language.
 Return only the required structured strategy output."""
 
@@ -58,6 +58,12 @@ OUTPUT_SCHEMA = {
     "technology": {"priorities": [{"title": "Technology category (specific products only if the organisation or board named them)", "explanation": "What it is needed for", "focus": "How it supports execution", "source": "string"}], "additional_ideas": ["string"]},
     "fundraising_team": {"priorities": [{"title": "Role", "explanation": "Primary Responsibility", "focus": "Why This Role Matters", "source": "string"}], "additional_ideas": ["string — Additional Roles To Consider"]},
     "materials": {"priorities": [{"title": "Material", "explanation": "What It Will Be Used For", "focus": "Who It Supports", "source": "string"}], "additional_ideas": ["string — Additional Materials To Consider"]},
+    "execution_budget": {
+        "required_now": [{"item": "string — only something actually needed to begin executing this strategy", "why_needed": "string", "lowest_cost_approach": "string — first use existing capacity, existing subscriptions, free/low-cost tools, templates, public research or AI-assisted drafting where appropriate", "cost": "exact supplied amount or exactly 'PRICE TO CONFIRM'"}],
+        "later_or_optional": [{"item": "string", "why_later": "string", "lowest_cost_approach": "string", "cost": "exact supplied amount or exactly 'PRICE TO CONFIRM'"}],
+        "cost_reduction_options": ["string — practical ways to execute the plan without unnecessary new spending"],
+        "budget_summary": "string — concise organization-specific explanation of the smallest realistic budget approach supported by the supplied information; never invent a total"
+    },
     "execution_timeline": {"set_up": ["string — use relative periods such as Weeks 1-2 / Month 2 unless exact dates are safely calculable from the deadline"], "launch": ["string"], "execute": ["string"], "review_and_improve": ["string"]},
     "additional_board_ideas": {"fundraising_audiences": ["string"], "where_to_find": ["string"], "attraction": ["string"], "fundraising_process": ["string"], "technology": ["string"], "fundraising_team": ["string"], "materials": ["string"], "execution_timeline": ["string"]},
     "next_step": "string — for working mode use exactly: 'This is a working strategy created from the information currently available. Continue collecting board input and update the strategy as your fundraising planning develops.' For board_prioritized mode use exactly: 'Your board has prioritised the ideas behind this strategy. The next step is to review the strategy together, make any final changes and adopt it as your organisation's working fundraising plan.'",
@@ -67,7 +73,7 @@ SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_D
 EDITABLE_SECTION_KEYS = ["executive_summary", "fundraising_goal", "fundraising_audiences", "where_to_find", "attraction",
                          "fundraising_process", "technology", "fundraising_team", "materials", "execution_timeline",
                          "additional_board_ideas", "next_step", "board_fundraising_process", "team_roles",
-                         "execution_resources", "board_priorities"]
+                         "execution_resources", "execution_budget", "board_priorities"]
 
 
 def now_iso() -> str:
