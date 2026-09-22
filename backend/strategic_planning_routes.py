@@ -1980,7 +1980,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         if not (form.get("content") or {}).get("sections"):raise HTTPException(409,"Generate the Strategic Planning Form first")
-        if not people:raise HTTPException(409,"At least one completed Strategic Planning Form is required")
+        if not any(person.get("role")=="Lead User" for person in people):raise HTTPException(409,"Complete your own Strategic Planning Form before starting the session")
+        if not any(person.get("role")!="Lead User" for person in people):raise HTTPException(409,"At least one Board Member must complete the Strategic Planning Form before starting the session")
         saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"status":"IN PROGRESS",
             "started_at":saved.get("started_at") or now_iso(),"current_section_index":saved.get("current_section_index",0),"updated_at":now_iso()}},upsert=True)
@@ -2167,7 +2168,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def facilitation(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
-        if not people:raise HTTPException(409,"At least one completed Strategic Planning Form is required")
+        lead_completed=any(person.get("role")=="Lead User" for person in people)
+        board_completed=any(person.get("role")!="Lead User" for person in people)
+        if not lead_completed:raise HTTPException(409,"Complete your own Strategic Planning Form before preparing the live session")
+        if not board_completed:raise HTTPException(409,"At least one Board Member must complete the Strategic Planning Form before preparing the live session")
         _,_,intake=await paid(sid)
         guide_sections=build_session_sections(form,people,{},intake.get("answers") or {},p)
         titles=[section.get("title","") for section in guide_sections]
