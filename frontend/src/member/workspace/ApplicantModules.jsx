@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Download, FileText, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
 import { MaterialCard, SendMaterialButton, currentVersion, downloadMaterialPdf, printBranded } from "./MaterialCard";
@@ -967,6 +967,7 @@ const AppointmentOfferPanel = ({ application, onChanged }) => {
 };
 
 export const OnboardingPreparation = () => {
+  const navigate = useNavigate();
   const { applications, refresh: refreshApps } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   const [branding] = useBranding();
@@ -1010,6 +1011,21 @@ export const OnboardingPreparation = () => {
             ) : null} />
         ))}
         <BoardProfilePanel />
+      </section>
+
+      <section className="workspace-panel" data-testid="live-onboarding-session-launcher">
+        <h2>Run The Live Board Member Onboarding Session</h2>
+        <p className="material-description">Turn the approved Board Member Manual into one synchronized onboarding presentation. Create one no-login screen link for everyone in the meeting, then move through the manual one section at a time while you facilitate the conversation.</p>
+        <p className="workspace-note">This session is optional facilitation support. It does not control whether you use a conditional offer, unconditional offer or final appointment.</p>
+        <button
+          className="button"
+          disabled={orgMaterials.board_manual?.status !== "Approved"}
+          onClick={() => navigate("/app/board-recruitment/onboarding-session")}
+          data-testid="open-live-onboarding-session"
+        >
+          START LIVE ONBOARDING SESSION
+        </button>
+        {orgMaterials.board_manual?.status !== "Approved" && <p className="workspace-note">Generate and approve the Board Member Manual above to unlock the shared onboarding screen.</p>}
       </section>
 
       <section className="workspace-panel" data-testid="onboarding-candidate-section">
