@@ -268,13 +268,36 @@ def create_applicant_router(db) -> APIRouter:
         filters = {"applicant_id": {"$in": selected_ids}} if selected_ids else {}
         applicants = await db.board_applicants.find(filters, {"_id": 0}).sort("created_at", -1).to_list(5000)
         output = io.StringIO()
-        fields = ["applicant_id", "first_name", "last_name", "email", "phone", "country", "city", "state_region", "job_title", "professional_field", "skills", "causes", "board_types", "availability", "status", "resend_segment_status", "created_at"]
+        fields = [
+            "applicant_id",
+            "first_name", "last_name", "email", "phone", "linkedin_url",
+            "country", "city", "state_region", "postal_code",
+            "job_title", "employer", "professional_field", "years_experience",
+            "skills", "other_skill", "professional_summary",
+            "causes", "other_cause", "board_types", "participation_preferences",
+            "geographic_preferences", "availability", "monthly_commitment",
+            "previous_board_experience", "board_experience_details",
+            "fundraising_activities", "professional_relationships",
+            "reason_for_joining", "commitment_answer", "understands_unpaid",
+            "profile_sharing_permission", "board_opportunity_consent",
+            "other_offers_consent", "privacy_accepted",
+            "consent_at", "source_page", "created_at", "updated_at", "status", "internal_notes",
+            "resume_filename", "resume_content_type", "resume_file_id",
+            "resend_contact_id", "resend_segment_status", "resend_sync_error",
+            "confirmation_email_status", "confirmation_email_id", "confirmation_email_error",
+            "owner_notification_status", "owner_notification_email_id", "owner_notification_error",
+        ]
+        list_fields = {
+            "skills", "causes", "board_types", "participation_preferences",
+            "fundraising_activities",
+        }
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()
         for applicant in applicants:
             row = {field: applicant.get(field, "") for field in fields}
-            for field in ("skills", "causes", "board_types"):
-                row[field] = " | ".join(row[field]) if isinstance(row[field], list) else row[field]
+            for field in list_fields:
+                if isinstance(row[field], list):
+                    row[field] = " | ".join(str(value) for value in row[field])
             writer.writerow(row)
         return Response(
             output.getvalue(), media_type="text/csv",
