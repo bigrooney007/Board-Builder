@@ -125,7 +125,26 @@ export function GuidedDashboardPage({ product: explicitProduct }){
  const [product,c]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const {member,loading}=useMemberAuth();const allowed=usePaidFlow(sid,product);const [context,setContext]=useState(null);const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false),[error,setError]=useState("");
  const recommitmentEntitled=product==="board-recommitment"&&Boolean(member?.entitlements?.includes("reactivation_self_guided"));
  const effectiveAllowed=recommitmentEntitled||allowed===true;
- useEffect(()=>{if(loading||!member)return;if(product==="board-recommitment"&&recommitmentEntitled&&!sid){setContext({product,intake:{answers:{}}});setAnswers({});setError("");return}if(!effectiveAllowed)return;if(product==="board-recommitment"){memberApi.post("/guided/board-recommitment/initialize",{session_id:sid}).then(()=>memberApi.get("/guided/dashboard",{params:{session_id:sid,product}})).then(r=>{setContext(r.data);setAnswers(r.data.intake?.answers||{})}).catch(e=>{if(recommitmentEntitled){setError("");setContext({product,intake:{answers:{}}});return}setError(e.response?.data?.detail||"We could not prepare your Board Recommitment dashboard.")});return}memberApi.get("/guided/dashboard",{params:{session_id:sid,product}}).then(r=>{setContext(r.data);setAnswers(r.data.intake?.answers||{})}).catch(e=>setError(e.response?.data?.detail||"We could not open your Strategic Planning dashboard."))},[effectiveAllowed,recommitmentEntitled,sid,product,loading,member]);
+ useEffect(()=>{if(loading||!member)return;
+   if(product==="board-recommitment"&&recommitmentEntitled&&member?.internal_dashboard_preview){
+     setError("");
+     setContext({product,intake:{answers:{}}});
+     setAnswers({});
+     return;
+   }
+   if(product==="board-recommitment"&&recommitmentEntitled&&!sid){setContext({product,intake:{answers:{}}});setAnswers({});setError("");return}
+   if(!effectiveAllowed)return;
+   if(product==="board-recommitment"){
+     memberApi.post("/guided/board-recommitment/initialize",{session_id:sid})
+       .then(()=>memberApi.get("/guided/dashboard",{params:{session_id:sid,product}}))
+       .then(r=>{setContext(r.data);setAnswers(r.data.intake?.answers||{})})
+       .catch(e=>{if(recommitmentEntitled){setError("");setContext({product,intake:{answers:{}}});return}setError(e.response?.data?.detail||"We could not prepare your Board Recommitment dashboard.")});
+     return;
+   }
+   memberApi.get("/guided/dashboard",{params:{session_id:sid,product}})
+     .then(r=>{setContext(r.data);setAnswers(r.data.intake?.answers||{})})
+     .catch(e=>setError(e.response?.data?.detail||"We could not open your Strategic Planning dashboard."))
+  },[effectiveAllowed,recommitmentEntitled,sid,product,loading,member]);
  if(!loading&&!member)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>Log In To Open {c.dashboardTitle}.</h1><p>Use the account email from your purchase. If you have not chosen a password yet, use the setup link in your access email or Forgot Password.</p><button className="bfg-btn bfg-btn-primary" onClick={()=>nav("/login?next="+encodeURIComponent(`/${product}/dashboard${sid?`?session_id=${sid}`:""}`))}>LOG IN</button></section></main></BfgShell>;
  if(allowed===null&&!recommitmentEntitled)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!effectiveAllowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
