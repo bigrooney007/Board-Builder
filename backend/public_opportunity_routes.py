@@ -357,9 +357,11 @@ def create_public_opportunity_router(db) -> APIRouter:
         if not sections and str(current.get("display_text") or "").strip():
             sections = [{"title": "Board Member Manual", "content": str(current.get("display_text") or "").strip()}]
         live = profile.get("onboarding_live") or {}
+        opportunity = await db.opportunities.find_one({"user_id": profile["user_id"]}, {"_id": 0, "organization_name": 1}) or {}
+        organization_name = (profile.get("data") or {}).get("organization_name") or opportunity.get("organization_name", "")
         index = min(max(int(live.get("current_section_index") or 0), 0), max(0, len(sections) - 1))
         return {
-            "organization_name": (profile.get("data") or {}).get("organization_name", ""),
+            "organization_name": organization_name,
             "status": live.get("status", "NOT STARTED"),
             "current_section_index": index,
             "total_sections": len(sections),
