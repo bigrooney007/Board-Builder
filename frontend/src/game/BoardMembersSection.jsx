@@ -190,8 +190,8 @@ export const BoardMembersSection = () => {
     <section id="bfg-board-members-section" className="bfg-panel" data-testid="bfg-board-members-section">
       <div className="bfg-panel-head">
         <div>
-          <h2>Invite Board Members And Others In Your Organization</h2>
-          <p className="bfg-panel-sub">Add the board members, staff, volunteers and other organizational leaders you want to participate in your Board Fundraising Game. Save your meeting details first so invitations include your Board Fundraising Day/Night.</p>
+          <><p className="bfg-eyebrow">STEP 4</p><h2>Invite Board Members And Others In Your Organization</h2></>
+          <p className="bfg-panel-sub">Add the people you want in the game, send or resend invitations, copy their game link, and use the person-specific call script when you need to follow up. Save your meeting details first so every invitation includes your Board Fundraising Day/Night.</p>
         </div>
         <div className="bfg-bm-actions" style={{ marginTop: 0 }}>
           <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => { setAdding(!adding); setEditingId(""); }} data-testid="bfg-add-board-member-btn">Add Board Member</button>
