@@ -323,102 +323,53 @@ Never invent: bylaws; committees; officer roles; voting rules; meeting schedules
 Board Members are not unpaid staff. Do not expose personal contact information, private support needs or exact capacity aloud to the group.
 Never mention AI."""},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
-        "header": {
-            "candidate": "string — actual candidate name",
-            "current_position": "string — actual current professional position where supplied; otherwise empty string",
-            "organization": "string — actual employer/organization where supplied; otherwise empty string",
-            "board_opportunity": "string — actual nonprofit name + actual Board terminology",
-            "priority_profile_being_explored": "string — the actual priority Board expertise/profile associated with this applicant where supplied or reasonably supported by their verified background. Do not state that they have been selected for this role.",
-            "suggested_duration": "string — ONLY when an actual standard interview duration was supplied by the organization; otherwise empty string",
-        },
-        "founder_pre_interview_brief": {
-            "candidate_snapshot": "string — concise verified summary of the candidate's professional background, relevant experience and application information. No praise or recommendation.",
-            "potential_connection_to_board_need": "string — explain which approved priority Board need their verified background may potentially relate to and why this should be explored. Do not declare fit.",
-            "application_points_to_explore": ["string — 2 to 4 specific VERIFIED items from their application/CV worth exploring further"],
-            "important_unknowns": ["string — important things not yet established that should be clarified during the interview"],
-            "interview_objective": "string — concise candidate-specific statement of what the founder should understand by the end of this conversation",
-        },
-        "welcome_and_conversation_setup": {"founder_script": "string — complete natural read-through opening welcoming the candidate, thanking them for applying and explaining how the conversation will work"},
-        "introduce_the_organization": {"founder_script": "string — complete concise read-through introduction explaining the actual organization, mission, community/beneficiaries, relevant work, verified direction and current stage. Strong positioning without hype or invented facts."},
-        "the_board_we_are_building": {"founder_script": "string — complete candidate-facing explanation of the kind of Board the organization is intentionally building, why Board leadership matters at this stage and the meaningful contribution expected from Board Members. Do not expose internal Board gaps or Reactivation information."},
-        "candidate_specific_questions": [{
-            "question": "string — a strong personalized question tied directly to an ACTUAL item in this candidate's application or CV",
-            "why_this_matters": "string — concise founder-only explanation",
-            "listen_for": ["string — evidence the founder should pay attention to, not a predetermined answer"],
-            "follow_up": "string — one useful evidence-seeking follow-up question where appropriate",
+        "candidate_name": "string — actual candidate name",
+        "candidate_context": "string — 1 to 3 concise sentences summarizing only the verified application/CV/background information most useful before the interview. If information is limited, say only what is known.",
+        "opening_script": "string — short natural opening the founder can read aloud: welcome the candidate, thank them for applying, explain that the conversation is to learn more about their experience and mutual alignment with the organization's Board.",
+        "questions": [{
+            "question": "string — one strong candidate-specific interview question",
+            "why_ask": "string — one short founder-only sentence explaining what this question helps establish",
+            "listen_for": "string — concise evidence or clarity to listen for, without prescribing a correct answer"
         }],
-        "mission_connection": [{
-            "question": "string — deepens the candidate's actual application response regarding connection to THIS mission rather than simply repeating the application",
-            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
-        }],
-        "priority_expertise_and_board_need": [{
-            "question": "string — explores the candidate's ACTUAL expertise against an approved priority Board capability without presuming fit or assigning responsibility",
-            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
-        }],
-        "potential_board_contribution": [{
-            "question": "string — explores where the candidate believes they could provide meaningful Board-level leadership/support based on verified organization needs and their actual experience",
-            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
-        }],
-        "board_expectations": {
-            "founder_script": "string — complete read-through explanation of the organization's ACTUAL verified Board expectations only",
-            "commitment_question": "string — natural direct question asking whether the candidate is genuinely willing and able to serve at the level just described",
-        },
-        "commitment_capacity_and_follow_through": [{
-            "question": "string — explores realistic availability, ownership, participation and follow-through without asking discriminatory personal questions",
-            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
-        }],
-        "collaboration_and_accountability": [{
-            "question": "string — evidence-based question about shared leadership, disagreement, feedback, accountability or follow-through",
-            "why_this_matters": "string", "listen_for": ["string"], "follow_up": "string",
-        }],
-        "fundraising_expectation": {
-            "applicable": "boolean — true ONLY when fundraising/resource development is a verified expectation of this organization's Board",
-            "founder_script": "string — when applicable, natural explanation that Board fundraising support can take different forms according to strengths, expertise, relationships and capacity; empty string when not applicable",
-            "question": "string — when applicable, ask whether the candidate is willing to participate in fundraising/resource development as part of Board service; empty string when not applicable",
-            "listen_for": ["string — evidence of understanding, willingness, questions or areas requiring clarification. Empty array when not applicable."],
-        },
-        "candidate_questions": {
-            "founder_script": "string — natural wording inviting the candidate to ask questions about the organization, Board, direction and expectations",
-            "founder_guidance": "string — concise reminder to answer accurately, not guess, and not treat reasonable due-diligence/logistics questions as negative signals",
-        },
-        "closing": {"founder_script": "string — complete natural closing thanking the candidate, explaining that interviews/selection are being completed and that the organization will follow up regarding next steps. Never announce a final decision."},
-        "post_interview_evaluation": {
-            "rating_scale": [
-                "1 — Significant concern / evidence does not demonstrate this criterion",
-                "2 — Limited evidence / substantial clarification still needed",
-                "3 — Adequate evidence",
-                "4 — Strong evidence",
-                "5 — Very strong evidence directly relevant to this organization's Board need",
-                "N/A — Not applicable / insufficient information to rate appropriately",
-            ],
+        "closing_script": "string — short natural closing thanking the candidate, inviting any final question and explaining that the organization will follow up after completing its interview process",
+        "scorecard": {
+            "scale": "string — exactly: 1 = weak evidence, 2 = limited evidence, 3 = adequate evidence, 4 = strong evidence, 5 = very strong evidence",
             "criteria": [{
-                "criterion": "string — one approved evaluation criterion",
-                "what_to_evaluate": "string — what the founder should assess from the actual conversation",
-                "evidence_to_consider": ["string — objective evidence from the interview that should inform the founder's rating"],
-                "questions_remaining": "string — any organization/candidate-specific matter the founder may still need to clarify; empty string where none can be identified before the interview",
-            }],
-            "founder_decision_options": [
-                "Move Forward to References / Background Checks",
-                "Further Conversation or Clarification Needed",
-                "Do Not Move Forward",
-            ],
-            "decision_reminder": "string — state clearly that the founder completes the ratings and makes the decision after the interview. AI has not scored or recommended this candidate.",
-        },
-    }, "note": """You are an exceptional nonprofit Board recruitment consultant preparing a founder or executive director to interview ONE SPECIFIC Board candidate.
-Create a COMPLETE, CANDIDATE-SPECIFIC, READ-THROUGH INTERVIEW FACILITATION GUIDE. This is not merely a list of interview questions. The founder should be able to open this resource during the interview and follow it from beginning to end without having to invent: the opening; how to introduce the organization; how to explain the Board being built; questions; transitions; how to explain Board expectations; how to invite candidate questions; or how to close the interview.
-Use only VERIFIED information supplied about: the organization; its mission and direction; its actual Board type; its verified Board expectations; the approved Powerhouse Board Blueprint; the actual priority Board profiles being recruited; the candidate's COMPLETE application; every organization-specific application response; their CV/resume; their professional background; and the Board role/expertise area associated with their application where supplied.
-The interview's purpose is to give the FOUNDER evidence needed to determine whether this person should move forward toward Board appointment. AI never makes that decision.
-STRUCTURE THE INTERVIEW AS: 1. Founder Pre-Interview Brief. 2. Welcome & Conversation Setup. 3. Introduce the Organization. 4. Explain the Board We Are Building. 5. Learn More About This Candidate. 6. Explore Mission Connection. 7. Explore Relevant Expertise Against the Actual Board Need. 8. Explore Potential Board-Level Contribution. 9. Explain Actual Board Expectations. 10. Explore Commitment, Capacity & Follow-Through. 11. Explore Collaboration & Accountability. 12. Discuss Fundraising / Resource Development ONLY where it is a verified Board expectation. 13. Invite the Candidate's Questions. 14. Close the Interview. 15. Founder Post-Interview Evaluation Matrix.
-READ-THROUGH SCRIPT RULE: Wherever the founder needs to speak to the candidate, write the actual natural suggested wording they can say. Do not merely write coaching notes such as "Explain the organization" — actually write the organization introduction using verified organization information. Do not merely write "Explain Board expectations" — actually write the explanation using the organization's verified expectations. Do not invent facts to make the script complete. Where something is unknown, write around it naturally.
-APPLICATION-DEEPENING RULE: Do not mechanically repeat questions the candidate already answered on the application. Use their actual answers as the starting point and ask deeper questions. Quote or paraphrase their application only when accurate. Never fabricate a candidate statement.
-PERSONALIZATION RULE: Create 2-3 questions directly tied to actual candidate application/CV information and 2-4 questions exploring the priority Board capability their background may address. If candidate information is limited, use only what is actually available. Never create fake specificity.
-FAIRNESS RULE: Alongside personalized questions, retain consistent core areas across candidates: mission connection; relevant expertise; Board-level contribution; active participation; commitment/capacity; collaboration/accountability; fundraising willingness where applicable.
-EVIDENCE RULE: Every substantive question should include: why it matters; what the founder should listen for; one useful follow-up where appropriate. "Listen for" must mean evidence, not predetermined correct answers. Encourage concrete examples, clarity about actual responsibility, realistic capacity, consistency and areas requiring clarification.
-BOARD-ROLE RULE: Board Members are not unpaid staff. Explore whether this person's expertise can help the organization create roadmaps, provide strategic leadership, guide important areas, open relationships, strengthen systems, build teams and provide appropriate Board-level leadership according to the actual role. Do not assume they will execute day-to-day operational work.
-FUNDRAISING RULE: Where fundraising/resource development is an actual Board expectation, determine whether the candidate understands and accepts that expectation. Fundraising participation may take different forms based on strengths, expertise, relationships and capacity. Do not assume everyone must personally solicit money. Do not create detailed future fundraising responsibilities during the interview — those are developed later through Fundraising Activation. If fundraising is NOT a verified Board expectation, set applicable to false and omit that content.
-PRIVACY / FAIRNESS: Never use or infer: age, race, ethnicity, sex, pregnancy, disability, medical information, sexual orientation, family status, political affiliation or other protected characteristics. Never infer personal characteristics from names, photographs, addresses, employment gaps or other indirect signals. Never psychologically profile the candidate. Never use "culture fit", charisma, likability, accent, personality similarity or executive presence as evaluation criteria. Do not compare this candidate with any other candidate. Do not ask about protected religious/political beliefs unless the organization is legitimately faith-based and an actual mission/role requirement makes the question appropriate — and even then use only the organization's verified language.
-EVALUATION MATRIX: End with a founder-only evaluation framework using the supplied 1-5 / N/A rating scale. Include criteria for: Mission Connection; Relevant Expertise / Board Gap Contribution; Ability to Contribute at Board Level; Active Board Participation; Commitment & Realistic Capacity; Collaboration & Accountability; Fundraising / Resource Development only where applicable; and at most one genuinely necessary organization/role-specific criterion. AI must NEVER fill in the founder's rating. AI must NEVER calculate a total score. AI must NEVER recommend whether to appoint, reject or move the candidate forward. The founder makes the decision.
-CLOSING: End the candidate-facing interview with natural wording explaining that the organization is completing its interview/selection process and will follow up regarding next steps. Never announce a final decision during the guide. The guide must not instruct the founder to make the appointment decision while the candidate is still on the call.
+                "criterion": "string — concise evaluation criterion",
+                "what_to_consider": "string — one short evidence-based description of what the founder should consider when assigning their own 1–5 rating"
+            }]
+        }
+    }, "note": """Create a SHORT, practical Board-candidate interview guide the founder can actually use live.
+
+MAXIMUM LENGTH AND STRUCTURE:
+- Candidate context: no more than 3 sentences.
+- Opening: one short read-through paragraph.
+- Interview questions: 5 QUESTIONS MAXIMUM. Prefer 5 when there is enough verified information; use fewer when information is limited.
+- Closing: one short read-through paragraph.
+- Scorecard: 4 to 5 concise criteria using the supplied 1–5 scale. The founder writes the score; never score the candidate yourself.
+
+PERSONALIZATION:
+Use whatever VERIFIED information exists. A CV is helpful but NOT required.
+Possible sources include: application answers, profile information, professional role/employer, uploaded CV/resume where available, organization mission, approved Board Member profiles/needs, and actual Board expectations.
+If there is no CV, build the best guide from the application and organization context. Never fail, pad or invent specificity because a CV is absent.
+
+QUESTION DESIGN:
+Across the maximum five questions, cover the most useful mix of:
+- connection to the mission,
+- relevant professional/Board experience,
+- how their expertise could contribute at Board level,
+- realistic commitment/follow-through,
+- collaboration/accountability,
+- fundraising/resource-development willingness only when it is an actual Board expectation.
+Deepen information they already supplied rather than mechanically repeating application questions.
+Board Members are not unpaid staff. Ask about Board-level leadership/support, not day-to-day employment work.
+
+SCORING:
+Use evidence-based criteria such as mission connection, relevant expertise, Board-level contribution, commitment/capacity, collaboration/accountability, and fundraising willingness only where applicable.
+Do not use protected characteristics, charisma, likability, accent, personality similarity, culture fit or executive presence.
+AI never decides whether the person moves forward and never calculates a total score.
+
+Never invent facts, roles, schedules, fundraising requirements, committees or candidate statements.
 Never mention AI."""},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {
         "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
@@ -1695,102 +1646,40 @@ def _interview_questions_block(lines: list, heading: str, items: list) -> None:
 
 
 def _interview_guide_display(structured: dict) -> str:
-    header = structured.get("header") or {}
-    brief = structured.get("founder_pre_interview_brief") or {}
-    first_name = (header.get("candidate") or "the candidate").split(" ")[0]
     lines = ["INTERVIEW GUIDE", ""]
-    for value in [header.get("candidate"), header.get("current_position"), header.get("organization"), header.get("board_opportunity")]:
-        if value:
-            lines.append(value)
-    if header.get("priority_profile_being_explored"):
-        lines.append(f"Priority Profile Being Explored: {header['priority_profile_being_explored']}")
-    if header.get("suggested_duration"):
-        lines.append(f"Suggested Duration: {header['suggested_duration']}")
-    lines.extend(["", "BEFORE THE INTERVIEW", ""])
-    if brief.get("candidate_snapshot"):
-        lines.extend(["Candidate Snapshot", brief["candidate_snapshot"], ""])
-    if brief.get("potential_connection_to_board_need"):
-        lines.extend(["Potential Connection to Board Need", brief["potential_connection_to_board_need"], ""])
-    if brief.get("application_points_to_explore"):
-        lines.append("Application Points to Explore")
-        lines.extend(f"- {item}" for item in brief["application_points_to_explore"])
-        lines.append("")
-    if brief.get("important_unknowns"):
-        lines.append("Important Unknowns")
-        lines.extend(f"- {item}" for item in brief["important_unknowns"])
-        lines.append("")
-    if brief.get("interview_objective"):
-        lines.extend(["Interview Objective", brief["interview_objective"], ""])
-    lines.extend(["----------------------------------------", "THE LIVE INTERVIEW", "----------------------------------------", ""])
-
-    def script_section(heading, section_key):
-        text = (structured.get(section_key) or {}).get("founder_script", "")
-        if text:
-            lines.extend([heading, text, ""])
-
-    script_section("WELCOME & SET THE CONVERSATION", "welcome_and_conversation_setup")
-    script_section("INTRODUCE THE ORGANIZATION", "introduce_the_organization")
-    script_section("THE BOARD WE ARE BUILDING", "the_board_we_are_building")
-    _interview_questions_block(lines, f"LEARN MORE ABOUT {first_name.upper()}", structured.get("candidate_specific_questions", []))
-    _interview_questions_block(lines, "CONNECTION TO OUR MISSION", structured.get("mission_connection", []))
-    _interview_questions_block(lines, "EXPERIENCE & EXPERTISE", structured.get("priority_expertise_and_board_need", []))
-    _interview_questions_block(lines, "HOW YOU COULD CONTRIBUTE", structured.get("potential_board_contribution", []))
-    expectations = structured.get("board_expectations") or {}
-    if expectations.get("founder_script") or expectations.get("commitment_question"):
-        lines.append("WHAT BOARD SERVICE LOOKS LIKE HERE")
-        if expectations.get("founder_script"):
-            lines.append(expectations["founder_script"])
-        if expectations.get("commitment_question"):
-            lines.extend(["", f"Commitment Question: {expectations['commitment_question']}"])
-        lines.append("")
-    _interview_questions_block(lines, "COMMITMENT & CAPACITY", structured.get("commitment_capacity_and_follow_through", []))
-    _interview_questions_block(lines, "COLLABORATION & ACCOUNTABILITY", structured.get("collaboration_and_accountability", []))
-    fundraising = structured.get("fundraising_expectation") or {}
-    if fundraising.get("applicable") and (fundraising.get("founder_script") or fundraising.get("question")):
-        lines.append("FUNDRAISING / RESOURCE DEVELOPMENT")
-        if fundraising.get("founder_script"):
-            lines.append(fundraising["founder_script"])
-        if fundraising.get("question"):
-            lines.extend(["", f"Q: {fundraising['question']}"])
-        if fundraising.get("listen_for"):
-            lines.append("What To Listen For:")
-            lines.extend(f"- {item}" for item in fundraising["listen_for"])
-        lines.append("")
-    questions = structured.get("candidate_questions") or {}
-    if questions.get("founder_script") or questions.get("founder_guidance"):
-        lines.append("YOUR QUESTIONS")
-        if questions.get("founder_script"):
-            lines.append(questions["founder_script"])
-        if questions.get("founder_guidance"):
-            lines.extend(["", f"Founder Guidance: {questions['founder_guidance']}"])
-        lines.append("")
-    script_section("CLOSE THE INTERVIEW", "closing")
-    evaluation = structured.get("post_interview_evaluation") or {}
-    if evaluation:
-        lines.extend(["----------------------------------------", "AFTER THE INTERVIEW — FOUNDER EVALUATION", "----------------------------------------", ""])
-        if evaluation.get("rating_scale"):
-            lines.append("Rating Scale")
-            lines.extend(f"- {item}" for item in evaluation["rating_scale"])
-            lines.append("")
-        for criterion in evaluation.get("criteria", []):
-            lines.append(criterion.get("criterion", ""))
-            if criterion.get("what_to_evaluate"):
-                lines.append(f"What To Evaluate: {criterion['what_to_evaluate']}")
-            if criterion.get("evidence_to_consider"):
-                lines.append("Evidence To Consider:")
-                lines.extend(f"- {item}" for item in criterion["evidence_to_consider"])
-            if criterion.get("questions_remaining"):
-                lines.append(f"Questions Remaining: {criterion['questions_remaining']}")
-            lines.extend(["Founder Rating: ________", "Founder Notes: ________________________________________", ""])
-        lines.append("FOUNDER DECISION")
-        for option in evaluation.get("founder_decision_options") or [
-                "Move Forward to References / Background Checks",
-                "Further Conversation or Clarification Needed",
-                "Do Not Move Forward"]:
-            lines.append(f"[ ] {option}")
-        if evaluation.get("decision_reminder"):
-            lines.extend(["", evaluation["decision_reminder"]])
-    return _flush_left("\n".join(str(line) for line in lines))
+    candidate = str(structured.get("candidate_name") or "").strip()
+    if candidate:
+        lines.extend([candidate, ""])
+    context = str(structured.get("candidate_context") or "").strip()
+    if context:
+        lines.extend(["BEFORE THE INTERVIEW", context, ""])
+    opening = str(structured.get("opening_script") or "").strip()
+    if opening:
+        lines.extend(["OPENING", opening, ""])
+    questions = list(structured.get("questions") or [])[:5]
+    lines.extend(["INTERVIEW QUESTIONS", ""])
+    for index, item in enumerate(questions, 1):
+        lines.append(f"{index}. {str(item.get('question') or '').strip()}")
+        if item.get("why_ask"):
+            lines.append(f"Why ask: {str(item.get('why_ask')).strip()}")
+        if item.get("listen_for"):
+            lines.append(f"Listen for: {str(item.get('listen_for')).strip()}")
+        lines.extend(["Notes: ________________________________________________", ""])
+    closing = str(structured.get("closing_script") or "").strip()
+    if closing:
+        lines.extend(["CLOSING", closing, ""])
+    scorecard = structured.get("scorecard") or {}
+    lines.extend(["INTERVIEW SCORECARD", str(scorecard.get("scale") or "1 = weak evidence, 2 = limited evidence, 3 = adequate evidence, 4 = strong evidence, 5 = very strong evidence"), ""])
+    for item in list(scorecard.get("criteria") or [])[:5]:
+        criterion = str(item.get("criterion") or "").strip()
+        if not criterion:
+            continue
+        lines.append(criterion)
+        if item.get("what_to_consider"):
+            lines.append(f"Consider: {str(item.get('what_to_consider')).strip()}")
+        lines.extend(["Rating (1–5): ______", "Notes: ________________________________________________", ""])
+    lines.extend(["FOUNDER DECISION / NEXT STEP", "[ ] Move Forward", "[ ] Further Conversation Needed", "[ ] Do Not Move Forward", "", "The founder makes the decision after considering the interview evidence."])
+    return _flush_left("\n".join(lines).strip())
 
 
 def structured_to_display(generation_type: str, structured: dict) -> str:
@@ -1972,6 +1861,11 @@ async def generate_structured(generation_type: str, context: str, instructions: 
     structured = parse_json_response(text)
     if generation_type == "application_questions":
         structured["custom_questions"] = structured.get("custom_questions", [])[:5]
+    if generation_type == "interview_guide":
+        structured["questions"] = list(structured.get("questions") or [])[:5]
+        scorecard = structured.get("scorecard") or {}
+        scorecard["criteria"] = list(scorecard.get("criteria") or [])[:5]
+        structured["scorecard"] = scorecard
     return structured
 
 
