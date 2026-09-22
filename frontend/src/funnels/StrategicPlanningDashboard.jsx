@@ -78,6 +78,11 @@ export default function StrategicPlanningDashboard(){
 
   useEffect(()=>{load();},[load]);
   useEffect(()=>{
+    if(ctx?.project?.final_plan?.status!=="Generating")return;
+    const timer=window.setInterval(load,10000);
+    return()=>window.clearInterval(timer);
+  },[ctx?.project?.final_plan?.status,load]);
+  useEffect(()=>{
     if(window.location.hash==="#generate-strategy"){
       setOpen("8");
       setTimeout(()=>document.getElementById("generate-strategy")?.scrollIntoView({behavior:"smooth",block:"start"}),150);
@@ -104,6 +109,8 @@ export default function StrategicPlanningDashboard(){
   const sessionDone=session?.status==="COMPLETED";
   const guideReady=Boolean(p.meeting_guide_text);
   const finalReady=Boolean(p.final_plan?.display_text);
+  const finalGenerating=p.final_plan?.status==="Generating";
+  const finalFailed=p.final_plan?.status==="Failed";
   const approved=p.final_plan?.status==="Approved";
   const portfolios=p.portfolios||[];
   const formLink=formReady?`${window.location.origin}/strategic-planning-form/${p.generic_form_token}`:"";
@@ -229,7 +236,11 @@ export default function StrategicPlanningDashboard(){
 
       {card(8,"Generate, Review And Approve The Strategic Plan","Turn the Board's agreed direction into one professional organization Strategic Plan.",sessionDone,<>
         <p>The generated plan uses the Board-selected ideas, the full original responses behind those ideas, the organization's starting information, community research as supporting context, and the live meeting transcript. It does not list who said what. It reads as the organization's Strategic Plan.</p>
-        {!finalReady?<Button disabled={busy==="strategy"} onClick={()=>act("strategy",()=>axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}))}>{busy==="strategy"?"GENERATING…":"GENERATE STRATEGIC PLAN"}</Button>:<>
+        {!finalReady?<>
+          <Button disabled={busy==="strategy"||finalGenerating} onClick={()=>act("strategy",()=>axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}))}>{finalGenerating?"GENERATING STRATEGIC PLAN…":busy==="strategy"?"STARTING…":finalFailed?"TRY GENERATING AGAIN":"GENERATE STRATEGIC PLAN"}</Button>
+          {finalGenerating&&<p className="workspace-note">Your Strategic Plan is being built in the background. This may take a few minutes. You can leave this page and check back in about 5 minutes.</p>}
+          {finalFailed&&<p className="bfg-error">The last generation did not complete. You can try again. No Board responses or session decisions were lost.</p>}
+        </>:<>
           <div className="sp-plan-editor">
             {!editingPlan?<pre className="sp-plan-preview">{finalDraft}</pre>:<textarea rows={30} value={finalDraft} disabled={approved} onChange={event=>setFinalDraft(event.target.value)}/>}
           </div>
