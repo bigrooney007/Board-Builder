@@ -102,16 +102,21 @@ def create_guided_product_router(db):
         payment_contact = {"email": tx.get("payment_email") or lead.get("email", ""), "phone": tx.get("payment_phone", "")}
         await db.guided_product_intakes.update_one(
             {"session_id": payload.session_id},
-            {"$set": {"session_id": payload.session_id, "product": "board-recommitment", "answers": {},
-                      "payment_contact": payment_contact, "updated_at": now}, "$setOnInsert": {"created_at": now}},
+            {"$set": {"session_id": payload.session_id, "product": "board-recommitment",
+                      "payment_contact": payment_contact, "updated_at": now},
+             "$setOnInsert": {"answers": {}, "created_at": now}},
             upsert=True,
         )
         await db.board_reactivation_intakes.update_one(
             {"guided_session_id": payload.session_id},
-            {"$set": {"user_id": member["user_id"], "organization_name": lead.get("organization", ""),
-                      "founder_title": "", "guided_session_id": payload.session_id,
+            {"$set": {"user_id": member["user_id"], "guided_session_id": payload.session_id,
                       "payment_contact": payment_contact, "submitted_at": now},
-             "$setOnInsert": {"mission": "", "organization_goals": ""}},
+             "$setOnInsert": {
+                 "organization_name": lead.get("organization", ""),
+                 "founder_title": "",
+                 "mission": "",
+                 "organization_goals": "",
+             }},
             upsert=True,
         )
         return {"saved": True, "dashboard_url": f"/board-recommitment/dashboard?session_id={payload.session_id}"}
