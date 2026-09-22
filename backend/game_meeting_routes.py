@@ -21,9 +21,9 @@ SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_D
 FUNDER_TYPES = {"Individual", "Business", "Grantor"}
 
 FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
-The board has completed Individual Games, explicitly selected the ideas it agreed with across the Group Game and held the complete discussion captured in the supplied transcript.
-Reconcile all supplied information into one execution-ready fundraising strategy.
-Where the board changed something during the meeting, the meeting decision overrides earlier drafts and ideas.
+The board has completed Individual Games and explicitly selected the ideas it agreed with across the Group Game. A meeting transcript may also be supplied, but it is optional enrichment rather than a prerequisite.
+Reconcile all supplied information into one execution-ready ORGANIZATION fundraising strategy.
+Where a supplied transcript clearly changes something during the meeting, that explicit meeting decision overrides earlier drafts and ideas. When no transcript is available, the Group Game selections and Board-added agreed wording are the authoritative decisions.
 Where the transcript does not change a decision, treat the ideas explicitly selected by the Lead User during the Group Game as the Board's adopted direction.
 Where ideas genuinely conflict and no resolution exists in the transcript, present the unresolved difference clearly rather than silently choosing one.
 The Board's explicitly selected ideas, Board-added agreed wording and explicit meeting decisions are the primary authority. Preserve their distinctive language, logic, examples and intended meaning wherever practical. Do not average multiple contributions into vague generic fundraising language simply to make the document sound polished. Organize, connect and operationalize what the Board chose while keeping the Board able to recognize its own thinking. Nonprofit Board Builder recommendations remain subordinate unless the Board explicitly selected or adopted them.
@@ -36,6 +36,7 @@ Do not invent facts, funders, organisations, relationships, commitments, amounts
 Inspect the organisation's present fundraising processes (Current Reality). Never discard an existing approach simply because the framework offers another: preserve what the organisation says is working, strengthen weaknesses, fill missing pieces and add better processes where needed. Where useful distinguish what they are already doing, what should be strengthened and what should be added. Do not claim something is proven to work unless the organisation indicated it produces results.
 Every fundraising_process audience MUST begin with how_this_process_works — a short organisation-specific explanation (not generic boilerplate, never one copied paragraph reused across audiences).
 Write for nonprofit leaders and board members in clear, direct, execution-ready language.
+The Final Strategy is an organizational strategy, not a meeting report. Never write "X said", "Y suggested", contributor-by-contributor attribution, transcript commentary or a history of who proposed an idea. Integrate adopted thinking into the strategy itself. Individual names may appear only where the Board explicitly assigned that person an execution responsibility.
 Return only the required structured JSON."""
 
 FINAL_V2_SCHEMA = {
@@ -105,6 +106,18 @@ BOARD_FUNDRAISING_PROCESS = {
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def generation_job_stale(job: dict, minutes: int = 10) -> bool:
+    if not job or job.get("status") != "running" or not job.get("started_at"):
+        return False
+    try:
+        started = datetime.fromisoformat(str(job["started_at"]).replace("Z", "+00:00"))
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - started).total_seconds() > minutes * 60
+    except (TypeError, ValueError):
+        return False
 
 
 class TranscriptPaste(BaseModel):
@@ -469,10 +482,8 @@ def create_game_meeting_router(db) -> APIRouter:
         member = await game_member(request)
         if not await completed_group_session(member["user_id"]):
             raise HTTPException(status_code=409, detail="Complete the Group Game before compiling the final strategy")
-        if not await get_transcript(member["user_id"]):
-            raise HTTPException(status_code=422, detail="Paste or upload your meeting transcript first")
         job = await final_job(member["user_id"])
-        if job and job.get("status") == "running":
+        if job and job.get("status") == "running" and not generation_job_stale(job):
             return {"status": "running"}
         await db.game_strategy_jobs.update_one(
             {"user_id": member["user_id"], "mode": "final"},
@@ -490,6 +501,11 @@ def create_game_meeting_router(db) -> APIRouter:
         job = await final_job(member["user_id"]) or {}
         final = await latest_final(member["user_id"])
         job_status = job.get("status", "")
+        if generation_job_stale(job):
+            await db.game_strategy_jobs.update_one(
+                {"user_id": member["user_id"], "mode": "final", "status": "running"},
+                {"$set": {"status": "failed", "error": "generation_timed_out", "finished_at": now_iso()}})
+            job_status = "failed"
         if job_status == "running":
             output_state = "generating"
         elif final:
