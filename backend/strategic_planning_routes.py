@@ -1843,6 +1843,73 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if "action" in key:return str(answers.get("action_planning") or "").strip()
         return ""
 
+    def facilitator_prompt_for(title: str, current_context: str = "") -> dict:
+        key=str(title or "").lower()
+        context_note=f" Start by reading the organization's present information on screen: {current_context}" if current_context else ""
+        if "mission" in key:
+            return {
+                "title":"Facilitate The Mission Discussion",
+                "say":"We are testing whether our present mission still expresses who we serve, the change we exist to create and the core purpose we want to protect."+context_note,
+                "questions":[
+                    "Does the mission still feel true to why this organization exists?",
+                    "Which ideas would make it clearer without making it longer or losing our core purpose?",
+                    "Do we want to change the mission, or deliberately leave it as it is?",
+                ],
+                "decision":"Before moving on, either select the ideas that should shape the mission or choose Leave Mission Statement As It Is.",
+            }
+        if "goal" in key:
+            return {"title":"Facilitate The Goals Discussion","say":"We are deciding what the organization should actually accomplish during this planning period."+context_note,
+                    "questions":["Which goals matter most over the next 12 to 24 months?","What goal is missing, unrealistic or no longer important?","How will we know we are making meaningful progress?"],
+                    "decision":"Select the goal ideas the Board wants carried into the Strategic Plan."}
+        if "objective" in key:
+            return {"title":"Facilitate The Objectives Discussion","say":"Objectives are the measurable things we must achieve in order to reach our goals."+context_note,
+                    "questions":["Which objectives directly move our goals forward?","What result or evidence should each objective produce?","Is anything here activity rather than an actual objective?"],
+                    "decision":"Select the objective ideas the Board agrees should guide execution."}
+        if "program:" in key:
+            program=title.split(":",1)[1].strip() if ":" in title else title
+            return {"title":f"Facilitate The {program} Discussion","say":f"Now test {program} as its own part of the strategy. The question is not simply whether we like the program, but what it should accomplish and how it should improve."+context_note,
+                    "questions":[f"What should {program} accomplish for the people it serves?",f"What should we protect, change, stop or improve in {program}?","What would make this program more effective and sustainable?"],
+                    "decision":f"Select the ideas the Board wants to shape {program} in the Strategic Plan."}
+        if "team" in key or "capacity" in key:
+            return {"title":"Facilitate The People & Capacity Discussion","say":"A strategy cannot execute itself. We are identifying the people and leadership capacity we already have and what is still missing."+context_note,
+                    "questions":["Who do we already have who can help execute this plan?","Where are we stretched or dependent on too few people?","What skills, staff, volunteers, Board leadership or outside support do we need to add?"],
+                    "decision":"Select the people/capacity ideas that must be reflected in the plan."}
+        if "operation" in key:
+            return {"title":"Facilitate The Operations Discussion","say":"We are looking at the systems and ways of working that will either support or frustrate execution."+context_note,
+                    "questions":["Which recurring processes are working well?","Where are we depending on memory, one person or inconsistent follow-up?","What operational change would make execution more reliable?"],
+                    "decision":"Select the operational changes the Board wants built into the strategy."}
+        if "marketing" in key or "visibility" in key:
+            return {"title":"Facilitate The Marketing & Visibility Discussion","say":"We are deciding who needs to know about our work, what they need to understand and how we earn their attention and trust."+context_note,
+                    "questions":["Which audiences matter most?","What evidence, stories or insight should they consistently see?","Where should we become more visible and what action do we want people to take?"],
+                    "decision":"Select the marketing and visibility ideas the Board agrees should shape the plan."}
+        if "partnership" in key:
+            return {"title":"Facilitate The Partnerships Discussion","say":"We are identifying relationships that can materially strengthen the mission, not collecting a long list of names."+context_note,
+                    "questions":["What kinds of partners would create real value for the mission?","What could we offer them and what could they help us accomplish?","Which relationships should we prioritize first?"],
+                    "decision":"Select the partnership ideas the Board wants to pursue."}
+        if "fundrais" in key:
+            return {"title":"Facilitate The Fundraising Discussion","say":"We are deciding how the organization will build a sustainable funding system rather than leaving fundraising as one person's job."+context_note,
+                    "questions":["Who is most likely to care about funding this work?","Where do we find them and how do we build enough trust before asking?","What role should the Board realistically play in relationships, introductions, cultivation or stewardship?"],
+                    "decision":"Select the fundraising ideas that should become part of the strategy."}
+        if "technology" in key:
+            return {"title":"Facilitate The Technology Discussion","say":"Technology should support the workflow we need, not become a strategy by itself."+context_note,
+                    "questions":["What work do we need technology to make easier or more reliable?","Where are current tools creating friction or lost information?","What capability is essential before we add more tools?"],
+                    "decision":"Select only the technology ideas that genuinely help execute the plan."}
+        if "budget" in key:
+            return {"title":"Facilitate The Budget & Resources Discussion","say":"We are testing whether the strategy is financially realistic and identifying what execution will actually require."+context_note,
+                    "questions":["What will this strategy genuinely cost to execute?","Which resources are already available and which must be raised or added?","What financial information does the Board need in order to monitor the plan responsibly?"],
+                    "decision":"Select the budget/resource ideas the Board wants reflected in the plan."}
+        if "action" in key:
+            return {"title":"Facilitate Action Planning","say":"Now turn the strategy into a first execution cycle. Focus on what happens first, next and after that, not on writing another document."+context_note,
+                    "questions":["What must happen in the first 30 days?","What should be achieved in the first 90 days?","What decisions, resources or dependencies could block execution if we do not address them now?"],
+                    "decision":"Select the actions the Board agrees should shape the first execution cycle. The next screen is where you discuss who is willing to help carry the work."}
+        if "roles we will play" in key:
+            return {"title":"Facilitate Roles We Will Play","say":"These ideas came from what people themselves said they would be willing to join, lead or support. They are starting points, not assignments.",
+                    "questions":["Is what you wrote still a role you would be comfortable playing?","What exact responsibility would you be willing to accept?","Is there any role you want to narrow, change, add or decline?","Do you need any support before agreeing to take responsibility?"],
+                    "decision":"Say any explicit role agreement or decline aloud so the transcript records it. If the Board prefers to finalize roles afterward, say that clearly and move on."}
+        return {"title":f"Facilitate {title}","say":"Review the present context and the ideas people submitted before the meeting."+context_note,
+                "questions":["What do these ideas mean in practice?","Which ideas should shape the organization's direction?","What needs clarification before we move on?"],
+                "decision":"Select the ideas the Board agrees should influence this section."}
+
     def build_session_sections(form: dict, people: list, saved: dict, answers: dict, project: dict) -> list:
         sections=[]
         for section in (form.get("content") or {}).get("sections",[]):
@@ -1877,6 +1944,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "key":section["key"],
                 "title":section["title"],
                 "current_context":strategic_section_context(section["title"],answers,project),
+                "facilitator_prompt":facilitator_prompt_for(
+                    section["title"], strategic_section_context(section["title"],answers,project)
+                ),
                 "ideas":ideas,
                 "recommendations":board_builder_recommendations(section["title"],project.get("mission","")),
                 "allow_keep_current_mission":"mission" in section["title"].lower(),
@@ -2097,7 +2167,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         if not people:raise HTTPException(409,"At least one completed Strategic Planning Form is required")
-        titles=[section.get("title","") for section in (form.get("content") or {}).get("sections",[])]
+        _,_,intake=await paid(sid)
+        guide_sections=build_session_sections(form,people,{},intake.get("answers") or {},p)
+        titles=[section.get("title","") for section in guide_sections]
         text=(f"STRATEGIC PLANNING SESSION FACILITATION GUIDE\n{p['organization_name']}\n\n"
               "PURPOSE\nThis is one live Board Strategic Planning Session. Board Members have already contributed their individual thinking. The purpose of the session is to review those ideas together, decide which ideas should shape the organization\'s direction, discuss what execution will require, and agree who will help carry the work forward.\n\n"
               "1. PREPARE THE ROOM\nCreate the shared Board screen link and place it in the meeting chat so everyone can follow the same strategic section. Explain that only the Lead User clicks selections; everyone else discusses. Ask everyone for consent before starting microphone transcription. Keep transcription running until the Action Planning and delegation discussion is complete.\n\n"
@@ -2107,7 +2179,15 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
               "5. COMPLETE ACTION PLANNING\nAt the Action Planning section, agree what should happen first, next and after that. Keep this conversation focused on execution priorities, sequence, resources and immediate actions.\n\n"
               "6. REVIEW THE ROLES PEOPLE SAID THEY WOULD BE WILLING TO PLAY\nThe final screen shows the committee/working-group interests, areas people said they would be willing to lead, and areas they said they would be happy to support. Treat these as each person's own starting point, not an assignment. Ask: 'You said you would be willing to help here. Is that still right, and what would you be comfortable taking responsibility for?' If the Board agrees a different or additional role, say the person's name and the exact agreed responsibility aloud so the transcript records the change. Nobody should be given a role simply because they suggested an idea.\n\n"
               "7. READ BACK THE AGREEMENT BEFORE ENDING\nBefore ending the session, summarize the major strategy decisions and read back any responsibilities explicitly agreed in the room. If the Board chooses not to finalize roles in the meeting, say that clearly. Each participant's own form preferences remain available afterward as proposed starting points for the Lead User to confirm, edit or remove before anything is sent.\n\n"
-              "8. END THE SESSION\nEnd the Strategic Planning Session only after every strategic section has an agreed direction, Action Planning is complete and the Roles We Will Play screen has been discussed. Return to the dashboard and generate the Strategic Plan. The system preserves participant-stated willingness, uses the transcript for explicit meeting agreements, and requires the Lead User to confirm or edit every delegation before portfolios or emails are created.")
+              "8. END THE SESSION\nEnd the Strategic Planning Session only after every strategic section has an agreed direction, Action Planning is complete and the Roles We Will Play screen has been discussed. Return to the dashboard and generate the Strategic Plan. The system preserves participant-stated willingness, uses the transcript for explicit meeting agreements, and requires the Lead User to confirm or edit every delegation before portfolios or emails are created."
+              "\n\nSECTION-BY-SECTION FACILITATION\n\n"
+              + "\n\n".join(
+                  f"{index}. {section['title'].upper()}\n"
+                  f"WHAT TO SAY\n{section['facilitator_prompt']['say']}\n\n"
+                  "QUESTIONS TO PUT TO THE BOARD\n- " + "\n- ".join(section['facilitator_prompt']['questions']) + "\n\n"
+                  f"BEFORE YOU MOVE ON\n{section['facilitator_prompt']['decision']}"
+                  for index,section in enumerate(guide_sections,1)
+              ))
         now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         return {"status":"Approved","guide":text}
 
