@@ -145,8 +145,15 @@ export default function GroupGamePage() {
     const isFinalRound = round.round_number >= session.total_rounds;
     await memberApi.post("/game/group/close-round", { round_number: round.round_number });
     await memberApi.post("/game/group/next-round");
-    if (isFinalRound && recorderController.current?.isActive?.()) {
-      await recorderController.current.finish();
+    if (isFinalRound) {
+      if (recorderController.current?.isActive?.()) {
+        await recorderController.current.finish();
+      }
+      try {
+        await memberApi.post("/game/meeting/compile-final");
+      } catch {
+        // Group Game decisions are already saved. The dashboard retries final generation automatically.
+      }
     }
     setNewAgreedIdea("");
   };
@@ -161,7 +168,7 @@ export default function GroupGamePage() {
   return (
     <BfgShell nav={<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/dashboard" data-testid="bfg-gg-back-dashboard">Back to Dashboard</Link>}>
       <main className="bfg-dash" data-testid="bfg-group-game-page">
-        <p className="bfg-eyebrow">Game Night</p>
+        <p className="bfg-eyebrow">STEP 6 · GAME NIGHT</p>
         <h1 style={{ marginBottom: 20 }}>Board Fundraising Review Game</h1>
 
         {showResults ? <ResultsSummary /> : (
@@ -269,12 +276,12 @@ export default function GroupGamePage() {
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
                 <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board has now made explicit decisions across the complete fundraising strategy and execution system. The checked ideas, ideas added during discussion and the meeting transcript will now be combined into the Final Board Fundraising Strategy.
+                  Your board has now made explicit decisions across the complete fundraising strategy and execution system. Final strategy generation has started in the background from those Board decisions. The meeting transcript is used when available to add context and delegation detail.
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
-                  <h3 style={{ fontSize: 17 }}>Create Your Final Fundraising Strategy</h3>
-                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>The final strategy is created from the complete upward stream of organization information, board ideas and meeting decisions.</p>
+                  <h3 style={{ fontSize: 17 }}>Your Final Fundraising Strategy Is Being Prepared</h3>
+                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>The final strategy is created from the complete upward stream of organization information, Board ideas and the decisions adopted during the Group Game. You do not need to stay on this screen while it generates.</p>
                   <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/dashboard" data-testid="bfg-gg-generate-strategy-btn">RETURN TO DASHBOARD</Link>
                 </div>
                 <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 18 }}>
