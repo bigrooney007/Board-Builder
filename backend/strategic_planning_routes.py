@@ -73,7 +73,7 @@ Take a few minutes to tell us about the need, the people most affected, the appr
     ]
 
 
-def compact_session_idea(value: str, limit: int = 280) -> str:
+def compact_session_idea(value: str, limit: int = 180) -> str:
     text = " ".join(str(value or "").split())
     if len(text) <= limit:
         return text
@@ -561,7 +561,7 @@ def create_strategic_planning_router(db) -> APIRouter:
             {"$set": {"status": "COMPLETED", "response": answers, "submitted_at": now,
                       "name": payload.full_name, "email": str(payload.email).lower(),
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
-        if result.modified_count:
+        if result.modified_count and record.get("role") != "Lead User":
             origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
             try:
                 if project.get("founder_email"):
@@ -609,11 +609,16 @@ def create_strategic_planning_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
         project = await owned_project(record["project_id"])
         prompts = {q["id"]: q for q in record.get("response_questions", [])}
+        if not prompts:
+            form = await db.sp_forms.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
+            for section in (form.get("content") or {}).get("sections", []):
+                for q in section.get("questions", []):
+                    prompts[q.get("id","")] = {**q, "section": section.get("title","")}
         lines = ["STRATEGIC PLANNING RESPONSE", "", f"Board Member: {record.get('name','')}", f"Organization: {project['organization_name']}", ""]
         for qid, value in (record.get("response") or {}).items():
             q = prompts.get(qid, {})
             rendered = ", ".join(value) if isinstance(value, list) else str(value or "")
-            lines.extend([str(q.get("section", "")).upper(), str(q.get("prompt", qid)), rendered, ""])
+            lines.extend([str(q.get("section", "")).upper(), str(q.get("prompt") or "Strategic Planning Question"), rendered, ""])
         return build_portfolio_pdf("STRATEGIC PLANNING RESPONSE", record.get("name","Board Member"),
                                    {"organization_name": project["organization_name"], "issued_by": record.get("name","Board Member")},
                                    "\n".join(lines))
