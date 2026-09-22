@@ -2201,20 +2201,24 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                         f"PARTICIPANT-STATED WILLINGNESS FROM THEIR OWN FORMS (context only; NOT automatically agreed roles):\n{json.dumps(list(preference_delegates.values()),default=str)}\n\n"
                         f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
                         f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-                        '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}]}\n'
-                        "Return that exact JSON shape. Include only responsibilities explicitly agreed in the live session.")
+                        '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}],"declined_participant_ids":[""]}\n'
+                        "Return that exact JSON shape. Include only responsibilities explicitly agreed in the live session. "
+                        "If the transcript clearly shows that a known participant declined or withdrew the role they had previously said they might be willing to take, put their exact known participant_id in declined_participant_ids. "
+                        "Do not mark someone declined merely because their role was not discussed.")
                 try:
                     chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
                     raw=await chat.send_message(UserMessage(text=prompt))
                     parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
                     extracted=parsed.get("delegations") or []
+                    declined_ids={str(x) for x in (parsed.get("declined_participant_ids") or []) if str(x)}
                 except Exception:
                     logger.exception("Strategic session delegation extraction failed for %s",p["project_id"])
                     extracted=[]
+                    declined_ids=set()
 
                 by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
                 by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
-                delegates=list(preference_delegates.values())
+                delegates=[item for pid,item in preference_delegates.items() if pid not in declined_ids]
                 delegate_index={d.get("participant_id"):index for index,d in enumerate(delegates) if d.get("participant_id")}
                 for item in extracted:
                     if not isinstance(item,dict):
