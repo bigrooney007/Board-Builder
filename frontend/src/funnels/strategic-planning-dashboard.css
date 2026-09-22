@@ -22,3 +22,5 @@
 .sp-session-controls{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:32px auto}.sp-board-decision{max-width:760px;margin:20px auto;padding:14px;border-radius:12px;background:#312e81;color:#fff;font-weight:900}.sp-board-watch .sp-session-screen{padding-top:35px}
 
 @media(max-width:800px){.sp-prep-grid,.sp-delegation-list,.sp-idea-grid{grid-template-columns:1fr}.sp-portfolio-row{grid-template-columns:1fr}.sp-session-topline{flex-direction:column;align-items:center}.sp-session-screen,.sp-session-prep{padding-top:35px}}
+
+.sp-plan-preview{white-space:pre-wrap;text-align:left!important;font-family:Georgia,"Times New Roman",serif;line-height:1.8;background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:34px;box-shadow:0 10px 28px rgba(15,23,42,.05);max-height:none;overflow:visible}.sp-plan-preview::first-line{font-weight:900}
