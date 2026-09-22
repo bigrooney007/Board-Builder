@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2, ClipboardList, Download, FileText, Mail, Plus, Search, Users } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
+import { trackPlatformEvent } from "@/clean/platform";
 import "@/game/game.css";
 import "./guided-products.css";
 import "./strategic-planning-dashboard.css";
