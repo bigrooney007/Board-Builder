@@ -196,7 +196,7 @@ export default function GameDashboardPage() {
           <HostToolsSection />
         </div>
         <GroupGameCard />
-        <FinalOutputsSection overview={meeting} />
+        <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} />
         <CompleteGameNightSection overview={postgame} />
 
         <div className="bfg-dash-grid">
