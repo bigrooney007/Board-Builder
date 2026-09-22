@@ -1766,7 +1766,12 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             ]),
             ("Action Planning",[
                 f"Based on everything above, what do you believe the organization should do first, next and after that to begin executing this strategy?\n\nPresent actions already planned or underway: {str(a.get('action_planning') or '').strip()}",
-                "What role would you personally be willing to play at Board level in helping move this strategy forward? What responsibilities do you believe other people around the Board or organization need to take?",
+                "What practical actions, decisions or resources do you believe are most important in the first 90 days after this Strategic Plan is adopted?",
+            ]),
+            ("Roles We Will Play",[
+                "Which Board committee, working group or recurring area of Board work would you genuinely be interested in joining or helping shape? If no formal committee exists yet, describe the kind of group or area you would be happy to participate in.",
+                "Which areas of this Strategic Plan would you personally be willing to LEAD at Board level? Only name areas you would genuinely be comfortable accepting responsibility for.",
+                "Which areas would you be happy to SUPPORT without being the lead? Describe the kind of contribution, expertise, relationships or help you would be comfortable providing.",
             ]),
         ])
 
@@ -1878,6 +1883,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "selected_idea_ids":selected,
                 "decision_mode":saved_decision if isinstance(saved_decision,str) and saved_decision.startswith("__") else "selected_ideas",
                 "is_action_planning":"action" in section["title"].lower(),
+                "is_role_planning":"roles we will play" in section["title"].lower(),
             })
         return sections
 
@@ -2098,9 +2104,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
               "2. REVIEW ONE STRATEGIC SECTION AT A TIME\nFor each section, begin with the organization\'s present information, then review the concise idea cards contributed before the meeting. Invite the people who shared ideas to explain or clarify them in their own words. Do not rush the conversation and do not let the system replace what people actually mean.\n\n"
               "3. CLICK THE IDEAS THE BOARD AGREES SHOULD SHAPE THE PLAN\nThe Lead User selects every idea the Board agrees should influence that section. More than one idea may be selected. The order of selection does NOT assign ownership. For Mission, the Board may explicitly choose to leave the present Mission Statement as it is. The full original responses remain preserved behind the concise cards.\n\n"
               "4. MOVE THROUGH THE COMPLETE STRATEGY\nReview the sections in this order:\n- "+"\n- ".join(titles)+"\n\n"
-              "5. USE ACTION PLANNING TO AGREE EXECUTION AND RESPONSIBILITY\nAt the Action Planning section, discuss what should happen first, next and after that. Then say clearly who will help lead or support each responsibility. State names and responsibilities aloud so the transcript contains an unambiguous delegation record. People may receive responsibility even if they did not complete the original form; say their name clearly and their email can be added afterward.\n\n"
-              "6. READ BACK THE AGREEMENT BEFORE ENDING\nBefore ending the session, summarize the major decisions and read back who has agreed to help with what. Correct anything that is unclear while everyone is still present.\n\n"
-              "7. END THE SESSION\nEnd the Strategic Planning Session only after every strategic section has an agreed direction and the Action Planning discussion is complete. Return to the dashboard and generate the Strategic Plan. The system will use only the Board-selected ideas, the preserved original responses, the organization context and the live transcript. The Lead User will review, edit and approve the plan and every delegation before anything is sent.")
+              "5. COMPLETE ACTION PLANNING\nAt the Action Planning section, agree what should happen first, next and after that. Keep this conversation focused on execution priorities, sequence, resources and immediate actions.\n\n"
+              "6. REVIEW THE ROLES PEOPLE SAID THEY WOULD BE WILLING TO PLAY\nThe final screen shows the committee/working-group interests, areas people said they would be willing to lead, and areas they said they would be happy to support. Treat these as each person's own starting point, not an assignment. Ask: 'You said you would be willing to help here. Is that still right, and what would you be comfortable taking responsibility for?' If the Board agrees a different or additional role, say the person's name and the exact agreed responsibility aloud so the transcript records the change. Nobody should be given a role simply because they suggested an idea.\n\n"
+              "7. READ BACK THE AGREEMENT BEFORE ENDING\nBefore ending the session, summarize the major strategy decisions and read back any responsibilities explicitly agreed in the room. If the Board chooses not to finalize roles in the meeting, say that clearly. Each participant's own form preferences remain available afterward as proposed starting points for the Lead User to confirm, edit or remove before anything is sent.\n\n"
+              "8. END THE SESSION\nEnd the Strategic Planning Session only after every strategic section has an agreed direction, Action Planning is complete and the Roles We Will Play screen has been discussed. Return to the dashboard and generate the Strategic Plan. The system preserves participant-stated willingness, uses the transcript for explicit meeting agreements, and requires the Lead User to confirm or edit every delegation before portfolios or emails are created.")
         now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         return {"status":"Approved","guide":text}
 
