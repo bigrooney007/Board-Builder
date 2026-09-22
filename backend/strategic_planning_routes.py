@@ -2016,8 +2016,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/community-research")
     async def community_research(request:Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));existing=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0})
-        if existing:return existing
-        token=secrets.token_urlsafe(32);posts=[f"We are reviewing the future direction of {p['organization_name']} and want to hear directly from the community. Share what you believe the real need is and what would make the strongest difference.",f"What does our community need most in relation to {p.get('mission') or 'our mission'}? We are listening before we finalize our next strategic plan.",f"Help shape the next chapter of {p['organization_name']}. Tell us what is working, what is missing and what approach you believe would create the greatest impact.",f"Good strategy starts by listening. If you have lived experience, professional insight or community knowledge connected to our mission, we would value your perspective.",f"Our Board is preparing its next strategic plan. Take a few minutes to tell us about the need, the best way to address it and how you or others could help."]
+        if existing:
+            if not existing.get("social_posts"):
+                posts=strategic_research_posts(p["organization_name"],p.get("mission",""))
+                await db.sp_community_research.update_one({"project_id":p["project_id"]},{"$set":{"social_posts":posts,"updated_at":now_iso()}})
+                existing["social_posts"]=posts
+            return existing
+        token=secrets.token_urlsafe(32);posts=strategic_research_posts(p["organization_name"],p.get("mission",""))
         doc={"project_id":p["project_id"],"token":token,"social_posts":posts,"response_count":0,"created_at":now_iso()};await db.sp_community_research.insert_one(doc.copy());return doc
 
     @router.get("/community-research/{token}")
@@ -2025,7 +2030,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         doc=await db.sp_community_research.find_one({"token":token},{"_id":0})
         if not doc:raise HTTPException(404,"This Community Need Research link is not valid")
         p=await owned_project(doc["project_id"])
-        return {"organization_name":p["organization_name"],"mission":p.get("mission",""),"questions":["What do you believe is the most important need or challenge connected to this mission?","Who is most affected by this need, and what does it look like in real life?","What approaches do you believe would make the strongest difference?","What is currently missing from the way this need is being addressed?","How could you, your organization, your network or your community help address this need?"]}
+        return {"organization_name":p["organization_name"],"mission":p.get("mission",""),"questions":[
+            "From what you have personally observed or experienced, what is the most important need or challenge connected to this mission, and why does it matter?",
+            "Who is most affected by this need? What does the problem actually look like in their day-to-day life or experience?",
+            "Based on what you know, what approach do you believe would make the strongest difference? What should organizations working on this issue do more of, less of, or differently?",
+            "What do you believe is currently missing from the way this need is being addressed? Think about services, access, relationships, information, funding, trust or anything else you have noticed.",
+            "How could you, your organization, your network or other people in the community realistically help address this need? What contribution or connection could make a difference?"
+        ]}
 
     @router.post("/community-research/{token}")
     async def submit_community_research(token:str,request:Request):
