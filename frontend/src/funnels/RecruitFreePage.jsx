@@ -5,6 +5,7 @@ import { BfgShell } from "@/game/gameShared";
 import { memberApi } from "@/member/api";
 import { NarrationControl } from "@/game/NarrationControl";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
+import { trackPlatformEvent } from "@/clean/platform";
 import "@/game/game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -93,6 +94,7 @@ export default function RecruitFreePage() {
         desired_count: lead.notSure ? "not_sure" : lead.count.trim(),
       });
       localStorage.setItem("recruitFreeToken", response.data.token);
+      trackPlatformEvent("recruitment", "contact_entered");
       setAssessment(response.data);
       setAnswers(response.data.answers || {});
       navigate("/recruit/walkthrough");
