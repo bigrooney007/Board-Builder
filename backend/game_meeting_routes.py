@@ -297,7 +297,7 @@ def create_game_meeting_router(db) -> APIRouter:
             prompt = (
                 "FINAL STRATEGY CONTEXT (the only information you may use):\n"
                 f"{json.dumps(context, indent=1)}\n\n"
-                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. Use the meeting transcript to identify clarifications, changes to those decisions, additional ideas, "
+                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. If a meeting transcript is supplied, use it to identify clarifications, changes to those decisions, additional ideas, "
                 "assignments, responsibilities, clarifications, execution decisions, timing decisions and decisions about "
                 "who will make introductions or asks. Integrate those decisions into the relevant strategy sections. "
                 "Do not invent decisions that are not present.\n\n"
@@ -317,7 +317,7 @@ def create_game_meeting_router(db) -> APIRouter:
                 "share_token": secrets.token_urlsafe(24),
                 "prepared_by": f"The Board of {organization.get('name', '').strip()}".strip(),
                 "data": data, "section_edits": {},
-                "source": "meeting_transcript_compile",
+                "source": "group_game_final_compile",
                 "generated_at": now, "created_at": now, "adopted_at": now,
                 "last_edited_at": "", "last_edited_by": "", "review_completed_at": "",
             }
@@ -510,10 +510,12 @@ def create_game_meeting_router(db) -> APIRouter:
             output_state = "generating"
         elif final:
             output_state = "ready"
+        elif job_status == "failed":
+            output_state = "failed"
         elif not session:
             output_state = "locked"
         else:
-            output_state = "meeting"
+            output_state = "preparing"
         return {
             "group_completed": bool(session),
             "transcript": {
