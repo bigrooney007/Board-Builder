@@ -1688,46 +1688,101 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if logo:updates["logo_data_url"]=logo
         await db.sp_projects.update_one({"project_id":p["project_id"]},{"$set":updates})
         await db.sp_forms.update_one({"project_id":p["project_id"]},{"$set":{"status":"Needs Regeneration","updated_at":now}})
-        research_posts=[f"We are reviewing the future direction of {name} and want to hear directly from the community. Share what you believe the real need is and what would make the strongest difference.",f"What does our community need most in relation to {answers.get('mission') or 'our mission'}? We are listening before we finalize our next strategic plan.",f"Help shape the next chapter of {name}. Tell us what is working, what is missing and what approach you believe would create the greatest impact.","Good strategy starts by listening. If you have lived experience, professional insight or community knowledge connected to our mission, we would value your perspective.","Our Board is preparing its next strategic plan. Take a few minutes to tell us about the need, the best way to address it and how you or others could help."]
-        await db.sp_community_research.update_one({"project_id":p["project_id"]},{"$set":{"social_posts":research_posts,"updated_at":now}})
+        await db.sp_community_research.update_one(
+            {"project_id":p["project_id"]},
+            {"$set":{"social_posts":strategic_research_posts(name, str(answers.get("mission") or "")),"updated_at":now}},
+            upsert=True,
+        )
         return {"saved":True}
 
     @router.post("/prepare-form")
     async def prepare_form(request:Request):
         body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);_,_,intake=await paid(sid);a=intake.get("answers") or {}
-        programs=a.get("programs") or a.get("areas") or ""; program_lines=[x.strip(" -•\t") for x in str(programs).split("\n") if x.strip()][:12]
-        def review_pair(label, supplied):
-            value=str(supplied or "No current information was supplied.").strip()
-            return [f"Review the organization's present {label}: {value}\n\nWhat is strong, what needs improvement, and what ideas would you add?", "What would you do differently in this area? Speak freely from your own experience and perspective."]
-        qs=[
-            ("Mission",review_pair("mission statement",a.get("mission") or p.get("mission"))),
-            ("Goals",review_pair("goals",a.get("goals"))),
-            ("Objectives",review_pair("objectives",a.get("objectives"))),
+        programs=a.get("programs") or a.get("areas") or ""
+        program_lines=[x.strip(" -•\t") for x in str(programs).split("\n") if x.strip()][:12]
+
+        sections_data=[
+            ("Mission",[
+                f"From your view, does our present mission still clearly explain who we serve, how we serve them and the change we are trying to create? What would you keep or change, and why?\n\nPresent mission: {str(a.get('mission') or p.get('mission') or '').strip()}",
+                "What wording, focus or emphasis would make the mission more useful for guiding the organization's decisions over the next few years?",
+            ]),
+            ("Goals",[
+                f"Looking at our present goals for the next 12 to 24 months, which goals feel most important, which should change, and what goal do you believe we are missing?\n\nPresent goals: {str(a.get('goals') or '').strip()}",
+                "From what you know about the organization and the people we serve, what do you believe we should realistically be trying to achieve during this planning period?",
+            ]),
+            ("Objectives",[
+                f"Our objectives should help us achieve our goals. Looking at what we presently have, which objectives are useful, which need to change, and what specific objectives should we add?\n\nPresent objectives: {str(a.get('objectives') or '').strip()}",
+                "What evidence or result would make you say that these objectives are actually being achieved?",
+            ]),
         ]
+
         for program in program_lines:
-            qs.append((f"Program: {program}",review_pair(f"program or service named {program}",program)))
-        review_sections=[
-            ("Team Building","team_building","team, staff, volunteer and leadership capacity"),
-            ("Operations","operations","operational systems, policies and processes"),
-            ("Marketing","marketing","marketing, visibility and communications"),
-            ("Partnerships","partnerships","partnerships and relationships"),
-            ("Fundraising","fundraising","fundraising approach and capacity"),
-            ("Technology","technology","technology and tools"),
-            ("Budget","budget","budget and the resources required for execution"),
-            ("Organizational Priorities","priorities","organizational priorities"),
-            ("Action Planning","action_planning","major actions and execution priorities"),
-        ]
-        for title,key,label in review_sections:
-            qs.append((title,review_pair(label,a.get(key))))
-        qs.append(("Board Leadership And Support",[
-            "Which parts of the organization would you be willing to lead at Board level? Explain where you believe your experience, relationships or perspective would be most useful.",
-            "Which other areas would you be willing to support, and which committees or working groups would you be willing to join?",
-        ]))
+            sections_data.append((f"Program: {program}",[
+                f"Thinking specifically about {program}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?",
+                f"From what you have observed, what would make {program} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
+            ]))
+
+        sections_data.extend([
+            ("Team & Capacity",[
+                f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {str(a.get('team_building') or '').strip()}",
+                "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
+            ]),
+            ("Operations",[
+                f"From what you have observed, which internal systems or processes help the organization work well and which ones make execution harder?\n\nPresent information: {str(a.get('operations') or '').strip()}",
+                "What operational change would make the biggest practical difference to our ability to deliver the strategy consistently?",
+            ]),
+            ("Marketing & Visibility",[
+                f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {str(a.get('marketing') or '').strip()}",
+                "From what you have seen, where should we be more visible and what would help the right people notice, trust and engage with the organization?",
+            ]),
+            ("Partnerships",[
+                f"Which types of organizations, institutions, businesses or community groups could materially strengthen our mission, and what could a useful partnership actually help us accomplish?\n\nPresent information: {str(a.get('partnerships') or '').strip()}",
+                "Are there relationships or partnership opportunities you believe we should prioritize because of what you know or have observed?",
+            ]),
+            ("Fundraising",[
+                f"From your perspective, what is working and not working about how we presently raise money?\n\nPresent information: {str(a.get('fundraising') or '').strip()}",
+                "Who do you believe is most likely to care about funding this work, where can we reach them, and what should we do to build enough trust to ask for support?",
+            ]),
+            ("Technology",[
+                f"What work do we need technology to make easier, faster or more reliable, and where are our present tools getting in the way?\n\nPresent information: {str(a.get('technology') or '').strip()}",
+                "What technology capability do you believe the organization genuinely needs in order to execute this strategy well?",
+            ]),
+            ("Budget & Resources",[
+                f"Looking at the direction we are considering, where do you believe the organization will need to spend, invest or secure additional resources?\n\nPresent information: {str(a.get('budget') or '').strip()}",
+                "What budget or resource decisions do you believe the Board needs to understand before committing to the strategy?",
+            ]),
+            ("Action Planning",[
+                f"Based on everything above, what do you believe the organization should do first, next and after that to begin executing this strategy?\n\nPresent actions already planned or underway: {str(a.get('action_planning') or '').strip()}",
+                "What role would you personally be willing to play at Board level in helping move this strategy forward? What responsibilities do you believe other people around the Board or organization need to take?",
+            ]),
+        ])
+
         sections=[]
-        for i,(title,prompts) in enumerate(qs,1):sections.append({"key":f"s{i}","title":title,"questions":[{"id":f"s{i}_q{j}","prompt":q,"type":"long","options":[],"required":True} for j,q in enumerate(prompts,1)]})
-        goal=a.get("goals") or a.get("priorities") or "build a clear, practical direction for the organization"
-        content={"introduction":f"{p['organization_name']} is using this process to {goal}. Review the organization's present information in every section and speak freely from your own experience and perspective. Your thinking will be discussed with the rest of the Board and used to build the Strategic Plan.","sections":sections};now=now_iso()
-        await db.sp_forms.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","content":content,"approved_version":1,"approved_at":now,"updated_at":now},"$setOnInsert":{"form_id":str(uuid.uuid4()),"created_at":now}},upsert=True);return {"status":"Approved"}
+        for i,(title,prompts) in enumerate(sections_data,1):
+            sections.append({
+                "key":f"s{i}",
+                "title":title,
+                "questions":[{"id":f"s{i}_q{j}","prompt":prompt,"type":"long","options":[],"required":True} for j,prompt in enumerate(prompts,1)],
+            })
+
+        goal=str(a.get("goals") or "build a clear, practical direction for the organization").strip()
+        content={
+            "introduction":(
+                f"{p['organization_name']} is preparing its next Strategic Plan. We want your own thinking before the Board meets together. "
+                "There are no right or wrong answers. Speak from what you have observed, what you know, and what you genuinely believe would help the organization. "
+                "Your ideas will remain attributable to you during the Board's Strategic Planning Session so the group can review every contribution together. "
+                f"Our present planning direction is to {goal}."
+            ),
+            "sections":sections,
+        }
+        now=now_iso()
+        await db.sp_forms.update_one(
+            {"project_id":p["project_id"]},
+            {"$set":{"status":"Approved","content":content,"approved_version":1,"approved_at":now,"updated_at":now},
+             "$setOnInsert":{"form_id":str(uuid.uuid4()),"created_at":now}},
+            upsert=True,
+        )
+        return {"status":"Approved"}
 
     @router.post("/branding")
     async def save_branding(request: Request):
