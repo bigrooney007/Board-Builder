@@ -68,7 +68,7 @@ const CandidateActions = ({ application, refresh, branding }) => {
 
       <div className="detail-section" data-testid="interview-guide-section">
         <MaterialCard type="interview_guide" title={`Interview Guide — ${name}`} buttonLabel="Generate Interview Guide"
-          description="A candidate-specific interview guide built from this person's actual application and CV, your organization's mission and needs, and the approved board-member profiles from Step 2. It prepares you to run the conversation — it never scores or selects candidates. You make every decision."
+          description="A short candidate-specific interview guide built from whatever verified information is available — application answers, professional profile, CV when available, your mission and the Board Member profiles you approved in Step 2. It gives you an introduction, no more than five tailored questions, a closing and a simple 1–5 scorecard. You score and make every decision."
           applicationId={application.application_id} material={byType.interview_guide} refresh={refreshAll} approvable
           extraActions={byType.interview_guide ? (
             <button className="button button-back" onClick={() => printBranded(`Board Candidate Interview Guide — ${name}`, currentVersion(byType.interview_guide).display_text + "\n\nPOST-INTERVIEW NOTES\n\nMost Relevant Strengths:\n\n\nConcerns / Areas to Clarify:\n\n\nPotential Areas of Contribution:\n\n\nCommitment / Availability:\n\n\nFollow-Up Questions:\n\n\nOverall Notes:\n\n", branding || {})} data-testid="download-branded-interview-guide"><Download size={14} /> Download Branded Copy</button>
