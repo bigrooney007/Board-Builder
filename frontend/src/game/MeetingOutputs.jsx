@@ -36,7 +36,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
       if (bufferRef.current.length > 900) flush();
     };
     rec.onend = () => { if (statusRef.current === "recording") { try { rec.start(); } catch { /* noop */ } } };
-    rec.onerror = (event) => { if (event.error === "not-allowed") { setError("Microphone permission was denied. You can upload or paste a transcript instead."); stopAll("idle"); } };
+    rec.onerror = (event) => { if (event.error === "not-allowed") { setError("Microphone permission was denied. You can continue the Group Game; transcription is optional and the Board's saved decisions remain authoritative."); stopAll("idle"); } };
     try { rec.start(); } catch { /* noop */ }
     recRef.current = rec;
   };
@@ -50,7 +50,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
   };
 
   const start = () => {
-    if (!Recognition) { setError("Live recording is not supported in this browser. Please upload or paste a transcript instead."); return; }
+    if (!Recognition) { setError("Live transcription is not supported in this browser. You can continue the Group Game; the final strategy will still use the Board's saved decisions."); return; }
     setError("");
     statusRef.current = "recording";
     setStatus("recording");
@@ -111,7 +111,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
     <div style={{ marginTop: 14, border: "1px solid #E5E7EB", borderRadius: 14, padding: 18 }} data-testid="bfg-live-recorder">
       <p style={{ fontWeight: 700, color: "#111827", margin: 0 }}>{title}</p>
       <p className="bfg-note" style={{ marginTop: 8 }}>
-        Before recording, make sure everyone in the meeting knows the discussion is being recorded and transcribed for the purpose of completing your organization's fundraising strategy.
+        Before recording, make sure everyone in the meeting knows the discussion is being recorded and transcribed. The transcript helps preserve clarification, additional ideas and delegation from the conversation, but your Group Game decisions can still generate the strategy if transcription is unavailable.
       </p>
       {status === "idle" && (
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 12 }} onClick={start} data-testid="bfg-record-meeting-btn">
