@@ -239,6 +239,7 @@ export default function StrategicPlanningDashboard(){
             {!approved&&<Button disabled={busy==="approve-plan"} onClick={approvePlan}>{busy==="approve-plan"?"APPROVING…":"APPROVE STRATEGIC PLAN"}</Button>}
             {approved&&<a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${API}/guided/strategic-planning/final-plan/pdf?session_id=${encodeURIComponent(sid)}`}><Download size={15}/> DOWNLOAD STRATEGIC PLAN</a>}
             {approved&&p.final_plan?.share_url&&<button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={()=>copy(`${window.location.origin}${p.final_plan.share_url}`)}>COPY STRATEGIC PLAN LINK</button>}
+            {approved&&<Button secondary disabled={busy==="send-final"} onClick={()=>act("send-final",()=>axios.post(`${API}/guided/strategic-planning/send-final-plan`,{session_id:sid}))}>{busy==="send-final"?"SENDING…":"SEND STRATEGIC PLAN TO ALL PARTICIPANTS"}</Button>}
           </div>
           {approved&&<p className="member-success"><CheckCircle2 size={16}/> Strategic Plan approved. You can now confirm the responsibilities agreed during the session.</p>}
         </>}
