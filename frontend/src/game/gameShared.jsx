@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
+import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -28,18 +29,12 @@ export const formatDate = (value) => {
 };
 
 export const GameVideo = ({ video, testId }) => (
-  video?.youtube_id ? (
-    <div className="bfg-video-frame" data-testid={testId}>
-      <iframe
-        src={`https://www.youtube.com/embed/${video.youtube_id}`}
-        title="Board Fundraising Game video"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    </div>
-  ) : (
-    <div className="bfg-video-frame bfg-video-placeholder" data-testid={testId}><p>Video coming soon</p></div>
-  )
+  <TrackedYouTubeVideo
+    video={video}
+    flow="board-fundraising-game"
+    testId={testId}
+    title="Board Fundraising Game video"
+  />
 );
 
 export const GameProgress = ({ steps, current }) => (
