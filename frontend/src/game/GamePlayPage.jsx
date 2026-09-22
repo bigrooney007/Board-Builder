@@ -73,7 +73,7 @@ export default function GamePlayPage() {
         const doc = sections[id];
         if (!doc.fine_tuning?.completed) {
           setSec(id);
-          setStage(doc.completed ? "finetune" : (doc.first_move_locked ? "deeper" : "first"));
+          setStage(doc.completed ? "finetune" : "first");
           setPhase("section");
           return;
         }
@@ -126,24 +126,12 @@ export default function GamePlayPage() {
     if (!text) return;
     setBusy(true); setError("");
     try {
-      await axios.put(`${API}/game/play/${token}/section/${sec}`, {
-        ...EMPTY_PAYLOAD, first_response: [text], first_move_locked: true,
-      });
-      setStage("deeper");
-    } catch (err) {
-      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your answer. Please try again.");
-    }
-    setBusy(false);
-  };
-
-  const saveSecond = async () => {
-    const text = state.seconds[sec].trim();
-    if (!text) return;
-    setBusy(true); setError("");
-    try {
       await axios.post(`${API}/game/play/${token}/section/${sec}/complete`, {
-        ...EMPTY_PAYLOAD, first_move_locked: true,
-        final_response: [text], extras: { second_response: text },
+        ...EMPTY_PAYLOAD,
+        first_response: [text],
+        first_move_locked: true,
+        final_response: [text],
+        extras: {},
       });
       setStage("finetune");
     } catch (err) {
@@ -221,17 +209,9 @@ export default function GamePlayPage() {
   if (phase === "section" && stage === "first") {
     return shell(<>
       <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(sec === 1 && isPrimary ? "lead_opening" : sec === 1 ? "board_opening" : `a${sec}_deeper`, true)} /></div>
-      {answerScreen(sdef.q1, sdef.label1 || "QUESTION 1 OF 2", state.firsts[sec],
+      {answerScreen(sdef.q1, sdef.label1 || "YOUR IDEA", state.firsts[sec],
         (value) => setState((current) => ({ ...current, firsts: { ...current.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
     </>, `bfg-s${sec}-first`);
-  }
-
-  if (phase === "section" && stage === "deeper") {
-    return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(`a${sec}_deeper`, true)} /></div>
-      {answerScreen(sdef.q2, `QUESTION 2 OF 2 · ${sdef.label2 || g.label_deeper || "THINK A LITTLE DEEPER"}`, state.seconds[sec],
-        (value) => setState((c) => ({ ...c, seconds: { ...c.seconds, [sec]: value } })), saveSecond, `bfg-s${sec}-second`)}
-    </>, `bfg-s${sec}-deeper`);
   }
 
   if (phase === "section" && stage === "finetune") {
@@ -240,7 +220,7 @@ export default function GamePlayPage() {
       <h1 style={{ marginTop: 14 }} data-testid="bfg-finetune-heading">{ft.heading}</h1>
       <FineTuneReview token={token} sectionId={sec} copy={{ ...ft, refining: g.refining }}
         onReady={() => playClip("approval_review")} onDone={afterApproval}
-        onEdit={(message) => { setError(message || "Edit your answer, then continue."); setStage("deeper"); }} />
+        onEdit={(message) => { setError(message || "Edit your answer, then continue."); setStage("first"); }} />
     </>, `bfg-s${sec}-finetune`);
   }
 
