@@ -253,9 +253,7 @@ def create_workspace_router(db) -> APIRouter:
                     {"user_id": user_id, "$or": [{"application_id": application_id}, {"data.email": application.get("applicant_email", "")}]},
                     {"_id": 0, "response_id": 1})
                 if not profile_done:
-                    raise HTTPException(status_code=409, detail="This member's New Board Member Profile has not been completed yet. It is required before this resource can be generated.")
-                if not (application.get("onboarding_conclusion") or {}).get("saved_at"):
-                    raise HTTPException(status_code=409, detail="Save this member's Onboarding Conclusion / Role Agreement first — it records what was actually agreed during onboarding and is required for this resource.")
+                    raise HTTPException(status_code=409, detail="This member's New Board Member Profile has not been completed yet. Complete that profile first so this resource can be tailored to the person's real skills, interests, capacity and preferred contribution.")
             if payload.type in {"board_member_portfolio", "board_member_engagement_guide", "ninety_day_plan"}:
                 context += "\n\n" + application_context_text({**application, "notes": "", "references": []})
                 profile_response = await db.board_profile_responses.find_one(
@@ -265,9 +263,15 @@ def create_workspace_router(db) -> APIRouter:
                     import json as _json
                     context += "\n\nNEW BOARD MEMBER PROFILE FORM RESPONSE (the member's own stated strengths, interests, desired contribution, capacity, leadership interest and networks):\n" + _json.dumps(profile_response["data"], indent=1)
                 if application.get("board_role"):
-                    context += f"\n\nBOARD ROLE THEY WERE RECRUITED FOR: {application['board_role']}"
+                    context += f"\n\nBOARD ROLE / EXPERTISE AREA THEY WERE RECRUITED FOR: {application['board_role']}"
+                cv_doc = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 1})
+                if cv_doc and cv_doc.get("cv_text"):
+                    context += "\n\nCANDIDATE CV / RESUME (verified professional background; use only what is actually present):\n" + cv_doc["cv_text"][:12000]
                 if payload.type in {"board_member_portfolio", "ninety_day_plan"}:
-                    context += await onboarding_conclusion_context(application)
+                    conclusion_context = await onboarding_conclusion_context(application)
+                    if conclusion_context:
+                        context += conclusion_context
+                        context += "\n\nAUTHORITY NOTE: where the optional founder-recorded Onboarding Conclusion contains a specific agreement, that explicit agreement overrides earlier interests or possibilities. Where no Onboarding Conclusion exists, build from the Board Member Profile, application/CV, recruited role and verified organization context without inventing commitments."
                 context += "\n\nPRIVACY: never include referee responses, background-check information, internal interview notes, private founder notes or internal evaluation material."
             else:
                 context += "\n\n" + application_context_text(application)
@@ -291,10 +295,10 @@ def create_workspace_router(db) -> APIRouter:
             structured = {
                 "subject": f"Your Board Member Portfolio | {org_name}",
                 "body": (f"Dear {first_name},\n\n"
-                         f"Thank you again for completing your onboarding with {org_name}.\n\n"
-                         "Your Board Member Portfolio brings together the role and areas of responsibility we agreed during your onboarding and provides a practical reference for how you will contribute moving forward.\n\n"
+                         f"Welcome to the Board of {org_name}.\n\n"
+                         "Your Board Member Portfolio brings together the experience, strengths, interests and capacity you shared through the recruitment process and your Board Member Profile, together with the role the organization recruited you to help strengthen. Where we have already confirmed specific responsibilities together, those agreements are reflected as well.\n\n"
                          f"You can review your Portfolio using your secure link:\n\n{portfolio_url}\n\n"
-                         "We will continue working with you as you begin putting the responsibilities we agreed into practice.\n\n"
+                         "Use it as a practical starting point for how you can contribute. As your role develops through Strategic Planning and future Board decisions, your responsibilities can become even more specific.\n\n"
                          f"Warm regards,\n{founder_name}\n{org_name}"),
             }
             material = await save_generation(db, user_id, payload.type, structured, "Deterministic portfolio delivery email — no AI call used.", application_id)
@@ -601,7 +605,7 @@ def create_workspace_router(db) -> APIRouter:
             f"Dear {first},\n\n"
             f"Welcome to the board of {organization}, and thank you for the time you have invested in the recruitment process.\n\n"
             "To help you begin with clarity, I have put together your Board Member Portfolio.\n\n"
-            f"It outlines your role, where your experience can create value, the areas of responsibility we discussed, and how you can help move {organization} forward.\n\n"
+            f"It brings together the experience, strengths, interests and capacity you shared through your application and Board Member Profile, along with the role you were recruited to help strengthen at {organization}.\n\n"
             "Please review your Portfolio using the link below:\n\n"
             "[VIEW MY BOARD MEMBER PORTFOLIO]\n\n"
             "I am glad to have you with us, and I look forward to working together as we move forward.\n\n"
@@ -923,6 +927,14 @@ def create_workspace_router(db) -> APIRouter:
         if status:
             query["status"] = status
         applications = await db.opportunity_applications.find(query, {"_id": 0, "cv_text": 0}).sort("created_at", -1).to_list(500)
+        profile_rows = await db.board_profile_responses.find({"user_id": member["user_id"]}, {"_id": 0, "application_id": 1, "data.email": 1}).to_list(500)
+        profile_application_ids = {row.get("application_id") for row in profile_rows if row.get("application_id")}
+        profile_emails = {str((row.get("data") or {}).get("email") or "").strip().lower() for row in profile_rows if str((row.get("data") or {}).get("email") or "").strip()}
+        for application in applications:
+            application["board_profile_completed"] = (
+                application.get("application_id") in profile_application_ids
+                or str(application.get("applicant_email") or "").strip().lower() in profile_emails
+            )
         return {"applications": applications, "statuses": APPLICATION_STATUSES}
 
     @router.get("/applications/{application_id}")
@@ -944,11 +956,13 @@ def create_workspace_router(db) -> APIRouter:
             if payload.status not in APPLICATION_STATUSES:
                 raise HTTPException(status_code=422, detail="Invalid applicant status")
             if payload.status == "Selected" and application.get("status") != "Selected":
-                conclusion = application.get("onboarding_conclusion") or {}
-                if not conclusion.get("saved_at"):
+                profile_done = await db.board_profile_responses.find_one(
+                    {"user_id": member["user_id"], "$or": [{"application_id": application_id}, {"data.email": application.get("applicant_email", "")}]},
+                    {"_id": 0, "response_id": 1})
+                if not profile_done:
                     raise HTTPException(
                         status_code=409,
-                        detail="Record this person's Onboarding Conclusion / Role Agreement before confirming the Final Board Appointment."
+                        detail="Ask this person to complete their Board Member Profile before confirming the Final Board Appointment. Their profile gives the organization the verified information needed to tailor their role and Portfolio."
                     )
             updates["status"] = payload.status
         if payload.notes is not None:
