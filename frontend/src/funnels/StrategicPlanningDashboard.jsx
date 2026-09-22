@@ -224,7 +224,7 @@ export default function StrategicPlanningDashboard(){
       </>)}
 
       {card(7,"Run The Strategic Planning Session","Use one live Board session to review ideas, agree direction and discuss execution responsibility.",completed.length>0,<>
-        <p>Generate the facilitation guide first. Then open the live session workspace. There you will create the Board's shared screen link, start microphone transcription with consent, and move through Mission, Goals, Objectives, each Program, Team, Operations, Marketing, Partnerships, Fundraising, Technology, Budget and Action Planning one screen at a time.</p>
+        <p>Generate the facilitation guide first. Then open the live session workspace. There you will create the Board's shared screen link, start microphone transcription with consent, and move through Mission, Goals, Objectives, each Program, Team, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Action Planning and Roles We Will Play one screen at a time.</p>
         <div className="sp-actions">
           <Button disabled={busy==="guide"} onClick={generateGuide}><FileText size={15}/> {guideReady?"REGENERATE FACILITATION GUIDE":"GENERATE FACILITATION GUIDE"}</Button>
           <Button disabled={!guideReady} onClick={()=>navigate(`/strategic-planning/session?session_id=${encodeURIComponent(sid)}`)}>{sessionDone?"VIEW COMPLETED SESSION":"OPEN STRATEGIC PLANNING SESSION"}</Button>
@@ -257,18 +257,24 @@ export default function StrategicPlanningDashboard(){
       </>,"generate-strategy")}
 
       {card(9,"Confirm Delegation And Give Everyone Their Execution Tools","Confirm what was actually agreed in the meeting before anything is sent.",approved,<>
-        <p>The platform uses the session transcript to identify people who were explicitly given responsibility. Review every person, correct anything that needs correction, add an email where necessary, and save. The transcript helps; you remain the final authority.</p>
+        <p>The platform starts with what each person said they would be willing to lead, support or join on their own Strategic Planning Form. If the live session explicitly agreed a different or additional responsibility, the transcript replaces that proposal with the meeting agreement. Review every person, correct anything that needs correction, remove anything they did not agree to, add an email where necessary, and save. Nothing is sent until you confirm it.</p>
 
         <div className="sp-actions">
           {completed.filter(person=>!delegates.some(item=>item.participant_id===person.participant_id)).map(person=><Button secondary key={person.participant_id} onClick={()=>addKnownDelegate(person)}><Plus size={14}/> ADD {person.name.toUpperCase()}</Button>)}
           <Button secondary onClick={addOtherDelegate}><Plus size={14}/> ADD SOMEONE ELSE FROM THE SESSION</Button>
         </div>
 
-        {!delegates.length?<div className="sp-empty">No execution responsibility was clearly identified from the transcript yet. Add the people who agreed to carry work forward, or return to the transcript if the discussion needs to be made clearer.</div>:<div className="sp-delegation-list">{delegates.map(person=><article className="sp-delegate-card" key={person.delegation_id}>
+        {!delegates.length?<div className="sp-empty">No participant stated a role they were willing to play and no explicit delegation was captured from the session. Add anyone who agreed to carry work forward, then confirm the responsibility before creating portfolios.</div>:<div className="sp-delegation-list">{delegates.map(person=><article className="sp-delegate-card" key={person.delegation_id}>
+          {person.source&&<p className="workspace-note"><strong>Starting source:</strong> {person.source}</p>}
+          {person.declared_preferences&&Object.values(person.declared_preferences).some(Boolean)&&<details className="sp-guide"><summary>View what this person said they were willing to do</summary>
+            {person.declared_preferences.committee_or_group&&<p><strong>Committee / working group:</strong> {person.declared_preferences.committee_or_group}</p>}
+            {person.declared_preferences.willing_to_lead&&<p><strong>Willing to lead:</strong> {person.declared_preferences.willing_to_lead}</p>}
+            {person.declared_preferences.willing_to_support&&<p><strong>Willing to support:</strong> {person.declared_preferences.willing_to_support}</p>}
+          </details>}
           <label><strong>Name</strong><input value={person.name||""} onChange={event=>updateDelegate(person.delegation_id,"name",event.target.value)}/></label>
           <label><strong>Email</strong><input type="email" value={person.email||""} onChange={event=>updateDelegate(person.delegation_id,"email",event.target.value)}/></label>
           <label><strong>Board / leadership role</strong><input value={person.role||""} onChange={event=>updateDelegate(person.delegation_id,"role",event.target.value)}/></label>
-          <label><strong>Responsibilities agreed during the session, one per line</strong><textarea rows={6} value={(person.responsibilities||[]).join("\n")} onChange={event=>updateDelegate(person.delegation_id,"responsibilities",event.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/></label>
+          <label><strong>Confirmed responsibility / responsibilities, one per line</strong><textarea rows={6} value={(person.responsibilities||[]).join("\n")} onChange={event=>updateDelegate(person.delegation_id,"responsibilities",event.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/><small>Confirm, rewrite or remove the proposed wording so this reflects what the person is actually willing to carry.</small></label>
           <label><strong>Strategic areas involved, one per line</strong><textarea rows={4} value={(person.areas||[]).join("\n")} onChange={event=>updateDelegate(person.delegation_id,"areas",event.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/></label>
           <label><strong>First agreed action, if one was stated</strong><textarea rows={3} value={person.first_action||""} onChange={event=>updateDelegate(person.delegation_id,"first_action",event.target.value)}/></label>
           <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={()=>removeDelegate(person.delegation_id)}>REMOVE</button>
