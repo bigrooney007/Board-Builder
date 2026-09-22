@@ -256,14 +256,25 @@ const OUTPUT_CARDS = [
 
 const STATUS_TEXT = {
   locked: "Locked — Complete Your Group Game First",
-  meeting: "Complete Your Board Meeting To Unlock",
+  preparing: "Preparing Final Strategy",
   generating: "Generating — check back in about 5 minutes",
+  failed: "Generation Needs A Retry",
   ready: "Ready",
 };
-const STATUS_COLOR = { locked: "#6B7280", meeting: "#b45309", generating: "#818cf8", ready: "#059669" };
+const STATUS_COLOR = { locked: "#6B7280", preparing: "#818cf8", generating: "#818cf8", failed: "#dc2626", ready: "#059669" };
 
-export const FinalOutputsSection = ({ overview }) => {
+export const FinalOutputsSection = ({ overview, onRefresh = () => {} }) => {
   const navigate = useNavigate();
+  const [retrying, setRetrying] = useState(false);
+  const retryFinal = async () => {
+    setRetrying(true);
+    try {
+      await memberApi.post("/game/meeting/compile-final");
+      await onRefresh();
+    } finally {
+      setRetrying(false);
+    }
+  };
   const outputs = overview?.outputs || {};
   const finalId = overview?.final?.strategy_id || "";
   const destinations = {
@@ -284,10 +295,17 @@ export const FinalOutputsSection = ({ overview }) => {
               </span>
               <h4>{card.title}</h4>
               <p>{card.text}</p>
-              <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={state!=="ready"||!destinations[card.key]} style={{ marginTop: 10 }}
-                onClick={() => state==="ready"&&navigate(destinations[card.key])} data-testid={`bfg-output-open-${card.key}`}>
-                {state!=="ready"&&<Lock size={14}/>} {card.action}
-              </button>
+              {state === "failed" && card.key === "final_strategy" ? (
+                <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={retrying} style={{ marginTop: 10 }}
+                  onClick={retryFinal} data-testid="bfg-retry-final-strategy">
+                  {retrying ? "RESTARTING…" : "RETRY FINAL STRATEGY"}
+                </button>
+              ) : (
+                <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={state!=="ready"||!destinations[card.key]} style={{ marginTop: 10 }}
+                  onClick={() => state==="ready"&&navigate(destinations[card.key])} data-testid={`bfg-output-open-${card.key}`}>
+                  {state!=="ready"&&<Lock size={14}/>} {card.action}
+                </button>
+              )}
             </section>
           );
         })}
