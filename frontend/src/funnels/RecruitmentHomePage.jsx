@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { recruitmentHomeContent as copy } from "@/content/siteContent";
@@ -6,16 +7,21 @@ import "../game/game.css";
 import "./recruitment-home.css";
 
 export default function RecruitmentHomePage({ form }) {
+  const navigate = useNavigate();
+  const { member, loading, logout } = useMemberAuth();
+  const handleLogout = async () => { await logout(); navigate("/login"); };
+
   return (
     <div className="bfg recruit-home-shell">
-      <header className="bfg-nav">
-        <Link to="/recruit" className="bfg-logo" data-testid="recruit-home-logo">
-          <span className="bfg-logo-mark">{copy.logoMark}</span>
-          <span><strong>{copy.brand}</strong><em>{copy.subtitle}</em></span>
-        </Link>
-        <nav className="bfg-nav-actions" aria-label={copy.subtitle}>
-          <a className="recruit-process-link" href="#recruit-process">{copy.howItWorks}</a>
-          <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login">{copy.login}</Link>
+      <header className="bfg-nav" style={{ justifyContent: "flex-end" }}>
+        <nav className="bfg-nav-actions" aria-label="Lead user account">
+          {!loading && (
+            member ? (
+              <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={handleLogout} data-testid="recruit-home-logout">Log Out</button>
+            ) : (
+              <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login" data-testid="recruit-home-login">{copy.login}</Link>
+            )
+          )}
         </nav>
       </header>
       <main className="recruit-home" data-testid="recruitment-landing-page">
