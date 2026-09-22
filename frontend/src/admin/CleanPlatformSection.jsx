@@ -80,9 +80,56 @@ export function PlatformVideosSection() {
   </section>;
 }
 
+const prettyLabel=(value)=>String(value)
+  .replace(/_/g," ")
+  .replace(/([a-z])([A-Z])/g,"$1 $2")
+  .replace(/\b\w/g,letter=>letter.toUpperCase());
+
+const cloneContent=(value)=>JSON.parse(JSON.stringify(value??{}));
+
+const setContentAtPath=(content,path,value)=>{
+  const next=cloneContent(content);
+  let cursor=next;
+  path.slice(0,-1).forEach(segment=>{cursor=cursor[segment]});
+  cursor[path[path.length-1]]=value;
+  return next;
+};
+
+const lockedTextKey=(key)=>/(?:_url|_href|_route|_path|_link)$/i.test(String(key));
+
+function HomepageContentFields({value,path=[],label="",onChange}){
+  if(Array.isArray(value)){
+    return <fieldset className="member-card" style={{margin:"14px 0",padding:18}}>
+      {label&&<legend style={{fontWeight:800,padding:"0 8px"}}>{label}</legend>}
+      {value.map((item,index)=><HomepageContentFields key={index} value={item} path={[...path,index]} label={`${label||"Item"} ${index+1}`} onChange={onChange}/>)}
+    </fieldset>;
+  }
+  if(value&&typeof value==="object"){
+    return <div className="admin-homepage-field-group">
+      {label&&<h3 style={{marginTop:20}}>{label}</h3>}
+      {Object.entries(value).filter(([key])=>!lockedTextKey(key)).map(([key,item])=>
+        <HomepageContentFields key={key} value={item} path={[...path,key]} label={prettyLabel(key)} onChange={onChange}/>
+      )}
+    </div>;
+  }
+  if(typeof value==="boolean"){
+    return <label className="terms-check" style={{margin:"12px 0"}}><input type="checkbox" checked={value} onChange={event=>onChange(path,event.target.checked)}/><span>{label}</span></label>;
+  }
+  if(typeof value==="number"){
+    return <label className="admin-notes"><strong>{label}</strong><input type="number" value={value} onChange={event=>onChange(path,Number(event.target.value))}/></label>;
+  }
+  const text=value==null?"":String(value);
+  const long=text.length>90 || /text|headline|heading|sub|promise|description|title|outcome|step|intro|note/i.test(label);
+  return <label className="admin-notes" style={{margin:"12px 0"}}><strong>{label}</strong>
+    {long
+      ? <textarea rows={Math.min(8,Math.max(2,Math.ceil(Math.max(text.length,80)/90)))} value={text} onChange={event=>onChange(path,event.target.value)}/>
+      : <input value={text} onChange={event=>onChange(path,event.target.value)}/>}
+  </label>;
+}
+
 export function HomepageTextSection(){
   const [pageKey,setPageKey]=useState(HOMEPAGE_KEYS[0][0]);
-  const [draft,setDraft]=useState("{}");
+  const [content,setContent]=useState({});
   const [saving,setSaving]=useState(false);
   const [message,setMessage]=useState("");
 
@@ -94,31 +141,34 @@ export function HomepageTextSection(){
       if(key==="board-fundraising-game"){
         defaults=(await axios.get(`${API}/game/content`)).data.content||{};
       }
-      setDraft(JSON.stringify({...defaults,...stored},null,2));
+      setContent({...cloneContent(defaults),...cloneContent(stored)});
     }catch(error){setMessage(error.response?.data?.detail||"Could not load this home page text.");}
   },[]);
 
   useEffect(()=>{load(pageKey)},[pageKey,load]);
 
+  const updateField=(path,value)=>setContent(current=>setContentAtPath(current,path,value));
+
   const save=async()=>{
     setSaving(true);setMessage("");
     try{
-      const content=JSON.parse(draft);
       await client.put(`/admin/platform/homepages/${pageKey}`,{content});
       setMessage("Home page text saved.");
     }catch(error){
-      setMessage(error instanceof SyntaxError?"The text editor contains invalid JSON. Check brackets, commas and quotation marks.":error.response?.data?.detail||"Could not save this home page.");
+      setMessage(error.response?.data?.detail||"Could not save this home page.");
     }
     setSaving(false);
   };
 
   return <section data-testid="clean-homepage-editor">
-    <div className="admin-funnel-numbers-head"><div><h2>Home Page Text Edit</h2><p>These are the six public home pages in the clean house. The saved copy becomes the live copy for that page without changing its route or product connection.</p></div></div>
+    <div className="admin-funnel-numbers-head"><div><h2>Home Page Text Edit</h2><p>Choose one of the six public home pages and edit its words directly. Routes, dashboard destinations and product connections stay locked outside this editor.</p></div></div>
     <div className="admin-filters">
       <label>Home Page<select value={pageKey} onChange={event=>setPageKey(event.target.value)}>{HOMEPAGE_KEYS.map(([key,name])=><option key={key} value={key}>{name}</option>)}</select></label>
-      <button className="button button-back button-small" onClick={()=>load(pageKey)}><RefreshCw size={15}/> Reload</button>
+      <button className="button button-back button-small" onClick={()=>load(pageKey)}><RefreshCw size={15}/> Reload Saved Text</button>
     </div>
-    <label className="admin-notes"><strong>Page text</strong><textarea rows={34} spellCheck="false" value={draft} onChange={event=>setDraft(event.target.value)} style={{fontFamily:"ui-monospace, SFMono-Regular, Menlo, monospace",fontSize:13,lineHeight:1.5}} /></label>
+    <div className="admin-homepage-text-fields">
+      <HomepageContentFields value={content} onChange={updateField}/>
+    </div>
     {message&&<p className="admin-message">{message}</p>}
     <button className="button" disabled={saving} onClick={save}><Save size={15}/> {saving?"SAVING…":"SAVE HOME PAGE TEXT"}</button>
   </section>;
