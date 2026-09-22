@@ -2426,7 +2426,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         row=next((x for x in rows if x.get("token")==token),None)
         if not row:raise HTTPException(404,"This delegation is not available")
         if not row.get("email"):raise HTTPException(422,"Add this person's email address before sending their delegation")
-        origin=origin_of(request);experience_link=f"{origin}/strategic-leadership-portfolio/{token}"
+        origin=origin_of(request);experience_link=f"{origin}/strategic-leadership-portfolio/{token}";assistant_link=f"{origin}/strategic-leadership-assistant/{token}"
         first=(row.get("name") or "Board Member").split()[0]
         responsibility="\n".join(f"- {x}" for x in row.get("responsibilities") or [])
         body_text=(f"Dear {first},\n\n"
@@ -2435,6 +2435,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             "Use the secure link below. It opens the approved Strategic Plan first. When you finish reviewing it, click HOW I CAN GET INVOLVED to see your personal Board Leadership Portfolio, download it and open your Executive Assistant.\n\n"
             f"{experience_link}\n\n"
             "Please bookmark that page. It is your ongoing entry point to the plan, your role and your execution support.\n\n"
+            "You can also bookmark your Executive Assistant directly here:\n"
+            f"{assistant_link}\n\n"
             f"{p.get('founder_name','')}\n{p['organization_name']}")
         await send_email(row["email"],f"Your Strategic Plan And Board Role | {p['organization_name']}",body_text,"OPEN STRATEGIC PLAN & MY ROLE",experience_link,reply_to=p.get("founder_email",""))
         for item in rows:
