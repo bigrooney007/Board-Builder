@@ -10,6 +10,7 @@ export const STRATEGY_SECTIONS = [
   { key: "technology", title: "Technology We Need To Execute", priorityLabel: "Priority Technology", additionalLabel: "Additional Technology To Consider" },
   { key: "fundraising_team", title: "The Fundraising Team We Need", priorityLabel: "Priority Team Roles", additionalLabel: "Additional Roles To Consider" },
   { key: "materials", title: "Fundraising Materials We Need", priorityLabel: "Priority Materials", additionalLabel: "Additional Materials To Consider" },
+  { key: "execution_budget", title: "Execution Budget", v2: "budget" },
   { key: "execution_timeline", title: "Execution Timeline", stages: [["set_up", "SET UP"], ["launch", "LAUNCH"], ["execute", "EXECUTE"], ["review_and_improve", "REVIEW AND IMPROVE"]] },
   { key: "additional_board_ideas", title: "Additional Ideas From Your Board" },
   { key: "next_step", title: "Next Step" },
