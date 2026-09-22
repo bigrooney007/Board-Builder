@@ -1818,19 +1818,75 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         link=f"{origin_of(request)}/strategic-planning-form/{participant['form_token']}";e=generic_form_email(p,link);await send_email(email,e["subject"],e["body"],e["button_label"],link,reply_to=p.get("founder_email",""));await db.sp_participants.update_one({"participant_id":participant["participant_id"]},{"$set":{"name":name,"status":"SENT","sent_at":now_iso()}})
         return {"status":"sent","participant_id":participant["participant_id"]}
 
-    @router.get("/session")
-    async def strategic_session(session_id: str):
-        p=await ensure_project(session_id);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+    def strategic_section_context(title: str, answers: dict, project: dict) -> str:
+        key=title.lower()
+        if "mission" in key:return str(answers.get("mission") or project.get("mission") or "").strip()
+        if key=="goals":return str(answers.get("goals") or "").strip()
+        if "objective" in key:return str(answers.get("objectives") or "").strip()
+        if key.startswith("program:"):return title.split(":",1)[1].strip()
+        if "team" in key:return str(answers.get("team_building") or "").strip()
+        if "operation" in key:return str(answers.get("operations") or "").strip()
+        if "marketing" in key:return str(answers.get("marketing") or "").strip()
+        if "partnership" in key:return str(answers.get("partnerships") or "").strip()
+        if "fundrais" in key:return str(answers.get("fundraising") or "").strip()
+        if "technology" in key:return str(answers.get("technology") or "").strip()
+        if "budget" in key:return str(answers.get("budget") or "").strip()
+        if "action" in key:return str(answers.get("action_planning") or "").strip()
+        return ""
+
+    def build_session_sections(form: dict, people: list, saved: dict, answers: dict, project: dict) -> list:
         sections=[]
         for section in (form.get("content") or {}).get("sections",[]):
             ideas=[]
             for person in people:
-                response=person.get("response") or {};parts=[str(response.get(q["id"],"")).strip() for q in section.get("questions",[]) if str(response.get(q["id"],"")).strip()]
-                if parts:ideas.append({"participant_id":person["participant_id"],"participant_name":person.get("name","Board Member"),"idea":"\n\n".join(parts)})
+                response=person.get("response") or {}
+                for question in section.get("questions",[]):
+                    raw=response.get(question.get("id"))
+                    if isinstance(raw,list): raw=", ".join(str(x) for x in raw if str(x).strip())
+                    raw=str(raw or "").strip()
+                    if not raw:continue
+                    idea_id=f"{person['participant_id']}:{question['id']}"
+                    ideas.append({
+                        "idea_id":idea_id,
+                        "participant_id":person["participant_id"],
+                        "participant_name":person.get("name","Board Member"),
+                        "question_id":question.get("id",""),
+                        "question":question.get("prompt",""),
+                        "idea":compact_session_idea(raw),
+                    })
             saved_decision=(saved.get("decisions") or {}).get(section["key"],[])
-            selected_ids=saved_decision if isinstance(saved_decision,list) else ([] if str(saved_decision).startswith("__") else ([saved_decision] if saved_decision else []))
-            sections.append({"key":section["key"],"title":section["title"],"ideas":ideas,"recommendations":board_builder_recommendations(section["title"],p.get("mission","")),"allow_keep_current_mission":"mission" in section["title"].lower(),"selected_participant_ids":selected_ids,"primary_selected_participant_id":selected_ids[0] if selected_ids else "","decision_mode":saved_decision if isinstance(saved_decision,str) and saved_decision.startswith("__") else "selected_ideas"})
-        return {"organization_name":p["organization_name"],"sections":sections,"transcript":saved.get("transcript",""),"status":saved.get("status","NOT STARTED"),"share_token":saved.get("share_token",""),"current_section_index":saved.get("current_section_index",0)}
+            selected=[]
+            if isinstance(saved_decision,list):
+                valid_ids={idea["idea_id"] for idea in ideas}
+                for item in saved_decision:
+                    item=str(item)
+                    if item in valid_ids and item not in selected:selected.append(item)
+                    elif ":" not in item:
+                        for idea in ideas:
+                            if idea["participant_id"]==item and idea["idea_id"] not in selected:selected.append(idea["idea_id"])
+            sections.append({
+                "key":section["key"],
+                "title":section["title"],
+                "current_context":strategic_section_context(section["title"],answers,project),
+                "ideas":ideas,
+                "recommendations":board_builder_recommendations(section["title"],project.get("mission","")),
+                "allow_keep_current_mission":"mission" in section["title"].lower(),
+                "selected_idea_ids":selected,
+                "decision_mode":saved_decision if isinstance(saved_decision,str) and saved_decision.startswith("__") else "selected_ideas",
+                "is_action_planning":"action" in section["title"].lower(),
+            })
+        return sections
+
+    @router.get("/session")
+    async def strategic_session(session_id: str):
+        p=await ensure_project(session_id);_,_,intake=await paid(session_id)
+        form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        sections=build_session_sections(form,people,saved,intake.get("answers") or {},p)
+        return {"organization_name":p["organization_name"],"sections":sections,"transcript":saved.get("transcript",""),
+                "status":saved.get("status","NOT STARTED"),"share_token":saved.get("share_token",""),
+                "current_section_index":saved.get("current_section_index",0)}
 
     @router.post("/session/share")
     async def share_strategic_session(request: Request):
@@ -1838,27 +1894,51 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"share_token":token,"current_section_index":saved.get("current_section_index",0),"updated_at":now_iso()}},upsert=True)
         return {"share_token":token}
 
+    @router.post("/session/start")
+    async def start_strategic_session(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""))
+        form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        if not (form.get("content") or {}).get("sections"):raise HTTPException(409,"Generate the Strategic Planning Form first")
+        if not people:raise HTTPException(409,"At least one completed Strategic Planning Form is required")
+        saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"status":"IN PROGRESS",
+            "started_at":saved.get("started_at") or now_iso(),"current_section_index":saved.get("current_section_index",0),"updated_at":now_iso()}},upsert=True)
+        return {"status":"IN PROGRESS"}
+
+    @router.post("/session/transcript")
+    async def save_strategic_session_transcript(request: Request):
+        body=await request.json();p=await ensure_project(body.get("session_id",""));transcript=str(body.get("transcript","")).strip()[:60000]
+        await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"transcript":transcript,"updated_at":now_iso()}},upsert=True)
+        return {"saved":True}
+
     @router.post("/session/progress")
     async def update_strategic_session_progress(request: Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));index=max(0,int(body.get("current_section_index",0)))
-        await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"current_section_index":index,"updated_at":now_iso()}},upsert=True)
+        await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"current_section_index":index,"status":"IN PROGRESS","updated_at":now_iso()}},upsert=True)
         return {"current_section_index":index}
 
     @router.post("/session/decision")
     async def save_strategic_session_decision(request: Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));key=str(body.get("section_key","")).strip();decision=body.get("decision")
-        form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};valid_keys={x.get("key") for x in (form.get("content") or {}).get("sections",[])}
-        if key not in valid_keys:raise HTTPException(422,"Choose a valid strategic section")
+        _,_,intake=await paid(body.get("session_id",""))
+        form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        sections=build_session_sections(form,people,saved,intake.get("answers") or {},p);section=next((x for x in sections if x["key"]==key),None)
+        if not section:raise HTTPException(422,"Choose a valid strategic section")
         if isinstance(decision,list):
-            people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0,"participant_id":1}).to_list(300);valid_ids={x["participant_id"] for x in people};clean=[]
-            for pid in decision:
-                pid=str(pid)
-                if pid in valid_ids and pid not in clean:clean.append(pid)
+            valid={idea["idea_id"] for idea in section["ideas"]};clean=[]
+            for idea_id in decision:
+                idea_id=str(idea_id)
+                if idea_id in valid and idea_id not in clean:clean.append(idea_id)
             if not clean:
-                await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"updated_at":now_iso()},"$unset":{f"decisions.{key}":""}},upsert=True)
+                await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$unset":{f"decisions.{key}":""},"$set":{"updated_at":now_iso()}},upsert=True)
                 return {"section_key":key,"decision":[]}
             stored=clean
-        elif decision in {"__keep_current__","__use_all_ideas__"}:
+        elif decision=="__keep_current__" and section["allow_keep_current_mission"]:
+            stored=decision
+        elif decision=="__use_all_ideas__":
             stored=decision
         else:raise HTTPException(422,"Choose at least one Board idea")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],f"decisions.{key}":stored,"updated_at":now_iso()}},upsert=True)
@@ -1868,67 +1948,70 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def watch_strategic_session(token: str):
         saved=await db.sp_sessions.find_one({"share_token":token},{"_id":0})
         if not saved:raise HTTPException(404,"This Strategic Planning session link is not valid")
-        p=await db.sp_projects.find_one({"project_id":saved["project_id"]},{"_id":0}) or {};form=await db.sp_forms.find_one({"project_id":saved["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":saved["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);sections=[]
-        for section in (form.get("content") or {}).get("sections",[]):
-            ideas=[]
-            for person in people:
-                response=person.get("response") or {};parts=[str(response.get(q["id"],"")).strip() for q in section.get("questions",[]) if str(response.get(q["id"],"")).strip()]
-                if parts:ideas.append({"participant_id":person["participant_id"],"participant_name":person.get("name","Board Member"),"idea":"\n\n".join(parts)})
-            saved_decision=(saved.get("decisions") or {}).get(section["key"],[]);selected_ids=saved_decision if isinstance(saved_decision,list) else []
-            ideas=[{**idea,"selected":idea.get("participant_id") in selected_ids,"primary_selected":bool(selected_ids and idea.get("participant_id")==selected_ids[0])} for idea in ideas]
-            sections.append({"key":section["key"],"title":section["title"],"ideas":ideas,"recommendations":board_builder_recommendations(section["title"],p.get("mission","")),"allow_keep_current_mission":"mission" in section["title"].lower(),"selected_participant_ids":selected_ids,"decision_mode":saved_decision if isinstance(saved_decision,str) else "selected_ideas"})
-        index=min(saved.get("current_section_index",0),max(0,len(sections)-1));return {"organization_name":p.get("organization_name",""),"status":saved.get("status","NOT STARTED"),"current_section_index":index,"section":sections[index] if sections else None,"total_sections":len(sections)}
+        p=await db.sp_projects.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
+        intake=await db.guided_product_intakes.find_one({"session_id":p.get("guided_session_id"),"product":"strategic-planning"},{"_id":0}) or {}
+        form=await db.sp_forms.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
+        people=await db.sp_participants.find({"project_id":saved["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        sections=build_session_sections(form,people,saved,intake.get("answers") or {},p)
+        index=min(saved.get("current_section_index",0),max(0,len(sections)-1))
+        section=sections[index] if sections else None
+        if section:
+            selected=set(section.get("selected_idea_ids") or [])
+            section={**section,"ideas":[{**idea,"selected":idea["idea_id"] in selected} for idea in section["ideas"]]}
+        return {"organization_name":p.get("organization_name",""),"status":saved.get("status","NOT STARTED"),
+                "current_section_index":index,"section":section,"total_sections":len(sections)}
 
     @router.post("/session/complete")
     async def complete_strategic_session(request: Request):
-        body=await request.json();sid=body.get("session_id","");decisions=body.get("decisions") or {};transcript=str(body.get("transcript","")).strip();p=await ensure_project(sid);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);by={x["participant_id"]:x for x in people};sections=(form.get("content") or {}).get("sections",[]);lead=next((x for x in people if x.get("role")=="Lead User"),people[0] if people else None)
-        def has_decision(value):
-            return bool(value) if not isinstance(value,list) else len(value)>0
-        if not sections or any(not has_decision(decisions.get(section["key"])) for section in sections):raise HTTPException(422,"Choose at least one agreed idea for every strategic section")
-        areas=[];display=[]
+        body=await request.json();sid=body.get("session_id","");decisions=body.get("decisions") or {};transcript=str(body.get("transcript","")).strip()[:60000]
+        p=await ensure_project(sid);_,_,intake=await paid(sid)
+        form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+        saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        sections=build_session_sections(form,people,saved,intake.get("answers") or {},p)
+        if not transcript:raise HTTPException(422,"Keep the microphone transcript running or paste the session transcript before ending the Strategic Planning Session")
         for section in sections:
-            decision=decisions[section["key"]];all_ideas=[];idea_by_person={}
-            for person in people:
-                text="\n\n".join(str((person.get("response") or {}).get(q["id"],"")).strip() for q in section.get("questions",[]) if str((person.get("response") or {}).get(q["id"],"")).strip())
-                if text:
-                    labelled=f"{person.get('name','Board Member')}: {text}";all_ideas.append(labelled);idea_by_person[person["participant_id"]]=labelled
-            agreed=[];selected_ids=[];decision_mode="selected_ideas"
-            if isinstance(decision,list):
-                selected_ids=[str(pid) for pid in decision if str(pid) in by]
-                if not selected_ids:raise HTTPException(422,f"Choose at least one available idea for {section['title']}")
-                owner=by[selected_ids[0]];agreed=[idea_by_person[pid] for pid in selected_ids if pid in idea_by_person];selected="\n\n".join(agreed)
-            elif decision=="__keep_current__" and "mission" in section["title"].lower():
-                selected=p.get("mission","");agreed=[f"Board decision: keep the present mission statement: {selected}"];decision_mode="keep_current";owner=None
-            elif decision=="__use_all_ideas__":
-                if not lead:raise HTTPException(422,"The Lead User is not available")
-                owner=lead;agreed=list(all_ideas);selected="Board direction: develop this section from the complete Board discussion, every submitted idea and the meeting transcript.";decision_mode="use_all_ideas"
-            else:
-                owner=by.get(str(decision)) or lead
-                if not owner:raise HTTPException(422,f"The selected contributor for {section['title']} is not available")
-                selected_ids=[owner["participant_id"]];agreed=[idea_by_person.get(owner["participant_id"],"")];selected="\n\n".join(x for x in agreed if x)
-            area={"area_key":section["key"],"area":section["title"],"direction":selected,"agreed_ideas":agreed,"selected_idea_participant_ids":selected_ids,
-                "proposed_priorities":board_builder_recommendations(section["title"],p.get("mission","")),"ideas_shared":all_ideas,
-                "owner_participant_id":owner["participant_id"] if owner else "","collaborator_participant_ids":[],"status":"ASSIGNED" if owner else "READY FOR BOARD","meeting_transcript":transcript,"decision_mode":decision_mode}
-            if decision_mode=="keep_current":
-                area.update({"detailed_plan_status":"Approved","submitted_plan":selected,"detailed_plan_text":selected,"plan_submitted_at":now_iso(),"pack_status":"Not Required"})
-            areas.append(area)
-            display.append(f"{section['title']}\nAgreed direction:\n{selected}")
-        if p.get("internal_preview"):
-            for area in areas:
-                area["detailed_plan_status"]="Approved"
-                area["submitted_plan"]=(f"ADMIN PREVIEW DETAILED PLAN — {area['area']}\n\n"
-                    f"BOARD-AGREED DIRECTION\n{area.get('direction', '')}\n\n"
-                    "EXECUTION APPROACH\nConvert the agreed direction into a 90-day implementation cycle with a named owner, "
-                    "specific milestones, required people and technology, a realistic budget, measurable evidence of progress "
-                    "and a recurring Board accountability review. Preserve the Board ideas and meeting decisions already recorded.\n\n"
-                    "FIRST 90 DAYS\n1. Confirm the owner, scope, success measure and required resources.\n"
-                    "2. Build the people, systems, materials and relationships required for execution.\n"
-                    "3. Complete the first execution cycle and bring evidence, barriers and decisions required back to the Board.\n\n"
-                    "BOARD LEADERSHIP RESPONSIBILITY\nThe delegated Board Member provides leadership, introductions, oversight and accountability while staff carries appropriate day-to-day execution.")
-                area["plan_submitted_at"]=now_iso();area["pack_status"]="Approved"
-        now=now_iso();await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"decisions":decisions,"transcript":transcript,"status":"COMPLETED","completed_at":now}},upsert=True);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"Approved","display_text":"\n\n".join(display),"finalized_text":"\n\n".join(display),"areas":areas,"share_token":secrets.token_urlsafe(32),"meeting_transcript":transcript,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
-        return {"status":"COMPLETED","area_count":len(areas)}
+            value=decisions.get(section["key"])
+            if section["allow_keep_current_mission"] and value=="__keep_current__":continue
+            if value=="__use_all_ideas__":continue
+            if not isinstance(value,list) or not value:raise HTTPException(422,f"Choose at least one agreed idea for {section['title']}")
 
+        full_ideas={}
+        for section in (form.get("content") or {}).get("sections",[]):
+            for person in people:
+                response=person.get("response") or {}
+                for question in section.get("questions",[]):
+                    raw=response.get(question.get("id"))
+                    if isinstance(raw,list):raw=", ".join(str(x) for x in raw if str(x).strip())
+                    raw=str(raw or "").strip()
+                    if raw:
+                        full_ideas[f"{person['participant_id']}:{question['id']}"]={
+                            "participant_id":person["participant_id"],"participant_name":person.get("name","Board Member"),
+                            "question":question.get("prompt",""),"text":raw,
+                        }
+
+        areas=[]
+        for section in sections:
+            decision=decisions.get(section["key"])
+            all_for_section=[full_ideas.get(idea["idea_id"]) for idea in section["ideas"] if full_ideas.get(idea["idea_id"])]
+            if decision=="__keep_current__":
+                agreed=[{"participant_name":"Board Decision","text":p.get("mission","")}]
+                direction=p.get("mission","");mode="keep_current"
+            elif decision=="__use_all_ideas__":
+                agreed=all_for_section;direction="Use all submitted ideas together with the live Board discussion.";mode="use_all_ideas"
+            else:
+                agreed=[full_ideas[x] for x in decision if x in full_ideas]
+                direction="\n\n".join(x["text"] for x in agreed);mode="selected_ideas"
+            areas.append({"area_key":section["key"],"area":section["title"],"current_context":section.get("current_context",""),
+                          "agreed_ideas":agreed,"ideas_shared":all_for_section,"direction":direction,"decision_mode":mode,"status":"READY FOR PLAN"})
+
+        now=now_iso()
+        await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"decisions":decisions,
+            "transcript":transcript,"status":"COMPLETED","completed_at":now,"updated_at":now}},upsert=True)
+        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"areas":areas,"meeting_transcript":transcript,
+            "status":"SESSION COMPLETED","final_status":"NONE","final_display_text":"","final_share_token":"","active_delegation":{},"updated_at":now},
+            "$setOnInsert":{"created_at":now}},upsert=True)
+        return {"status":"COMPLETED","area_count":len(areas)}
 
     @router.post("/community-research")
     async def community_research(request:Request):
