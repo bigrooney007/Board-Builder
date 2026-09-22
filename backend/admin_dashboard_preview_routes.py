@@ -31,6 +31,7 @@ PRODUCTS = {
 
 FIXTURE_VERSION = "v3"
 RECRUITMENT_FIXTURE_VERSION = "v5"
+STRATEGIC_FIXTURE_VERSION = "v4"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -120,16 +121,8 @@ def strategic_response(lens: str) -> dict:
             "I would build a base budget and a growth budget, then connect every strategic priority to its actual execution cost.",
         ),
         (
-            "The immediate priorities should be revenue diversification, board capacity, program outcome evidence and operating discipline.",
-            "I would sequence the work so the organization first builds the people and systems required to execute the larger growth goals.",
-        ),
-        (
-            "Major actions need owners, dates and review points. We currently have intentions that are not always converted into accountable projects.",
-            "I would use 90-day execution cycles with a named owner, success measure, required resources and a board review at the end of each cycle.",
-        ),
-        (
-            "I am willing to lead corporate partnerships and support fundraising strategy, communications and board recruitment.",
-            "I would serve on a revenue and partnerships working group and take responsibility for opening qualified corporate conversations from my network.",
+            "The immediate priorities should be revenue diversification, board capacity, program outcome evidence and operating discipline. I would turn those priorities into 90-day actions with named owners, clear resources and a Board review point.",
+            "I am willing to lead corporate partnerships and support fundraising strategy, communications and board recruitment. I would take responsibility for opening qualified corporate conversations from my network and reporting progress back to the Board.",
         ),
     ]
     response = {}
@@ -809,8 +802,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
     async def seed_guided_product(member: dict, product: str, config: dict) -> str:
         now = now_iso()
         tag = suffix(member)
-        session_id = f"admin_preview_{FIXTURE_VERSION}_{product.replace('-', '_')}_{tag}"
-        lead_token = f"admin-preview-{FIXTURE_VERSION}-{product}-{tag}"
+        fixture_version = STRATEGIC_FIXTURE_VERSION if product == "strategic-planning" else FIXTURE_VERSION
+        session_id = f"admin_preview_{fixture_version}_{product.replace('-', '_')}_{tag}"
+        lead_token = f"admin-preview-{fixture_version}-{product}-{tag}"
         await db.guided_product_leads.update_one(
             {"token": lead_token},
             {"$setOnInsert": {
@@ -932,33 +926,34 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 ),
             ]
             for participant_id, name, email, role, expertise, lens in people:
+                is_lead = role == "Lead User"
+                participant_doc = {
+                    "participant_id": participant_id,
+                    "project_id": project_id,
+                    "name": name,
+                    "email": email,
+                    "role": role,
+                    "expertise": expertise,
+                    "status": "INVITED" if is_lead else "COMPLETED",
+                    "form_token": f"{participant_id}-form",
+                    "review_status": "NOT SENT",
+                    "review_token": f"{participant_id}-review",
+                    "internal_preview": True,
+                    "created_at": now,
+                }
+                if not is_lead:
+                    participant_doc["response"] = strategic_response(lens)
+                    participant_doc["submitted_at"] = now
                 await db.sp_participants.update_one(
                     {"participant_id": participant_id},
-                    {"$setOnInsert": {
-                        "participant_id": participant_id,
-                        "project_id": project_id,
-                        "name": name,
-                        "email": email,
-                        "role": role,
-                        "expertise": expertise,
-                        "status": "COMPLETED",
-                        "form_token": f"{participant_id}-form",
-                        "review_status": "NOT SENT",
-                        "review_token": f"{participant_id}-review",
-                        "response": strategic_response(lens),
-                        "submitted_at": now,
-                        "internal_preview": True,
-                        "created_at": now,
-                    }},
+                    {"$setOnInsert": participant_doc},
                     upsert=True,
                 )
-            participant_ids = [row[0] for row in people]
-            decisions = {f"s{index}": participant_ids[(index - 1) % len(participant_ids)] for index in range(1, 18)}
             await db.sp_sessions.update_one(
                 {"project_id": project_id},
                 {"$setOnInsert": {
                     "project_id": project_id,
-                    "decisions": decisions,
+                    "decisions": {},
                     "transcript": strategic_transcript(),
                     "status": "NOT STARTED",
                     "current_section_index": 0,
@@ -975,32 +970,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "status": "NONE",
                     "display_text": "",
                     "areas": [],
-                    "presentation_meeting": {
-                        "meeting_date": "2026-10-29",
-                        "start_time": "18:00",
-                        "timezone_name": "America/New_York",
-                        "meeting_format": "Virtual",
-                        "meeting_link": "https://example.org/admin-preview-strategic-meeting",
-                        "meeting_location": "",
-                        "note": "Admin preview presentation meeting.",
-                        "status": "SCHEDULED",
-                        "transcript": strategic_presentation_transcript(),
-                    },
-                    "active_delegation": {
-                        "assignments": {},
-                        "transcript": (
-                            "Rooney: Maya will lead corporate partnerships, Daniel will lead budget and financial tracking, "
-                            "Aisha will lead marketing and visibility, and I will coordinate implementation across the plan. "
-                            "Each leader will bring evidence of progress and decisions required to the next board meeting."
-                        ),
-                    },
-                    "follow_up_meeting": {
-                        "transcript": (
-                            "Rooney: We reviewed the first 30 days. Maya opened four qualified employer conversations. "
-                            "Daniel completed the base and growth budget. Aisha established the content calendar. "
-                            "The Board agreed to keep the present direction and increase follow-up discipline in the corporate pipeline."
-                        ),
-                    },
+                    "final_status": "NONE",
+                    "final_display_text": "",
+                    "final_share_token": "",
+                    "active_delegation": {},
                     "internal_preview": True,
                     "created_at": now,
                     "updated_at": now,
@@ -1507,7 +1480,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Unknown product dashboard")
         member = await preview_member(
             admin,
-            RECRUITMENT_FIXTURE_VERSION if product == "recruitment" else FIXTURE_VERSION,
+            RECRUITMENT_FIXTURE_VERSION if product == "recruitment"
+            else STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
+            else FIXTURE_VERSION,
         )
         if config["entitlements"]:
             await db.members.update_one(
