@@ -273,7 +273,7 @@ export const FinalOutputsSection = ({ overview }) => {
   };
   return (
     <>
-      <p className="bfg-eyebrow" style={{ marginTop: 30 }}>After Your Board Meeting</p>
+      <p className="bfg-eyebrow" style={{ marginTop: 30 }}>STEP 7 · AFTER THE GROUP GAME</p>
       <div className="bfg-output-grid" data-testid="bfg-final-outputs">
         {OUTPUT_CARDS.map((card) => {
           const state = outputs[card.key] || "locked";
