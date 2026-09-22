@@ -2421,16 +2421,27 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/leadership-portfolio/send")
     async def send_leadership_portfolio(request:Request):
-        body=await request.json();p=await ensure_project(body.get("session_id",""));token=str(body.get("token",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};rows=plan.get("leadership_portfolios") or [];row=next((x for x in rows if x.get("token")==token),None)
+        body=await request.json();p=await ensure_project(body.get("session_id",""));token=str(body.get("token",""))
+        plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};rows=plan.get("leadership_portfolios") or []
+        row=next((x for x in rows if x.get("token")==token),None)
         if not row:raise HTTPException(404,"This delegation is not available")
         if not row.get("email"):raise HTTPException(422,"Add this person's email address before sending their delegation")
-        origin=origin_of(request);portfolio_link=f"{origin}/strategic-leadership-portfolio/{token}";assistant_link=f"{origin}/strategic-leadership-assistant/{token}";plan_link=f"{origin}/strategic-plan/{plan.get('final_share_token')}";first=(row.get("name") or "Board Member").split()[0];responsibility="\n".join(f"- {x}" for x in row.get("responsibilities") or [])
-        body_text=f"Dear {first},\n\nDuring our Strategic Planning Session, the Board agreed the following responsibility with you:\n\n{responsibility}\n\nReview the approved Strategic Plan here:\n{plan_link}\n\nYour personal Leadership Portfolio explains your role and how to get started:\n{portfolio_link}\n\nYour Executive Assistant is ready to help you execute this responsibility. Bookmark it and return whenever you need guidance, a plan, message, checklist, resource or Board update:\n{assistant_link}\n\nIncluded Executive Assistant access is available for six months from activation.\n\n{p.get('founder_name','')}\n{p['organization_name']}"
-        await send_email(row["email"],f"Your Strategic Plan Delegation | {p['organization_name']}",body_text,"OPEN MY LEADERSHIP PORTFOLIO",portfolio_link,reply_to=p.get("founder_email",""))
+        origin=origin_of(request);experience_link=f"{origin}/strategic-leadership-portfolio/{token}"
+        first=(row.get("name") or "Board Member").split()[0]
+        responsibility="\n".join(f"- {x}" for x in row.get("responsibilities") or [])
+        body_text=(f"Dear {first},\n\n"
+            f"Our Strategic Plan for {p['organization_name']} is ready. During the Strategic Planning Session, the Board also agreed on the responsibility you will help carry forward:\n\n"
+            f"{responsibility}\n\n"
+            "Use the secure link below. It opens the approved Strategic Plan first. When you finish reviewing it, click HOW I CAN GET INVOLVED to see your personal Board Leadership Portfolio, download it and open your Executive Assistant.\n\n"
+            f"{experience_link}\n\n"
+            "Please bookmark that page. It is your ongoing entry point to the plan, your role and your execution support.\n\n"
+            f"{p.get('founder_name','')}\n{p['organization_name']}")
+        await send_email(row["email"],f"Your Strategic Plan And Board Role | {p['organization_name']}",body_text,"OPEN STRATEGIC PLAN & MY ROLE",experience_link,reply_to=p.get("founder_email",""))
         for item in rows:
             if item.get("token")==token:item["sent_at"]=now_iso()
         await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"leadership_portfolios":rows}})
         return {"status":"sent"}
+
 
 
     @router.post("/active-delegation")
@@ -2473,7 +2484,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
         if not row: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
         project=await owned_project(plan["project_id"])
-        return {"title":"Board Member Leadership Portfolio","organization_name":project["organization_name"],"member_name":row.get("name",""),"areas":row.get("areas",[]),"display_text":row.get("text",""),"issued_by":project.get("founder_name","")}
+        return {"title":"Board Member Leadership Portfolio","organization_name":project["organization_name"],"member_name":row.get("name",""),"areas":row.get("areas",[]),
+                "display_text":row.get("text",""),"strategic_plan_text":plan.get("final_display_text",""),
+                "strategic_plan_url":f"/strategic-plan/{plan.get('final_share_token')}" if plan.get("final_share_token") else "",
+                "assistant_url":f"/strategic-leadership-assistant/{token}","issued_by":project.get("founder_name","")}
 
     @router.get("/leadership-portfolio/{token}/pdf")
     async def leadership_portfolio_pdf(token:str):
@@ -2501,7 +2515,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan:raise HTTPException(404,"This Board Leadership Assistant is not available")
         row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None);project=await owned_project(plan["project_id"]);access=await ensure_execution_access(project)
         if execution_access_state(access)=="renewal_required":raise HTTPException(402,"Your organization's included Executive Assistant access has ended. Please ask your organization leader to renew Board Execution Support.")
-        request_text=f"Create this ready-to-use resource: {material}.\n\n{message}" if material else message;approved_areas=[{"area":area.get("area",""),"agreed_direction":area.get("direction",""),"agreed_ideas":area.get("agreed_ideas",[]),"approved_detailed_plan":area.get("submitted_plan","")} for area in (plan.get("areas") or [])];context={"organization":{"organization_name":project.get("organization_name",""),"mission":project.get("mission",""),"founder_name":project.get("founder_name",""),"founder_title":project.get("founder_title","")},"final_strategic_plan":plan.get("final_display_text",""),"approved_strategic_areas":approved_areas,"delegated_leadership_portfolio":row,"active_delegation":plan.get("active_delegation",{}),"confirmed_board_session_transcript":(plan.get("presentation_meeting") or {}).get("transcript",""),"follow_up_meeting":plan.get("follow_up_meeting",{})};history=await db.sp_leadership_assistant_messages.find({"token":token},{"_id":0}).sort("created_at",-1).limit(12).to_list(12);history.reverse();api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("EXECUTIVE_ASSISTANT_MODEL","claude-haiku-4-5-20251001");provider=os.environ.get("EXECUTIVE_ASSISTANT_PROVIDER","anthropic");system="You are one nonprofit leader's secure Executive Assistant for executing an approved Strategic Plan. The organization\'s approved plan, Board-agreed strategic areas, confirmed meeting decisions and this person\'s delegated portfolio are authoritative. Preserve the organization\'s own wording, logic and decisions. Help only with responsibilities actually delegated to this person, while using organization-wide approved context when it helps them execute intelligently. Never expose another participant\'s private planning-form reflections merely because they exist. Never invent facts, authority, commitments or results. Do not turn a Board Member into unpaid staff. Do not mention AI."
+        request_text=f"Create this ready-to-use resource: {material}.\n\n{message}" if material else message;approved_areas=[{"area":area.get("area",""),"agreed_direction":area.get("direction",""),"agreed_ideas":area.get("agreed_ideas",[]),"approved_detailed_plan":area.get("submitted_plan","")} for area in (plan.get("areas") or [])];context={"organization":{"organization_name":project.get("organization_name",""),"mission":project.get("mission",""),"founder_name":project.get("founder_name",""),"founder_title":project.get("founder_title","")},"final_strategic_plan":plan.get("final_display_text",""),"approved_strategic_areas":approved_areas,"delegated_leadership_portfolio":row,"active_delegation":plan.get("active_delegation",{}),"confirmed_board_session_transcript":plan.get("meeting_transcript","") or (plan.get("active_delegation") or {}).get("transcript",""),"follow_up_meeting":plan.get("follow_up_meeting",{})};history=await db.sp_leadership_assistant_messages.find({"token":token},{"_id":0}).sort("created_at",-1).limit(12).to_list(12);history.reverse();api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("EXECUTIVE_ASSISTANT_MODEL","claude-haiku-4-5-20251001");provider=os.environ.get("EXECUTIVE_ASSISTANT_PROVIDER","anthropic");system="You are one nonprofit leader's secure Executive Assistant for executing an approved Strategic Plan. The organization\'s approved plan, Board-agreed strategic areas, confirmed meeting decisions and this person\'s delegated portfolio are authoritative. Preserve the organization\'s own wording, logic and decisions. Help only with responsibilities actually delegated to this person, while using organization-wide approved context when it helps them execute intelligently. Never expose another participant\'s private planning-form reflections merely because they exist. Never invent facts, authority, commitments or results. Do not turn a Board Member into unpaid staff. Do not mention AI."
         chat=LlmChat(api_key=api_key,session_id=f"sp-assistant-{token}-{uuid.uuid4()}",system_message=system).with_model(provider,model);response=await chat.send_message(UserMessage(text=f"AUTHORITATIVE CONTEXT:\n{json.dumps(context,default=str)}\n\nRECENT CONVERSATION:\n{json.dumps(history,default=str)}\n\nREQUEST:\n{request_text}"));answer=response if isinstance(response,str) else getattr(response,"text",str(response));await db.sp_leadership_assistant_messages.insert_many([{"message_id":str(uuid.uuid4()),"token":token,"role":"user","text":request_text,"created_at":now_iso()},{"message_id":str(uuid.uuid4()),"token":token,"role":"assistant","text":answer,"created_at":now_iso()}]);await meter_assistant(access["scope_id"],token,row.get("name",""),request_text,answer,material);return {"answer":answer}
 
     return router
