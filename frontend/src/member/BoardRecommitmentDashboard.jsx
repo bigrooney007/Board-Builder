@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
-import { memberApi } from "./api";\nimport { trackPlatformEvent } from "@/clean/platform";
+import { memberApi } from "./api";
+import { trackPlatformEvent } from "@/clean/platform";
 import ReactivationStep2 from "./ReactivationStep2";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import ReactivationStep3 from "./ReactivationStep3";
@@ -15,8 +16,14 @@ const CompactSection=({n,title,open,onOpen,children})=><section className="membe
 const ProgressSummary=({refreshKey})=>{
  const [data,setData]=useState(null);
  useEffect(()=>{memberApi.get("/reactivation/my-board").then(r=>setData(r.data)).catch(()=>setData(null))},[refreshKey]);
+ const rows=data?Object.values(data.groups||{}).flat():[];
+ const completedCount=rows.filter(row=>row.conversation_outcome&&(row.conversation_conclusion||"").trim()).length;
+ useEffect(()=>{
+  if(rows.length&&completedCount===rows.length) trackPlatformEvent("board-recommitment","platform_completed");
+ },[rows.length,completedCount]);
  if(!data)return <p>Loading progress…</p>;
- const rows=Object.values(data.groups||{}).flat(),summary=data.summary||{};\n useEffect(()=>{if(rows.length&&rows.every(row=>row.conversation_outcome&&(row.conversation_conclusion||"").trim()))trackPlatformEvent("board-recommitment","platform_completed")},[rows.length,rows.filter(row=>row.conversation_outcome&&(row.conversation_conclusion||"").trim()).length]);\n const stats=[["Responded",rows.filter(r=>r.status==="COMPLETED").length],["Understood",rows.filter(r=>r.analyzed).length],["Conversations Done",rows.filter(r=>r.conversation_outcome&&(r.conversation_conclusion||"").trim()).length],["Stepped Up",summary.active||0],["Advisory Board",summary.advisory||0],["Stepped Down",summary.stepping_down||0]];
+ const summary=data.summary||{};
+ const stats=[["Responded",rows.filter(r=>r.status==="COMPLETED").length],["Understood",rows.filter(r=>r.analyzed).length],["Conversations Done",completedCount],["Stepped Up",summary.active||0],["Advisory Board",summary.advisory||0],["Stepped Down",summary.stepping_down||0]];
  return <div className="recommitment-progress" data-testid="recommitment-progress-summary">{stats.map(([label,count])=><div key={label}><strong>{count}</strong><span>{label}</span></div>)}</div>;
 };
 
