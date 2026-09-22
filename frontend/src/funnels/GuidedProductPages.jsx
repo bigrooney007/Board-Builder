@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowRight, CheckCircle2, Map, RefreshCw, Video } from "lucide-react";
+import { ArrowRight, CheckCircle2, Map, RefreshCw } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
 import { memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
+import { trackPlatformEvent, useHomepageContent, usePlatformVideo } from "@/clean/platform";
 import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
 import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
@@ -77,13 +79,13 @@ const CONFIG={
     ],
   }
 };
-const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); return [p,CONFIG[p]]};
+const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); const content=useHomepageContent(p,CONFIG[p]); return [p,content]};
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
 export function GuidedLandingPage({ product: explicitProduct }){
  const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
  useEffect(()=>{document.title=`${c.eyebrow} | Nonprofit Board Builder`},[c]);
- const start=async()=>{if(!form.name||!form.email||!form.organization||!form.board_count){setError("Complete your name, email, organization and number of board members.");return}setBusy(true);setError("");try{const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token);let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count),origin_url:window.location.origin});nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
+ const start=async()=>{if(!form.name||!form.email||!form.organization||!form.board_count){setError("Complete your name, email, organization and number of board members.");return}setBusy(true);setError("");try{const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token);let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count),origin_url:window.location.origin});trackPlatformEvent(product,"contact_entered");nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
  const scrollToForm=()=>document.getElementById(`${product}-lead-form`)?.scrollIntoView({behavior:"smooth",block:"start"});
  return <BfgShell><main className="guided-page">
   <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><button className="bfg-btn bfg-btn-primary guided-hero-cta" onClick={scrollToForm}>START MY PROCESS <ArrowRight size={17}/></button></section>
@@ -96,10 +98,10 @@ export function GuidedLandingPage({ product: explicitProduct }){
  </main></BfgShell>
 }
 export function GuidedVideoPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(false),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);
+ const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(false),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");
  useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product]);
- const buy=async()=>{setBusy(true);setError("");try{let r=await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy(false)}};
- return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><Video size={38}/><strong>Short walkthrough video</strong><span>Video URL can be added before launch.</span></div><div className="guided-pay-card"><h2>{c.payTitle}</h2><div className="guided-price">$497 <small>ONE TIME</small></div><p>You see the process step by step, use the forms, scripts and materials we provide, and get guided support throughout the process.</p><button className="bfg-btn bfg-btn-primary" disabled={busy||!validToken} onClick={buy}>{busy?"OPENING SECURE CHECKOUT…":product==="strategic-planning"?"START MY STRATEGIC PLANNING PROCESS — $497":"START MY BOARD RECOMMITMENT — $497"}</button>{error&&<p className="bfg-error">{error}</p>}</div></section></main></BfgShell>
+ const buy=async()=>{setBusy(true);setError("");try{trackPlatformEvent(product,"checkout_started");let r=await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy(false)}};
+ return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><div className="guided-pay-card"><h2>{c.payTitle}</h2><div className="guided-price">$497 <small>ONE TIME</small></div><p>You see the process step by step, use the forms, scripts and materials we provide, and get guided support throughout the process.</p><button className="bfg-btn bfg-btn-primary" disabled={busy||!validToken} onClick={buy}>{busy?"OPENING SECURE CHECKOUT…":product==="strategic-planning"?"START MY STRATEGIC PLANNING PROCESS — $497":"START MY BOARD RECOMMITMENT — $497"}</button>{error&&<p className="bfg-error">{error}</p>}</div></section></main></BfgShell>
 }
 
 export function GuidedPaymentConfirmedPage({ product: explicitProduct }){
@@ -109,11 +111,11 @@ export function GuidedPaymentConfirmedPage({ product: explicitProduct }){
 }
 
 export function GuidedWelcomePage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();
+ const [product,c]=useProduct(explicitProduct);const sid=new URLSearchParams(useLocation().search).get("session_id")||"";const nav=useNavigate();const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_welcome":"board_recommitment_welcome");
  const allowed=usePaidFlow(sid,product);
  if(allowed===null)return <BfgShell><main className="guided-page"><section className="guided-confirm"><p>Confirming your product access…</p></section></main></BfgShell>;
  if(!allowed)return <BfgShell><main className="guided-page"><section className="guided-confirm"><h1>This Link Does Not Belong To This Product Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}`)}>RETURN TO THIS PRODUCT</button></section></main></BfgShell>;
- return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">WELCOME</p><h1>{c.onboardingTitle}</h1><p>Watch this short onboarding before opening your dashboard. Everything you need, beginning with information about your organization, is inside the dashboard.</p><div className="guided-video"><Video size={38}/><strong>Onboarding video</strong><span>Video URL can be added before launch.</span></div><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}/dashboard?session_id=${sid}`)}>GO TO MY DASHBOARD</button></section></main></BfgShell>
+ return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">WELCOME</p><h1>{c.onboardingTitle}</h1><p>Watch this short onboarding before opening your dashboard. Everything you need, beginning with information about your organization, is inside the dashboard.</p><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-onboarding-video`} title={`${c.eyebrow} onboarding`}/></div><button className="bfg-btn bfg-btn-primary" onClick={()=>nav(`/${product}/dashboard?session_id=${sid}`)}>GO TO MY DASHBOARD</button></section></main></BfgShell>
 }
 
 export function GuidedIntakePage({ product: explicitProduct }){
