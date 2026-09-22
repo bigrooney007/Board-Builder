@@ -2106,79 +2106,102 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/session-plan")
     async def generate_session_plan(request: Request):
-        sid=(await request.json()).get("session_id","");p=await ensure_project(sid)
+        sid=(await request.json()).get("session_id","")
+        p=await ensure_project(sid)
         session=await db.sp_sessions.find_one({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}) or {}
         plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
-        if not session or not plan.get("areas"):raise HTTPException(409,"Complete the Strategic Planning Session first")
+        if not session or not plan.get("areas"):
+            raise HTTPException(409,"Complete the Strategic Planning Session first")
+        if plan.get("final_status")=="Generating":
+            return {"status":"Generating"}
+
         _,_,intake=await paid(sid)
-        people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
-        research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
-
-        context=(
-            f"ORGANIZATION: {p['organization_name']}\n"
-            f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
-            f"ORGANIZATION INTAKE / STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
-            f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
-            f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-            f"COMMUNITY NEED RESEARCH (context/evidence only, not Board authority):\n{json.dumps(research.get('responses') or [],default=str)}"
+        await db.sp_plans.update_one(
+            {"project_id":p["project_id"]},
+            {"$set":{"final_status":"Generating","final_generation_error":"","updated_at":now_iso()}}
         )
-        generated=await generate_structured(
-            "strategic_session_final_plan",
-            context,
-            "Build the professional Strategic Plan exactly from the Board's selected ideas and live session conclusions. Do not attribute the final plan to individual contributors. Do not introduce a second planning or adoption process."
-        )
-        display=final_display(generated,p["organization_name"])
 
-        known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
-        if not any((x.get("email") or "").lower()==(p.get("founder_email") or "").lower() for x in known):
-            known.append({"participant_id":"","name":p.get("founder_name",""),"email":p.get("founder_email",""),"role":"Organization Leader"})
+        async def run_generation():
+            try:
+                people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
+                research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+                context=(
+                    f"ORGANIZATION: {p['organization_name']}\n"
+                    f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
+                    f"ORGANIZATION INTAKE / STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
+                    f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+                    f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+                    f"COMMUNITY NEED RESEARCH (context/evidence only, not Board authority):\n{json.dumps(research.get('responses') or [],default=str)}"
+                )
+                generated=await generate_structured(
+                    "strategic_session_final_plan",
+                    context,
+                    "Build the professional Strategic Plan exactly from the Board's selected ideas and live session conclusions. Do not attribute the final plan to individual contributors. Do not introduce a second planning or adoption process."
+                )
+                display=final_display(generated,p["organization_name"])
 
-        api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
-        system=("You extract execution responsibilities that people explicitly agreed to during one nonprofit Board Strategic Planning Session. "
-                "Use only explicit delegation supported by the transcript. A person may receive multiple responsibilities. "
-                "Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
-                "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, or is knowledgeable about it. "
-                "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
-        prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
-                f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
-                f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-                '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}]}\n'
-                "Return that exact JSON shape. Include only people explicitly given execution responsibility in the session.")
-        try:
-            chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
-            raw=await chat.send_message(UserMessage(text=prompt))
-            parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
-            extracted=parsed.get("delegations") or []
-        except Exception:
-            logger.exception("Strategic session delegation extraction failed for %s",p["project_id"]);extracted=[]
+                known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
+                if not any((x.get("email") or "").lower()==(p.get("founder_email") or "").lower() for x in known):
+                    known.append({"participant_id":"","name":p.get("founder_name",""),"email":p.get("founder_email",""),"role":"Organization Leader"})
 
-        by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
-        by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
-        delegates=[]
-        for item in extracted:
-            if not isinstance(item,dict):continue
-            name=str(item.get("name","")).strip();responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
-            if not name or not responsibilities:continue
-            known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
-            delegates.append({
-                "delegation_id":str(uuid.uuid4()),"participant_id":known_person.get("participant_id",""),
-                "name":known_person.get("name") or name,"email":known_person.get("email",""),"role":known_person.get("role",""),
-                "responsibilities":responsibilities[:20],"areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
-                "first_action":str(item.get("first_action","")).strip()[:2000],
-                "support_needed":str(item.get("support_needed","")).strip()[:2000],
-                "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
-            })
-        assignments={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in delegates}
-        active={"delegates":delegates,"assignments":assignments,"transcript":session.get("transcript",""),
-                "source":"strategic_planning_session_transcript","manual_assignments_authoritative":False,
-                "saved_at":now_iso(),"next_meeting_guide":"Ask each delegated leader to report progress, evidence, barriers, decisions required and the next action."}
+                api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","")
+                model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
+                system=("You extract execution responsibilities that people explicitly agreed to during one nonprofit Board Strategic Planning Session. "
+                        "Use only explicit delegation supported by the transcript. A person may receive multiple responsibilities. "
+                        "Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
+                        "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, or is knowledgeable about it. "
+                        "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
+                prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
+                        f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+                        f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+                        '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}]}\n'
+                        "Return that exact JSON shape. Include only people explicitly given execution responsibility in the session.")
+                try:
+                    chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
+                    raw=await chat.send_message(UserMessage(text=prompt))
+                    parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
+                    extracted=parsed.get("delegations") or []
+                except Exception:
+                    logger.exception("Strategic session delegation extraction failed for %s",p["project_id"])
+                    extracted=[]
 
-        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{
-            "status":"PLAN READY","structured":generated,"display_text":display,
-            "final_status":"Draft","final_display_text":display,"final_share_token":"",
-            "active_delegation":active,"generated_from_session_at":now_iso(),"updated_at":now_iso()
-        }})
-        return {"status":"Draft","delegation_count":len(delegates)}
+                by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
+                by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
+                delegates=[]
+                for item in extracted:
+                    if not isinstance(item,dict):continue
+                    name=str(item.get("name","")).strip()
+                    responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
+                    if not name or not responsibilities:continue
+                    known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
+                    delegates.append({
+                        "delegation_id":str(uuid.uuid4()),"participant_id":known_person.get("participant_id",""),
+                        "name":known_person.get("name") or name,"email":known_person.get("email",""),"role":known_person.get("role",""),
+                        "responsibilities":responsibilities[:20],
+                        "areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
+                        "first_action":str(item.get("first_action","")).strip()[:2000],
+                        "support_needed":str(item.get("support_needed","")).strip()[:2000],
+                        "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
+                    })
+                assignments={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in delegates}
+                active={"delegates":delegates,"assignments":assignments,"transcript":session.get("transcript",""),
+                        "source":"strategic_planning_session_transcript","manual_assignments_authoritative":False,
+                        "saved_at":now_iso(),"next_meeting_guide":"Ask each delegated leader to report progress, evidence, barriers, decisions required and the next action."}
+
+                await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{
+                    "status":"PLAN READY","structured":generated,"display_text":display,
+                    "final_status":"Draft","final_display_text":display,"final_share_token":"",
+                    "active_delegation":active,"generated_from_session_at":now_iso(),"updated_at":now_iso()
+                }})
+            except Exception as exc:
+                logger.exception("Strategic session plan generation failed for %s",p["project_id"])
+                await db.sp_plans.update_one(
+                    {"project_id":p["project_id"]},
+                    {"$set":{"final_status":"Failed","final_generation_error":str(exc)[:500],"updated_at":now_iso()}}
+                )
+
+        asyncio.create_task(run_generation())
+        return {"status":"Generating"}
 
     @router.post("/auto-delegate")
     async def auto_delegate(request:Request):
