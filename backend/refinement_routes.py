@@ -481,8 +481,9 @@ def create_refinement_router(db) -> APIRouter:
             {"user_id": member["user_id"]}, {"_id": 0, "data.organization_name": 1, "onboarding_live": 1}
         ) or {}
         session = profile.get("onboarding_live") or {}
+        organization_name = (profile.get("data") or {}).get("organization_name") or await org_name_of(member["user_id"])
         return {
-            "organization_name": (profile.get("data") or {}).get("organization_name", ""),
+            "organization_name": organization_name,
             "session": session,
             "sections": manual["sections"],
             "manual_material_id": manual["material_id"],
