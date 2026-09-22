@@ -29,9 +29,9 @@ const ResultsSummary = () => {
         {data.status === "completed" && (
           <div style={{ marginTop: 14 }}>
             <Link className="bfg-btn bfg-btn-primary bfg-btn-sm" to="/game/dashboard" data-testid="bfg-gg-results-generate-strategy-btn">
-              Return To Dashboard And Create Final Strategy
+              Return To Dashboard And View Final Strategy Progress
             </Link>
-            <p className="bfg-note" style={{ marginTop: 8 }}>Turn your board's priorities and ideas into a complete fundraising strategy for your board to review together.</p>
+            <p className="bfg-note" style={{ marginTop: 8 }}>Your final fundraising strategy starts generating automatically when the Group Game is complete. Return to the dashboard to see its progress.</p>
           </div>
         )}
       </div>
