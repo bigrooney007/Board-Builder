@@ -70,6 +70,12 @@ class CallNotes(BaseModel):
     notes: str = ""
 
 
+class RecommitmentEmailDraftPayload(BaseModel):
+    variant: str = "full"
+    subject: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1, max_length=12000)
+
+
 class RecommitmentSubmission(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
     full_name: str = Field(min_length=1)
@@ -1268,6 +1274,63 @@ def create_reactivation_router(db) -> APIRouter:
             else "This version also gives the Board Member the option to step down from the Board gracefully."
         )
         return {**email, "form_link": link, "variant": clean_variant, "variant_note": variant_note}
+
+    async def recommitment_email_draft(user_id: str, variant: str, origin: str) -> dict:
+        clean_variant = "active_advisory" if variant == "active_advisory" else "full"
+        saved = await db.reactivation_email_drafts.find_one(
+            {"user_id": user_id, "variant": clean_variant}, {"_id": 0}) or {}
+        form = await db.reactivation_forms.find_one(
+            {"user_id": user_id, "status": "Approved"}, {"_id": 0, "generic_token": 1})
+        if not form:
+            raise HTTPException(status_code=409, detail="Generate and approve the Recommitment Form first")
+        context = await founder_context(user_id)
+        form_link = f"{origin}/board-recommitment/{form['generic_token']}?variant={clean_variant}"
+        if saved.get("subject") and saved.get("body"):
+            return {**saved, "form_link": form_link}
+        generated = recommitment_outreach_email(
+            "initial", "", context["founder_name"], context["founder_title"], context["organization"],
+            mission=context.get("mission", ""), goals=context.get("board_help_accomplish", ""),
+        )
+        return {
+            "variant": clean_variant, "status": "Draft",
+            "subject": generated["subject"], "body": generated["body"], "form_link": form_link,
+        }
+
+    @router.get("/reactivation/recommitment-email-draft")
+    async def get_recommitment_email_draft(request: Request, variant: str = "full"):
+        member = await reactivation_member(request)
+        return await recommitment_email_draft(member["user_id"], variant, origin_of(request))
+
+    @router.put("/reactivation/recommitment-email-draft")
+    async def save_recommitment_email_draft(payload: RecommitmentEmailDraftPayload, request: Request):
+        member = await reactivation_member(request)
+        clean_variant = "active_advisory" if payload.variant == "active_advisory" else "full"
+        now = datetime.now(timezone.utc).isoformat()
+        await db.reactivation_email_drafts.update_one(
+            {"user_id": member["user_id"], "variant": clean_variant},
+            {"$set": {
+                "subject": payload.subject.strip(), "body": payload.body.strip(), "status": "Draft",
+                "updated_at": now,
+            }, "$setOnInsert": {"user_id": member["user_id"], "variant": clean_variant, "created_at": now}},
+            upsert=True,
+        )
+        return await recommitment_email_draft(member["user_id"], clean_variant, origin_of(request))
+
+    @router.post("/reactivation/recommitment-email-draft/approve")
+    async def approve_recommitment_email_draft(request: Request, variant: str = "full"):
+        member = await reactivation_member(request)
+        clean_variant = "active_advisory" if variant == "active_advisory" else "full"
+        draft = await recommitment_email_draft(member["user_id"], clean_variant, origin_of(request))
+        now = datetime.now(timezone.utc).isoformat()
+        await db.reactivation_email_drafts.update_one(
+            {"user_id": member["user_id"], "variant": clean_variant},
+            {"$set": {
+                "subject": draft["subject"], "body": draft["body"], "status": "Approved",
+                "approved_at": now, "updated_at": now,
+            }, "$setOnInsert": {"user_id": member["user_id"], "variant": clean_variant, "created_at": now}},
+            upsert=True,
+        )
+        return await recommitment_email_draft(member["user_id"], clean_variant, origin_of(request))
 
     # ---------------- STEP 3: UNDERSTAND THEIR RESPONSE ----------------
 
