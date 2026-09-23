@@ -20,6 +20,9 @@ jobs:
       - name: Compile backend
         run: python -m compileall -q backend
 
+      - name: Validate Recruitment clean-house contract
+        run: python tests/validate_recruitment_clean_house.py
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
