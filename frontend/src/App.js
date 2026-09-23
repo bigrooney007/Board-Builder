@@ -14,6 +14,7 @@ import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
 import RecommitmentQuestionsPage from "@/member/RecommitmentQuestionsPage";
 import PortfolioPage from "@/pages/PortfolioPage";
+import RecommitmentAssistantPage from "@/pages/RecommitmentAssistantPage";
 
 import {
   GuidedLandingPage,
@@ -199,6 +200,7 @@ function CleanRoutes() {
       <Route path="/board-recommitment/questions" element={<RecommitmentQuestionsPage />} />
       <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
       <Route path="/portfolio/:token" element={<PortfolioPage />} />
+      <Route path="/portfolio-assistant/:token" element={<RecommitmentAssistantPage />} />
 
       {/* Board Applicant Network */}
       <Route path="/join-a-board" element={<JoinBoardPage />} />
