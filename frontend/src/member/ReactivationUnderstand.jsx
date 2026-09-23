@@ -130,7 +130,7 @@ const MemberUnderstanding = ({ row, reload }) => {
       {row.monthly_availability && <p style={{ margin: "6px 0 0" }}><strong>Availability:</strong> {row.monthly_availability}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
         <button type="button" className="button" onClick={generate} disabled={busy} data-testid={`understand-generate-${id}`}>
-          <Brain size={15} /> {busy ? C.analyzingLabel : (row.analysis || material) ? "REANALYZE RESPONSE" : "ANALYZE RESPONSE"}
+          <Brain size={15} /> {busy ? C.analyzingLabel : (row.analysis || material) ? "REINTERPRET RESPONSE" : "INTERPRET RESPONSE"}
         </button>
         {ready && <button type="button" className="button button-outline" onClick={openView} data-testid={`understand-view-${id}`}><Eye size={15} /> {C.viewUnderstandingButton}</button>}
         <button type="button" className="button button-outline" onClick={async () => setResponse((await memberApi.get(`/reactivation/board-members/${id}/response`)).data)} data-testid={`understand-view-response-${id}`}>{C.viewResponseButton}</button>
