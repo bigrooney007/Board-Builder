@@ -224,6 +224,7 @@ export default function GameDashboardPage() {
 
   const goalAmount = Number(data.goal?.amount || 0);
   const founderGameComplete = Boolean(data.situation_completed && data.individual_game_completed);
+  const meetingReady = Boolean(data.game_night_ready);
 
   const openIndividualGame = async () => {
     setOpeningGame(true);
@@ -277,7 +278,7 @@ export default function GameDashboardPage() {
           number={2}
           title="SET YOUR BOARD MEETING AND FUNDING DEADLINE"
           summary="Set the meeting your Board will use to make final decisions and tell us when the money is needed so the execution plan is built backward from the real deadline."
-          status={founderGameComplete ? "Ready" : "Locked"}
+          status={!founderGameComplete ? "Locked" : meetingReady ? "Complete" : "Set Meeting"}
           testId="bfg-dashboard-section-meeting"
         >
           {founderGameComplete
@@ -289,12 +290,16 @@ export default function GameDashboardPage() {
           number={3}
           title="INVITE YOUR BOARD MEMBERS TO PLAY"
           summary="Add each Board Member, send their private Game invitation, resend when needed and use a person-specific call script for follow-up."
-          status={founderGameComplete ? "Prepare Board" : "Locked"}
+          status={!founderGameComplete ? "Locked" : meetingReady ? "Invite Board" : "Locked"}
           testId="bfg-dashboard-section-board"
         >
-          {founderGameComplete
-            ? <BoardMembersSection />
-            : <p className="bfg-note">Complete your individual Game first. Invitations also require the Board meeting and funding deadline to be saved.</p>}
+          {!founderGameComplete ? (
+            <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>
+          ) : !meetingReady ? (
+            <p className="bfg-note">Save the Board meeting date, time, timezone and funding deadline in Section 2 before inviting participants.</p>
+          ) : (
+            <BoardMembersSection />
+          )}
         </DashboardSection>
 
         <DashboardSection
