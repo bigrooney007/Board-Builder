@@ -829,6 +829,7 @@ export const Module5References = () => {
 
 export const AutomatedReferenceChecks = () => {
   const { applications } = useApplications();
+  const eligible = applications.filter((application) => application.journey?.interview_guide_generated);
   const [selectedId, setSelectedId] = useState("");
   const [startingId, setStartingId] = useState("");
 
@@ -843,15 +844,15 @@ export const AutomatedReferenceChecks = () => {
     setStartingId("");
   };
 
-  const selected = applications.find((application) => application.application_id === selectedId);
+  const selected = eligible.find((application) => application.application_id === selectedId);
 
   return (
     <div data-testid="automated-reference-workspace">
       <section className="workspace-panel">
         <h2>Reference Checks</h2>
-        <p className="material-description">Every applicant appears here. Click Start Reference Check and the platform first checks the candidate's CV for explicit referee details. If the CV does not contain usable references, you can immediately ask the applicant to provide them.</p>
-        {applications.length === 0 && <p className="workspace-note">Applicants will appear here as they enter your recruitment process.</p>}
-        {applications.map((application) => (
+        <p className="material-description">Candidates appear here after their tailored interview guide has been generated. Start the reference process and the platform first checks the candidate's CV for explicit referee details. If no usable references are found, the secure reference-information workflow continues from here.</p>
+        {eligible.length === 0 && <p className="workspace-note">Generate a candidate's interview guide to unlock their reference check.</p>}
+        {eligible.map((application) => (
           <div className="candidate-card" key={application.application_id} data-testid={`reference-candidate-${application.application_id}`}>
             <div className="candidate-card-info">
               <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
@@ -873,37 +874,35 @@ export const AutomatedReferenceChecks = () => {
 
 export const BackgroundChecksWorkspace = () => {
   const { applications } = useApplications();
-  const [selectedId, setSelectedId] = useState("");
   const [location, setLocation] = useState("");
-
   useEffect(() => {
     memberApi.get("/workspace/profile").then((response) => {
       const data = { ...(response.data.prefill || {}), ...(response.data.profile || {}) };
       setLocation([data.city, data.state_region, data.country].filter(Boolean).join(", "));
     }).catch(() => {});
   }, []);
-
-  const selected = applications.find((application) => application.application_id === selectedId);
-
+  const eligible = applications.filter((application) => application.journey?.interview_guide_generated);
+  const search = (query) => window.open("https://www.google.com/search?q=" + encodeURIComponent(query), "_blank", "noopener");
   return (
     <div data-testid="background-check-workspace">
       <section className="workspace-panel">
-        <h2>Background Checks</h2>
-        <p className="material-description">Every applicant appears here. Choose a person, decide whether your organization requires a background check, and if it does, use the local search tools to find an appropriate provider or law-enforcement option in your area.</p>
-        {applications.length === 0 && <p className="workspace-note">Applicants will appear here as they enter your recruitment process.</p>}
-        {applications.map((application) => (
-          <div className="candidate-card" key={application.application_id} data-testid={`background-candidate-${application.application_id}`}>
-            <div className="candidate-card-info">
-              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
-              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
-              <span>Background Check: <b>{application.background_check?.status || "Not decided"}</b></span>
+        <h2>Background Check</h2>
+        <p className="material-description">Use an appropriate local provider when your organization decides a background check is needed. Nonprofit Board Builder does not perform or interpret background checks.</p>
+        {eligible.length === 0 ? (
+          <p className="workspace-note">Candidates appear here after their interview guide has been generated.</p>
+        ) : (
+          <>
+            <p><strong>{eligible.length}</strong> interview candidate{eligible.length === 1 ? "" : "s"} currently in this stage.</p>
+            <div className="material-actions">
+              <button className="button" onClick={() => search("background check companies near " + (location || "me"))} data-testid="background-provider-search">
+                FIND A LOCAL BACKGROUND CHECK COMPANY
+              </button>
+              <button className="button button-back" onClick={() => search("local sheriff police background check near " + (location || "me"))} data-testid="background-law-enforcement-search">
+                FIND LOCAL SHERIFF / POLICE BACKGROUND CHECK
+              </button>
             </div>
-            <div className="candidate-card-actions">
-              <button className="button button-small" onClick={() => setSelectedId(application.application_id)} data-testid={`open-background-${application.application_id}`}>BACKGROUND CHECK</button>
-            </div>
-          </div>
-        ))}
-        {selected && <BackgroundCheckPanel application={selected} location={location} key={`background-panel-${selected.application_id}-${selected.updated_at || ""}`} />}
+          </>
+        )}
       </section>
     </div>
   );
