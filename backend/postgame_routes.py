@@ -22,6 +22,7 @@ DEFAULT_POSTGAME_EMAIL = {
 }
 
 PORTFOLIO_SENT_STATUSES = {"sent", "change_requested", "approved", "materials_ready"}
+FOUNDER_DELEGATION_APPROVED_STATUSES = {"ready_to_send", "sent", "approved", "materials_ready"}
 
 
 def now_iso() -> str:
@@ -147,6 +148,40 @@ def create_postgame_router(db) -> APIRouter:
         return await db.game_board_members.find(
             {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0}).sort("created_at", 1).to_list(200)
 
+    async def participating_members(user_id: str) -> list:
+        """Only people who actually contributed ideas or joined the Group Game receive the final strategy."""
+        records = await active_members(user_id)
+        joined = await group_joined_ids(user_id)
+        output = []
+        for record in records:
+            response_count = await db.game_section_responses.count_documents({
+                "user_id": user_id,
+                "board_member_id": record["member_id"],
+                "completed": True,
+            })
+            if response_count > 0 or record["member_id"] in joined:
+                output.append(record)
+        return output
+
+    async def delegation_for(user_id: str, member_id: str) -> dict:
+        return await db.board_portfolios.find_one(
+            {"user_id": user_id, "board_member_id": member_id},
+            {"_id": 0, "portfolio_id": 1, "status": 1, "member_name": 1},
+            sort=[("created_at", -1)],
+        ) or {}
+
+    async def require_founder_approved_delegation(user_id: str, records: list) -> None:
+        missing = []
+        for record in records:
+            portfolio = await delegation_for(user_id, record["member_id"])
+            if portfolio.get("status") not in FOUNDER_DELEGATION_APPROVED_STATUSES:
+                missing.append(record.get("full_name") or record.get("email") or "Board Member")
+        if missing:
+            raise HTTPException(
+                status_code=409,
+                detail="Review and approve the proposed fundraising delegation before sending the strategy for: " + ", ".join(missing[:12]),
+            )
+
     async def group_joined_ids(user_id: str) -> set:
         session = await db.group_game_sessions.find_one(
             {"user_id": user_id, "status": {"$ne": "archived"}}, {"_id": 0, "session_id": 1}, sort=[("created_at", -1)])
@@ -226,14 +261,20 @@ def create_postgame_router(db) -> APIRouter:
         joined = await group_joined_ids(member["user_id"])
         recipients = []
         sent_count = 0
-        for record in await active_members(member["user_id"]):
+        for record in await participating_members(member["user_id"]):
             delivery = deliveries.get(record["member_id"]) or {}
+            delegation = await delegation_for(member["user_id"], record["member_id"])
             if delivery.get("status") == "sent":
                 sent_count += 1
             recipients.append({
                 "member_id": record["member_id"], "full_name": record["full_name"], "email": record["email"],
                 "game_status": await game_status_for(record["member_id"], record.get("invitation_status", ""), record.get("total_sections") or 0),
                 "group_joined": record["member_id"] in joined,
+                "delegation": {
+                    "portfolio_id": delegation.get("portfolio_id", ""),
+                    "status": delegation.get("status", "not_prepared"),
+                    "founder_approved": delegation.get("status") in FOUNDER_DELEGATION_APPROVED_STATUSES,
+                },
                 "delivery": {
                     "status": delivery.get("status", "not_sent"),
                     "sent_at": delivery.get("sent_at", ""),
@@ -260,13 +301,15 @@ def create_postgame_router(db) -> APIRouter:
         selected = {str(member_id) for member_id in payload.member_ids}
         if not selected:
             raise HTTPException(status_code=422, detail="Select at least one board member")
+        eligible = [record for record in await participating_members(member["user_id"]) if record["member_id"] in selected]
+        if not eligible:
+            raise HTTPException(status_code=422, detail="Choose at least one person who participated in the Board Fundraising Game")
+        await require_founder_approved_delegation(member["user_id"], eligible)
         profile = await get_profile(member["user_id"])
         content = await email_content()
         sent = 0
         failed = []
-        for record in await active_members(member["user_id"]):
-            if record["member_id"] not in selected:
-                continue
+        for record in eligible:
             if await deliver_to(member, record, profile, strategy, payload.origin_url, content):
                 sent += 1
             else:
@@ -283,6 +326,9 @@ def create_postgame_router(db) -> APIRouter:
             {"member_id": member_id, "user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Board member not found")
+        if record not in await participating_members(member["user_id"]):
+            raise HTTPException(status_code=409, detail="This person has not participated in the Board Fundraising Game yet")
+        await require_founder_approved_delegation(member["user_id"], [record])
         profile = await get_profile(member["user_id"])
         content = await email_content()
         if await deliver_to(member, record, profile, strategy, payload.origin_url, content):
