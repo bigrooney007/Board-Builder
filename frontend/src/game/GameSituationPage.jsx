@@ -352,6 +352,7 @@ export default function GameSituationPage() {
     ];
     if (partStep === -1) {
       return shell(<>
+        <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip("part_intro", true)} /></div>
         <h1 data-testid="bfg-participation-intro-heading">NOW LET'S TALK ABOUT YOU</h1>
         <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 26 }} onClick={() => { setPartStep(0); window.scrollTo({ top: 0 }); }} data-testid="bfg-participation-intro-continue">
           Continue
@@ -361,6 +362,7 @@ export default function GameSituationPage() {
     const screen = screens[partStep];
     const last = partStep === screens.length - 1;
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(PART_CLIPS[partStep], true)} /></div>
       <h1 data-testid="bfg-participation-heading">{screen.heading}</h1>
       {screen.body}
       {error && <p className="bfg-error">{error}</p>}
