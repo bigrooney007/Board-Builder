@@ -256,6 +256,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     if lead_id:
         add_to_set["lead_ids"] = lead_id
     update = {"$addToSet": add_to_set, "$set": {"updated_at": now}}
+    if purchase.get("payment_phone"):
+        update["$set"]["phone"] = purchase["payment_phone"]
     if offer_source == "facilitated_board_fundraising_game":
         update["$set"]["facilitated_game"] = True
     if session.customer:
@@ -268,8 +270,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
                   "claimed_by_user_id": member["user_id"], "updated_at": now}},
     )
     if lead_id:
+        lead_updates = {"member_user_id": member["user_id"], "updated_at": now}
+        if purchase.get("payment_phone"):
+            lead_updates["phone"] = purchase["payment_phone"]
         await db.funnel_leads.update_one(
-            {"lead_id": lead_id}, {"$set": {"member_user_id": member["user_id"], "updated_at": now}}
+            {"lead_id": lead_id}, {"$set": lead_updates}
         )
         if offer_source == "recruitment":
             try:
