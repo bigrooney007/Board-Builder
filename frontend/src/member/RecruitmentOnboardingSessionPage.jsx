@@ -75,7 +75,7 @@ export default function RecruitmentOnboardingSessionPage() {
           <p>Use your approved Board Member Manual as the shared onboarding experience. You control the screen. Board Members open one no-login link and follow the section you are presenting.</p>
         </header>
 
-        {message && !data && <section className="member-card"><p className="submit-error">{message}</p><button className="button button-back" onClick={()=>navigate("/app/board-recruitment#br-section-onboarding")}>RETURN TO ONBOARDING</button></section>}
+        {message && !data && <section className="member-card"><p className="submit-error">{message}</p><button className="button button-back" onClick={()=>navigate("/app/board-recruitment#br-section-onboarding-session")}>RETURN TO ONBOARDING</button></section>}
 
         {data && session.status !== "IN PROGRESS" && (
           <section className="member-card" data-testid="onboarding-live-prep">
@@ -109,7 +109,7 @@ export default function RecruitmentOnboardingSessionPage() {
               </button>
             </div>
 
-            <button className="button button-back" onClick={()=>navigate("/app/board-recruitment#br-section-onboarding")}>RETURN TO RECRUITMENT DASHBOARD</button>
+            <button className="button button-back" onClick={()=>navigate("/app/board-recruitment#br-section-onboarding-session")}>RETURN TO RECRUITMENT DASHBOARD</button>
             {message && <p className="submit-error">{message}</p>}
           </section>
         )}
