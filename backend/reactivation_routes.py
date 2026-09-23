@@ -1126,16 +1126,31 @@ def create_reactivation_router(db) -> APIRouter:
         form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         completed = await db.reactivation_board_members.count_documents({"user_id": member["user_id"], "status": "COMPLETED"})
         context = await founder_context(member["user_id"])
-        return {"status": form.get("status", "NONE"), "intro_text": form.get("intro_text", ""),
-                "generic_token": form.get("generic_token", ""), "responses_received": completed,
-                "transition_enabled": bool(set(context["transition_options"]) & {ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"})}
+        token = form.get("generic_token", "")
+        origin = origin_of(request)
+        return {
+            "status": form.get("status", "NONE"),
+            "intro_text": form.get("intro_text", ""),
+            "generic_token": token,
+            "responses_received": completed,
+            "active_advisory_link": f"{origin}/board-recommitment/{token}?variant=active_advisory" if token else "",
+            "full_link": f"{origin}/board-recommitment/{token}?variant=full" if token else "",
+        }
 
     @router.post("/reactivation/recommitment-form/generate")
     async def generate_recommitment_form(request: Request):
         member = await reactivation_member(request)
         context = await founder_context(member["user_id"])
         intake = await user_intake(member["user_id"])
+        required_setup = [intake.get("mission"), intake.get("why_recommit"), intake.get("board_help_accomplish"), intake.get("need_by")]
+        if any(not str(value or "").strip() for value in required_setup):
+            raise HTTPException(status_code=409, detail="Answer the four Board Recommitment setup questions before generating the forms")
         intro = recommitment_form_intro(context["organization"], intake.get("mission", ""))
+        intro += (
+            f"\n\nWhy we are asking you to recommit: {intake.get('why_recommit', '').strip()}"
+            f"\n\nWhat we need the Board to help accomplish: {intake.get('board_help_accomplish', '').strip()}"
+            f"\n\nWhen we need this recommitment in place: {intake.get('need_by', '').strip()}"
+        )
         existing = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "generic_token": 1})
         token = (existing or {}).get("generic_token") or secrets.token_urlsafe(32)
         now = datetime.now(timezone.utc).isoformat()
@@ -1143,7 +1158,12 @@ def create_reactivation_router(db) -> APIRouter:
             {"user_id": member["user_id"]},
             {"$set": {"status": "Draft", "intro_text": intro, "generic_token": token, "updated_at": now},
              "$setOnInsert": {"created_at": now}}, upsert=True)
-        return {"status": "Draft", "intro_text": intro, "generic_token": token}
+        origin = origin_of(request)
+        return {
+            "status": "Draft", "intro_text": intro, "generic_token": token,
+            "active_advisory_link": f"{origin}/board-recommitment/{token}?variant=active_advisory",
+            "full_link": f"{origin}/board-recommitment/{token}?variant=full",
+        }
 
     @router.put("/reactivation/recommitment-form")
     async def edit_recommitment_form(payload: FormTextPayload, request: Request):
@@ -1168,15 +1188,24 @@ def create_reactivation_router(db) -> APIRouter:
         return {"status": "Approved"}
 
     @router.get("/reactivation/recommitment-email")
-    async def recommitment_email(request: Request):
+    async def recommitment_email(request: Request, variant: str = "full"):
         member = await reactivation_member(request)
         form = await db.reactivation_forms.find_one({"user_id": member["user_id"]}, {"_id": 0, "status": 1, "generic_token": 1})
         if not form or form.get("status") != "Approved":
             raise HTTPException(status_code=409, detail="Generate and approve the Recommitment Form first")
+        clean_variant = "active_advisory" if variant == "active_advisory" else "full"
         context = await founder_context(member["user_id"])
-        link = f"{origin_of(request)}/board-recommitment/{form['generic_token']}"
-        email = recommitment_outreach_email("initial", "", context["founder_name"], context["founder_title"], context["organization"], mission=context.get("mission", ""), goals=context.get("organization_goals", ""))
-        return {**email, "form_link": link}
+        link = f"{origin_of(request)}/board-recommitment/{form['generic_token']}?variant={clean_variant}"
+        email = recommitment_outreach_email(
+            "initial", "", context["founder_name"], context["founder_title"], context["organization"],
+            mission=context.get("mission", ""), goals=context.get("board_help_accomplish", ""),
+        )
+        variant_note = (
+            "This version asks the Board Member to choose between recommitting as an active Board Member and moving into an Advisory Board role."
+            if clean_variant == "active_advisory"
+            else "This version also gives the Board Member the option to step down from the Board gracefully."
+        )
+        return {**email, "form_link": link, "variant": clean_variant, "variant_note": variant_note}
 
     # ---------------- STEP 3: UNDERSTAND THEIR RESPONSE ----------------
 
