@@ -70,9 +70,9 @@ require(preview, "fundraising_meeting_transcript()", "Board Fundraising meeting 
 require(preview, '"schema_version": 2', "current Fundraising Strategy schema")
 require(preview, '"status": "adopted"', "adopted Fundraising Strategy")
 require(preview, '"status": "materials_ready"', "approved Board Fundraising Portfolios")
-require(preview, '"execution_toolkits"', "execution toolkit collection")
-require(preview, '"game_strategy_deliveries"', "strategy delivery records")
-require(preview, '"game_relationships"', "Board relationship mapping")
+require(preview, "db.execution_toolkits", "execution toolkit collection")
+require(preview, "db.game_strategy_deliveries", "strategy delivery records")
+require(preview, "db.game_relationships", "Board relationship mapping")
 
 # Admin must still expose all four real dashboards.
 for product in ("recruitment", "board-fundraising-game", "strategic-planning", "board-recommitment"):
