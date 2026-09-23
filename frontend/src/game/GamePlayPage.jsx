@@ -307,6 +307,7 @@ export default function GamePlayPage() {
     const screen = screens[pIdx];
     const last = pIdx === screens.length - 1;
     return shell(<>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx], true)} /></div>
       <h1 data-testid={`bfg-part-heading-${pIdx}`}>{screen.heading}</h1>
       {screen.body}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 22 }}>
