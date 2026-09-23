@@ -68,7 +68,7 @@ The present Strategic Planning dashboard and its participant/session/public-plan
 → `/board-recommitment/welcome?session_id=...`
 → `/board-recommitment/dashboard?session_id=...`
 
-The present Recommitment dashboard and the public member response/portfolio routes it requires remain available until that dashboard is rebuilt separately.
+The Board Recommitment dashboard has now been rebuilt under the clean-house flow defined in Section 11. Reusable Recommitment infrastructure remains only where it supports that canonical four-stage journey.
 
 ## 3. Facilitated Board Fundraising Game
 
@@ -174,7 +174,7 @@ Board Recruitment is now the first dashboard rebuilt on top of that base. Its ca
 
 The six Recruitment Questions are the authoritative strategic input for the Recruitment dashboard. Campaign assets are generated only from founder-approved Board Member profiles. Candidate progression is action-driven so the next stage unlocks from meaningful founder actions rather than manual card-moving.
 
-Strategic Planning and Board Recommitment remain separate rebuild phases. The Board Fundraising Game is now rebuilt under the separate contract below and must remain isolated from Recruitment.
+Strategic Planning remains a separate rebuild phase. Board Recommitment and the Board Fundraising Game now have their own locked clean-house contracts below and must remain isolated from Recruitment and from each other.
 
 
 ## 10. Board Fundraising Game Dashboard Contract
@@ -309,3 +309,97 @@ The Portfolio shows their founder-approved system-building and direct-fundraisin
 After approval, the existing relationship-mapping, execution-material and Board Fundraising Executive Assistant capabilities support execution from the adopted strategy and approved Portfolio.
 
 Do not scatter duplicate strategy-send controls back into the Board invitation section. Final strategy delivery belongs in the final Strategy / Execution stage of the dashboard.
+
+
+## 11. Board Recommitment Dashboard Contract
+
+Board Recommitment is a four-stage decision and transition process. Do not restore the prior multi-module dashboard, Founder Board Audit, separate invitation stage or standalone progress section.
+
+### Stage 1: Answer Four Important Questions
+
+The founder answers these questions one screen at a time:
+1. Organization mission statement.
+2. Why the Board needs to recommit and step up now.
+3. What the organization needs these Board Members to help accomplish.
+4. The date by which the renewed Board commitment needs to be in place.
+
+The opening screen also allows the organization logo to be added. The organization name is already known and must not be asked again.
+
+Every answer is saved into the same Recommitment context and is available to all downstream forms, response interpretation, call scripts and Board Member Portfolios.
+
+### Stage 2: Prepare And Send The Recommitment Forms
+
+The founder prepares one approved Recommitment Form introduction and receives two public form variants:
+
+1. **Active Board / Advisory Board**: the Board Member may recommit as an active Board Member and step up, or transition into an Advisory Board role. This form must not offer stepping down.
+2. **Full Recommitment / Transition**: the Board Member may recommit as an active Board Member and step up, transition into an Advisory Board role, or step down gracefully.
+
+The old unsure pathway and generic volunteer/support-role pathway are not part of the clean product.
+
+The founder can:
+- copy either public form link,
+- edit and approve the outreach email,
+- copy the approved email with the correct form link inserted,
+- add a Board Member by name and email,
+- choose which form that person receives,
+- send or resend the form directly from the platform.
+
+### Stage 3: Review Responses And Prepare The Conversation
+
+Every submitted form appears automatically.
+
+For each respondent, the founder can:
+- view the complete submitted response,
+- download the response,
+- generate and review an interpretation of the response,
+- generate, review, edit, approve and download the person-specific one-on-one call script.
+
+The submitted choice supplies the default conversation direction:
+- active recommitment -> Remain and Step Up
+- Advisory Board -> Move to Advisory Board
+- step down -> Step Down
+
+That direction is preparation only. The founder's saved post-conversation agreement and final outcome remain authoritative.
+
+### Stage 4: Confirm The Final Outcome And Move The Person Forward
+
+After the one-on-one conversation, the founder records what was actually agreed and chooses exactly one final path:
+- Continuing as an Active Board Member
+- Transitioning to an Advisory Role
+- Stepping Down From the Board
+
+For Active and Advisory outcomes, the founder must confirm or edit the person's final role before any Portfolio can be generated.
+
+An Active Board Member receives a Board Member Portfolio built from the confirmed role, submitted profile information and authoritative conversation agreement.
+
+An Advisory Board Member receives an Advisory Board Member Portfolio plus the Advisory transition email.
+
+A person stepping down does not receive a Portfolio. The platform prepares the Board departure email using the actual conversation agreement and any verified governance/resignation context supplied by the organization.
+
+### Portfolio Delivery And Execution
+
+The founder reviews and approves the Portfolio before delivery.
+
+The Portfolio email can be:
+- copied for sending from the founder's own inbox, or
+- sent directly from the platform.
+
+An approved Active or Advisory Board Member Portfolio includes access to that person's Executive Assistant.
+
+The Executive Assistant is constrained by:
+- the approved Portfolio,
+- the founder-confirmed role,
+- the authoritative conversation agreement,
+- the verified organization context.
+
+It must not invent responsibilities or authority outside the approved role. It may help turn approved responsibilities into next actions, checklists, working drafts and execution materials.
+
+### Dashboard UX
+
+The customer-facing dashboard contains only four primary collapsible sections corresponding to the four stages above.
+
+Every section has its own admin-managed YouTube help-video slot.
+
+A persistent branded support area remains at the bottom of the dashboard.
+
+Do not add the old Founder Board Audit, old separate invitation module, old separate progress module, support-role pathway or unsure pathway back into the canonical clean dashboard.
