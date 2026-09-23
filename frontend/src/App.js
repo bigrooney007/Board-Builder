@@ -12,6 +12,7 @@ import RecruitFreePage from "@/funnels/RecruitFreePage";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
 import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
+import RecommitmentQuestionsPage from "@/member/RecommitmentQuestionsPage";
 import PortfolioPage from "@/pages/PortfolioPage";
 
 import {
@@ -195,6 +196,7 @@ function CleanRoutes() {
       <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage product="board-recommitment" />} />
       <Route path="/board-recommitment/intake" element={<GuidedIntakePage product="board-recommitment" />} />
       <Route path="/board-recommitment/dashboard" element={<GuidedDashboardPage product="board-recommitment" />} />
+      <Route path="/board-recommitment/questions" element={<RecommitmentQuestionsPage />} />
       <Route path="/board-recommitment/:token" element={<BoardRecommitmentFormPage />} />
       <Route path="/portfolio/:token" element={<PortfolioPage />} />
 
