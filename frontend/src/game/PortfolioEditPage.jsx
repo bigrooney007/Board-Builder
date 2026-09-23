@@ -5,8 +5,12 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
 
 const STATUS_LABELS = {
-  draft: "Draft", ready_to_send: "Ready To Send", sent: "Sent",
-  change_requested: "Change Requested", approved: "Approved", materials_ready: "Execution Materials Ready",
+  draft: "Founder Review Required",
+  ready_to_send: "Founder Approved",
+  sent: "Founder Approved / Previously Shared",
+  change_requested: "Board Member Requested A Change",
+  approved: "Board Member Approved",
+  materials_ready: "Execution Ready",
 };
 
 export default function PortfolioEditPage() {
@@ -59,19 +63,9 @@ export default function PortfolioEditPage() {
         additional_commitments: additional, org_note: orgNote,
       });
       if (thenStatus) await memberApi.post(`/game/portfolios/${portfolioId}/status`, { status: thenStatus });
-      setNotice(thenStatus === "ready_to_send" ? "Portfolio marked Ready To Send." : "Draft saved.");
+      setNotice(thenStatus === "ready_to_send" ? "Delegation approved by the founder. This participant can now receive the final strategy." : "Draft saved.");
       await load();
     } catch { setNotice("We could not save the portfolio. Please try again."); }
-    setBusy(false);
-  };
-
-  const send = async () => {
-    setBusy(true); setNotice("");
-    try {
-      await memberApi.post(`/game/portfolios/${portfolioId}/send`, { origin_url: window.location.origin });
-      setNotice("Portfolio sent.");
-      await load();
-    } catch { setNotice("The email could not be sent. Please try again."); }
     setBusy(false);
   };
 
@@ -124,10 +118,10 @@ export default function PortfolioEditPage() {
     <BfgShell nav={<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/portfolios" data-testid="bfg-pe-back">Back to Portfolios</Link>}>
       <main className="bfg-dash" data-testid="bfg-portfolio-edit-page" style={{ maxWidth: 960 }}>
         <div className="bfg-panel">
-          <p className="bfg-eyebrow">Board Fundraising Portfolio</p>
+          <p className="bfg-eyebrow">FOUNDER DELEGATION REVIEW</p>
           <h1>{portfolio.member_name}</h1>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
-            Organization: {detail.organization_name} · Fundraising Goal: {detail.goal_display}
+            Review what will be delegated to this person before the final strategy is sent. Organization: {detail.organization_name} · Fundraising Goal: {detail.goal_display}
             {detail.goal_deadline && <> · Goal Deadline: {detail.goal_deadline}</>}
             {" "}· Status: <strong data-testid="bfg-pe-status">{STATUS_LABELS[portfolio.status]}</strong>
           </p>
@@ -280,32 +274,24 @@ export default function PortfolioEditPage() {
           <div className="bfg-bm-actions">
             {!locked && (
               <>
-                <button className="bfg-btn bfg-btn-ghost" disabled={busy} onClick={() => save()} data-testid="bfg-pe-save-draft-btn">Save Draft</button>
-                {portfolio.status === "draft" && (
+                <button className="bfg-btn bfg-btn-ghost" disabled={busy} onClick={() => save()} data-testid="bfg-pe-save-draft-btn">SAVE DRAFT</button>
+                {["draft", "change_requested"].includes(portfolio.status) && (
                   <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={() => save("ready_to_send")} data-testid="bfg-pe-mark-ready-btn">
-                    Mark Ready To Send
+                    {portfolio.status === "change_requested" ? "APPROVE UPDATED DELEGATION" : "APPROVE THIS DELEGATION"}
                   </button>
                 )}
-                {portfolio.status === "ready_to_send" && (
-                  <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={send} data-testid="bfg-pe-send-btn">Send Portfolio</button>
-                )}
-                {portfolio.status === "change_requested" && (
-                  <button className="bfg-btn bfg-btn-primary" disabled={busy}
-                    onClick={async () => { await save(); await send(); }} data-testid="bfg-pe-send-updated-btn">
-                    Send Updated Portfolio
-                  </button>
-                )}
-                {portfolio.status === "sent" && (
-                  <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={busy} onClick={send} data-testid="bfg-pe-resend-btn">Resend Portfolio Link</button>
+                {["ready_to_send", "sent"].includes(portfolio.status) && (
+                  <p className="bfg-success" style={{ fontWeight: 700 }}>
+                    Founder-approved. This person's final strategy email is unlocked.
+                  </p>
                 )}
               </>
             )}
             {locked && (
               <>
                 <p className="bfg-success" style={{ fontWeight: 700 }}>
-                  Portfolio approved{portfolio.approved_at ? ` on ${new Date(portfolio.approved_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : ""} — it can no longer be edited directly.
+                  Board Member approved this Portfolio{portfolio.approved_at ? ` on ${new Date(portfolio.approved_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : ""}. It now drives their execution support.
                 </p>
-                <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={busy} onClick={send} data-testid="bfg-pe-resend-approved-btn">Resend Portfolio Link</button>
                 {detail.toolkit_status === "ready" ? (
                   <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate(`/game/portfolios/${portfolioId}/toolkit`)}
                     data-testid="bfg-pe-view-toolkit-btn">View Execution Materials</button>
