@@ -26,12 +26,14 @@ export default function GameSituationPage() {
   const [partStep, setPartStep] = useState(-1);
   const [anything, setAnything] = useState("");
   const [clips, setClips] = useState({});
+  const [branding, setBranding] = useState({ logo_data: "" });
+  const [brandingMessage, setBrandingMessage] = useState("");
   const audioRef = useRef(null);
   const poller = useRef(null);
 
-  const playClip = (id) => {
+  const playClip = (id, force = false) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (isNarrationMuted() || wasClipPlayed(id)) return null;
+    if (isNarrationMuted() || (!force && wasClipPlayed(id))) return null;
     const clip = clips[id];
     if (!clip?.ready) return null;
     const audio = new Audio(`${process.env.REACT_APP_BACKEND_URL}${clip.url}`);
@@ -55,6 +57,7 @@ export default function GameSituationPage() {
     (async () => {
       try {
         const situation = (await memberApi.get("/game/situation")).data;
+        memberApi.get("/game/branding").then((response) => setBranding(response.data.branding || { logo_data: "" })).catch(() => {});
         if (situation.completed) { navigate("/game/dashboard", { replace: true }); return; }
         setReality(situation.sections?.current_reality || {});
         const saved = situation.sections?.participation || {};
@@ -106,8 +109,13 @@ export default function GameSituationPage() {
   };
 
   const REALITY_CLIP_BY_KEY = {
-    current_individual_donors: "reality_donors", current_businesses: "reality_businesses",
-    current_grantors: "reality_grantors", current_team: "reality_team", current_resources: "reality_resources",
+    current_individual_donors: "reality_donors",
+    current_businesses: "reality_businesses",
+    current_grantors: "reality_grantors",
+    current_team: "reality_team",
+    current_technology: "reality_technology",
+    current_materials: "reality_materials",
+    current_budget: "reality_budget",
   };
   const PART_CLIPS = ["part_build", "part_raise", "part_time", "part_anything"];
 
@@ -178,11 +186,54 @@ export default function GameSituationPage() {
   );
 
   if (phase === "play_first") {
+    const chooseLogo = (event) => {
+      const file = event.target.files?.[0];
+      setBrandingMessage("");
+      if (!file) return;
+      if (!file.type.startsWith("image/")) { setBrandingMessage("Choose an image file for your organization logo."); return; }
+      if (file.size > 500000) { setBrandingMessage("Use a logo image under 500KB."); return; }
+      const reader = new FileReader();
+      reader.onload = () => setBranding({ logo_data: reader.result });
+      reader.readAsDataURL(file);
+    };
+    const begin = async () => {
+      setBusy(true); setBrandingMessage("");
+      try {
+        if (branding.logo_data) await memberApi.put("/game/branding", branding);
+        navigate(`/play/${token}`);
+      } catch (err) {
+        setBrandingMessage(err.response?.data?.detail || "We could not save your logo.");
+        setBusy(false);
+      }
+    };
     return shell(<>
-      <h1>{pr.play_first_heading}</h1>
-      <p style={{ marginTop: 14 }}>{pr.play_first_text}</p>
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} onClick={() => navigate(`/play/${token}`)} data-testid="bfg-setup-play-first-btn">
-        {pr.play_first_button}
+      <p className="bfg-eyebrow">YOUR INDIVIDUAL BOARD FUNDRAISING GAME</p>
+      <h1>Build The Thinking Your Board Will Turn Into A Fundraising Strategy</h1>
+      <p style={{ marginTop: 14, fontSize: 17 }}>
+        You will answer one question at a time. For the four strategic questions, we keep your original idea and make it more actionable for you to review, edit or approve. Then we capture what your organization already has and how you want to participate.
+      </p>
+      <div className="bfg-card bfg-game-opening-card" style={{ marginTop: 22 }}>
+        <h2 style={{ marginTop: 0 }}>Add Your Organization Logo</h2>
+        <p className="bfg-panel-sub">Add it once and we will carry your organization identity through the Game and the strategy experience.</p>
+        <div className="bfg-game-logo-control">
+          {branding.logo_data
+            ? <img src={branding.logo_data} alt="Organization logo" />
+            : <div className="bfg-game-logo-placeholder">Your logo will appear here</div>}
+          <label className="bfg-btn bfg-btn-ghost bfg-btn-sm">
+            CHOOSE LOGO
+            <input type="file" accept="image/*" hidden onChange={chooseLogo} data-testid="bfg-game-logo-input" />
+          </label>
+        </div>
+        {brandingMessage && <p className={brandingMessage.includes("saved") ? "bfg-success" : "bfg-error"}>{brandingMessage}</p>}
+      </div>
+      <div className="bfg-card" style={{ marginTop: 18, textAlign: "left" }}>
+        <strong>What happens in this Game</strong>
+        <p style={{ marginTop: 10 }}>1. Decide who should fund the mission, where to find them, how to attract them and the process to raise money from them.</p>
+        <p style={{ marginTop: 8 }}>2. Tell us about your present donors, business supporters, grantors, team, technology, materials/content and budget.</p>
+        <p style={{ marginTop: 8 }}>3. Tell us how you want to help build the fundraising system and personally participate in raising money.</p>
+      </div>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={begin} data-testid="bfg-setup-play-first-btn">
+        {busy ? "SAVING…" : "START MY BOARD FUNDRAISING GAME"}
       </button>
     </>, "bfg-setup-play-first");
   }
@@ -231,7 +282,7 @@ export default function GameSituationPage() {
       setBusy(false);
     };
     return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} /></div>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(REALITY_CLIP_BY_KEY[question.key] || "", true)} /></div>
       <p className="bfg-eyebrow">YOUR CURRENT REALITY — {rIdx + 1} OF {questions.length}</p>
       <h1 data-testid="bfg-reality-heading">{question.heading}</h1>
       <p style={{ marginTop: 18, fontWeight: 700, fontSize: 18 }} data-testid={`bfg-reality-question-${question.key}`}>{question.question}</p>
@@ -247,7 +298,12 @@ export default function GameSituationPage() {
           onClick={() => { if (audioRef.current) audioRef.current.pause(); setRIdx(rIdx - 1); window.scrollTo({ top: 0 }); }}>
           Back
         </button>
-        <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={continueReality} data-testid="bfg-reality-continue">
+        {question.skippable && !String(reality[question.key] || "").trim() && (
+          <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={busy} onClick={continueReality} data-testid="bfg-reality-skip">
+            Skip — We Don't Have This Yet
+          </button>
+        )}
+        <button className="bfg-btn bfg-btn-primary" disabled={busy || (!question.skippable && !String(reality[question.key] || "").trim())} onClick={continueReality} data-testid="bfg-reality-continue">
           {busy ? "Saving…" : "Continue"}
         </button>
       </div>
@@ -329,8 +385,8 @@ export default function GameSituationPage() {
 
   if (phase === "done") {
     return shell(<>
-      <h1 data-testid="bfg-setup-done-heading">Building Your Working Fundraising Strategy</h1>
-      <p style={{ marginTop: 14 }}>We're taking you to your dashboard now. Your working strategy will be there as soon as it's ready.</p>
+      <h1 data-testid="bfg-setup-done-heading">Your Individual Game Is Saved</h1>
+      <p style={{ marginTop: 14 }}>Your thinking is now part of the fundraising-strategy process. We are preparing the intelligence underneath while you return to the dashboard, set your Board meeting and invite your Board Members to contribute their ideas.</p>
       <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 22 }}
         onClick={() => navigate("/game/dashboard", { replace: true })} data-testid="bfg-setup-done-dashboard">
         Go To My Dashboard
