@@ -138,13 +138,25 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
     result = assessment.get("result") or {}
     if result:
         from workspace_service import save_generation
-        await save_generation(
-            db,
-            member["user_id"],
-            "powerhouse_board_blueprint",
-            result,
-            "Six-question Board Recruitment assessment",
+        existing_material = await db.generated_materials.find_one(
+            {"user_id": member["user_id"], "type": "powerhouse_board_blueprint", "application_id": ""},
+            {"_id": 0, "versions": 1, "current_version": 1},
         )
+        current_structured = None
+        if existing_material:
+            current_structured = next(
+                (version.get("structured") for version in existing_material.get("versions", [])
+                 if version.get("version") == existing_material.get("current_version")),
+                None,
+            )
+        if json.dumps(current_structured, sort_keys=True, default=str) != json.dumps(result, sort_keys=True, default=str):
+            await save_generation(
+                db,
+                member["user_id"],
+                "powerhouse_board_blueprint",
+                result,
+                "Six-question Board Recruitment assessment",
+            )
 
     answers = assessment.get("answers") or {}
     role_names = [row.get("role_name", "") for row in result.get("priority_roles", []) if row.get("role_name")]
