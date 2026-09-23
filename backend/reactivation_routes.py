@@ -1056,7 +1056,9 @@ def create_reactivation_router(db) -> APIRouter:
         material = await shared_portfolio(token)
         issuer = await portfolio_issuer(material)
         return {"title": material["title"], "member_name": await portfolio_member_name(material),
-                "display_text": current_display(material), "assistant_url": f"/portfolio-assistant/{token}", **issuer}
+                "display_text": current_display(material),
+                "assistant_url": f"/portfolio-assistant/{token}" if material.get("type") == PORTFOLIO_TYPE else "",
+                **issuer}
 
     @router.get("/portfolio/{token}/pdf")
     async def public_portfolio_pdf(token: str):
@@ -1087,6 +1089,8 @@ def create_reactivation_router(db) -> APIRouter:
     @router.get("/portfolio-assistant/{token}")
     async def recommitment_portfolio_assistant(token: str):
         material = await shared_portfolio(token)
+        if material.get("type") != PORTFOLIO_TYPE:
+            raise HTTPException(status_code=404, detail="This Recommitment Executive Assistant is not available")
         history = await db.reactivation_assistant_messages.find(
             {"material_id": material["material_id"]}, {"_id": 0, "role": 1, "text": 1}
         ).sort("created_at", 1).to_list(120)
@@ -1110,6 +1114,8 @@ def create_reactivation_router(db) -> APIRouter:
     @router.post("/portfolio-assistant/{token}")
     async def use_recommitment_portfolio_assistant(token: str, payload: RecommitmentAssistantPayload):
         material = await shared_portfolio(token)
+        if material.get("type") != PORTFOLIO_TYPE:
+            raise HTTPException(status_code=404, detail="This Recommitment Executive Assistant is not available")
         context = await recommitment_assistant_context(material)
         request_text = (
             f"Create or help me execute this item: {payload.material_type}.\n\nAdditional request: {payload.message}"
