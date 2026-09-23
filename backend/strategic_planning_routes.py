@@ -1829,6 +1829,17 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
              "$setOnInsert":{"form_id":str(uuid.uuid4()),"created_at":now}},
             upsert=True,
         )
+        if p.get("founder_email"):
+            lead=await db.sp_participants.find_one({"project_id":p["project_id"],"email":str(p.get("founder_email","")).lower()},{"_id":0})
+            if not lead:
+                await db.sp_participants.insert_one({
+                    "participant_id":str(uuid.uuid4()),"project_id":p["project_id"],
+                    "name":p.get("founder_name") or "Organization Leader","email":str(p.get("founder_email","")).lower(),
+                    "role":"Lead User","status":"INVITED","form_token":secrets.token_urlsafe(32),
+                    "review_status":"NOT SENT","review_token":secrets.token_urlsafe(32),"created_at":now,
+                })
+            elif lead.get("role")!="Lead User":
+                await db.sp_participants.update_one({"participant_id":lead["participant_id"]},{"$set":{"role":"Lead User"}})
         return {"status":"Approved"}
 
     @router.post("/branding")
