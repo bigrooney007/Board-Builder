@@ -90,6 +90,11 @@ const MemberUnderstanding = ({ row, reload }) => {
     const url = URL.createObjectURL(res.data); const anchor = document.createElement("a");
     anchor.href = url; anchor.download = `Call-Script-${row.name.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`; anchor.click(); URL.revokeObjectURL(url);
   };
+  const downloadResponse = async () => {
+    const res = await memberApi.get(`/reactivation/board-members/${id}/response/pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data); const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = `Recommitment-Response-${row.name.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`; anchor.click(); URL.revokeObjectURL(url);
+  };
 
   if (row.status !== "COMPLETED") {
     return (
@@ -129,10 +134,11 @@ const MemberUnderstanding = ({ row, reload }) => {
         </button>
         {ready && <button type="button" className="button button-outline" onClick={openView} data-testid={`understand-view-${id}`}><Eye size={15} /> {C.viewUnderstandingButton}</button>}
         <button type="button" className="button button-outline" onClick={async () => setResponse((await memberApi.get(`/reactivation/board-members/${id}/response`)).data)} data-testid={`understand-view-response-${id}`}>{C.viewResponseButton}</button>
+        <button type="button" className="button button-outline" onClick={downloadResponse} data-testid={`understand-download-response-${id}`}><Download size={15}/> DOWNLOAD RESPONSE</button>
         {ready && <button type="button" className="button" onClick={generateScript} disabled={busy} data-testid={`understand-generate-script-${id}`}><FileText size={15}/> {row.script||script?"REGENERATE CALL SCRIPT":"GENERATE INDIVIDUAL CALL SCRIPT"}</button>}
         {(row.script||script)&&!busy&&<><button type="button" className="button button-outline" onClick={openScript} data-testid={`understand-view-script-${id}`}>VIEW CALL SCRIPT</button><button type="button" className="button button-outline" onClick={downloadScript} data-testid={`understand-download-script-${id}`}><Download size={15}/> DOWNLOAD</button></>}
       </div>
-      {busy && <p className="workspace-note" data-testid={`understand-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
+      {busy && <p className="workspace-note" data-testid={`understand-generation-wait-${id}`}>We are preparing this now. You can leave this card and return when it is ready.</p>}
       {analysisStatus === "Failed" && !busy && <p style={{ marginTop: 8 }} data-testid={`understand-failed-${id}`}>{C.failedLabel}</p>}
       {viewing && material && (
         <Modal onClose={() => setViewing(false)} testId={`understand-modal-${id}`}>
