@@ -68,6 +68,16 @@ TEXTS.update({
     "rct_onboarding": "Prepare for onboarding only after the selection and required documents are complete. Generate the facilitation guide, lead the onboarding conversation and confirm the new member's role, responsibilities, contribution and first steps. Their completed information can then be used to create their Board Member Portfolio.",
 })
 
+for retired_recruitment_id in (
+    "recruitment-free-entry",
+    "recruitment-free-question-1-mission",
+    "recruitment-free-question-2-current-board",
+    "recruitment-free-question-3-important-areas",
+    "recruitment-free-question-4-support-needed",
+    "recruitment-free-result",
+):
+    TEXTS.pop(retired_recruitment_id, None)
+
 LABELS = {
     "lead_opening": "01 Lead User Opening",
     "board_opening": "02 Board Member Opening",
