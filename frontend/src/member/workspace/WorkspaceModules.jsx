@@ -75,7 +75,7 @@ export const Module3Launch = ({ mode = "all" }) => {
   const { byType, refresh } = useMaterials();
   const [opportunity, setOpportunity] = useState(null);
   const [coreQuestions, setCoreQuestions] = useState([]);
-  const [readiness, setReadiness] = useState({});
+  const [readiness, setReadiness] = useState({});\n  const [preparation, setPreparation] = useState({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,12 +85,17 @@ export const Module3Launch = ({ mode = "all" }) => {
       const response = await memberApi.get("/workspace/opportunity");
       setOpportunity(response.data.opportunity);
       setCoreQuestions(response.data.core_questions);
-      setReadiness(response.data.readiness);
+      setReadiness(response.data.readiness);\n      setPreparation(response.data.preparation || {});
     } catch { /* ignore */ }
   }, []);
   useEffect(() => { loadOpportunity(); }, [loadOpportunity]);
 
   const refreshAll = async () => { await refresh(); await loadOpportunity(); };
+  useEffect(() => {
+    if (!["queued", "generating"].includes(preparation.status)) return undefined;
+    const timer = window.setInterval(() => { refreshAll(); }, 4000);
+    return () => window.clearInterval(timer);
+  }, [preparation.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateApplication = async () => {
     setBusy(true); setError(""); setMessage("");
