@@ -163,7 +163,10 @@ def strategic_response(lens: str) -> dict:
 
 
 def strategic_preview_form_content(answers: dict) -> dict:
-    programs=[x.strip() for x in str(answers.get("programs") or "").split("\n") if x.strip()]
+    supplied=answers.get("program_details") if isinstance(answers.get("program_details"),list) else []
+    programs=[x for x in supplied if isinstance(x,dict) and str(x.get("name","")).strip()]
+    if not programs:
+        programs=[{"name":x.strip(),"description":"","present_work":""} for x in str(answers.get("programs") or "").split("\n") if x.strip()]
     rows=[
         ("Mission",[
             f"From your view, does our present mission still clearly explain who we serve, how we serve them and the change we are trying to create? What would you keep or change, and why?\n\nPresent mission: {answers.get('mission','')}",
@@ -179,18 +182,16 @@ def strategic_preview_form_content(answers: dict) -> dict:
         ]),
     ]
     for program in programs:
-        rows.append((f"Program: {program}",[
-            f"Thinking specifically about {program}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?",
-            f"From what you have observed, what would make {program} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
+        name=str(program.get("name","")).strip()
+        starting=" | ".join(x for x in [str(program.get("description","")).strip(),str(program.get("present_work","")).strip()] if x)
+        rows.append((f"Program: {name}",[
+            f"Thinking specifically about {name}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?\n\nPresent program information: {starting}",
+            f"From what you have observed, what would make {name} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
         ]))
     rows.extend([
         ("Team & Capacity",[
             f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {answers.get('team_building','')}",
             "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
-        ]),
-        ("Operations",[
-            f"From what you have observed, which internal systems or processes help the organization work well and which ones make execution harder?\n\nPresent information: {answers.get('operations','')}",
-            "What operational change would make the biggest practical difference to our ability to deliver the strategy consistently?",
         ]),
         ("Marketing & Visibility",[
             f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {answers.get('marketing','')}",
@@ -261,6 +262,73 @@ Rooney: For operations, we will document the recurring workflows and move away f
 Maya: I can lead partnerships. Daniel can lead budget and financial tracking. Aisha can lead marketing and visibility. Rooney remains responsible for overall execution and staff coordination.
 
 Rooney: Confirmed. We will build this into 90-day execution cycles and review progress at every board meeting."""
+
+
+def strategic_preview_final_plan() -> str:
+    return """STRATEGIC PLAN
+BrightPath Youth Alliance
+
+EXECUTIVE SUMMARY
+BrightPath Youth Alliance will grow youth reach and outcomes while building the Board, revenue, partnership and operating capacity required to sustain that growth. The next planning period centers on measurable youth outcomes, diversified revenue, stronger employer and corporate partnerships, disciplined visibility and clear execution ownership.
+
+MISSION
+BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities build the skills, relationships and opportunities they need to move into education, employment and stable adulthood.
+
+GOALS
+- Serve 1,000 young people during the next 24 months.
+- Diversify revenue so growth is not dependent on grants or the founder.
+- Build a Board with clear strategic ownership for fundraising, partnerships, visibility and accountability.
+- Strengthen evidence of youth outcomes and use it consistently in fundraising, partnerships and Board decision-making.
+
+OBJECTIVES
+- Establish one quarterly scorecard covering participant reach, outcomes, unrestricted revenue, corporate partners and Board execution.
+- Build three managed fundraising pipelines: individuals, businesses and grant funders.
+- Recruit the professional Board capability needed for fundraising, corporate partnerships and marketing.
+- Create repeatable 90-day execution cycles with named owners and Board review points.
+
+PROGRAMS
+
+Board Recruitment
+Description: Recruit the specific professional capability the organization needs rather than filling seats.
+Board-agreed direction: Use a Board skills map, structured application and interview process, explicit contribution expectations and disciplined onboarding.
+
+Board Fundraising Game
+Description: Build the fundraising strategy with the Board and translate Board ideas into execution roles.
+Board-agreed direction: Use one fundraising planning process to identify audiences, relationship pathways, Board roles, follow-up ownership and required fundraising materials.
+
+Strategic Planning
+Description: Turn Board thinking into a concise Strategic Plan and accountable execution.
+Board-agreed direction: Every major strategic area must have a clear direction, execution owner, milestones, evidence of progress and a recurring Board review point.
+
+Board Recommitment
+Description: Confirm who is prepared to carry responsibility during the next stage of growth.
+Board-agreed direction: Use individual recommitment conversations to confirm capacity, contribution area and the right Active, Advisory or Step-Down pathway.
+
+TEAM BUILDING / TEAM STRUCTURE
+Clarify which responsibilities belong to staff and which require Board leadership. Rooney remains responsible for overall execution and staff coordination. Maya leads Board-level corporate partnerships. Daniel leads Board-level budget and financial-performance oversight. Aisha leads Board-level marketing and visibility review.
+
+TECHNOLOGY
+Use one lightweight CRM for fundraising and partnership prospects, one outcome dashboard and shared project tracking. Add technology only when it simplifies a recurring process the team is committed to maintaining.
+
+MARKETING
+Publish evidence-led content consistently. Use youth outcomes, participant stories with consent, useful insight and partner visibility to build trust with funders, employers, families and community partners.
+
+PARTNERSHIPS
+Prioritize qualified employers, schools, community organizations and corporate partners that can expand opportunity for young people. Assign a relationship owner and next action to every priority relationship.
+
+FUNDRAISING
+Operate three parallel pipelines for individuals, businesses and grants. Track every qualified prospect, relationship owner, stage, next action and ask. Board Members contribute through introductions, cultivation, selected asks and stewardship according to the responsibility they explicitly accept.
+
+BUDGET
+Separate the cost of maintaining current delivery from the additional cost of growth. Connect every strategic priority to its actual people, technology, communications and evaluation costs, and review cash visibility quarterly.
+
+ACTION PLANNING
+Days 1–30: finalize the scorecard, confirm execution owners, configure the CRM and establish the fundraising and partnership pipelines.
+Days 31–60: launch the agreed visibility rhythm, map warm relationships, begin qualified employer/corporate outreach and strengthen outcome evidence.
+Days 61–90: move qualified relationships into meetings, proposals and asks; review execution evidence at the Board meeting; repair weak systems and begin the next 90-day cycle.
+"""
+
+
     
 
 def strategic_presentation_transcript() -> str:
@@ -1055,8 +1123,13 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "and implement a quarterly organization scorecard."
                 ),
                 "programs": "Board Recruitment\nBoard Fundraising Game\nStrategic Planning\nBoard Recommitment",
+                "program_details": [
+                    {"name":"Board Recruitment","description":"Recruit the exact Board capability the organization needs.","present_work":"We currently recruit mainly through referrals and are moving to a skills-based recruitment process."},
+                    {"name":"Board Fundraising Game","description":"Build the fundraising strategy with the Board.","present_work":"We are using the Game to move Board fundraising from occasional requests to a shared system."},
+                    {"name":"Strategic Planning","description":"Create and execute one Board-owned Strategic Plan.","present_work":"We are replacing document-only planning with Board discussion, decisions, roles and 90-day execution cycles."},
+                    {"name":"Board Recommitment","description":"Clarify who is prepared to carry responsibility in the next phase.","present_work":"We are moving from general Board membership to explicit recommitment and defined roles."},
+                ],
                 "team_building": "Strengthen staff leadership and give board members defined strategic ownership instead of general volunteer tasks.",
-                "operations": "Document recurring workflows, clarify decision rights and use 90-day execution cycles with accountability reviews.",
                 "marketing": "Publish consistent evidence-led content, strengthen participant and partner storytelling, and connect visibility to fundraising and partnerships.",
                 "partnerships": "Build a managed pipeline of schools, employers, community partners and corporate sponsors with named relationship owners.",
                 "fundraising": "Diversify beyond grants by building individual donor, corporate partnership and grant pipelines with board participation.",
@@ -1091,6 +1164,14 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "founder_email": member["email"],
                     "founder_title": "Founder and Executive Director",
                     "mission": MISSION,
+                    "logo_data_url": PREVIEW_LOGO_DATA,
+                    "organization_details_saved_at": now,
+                    "planning_meeting": {
+                        "meeting_date": "2026-10-15",
+                        "start_time": "18:00",
+                        "timezone_name": "America/New_York",
+                        "saved_at": now,
+                    },
                     "status": "Active",
                     "generic_form_token": f"admin-preview-sp-form-{tag}",
                     "internal_preview": True,
@@ -1163,7 +1244,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "email": email,
                     "role": role,
                     "expertise": expertise,
-                    "status": "INVITED" if is_lead else "COMPLETED",
+                    "status": "COMPLETED",
                     "form_token": f"{participant_id}-form",
                     "form_version": 1,
                     "review_status": "NOT SENT",
@@ -1173,8 +1254,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "internal_preview": True,
                     "created_at": now,
                 }
-                if not is_lead:
-                    participant_doc["submitted_at"] = now
+                participant_doc["submitted_at"] = now
                 await db.sp_participants.update_one(
                     {"participant_id": participant_id},
                     {"$setOnInsert": participant_doc},
@@ -1184,27 +1264,94 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 {"project_id": project_id},
                 {"$setOnInsert": {
                     "project_id": project_id,
-                    "decisions": {},
+                    "decisions": {"preview": "Board decisions are represented in the preloaded final plan and transcript."},
                     "transcript": strategic_transcript(),
-                    "status": "NOT STARTED",
-                    "current_section_index": 0,
+                    "status": "COMPLETED",
+                    "current_section_index": 99,
+                    "completed_at": now,
                     "internal_preview": True,
                     "created_at": now,
                     "updated_at": now,
                 }},
                 upsert=True,
             )
+            final_plan_text = strategic_preview_final_plan()
+            delegates = [
+                {
+                    "delegation_id": f"admin-preview-sp-delegate-rooney-{tag}",
+                    "participant_id": f"admin-preview-sp-lead-{tag}",
+                    "name": "Rooney Akpesiri", "email": member["email"], "role": "Founder and Executive Director — Strategic Execution Lead",
+                    "responsibilities": ["Coordinate overall Strategic Plan execution", "Keep staff work aligned to Board-adopted priorities", "Bring progress, barriers and decisions to the Board"],
+                    "areas": ["Strategic execution", "Board accountability"], "first_action": "Publish the first 90-day execution scorecard.",
+                    "support_needed": "Timely Board decisions and clear staff ownership.", "reporting_rhythm": "Progress review at every Board meeting",
+                    "source": "Explicit Strategic Planning Session agreement",
+                },
+                {
+                    "delegation_id": f"admin-preview-sp-delegate-maya-{tag}",
+                    "participant_id": f"admin-preview-sp-maya-{tag}",
+                    "name": "Maya Thompson", "email": f"maya.thompson-{tag}@nonprofitboardbuilder.internal", "role": "Board Partnerships Lead",
+                    "responsibilities": ["Lead Board-level corporate partnership development", "Open qualified employer relationships", "Review partnership pipeline progress"],
+                    "areas": ["Partnerships", "Fundraising"], "first_action": "Identify the first 20 qualified employer and corporate prospects.",
+                    "support_needed": "Corporate proposition, impact evidence and staff follow-up.", "reporting_rhythm": "Monthly pipeline review",
+                    "source": "Explicit Strategic Planning Session agreement",
+                },
+                {
+                    "delegation_id": f"admin-preview-sp-delegate-daniel-{tag}",
+                    "participant_id": f"admin-preview-sp-daniel-{tag}",
+                    "name": "Daniel Brooks", "email": f"daniel.brooks-{tag}@nonprofitboardbuilder.internal", "role": "Treasurer — Finance and Performance Lead",
+                    "responsibilities": ["Lead Board-level budget oversight", "Create quarterly cash visibility", "Review fundraising and strategic scorecard performance"],
+                    "areas": ["Budget", "Fundraising"], "first_action": "Separate the base budget from the growth budget and add a quarterly cash forecast.",
+                    "support_needed": "Current finance data and fundraising pipeline reporting.", "reporting_rhythm": "Quarterly finance review plus monthly fundraising dashboard",
+                    "source": "Explicit Strategic Planning Session agreement",
+                },
+                {
+                    "delegation_id": f"admin-preview-sp-delegate-aisha-{tag}",
+                    "participant_id": f"admin-preview-sp-aisha-{tag}",
+                    "name": "Aisha Patel", "email": f"aisha.patel-{tag}@nonprofitboardbuilder.internal", "role": "Board Marketing and Visibility Lead",
+                    "responsibilities": ["Lead Board-level marketing and visibility review", "Strengthen fundraising and partner-facing messaging", "Review evidence-led content performance"],
+                    "areas": ["Marketing", "Partnerships"], "first_action": "Create the first 90-day evidence-led content rhythm.",
+                    "support_needed": "Outcome data, participant stories with consent and partner examples.", "reporting_rhythm": "Quarterly Board visibility review",
+                    "source": "Explicit Strategic Planning Session agreement",
+                },
+            ]
+            portfolios = []
+            for delegate in delegates:
+                token_value = f"admin-preview-sp-portfolio-{delegate['participant_id']}-{tag}"
+                text_value = (
+                    f"BOARD MEMBER LEADERSHIP PORTFOLIO\n{delegate['name']}\n{ORG_NAME}\n\n"
+                    f"YOUR CONFIRMED ROLE\n{delegate['role']}\n\nYOUR RESPONSIBILITIES\n- " + "\n- ".join(delegate["responsibilities"]) +
+                    f"\n\nYOUR FIRST ACTION\n{delegate['first_action']}\n\nREPORTING RHYTHM\n{delegate['reporting_rhythm']}\n\n"
+                    "Your Executive Assistant uses the adopted Strategic Plan and this confirmed Portfolio as its authority."
+                )
+                portfolios.append({
+                    "delegation_id": delegate["delegation_id"], "participant_id": delegate["participant_id"],
+                    "name": delegate["name"], "email": delegate["email"], "role": delegate["role"],
+                    "areas": delegate["areas"], "responsibilities": delegate["responsibilities"], "text": text_value,
+                    "token": token_value, "url": f"/strategic-leadership-portfolio/{token_value}",
+                    "assistant_access_started_at": now, "assistant_access_included_until": "2027-03-31", "sent_at": now,
+                })
             await db.sp_plans.update_one(
                 {"project_id": project_id},
-                {"$setOnInsert": {
+                {"$set": {
                     "project_id": project_id,
-                    "status": "NONE",
-                    "display_text": "",
+                    "status": "PLAN READY",
+                    "display_text": final_plan_text,
+                    "share_token": f"admin-preview-sp-review-{tag}",
                     "areas": [],
-                    "final_status": "NONE",
-                    "final_display_text": "",
-                    "final_share_token": "",
-                    "active_delegation": {},
+                    "meeting_status": "Approved",
+                    "meeting_guide_text": (
+                        f"STRATEGIC PLANNING SESSION FACILITATION GUIDE\n{ORG_NAME}\n\n"
+                        "Move through Mission, Goals, Objectives, each Program, Team, Technology, Marketing, Partnerships, Fundraising, Budget, Action Planning and Roles. "
+                        "Show the organization's present information first, then the attributed Board ideas. Ask the Board what should be kept, changed or added. "
+                        "For Mission, explicitly offer the option to leave the Mission Statement unchanged. Confirm roles aloud before ending the session."
+                    ),
+                    "meeting_transcript": strategic_transcript(),
+                    "final_status": "Approved",
+                    "final_display_text": final_plan_text,
+                    "final_share_token": f"admin-preview-sp-final-{tag}",
+                    "final_approved_at": now,
+                    "active_delegation": {"delegates": delegates, "assignments": {d["participant_id"]: "\n".join(d["responsibilities"]) for d in delegates}, "transcript": strategic_transcript(), "manual_assignments_authoritative": True, "saved_at": now},
+                    "leadership_portfolios": portfolios,
                     "internal_preview": True,
                     "created_at": now,
                     "updated_at": now,
