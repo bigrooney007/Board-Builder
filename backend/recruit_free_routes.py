@@ -95,6 +95,7 @@ def lead_answers(doc: dict) -> dict:
 
 
 async def sync_funnel_lead(db, doc: dict) -> None:
+    existing = await db.funnel_leads.find_one({"lead_id": doc["lead_id"]}, {"_id": 0}) or {}
     await db.funnel_leads.update_one(
         {"lead_id": doc["lead_id"]},
         {"$set": {
@@ -104,11 +105,11 @@ async def sync_funnel_lead(db, doc: dict) -> None:
             "name": doc["name"],
             "email": doc["email"],
             "organization": doc["organization"],
-            "phone": "",
-            "website": "",
-            "city": "",
-            "state_region": "",
-            "country": "",
+            "phone": existing.get("phone", ""),
+            "website": existing.get("website", ""),
+            "city": existing.get("city", ""),
+            "state_region": existing.get("state_region", ""),
+            "country": existing.get("country", ""),
             "answers": lead_answers(doc),
             "free_assessment_result": doc.get("result"),
             "updated_at": now_iso(),
@@ -135,16 +136,14 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
     )
 
     result = assessment.get("result") or {}
-    if result and not await db.generated_materials.find_one({
-        "user_id": member["user_id"], "type": "powerhouse_board_blueprint", "application_id": ""
-    }, {"_id": 0, "material_id": 1}):
+    if result:
         from workspace_service import save_generation
         await save_generation(
             db,
             member["user_id"],
             "powerhouse_board_blueprint",
             result,
-            "Four-question Board Recruitment assessment",
+            "Six-question Board Recruitment assessment",
         )
 
     answers = assessment.get("answers") or {}
@@ -199,7 +198,8 @@ def create_recruit_free_router(db) -> APIRouter:
             "token": secrets.token_urlsafe(32), "lead_id": lead.get("lead_id") or new_uuid(),
             "name": lead.get("name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
             "email": member["email"], "organization": lead.get("organization") or "Your Organization",
-            "desired_count": None, "answers": {}, "state": {"paid": True, "result_generated": False},
+            "desired_count": normalize_count(str((lead.get("answers") or {}).get("new_members_needed") or "not_sure")),
+            "answers": {}, "state": {"paid": True, "result_generated": False, "generation_status": "not_started"},
             "result": None, "member_user_id": member["user_id"], "created_at": timestamp, "updated_at": timestamp,
         }
         await primary.insert_one(doc.copy())
