@@ -29,6 +29,9 @@ jobs:
       - name: Validate Board Recommitment clean-house contract
         run: python tests/validate_recommitment_clean_house.py
 
+      - name: Validate Strategic Planning clean-house contract
+        run: python tests/validate_strategic_planning_clean_house.py
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
