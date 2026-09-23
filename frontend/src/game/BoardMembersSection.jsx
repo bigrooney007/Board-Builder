@@ -113,7 +113,6 @@ export const BoardMembersSection = () => {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [copiedId, setCopiedId] = useState("");
-  const [postgame, setPostgame] = useState(null);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("response") || "";
     if (requested) setViewingId(requested);
@@ -126,20 +125,6 @@ export const BoardMembersSection = () => {
     } catch { /* ignore */ }
   }, []);
   useEffect(() => { load(); }, [load]);
-
-  const loadPostgame = useCallback(() => {
-    memberApi.get("/game/postgame/overview")
-      .then((response) => setPostgame(response.data.adopted ? response.data : null))
-      .catch(() => {});
-  }, []);
-  useEffect(() => { loadPostgame(); }, [loadPostgame]);
-
-  const deliveryFor = (memberId) => (postgame?.recipients || []).find((row) => row.member_id === memberId)?.delivery;
-
-  const sendStrategy = (member) => run(`strategy-${member.member_id}`, async () => {
-    await memberApi.post(`/game/postgame/send/${member.member_id}`, origin);
-    loadPostgame();
-  }, "Adopted strategy sent.");
 
   const origin = { origin_url: window.location.origin };
   const run = async (key, fn, successMessage) => {
@@ -229,16 +214,6 @@ export const BoardMembersSection = () => {
                 <span className={`bfg-status-pill ${statusClass(member.status)}`} data-testid={`bfg-bm-status-${member.member_id}`}>{member.status}</span>
               </div>
               <p className="bfg-bm-progress">{member.sections_completed} of {member.total_sections} sections complete</p>
-              {postgame && (() => {
-                const delivery = deliveryFor(member.member_id);
-                return (
-                  <p className="bfg-bm-progress" data-testid={`bfg-strategy-delivery-${member.member_id}`}>
-                    Adopted Strategy: {delivery?.status === "sent"
-                      ? `Sent ${new Date(delivery.sent_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
-                      : delivery?.status === "delivery_failed" ? "Delivery Failed" : "Not Sent"}
-                  </p>
-                );
-              })()}
               {editingId === member.member_id ? (
                 <MemberForm initial={{ full_name: member.full_name, email: member.email, board_title: member.board_title }}
                   onSave={editMember(member.member_id)} onCancel={() => setEditingId("")} busy={busy === "edit"} saveLabel="Save Changes" />
@@ -260,12 +235,6 @@ export const BoardMembersSection = () => {
                   )}
                   <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to={`/game/host/call-script?member=${member.member_id}`}
                     data-testid={`bfg-call-script-${member.member_id}`}>Call Script</Link>
-                  {postgame && (
-                    <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={busy === `strategy-${member.member_id}`}
-                      onClick={() => sendStrategy(member)} data-testid={`bfg-send-strategy-${member.member_id}`}>
-                      {deliveryFor(member.member_id)?.status === "sent" ? "Resend Strategy" : "Send Strategy"}
-                    </button>
-                  )}
                   <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => copyLink(member)} data-testid={`bfg-copy-link-${member.member_id}`}>
                     {copiedId === member.member_id ? "Link Copied" : "Copy Game Link"}
                   </button>
