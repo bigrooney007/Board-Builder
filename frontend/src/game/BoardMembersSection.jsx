@@ -116,7 +116,7 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("response") || "";
     if (requested) setViewingId(requested);
-  }, [onChanged]);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -124,7 +124,7 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
       setMembers(response.data.board_members || []);
       onChanged(response.data.board_members || []);
     } catch { /* ignore */ }
-  }, []);
+  }, [onChanged]);
   useEffect(() => { load(); }, [load]);
 
   const origin = { origin_url: window.location.origin };
