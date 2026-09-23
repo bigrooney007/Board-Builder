@@ -40,6 +40,16 @@ VIDEO_DEFINITIONS = [
     {"key": "board_recommitment_welcome", "name": "Board Recommitment Onboarding", "flow": "board-recommitment", "stage": "onboarding"},
 ]
 
+STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS = [
+    {"key": "organization", "name": "Tell Us About Your Organization"},
+    {"key": "meeting", "name": "Set Your Strategic Planning Meeting"},
+    {"key": "founder-form", "name": "Complete Your Own Strategic Planning Form"},
+    {"key": "board-forms", "name": "Invite The Board And Collect Their Ideas"},
+    {"key": "facilitation-guide", "name": "Prepare The Strategic Planning Session"},
+    {"key": "live-session", "name": "Run The Strategic Planning Session"},
+    {"key": "plan-execution", "name": "Review The Plan And Move Into Execution"},
+]
+
 RECOMMITMENT_SECTION_VIDEO_DEFINITIONS = [
     {"key": "questions", "name": "Answer The Four Recommitment Questions"},
     {"key": "forms", "name": "Prepare And Send The Recommitment Forms"},
@@ -174,6 +184,41 @@ def create_clean_platform_router(db) -> APIRouter:
     async def admin_videos(request: Request):
         await authenticate_admin(request, db)
         return await public_videos()
+
+    @router.get("/platform/strategic-planning-section-videos")
+    async def strategic_planning_section_videos():
+        doc = await db.marketing_settings.find_one({"key": "strategic_planning_section_videos"}, {"_id": 0}) or {}
+        stored = doc.get("videos") or {}
+        rows = []
+        for item in STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS:
+            raw = stored.get(item["key"], "")
+            try:
+                video_id = youtube_id(raw)
+            except ValueError:
+                video_id = ""
+            rows.append({**item, "url": raw, "youtube_id": video_id})
+        return {"videos": rows}
+
+    @router.get("/admin/platform/strategic-planning-section-videos")
+    async def admin_strategic_planning_section_videos(request: Request):
+        await authenticate_admin(request, db)
+        return await strategic_planning_section_videos()
+
+    @router.put("/admin/platform/strategic-planning-section-videos/{key}")
+    async def update_strategic_planning_section_video(key: str, payload: VideoUpdate, request: Request):
+        await authenticate_admin(request, db)
+        if key not in {item["key"] for item in STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS}:
+            raise HTTPException(status_code=404, detail="Unknown Strategic Planning section video")
+        raw = payload.url.strip()
+        if raw:
+            youtube_id(raw)
+        await db.marketing_settings.update_one(
+            {"key": "strategic_planning_section_videos"},
+            {"$set": {f"videos.{key}": raw, "updated_at": datetime.now(timezone.utc).isoformat()},
+             "$setOnInsert": {"key": "strategic_planning_section_videos"}},
+            upsert=True,
+        )
+        return {"status": "saved", "key": key, "url": raw}
 
     @router.get("/platform/recommitment-section-videos")
     async def recommitment_section_videos():
