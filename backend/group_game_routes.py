@@ -288,9 +288,9 @@ def create_group_game_router(db) -> APIRouter:
             elif definition["section_key"]=="team" and v3_reality.get("current_team"):
                 reality={"current_team":v3_reality.get("current_team","")}
             elif definition["section_key"] == "technology":
-                reality = {"current_technology": v3_reality.get("current_technology", "")}
+                reality = {"current_technology": v3_reality.get("current_technology") or v3_reality.get("current_resources", "")}
             elif definition["section_key"] == "materials":
-                reality = {"current_materials": v3_reality.get("current_materials", "")}
+                reality = {"current_materials": v3_reality.get("current_materials") or v3_reality.get("current_resources", "")}
             elif definition["section_key"] == "budget":
                 reality = {"current_budget": v3_reality.get("current_budget", "")}
             elif definition["section_key"] == "execution":
