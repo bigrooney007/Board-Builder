@@ -1,4 +1,5 @@
-"""Public four-question Board Recruitment assessment and paid-flow handoff."""
+"""Board Recruitment entry capture and the six-question paid dashboard intelligence handoff."""
+import asyncio
 import json
 import secrets
 from datetime import datetime, timezone
@@ -15,7 +16,14 @@ ASSESSMENT_COLLECTION_NAMES = (
     "recruit_free_assessments",
     "free_recruitment_assessments",
 )
-QUESTION_KEYS = {1: "mission", 2: "current_board", 3: "important_areas", 4: "support_needs"}
+QUESTION_KEYS = {
+    1: "mission",
+    2: "current_board",
+    3: "desired_board_members",
+    4: "support_needs",
+    5: "board_type",
+    6: "why_join",
+}
 EVENTS = {
     "video_page_viewed",
     "checkout_started",
@@ -38,7 +46,7 @@ class RecruitFreeStart(BaseModel):
 
 
 class RecruitFreeAnswer(BaseModel):
-    question: int = Field(ge=1, le=4)
+    question: int = Field(ge=1, le=6)
     text: str = Field(min_length=1, max_length=12000)
 
 
@@ -77,8 +85,11 @@ def lead_answers(doc: dict) -> dict:
     return {
         "mission": answers.get("mission", ""),
         "present_board": answers.get("current_board", ""),
-        "important_areas": answers.get("important_areas", ""),
+        "desired_board_members": answers.get("desired_board_members", ""),
+        "strengthen_areas": answers.get("support_needs", ""),
         "accomplish": answers.get("support_needs", ""),
+        "board_type": answers.get("board_type", ""),
+        "why_join": answers.get("why_join", ""),
         "new_members_needed": str(doc.get("desired_count") or "Not sure"),
     }
 
@@ -146,7 +157,9 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
         "current_board_strengths": answers.get("current_board", ""),
         "desired_board_skills": role_names,
         "priorities": answers.get("support_needs", ""),
-        "important_areas": answers.get("important_areas", ""),
+        "desired_board_members_founder_view": answers.get("desired_board_members", ""),
+        "board_kind": answers.get("board_type", ""),
+        "why_join_board": answers.get("why_join", ""),
     }
     existing = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
     data = existing.get("data") or {}
@@ -234,7 +247,10 @@ def create_recruit_free_router(db) -> APIRouter:
                 "question_2_completed": False,
                 "question_3_completed": False,
                 "question_4_completed": False,
+                "question_5_completed": False,
+                "question_6_completed": False,
                 "result_generated": False,
+                "generation_status": "not_started",
                 "video_page_viewed": False,
                 "checkout_started": False,
                 "paid": False,
@@ -257,6 +273,104 @@ def create_recruit_free_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Assessment not found")
         return public_assessment(doc)
 
+    async def generate_result_for_doc(collection, doc: dict, member: dict) -> dict:
+        if doc.get("result"):
+            await attach_free_assessment_to_member(db, doc["lead_id"], member)
+            return doc["result"]
+        answers = doc.get("answers") or {}
+        missing = [key for key in QUESTION_KEYS.values() if not str(answers.get(key) or "").strip()]
+        if missing:
+            raise HTTPException(status_code=409, detail="Answer all six recruitment questions before generating your result")
+
+        exact_count = doc.get("desired_count")
+        context = {
+            "organization_name": doc["organization"],
+            "mission": answers["mission"],
+            "confirmed_present_board": answers["current_board"],
+            "founder_view_of_board_members_needed": answers["desired_board_members"],
+            "areas_needing_board_support": answers["support_needs"],
+            "desired_board_model": answers["board_type"],
+            "why_someone_should_join_this_board": answers["why_join"],
+            "new_members_count": exact_count if exact_count else "Not sure",
+        }
+        instructions = (
+            "Act as a nonprofit board-building strategist. Use every supplied answer together rather than treating each answer independently. "
+            "Begin with the mission and desired board model, then assess what the present board already contributes, what the founder believes is missing, "
+            "the areas where the organization needs support, and the value proposition for joining. Recommend a balanced team, not a list of generic job titles. "
+            "Professional or fiduciary capability can matter, including fundraising, partnerships, marketing, finance/accounting, legal, technology, operations, "
+            "community credibility, lived experience or other expertise when the organization's actual context supports it. Do not duplicate capability already "
+            "covered by the present board unless the supplied information shows additional capacity is genuinely required. "
+            + (f"Return EXACTLY {exact_count} priority_roles because the founder said they want to recruit {exact_count} new board members. " if exact_count else
+               "Return the smallest practical set of priority_roles needed to strengthen this board. ")
+            + "Each priority role must have a clear role_name. Keep customer-facing rationale concise: one or two sentences total across "
+              "why_this_person_is_important and how_this_person_can_support. The recommendations must be specific to this organization."
+        )
+
+        await collection.update_one(
+            {"token": doc["token"]},
+            {"$set": {"state.generation_status": "generating", "updated_at": now_iso()},
+             "$unset": {"generation_error": ""}},
+        )
+        try:
+            generated = await generate_structured(
+                "powerhouse_board_blueprint",
+                json.dumps(context, indent=2),
+                instructions,
+            )
+            roles = generated.get("priority_roles") if isinstance(generated, dict) else None
+            if not isinstance(roles, list) or not roles:
+                raise RuntimeError("No priority board roles were returned")
+            if exact_count and len(roles) != int(exact_count):
+                correction = (
+                    f"The previous result returned {len(roles)} priority roles. The founder explicitly requested {exact_count} new board members. "
+                    f"Return exactly {exact_count} distinct priority_roles. Preserve the strongest organization-specific reasoning and create a balanced team."
+                )
+                generated = await generate_structured(
+                    "powerhouse_board_blueprint",
+                    json.dumps(context, indent=2),
+                    instructions + "\n\nCORRECTION REQUIRED: " + correction,
+                )
+                roles = generated.get("priority_roles") if isinstance(generated, dict) else None
+                if not isinstance(roles, list) or len(roles) < int(exact_count):
+                    raise RuntimeError(f"Could not produce the requested {exact_count} board profiles")
+                if len(roles) > int(exact_count):
+                    generated["priority_roles"] = roles[:int(exact_count)]
+
+            timestamp = now_iso()
+            await collection.update_one(
+                {"token": doc["token"]},
+                {"$set": {"result": generated, "state.result_generated": True,
+                          "state.generation_status": "ready", "result_generated_at": timestamp,
+                          "updated_at": timestamp},
+                 "$unset": {"generation_error": ""}},
+            )
+            doc["result"] = generated
+            await sync_funnel_lead(db, doc)
+            await attach_free_assessment_to_member(db, doc["lead_id"], member)
+            return generated
+        except HTTPException:
+            raise
+        except Exception as exc:
+            await collection.update_one(
+                {"token": doc["token"]},
+                {"$set": {"state.generation_status": "failed", "generation_error": str(exc)[:500],
+                          "updated_at": now_iso()}},
+            )
+            raise HTTPException(status_code=503, detail="We could not prepare your board recommendations yet. Please try again.") from exc
+
+    async def background_generate_result(token: str, user_id: str) -> None:
+        try:
+            collection, fresh = await find_assessment(db, {"token": token})
+            if not fresh or fresh.get("result"):
+                return
+            member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
+            if not member:
+                return
+            await generate_result_for_doc(collection, fresh, member)
+        except Exception:
+            # The dashboard exposes generation_status and allows a deliberate retry.
+            return
+
     @router.put("/{token}/answer")
     async def answer(token: str, payload: RecruitFreeAnswer, request: Request):
         collection, doc = await find_assessment(db, {"token": token})
@@ -266,17 +380,26 @@ def create_recruit_free_router(db) -> APIRouter:
         if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
             raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before answering these questions")
         key = QUESTION_KEYS[payload.question]
-        text = payload.text.strip()
+        text_value = payload.text.strip()
         timestamp = now_iso()
         await collection.update_one(
             {"token": token},
-            {"$set": {f"answers.{key}": text, f"state.question_{payload.question}_completed": True,
-                      "result": None, "state.result_generated": False, "updated_at": timestamp}},
+            {"$set": {f"answers.{key}": text_value, f"state.question_{payload.question}_completed": True,
+                      "state.generation_status": "not_started", "result": None,
+                      "state.result_generated": False, "updated_at": timestamp}},
         )
-        doc.setdefault("answers", {})[key] = text
+        doc.setdefault("answers", {})[key] = text_value
         doc["result"] = None
         await sync_funnel_lead(db, doc)
-        return {"status": "saved", "question": payload.question}
+
+        complete = all(str(doc["answers"].get(answer_key) or "").strip() for answer_key in QUESTION_KEYS.values())
+        if complete:
+            await collection.update_one(
+                {"token": token},
+                {"$set": {"state.generation_status": "queued", "updated_at": now_iso()}},
+            )
+            asyncio.create_task(background_generate_result(token, member["user_id"]))
+        return {"status": "saved", "question": payload.question, "generation_queued": complete}
 
     @router.post("/{token}/result")
     async def result(token: str, request: Request):
@@ -286,54 +409,7 @@ def create_recruit_free_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
             raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before generating your result")
-        if doc.get("result"):
-            await attach_free_assessment_to_member(db, doc["lead_id"], member)
-            return {"result": doc["result"]}
-        answers = doc.get("answers") or {}
-        missing = [key for key in QUESTION_KEYS.values() if not str(answers.get(key) or "").strip()]
-        if missing:
-            raise HTTPException(status_code=409, detail="Answer all four questions before generating your result")
-        context = {
-            "organization_name": doc["organization"],
-            "mission": answers["mission"],
-            "confirmed_present_board": answers["current_board"],
-            "organization_success_areas": answers["important_areas"],
-            "current_board_support_needs": answers["support_needs"],
-            "new_members_count": doc.get("desired_count") if doc.get("desired_count") else "Not sure",
-        }
-        instructions = (
-            "Use this concise four-question assessment as the complete verified context. Produce practical, "
-            "organization-specific board profiles. If an exact new_members_count is supplied, return exactly that many "
-            "priority_roles. Treat confirmed_present_board as the authoritative description of the present board. "
-            "Keep the customer-facing recommendation concise: each priority role needs a clear role_name and only one or two "
-            "sentences across why_this_person_is_important/how_this_person_can_support explaining how that board member will help "
-            "this specific organization. Do not pad the result with generic explanations."
-        )
-        try:
-            generated = await generate_structured(
-                "powerhouse_board_blueprint",
-                json.dumps(context, indent=2),
-                instructions,
-            )
-        except Exception as exc:
-            await collection.update_one(
-                {"token": token},
-                {"$set": {"generation_error": str(exc)[:500], "updated_at": now_iso()}},
-            )
-            raise HTTPException(status_code=503, detail="We could not prepare your result yet. Please try again.") from exc
-        if not isinstance(generated.get("priority_roles"), list) or not generated["priority_roles"]:
-            raise HTTPException(status_code=503, detail="We could not prepare your result yet. Please try again.")
-        timestamp = now_iso()
-        await collection.update_one(
-            {"token": token},
-            {"$set": {"result": generated, "state.result_generated": True,
-                      "result_generated_at": timestamp, "updated_at": timestamp},
-             "$unset": {"generation_error": ""}},
-        )
-        doc["result"] = generated
-        await sync_funnel_lead(db, doc)
-        await attach_free_assessment_to_member(db, doc["lead_id"], member)
-        return {"result": generated}
+        return {"result": await generate_result_for_doc(collection, doc, member)}
 
     @router.post("/{token}/event")
     async def event(token: str, payload: RecruitFreeEvent):
