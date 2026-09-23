@@ -94,7 +94,7 @@ export default function GamePlayPage() {
       const role = ctx?.member?.participant_role || "board_member";
       playClip(ctx?.member?.is_primary ? "lead_opening" : role === "board_member" ? "board_opening" : "");
     }
-    else if (phase === "section" && stage === "deeper") playClip(`a${sec}_deeper`);
+    else if (phase === "section" && stage === "first") playClip(`a${sec}_deeper`);
     else if (phase === "lead_done") playClip("lead_free_complete");
     else if (phase === "board_done") playClip((ctx?.member?.participant_role || "board_member") === "board_member" ? "board_complete" : "");
     else if (phase === "participation") playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx]);
@@ -208,7 +208,7 @@ export default function GamePlayPage() {
 
   if (phase === "section" && stage === "first") {
     return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(sec === 1 && isPrimary ? "lead_opening" : sec === 1 ? "board_opening" : `a${sec}_deeper`, true)} /></div>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(`a${sec}_deeper`, true)} /></div>
       {answerScreen(sdef.q1, sdef.label1 || "YOUR IDEA", state.firsts[sec],
         (value) => setState((current) => ({ ...current, firsts: { ...current.firsts, [sec]: value } })), saveFirst, `bfg-s${sec}-first`)}
     </>, `bfg-s${sec}-first`);
