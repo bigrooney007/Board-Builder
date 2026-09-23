@@ -30,10 +30,10 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v3"
-RECRUITMENT_FIXTURE_VERSION = "v6"
-STRATEGIC_FIXTURE_VERSION = "v5"
-RECOMMITMENT_FIXTURE_VERSION = "v5"
-FUNDRAISING_FIXTURE_VERSION = "v4"
+RECRUITMENT_FIXTURE_VERSION = "v7"
+STRATEGIC_FIXTURE_VERSION = "v6"
+RECOMMITMENT_FIXTURE_VERSION = "v6"
+FUNDRAISING_FIXTURE_VERSION = "v5"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -333,15 +333,23 @@ def recruitment_answers() -> dict:
             "is a community organizer with local relationships. The board is committed, but we do not currently have deep "
             "fundraising leadership, corporate partnership experience or strong marketing and communications expertise."
         ),
+        "desired_board_members": (
+            "I believe we need one experienced fundraiser who understands major donors and can help the board build an individual-giving system; "
+            "one corporate partnerships or business-development leader who can open employer and sponsor relationships; and one senior marketing "
+            "and communications leader who can strengthen visibility, fundraising messaging and partner-facing content."
+        ),
         "important_areas": (
             "Fundraising strategy, individual giving, corporate partnerships, grant development, marketing and communications, "
             "program evaluation, finance, governance, technology, employer relationships, community engagement and board accountability."
         ),
         "support_needs": (
-            "We want to recruit three new board members. We need one person with senior fundraising and major-donor experience who can "
-            "help build an individual giving system and coach the board on fundraising. We need one person with corporate partnerships "
-            "or business development experience who can open employer and sponsor relationships. We need one marketing and communications "
-            "leader who can strengthen visibility, messaging and digital reach. All three must be willing to carry clear board-level responsibility."
+            "We want the new Board Members to help diversify revenue, open corporate relationships, strengthen fundraising discipline, "
+            "improve visibility and help the organization execute a clear growth strategy. They must be willing to carry defined Board-level responsibility."
+        ),
+        "board_type": "Working Board",
+        "why_join": (
+            "The right Board Member can directly help expand opportunity for young people, shape the next stage of a growing organization, "
+            "use their professional experience on meaningful strategic work, build relationships with other committed leaders and see the results of the role they agreed to carry."
         ),
     }
 
