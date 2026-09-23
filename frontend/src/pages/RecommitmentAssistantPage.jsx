@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import "@/member/sgr.css";
 import { Send } from "lucide-react";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
