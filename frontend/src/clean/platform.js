@@ -33,6 +33,20 @@ export const HOMEPAGE_KEYS = [
   ["facilitated-game", "Let's Organize Your Board Fundraising Game"],
 ];
 
+export const RECRUITMENT_SECTION_VIDEO_KEYS = [
+  ["questions", "Answer The Six Recruitment Questions"],
+  ["identify", "Identify The Board Members You Need"],
+  ["materials", "Build The Application And Campaign Materials"],
+  ["launch", "Launch Your Recruitment Campaign"],
+  ["applicants", "Review Applicants"],
+  ["interviews", "Run Board Candidate Interviews"],
+  ["references", "Complete Reference Checks"],
+  ["background", "Complete Background Checks"],
+  ["onboarding-prep", "Prepare Onboarding And Appointment Emails"],
+  ["onboarding-session", "Facilitate The Onboarding Session"],
+  ["portfolios", "Create Board Member Portfolios"],
+];
+
 const VISITOR_KEY = "nbb_clean_visitor_id";
 
 export const visitorId = () => {
@@ -118,6 +132,33 @@ export const usePlatformVideo = (key) => {
   useEffect(() => {
     let live = true;
     loadVideos().then((rows) => { if (live) setVideo(rows.find((item) => item.key === key) || null); });
+    return () => { live = false; };
+  }, [key]);
+  return video;
+};
+
+
+let recruitmentSectionVideosCache = null;
+let recruitmentSectionVideosPromise = null;
+
+const loadRecruitmentSectionVideos = () => {
+  if (recruitmentSectionVideosCache) return Promise.resolve(recruitmentSectionVideosCache);
+  if (!recruitmentSectionVideosPromise) {
+    recruitmentSectionVideosPromise = axios.get(`${API}/platform/recruitment-section-videos`).then((response) => {
+      recruitmentSectionVideosCache = response.data.videos || [];
+      return recruitmentSectionVideosCache;
+    }).catch(() => []);
+  }
+  return recruitmentSectionVideosPromise;
+};
+
+export const useRecruitmentSectionVideo = (key) => {
+  const [video, setVideo] = useState(() => recruitmentSectionVideosCache?.find((item) => item.key === key) || null);
+  useEffect(() => {
+    let live = true;
+    loadRecruitmentSectionVideos().then((rows) => {
+      if (live) setVideo(rows.find((item) => item.key === key) || null);
+    });
     return () => { live = false; };
   }, [key]);
   return video;
