@@ -198,6 +198,7 @@ export default function GroupGamePage() {
               <div className="bfg-panel" data-testid="bfg-gg-overview">
                 <div className="bfg-night-summary">
                   <div className="bfg-summary-row"><span>Fundraising Goal</span><strong>{overview.goal_display}</strong></div>
+                  <div className="bfg-summary-row"><span>Funding Deadline</span><strong>{fmtDate(overview.funding_deadline) || "Not set"}</strong></div>
                   <div className="bfg-summary-row"><span>Game Night</span><strong>{fmtDate(overview.game_night_date) || "Not scheduled yet"}</strong></div>
                   <div className="bfg-summary-row"><span>Board Members</span><strong>{overview.board_member_count}</strong></div>
                   <div className="bfg-summary-row"><span>Individual Games Completed</span><strong>{overview.individual_completed}</strong></div>
