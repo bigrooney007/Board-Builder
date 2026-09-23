@@ -71,6 +71,35 @@ def normalise(text: str) -> str:
     return re.sub(r"\s+", " ", cleaned).strip()
 
 
+def deadline_execution_recommendations(profile: dict) -> list:
+    goal = profile.get("goal") or {}
+    deadline_raw = str(goal.get("deadline") or "").strip()
+    if not deadline_raw:
+        return [
+            "Set the funding deadline before finalizing the execution calendar. The deadline should determine the length and intensity of the plan.",
+            "Build only the minimum fundraising system needed to begin execution, then move the chosen audiences through the Board-approved fundraising process.",
+            "Review progress at every Board meeting and adjust owners, capacity and next actions without changing the agreed strategic direction casually.",
+        ]
+    try:
+        deadline = datetime.strptime(deadline_raw, "%Y-%m-%d").date()
+        today = datetime.now(timezone.utc).date()
+        days = max(0, (deadline - today).days)
+    except ValueError:
+        return [f"Build the execution calendar backward from the supplied funding deadline: {deadline_raw}."]
+    if days == 0:
+        return [f"The stated funding deadline is {deadline_raw}. Treat execution as an immediate sprint and prioritize only prospects and actions that can realistically move now."]
+    setup_days = max(2, min(21, round(days * 0.18)))
+    ask_days = max(5, min(30, round(days * 0.30)))
+    relationship_days = max(1, days - setup_days - ask_days)
+    return [
+        f"Execution window: {days} days, ending {deadline_raw}. Build the action plan backward from this date rather than forcing a standard 90- or 120-day plan.",
+        f"First approximately {setup_days} days: confirm owners, complete Board relationship mapping, set up tracking and finish only the essential fundraising materials needed to begin.",
+        f"Next approximately {relationship_days} days: run the agreed attraction, introductions, prospect research and Know / Like / Trust activity while business and grant opportunities move on their real timelines.",
+        f"Protect roughly the final {ask_days} days for qualified asks, proposals, decisions, follow-up and closing activity, while stewardship begins immediately after support is secured.",
+        "At every Board meeting, review each delegated responsibility, evidence of progress, barriers, decisions required and the next action.",
+    ]
+
+
 def required_rank_for(idea_count: int) -> int:
     if idea_count == 0:
         return 0
@@ -251,6 +280,7 @@ def create_group_game_router(db) -> APIRouter:
         situation_sections = situation.get("sections") or {}
         working = await db.game_strategies.find_one({"user_id":user_id,"mode":"working"},{"_id":0},sort=[("generated_at",-1)]) or {}
         working_data=working.get("data") or {}
+        profile = await get_profile(user_id)
         for definition in ROUND_DEFS:
             section_id = SECTION_ID_BY_KEY.get(definition.get("source_key", ""))
             responses = []
@@ -341,7 +371,8 @@ def create_group_game_router(db) -> APIRouter:
                 if key not in pool:
                     pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],
                         "text":recommendation[:800],"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation based on your working strategy"],"contributor_ids":[],"order":order};order+=1
-            for recommendation in ROONEY_RECOMMENDATIONS.get(definition["section_key"], []):
+            recommendations = deadline_execution_recommendations(profile) if definition["section_key"] == "execution" else ROONEY_RECOMMENDATIONS.get(definition["section_key"], [])
+            for recommendation in recommendations:
                 key=normalise(recommendation)
                 if key not in pool:
                     pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":recommendation,"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation"],"contributor_ids":[],"order":order};order+=1
