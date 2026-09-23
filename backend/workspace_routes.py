@@ -41,6 +41,10 @@ class MaterialEdit(BaseModel):
     display_text: str = Field(min_length=1)
 
 
+class BoardProfilesUpdate(BaseModel):
+    priority_roles: List[dict] = Field(min_length=1)
+
+
 class SetCurrent(BaseModel):
     version: int
 
@@ -800,6 +804,50 @@ def create_workspace_router(db) -> APIRouter:
             query["application_id"] = application_id
         materials = await db.generated_materials.find(query, {"_id": 0, "versions.structured": 0}).sort("updated_at", -1).to_list(300)
         return {"materials": materials}
+
+    @router.get("/board-profiles")
+    async def board_profiles(request: Request):
+        member = await current_member(request)
+        material = await get_current_material(db, member["user_id"], "powerhouse_board_blueprint")
+        lead = await get_lead(db, member) or {}
+        desired_raw = ((lead.get("answers") or {}).get("new_members_needed") or "").strip()
+        desired_count = int(desired_raw) if desired_raw.isdigit() else None
+        current = material["current"] if material else None
+        return {
+            "material": material["material"] if material else None,
+            "priority_roles": (current.get("structured") or {}).get("priority_roles", []) if current else [],
+            "desired_count": desired_count,
+        }
+
+    @router.put("/board-profiles")
+    async def update_board_profiles(payload: BoardProfilesUpdate, request: Request):
+        member = await current_member(request)
+        lead = await get_lead(db, member) or {}
+        desired_raw = ((lead.get("answers") or {}).get("new_members_needed") or "").strip()
+        desired_count = int(desired_raw) if desired_raw.isdigit() else None
+        roles = []
+        for raw in payload.priority_roles:
+            role_name = str(raw.get("role_name") or "").strip()
+            why = str(raw.get("why_this_person_is_important") or "").strip()
+            support = str(raw.get("how_this_person_can_support") or "").strip()
+            if not role_name:
+                raise HTTPException(status_code=422, detail="Every Board Member profile needs a role or profile title.")
+            roles.append({
+                "role_name": role_name[:180],
+                "why_this_person_is_important": why[:1200],
+                "how_this_person_can_support": support[:1200],
+            })
+        if desired_count and len(roles) != desired_count:
+            raise HTTPException(
+                status_code=409,
+                detail=f"You told us you want to recruit {desired_count} new Board Members. Keep exactly {desired_count} profiles by editing, replacing or removing one before approval.",
+            )
+        material = await save_generation(
+            db, member["user_id"], "powerhouse_board_blueprint",
+            {"priority_roles": roles},
+            "Founder-edited Board Member profiles from the six Recruitment Questions.",
+        )
+        return {"material": material, "priority_roles": roles, "desired_count": desired_count}
 
     @router.get("/materials/{material_id}")
     async def get_material(material_id: str, request: Request):
