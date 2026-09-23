@@ -37,6 +37,7 @@ export const GameNightSection = () => {
     setForm({
       name: night?.name || defaultName || "Board Fundraising Day/Night",
       meeting_date: night?.meeting_date || "",
+      funding_deadline: night?.funding_deadline || "",
       start_time: night?.start_time || "",
       timezone_name: night?.timezone || "Eastern Time (ET)",
       meeting_format: night?.meeting_format || "in_person",
@@ -50,6 +51,10 @@ export const GameNightSection = () => {
   const save = async () => {
     setError("");
     if (!form.meeting_date) { setError("Meeting date is required."); return; }
+    if (!form.funding_deadline) { setError("Funding deadline is required."); return; }
+    if (new Date(form.funding_deadline + "T00:00:00") < new Date(form.meeting_date + "T00:00:00")) {
+      setError("The funding deadline cannot be before the Board meeting date."); return;
+    }
     if (!form.start_time) { setError("Start time is required."); return; }
     if (!form.timezone_name) { setError("Time zone is required."); return; }
     setBusy(true);
@@ -73,7 +78,7 @@ export const GameNightSection = () => {
       <div className="bfg-panel-head">
         <div>
           <><p className="bfg-eyebrow">STEP 3</p><h2>Set Your Board Fundraising Day/Night</h2></>
-          <p className="bfg-panel-sub">Add the details of your next board meeting so your Board Fundraising Day/Night is connected to a specific date, time and meeting.</p>
+          <p className="bfg-panel-sub">Set the next Board meeting and tell us when the money is needed. The funding deadline becomes the anchor for the execution timeline in your final fundraising strategy.</p>
         </div>
         {saved && !editing && (
           <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={startEdit} data-testid="bfg-edit-game-night-btn">Edit Meeting Details</button>
@@ -87,7 +92,8 @@ export const GameNightSection = () => {
       {saved && !editing && (
         <div className="bfg-night-summary" data-testid="bfg-game-night-summary">
           <p className="bfg-eyebrow" style={{ margin: "8px 0 4px" }}>Your Next Board Fundraising Day/Night</p>
-          <div className="bfg-summary-row"><span>Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
+          <div className="bfg-summary-row"><span>Board Meeting Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
+          <div className="bfg-summary-row"><span>Funding Deadline</span><strong>{fmtDate(night.funding_deadline)}</strong></div>
           <div className="bfg-summary-row"><span>Time</span><strong>{fmtTime(night.start_time)} {night.timezone}</strong></div>
           <div className="bfg-summary-row"><span>Format</span><strong>{formatLabel}</strong></div>
           {["online", "hybrid"].includes(night.meeting_format) && night.meeting_link && (
@@ -106,6 +112,12 @@ export const GameNightSection = () => {
             <label className="bfg-field"><span>Meeting Date <b>*</b></span>
               <input type="date" value={form.meeting_date} onChange={set("meeting_date")} data-testid="bfg-night-date" />
             </label>
+            <label className="bfg-field"><span>When Do You Need The Money? <b>*</b></span>
+              <input type="date" min={form.meeting_date || undefined} value={form.funding_deadline} onChange={set("funding_deadline")} data-testid="bfg-funding-deadline" />
+              <small>This deadline determines whether your execution plan should be 30, 60, 90, 120 days or another realistic period.</small>
+            </label>
+          </div>
+          <div className="bfg-two-col">
             <label className="bfg-field"><span>Start Time <b>*</b></span>
               <input type="time" value={form.start_time} onChange={set("start_time")} data-testid="bfg-night-time" />
             </label>
