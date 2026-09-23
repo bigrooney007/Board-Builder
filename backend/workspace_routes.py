@@ -1002,17 +1002,21 @@ def create_workspace_router(db) -> APIRouter:
                 raise HTTPException(status_code=422, detail="Every Board Member profile needs a role or profile title.")
             roles.append({
                 "role_name": role_name[:180],
+                "gap_this_role_fills": [str(item)[:300] for item in (raw.get("gap_this_role_fills") or [])[:10]],
                 "why_this_person_is_important": why[:1200],
                 "how_this_person_can_support": support[:1200],
+                "what_to_look_for": [str(item)[:400] for item in (raw.get("what_to_look_for") or [])[:10]],
             })
         if desired_count and len(roles) != desired_count:
             raise HTTPException(
                 status_code=409,
                 detail=f"You told us you want to recruit {desired_count} new Board Members. Keep exactly {desired_count} profiles by editing, replacing or removing one before approval.",
             )
+        existing = await get_current_material(db, member["user_id"], "powerhouse_board_blueprint")
+        existing_structured = ((existing or {}).get("current") or {}).get("structured") or {}
         material = await save_generation(
             db, member["user_id"], "powerhouse_board_blueprint",
-            {"priority_roles": roles},
+            {**existing_structured, "priority_roles": roles},
             "Founder-edited Board Member profiles from the six Recruitment Questions.",
         )
         return {"material": material, "priority_roles": roles, "desired_count": desired_count}
