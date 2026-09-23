@@ -148,7 +148,7 @@ export const BoardMembersSection = () => {
     catch (err) {
       const detail = err.response?.data?.detail;
       if (detail === "meeting_details_required") {
-        setNotice("ADD YOUR BOARD FUNDRAISING DAY/NIGHT DETAILS FIRST — Save your meeting date and time so your participants know when they need to complete the game.");
+        setNotice("ADD YOUR BOARD MEETING AND FUNDING DEADLINE FIRST — Save the meeting date, time and the date the money is needed so the invitation carries the full context and the execution plan can be built to the deadline.");
         document.querySelector('[data-tour="prepare-meeting"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
       } else {
         setNotice(typeof detail === "string" ? detail : "Something went wrong. Please try again.");
