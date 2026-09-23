@@ -1074,13 +1074,6 @@ def create_workspace_router(db) -> APIRouter:
 
             failures = []
             for generation_type in CAMPAIGN_TYPES:
-                existing = await db.generated_materials.find_one(
-                    {"user_id": user_id, "type": generation_type,
-                     "$or": [{"application_id": ""}, {"application_id": None}, {"application_id": {"$exists": False}}]},
-                    {"_id": 0, "material_id": 1},
-                )
-                if existing:
-                    continue
                 await db.recruitment_preparation.update_one(
                     {"user_id": user_id},
                     {"$set": {"stage": generation_type, "updated_at": now_iso()}},
