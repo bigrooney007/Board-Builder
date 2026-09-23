@@ -34,6 +34,7 @@ LEGACY_RECOMMIT_NO = "No, I am not able to recommit to serving on the Board."
 LEGACY_RECOMMIT_UNSURE = "I am not sure yet. I need more information or would like to discuss my role before deciding."
 
 ADVISORY_OPTION = "Transition to an Advisory Board / Advisory Role"
+SUPPORT_OPTION = "Transition to Another Volunteer/Support Role"  # legacy compatibility only
 
 
 class BoardMemberCreate(BaseModel):
@@ -1011,9 +1012,7 @@ def create_reactivation_router(db) -> APIRouter:
                 "founder_title": context["founder_title"],
                 "introduction": (form or {}).get("intro_text", "") if (form or {}).get("status") == "Approved" else "",
                 "submitted": record["status"] == "COMPLETED",
-                "allow_advisory": ADVISORY_OPTION in context["transition_options"],
-                "allow_support_role": SUPPORT_OPTION in context["transition_options"],
-                "allow_step_off": "Step Down From the Board" in context["transition_options"],
+                "form_variant": record.get("form_variant", "full"),
                 "recommitment_options": RECOMMITMENT_OPTIONS,
                 "prefill": {"full_name": record.get("name", ""), "email": record.get("email", ""), "phone": record.get("phone", ""), "role": record.get("role", "")},
             }
@@ -1028,9 +1027,7 @@ def create_reactivation_router(db) -> APIRouter:
             "founder_title": context["founder_title"],
             "introduction": form.get("intro_text", ""),
             "submitted": False,
-            "allow_advisory": ADVISORY_OPTION in context["transition_options"],
-            "allow_support_role": SUPPORT_OPTION in context["transition_options"],
-            "allow_step_off": "Step Down From the Board" in context["transition_options"],
+            "form_variant": "full",
             "recommitment_options": RECOMMITMENT_OPTIONS,
             "prefill": {"full_name": "", "email": "", "phone": "", "role": ""},
         }
@@ -1049,14 +1046,17 @@ def create_reactivation_router(db) -> APIRouter:
                     "member_record_id": str(uuid.uuid4()), "user_id": form["user_id"],
                     "name": payload.full_name, "email": email, "phone": payload.phone, "role": "",
                     "source": "recommitment_link", "status": "SENT", "form_token": secrets.token_urlsafe(32),
+                    "form_variant": "active_advisory" if payload.form_variant == "active_advisory" else "full",
                     "call_notes": "", "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 await db.reactivation_board_members.insert_one({**record})
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
-        if payload.recommitment not in RECOMMITMENT_OPTIONS:
-            raise HTTPException(status_code=422, detail="Invalid recommitment selection")
-        if payload.recommitment == RECOMMIT_YES:
+        variant = record.get("form_variant") or ("active_advisory" if payload.form_variant == "active_advisory" else "full")
+        allowed_choices = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY] if variant == "active_advisory" else RECOMMITMENT_OPTIONS
+        if payload.recommitment not in allowed_choices:
+            raise HTTPException(status_code=422, detail="This choice is not available on this Recommitment Form")
+        if payload.recommitment == RECOMMIT_ACTIVE:
             required = [payload.why_joined, payload.participation_barriers, payload.ownership_area,
                         payload.strengths_resources, payload.monthly_availability, payload.experience_improvement]
             if any(not value.strip() for value in required) or not payload.expertise or not (1 <= len(payload.contribution_interests) <= 3):
@@ -1065,17 +1065,18 @@ def create_reactivation_router(db) -> APIRouter:
                 raise HTTPException(status_code=422, detail="Please answer every required question")
             if payload.leadership_interest == "Yes" and not payload.leadership_area.strip():
                 raise HTTPException(status_code=422, detail="Please tell us the area or responsibility you would be interested in leading")
-        elif payload.recommitment == RECOMMIT_NO:
-            if not payload.decision_reason.strip():
-                raise HTTPException(status_code=422, detail="Please answer every required question")
-        elif not payload.decision_support.strip():
-            raise HTTPException(status_code=422, detail="Please answer every required question")
+        elif payload.recommitment == RECOMMIT_ADVISORY:
+            if not payload.decision_reason.strip() or not payload.strengths_resources.strip() or not payload.monthly_availability.strip():
+                raise HTTPException(status_code=422, detail="Please tell us why Advisory Board service fits you, what you can contribute and your realistic availability")
+        elif payload.recommitment == RECOMMIT_STEP_DOWN and not payload.decision_reason.strip():
+            raise HTTPException(status_code=422, detail="Please briefly tell us what has led to your decision to step down")
         now = datetime.now(timezone.utc).isoformat()
         response = payload.model_dump()
         response["email"] = str(payload.email).lower()
         await db.reactivation_board_members.update_one(
             {"member_record_id": record["member_record_id"], "status": {"$ne": "COMPLETED"}},
-            {"$set": {"status": "COMPLETED", "response": response, "submitted_at": now, "name": payload.full_name, "email": response["email"]}},
+            {"$set": {"status": "COMPLETED", "response": response, "form_variant": variant,
+                      "submitted_at": now, "name": payload.full_name, "email": response["email"]}},
         )
         context = await founder_context(record["user_id"])
         try:
