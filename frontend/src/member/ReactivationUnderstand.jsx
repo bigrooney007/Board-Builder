@@ -144,7 +144,7 @@ const MemberUnderstanding = ({ row, reload }) => {
         <Modal onClose={() => setViewing(false)} testId={`understand-modal-${id}`}>
           <h2>Understanding {row.name}'s Response</h2>
           <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }} data-testid={`understand-text-${id}`}>{material.display_text}</div>
-          <Link className="button" style={{ marginTop: 14 }} to="/app/reactivation/self-guided/module/4" data-testid={`understand-go-conversation-${id}`}>PREPARE THE CONVERSATION</Link>
+          <Link className="button" style={{ marginTop: 14 }} to="/board-recommitment/dashboard#recommitment-decisions" data-testid={`understand-go-conversation-${id}`}>PREPARE THE CONVERSATION</Link>
         </Modal>
       )}
       {response && (
@@ -187,7 +187,7 @@ export default function ReactivationUnderstand() {
           ) : (
             <>
               <p>{C.emptyState}</p>
-              <Link className="button button-outline" to="/app/reactivation/self-guided/module/2">{reactivationUnderstandText.goToStep2}</Link>
+              <Link className="button button-outline" to="/board-recommitment/dashboard#recommitment-forms">{reactivationUnderstandText.goToStep2}</Link>
             </>
           )}
         </section>
