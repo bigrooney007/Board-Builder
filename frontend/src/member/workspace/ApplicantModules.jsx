@@ -67,41 +67,6 @@ const CandidateActions = ({ application, refresh, branding }) => {
           ) : null} />
       </div>
 
-      <div className="detail-section" data-testid="interview-guide-section">
-        <MaterialCard type="interview_guide" title={`Interview Guide — ${name}`} buttonLabel="Generate Interview Guide"
-          description="A short candidate-specific interview guide built from whatever verified information is available — application answers, professional profile, CV when available, your mission and the Board Member profiles you approved in Step 2. It gives you an introduction, no more than five tailored questions, a closing and a simple 1–5 scorecard. You score and make every decision."
-          applicationId={application.application_id} material={byType.interview_guide} refresh={refreshAll} approvable
-          extraActions={byType.interview_guide ? (
-            <button className="button button-back" onClick={() => printBranded(`Board Candidate Interview Guide — ${name}`, currentVersion(byType.interview_guide).display_text + "\n\nPOST-INTERVIEW NOTES\n\nMost Relevant Strengths:\n\n\nConcerns / Areas to Clarify:\n\n\nPotential Areas of Contribution:\n\n\nCommitment / Availability:\n\n\nFollow-Up Questions:\n\n\nOverall Notes:\n\n", branding || {})} data-testid="download-branded-interview-guide"><Download size={14} /> Download Branded Copy</button>
-          ) : null} />
-      </div>
-
-      <div className="detail-section" data-testid="interview-completion-section">
-        <h3>Interview Status: <span data-testid="interview-status">{interviewed ? `Completed${application.interview_completed_at ? ` — ${new Date(application.interview_completed_at).toLocaleDateString()}` : ""}` : "Not Completed"}</span></h3>
-        {!interviewed && (
-          <button className="button button-back" onClick={markInterviewComplete} data-testid="mark-interview-complete-button">Mark Interview Complete</button>
-        )}
-        {interviewed && (
-          <MaterialCard type="after_interview_thank_you" title={`After-Interview Thank-You — ${name}`} buttonLabel="Generate After-Interview Thank-You"
-            description="A decision-neutral thank-you for everyone who attended their interview. It never accepts, rejects or conditionally appoints — it simply thanks the candidate and says you will follow up once the review process is complete."
-            applicationId={application.application_id} material={byType.after_interview_thank_you} refresh={refreshAll} approvable
-            extraActions={byType.after_interview_thank_you ? (
-              <SendMaterialButton type="after_interview_thank_you" applicationId={application.application_id} recipientEmail={email}
-                label={application.emails_sent?.after_interview_thank_you ? "Send Again" : "Send After-Interview Thank-You"}
-                sentAt={application.emails_sent?.after_interview_thank_you} onSent={refreshAll} />
-            ) : null} />
-        )}
-        {interviewed && (
-          <MaterialCard type="after_interview_email" title={`Move Forward After Interview — ${name}`} buttonLabel="Generate Move Forward Email"
-            description="Use this ONLY after you have decided this candidate should move forward to References / Background Checks. It tells them they are proceeding to the next stage of the recruitment process — it is not a Board appointment. If you selected 'Further Conversation or Clarification Needed' or 'Do Not Move Forward', do not use this email."
-            applicationId={application.application_id} material={byType.after_interview_email} refresh={refreshAll} approvable
-            extraActions={byType.after_interview_email ? (
-              <SendMaterialButton type="after_interview_email" applicationId={application.application_id} recipientEmail={email}
-                label={application.emails_sent?.after_interview_email ? "Send Again" : "Send Move Forward Email"}
-                sentAt={application.emails_sent?.after_interview_email} onSent={refreshAll} />
-            ) : null} />
-        )}
-      </div>
     </>
   );
 };
