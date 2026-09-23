@@ -62,6 +62,8 @@ class ApplicationUpdate(BaseModel):
     interview_completed: Optional[bool] = None
     candidate_email: Optional[str] = None
     board_role: Optional[str] = None
+    portfolio_role_approved: Optional[bool] = None
+    portfolio_role_rationale: Optional[str] = None
 
 
 class ReferenceRecord(BaseModel):
@@ -1174,6 +1176,12 @@ def create_workspace_router(db) -> APIRouter:
             updates["profile_snapshot.email"] = payload.candidate_email.strip().lower()
         if payload.board_role is not None:
             updates["board_role"] = payload.board_role
+        if payload.portfolio_role_approved is not None:
+            updates["portfolio_role_approved"] = payload.portfolio_role_approved
+            if payload.portfolio_role_approved:
+                updates["portfolio_role_approved_at"] = now_iso()
+        if payload.portfolio_role_rationale is not None:
+            updates["portfolio_role_rationale"] = payload.portfolio_role_rationale
         if payload.background_check is not None:
             check = payload.background_check
             if check.get("status") and check["status"] not in BACKGROUND_STATUSES:
@@ -1219,6 +1227,37 @@ def create_workspace_router(db) -> APIRouter:
         await run_interview_guide(db, application_id)
         application = await db.opportunity_applications.find_one({"application_id": application_id}, {"_id": 0, "cv_text": 0})
         return {"interview_guide": application.get("interview_guide", {})}
+
+    @router.post("/applications/{application_id}/role-recommendation")
+    async def recommend_board_role(application_id: str, request: Request):
+        member = await selection_member(request)
+        application = await owned_application(member["user_id"], application_id)
+        context = await build_org_context(db, member["user_id"], member)
+        context += "\n\n" + application_context_text(application)
+        if application.get("board_role"):
+            context += f"\n\nROLE OR EXPERTISE AREA ORIGINALLY ASSOCIATED WITH THIS CANDIDATE: {application['board_role']}"
+        cv_doc = await db.opportunity_applications.find_one(
+            {"application_id": application_id}, {"_id": 0, "cv_text": 1})
+        if cv_doc and cv_doc.get("cv_text"):
+            context += "\n\nCANDIDATE CV / RESUME:\n" + cv_doc["cv_text"][:12000]
+        try:
+            recommendation = await generate_structured(
+                "board_role_recommendation",
+                context,
+                "Recommend the strongest Board role or contribution focus for this individual. Keep the recommendation practical, specific and editable by the founder.",
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail="The Board role recommendation could not be prepared yet.") from exc
+        await db.opportunity_applications.update_one(
+            {"application_id": application_id, "owner_user_id": member["user_id"]},
+            {"$set": {
+                "board_role_recommendation": recommendation,
+                "portfolio_role_approved": False,
+                "portfolio_role_recommended_at": now_iso(),
+                "updated_at": now_iso(),
+            }},
+        )
+        return {"recommendation": recommendation}
 
     # ---------- Module 6: Signatures ----------
     AGREEMENT_TYPES = {"board_member_agreement", "confidentiality_agreement", "conflict_of_interest_agreement"}
