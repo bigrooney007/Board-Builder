@@ -1801,19 +1801,20 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "user_id": member["user_id"],
                     "section_id": section_id,
                     "first_response": [first],
-                    "first_move_locked": False,
-                    "final_response": [],
+                    "first_move_locked": True,
+                    "final_response": [first],
                     "guided_selections": {},
                     "additional_ideas": {},
                     "stage_responses": {},
                     "preferences": [],
                     "do_not_want": [],
-                    "group_game_ideas": [],
-                    "extras": {},
-                    "fine_tuning": {},
-                    "approved_entries": [],
-                    "approved_display": "",
-                    "completed": False,
+                    "group_game_ideas": [first],
+                    "extras": {"second_response": first},
+                    "fine_tuning": {"completed": True},
+                    "approved_entries": [{"text": first, "source": "founder"}],
+                    "approved_display": first,
+                    "completed": True,
+                    "completed_at": now,
                     "internal_preview": True,
                     "created_at": now,
                     "updated_at": now,
@@ -1940,6 +1941,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "user_id": member["user_id"],
                 "name": f"{ORG_NAME} Board Fundraising Night",
                 "meeting_date": "2026-10-08",
+                "funding_deadline": "2027-06-30",
                 "start_time": "18:00",
                 "timezone": "America/New_York",
                 "meeting_format": "online",
@@ -1953,6 +1955,402 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
+
+
+        group_session_id = f"admin-preview-group-session-{tag}"
+        group_token = f"admin-preview-group-token-{tag}"
+        await db.group_game_sessions.update_one(
+            {"session_id": group_session_id},
+            {"$set": {
+                "session_id": group_session_id, "user_id": member["user_id"], "token": group_token,
+                "status": "completed", "current_round": 9, "started_at": now, "completed_at": now,
+                "updated_at": now, "created_at": now, "internal_preview": True,
+            }},
+            upsert=True,
+        )
+
+        participant_rows = [
+            (primary_id, primary_token, "Rooney"),
+            *[(person_id, token, name.split(" ")[0]) for person_id, token, name, _email, _title, _ideas in board_people],
+        ]
+        for board_member_id, slot_id, first_name in participant_rows:
+            await db.group_game_participants.update_one(
+                {"session_id": group_session_id, "board_member_id": board_member_id},
+                {"$set": {
+                    "participant_id": f"admin-preview-group-participant-{board_member_id}-{tag}",
+                    "session_id": group_session_id, "board_member_id": board_member_id, "slot_id": slot_id,
+                    "name": first_name, "device_id": f"admin-preview-device-{board_member_id}",
+                    "joined_at": now, "last_active_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+
+        group_rounds = [
+            ("who_should_fund", "Who Should Fund Our Mission", [
+                "Professionals and business owners who care about youth opportunity, workforce mobility and mentoring.",
+                "Employers that need early-career talent and want visible local community impact.",
+                "Foundations and public funders focused on youth employment, education access and economic mobility.",
+            ]),
+            ("where_to_find", "Where We Can Consistently Find Them", [
+                "Start with Board and staff networks, employer associations, chambers of commerce and professional groups.",
+                "Use a weekly prospect-research routine and assign every qualified prospect to a relationship owner.",
+                "Use community foundations and funder databases to identify grantors whose priorities and geography match the mission.",
+            ]),
+            ("attract_attention", "How We Will Attract Their Attention", [
+                "Publish credible youth outcomes, employer stories and useful youth-employment insight before making most asks.",
+                "Use warm introductions and small mission-connected briefings to create direct relationships.",
+                "Give businesses a clear partnership proposition tied to youth talent, community impact and measurable outcomes.",
+            ]),
+            ("fundraising_process", "The Process We Will Use To Raise Money", [
+                "Use Know, Like, Trust, Ask, Follow Up and Steward as the common relationship pathway.",
+                "Every prospect must have a relationship owner, stage, next action and follow-up point.",
+                "Stewardship begins immediately after support is secured and should prepare the relationship for the next gift or partnership.",
+            ]),
+            ("team", "Team", [
+                "Rooney coordinates the fundraising system and staff follow-up.",
+                "Maya opens and develops corporate and employer relationships.",
+                "Daniel helps maintain fundraising performance visibility and Board accountability.",
+                "Aisha strengthens fundraising messaging, partner stories and campaign visibility.",
+            ]),
+            ("technology", "Technology", [
+                "Use one lightweight CRM for prospects, relationship owners, stages and next actions.",
+                "Use one shared fundraising dashboard for monthly Board review.",
+                "Keep fundraising materials in one shared cloud folder so Board Members can find current versions quickly.",
+            ]),
+            ("materials", "Materials", [
+                "Complete one case for support tied to the $500,000 goal and youth outcomes.",
+                "Create a corporate partnership one-pager and employer briefing deck.",
+                "Prepare major-donor conversation guides, follow-up messages and stewardship templates.",
+            ]),
+            ("budget", "Budget", [
+                "Fund the smallest CRM and prospect-research setup the team will actually maintain.",
+                "Budget for communications support, donor stewardship and only the cultivation activities required by the strategy.",
+                "Use existing staff, Board leadership, templates and current subscriptions before buying additional capacity.",
+            ]),
+            ("execution", "Execution And Accountability", [
+                "Days 1–30: configure the system, finalize core materials, map warm relationships and confirm owners.",
+                "Days 31–60: launch visibility, introductions, prospect research and cultivation.",
+                "Days 61–90: move ready relationships into meetings, proposals and asks while continuing follow-up and stewardship.",
+                "Review fundraising responsibilities, evidence, barriers and next actions at every Board meeting until the June 30, 2027 deadline.",
+            ]),
+        ]
+        for round_number, (section_key, title, ideas) in enumerate(group_rounds, 1):
+            round_id = f"admin-preview-group-round-{round_number}-{tag}"
+            idea_rows = []
+            selected_ids = []
+            results = []
+            for index, idea_text in enumerate(ideas):
+                idea_id = f"admin-preview-group-idea-{round_number}-{index + 1}-{tag}"
+                idea_rows.append({
+                    "idea_id": idea_id, "session_id": group_session_id, "round_number": round_number,
+                    "section_key": section_key, "text": idea_text, "normalized": idea_text.lower(),
+                    "contributor_names": ["Board discussion"], "contributor_ids": [], "order": index,
+                    "internal_preview": True,
+                })
+                selected_ids.append(idea_id)
+                results.append({
+                    "idea_id": idea_id, "text": idea_text, "suggested_by": "Board discussion",
+                    "total_score": 1, "first_place_count": 1 if index == 0 else 0,
+                    "selection_count": 1, "order": index, "rank": index + 1,
+                    "prioritised": True, "additional": False, "decision_source": "board_checkbox",
+                })
+            await db.group_game_rounds.update_one(
+                {"session_id": group_session_id, "round_number": round_number},
+                {"$set": {
+                    "round_id": round_id, "session_id": group_session_id, "round_number": round_number,
+                    "section_key": section_key, "title": title,
+                    "instruction": f"Admin Preview completed Board discussion for {title}.",
+                    "status": "closed", "required_rank": 0, "idea_count": len(idea_rows),
+                    "started_at": now, "closed_at": now, "created_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+            for idea_row in idea_rows:
+                await db.group_game_ideas.update_one(
+                    {"idea_id": idea_row["idea_id"]}, {"$set": idea_row}, upsert=True)
+            await db.group_game_host_decisions.update_one(
+                {"session_id": group_session_id, "round_number": round_number},
+                {"$set": {
+                    "session_id": group_session_id, "round_number": round_number,
+                    "selected_idea_ids": selected_ids, "additional_agreed_ideas": [],
+                    "created_at": now, "updated_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+            await db.group_game_results.update_one(
+                {"session_id": group_session_id, "round_number": round_number},
+                {"$set": {
+                    "session_id": group_session_id, "round_number": round_number, "round_id": round_id,
+                    "section_key": section_key, "title": title, "results": results, "computed_at": now,
+                    "internal_preview": True,
+                }},
+                upsert=True,
+            )
+
+        transcript_id = f"admin-preview-fundraising-transcript-{tag}"
+        await db.game_meeting_transcripts.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "transcript_id": transcript_id, "user_id": member["user_id"],
+                "text": fundraising_meeting_transcript(), "source": "admin_preview_fixture",
+                "filename": "BrightPath-Board-Fundraising-Meeting-Transcript.txt",
+                "submitted_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+            }},
+            upsert=True,
+        )
+
+        strategy_id = f"admin-preview-final-fundraising-strategy-{tag}"
+        strategy_data = {
+            "executive_summary": (
+                "BrightPath Youth Alliance will pursue $500,000 by June 30, 2027 through one Board-owned fundraising system. "
+                "The strategy prioritizes mission-aligned individuals, employers and grant funders, moves every qualified relationship through a consistent Know, Like, Trust, Ask, Follow Up and Steward pathway, and gives each Board Member a specific execution responsibility."
+            ),
+            "fundraising_goal": {
+                "amount": "$500,000", "currency": "USD", "deadline": "June 30, 2027",
+                "purpose": "Fund program growth, fundraising capacity and employer-partnership expansion.",
+                "summary": "The deadline drives the execution calendar. System setup happens first, then the Board moves qualified relationships toward decisions early enough to pursue the full goal before June 30, 2027.",
+            },
+            "fundraising_audiences": {
+                "individuals": [
+                    {"title": "Mission-aligned professionals and business owners", "explanation": "People who care about youth opportunity, education, mentoring and economic mobility and have the capacity to make meaningful individual gifts.", "focus": "Start with warm Board, staff and alumni connections."},
+                    {"title": "High-capacity people connected to existing supporters", "explanation": "Qualified people who can be introduced through trusted relationships rather than cold outreach.", "focus": "Use relationship mapping before prospecting outside the network."},
+                ],
+                "businesses": [
+                    {"title": "Employers seeking early-career talent", "explanation": "Companies whose workforce needs connect directly to BrightPath's youth-employment mission.", "focus": "Lead with talent pathways, measurable community impact and employee engagement."},
+                    {"title": "Local and regional businesses with youth or community-investment priorities", "explanation": "Businesses whose geography, customers, workforce or social-impact priorities overlap with the communities BrightPath serves.", "focus": "Pursue strategic partnerships, not one-off logo sponsorships."},
+                ],
+                "grantors": [
+                    {"title": "Youth employment and workforce funders", "explanation": "Foundations and public funders whose priorities match youth employment, education access, mentoring and economic mobility.", "focus": "Research eligible costs and application calendars proactively."},
+                ],
+            },
+            "where_to_find": {
+                "priorities": [
+                    {"title": "Board and staff relationship maps", "explanation": "Start with trusted personal, professional, employer and community relationships."},
+                    {"title": "Employer associations and chambers of commerce", "explanation": "Use places where business decision makers already gather."},
+                    {"title": "Community foundations and funder databases", "explanation": "Use filters for mission, geography, eligible costs and decision calendars."},
+                ],
+                "additional_ideas": ["Professional associations, alumni networks and local business events."],
+            },
+            "attraction": {
+                "priorities": [
+                    {"title": "Evidence-led youth outcome content", "explanation": "Show credible results, useful insight and participant stories with consent before asking for support."},
+                    {"title": "Warm introductions and small briefings", "explanation": "Use trusted people to create direct conversations with qualified prospects."},
+                    {"title": "Employer-facing partnership proposition", "explanation": "Explain how partnership creates value for young people, employers and the community."},
+                ],
+                "additional_ideas": ["Site visits and selected mission-connected events for qualified prospects."],
+            },
+            "fundraising_process": {
+                "individuals": {
+                    "how_this_process_works": "Use warm relationships and evidence to move qualified individuals from awareness to an appropriate gift, then steward the relationship for long-term support.",
+                    "know": ["Board or staff introduction", "Evidence-led content or event encounter"],
+                    "like": ["Personal follow-up", "Useful mission-connected insight", "Small-group briefing"],
+                    "trust": ["Youth outcome evidence", "Transparent explanation of funding use", "Leadership conversation"],
+                    "ask": ["Make a specific gift request matched to capacity and relationship maturity"],
+                    "follow_up": ["Record next action immediately and follow up until the prospect gives a clear answer"],
+                    "steward": ["Thank promptly, report impact and maintain a meaningful relationship after the gift"],
+                },
+                "businesses": {
+                    "how_this_process_works": "Target employers and businesses with a real mission/business connection, reach the correct decision maker and develop a partnership proposition before asking for financial support.",
+                    "know": ["Warm Board introduction", "Employer-network visibility"],
+                    "like": ["Share useful youth-employment insight", "Invite decision makers to a briefing"],
+                    "trust": ["Show employer outcomes, community evidence and clear partnership delivery"],
+                    "ask": ["Present a specific partnership or sponsorship proposition"],
+                    "follow_up": ["Track decision maker, proposal status, next action and internal decision timeline"],
+                    "steward": ["Report partnership outcomes and develop the relationship beyond the first contribution"],
+                },
+                "grantors": {
+                    "how_this_process_works": "Research funders whose priorities and eligible costs actually fit BrightPath, understand the decision calendar and cultivate where possible before submitting.",
+                    "know": ["Funder research and Board/staff relationships"],
+                    "like": ["Attend relevant funder briefings and communicate where appropriate"],
+                    "trust": ["Demonstrate mission alignment, outcomes and delivery capacity"],
+                    "ask": ["Submit a tailored application or proposal against the actual funder's requirements"],
+                    "follow_up": ["Track clarification requests, decisions and future cycles"],
+                    "steward": ["Deliver reports, communicate outcomes and prepare for renewal"],
+                },
+            },
+            "board_fundraising_process": {
+                "know": ["Identify people, businesses and grantors in each Board Member's own network who match the approved funder profiles."],
+                "like": ["Use the Board Member's relationship to enable an introduction or first conversation."],
+                "trust": ["Bring the organization into the relationship with credible evidence, stories and clear follow-through."],
+                "ask": ["The Board Member joins or enables an appropriate ask according to the responsibility they agreed to carry."],
+                "follow_up": ["Keep every introduced relationship in the shared pipeline with a next action and owner."],
+                "steward": ["Board Members help maintain important relationships they opened while staff manages consistent organization follow-up."],
+            },
+            "team_roles": [
+                {"role": "Fundraising system coordination", "assigned": "Rooney Akpesiri", "responsibility": "Coordinate the fundraising pipeline, staff follow-up, materials and Board accountability."},
+                {"role": "Corporate partnerships and introductions", "assigned": "Maya Thompson", "responsibility": "Open at least five qualified corporate/employer relationships in the first month and help develop partnership opportunities."},
+                {"role": "Finance and fundraising performance", "assigned": "Daniel Brooks", "responsibility": "Help build the fundraising dashboard and review pipeline, revenue and budget performance with the Board."},
+                {"role": "Fundraising communications and visibility", "assigned": "Aisha Patel", "responsibility": "Strengthen the case for support, publish evidence-led content and develop partner stories."},
+            ],
+            "execution_resources": {
+                "people": ["Founder/fundraising coordinator", "Board relationship owners", "Board finance oversight", "Board communications support"],
+                "technology": ["One lightweight CRM", "Shared fundraising dashboard", "Email platform", "Shared cloud files"],
+                "materials": ["Case for support", "Corporate partnership one-pager", "Impact evidence sheet", "Major donor conversation guide", "Follow-up and stewardship templates"],
+                "resources": ["Board relationship maps", "Outcome data", "Participant stories with consent", "Employer and funder research"],
+                "content": ["Evidence-led youth outcome posts", "Partner stories", "Useful youth-employment insight", "Qualified prospect briefing content"],
+            },
+            "execution_budget": {
+                "required_now": [
+                    {"item": "CRM / prospect tracking", "why_needed": "One reliable place for prospects, owners, stages and next actions.", "lowest_cost_approach": "Use the smallest system the team can maintain consistently.", "cost": "PRICE TO CONFIRM"},
+                    {"item": "Prospect research and communications support", "why_needed": "Support proactive pipeline building and consistent visibility.", "lowest_cost_approach": "Start with Board networks, public sources and existing staff/templates.", "cost": "PRICE TO CONFIRM"},
+                ],
+                "later_or_optional": [
+                    {"item": "Large paid prospect database", "why_later": "Only add after the team is consistently using the core pipeline.", "lowest_cost_approach": "Use public and relationship-led research first.", "cost": "PRICE TO CONFIRM"},
+                ],
+                "cost_reduction_options": ["Reuse existing subscriptions and brand assets.", "Use Board networks before buying prospect lists.", "Create repeatable templates before outsourcing routine materials."],
+                "budget_summary": "Start lean. Fund only the capacity, technology and activity required to execute the adopted strategy, and confirm real prices before approving spend.",
+            },
+            "execution_timeline": {
+                "phase_1_build_the_system": ["Days 1–30: configure CRM and dashboard, complete relationship maps, finalize core materials and confirm owners."],
+                "phase_2_build_know_like_trust": ["Days 31–60: launch evidence-led visibility, warm introductions, employer outreach and funder cultivation."],
+                "phase_3_ask_campaign": ["Days 61–90 and onward: move qualified relationships into asks, proposals and decisions as soon as trust and timing permit."],
+                "follow_up_and_steward": ["Track follow-up continuously and begin stewardship immediately after any gift or partnership is secured."],
+                "business_timeline": ["Work each employer/business relationship around its real budget and decision calendar rather than waiting for one organization-wide campaign date."],
+                "grantor_timeline": ["Track each grantor's actual application and decision timeline and work backward from the June 30, 2027 funding deadline."],
+            },
+            "board_priorities": [
+                {"area": "First 30 Days", "items": ["Set up the shared system", "Map warm relationships", "Finalize the case for support", "Open the first five corporate relationships"]},
+                {"area": "Board Accountability", "items": ["Review every delegated fundraising responsibility and next action at each Board meeting"]},
+            ],
+            "additional_board_ideas": [
+                {"area": "Future Experiments", "items": ["Consider a small employer briefing event after the core pipeline is operating consistently"]},
+            ],
+            "next_step": "Your final fundraising strategy is ready. Review it with your board, send it to every participant and move into execution using the Board Portfolios, Execution Materials and Relationship Mapping.",
+        }
+        await db.game_strategies.update_one(
+            {"strategy_id": strategy_id},
+            {"$set": {
+                "strategy_id": strategy_id, "user_id": member["user_id"], "mode": "final",
+                "status": "adopted", "version": 1, "schema_version": 2,
+                "prepared_by": f"The Board of {ORG_NAME}", "generated_at": now, "adopted_at": now,
+                "share_token": f"admin-preview-fundraising-strategy-share-{tag}", "data": strategy_data,
+                "section_edits": {}, "source": "admin_preview_fixture", "internal_preview": True,
+                "created_at": now, "updated_at": now,
+            }},
+            upsert=True,
+        )
+        await db.game_strategy_jobs.update_one(
+            {"user_id": member["user_id"], "mode": "final"},
+            {"$set": {
+                "user_id": member["user_id"], "mode": "final", "status": "done", "strategy_id": strategy_id,
+                "error": "", "started_at": now, "finished_at": now, "internal_preview": True,
+            }},
+            upsert=True,
+        )
+
+        portfolio_specs = {
+            primary_id: {
+                "name": "Rooney Akpesiri", "email": member["email"], "availability": "4–6 hours per month",
+                "role": "Fundraising System Coordinator",
+                "commitment": "Coordinate the fundraising pipeline, staff follow-up, materials and Board accountability.",
+                "activities": ["Maintain the shared pipeline", "Coordinate follow-up and staff execution", "Prepare Board fundraising progress updates"],
+            },
+            board_people[0][0]: {
+                "name": "Maya Thompson", "email": board_people[0][3], "availability": "2–4 hours per month",
+                "role": "Corporate Partnerships Lead",
+                "commitment": "Open and develop qualified corporate and employer relationships and join selected partnership asks.",
+                "activities": ["Make warm corporate introductions", "Join priority employer meetings", "Help steward relationships she opens"],
+            },
+            board_people[1][0]: {
+                "name": "Daniel Brooks", "email": board_people[1][3], "availability": "2–4 hours per month",
+                "role": "Fundraising Performance Lead",
+                "commitment": "Help build the fundraising dashboard and review pipeline, revenue and budget performance.",
+                "activities": ["Review pipeline numbers", "Help structure the dashboard", "Support selected asks where appropriate"],
+            },
+            board_people[2][0]: {
+                "name": "Aisha Patel", "email": board_people[2][3], "availability": "2–4 hours per month",
+                "role": "Fundraising Communications Lead",
+                "commitment": "Strengthen the case for support, evidence-led content and partner stories used in fundraising.",
+                "activities": ["Improve case-for-support messaging", "Develop evidence-led content", "Support partner and donor storytelling"],
+            },
+        }
+        for board_member_id, spec in portfolio_specs.items():
+            portfolio_id = f"admin-preview-fundraising-portfolio-{board_member_id}-{tag}"
+            portfolio_token = f"admin-preview-fundraising-portfolio-token-{board_member_id}-{tag}"
+            system_roles = [{
+                "item_id": f"{portfolio_id}-role-1", "role_key": "custom", "label": spec["role"],
+                "source": "meeting_commitment", "involvement": "Board-agreed responsibility",
+                "member_note": "", "commitment": spec["commitment"], "deadline": "2027-06-30",
+                "requires_confirmation": False, "active": True,
+            }]
+            direct_activities = [
+                {
+                    "item_id": f"{portfolio_id}-activity-{index + 1}", "activity_key": "custom",
+                    "label": activity, "source": "meeting_commitment",
+                    "involvement": "Agreed execution activity", "member_note": "",
+                    "commitment": activity, "deadline": "", "requires_confirmation": False, "active": True,
+                }
+                for index, activity in enumerate(spec["activities"])
+            ]
+            approved_snapshot = {
+                "system_roles": system_roles, "direct_activities": direct_activities,
+                "additional_commitments": [], "do_not_want": [], "availability": spec["availability"], "org_note": "",
+            }
+            await db.board_portfolios.update_one(
+                {"portfolio_id": portfolio_id},
+                {"$set": {
+                    "portfolio_id": portfolio_id, "user_id": member["user_id"], "board_member_id": board_member_id,
+                    "member_name": spec["name"], "member_email": spec["email"], "strategy_id": strategy_id,
+                    "token": portfolio_token, "status": "materials_ready", "version": 1, "approved_version": 1,
+                    "system_roles": system_roles, "direct_activities": direct_activities,
+                    "additional_commitments": [], "do_not_want": [], "availability": spec["availability"],
+                    "org_note": "", "change_request": "", "sent_at": now, "approved_at": now,
+                    "approved_snapshot": approved_snapshot, "created_at": now, "updated_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+            toolkit_id = f"admin-preview-toolkit-{portfolio_id}"
+            await db.execution_toolkits.update_one(
+                {"toolkit_id": toolkit_id},
+                {"$set": {
+                    "toolkit_id": toolkit_id, "portfolio_id": portfolio_id, "user_id": member["user_id"],
+                    "board_member_id": board_member_id, "strategy_id": strategy_id, "portfolio_version": 1,
+                    "status": "ready",
+                    "data": {
+                        "quick_start": [
+                            "Review the responsibility in your approved Board Fundraising Portfolio.",
+                            "Choose the first relationship, material or execution task you will move this week.",
+                            "Record progress and the next action before the next Board meeting.",
+                        ],
+                        "scripts_and_templates": [
+                            "Warm introduction message", "Fundraising meeting preparation checklist",
+                            "Follow-up message", "Stewardship thank-you and impact update",
+                        ],
+                        "relationship_mapping": "Use your professional, business and community network to identify people, businesses and grantors that match the Board-approved funding audiences.",
+                    },
+                    "ready_email_sent": True, "generated_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+            await db.game_strategy_deliveries.update_one(
+                {"strategy_id": strategy_id, "board_member_id": board_member_id},
+                {"$set": {
+                    "user_id": member["user_id"], "strategy_id": strategy_id, "board_member_id": board_member_id,
+                    "email": spec["email"], "member_name": spec["name"], "status": "sent", "error": "",
+                    "sent_at": now, "updated_at": now, "created_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+
+        relationship_rows = [
+            (board_people[0][0], "Maya Thompson", "Business", "Jordan Wells", "Fictional Regional Employers Council", "Former employer-network colleague", "Strong fit because the council represents employers hiring early-career talent."),
+            (board_people[1][0], "Daniel Brooks", "Individual", "Elena Price", "Fictional Financial Advisory Group", "Professional colleague", "High-capacity professional who has supported youth education and mentoring."),
+            (board_people[2][0], "Aisha Patel", "Business", "Samira Cole", "Fictional Impact Brands", "Marketing industry contact", "Brand has a community-investment priority around youth opportunity."),
+        ]
+        for index, (board_member_id, member_name, funder_type, person_name, organization_name, how_know, why_match) in enumerate(relationship_rows, 1):
+            relationship_id = f"admin-preview-game-relationship-{index}-{tag}"
+            await db.game_relationships.update_one(
+                {"relationship_id": relationship_id},
+                {"$set": {
+                    "relationship_id": relationship_id, "user_id": member["user_id"],
+                    "board_member_id": board_member_id, "member_name": member_name,
+                    "funder_type": funder_type, "name": person_name, "organization": organization_name,
+                    "email": "", "phone": "", "other_contact": "", "how_know": how_know, "why_match": why_match,
+                    "willing_intro": True, "willing_participate": True, "willing_ask": False, "willing_org_ask": True,
+                    "created_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
 
     @router.post("/{product}")
     async def launch_dashboard_preview(product: str, request: Request, response: Response):
