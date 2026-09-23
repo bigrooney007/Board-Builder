@@ -36,11 +36,12 @@ const FLOW_STEPS = [
 
 const SectionVideoButton = ({ videoKey }) => {
   const video = useRecruitmentSectionVideo(videoKey);
-  if (!video?.url) {
+  const watchUrl = video?.url?.startsWith("http") ? video.url : video?.youtube_id ? "https://www.youtube.com/watch?v=" + video.youtube_id : "";
+  if (!watchUrl) {
     return <button type="button" className="sgr-section-video is-empty" disabled><PlayCircle size={16}/> SECTION VIDEO COMING SOON</button>;
   }
   return (
-    <a className="sgr-section-video" href={video.url} target="_blank" rel="noreferrer" data-testid={"section-video-" + videoKey}>
+    <a className="sgr-section-video" href={watchUrl} target="_blank" rel="noreferrer" data-testid={"section-video-" + videoKey}>
       <PlayCircle size={16}/> PLAY SECTION VIDEO <ExternalLink size={13}/>
     </a>
   );
