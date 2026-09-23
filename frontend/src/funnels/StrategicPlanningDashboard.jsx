@@ -172,7 +172,7 @@ export default function StrategicPlanningDashboard(){
     setEditingPlan(false);
   });
   const copy=text=>navigator.clipboard?.writeText(text);
-  const downloadResponse=participantId=>window.open(`${API}/guided/strategic-planning-response/${participantId}/pdf`,"_blank");
+  const downloadResponse=participantId=>window.open(`${API}/strategic-planning-response/${participantId}/pdf`,"_blank");
 
   const updateDelegate=(id,field,value)=>setDelegates(rows=>rows.map(x=>x.delegation_id===id?{...x,[field]:value}:x));
   const removeDelegate=id=>setDelegates(rows=>rows.filter(x=>x.delegation_id!==id));
