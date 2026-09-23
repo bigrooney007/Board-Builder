@@ -7,7 +7,7 @@ import { memberApi } from "./api";
 import { UnlockPurchaseButton } from "./DashboardPage";
 import { SupportBox } from "./CoursePages";
 import { Module1Profile } from "./workspace/Module1Profile";
-import { RecruitmentCampaignLaunch, RecruitmentMaterials } from "./workspace/WorkspaceModules";
+import { RecruitmentCampaignLaunch, RecruitmentMaterials, useMaterials } from "./workspace/WorkspaceModules";
 import {
   AutomatedReferenceChecks,
   BackgroundChecksWorkspace,
@@ -76,7 +76,7 @@ const Section = ({ number, title, summary, children, testId, videoKey, status = 
 export default function BoardRecruitmentPage() {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
-  const [assessment,setAssessment]=useState(null);
+  const [assessment,setAssessment]=useState(null);\n  const { byType: dashboardMaterials } = useMaterials();
 
   useEffect(() => {
     if (loading) return;
@@ -112,11 +112,13 @@ export default function BoardRecruitmentPage() {
   const questionStatus=questionsComplete?"Complete":answeredCount?"In Progress":"Start";
   const identifyStatus=assessment?.result?"Ready To Review":questionsComplete&&["queued","generating"].includes(generationStatus)?"Generating":"Locked";
 
+  const boardProfilesApproved=dashboardMaterials.powerhouse_board_blueprint?.status==="Approved";
   const progress=useMemo(()=>{
     if(!questionsComplete)return 0;
     if(!assessment?.result)return 1;
-    return 2;
-  },[questionsComplete,assessment?.result]);
+    if(!boardProfilesApproved)return 2;
+    return 3;
+  },[questionsComplete,assessment?.result,boardProfilesApproved]);
 
   return (
     <MemberShell>
