@@ -1067,6 +1067,98 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             )
 
 
+        # Preload the organization-level onboarding library so the later dashboard stages
+        # are immediately inspectable instead of waiting for generation.
+        org_materials = [
+            ("organization_overview", "Organization Overview",
+             f"{ORG_NAME}\n\nMISSION\n{MISSION}\n\nWHO WE SERVE\nYoung people ages 12 to 24 in underserved communities.\n\nCURRENT PRIORITIES\nDiversify revenue, expand employer partnerships, strengthen Board capacity and improve outcome evidence."),
+            ("board_manual", "Board Manual",
+             f"BOARD MANUAL\n{ORG_NAME}\n\nOUR MISSION\n{MISSION}\n\nHOW THE BOARD WORKS\nThe Board governs, provides strategic leadership, protects the mission, supports resource development and holds the organization accountable without replacing staff.\n\nBOARD MEMBER COMMITMENT\nAttend meetings, prepare, carry agreed responsibilities, disclose conflicts, protect confidential information and communicate early when support is needed.\n\nORGANIZATION COMMITMENT TO BOARD MEMBERS\nProvide timely information, clear decisions, useful materials, staff access and realistic expectations."),
+            ("board_member_agreement", "Board Member Agreement",
+             "BOARD MEMBER AGREEMENT\n\nI agree to prepare for and attend Board meetings, act in the best interests of BrightPath Youth Alliance, carry the responsibilities I explicitly accept, support fundraising appropriately, maintain confidentiality and disclose conflicts of interest."),
+            ("confidentiality_agreement", "Confidentiality Agreement",
+             "CONFIDENTIALITY AGREEMENT\n\nBoard Members protect non-public information concerning participants, applicants, donors, partners, staff, finances and Board discussions and use that information only for authorized organizational purposes."),
+            ("conflict_of_interest_agreement", "Conflict of Interest Agreement",
+             "CONFLICT OF INTEREST AGREEMENT\n\nBoard Members disclose actual or potential conflicts promptly, do not use their Board position for improper private benefit and follow the organization's process for recusal and documentation."),
+            ("onboarding_agenda", "Board Member Onboarding Agenda",
+             "BOARD MEMBER ONBOARDING AGENDA\n\n1. Welcome and introductions\n2. Mission, programs and current priorities\n3. The role of the Board and the role of staff\n4. Documents, governance and agreements\n5. Each person's Board role and contribution focus\n6. First 90 days and immediate next action\n7. Questions and close"),
+            ("onboarding_script", "Board Member Onboarding Facilitation Guide",
+             f"BOARD MEMBER ONBOARDING FACILITATION GUIDE\n{ORG_NAME}\n\nWELCOME\nThank everyone for choosing to serve. Explain that onboarding is designed to make roles clear before execution begins.\n\nMISSION AND ORGANIZATION\nRead and discuss the mission: {MISSION}\n\nROLE OF THE BOARD\nClarify governance, strategic leadership, fundraising participation and accountability.\n\nROLE AGREEMENT\nConfirm each person's specific contribution focus, support needed and first action.\n\nCLOSE\nRead back agreed responsibilities, answer questions and explain how Portfolios and ongoing execution support will work."),
+        ]
+        for material_type, title, display_text in org_materials:
+            await seed_material(material_type, title, {"preview": True}, display_text)
+
+        jordan_id = f"admin-preview-applicant-jordan-{tag}"
+        # Jordan remains the early-stage candidate so the Applicants area still has a realistic person to move manually.
+        await seed_material(
+            "interview_invitation", "Interview Invitation — Jordan Ellis",
+            {"subject": f"Board Interview | {ORG_NAME}"},
+            f"Dear Jordan,\n\nThank you for applying to join the Board of {ORG_NAME}. We would like to invite you to a Board candidate interview to explore your corporate-partnership experience, your interest in the mission and the responsibility you would be comfortable carrying.\n\nWe will coordinate the interview time directly.",
+            application_id=jordan_id,
+        )
+
+        for candidate_id, candidate_name, focus in [
+            (priya_id, "Priya Mensah", "Fundraising and Major Gifts"),
+            (marcus_id, "Marcus Chen", "Marketing and Communications"),
+        ]:
+            await seed_material(
+                "interview_invitation", f"Interview Invitation — {candidate_name}",
+                {"subject": f"Board Interview | {ORG_NAME}"},
+                f"Dear {candidate_name.split()[0]},\n\nThank you for your interest in joining the Board of {ORG_NAME}. We would like to invite you to a candidate interview focused on the {focus} role and the contribution you would be prepared to make.",
+                application_id=candidate_id,
+            )
+            guide_id = await seed_material(
+                "interview_guide", f"Tailored Interview Guide — {candidate_name}",
+                {"candidate": candidate_name, "role": focus},
+                f"TAILORED BOARD CANDIDATE INTERVIEW GUIDE\n\nCandidate: {candidate_name}\nRole being considered: Board Member — {focus}\n\n1. What connects you personally to BrightPath's mission?\n2. Based on your experience, what would you want to understand before accepting responsibility for {focus}?\n3. Tell us about a situation where you used your professional experience to help an organization move a strategic priority forward.\n4. Which fundraising or Board activities would you genuinely be willing to carry?\n5. What time can you realistically commit each month?\n6. What support would help you follow through?\n\nINTERVIEWER NOTE\nCompare the candidate's answers with the approved Board profile. Do not infer willingness from expertise alone.",
+                application_id=candidate_id,
+            )
+            await db.opportunity_applications.update_one(
+                {"application_id": candidate_id},
+                {"$set": {"interview_guide": {"status": "Ready", "material_id": guide_id, "generated_at": now}, "updated_at": now}},
+            )
+
+        await seed_material(
+            "conditional_offer", "Conditional Board Appointment Email — Priya Mensah",
+            {"subject": f"Conditional Board Appointment | {ORG_NAME}"},
+            "Dear Priya,\n\nWe would like to offer you a Board position focused on Fundraising and Major Gifts, conditional on completion of the remaining reference/background-check process. Your onboarding session is scheduled for October 8, 2026 at 6:00 PM Eastern Time.",
+            application_id=priya_id,
+        )
+
+        # Marcus is the fully completed candidate used to test final appointment, Portfolio and post-onboarding execution.
+        await db.opportunity_applications.update_one(
+            {"application_id": marcus_id},
+            {"$set": {
+                "status": "Selected",
+                "final_outcome": "Joined Board",
+                "board_role_recommendation": {
+                    "recommended_role": "Board Member — Marketing and Communications",
+                    "why_this_role_fits": "Marcus's senior marketing, brand and executive-communications experience directly matches the approved Board gap and the contribution discussed through recruitment and onboarding.",
+                },
+                "board_role": "Board Member — Marketing and Communications",
+                "portfolio_role_rationale": "Marcus will provide Board-level leadership for visibility, fundraising messaging and partner storytelling without becoming operational staff.",
+                "portfolio_role_approved": True,
+                "portfolio_role_approved_at": now,
+                "onboarding_conclusion.saved_at": now,
+                "updated_at": now,
+            }},
+        )
+        for material_type, title, display_text in [
+            ("unconditional_offer", "Unconditional Board Appointment Offer Email",
+             "Dear Marcus,\n\nWe are pleased to offer you a position on the Board of BrightPath Youth Alliance as Board Member — Marketing and Communications. Your onboarding session is scheduled for October 8, 2026 at 6:00 PM Eastern Time."),
+            ("onboarding_email", "Board Member Onboarding Email",
+             "Dear Marcus,\n\nWelcome to the Board of BrightPath Youth Alliance. Before our onboarding session, please review the Organization Overview, Board Manual and agreements. During the session we will confirm how your marketing and communications experience will be used and your first 90-day priorities."),
+            ("formal_appointment_letter", "Formal Board Appointment Letter",
+             "FORMAL BOARD APPOINTMENT\n\nBrightPath Youth Alliance confirms the appointment of Marcus Chen as Board Member — Marketing and Communications. The appointment follows completion of the recruitment, reference, onboarding and role-confirmation process."),
+            ("formal_appointment_email", "Final Board Appointment Email",
+             "Dear Marcus,\n\nYour appointment to the Board of BrightPath Youth Alliance is confirmed. Thank you for accepting the Board Member — Marketing and Communications role. Your Portfolio summarizes the responsibility agreed during onboarding."),
+            ("board_member_portfolio", "Board Member Portfolio — Marcus Chen",
+             f"BOARD MEMBER PORTFOLIO\nMarcus Chen\n{ORG_NAME}\n\nYOUR BOARD ROLE\nBoard Member — Marketing and Communications\n\nWHY YOUR ROLE MATTERS\nBrightPath needs Board-level leadership that can turn program evidence into credible visibility, fundraising messaging and partner communication.\n\nYOUR RESPONSIBILITIES\n- Lead quarterly Board review of visibility, messaging and campaign performance.\n- Help strengthen the case for support and partner-facing content.\n- Identify and support two partner-story opportunities in the first 90 days.\n\nHOW THE ORGANIZATION WILL SUPPORT YOU\nProvide timely impact data, participant stories with consent, campaign priorities and a clear staff contact.\n\nFIRST 90 DAYS\nReview the existing case for support, propose the first 90-day communications priorities and identify the first two partner stories."),
+            ("portfolio_email", "Portfolio Email — Marcus Chen",
+             "Subject: Your Board Member Portfolio | BrightPath Youth Alliance\n\nDear Marcus,\n\nYour Board Member Portfolio is ready. It captures the Board role and responsibilities we confirmed through recruitment and onboarding. Please review it and keep it as the working reference for the contribution you agreed to carry."),
+        ]:
+            await seed_material(material_type, title, {"candidate": "Marcus Chen"}, display_text, application_id=marcus_id)
+
     async def seed_guided_product(member: dict, product: str, config: dict) -> str:
         now = now_iso()
         tag = suffix(member)
