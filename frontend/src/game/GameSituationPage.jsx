@@ -59,7 +59,12 @@ export default function GameSituationPage() {
         const situation = (await memberApi.get("/game/situation")).data;
         memberApi.get("/game/branding").then((response) => setBranding(response.data.branding || { logo_data: "" })).catch(() => {});
         if (situation.completed) { navigate("/game/dashboard", { replace: true }); return; }
-        setReality(situation.sections?.current_reality || {});
+        const loadedReality = situation.sections?.current_reality || {};
+        if (loadedReality.current_resources) {
+          if (!loadedReality.current_technology) loadedReality.current_technology = loadedReality.current_resources;
+          if (!loadedReality.current_materials) loadedReality.current_materials = loadedReality.current_resources;
+        }
+        setReality(loadedReality);
         const saved = situation.sections?.participation || {};
         setPart({
           build: saved.build || [], buildOther: saved.build_other || "",
