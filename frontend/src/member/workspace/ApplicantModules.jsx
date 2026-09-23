@@ -1083,6 +1083,7 @@ export const OnboardingPreparation = () => {
 
 export const OnboardingSessionWorkspace = () => {
   const navigate = useNavigate();
+  const { applications } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   const [session, setSession] = useState({});
   useEffect(() => {
@@ -1090,7 +1091,13 @@ export const OnboardingSessionWorkspace = () => {
   }, []);
   const scheduleReady = Boolean(session.date && session.time && session.timezone);
   const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
-  const ready = scheduleReady && materialsReady && orgMaterials.board_manual?.status === "Approved";
+  const appointmentReady = applications.some((application) =>
+    application.journey?.conditional_offer_generated
+    || application.journey?.unconditional_offer_generated
+    || application.emails_sent?.conditional_offer
+    || application.emails_sent?.unconditional_offer
+  );
+  const ready = scheduleReady && materialsReady && appointmentReady && orgMaterials.board_manual?.status === "Approved";
   return (
     <div data-testid="onboarding-session-workspace">
       <section className="workspace-panel">
@@ -1104,11 +1111,12 @@ export const OnboardingSessionWorkspace = () => {
         <div className="sgr-readiness-banner">
           <span className={scheduleReady ? "ready" : ""}>Schedule: {scheduleReady ? "Ready" : "Needed"}</span>
           <span className={materialsReady ? "ready" : ""}>Materials: {materialsReady ? "Approved" : "Need Approval"}</span>
+          <span className={appointmentReady ? "ready" : ""}>Appointment: {appointmentReady ? "Prepared" : "Needed"}</span>
         </div>
         <button className="button" disabled={!ready} onClick={() => navigate("/app/board-recruitment/onboarding-session")}>
           START THE ONBOARDING SESSION
         </button>
-        {!ready && <p className="workspace-note">Finish the onboarding preparation section first.</p>}
+        {!ready && <p className="workspace-note">Finish the onboarding preparation and prepare at least one candidate appointment email first.</p>}
       </section>
     </div>
   );
