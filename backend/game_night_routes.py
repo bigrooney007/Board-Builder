@@ -60,6 +60,7 @@ def fmt_time(night: dict) -> str:
 class GameNightUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=300)
     meeting_date: str = Field(min_length=1, max_length=20)
+    funding_deadline: str = Field(min_length=1, max_length=20)
     start_time: str = Field(min_length=1, max_length=20)
     timezone_name: str = Field(min_length=1, max_length=80)
     meeting_format: str = Field(min_length=1, max_length=20)
@@ -166,17 +167,30 @@ def create_game_night_router(db) -> APIRouter:
         member = await game_member(request)
         if payload.meeting_format not in {"in_person", "online", "hybrid"}:
             raise HTTPException(status_code=422, detail="Choose a meeting format")
+        try:
+            meeting_date = datetime.strptime(payload.meeting_date.strip(), "%Y-%m-%d").date()
+            funding_deadline = datetime.strptime(payload.funding_deadline.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Use a valid meeting date and funding deadline")
+        if funding_deadline < meeting_date:
+            raise HTTPException(status_code=422, detail="The funding deadline cannot be before the Board meeting date")
         now = now_iso()
         await db.game_nights.update_one(
             {"user_id": member["user_id"]},
             {"$set": {
                 "name": payload.name.strip(), "meeting_date": payload.meeting_date.strip(),
+                "funding_deadline": payload.funding_deadline.strip(),
                 "start_time": payload.start_time.strip(), "timezone": payload.timezone_name.strip(),
                 "meeting_format": payload.meeting_format,
                 "meeting_link": payload.meeting_link.strip(), "meeting_location": payload.meeting_location.strip(),
                 "note": payload.note.strip(), "status": "scheduled", "updated_at": now},
              "$setOnInsert": {"user_id": member["user_id"], "created_at": now}},
             upsert=True)
+        await db.game_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"goal.deadline": payload.funding_deadline.strip(), "updated_at": now}},
+            upsert=True,
+        )
         return {"night": await get_night(member["user_id"])}
 
     # ---------- Board member management ----------
@@ -342,7 +356,7 @@ def create_game_night_router(db) -> APIRouter:
 
     async def require_night(user_id: str) -> dict:
         night = await get_night(user_id)
-        if not night.get("meeting_date"):
+        if not night.get("meeting_date") or not night.get("funding_deadline"):
             raise HTTPException(status_code=409, detail="meeting_details_required")
         return night
 
