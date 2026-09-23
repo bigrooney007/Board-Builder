@@ -77,7 +77,7 @@ export const GameNightSection = () => {
     <section className="bfg-panel" data-testid="bfg-game-night-section">
       <div className="bfg-panel-head">
         <div>
-          <><p className="bfg-eyebrow">STEP 3</p><h2>Set Your Board Fundraising Day/Night</h2></>
+          <><p className="bfg-eyebrow">BOARD MEETING</p><h2>Set Your Board Fundraising Day/Night</h2></>
           <p className="bfg-panel-sub">Set the next Board meeting and tell us when the money is needed. The funding deadline becomes the anchor for the execution timeline in your final fundraising strategy.</p>
         </div>
         {saved && !editing && (
