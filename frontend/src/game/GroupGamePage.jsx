@@ -66,6 +66,7 @@ export default function GroupGamePage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [newAgreedIdea, setNewAgreedIdea] = useState("");
+  const [finalState, setFinalState] = useState(null);
   const timer = useRef(null);
   const recorderController = useRef(null);
 
@@ -91,6 +92,26 @@ export default function GroupGamePage() {
     timer.current = setInterval(() => { loadSession(); }, 3000);
     return () => clearInterval(timer.current);
   }, [loadSession]);
+
+  useEffect(() => {
+    if (status !== "completed") return undefined;
+    let live = true;
+    let finalTimer;
+    const checkFinal = async () => {
+      try {
+        const response = await memberApi.get("/game/meeting/overview");
+        if (!live) return;
+        setFinalState(response.data.final || null);
+        if (response.data.final?.status === "running" || !response.data.final?.status) {
+          finalTimer = window.setTimeout(checkFinal, 4000);
+        }
+      } catch {
+        if (live) finalTimer = window.setTimeout(checkFinal, 5000);
+      }
+    };
+    checkFinal();
+    return () => { live = false; if (finalTimer) window.clearTimeout(finalTimer); };
+  }, [status]);
 
   const run = async (key, fn) => {
     setBusy(key); setError("");
@@ -280,9 +301,20 @@ export default function GroupGamePage() {
                 </p>
                 <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
-                  <h3 style={{ fontSize: 17 }}>Your Final Fundraising Strategy Is Being Prepared</h3>
-                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>The final strategy is created from the complete upward stream of organization information, Board ideas and the decisions adopted during the Group Game. You do not need to stay on this screen while it generates.</p>
-                  <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/dashboard" data-testid="bfg-gg-generate-strategy-btn">RETURN TO DASHBOARD</Link>
+                  <h3 style={{ fontSize: 17 }}>{finalState?.status === "done" ? "Your Final Fundraising Strategy Is Ready" : "Your Final Fundraising Strategy Is Being Prepared"}</h3>
+                  <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
+                    {finalState?.status === "done"
+                      ? "The strategy now reflects the Board's adopted decisions, the fundraising goal and deadline, the execution system and the meeting discussion where available. You can open it now and review it together before leaving the meeting."
+                      : "The final strategy is being created from the complete upward stream of organization information, Board ideas and the decisions adopted during the Group Game. You can stay here and it will surface automatically, or return to the dashboard."}
+                  </p>
+                  {finalState?.status === "done" && finalState?.strategy_id ? (
+                    <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }}
+                      onClick={() => navigate(`/game/strategy/view/${finalState.strategy_id}`)} data-testid="bfg-gg-view-final-strategy-now">
+                      VIEW FINAL STRATEGY TOGETHER
+                    </button>
+                  ) : (
+                    <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }} to="/game/dashboard" data-testid="bfg-gg-generate-strategy-btn">RETURN TO DASHBOARD</Link>
+                  )}
                 </div>
                 <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 18 }}>
                   <Link className="bfg-btn bfg-btn-ghost" to="/game/group?results=1" data-testid="bfg-gg-view-results-btn">View Group Game Results</Link>
