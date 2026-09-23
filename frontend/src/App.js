@@ -114,7 +114,8 @@ function CleanRoutes() {
       <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
       <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
-      <Route path="/app/board-recruitment/questions" element={<RecruitmentGamePage />} />\n      <Route path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions" replace />} />
+      <Route path="/app/board-recruitment/questions" element={<RecruitmentGamePage />} />
+      <Route path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions" replace />} />
       <Route path="/app/board-recruitment/onboarding-session" element={<RecruitmentOnboardingSessionPage />} />
       <Route path="/onboarding-session/:token" element={<RecruitmentOnboardingWatchPage />} />
       <Route path="/app/recruitment/self-guided/results" element={<RecruitmentResultsPage />} />
