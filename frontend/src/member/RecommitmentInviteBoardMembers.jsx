@@ -4,7 +4,7 @@ import { memberApi } from "./api";
 
 export default function RecommitmentInviteBoardMembers({ onChanged }) {
   const [roster, setRoster] = useState([]);
-  const [form, setForm] = useState({ name: "", email: "", form_variant: "full" });
+  const [form, setForm] = useState({ name: "", email: "", form_variant: "active_advisory" });
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const load = useCallback(() => memberApi.get("/reactivation/roster").then((r) => setRoster(r.data.members || [])).catch(() => setRoster([])), []);
@@ -16,7 +16,7 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
       const created = await memberApi.post("/reactivation/board-members", form);
       const person = created.data.member;
       await memberApi.post(`/reactivation/board-members/${person.member_record_id}/send`, { type: "initial" });
-      setForm({ name: "", email: "", form_variant: "full" });
+      setForm({ name: "", email: "", form_variant: "active_advisory" });
       setMessage(`The Recommitment Form was sent to ${person.name}.`);
       await load(); if (onChanged) onChanged();
     } catch (error) { setMessage(error.response?.data?.detail || "The invitation could not be sent."); }
