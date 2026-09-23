@@ -158,12 +158,18 @@ export default function GameDashboardPage() {
     try {
       const overview = (await memberApi.get("/game/meeting/overview")).data;
       setMeeting(overview);
+      if (overview.final?.status === "done") {
+        memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
+      }
       clearInterval(meetingPoller.current);
       if (overview.group_completed && !["running", "done"].includes(overview.final?.status || "")) {
         try {
           await memberApi.post("/game/meeting/compile-final");
           const refreshed = (await memberApi.get("/game/meeting/overview")).data;
           setMeeting(refreshed);
+          if (refreshed.final?.status === "done") {
+            memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
+          }
         } catch { /* Group decisions remain saved and can be retried. */ }
       }
       const state = overview.final?.status === "running" ? overview : null;
@@ -172,6 +178,9 @@ export default function GameDashboardPage() {
           try {
             const next = (await memberApi.get("/game/meeting/overview")).data;
             setMeeting(next);
+            if (next.final?.status === "done") {
+              memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
+            }
             if (next.final?.status !== "running") clearInterval(meetingPoller.current);
           } catch { /* keep the last known state */ }
         }, 4000);
