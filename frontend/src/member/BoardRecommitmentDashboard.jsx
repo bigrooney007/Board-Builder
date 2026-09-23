@@ -1,50 +1,114 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ExternalLink, LifeBuoy, PlayCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
 import { memberApi } from "./api";
-import { trackPlatformEvent } from "@/clean/platform";
-import ReactivationStep2 from "./ReactivationStep2";
+import RecommitmentFormsSection from "./RecommitmentFormsSection";
 import ReactivationUnderstand from "./ReactivationUnderstand";
-import ReactivationStep3 from "./ReactivationStep3";
-import FounderBoardAudit from "./FounderBoardAudit";
-import RecommitmentInviteBoardMembers from "./RecommitmentInviteBoardMembers";
+import RecommitmentFinalStage from "./RecommitmentFinalStage";
+import { trackPlatformEvent, useRecommitmentSectionVideo } from "@/clean/platform";
 import "./sgr.css";
 
-const CompactSection=({n,title,open,onOpen,children})=><section className="member-card compact-flow-section"><button type="button" className="compact-flow-toggle" onClick={onOpen}><span>{n}</span><strong>{title}</strong>{open?<ChevronUp/>:<ChevronDown/>}</button>{open&&<div className="compact-flow-body">{children}</div>}</section>;
+const SectionVideoButton=({videoKey})=>{
+  const video=useRecommitmentSectionVideo(videoKey);
+  const url=video?.url?.startsWith("http")?video.url:video?.youtube_id?`https://www.youtube.com/watch?v=${video.youtube_id}`:"";
+  if(!url)return <button type="button" className="sgr-section-video is-empty" disabled><PlayCircle size={16}/> SECTION VIDEO COMING SOON</button>;
+  return <a className="sgr-section-video" href={url} target="_blank" rel="noreferrer"><PlayCircle size={16}/> PLAY SECTION VIDEO <ExternalLink size={13}/></a>;
+};
 
-const ProgressSummary=({refreshKey})=>{
- const [data,setData]=useState(null);
- useEffect(()=>{memberApi.get("/reactivation/my-board").then(r=>setData(r.data)).catch(()=>setData(null))},[refreshKey]);
- const rows=data?Object.values(data.groups||{}).flat():[];
- const completedCount=rows.filter(row=>row.conversation_outcome&&(row.conversation_conclusion||"").trim()).length;
- useEffect(()=>{
-  if(rows.length&&completedCount===rows.length) trackPlatformEvent("board-recommitment","platform_completed");
- },[rows.length,completedCount]);
- if(!data)return <p>Loading progress…</p>;
- const summary=data.summary||{};
- const stats=[["Responded",rows.filter(r=>r.status==="COMPLETED").length],["Understood",rows.filter(r=>r.analyzed).length],["Conversations Done",completedCount],["Stepped Up",summary.active||0],["Advisory Board",summary.advisory||0],["Stepped Down",summary.stepping_down||0]];
- return <div className="recommitment-progress" data-testid="recommitment-progress-summary">{stats.map(([label,count])=><div key={label}><strong>{count}</strong><span>{label}</span></div>)}</div>;
+const Section=({number,title,summary,status,videoKey,testId,children,defaultOpen=false})=>{
+  const[open,setOpen]=useState(defaultOpen);
+  useEffect(()=>{
+    const sync=()=>{if(window.location.hash===`#${testId}`)setOpen(true)};
+    sync();window.addEventListener("hashchange",sync);return()=>window.removeEventListener("hashchange",sync);
+  },[testId]);
+  return <section id={testId} className={`member-card sgr-flow-section sgr-machine-section ${open?"is-open":""}`}>
+    <div className="sgr-section-video-row"><SectionVideoButton videoKey={videoKey}/></div>
+    <button type="button" className="sgr-section-toggle" onClick={()=>setOpen(!open)} aria-expanded={open}>
+      <span className="sgr-step-number">{number}</span>
+      <span><strong>{title}</strong><small>{summary}</small></span>
+      <span className="sgr-section-right">{status&&<em className="sgr-stage-status">{status}</em>}<ChevronDown size={18} className={open?"rotate":""}/></span>
+    </button>
+    {open&&<div className="sgr-section-body">{children}</div>}
+  </section>;
 };
 
 export default function BoardRecommitmentDashboard(){
- const [branding,setBranding]=useState({organization_name:"",logo_data_url:""});
- const [brandingMessage,setBrandingMessage]=useState("");
- const [open,setOpen]=useState("1");
- const [refreshKey,setRefreshKey]=useState(0);
- const loadBranding=useCallback(()=>memberApi.get("/reactivation/branding").then(r=>setBranding(r.data)).catch(()=>{}),[]);
- useEffect(()=>{loadBranding()},[loadBranding]);
- const uploadLogo=file=>{if(!file)return;const reader=new FileReader();reader.onload=()=>setBranding({...branding,logo_data_url:reader.result});reader.readAsDataURL(file)};
- const saveBranding=async()=>{setBrandingMessage("");try{const r=await memberApi.put("/reactivation/branding",branding);setBranding(r.data);setBrandingMessage("Organization details saved. Your forms will now carry this branding.")}catch(e){setBrandingMessage(e.response?.data?.detail||"We could not save your organization branding.")}};
- return <MemberShell><main className="member-page sgr" data-testid="board-recommitment-dashboard">
-  <header className="member-page-heading"><p className="eyebrow">Nonprofit Board Builder</p><h1>BOARD RECOMMITMENT</h1><p><strong>Get clear answers from each Board Member, prepare the right conversation and move that person forward based on what you agree together.</strong></p></header>
-  <CompactSection n="1" title="Enter Organization Details" open={open==="1"} onOpen={()=>setOpen(open==="1"?"":"1")}><div data-testid="recommitment-branding"><p>Add your organization name and logo. They will appear on both versions of the Recommitment Form.</p>{branding.logo_data_url&&<img src={branding.logo_data_url} alt={`${branding.organization_name||"Organization"} logo`} style={{maxWidth:180,maxHeight:100,objectFit:"contain",margin:"8px auto 18px",display:"block"}}/>}<label className="field"><span>Organization Name <b>*</b></span><input value={branding.organization_name||""} onChange={e=>setBranding({...branding,organization_name:e.target.value})}/></label><label className="field"><span>Organization Logo</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>uploadLogo(e.target.files?.[0])}/></label><button className="button" disabled={!branding.organization_name?.trim()} onClick={saveBranding}>SAVE ORGANIZATION BRANDING</button>{brandingMessage&&<p className="member-success">{brandingMessage}</p>}</div></CompactSection>
-  <CompactSection n="2" title="Generate The Recommitment Forms And Email" open={open==="2"} onOpen={()=>setOpen(open==="2"?"":"2")}><p>Generate the branded form and email. You receive a full version with graceful transition choices and a continue-serving version without the step-down option.</p><ReactivationStep2/></CompactSection>
-  <CompactSection n="3" title="Complete Your Founder / Executive Director Audit" open={open==="3"} onOpen={()=>setOpen(open==="3"?"":"3")}><FounderBoardAudit/></CompactSection>
-  <CompactSection n="4" title="Invite Your Board Members" open={open==="4"} onOpen={()=>setOpen(open==="4"?"":"4")}><RecommitmentInviteBoardMembers onChanged={()=>setRefreshKey(value=>value+1)}/></CompactSection>
-  <CompactSection n="5" title="See Responses, Understand Each Person And Generate Their Call Script" open={open==="5"} onOpen={()=>setOpen(open==="5"?"":"5")}><p>Each person appears once. Analyze their response, view the interpretation and full response, then generate their individual call script from the same card.</p><ReactivationUnderstand/></CompactSection>
-  <CompactSection n="6" title="Record Each Conversation And Create The Correct Next Step" open={open==="6"} onOpen={()=>setOpen(open==="6"?"":"6")}><p>Open each person's card, record what you agreed and select the final outcome. The correct portfolio or transition email will appear for that person.</p><ReactivationStep3 conclusionsOnly/></CompactSection>
-  <CompactSection n="7" title="Your Recommitment Progress" open={open==="7"} onOpen={()=>setOpen(open==="7"?"":"7")}><ProgressSummary refreshKey={refreshKey}/></CompactSection>
-  <div id="recommitment-support" className="recommitment-support" data-testid="recommitment-support"><SupportBox productKey="reactivation_self_guided" moduleNumber={1} supportTypes={["I have a question about Board Recommitment","I need help interpreting a board member response","I need help preparing for a conversation","I need help using the platform"]}/></div>
- </main></MemberShell>;
+  const navigate=useNavigate();
+  const[setup,setSetup]=useState(null);
+  const[form,setForm]=useState(null);
+  const[board,setBoard]=useState(null);
+  const[refreshKey,setRefreshKey]=useState(0);
+
+  const load=useCallback(async()=>{
+    const [setupResponse,formResponse,boardResponse]=await Promise.all([
+      memberApi.get("/reactivation/setup").catch(()=>({data:null})),
+      memberApi.get("/reactivation/recommitment-form").catch(()=>({data:null})),
+      memberApi.get("/reactivation/my-board").catch(()=>({data:null})),
+    ]);
+    setSetup(setupResponse.data);
+    setForm(formResponse.data);
+    setBoard(boardResponse.data);
+  },[]);
+
+  useEffect(()=>{load()},[load,refreshKey]);
+  useEffect(()=>{
+    const rows=board?Object.values(board.groups||{}).flat():[];
+    const respondents=rows.filter(row=>row.status==="COMPLETED");
+    const resolved=respondents.filter(row=>row.conversation_outcome&&String(row.conversation_conclusion||"").trim());
+    if(respondents.length&&resolved.length===respondents.length)trackPlatformEvent("board-recommitment","platform_completed");
+  },[board]);
+
+  const changed=()=>{setRefreshKey(value=>value+1);load()};
+  const rows=board?Object.values(board.groups||{}).flat():[];
+  const responded=rows.filter(row=>row.status==="COMPLETED").length;
+  const resolved=rows.filter(row=>row.status==="COMPLETED"&&row.conversation_outcome&&String(row.conversation_conclusion||"").trim()).length;
+  const setupComplete=Boolean(setup?.complete);
+  const formApproved=form?.status==="Approved";
+
+  return <MemberShell><main className="member-page sgr recommitment-clean-dashboard" data-testid="board-recommitment-dashboard">
+    <header className="sgr-dashboard-hero">
+      <p className="eyebrow">NONPROFIT BOARD BUILDER</p>
+      <h1>BOARD RECOMMITMENT</h1>
+      <p>Give each Board Member a clear opportunity to recommit, move into an Advisory Board role or step down gracefully, then turn the final agreement into a role they can actually execute.</p>
+      <div className="sgr-dashboard-promise">
+        <span>1. Give the process context</span><span>2. Send the right form</span><span>3. Have the right conversation</span><span>4. Confirm the way forward</span>
+      </div>
+    </header>
+
+    <Section number="1" title="ANSWER FOUR IMPORTANT QUESTIONS"
+      summary="Tell us your mission, why recommitment matters, what you need the Board to help accomplish and when you need the new commitment in place."
+      status={setupComplete?"Complete":"Start Here"} videoKey="questions" testId="recommitment-questions" defaultOpen>
+      <div className="sgr-clean-stage">
+        <h2>Give The Process The Context It Needs</h2>
+        <p>These four answers become the organization context used by the Recommitment Forms, response interpretation, call scripts and final Board Member Portfolios.</p>
+        {setup?.answers?.logo_data_url&&<img src={setup.answers.logo_data_url} alt="Organization logo" className="recommitment-dashboard-logo"/>}
+        <button className="button" onClick={()=>navigate("/board-recommitment/questions")}>{setupComplete?"REVIEW MY FOUR ANSWERS":"ANSWER THE FOUR QUESTIONS"}</button>
+      </div>
+    </Section>
+
+    <Section number="2" title="PREPARE AND SEND THE RECOMMITMENT FORMS"
+      summary="Create both form versions, approve the outreach email, copy what you need or send a personal form directly from the platform."
+      status={!setupComplete?"Locked":formApproved?"Ready":"Prepare"} videoKey="forms" testId="recommitment-forms">
+      {!setupComplete?<p className="workspace-note">Complete the four questions in Section 1 first.</p>:<RecommitmentFormsSection onChanged={changed}/>}
+    </Section>
+
+    <Section number="3" title="REVIEW RESPONSES AND PREPARE THE CONVERSATION"
+      summary="Every submitted form appears automatically. View or download the response, interpret what it means and generate the one-on-one call script for that person's chosen path."
+      status={!formApproved?"Locked":responded?`${responded} Responded`:"Waiting For Responses"} videoKey="responses" testId="recommitment-responses">
+      {!formApproved?<p className="workspace-note">Approve the Recommitment Forms first.</p>:<ReactivationUnderstand key={refreshKey}/>}
+    </Section>
+
+    <Section number="4" title="CONFIRM THE FINAL OUTCOME AND MOVE EACH PERSON FORWARD"
+      summary="After the conversation, record what was actually agreed. Confirm Active Board, Advisory Board or Step Down, then create the correct Portfolio or transition email."
+      status={!responded?"Waiting For Responses":resolved===responded?"Complete":`${resolved}/${responded} Resolved`} videoKey="decisions" testId="recommitment-decisions">
+      {!responded?<p className="workspace-note">Board Members appear here automatically after submitting their Recommitment Form.</p>:<RecommitmentFinalStage key={refreshKey}/>}
+    </Section>
+
+    <section className="sgr-persistent-support" data-testid="recommitment-support">
+      <div className="sgr-support-heading"><LifeBuoy size={28}/><div><p className="eyebrow">SUPPORT THROUGHOUT THE PROCESS</p><h2>Need Help With Board Recommitment?</h2><p>Tell us where you are stuck, which response you are trying to understand or which conversation you need help preparing for.</p></div></div>
+      <SupportBox productKey="reactivation_self_guided" moduleNumber={1} supportTypes={["I have a question about this step","I need help understanding a Board Member response","I need help preparing for a conversation","I need help deciding the correct next step","I need help using the platform"]}/>
+    </section>
+  </main></MemberShell>;
 }
