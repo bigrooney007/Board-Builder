@@ -30,7 +30,7 @@ export const DashboardPreviewSection = () => {
     }
   };
   return <section data-testid="admin-dashboard-previews">
-    <div className="admin-funnel-numbers-head"><div><h2>Present The Four Product Dashboards</h2><p>Open each real customer dashboard directly from this admin area. The preview workspace is isolated from customer accounts, Stripe revenue, and customer reporting. No separate customer login is required.</p></div></div>
+    <div className="admin-funnel-numbers-head"><div><h2>Present The Four Product Dashboards</h2><p>Open each real customer dashboard with a fully preloaded test journey: completed forms, realistic participant responses, transcripts, decisions, materials and downstream outputs. The preview workspace is isolated from customer accounts, Stripe revenue and customer reporting. No separate customer login is required.</p></div></div>
     {error && <p className="submit-error" data-testid="dashboard-preview-error">{error}</p>}
     <div className="admin-preview-dashboard-grid">
       {DASHBOARDS.map((dashboard, index) => <article className="member-card" key={dashboard.key} data-testid={`dashboard-preview-${dashboard.key}`}>
