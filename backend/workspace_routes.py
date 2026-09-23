@@ -915,6 +915,62 @@ def create_workspace_router(db) -> APIRouter:
                 upsert=True,
             )
 
+    async def prepare_onboarding_assets(user_id: str) -> None:
+        """Prepare reusable organization-level onboarding drafts while recruitment is running."""
+        try:
+            member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
+            if not member:
+                return
+            context = await build_org_context(db, user_id, member)
+            context += await bylaws_context(user_id)
+            types = ["organization_overview", "board_manual", "board_member_agreement",
+                     "confidentiality_agreement", "conflict_of_interest_agreement"]
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"onboarding_status": "generating", "onboarding_stage": types[0], "updated_at": now_iso()}},
+                upsert=True,
+            )
+            failures = []
+            for generation_type in types:
+                existing = await db.generated_materials.find_one(
+                    {"user_id": user_id, "type": generation_type,
+                     "$or": [{"application_id": ""}, {"application_id": None}, {"application_id": {"$exists": False}}]},
+                    {"_id": 0, "material_id": 1},
+                )
+                if existing:
+                    continue
+                await db.recruitment_preparation.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"onboarding_stage": generation_type, "updated_at": now_iso()}},
+                )
+                try:
+                    reference = await reference_context(db, generation_type)
+                    generation_context = context + (f"\n\n{reference}" if reference else "")
+                    structured = await generate_structured(
+                        generation_type,
+                        generation_context,
+                        "Use the standard Board onboarding framework for this resource and update it only with verified organization-specific "
+                        "mission, board model, expectations and governance information. Keep the framework consistent across organizations. "
+                        "Do not invent legal requirements, policies or organization facts.",
+                    )
+                    await save_generation(db, user_id, generation_type, structured, generation_context[:1500])
+                except Exception as exc:
+                    failures.append({"type": generation_type, "error": str(exc)[:300]})
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"onboarding_status": "ready" if not failures else "partial",
+                          "onboarding_stage": "onboarding_assets", "onboarding_failures": failures,
+                          "onboarding_completed_at": now_iso(), "updated_at": now_iso()}},
+                upsert=True,
+            )
+        except Exception as exc:
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"onboarding_status": "failed", "onboarding_stage": "onboarding_assets",
+                          "onboarding_error": str(exc)[:500], "updated_at": now_iso()}},
+                upsert=True,
+            )
+
     @router.get("/opportunity")
     async def read_opportunity(request: Request):
         member = await current_member(request)
@@ -997,6 +1053,13 @@ def create_workspace_router(db) -> APIRouter:
         except Exception as exc:
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {"broadcast_status": "Failed", "broadcast_error": str(exc)[:400]}})
         opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
+        await db.recruitment_preparation.update_one(
+            {"user_id": user_id},
+            {"$set": {"onboarding_status": "queued", "onboarding_stage": "onboarding_assets", "updated_at": now_iso()},
+             "$setOnInsert": {"created_at": now_iso()}},
+            upsert=True,
+        )
+        asyncio.create_task(prepare_onboarding_assets(user_id))
         return {"status": "Published", "broadcast_status": broadcast_status, "opportunity": opportunity}
 
     @router.post("/opportunity/close")
