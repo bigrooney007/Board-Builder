@@ -16,6 +16,7 @@ def forbid(text: str, needle: str, label: str) -> None:
 dashboard = read("frontend/src/member/BoardRecommitmentDashboard.jsx")
 questions = read("frontend/src/member/RecommitmentQuestionsPage.jsx")
 forms_section = read("frontend/src/member/RecommitmentFormsSection.jsx")
+direct_invite = read("frontend/src/member/RecommitmentInviteBoardMembers.jsx")
 public_form = read("frontend/src/funnels/BoardRecommitmentFormPage.jsx")
 understand = read("frontend/src/member/ReactivationUnderstand.jsx")
 final_stage = read("frontend/src/member/RecommitmentFinalStage.jsx")
@@ -59,6 +60,9 @@ require(forms_section, "Active Board / Advisory Board", "active/advisory form ca
 require(forms_section, "Full Recommitment / Transition", "full transition form card")
 require(forms_section, "COPY APPROVED EMAIL", "copyable approved outreach email")
 require(forms_section, "RecommitmentInviteBoardMembers", "direct platform sending inside forms section")
+require(direct_invite, 'value="active_advisory"', "direct-send no-step-down form variant")
+require(direct_invite, 'value="full"', "direct-send full form variant")
+forbid(direct_invite, 'value="standard"', "retired standard form selector")
 require(backend, '@router.put("/reactivation/recommitment-email-draft")', "editable outreach email")
 require(backend, '@router.post("/reactivation/recommitment-email-draft/approve")', "outreach email approval")
 
