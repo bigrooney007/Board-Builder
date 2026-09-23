@@ -190,6 +190,13 @@ export default function GameDashboardPage() {
 
   useEffect(() => () => clearInterval(meetingPoller.current), []);
 
+  const refreshDashboard = useCallback(async () => {
+    try {
+      const response = await memberApi.get("/game/dashboard");
+      setData(response.data);
+    } catch { /* the existing dashboard state remains visible */ }
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (!member) {
@@ -283,7 +290,7 @@ export default function GameDashboardPage() {
           testId="bfg-dashboard-section-meeting"
         >
           {founderGameComplete
-            ? <GameNightSection />
+            ? <GameNightSection onSaved={refreshDashboard} />
             : <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>}
         </DashboardSection>
 
@@ -299,7 +306,7 @@ export default function GameDashboardPage() {
           ) : !meetingReady ? (
             <p className="bfg-note">Save the Board meeting date, time, timezone and funding deadline in Section 2 before inviting participants.</p>
           ) : (
-            <BoardMembersSection />
+            <BoardMembersSection onChanged={refreshDashboard} />
           )}
         </DashboardSection>
 
