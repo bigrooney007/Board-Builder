@@ -773,8 +773,7 @@ def create_reactivation_router(db) -> APIRouter:
     async def save_outcome(member_record_id: str, payload: OutcomePayload, request: Request):
         member = await reactivation_member(request)
         await owned_board_member(member["user_id"], member_record_id)
-        intake = await user_intake(member["user_id"])
-        if payload.outcome not in allowed_outcomes(intake.get("transition_options", [])):
+        if payload.outcome not in allowed_outcomes():
             raise HTTPException(status_code=422, detail="This outcome is not available for your organization")
         now = datetime.now(timezone.utc).isoformat()
         await db.reactivation_board_members.update_one(
@@ -1387,6 +1386,7 @@ def create_reactivation_router(db) -> APIRouter:
             if analysis and analysis["status"] not in {"Generating", "Failed"}:
                 analyzed += 1
             rows.append({**public_record(record),
+                         "recommitment": response.get("recommitment", ""),
                          "recommitment": response.get("recommitment", ""),
                          "professional_role": response.get("current_position", ""), "employer": response.get("employer", ""),
                          "expertise": response.get("expertise", []), "contribution_interests": response.get("contribution_interests", []),
