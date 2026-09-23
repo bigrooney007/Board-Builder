@@ -1,6 +1,7 @@
 """Phase 3 member workspace routes — $497 Self-Guided Recruitment execution platform.
 All endpoints require member auth + recruitment_self_guided entitlement. Tenant isolation enforced by user_id scoping.
 """
+import asyncio
 import io
 import os
 import secrets
@@ -581,6 +582,14 @@ def create_workspace_router(db) -> APIRouter:
             updates["share_token"] = secrets.token_urlsafe(24)
         await db.generated_materials.update_one(
             {"material_id": material_id, "user_id": member["user_id"]}, {"$set": updates})
+        if material["type"] == "powerhouse_board_blueprint":
+            await db.recruitment_preparation.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {"status": "queued", "stage": "campaign_assets", "updated_at": now_iso()},
+                 "$setOnInsert": {"created_at": now_iso()}},
+                upsert=True,
+            )
+            asyncio.create_task(prepare_campaign_assets(member["user_id"]))
         refreshed = await db.generated_materials.find_one({"material_id": material_id}, {"_id": 0, "share_token": 1})
         return {"status": "Approved", "share_token": (refreshed or {}).get("share_token", "")}
 
@@ -827,14 +836,84 @@ def create_workspace_router(db) -> APIRouter:
             "materials_total": len(CAMPAIGN_TYPES),
         }
 
+    async def prepare_campaign_assets(user_id: str) -> None:
+        """Prepare the next recruitment stage after the founder approves the board profiles."""
+        try:
+            member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
+            if not member:
+                return
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"status": "generating", "stage": "application", "updated_at": now_iso()}},
+                upsert=True,
+            )
+            opportunity = await ensure_opportunity(user_id, member)
+            if not opportunity.get("application_saved"):
+                await db.opportunities.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"custom_questions": opportunity.get("custom_questions", []),
+                              "application_saved": True, "updated_at": now_iso()}},
+                )
+                opportunity["application_saved"] = True
+
+            origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
+            apply_url = f"{origin}/board-opportunities/{opportunity['slug']}/apply"
+            base_context = await build_org_context(db, user_id, member)
+            base_context += f"\n\nBOARD APPLICATION URL (insert this exact URL wherever the application link belongs): {apply_url}"
+
+            failures = []
+            for generation_type in CAMPAIGN_TYPES:
+                existing = await db.generated_materials.find_one(
+                    {"user_id": user_id, "type": generation_type,
+                     "$or": [{"application_id": ""}, {"application_id": None}, {"application_id": {"$exists": False}}]},
+                    {"_id": 0, "material_id": 1},
+                )
+                if existing:
+                    continue
+                await db.recruitment_preparation.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"stage": generation_type, "updated_at": now_iso()}},
+                )
+                try:
+                    context = base_context
+                    reference = await reference_context(db, generation_type)
+                    if reference:
+                        context += f"\n\n{reference}"
+                    structured = await generate_structured(
+                        generation_type,
+                        context,
+                        "Prepare a finished organization-specific recruitment asset from the founder-approved Board Member profiles. "
+                        "Use the organization's actual mission, board needs, value proposition and application link. Do not invent facts.",
+                    )
+                    await save_generation(db, user_id, generation_type, structured, context[:1500])
+                except Exception as exc:
+                    failures.append({"type": generation_type, "error": str(exc)[:300]})
+
+            status = "ready" if not failures else "partial"
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"status": status, "stage": "campaign_assets", "failures": failures,
+                          "completed_at": now_iso(), "updated_at": now_iso()}},
+                upsert=True,
+            )
+        except Exception as exc:
+            await db.recruitment_preparation.update_one(
+                {"user_id": user_id},
+                {"$set": {"status": "failed", "stage": "campaign_assets",
+                          "error": str(exc)[:500], "updated_at": now_iso()}},
+                upsert=True,
+            )
+
     @router.get("/opportunity")
     async def read_opportunity(request: Request):
         member = await current_member(request)
         opportunity = await ensure_opportunity(member["user_id"], member)
         readiness = await opportunity_readiness(member["user_id"], opportunity)
         applications = await db.opportunity_applications.count_documents({"owner_user_id": member["user_id"]})
+        preparation = await db.recruitment_preparation.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0}) or {}
         return {"opportunity": opportunity, "core_questions": CORE_QUESTIONS, "readiness": readiness,
-                "applications_count": applications}
+                "applications_count": applications, "preparation": preparation}
 
     @router.put("/opportunity/application")
     async def save_application_form(payload: ApplicationFormUpdate, request: Request):
