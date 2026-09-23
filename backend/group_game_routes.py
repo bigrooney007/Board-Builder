@@ -130,6 +130,19 @@ def working_strategy_ideas(data: dict, section_key: str) -> list:
         return ideas
     if section_key == "team":
         return [strategy_item_text(item) for item in ((data.get("fundraising_team") or {}).get("priorities") or []) if strategy_item_text(item)]
+    if section_key == "budget":
+        budget = data.get("execution_budget") or {}
+        ideas = []
+        if isinstance(budget, dict):
+            for item in budget.get("required_now") or []:
+                text = strategy_item_text(item)
+                if text: ideas.append(f"REQUIRED NOW: {text}")
+            for item in budget.get("later") or []:
+                text = strategy_item_text(item)
+                if text: ideas.append(f"LATER: {text}")
+            summary = str(budget.get("budget_summary") or "").strip()
+            if summary: ideas.append(f"BUDGET APPROACH: {summary}")
+        return ideas
     if section_key == "execution":
         timeline=data.get("execution_timeline") or {};ideas=[]
         if isinstance(timeline, dict):
@@ -274,8 +287,18 @@ def create_group_game_router(db) -> APIRouter:
                              "current_grantors":v3_reality.get("current_grantors","")}
             elif definition["section_key"]=="team" and v3_reality.get("current_team"):
                 reality={"current_team":v3_reality.get("current_team","")}
-            elif definition["section_key"] in {"technology","materials","budget","execution"} and v3_reality.get("current_resources"):
-                reality={"current_resources":v3_reality.get("current_resources","")}
+            elif definition["section_key"] == "technology":
+                reality = {"current_technology": v3_reality.get("current_technology", "")}
+            elif definition["section_key"] == "materials":
+                reality = {"current_materials": v3_reality.get("current_materials", "")}
+            elif definition["section_key"] == "budget":
+                reality = {"current_budget": v3_reality.get("current_budget", "")}
+            elif definition["section_key"] == "execution":
+                reality = {
+                    "current_individual_donor_process": v3_reality.get("current_individual_donors", ""),
+                    "current_business_process": v3_reality.get("current_businesses", ""),
+                    "current_grant_process": v3_reality.get("current_grantors", ""),
+                }
             def add_reality(value, label="Organization reality"):
                 nonlocal order
                 if isinstance(value, dict):
