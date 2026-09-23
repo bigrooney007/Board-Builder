@@ -277,13 +277,21 @@ export default function GameSituationPage() {
       </>, "bfg-setup-reality-intro");
     }
     const question = questions[rIdx] || {};
-    const last = rIdx === questions.length - 1;    const continueReality = async () => {
-      if (!last) { setRIdx(rIdx + 1); window.scrollTo({ top: 0 }); return; }
+    const last = rIdx === questions.length - 1;
+    const continueReality = async () => {
       setBusy(true); setError("");
       try {
         await memberApi.put("/game/situation", { sections: { current_reality: reality }, current_step: 5 });
-        setPhase("participation"); setPartStep(-1); window.scrollTo({ top: 0 });
-      } catch { setError("We could not save your answers. Please try again."); }
+        if (!last) {
+          setRIdx(rIdx + 1);
+        } else {
+          setPhase("participation");
+          setPartStep(-1);
+        }
+        window.scrollTo({ top: 0 });
+      } catch {
+        setError("We could not save your answer. Please try again.");
+      }
       setBusy(false);
     };
     return shell(<>
@@ -366,6 +374,22 @@ export default function GameSituationPage() {
     }
     const screen = screens[partStep];
     const last = partStep === screens.length - 1;
+    const saveParticipationProgress = async () => {
+      setBusy(true); setError("");
+      try {
+        const participation = {
+          build: part.build, build_other: part.buildOther,
+          raise: part.raise, raise_other: part.raiseOther,
+          time: part.time, anything_else: anything,
+        };
+        await memberApi.put("/game/situation", { sections: { participation }, current_step: 6 });
+        setPartStep(partStep + 1);
+        window.scrollTo({ top: 0 });
+      } catch {
+        setError("We could not save your answer. Please try again.");
+      }
+      setBusy(false);
+    };
     return shell(<>
       <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(PART_CLIPS[partStep], true)} /></div>
       <h1 data-testid="bfg-participation-heading">{screen.heading}</h1>
@@ -382,7 +406,7 @@ export default function GameSituationPage() {
           Back
         </button>
         <button className="bfg-btn bfg-btn-primary" disabled={busy || !screen.can}
-          onClick={() => { if (last) finishParticipation(); else { setPartStep(partStep + 1); window.scrollTo({ top: 0 }); } }}
+          onClick={() => { if (last) finishParticipation(); else saveParticipationProgress(); }}
           data-testid="bfg-setup-participation-submit">
           {busy ? "Saving…" : last ? "Continue" : "Continue"}
         </button>
