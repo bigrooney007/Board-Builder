@@ -16,7 +16,7 @@ const fmtTime = (raw) => {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 };
 
-export const GameNightSection = () => {
+export const GameNightSection = ({ onSaved = () => {} }) => {
   const [night, setNight] = useState(null);
   const [defaultName, setDefaultName] = useState("");
   const [editing, setEditing] = useState(false);
@@ -62,6 +62,7 @@ export const GameNightSection = () => {
       const response = await memberApi.put("/game/night", form);
       setNight(response.data.night);
       setEditing(false);
+      onSaved(response.data.night);
     } catch (err) {
       setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not save your meeting details. Please try again.");
     }
