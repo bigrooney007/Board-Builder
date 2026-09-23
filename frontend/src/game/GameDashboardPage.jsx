@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, LifeBuoy } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
@@ -7,57 +8,69 @@ import { GameNightSection } from "./GameNightSection";
 import { HostToolsSection } from "./HostToolsSection";
 import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
-import { WorkingStrategyCard, StrategiesHistoryCard } from "./StrategyCards";
 import { FinalOutputsSection } from "./MeetingOutputs";
-import { DashboardTour } from "./DashboardTour";
 import { BfgShell, formatDate, money } from "./gameShared";
 
 const SUPPORT_TYPES = [
-  "I have a question about this module",
+  "I have a question about this step",
   "I need help using the platform",
   "I need help executing this step",
   "I would like someone to help me complete this step",
 ];
 
-const GroupGameCard = () => {
+const DashboardSection = ({ number, title, summary, status, children, defaultOpen = false, testId }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className={`bfg-panel bfg-machine-section ${open ? "is-open" : ""}`} data-testid={testId}>
+      <button type="button" className="bfg-machine-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="bfg-machine-number">{String(number).padStart(2, "0")}</span>
+        <span className="bfg-machine-title">
+          <strong>{title}</strong>
+          <small>{summary}</small>
+        </span>
+        <span className="bfg-machine-right">
+          {status && <em>{status}</em>}
+          <ChevronDown size={19} className={open ? "rotate" : ""}/>
+        </span>
+      </button>
+      {open && <div className="bfg-machine-body">{children}</div>}
+    </section>
+  );
+};
+
+const GroupGameStage = () => {
   const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   useEffect(() => {
-    memberApi.get("/game/group/overview").then((r) => setOverview(r.data)).catch(() => {});
+    memberApi.get("/game/group/overview").then((response) => setOverview(response.data)).catch(() => {});
   }, []);
-  if (!overview) return null;
+  if (!overview) return <p className="bfg-note">Opening your Group Game…</p>;
   const session = overview.session;
   const completed = session?.status === "completed";
+  const inProgress = session?.status === "in_progress";
   return (
-    <section className="bfg-panel" data-tour="group-game" data-testid="bfg-group-game-card">
-      <div className="bfg-panel-head">
-        <div>
-          <><p className="bfg-eyebrow">STEP 6</p><h2>Group Review Game</h2></>
-          <p className="bfg-panel-sub">
-            {completed
-              ? "Completed — 9 of 9 review screens completed"
-              : session?.status === "in_progress"
-                ? "In progress — continue running your Board Fundraising Day/Night with your board."
-                : session
-                  ? "Ready — your Group Game link is prepared and waiting."
-                  : "Bring your board together on one shared screen to review every idea and agree on the complete fundraising system."}
-          </p>
-          {completed && <p className="bfg-note">{session.participants_joined} board members participated</p>}
+    <div className="bfg-stage-stack">
+      <div className="bfg-clean-stage">
+        <h3>Bring The Board's Ideas Into One Room</h3>
+        <p className="bfg-panel-sub">
+          {completed
+            ? "Your Board completed all nine decision screens. The final strategy is being built from the decisions the Board adopted."
+            : inProgress
+              ? "Your Group Game is in progress. Continue from the exact screen where the Board stopped."
+              : "The Group Game brings together the founder's thinking, Board Member ideas, current fundraising reality and execution recommendations so the Board can decide what actually moves forward."}
+        </p>
+        <div className="bfg-night-summary" style={{ marginTop: 14 }}>
+          <div className="bfg-summary-row"><span>Fundraising Goal</span><strong>{overview.goal_display || "Not set"}</strong></div>
+          <div className="bfg-summary-row"><span>Individual Games Completed</span><strong>{overview.individual_completed || 0}</strong></div>
+          <div className="bfg-summary-row"><span>Board Members</span><strong>{overview.board_member_count || 0}</strong></div>
+          {session && <div className="bfg-summary-row"><span>Group Game</span><strong>{completed ? "Complete" : inProgress ? "In Progress" : "Prepared"}</strong></div>}
         </div>
-        <div className="bfg-bm-actions" style={{ marginTop: 0 }}>
-          {completed ? (
-            <>
-              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/group?results=1")} data-testid="bfg-view-group-results-btn">View Group Game Results</button>
-              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/group")} data-testid="bfg-open-group-game-btn">Open Group Game</button>
-            </>
-          ) : (
-            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate("/game/group")} data-testid="bfg-start-group-game-btn">
-              {session ? "Open Group Game" : "Start Group Game"}
-            </button>
-          )}
-        </div>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} onClick={() => navigate("/game/group")}>
+          {completed ? "OPEN GROUP GAME RESULTS" : inProgress ? "CONTINUE GROUP GAME" : "START GROUP GAME"}
+        </button>
       </div>
-    </section>
+      <HostToolsSection />
+    </div>
   );
 };
 
@@ -67,12 +80,11 @@ export default function GameDashboardPage() {
   const [data, setData] = useState(null);
   const [postgame, setPostgame] = useState(null);
   const [meeting, setMeeting] = useState(null);
-  const [showTour, setShowTour] = useState(false);
   const [denied, setDenied] = useState(false);
   const [openingGame, setOpeningGame] = useState(false);
   const meetingPoller = useRef(null);
 
-  useEffect(() => { document.title = "Your Game Dashboard | Board Fundraising Game"; }, []);
+  useEffect(() => { document.title = "Board Fundraising Game Dashboard | Nonprofit Board Builder"; }, []);
 
   const loadMeeting = useCallback(async () => {
     try {
@@ -84,39 +96,33 @@ export default function GameDashboardPage() {
           await memberApi.post("/game/meeting/compile-final");
           const refreshed = (await memberApi.get("/game/meeting/overview")).data;
           setMeeting(refreshed);
-          if (refreshed.final?.status === "running") {
-            meetingPoller.current = setInterval(async () => {
-              try {
-                const next = (await memberApi.get("/game/meeting/overview")).data;
-                setMeeting(next);
-                if (next.final?.status !== "running") clearInterval(meetingPoller.current);
-              } catch { /* keep polling */ }
-            }, 5000);
-          }
-          return;
-        } catch { /* the output cards will show the current state */ }
+        } catch { /* Group decisions remain saved and can be retried. */ }
       }
-      if (overview.final?.status === "running") {
+      const state = overview.final?.status === "running" ? overview : null;
+      if (state || overview.final?.status === "running") {
         meetingPoller.current = setInterval(async () => {
           try {
             const next = (await memberApi.get("/game/meeting/overview")).data;
             setMeeting(next);
             if (next.final?.status !== "running") clearInterval(meetingPoller.current);
-          } catch { /* keep polling */ }
-        }, 5000);
+          } catch { /* keep the last known state */ }
+        }, 4000);
       }
-    } catch { /* section stays hidden */ }
+    } catch { /* final-output stage stays available when data exists */ }
   }, []);
 
   useEffect(() => () => clearInterval(meetingPoller.current), []);
 
   useEffect(() => {
     if (loading) return;
-    if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!member) {
+      navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
+      return;
+    }
     memberApi.get("/game/dashboard")
       .then((response) => setData(response.data))
-      .catch((err) => {
-        if (err.response?.status === 403) setDenied(true);
+      .catch((error) => {
+        if (error.response?.status === 403) setDenied(true);
         else navigate("/board-fundraising-game", { replace: true });
       });
     memberApi.get("/game/postgame/overview").then((response) => setPostgame(response.data)).catch(() => {});
@@ -132,7 +138,7 @@ export default function GameDashboardPage() {
           <div className="bfg-card" style={{ textAlign: "center" }}>
             <h1>Unlock Your Board Fundraising Game</h1>
             <p style={{ marginTop: 12 }}>Your account does not include the Board Fundraising Game yet.</p>
-            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to="/board-fundraising-game">Return To My Board Fundraising Game</Link>
+            <Link className="bfg-btn bfg-btn-primary" style={{ marginTop: 20 }} to="/board-fundraising-game">Return To The Board Fundraising Game</Link>
           </div>
         </main>
       </BfgShell>
@@ -140,6 +146,8 @@ export default function GameDashboardPage() {
   }
 
   const goalAmount = Number(data.goal?.amount || 0);
+  const founderGameComplete = Boolean(data.situation_completed && data.individual_game_completed);
+
   const openIndividualGame = async () => {
     setOpeningGame(true);
     try {
@@ -147,71 +155,118 @@ export default function GameDashboardPage() {
       if (situation.completed) {
         const token = (await memberApi.post("/game/self-play")).data.token;
         navigate(`/play/${token}`);
-      } else navigate("/game/setup");
-    } catch { navigate("/game/setup"); }
+      } else {
+        navigate("/game/setup");
+      }
+    } catch {
+      navigate("/game/setup");
+    }
   };
 
   return (
     <BfgShell nav={
       <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={async () => { await logout(); navigate("/"); }} data-testid="bfg-logout-btn">Log Out</button>
     }>
-      <main className="bfg-dash" data-testid="bfg-dashboard">
-        <div className="bfg-dash-head">
-          <div>
-            <p className="bfg-eyebrow">Your Board Fundraising Game</p>
-            <h1 data-testid="bfg-dashboard-welcome">Welcome back, {data.first_name}</h1>
+      <main className="bfg-dash bfg-clean-dashboard" data-testid="bfg-dashboard">
+        <header className="bfg-clean-dashboard-hero">
+          <p className="bfg-eyebrow">NONPROFIT BOARD BUILDER</p>
+          <h1>BOARD FUNDRAISING GAME</h1>
+          <p>Build the fundraising strategy with your Board, agree the system required to execute it and give every Board Member a clear role in raising money and strengthening that system.</p>
+          <div className="bfg-goal-chip">
+            <span>Fundraising Goal</span>
+            <strong>{goalAmount ? money(goalAmount) : "Not set yet"}</strong>
+            {data.goal?.deadline && <small>Needed by {formatDate(data.goal.deadline)}</small>}
           </div>
-          <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/board-fundraising-game" data-testid="bfg-edit-game-profile-link">Edit Game Profile</Link>
-        </div>
+        </header>
 
-        <section className="bfg-panel bfg-tour-panel" data-testid="bfg-dashboard-tutorial-card">
-          <div className="bfg-panel-head"><div><p className="bfg-eyebrow">START HERE</p><h2>Take A Guided Tour Of Your Dashboard</h2><p className="bfg-panel-sub">See how to play your individual game, prepare the Board, run the Group Game and move into execution.</p></div><button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => setShowTour(true)} data-testid="bfg-watch-tutorial-btn">START GUIDED TOUR</button></div>
-        </section>
-
-        <section className="bfg-panel" data-tour="play-individual-game" data-testid="bfg-play-individual-game">
-          <div className="bfg-panel-head">
-            <div>
-              <p className="bfg-eyebrow">STEP 1</p>
-              <h2>Play Your Board Fundraising Game</h2>
-              <p className="bfg-panel-sub">Answer one strategic question at a time. After each answer, the platform makes your idea sharper and more actionable for you to approve before moving forward. Your game also captures your present fundraising reality and how you want to participate.</p>
-            </div>
-            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
-              {openingGame ? "OPENING…" : "PLAY MY BOARD FUNDRAISING GAME"}
+        <DashboardSection
+          number={1}
+          title="PLAY THE BOARD FUNDRAISING GAME"
+          summary="Build your starting fundraising direction, document the fundraising system you already have and tell us how you want to participate."
+          status={founderGameComplete ? "Complete" : "Start Here"}
+          defaultOpen
+          testId="bfg-dashboard-section-founder-game"
+        >
+          <div className="bfg-clean-stage">
+            <h3>Your Thinking Comes First</h3>
+            <p className="bfg-panel-sub">Answer each strategic question in your own words. The platform makes the idea actionable without replacing your thinking. You decide what becomes part of the strategy.</p>
+            <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
+              {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>
           </div>
-        </section>
+        </DashboardSection>
 
-        <div data-tour="working-strategy">
-          <WorkingStrategyCard autoGenerate={data.situation_completed && data.individual_game_completed} />
-        </div>
+        <DashboardSection
+          number={2}
+          title="SET YOUR BOARD MEETING AND FUNDING DEADLINE"
+          summary="Set the meeting your Board will use to make final decisions and tell us when the money is needed so the execution plan is built backward from the real deadline."
+          status={founderGameComplete ? "Ready" : "Locked"}
+          testId="bfg-dashboard-section-meeting"
+        >
+          {founderGameComplete
+            ? <GameNightSection />
+            : <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>}
+        </DashboardSection>
 
+        <DashboardSection
+          number={3}
+          title="INVITE YOUR BOARD MEMBERS TO PLAY"
+          summary="Add each Board Member, send their private Game invitation, resend when needed and use a person-specific call script for follow-up."
+          status={founderGameComplete ? "Prepare Board" : "Locked"}
+          testId="bfg-dashboard-section-board"
+        >
+          {founderGameComplete
+            ? <BoardMembersSection />
+            : <p className="bfg-note">Complete your individual Game first. Invitations also require the Board meeting and funding deadline to be saved.</p>}
+        </DashboardSection>
 
-        <div data-tour="prepare-meeting">
-          <GameNightSection />
-        </div>
-        <div data-tour="board-participation">
-          <BoardMembersSection />
-        </div>
-        <div data-tour="meeting-resources">
-          <HostToolsSection />
-        </div>
-        <GroupGameCard />
-        <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} />
-        <CompleteGameNightSection overview={postgame} />
+        <DashboardSection
+          number={4}
+          title="RUN THE GROUP BOARD FUNDRAISING GAME"
+          summary="Discuss every idea together, choose what the Board agrees to, settle the execution system and capture the meeting discussion and delegation."
+          status={meeting?.group_completed ? "Complete" : "Group Decision"}
+          testId="bfg-dashboard-section-group"
+        >
+          <GroupGameStage />
+        </DashboardSection>
 
-        <div className="bfg-dash-grid">
-          <div className="bfg-dash-card" data-testid="bfg-dashboard-goal-card">
-            <h3>Your Fundraising Goal</h3>
-            <p className="bfg-big">{goalAmount ? money(goalAmount) : "Not set yet"}</p>
-            {data.goal?.deadline && <p className="bfg-sub">by {formatDate(data.goal.deadline)}</p>}
-            {data.organization?.name && <p className="bfg-sub">{data.organization.name}</p>}
+        <DashboardSection
+          number={5}
+          title="FINAL FUNDRAISING STRATEGY AND DELEGATION"
+          summary="Turn the Board's adopted decisions into a concise execution strategy, then review the responsibility proposed for every participant before sharing it."
+          status={meeting?.final?.status === "done" ? "Ready To Review" : meeting?.final?.status === "running" ? "Generating" : "Waiting For Group Game"}
+          testId="bfg-dashboard-section-strategy"
+        >
+          <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} />
+        </DashboardSection>
+
+        <DashboardSection
+          number={6}
+          title="SHARE THE STRATEGY AND MOVE INTO EXECUTION"
+          summary="Send the final strategy, activate Board Fundraising Portfolios and give Board Members the execution tools and assistant support tied to their approved responsibilities."
+          status={postgame?.adopted ? "Execution" : "Waiting For Strategy"}
+          testId="bfg-dashboard-section-execution"
+        >
+          <CompleteGameNightSection overview={postgame} />
+          {postgame?.adopted && (
+            <div className="bfg-bm-actions" style={{ marginTop: 16 }}>
+              <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate("/game/portfolios")}>MANAGE BOARD FUNDRAISING PORTFOLIOS</button>
+              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/complete?send=1")}>MANAGE STRATEGY DELIVERY</button>
+            </div>
+          )}
+        </DashboardSection>
+
+        <section className="bfg-persistent-support" data-testid="bfg-dashboard-support">
+          <div className="bfg-support-head">
+            <LifeBuoy size={28}/>
+            <div>
+              <p className="bfg-eyebrow">SUPPORT THROUGHOUT THE PROCESS</p>
+              <h2>Need Help With Your Board Fundraising Game?</h2>
+              <p>Tell us where you are stuck or what you need help executing. Your request stays connected to the Board Fundraising Game.</p>
+            </div>
           </div>
-        </div>
-
-        <StrategiesHistoryCard />
-
-        <SupportBox productKey="board_fundraising_game" moduleNumber={1} supportTypes={SUPPORT_TYPES} />
-        {showTour && <DashboardTour onClose={() => setShowTour(false)} />}
+          <SupportBox productKey="board_fundraising_game" moduleNumber={1} supportTypes={SUPPORT_TYPES} />
+        </section>
       </main>
     </BfgShell>
   );
