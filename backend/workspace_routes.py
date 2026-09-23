@@ -257,6 +257,8 @@ def create_workspace_router(db) -> APIRouter:
                     {"_id": 0, "response_id": 1})
                 if not profile_done:
                     raise HTTPException(status_code=409, detail="This member's New Board Member Profile has not been completed yet. Complete that profile first so this resource can be tailored to the person's real skills, interests, capacity and preferred contribution.")
+                if payload.type == "board_member_portfolio" and not application.get("portfolio_role_approved"):
+                    raise HTTPException(status_code=409, detail="Review, edit and approve this person's Board role before generating their Board Member Portfolio.")
             if payload.type in {"board_member_portfolio", "board_member_engagement_guide", "ninety_day_plan"}:
                 context += "\n\n" + application_context_text({**application, "notes": "", "references": []})
                 profile_response = await db.board_profile_responses.find_one(
