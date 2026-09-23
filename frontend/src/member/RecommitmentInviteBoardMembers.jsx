@@ -27,7 +27,7 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
     setBusy(person.member_record_id); setMessage("");
     try {
       await memberApi.post(`/reactivation/board-members/${person.member_record_id}/send`, { type: "reminder" });
-      setMessage(`A reminder was sent to ${person.name}.`); await load();
+      setMessage(`A reminder was sent to ${person.name}.`); await load(); if (onChanged) onChanged();
     } catch (error) { setMessage(error.response?.data?.detail || "The reminder could not be sent."); }
     setBusy("");
   };
@@ -38,8 +38,8 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
       <label className="field"><span>Board Member Name</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
       <label className="field"><span>Board Member Email</span><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
       <label className="field"><span>Which form should this person receive?</span><select value={form.form_variant} onChange={(e) => setForm({ ...form, form_variant: e.target.value })}>
-        <option value="full">Full Recommitment Form, including graceful transition options</option>
-        <option value="standard">Continue-Serving Form, without the step-down option</option>
+        <option value="active_advisory">Active Board / Advisory Board Form — no step-down option</option>
+        <option value="full">Full Recommitment Form — includes step-down option</option>
       </select></label>
       <button className="button" disabled={busy || !form.name.trim() || !form.email.includes("@")} onClick={invite}><Mail size={15} /> {busy === "new" ? "SENDING…" : "SEND RECOMMITMENT FORM"}</button>
     </div>
