@@ -378,6 +378,34 @@ def create_workspace_router(db) -> APIRouter:
                             "parameters or officer structure where explicitly stated; never invent legal requirements or legal conclusions; "
                             "where sources conflict, use the verified information conservatively):\n"
                             + reactivation_intake["bylaws_text"][:10000])
+        if payload.type in {"conditional_offer", "unconditional_offer"}:
+            required_types = ["organization_overview", "board_manual", "board_member_agreement",
+                              "confidentiality_agreement", "conflict_of_interest_agreement"]
+            missing = []
+            for doc_type in required_types:
+                document = await db.generated_materials.find_one(
+                    {"user_id": user_id, "type": doc_type, "application_id": "", "status": "Approved"},
+                    {"_id": 0, "material_id": 1})
+                if not document:
+                    missing.append(GENERATION_TYPES[doc_type]["title"])
+            onboarding_session = profile.get("onboarding_session") or {}
+            if not onboarding_session.get("date") or not onboarding_session.get("time") or not onboarding_session.get("timezone"):
+                missing.append("Onboarding date, time and timezone")
+            if missing:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Prepare the onboarding session before generating the appointment email: " + ", ".join(missing),
+                )
+            context += (
+                "\n\nONBOARDING SESSION DETAILS (include these actual details in the appointment email):\n"
+                f"Date: {onboarding_session.get('date', '')}\n"
+                f"Time: {onboarding_session.get('time', '')}\n"
+                f"Timezone: {onboarding_session.get('timezone', '')}\n"
+                f"Format: {onboarding_session.get('format', '')}\n"
+                f"Meeting link: {onboarding_session.get('link', '')}\n"
+                f"Location: {onboarding_session.get('location', '')}"
+            )
+
         if payload.type == "conditional_offer":
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
