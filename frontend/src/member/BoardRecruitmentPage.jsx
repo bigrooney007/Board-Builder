@@ -179,10 +179,11 @@ export default function BoardRecruitmentPage() {
                 <p className="workspace-note">Complete all six Recruitment Questions first.</p>
               ):(
                 <>
-                  {["queued","generating"].includes(generationStatus)&&!assessment?.result&&(
-                    <div className="sgr-background-work"><span className="sgr-working-dot"/><div><strong>We are identifying your board members now.</strong><p>You can leave this section and continue using the dashboard. The result will surface here when it is ready.</p></div></div>
+                  {!assessment?.result ? (
+                    <div className="sgr-background-work"><span className="sgr-working-dot"/><div><strong>We are identifying your board members now.</strong><p>You can leave this section and continue using the dashboard. The result will surface here automatically when it is ready.</p></div></div>
+                  ) : (
+                    <Module1Profile key={"board-profiles-ready-" + (assessment.result_generated_at || "1")}/>
                   )}
-                  <Module1Profile/>
                 </>
               )}
             </Section>
