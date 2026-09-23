@@ -1001,6 +1001,21 @@ export const OnboardingPreparation = () => {
   useEffect(() => {
     memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
   }, []);
+  useEffect(() => {
+    let timer;
+    const checkPreparation = async () => {
+      try {
+        const response = await memberApi.get("/workspace/opportunity");
+        const status = response.data.preparation?.onboarding_status;
+        await refreshOrg();
+        if (["queued", "generating"].includes(status)) {
+          timer = window.setTimeout(checkPreparation, 4000);
+        }
+      } catch { /* keep manual generation available */ }
+    };
+    checkPreparation();
+    return () => { if (timer) window.clearTimeout(timer); };
+  }, [refreshOrg]);
 
   const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
   const selected = candidates.find((application) => application.application_id === selectedId);
@@ -1158,8 +1173,11 @@ export const OnboardingFacilitationGuide = () => {
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   return (
     <div data-testid="onboarding-guide-workspace">
-      <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Generate Onboarding Facilitation Guide"
-        description="A complete read-through guide for leading the onboarding session, reviewing expectations, discussing how each new board member will contribute and recording the responsibilities agreed during the conversation."
+      <MaterialCard type="onboarding_agenda" title="Board Member Onboarding Agenda" buttonLabel="Prepare Onboarding Agenda"
+        description="A concise participant-facing agenda for the session. It follows the same onboarding framework and uses your saved session information where available."
+        material={orgMaterials.onboarding_agenda} refresh={refreshOrg} approvable />
+      <MaterialCard type="onboarding_script" title={applicantModulesText.boardMemberOnboardingFacilitatorGuide} buttonLabel="Prepare Onboarding Facilitation Guide"
+        description="Your presenter notes for leading the session. Keep the framework consistent, use the organization's verified information, and explain each section naturally in your own words."
         material={orgMaterials.onboarding_script} refresh={refreshOrg} approvable />
     </div>
   );
