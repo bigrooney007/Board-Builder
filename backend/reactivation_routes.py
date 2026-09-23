@@ -440,16 +440,44 @@ def create_reactivation_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="This Board Member has not completed their form yet")
         return {"member": public_record(record), "response": record["response"], "submitted_at": record.get("submitted_at", "")}
 
+    @router.get("/reactivation/board-members/{member_record_id}/response/pdf")
+    async def download_response_pdf(member_record_id: str, request: Request):
+        member = await reactivation_member(request)
+        record = await owned_board_member(member["user_id"], member_record_id)
+        if record["status"] != "COMPLETED" or not record.get("response"):
+            raise HTTPException(status_code=404, detail="This Board Member has not completed their form yet")
+        context = await founder_context(member["user_id"])
+        response = record.get("response") or {}
+        labels = {
+            "recommitment": "Recommitment Choice", "why_joined": "Why They Want To Continue",
+            "expertise": "Expertise", "participation_barriers": "Participation Barriers",
+            "contribution_interests": "Contribution Interests", "ownership_area": "Responsibility They Could Own",
+            "leadership_interest": "Leadership Interest", "leadership_area": "Leadership Area",
+            "strengths_resources": "Strengths / Relationships / Resources", "monthly_availability": "Monthly Availability",
+            "experience_improvement": "Support They Need From The Organization", "decision_reason": "Reason For Their Chosen Path",
+            "anything_else": "Anything Else",
+        }
+        lines = ["BOARD RECOMMITMENT RESPONSE", "", f"Board Member: {record.get('name','')}", f"Email: {record.get('email','')}", ""]
+        for key, label in labels.items():
+            value = response.get(key)
+            if not value:
+                continue
+            if isinstance(value, list):
+                value = ", ".join(str(item) for item in value)
+            lines.extend([label.upper(), str(value), ""])
+        issuer = {
+            "issued_by": context.get("founder_name", ""), "issuer_title": context.get("founder_title", ""),
+            "organization": context.get("organization", ""), "issue_date": (record.get("submitted_at") or datetime.now(timezone.utc).isoformat())[:10],
+        }
+        return build_portfolio_pdf("Board Recommitment Response", record.get("name",""), issuer, "\n".join(lines))
+
     # ---------------- STEP 3: DIFFICULT CONVERSATIONS ----------------
 
-    BASE_OUTCOMES = ["Continuing as an Active Board Member", "Follow-Up Conversation Needed"]
+    BASE_OUTCOMES = ["Continuing as an Active Board Member"]
 
     def allowed_outcomes() -> list:
-        # The streamlined Recommitment product no longer asks the founder to pre-authorize
-        # transition choices in intake. The one-on-one conversation determines the right outcome.
         return list(BASE_OUTCOMES) + [
             "Transitioning to an Advisory Role",
-            "Transitioning to Another Support Role",
             "Stepping Down From the Board",
         ]
 
@@ -604,10 +632,25 @@ def create_reactivation_router(db) -> APIRouter:
         if record.get("call_notes"):
             context += "\n\nFOUNDER'S PREVIOUS NOTES ABOUT THIS BOARD MEMBER:\n" + record["call_notes"]
         direction = record.get("conversation_direction", "")
+        if not direction:
+            choice = (record.get("response") or {}).get("recommitment", "")
+            direction = {
+                RECOMMIT_ACTIVE: "Remain and Step Up",
+                RECOMMIT_ADVISORY: "Move to Advisory Board",
+                RECOMMIT_STEP_DOWN: "Step Down",
+                LEGACY_RECOMMIT_YES: "Remain and Step Up",
+                LEGACY_RECOMMIT_NO: "Step Down",
+            }.get(choice, "")
+            if direction:
+                await db.reactivation_board_members.update_one(
+                    {"member_record_id": member_record_id},
+                    {"$set": {"conversation_direction": direction, "direction_source": "form_response"}},
+                )
         if direction:
-            context += (f"\n\nFOUNDER-SELECTED CONVERSATION DIRECTION: {direction}\n"
+            context += (f"\n\nCONVERSATION DIRECTION: {direction}\n"
                         + DIRECTION_GUIDANCE.get(direction, "")
-                        + "\nWrite the entire script specifically for this direction and this person — never a generic script.")
+                        + "\nThis direction comes from the Board Member's submitted choice unless the founder deliberately changes it. "
+                          "Write the entire script specifically for this direction and this person — never a generic script.")
         query = {"user_id": member["user_id"], "type": "reactivation_conversation_script", "application_id": member_record_id}
         existing = await db.generated_materials.find_one(query, {"_id": 0, "material_id": 1, "status": 1})
         if existing and existing.get("status") == "Generating":
@@ -827,9 +870,26 @@ def create_reactivation_router(db) -> APIRouter:
                             "follow_up": len(groups["follow_up"]), "waiting": len(groups["waiting"]),
                             "portfolios_approved": approved}}
 
+    class ConfirmedRolePayload(BaseModel):
+        role: str = Field(min_length=1, max_length=500)
+
+    @router.put("/reactivation/board-members/{member_record_id}/confirmed-role")
+    async def save_confirmed_role(member_record_id: str, payload: ConfirmedRolePayload, request: Request):
+        member = await reactivation_member(request)
+        record = await owned_board_member(member["user_id"], member_record_id)
+        if record.get("conversation_outcome") not in {OUTCOME_ACTIVE, OUTCOME_ADVISORY}:
+            raise HTTPException(status_code=409, detail="Confirm the final active or Advisory Board outcome before setting this role")
+        await db.reactivation_board_members.update_one(
+            {"member_record_id": member_record_id},
+            {"$set": {"confirmed_role": payload.role.strip(), "confirmed_role_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"status": "saved", "confirmed_role": payload.role.strip()}
+
     def eligible_for_portfolio(record: dict) -> str:
         outcome = record.get("conversation_outcome", "")
         if outcome in {OUTCOME_ACTIVE, OUTCOME_ADVISORY}:
+            if not str(record.get("confirmed_role") or "").strip():
+                raise HTTPException(status_code=409, detail="Confirm or edit this person's final Board role before generating their Portfolio.")
             return outcome
         if outcome == OUTCOME_SUPPORT:
             if not (record.get("conversation_conclusion") or "").strip():
@@ -852,7 +912,9 @@ def create_reactivation_router(db) -> APIRouter:
         title = portfolio_title_for(outcome)
         context = f"PORTFOLIO TYPE: {title}\n\nORGANIZATION:\n" + json.dumps({**context_org, "founder_name": founder["founder_name"]}, indent=1, default=str)
         context += "\n\nTHIS BOARD MEMBER (their Recommitment/Profile response):\n" + json.dumps(
-            {"name": record["name"], "current_board_role": record.get("role", ""), **(record.get("response") or {})}, indent=1, default=str)
+            {"name": record["name"], "previous_board_role": record.get("role", ""),
+             "founder_confirmed_role": record.get("confirmed_role", ""), **(record.get("response") or {})}, indent=1, default=str)
+        context += f"\n\nFOUNDER-CONFIRMED ROLE (authoritative for this Portfolio): {record.get('confirmed_role','')}"
         context += f"\n\nFOUNDER-SELECTED CONVERSATION OUTCOME: {outcome}"
         context += "\n\nFOUNDER'S CONVERSATION CONCLUSION (what was ACTUALLY agreed — highest authority):\n" + (record.get("conversation_conclusion") or "No conclusion recorded yet.")
         try:
