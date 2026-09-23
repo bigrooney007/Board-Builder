@@ -92,15 +92,16 @@ export default function StrategicPlanningSessionPage(){
   try{
    if(listening){recognition.current?.stop();setListening(false);}
    await axios.post(`${API}/guided/strategic-planning/session/complete`,{session_id:sid,decisions,transcript});
+   try { await axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}); } catch {}
    localStorage.removeItem(`sp-transcript-${sid}`);
-   navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#generate-strategy`);
+   navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-plan`);
   }catch(e){setMessage(e.response?.data?.detail||"The Strategic Planning Session could not be completed.");}
   setBusy("");
  };
 
  if(!session)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning Session</h1><p>{message||"Preparing your session…"}</p></section></main></BfgShell>;
 
- if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><h1>Strategic Planning Session Complete</h1><p>Your Board decisions and transcript are saved. Return to the dashboard to generate the professional Strategic Plan.</p><button className="bfg-btn bfg-btn-primary" onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#generate-strategy`)}>RETURN TO DASHBOARD</button></section></main></BfgShell>;
+ if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><h1>Strategic Planning Session Complete</h1><p>Your Board decisions and transcript are saved. The Final Strategic Plan is now being prepared from the decisions you made together.</p><button className="bfg-btn bfg-btn-primary" onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-plan`)}>RETURN TO DASHBOARD</button></section></main></BfgShell>;
 
  if(session.status!=="IN PROGRESS")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-prep">
   <p className="bfg-eyebrow">BEFORE YOU START</p><h1>Prepare Your Strategic Planning Session</h1><p className="sp-session-lead">Set up the shared Board screen and start transcription before moving into the first strategic section.</p>
