@@ -423,6 +423,11 @@ def create_game_router(db) -> APIRouter:
             {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}},
             {"_id": 0, "member_id": 1})
         individual_game_completed = False
+        night = await db.game_nights.find_one(
+            {"user_id": member["user_id"]},
+            {"_id": 0, "meeting_date": 1, "funding_deadline": 1, "start_time": 1, "timezone": 1},
+        ) or {}
+        game_night_ready = bool(night.get("meeting_date") and night.get("funding_deadline") and night.get("start_time") and night.get("timezone"))
         if primary:
             rows = await db.game_section_responses.find(
                 {"board_member_id": primary["member_id"], "section_id": {"$in": [1, 2, 3, 4]}},
@@ -438,6 +443,8 @@ def create_game_router(db) -> APIRouter:
             "goal": profile.get("goal", {}),
             "situation_completed": situation_completed,
             "individual_game_completed": individual_game_completed,
+            "game_night_ready": game_night_ready,
+            "game_night": night,
             "status": "set_up_board" if situation_completed and individual_game_completed else "complete_setup",
             "areas": [{**area, "locked": True} for area in GAME_AREAS],
         }
