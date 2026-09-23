@@ -24,14 +24,16 @@ from content_templates import (
 
 logger = logging.getLogger(__name__)
 
-RECOMMITMENT_OPTIONS = [
-    "Yes, I am ready to recommit and continue serving.",
-    "No, I am not able to recommit to serving on the Board.",
-    "I am not sure yet. I need more information or would like to discuss my role before deciding.",
-]
-RECOMMIT_YES, RECOMMIT_NO, RECOMMIT_UNSURE = RECOMMITMENT_OPTIONS
+RECOMMIT_ACTIVE = "I am ready to recommit, remain an active Board Member and step up in my role."
+RECOMMIT_ADVISORY = "I would like to transition into an Advisory Board role."
+RECOMMIT_STEP_DOWN = "I would like to step down from the Board."
+RECOMMITMENT_OPTIONS = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY, RECOMMIT_STEP_DOWN]
+
+LEGACY_RECOMMIT_YES = "Yes, I am ready to recommit and continue serving."
+LEGACY_RECOMMIT_NO = "No, I am not able to recommit to serving on the Board."
+LEGACY_RECOMMIT_UNSURE = "I am not sure yet. I need more information or would like to discuss my role before deciding."
+
 ADVISORY_OPTION = "Transition to an Advisory Board / Advisory Role"
-SUPPORT_OPTION = "Transition to Another Volunteer/Support Role"
 
 
 class BoardMemberCreate(BaseModel):
@@ -44,6 +46,14 @@ class BoardMemberCreate(BaseModel):
 
 class RecommitmentBrandingUpdate(BaseModel):
     organization_name: str = Field(min_length=1)
+    logo_data_url: str = ""
+
+
+class RecommitmentSetupUpdate(BaseModel):
+    mission: str = Field(min_length=1, max_length=6000)
+    why_recommit: str = Field(min_length=1, max_length=6000)
+    board_help_accomplish: str = Field(min_length=1, max_length=6000)
+    need_by: str = Field(min_length=1, max_length=20)
     logo_data_url: str = ""
 
 
@@ -64,6 +74,7 @@ class RecommitmentSubmission(BaseModel):
     full_name: str = Field(min_length=1)
     email: EmailStr
     phone: str = ""
+    form_variant: str = "full"
     recommitment: str
     why_joined: str = ""
     expertise: List[str] = []
@@ -200,10 +211,12 @@ def create_reactivation_router(db) -> APIRouter:
             "founder_title": (intake or {}).get("founder_title", ""),
             "founder_phone": (intake or {}).get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
-            # Streamlined Recommitment always keeps the three graceful transition pathways available.
-            "transition_options": [ADVISORY_OPTION, SUPPORT_OPTION, "Step Down From the Board"],
+            "transition_options": [ADVISORY_OPTION, "Step Down From the Board"],
             "mission": (intake or {}).get("mission", ""),
-            "organization_goals": (intake or {}).get("organization_goals", ""),
+            "why_recommit": (intake or {}).get("why_recommit", ""),
+            "board_help_accomplish": (intake or {}).get("board_help_accomplish", "") or (intake or {}).get("organization_goals", ""),
+            "organization_goals": (intake or {}).get("board_help_accomplish", "") or (intake or {}).get("organization_goals", ""),
+            "need_by": (intake or {}).get("need_by", ""),
             "logo_data_url": (intake or {}).get("logo_data_url", ""),
         }
 
@@ -234,6 +247,56 @@ def create_reactivation_router(db) -> APIRouter:
                 "logo_data_url": logo, "mission": "", "organization_goals": "", "submitted_at": now,
             })
         return {"saved": True, "organization_name": payload.organization_name.strip(), "logo_data_url": logo}
+
+    @router.get("/reactivation/setup")
+    async def get_recommitment_setup(request: Request):
+        member = await reactivation_member(request)
+        context = await founder_context(member["user_id"])
+        answers = {
+            "mission": context.get("mission", ""),
+            "why_recommit": context.get("why_recommit", ""),
+            "board_help_accomplish": context.get("board_help_accomplish", ""),
+            "need_by": context.get("need_by", ""),
+            "logo_data_url": context.get("logo_data_url", ""),
+        }
+        return {
+            "organization_name": context.get("organization", ""),
+            "answers": answers,
+            "complete": all(str(answers.get(key) or "").strip() for key in ("mission", "why_recommit", "board_help_accomplish", "need_by")),
+        }
+
+    @router.put("/reactivation/setup")
+    async def save_recommitment_setup(payload: RecommitmentSetupUpdate, request: Request):
+        member = await reactivation_member(request)
+        logo = payload.logo_data_url.strip()
+        if logo and (not logo.startswith("data:image/") or len(logo) > 2_500_000):
+            raise HTTPException(status_code=422, detail="Upload a PNG, JPG or WebP logo smaller than 1.8 MB")
+        try:
+            datetime.strptime(payload.need_by.strip(), "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Choose a valid date for when you need the Board to recommit")
+        existing = await db.board_reactivation_intakes.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0}, sort=[("submitted_at", -1)]
+        ) or {}
+        now = datetime.now(timezone.utc).isoformat()
+        query = {"user_id": member["user_id"]}
+        if existing.get("guided_session_id"):
+            query["guided_session_id"] = existing["guided_session_id"]
+        updates = {
+            "mission": payload.mission.strip(),
+            "why_recommit": payload.why_recommit.strip(),
+            "board_help_accomplish": payload.board_help_accomplish.strip(),
+            "organization_goals": payload.board_help_accomplish.strip(),
+            "need_by": payload.need_by.strip(),
+            "logo_data_url": logo,
+            "submitted_at": now,
+        }
+        await db.board_reactivation_intakes.update_one(
+            query,
+            {"$set": updates, "$setOnInsert": {"user_id": member["user_id"], "created_at": now}},
+            upsert=True,
+        )
+        return {"saved": True, "answers": updates}
 
     async def owned_board_member(user_id: str, member_record_id: str) -> dict:
         record = await db.reactivation_board_members.find_one({"user_id": user_id, "member_record_id": member_record_id}, {"_id": 0})
