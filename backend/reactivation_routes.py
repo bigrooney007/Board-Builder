@@ -307,8 +307,9 @@ def create_reactivation_router(db) -> APIRouter:
 
     def public_record(record: dict) -> dict:
         return {key: record.get(key, "") for key in [
-            "member_record_id", "name", "email", "phone", "role", "status", "source",
-            "last_sent_at", "last_reminder_at", "submitted_at", "call_notes",
+            "member_record_id", "name", "email", "phone", "role", "status", "source", "form_variant",
+            "last_sent_at", "last_reminder_at", "submitted_at", "call_notes", "conversation_direction",
+            "conversation_outcome", "conversation_conclusion", "confirmed_role",
         ]}
 
     @router.get("/reactivation/roster")
@@ -343,7 +344,7 @@ def create_reactivation_router(db) -> APIRouter:
             "member_record_id": str(uuid.uuid4()), "user_id": member["user_id"],
             "name": payload.name, "email": email, "phone": payload.phone, "role": payload.role,
             "source": "manual", "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
-            "call_notes": "", "form_variant": "standard" if payload.form_variant == "standard" else "full",
+            "call_notes": "", "form_variant": "active_advisory" if payload.form_variant == "active_advisory" else "full",
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.reactivation_board_members.insert_one({**record})
@@ -369,7 +370,7 @@ def create_reactivation_router(db) -> APIRouter:
             "phone": snapshot.get("phone", ""), "role": "Board Member",
             "source": "recruitment", "application_id": payload.application_id,
             "status": "NOT SENT", "form_token": secrets.token_urlsafe(32),
-            "call_notes": "", "created_at": datetime.now(timezone.utc).isoformat(),
+            "call_notes": "", "form_variant": "full", "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.reactivation_board_members.insert_one({**record})
         return {"status": "created", "member": public_record(record)}
@@ -379,8 +380,8 @@ def create_reactivation_router(db) -> APIRouter:
         member = await reactivation_member(request)
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
-        suffix = "?general=1" if record.get("form_variant") == "standard" else ""
-        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}{suffix}"
+        variant = "active_advisory" if record.get("form_variant") == "active_advisory" else "full"
+        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}?variant={variant}"
         email = build_outreach_email(type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         return {"to_name": record["name"], "to_email": record["email"], **email}
 
@@ -389,8 +390,8 @@ def create_reactivation_router(db) -> APIRouter:
         member = await reactivation_member(request)
         record = await owned_board_member(member["user_id"], member_record_id)
         context = await founder_context(member["user_id"])
-        suffix = "?general=1" if record.get("form_variant") == "standard" else ""
-        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}{suffix}"
+        variant = "active_advisory" if record.get("form_variant") == "active_advisory" else "full"
+        form_link = f"{origin_of(request)}/board-recommitment/{record['form_token']}?variant={variant}"
         email = build_outreach_email(payload.type, record, context["founder_name"], context["founder_title"], context["organization"], form_link, context.get("mission",""), context.get("organization_goals",""))
         resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
         message = {
