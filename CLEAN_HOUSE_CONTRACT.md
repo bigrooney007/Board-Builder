@@ -155,8 +155,23 @@ Analytics must not combine payment records across products.
 
 ## 9. Dashboard Rebuild Boundary
 
-This clean-house phase ends at the entrance to each of the four existing dashboards.
+The clean public house, sales/payment paths, onboarding paths, admin controls and analytics foundation are the shared base.
 
-Do not redesign the internal dashboards as part of this phase.
+Board Recruitment is now the first dashboard rebuilt on top of that base. Its canonical customer journey is:
 
-Each dashboard will be rebuilt separately, one at a time, after the clean public house, sales/payment path, onboarding path, admin controls and analytics foundation are stable.
+1. Answer the Six Recruitment Questions.
+2. Review, edit and approve the exact Board Member profiles the organization needs.
+3. Review the Board Application and recruitment campaign materials prepared from the approved profiles.
+4. Launch the recruitment campaign.
+5. Review applicants and add outside applicants when needed.
+6. Move applicants into Interviews by generating an interview invitation.
+7. Generate a tailored interview guide for each interview candidate.
+8. Run Reference Checks for candidates whose interview guide has been generated.
+9. Use local Background Check search options when the organization chooses to conduct one.
+10. Set the onboarding date/time, approve the organization-level onboarding materials and prepare the appropriate conditional or unconditional appointment email.
+11. Facilitate the live onboarding session with presenter notes and a synchronized participant screen.
+12. Review and approve each person's Board role before generating a Board Member Portfolio and a separate email draft for the founder to send from their own inbox.
+
+The six Recruitment Questions are the authoritative strategic input for the Recruitment dashboard. Campaign assets are generated only from founder-approved Board Member profiles. Candidate progression is action-driven so the next stage unlocks from meaningful founder actions rather than manual card-moving.
+
+The Board Fundraising Game, Strategic Planning and Board Recommitment dashboards remain separate rebuild phases and must not be redesigned implicitly while working on Recruitment.
