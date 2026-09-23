@@ -512,11 +512,14 @@ def create_portfolio_router(db) -> APIRouter:
         portfolios = []
         toolkit_ready = 0
         approved = 0
+        founder_approved = 0
         for row in rows:
             toolkit = await toolkit_for(row)
             ready = toolkit.get("status") == "ready"
             if ready:
                 toolkit_ready += 1
+            if row["status"] in {"ready_to_send", "sent", "approved", "materials_ready"}:
+                founder_approved += 1
             if row["status"] in {"approved", "materials_ready"}:
                 approved += 1
             portfolios.append({
@@ -533,7 +536,8 @@ def create_portfolio_router(db) -> APIRouter:
             "goal_display": fmt_goal(profile), "goal_deadline": fmt_deadline(profile),
             "strategy_id": strategy["strategy_id"],
             "portfolios": portfolios,
-            "total": len(portfolios), "approved_count": approved, "toolkit_ready_count": toolkit_ready,
+            "total": len(portfolios), "founder_approved_count": founder_approved,
+            "approved_count": approved, "toolkit_ready_count": toolkit_ready,
             "execution_ready": approved >= 1,
             "executive_assistant_access":{"status":execution_access_state(access) if access else "not_started","included_until":access.get("included_until","") if access else ""},
         }
