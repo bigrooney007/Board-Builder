@@ -159,7 +159,8 @@ export const Module3Launch = ({ mode = "all" }) => {
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{launched ? "Live" : opportunity?.status || "Draft"}</strong></p>
         <ul className="readiness-list">
           <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
-          <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials generated ({readiness.materials_count || 0} of {readiness.materials_total || 4})</li>
+          <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials prepared ({readiness.materials_count || 0} of {readiness.materials_total || 4})</li>
+          <li className={readiness.materials_approved ? "done" : ""} data-testid="readiness-materials-approved">Campaign materials approved ({readiness.materials_approved_count || 0} of {readiness.materials_total || 4})</li>
         </ul>
         {launched && (
           <div className="member-success" data-testid="published-info">
@@ -174,7 +175,7 @@ export const Module3Launch = ({ mode = "all" }) => {
         {error && <p className="submit-error" data-testid="publish-error">{error}</p>}
         <div className="material-actions">
           {!launched && opportunity?.status !== "Closed" && (
-            <button className="button" disabled={busy || !(readiness.application_saved && readiness.materials_generated)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
+            <button className="button" disabled={busy || !(readiness.application_saved && readiness.materials_approved)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
           )}
           {launched && <button className="button button-back" onClick={closeCampaign} data-testid="close-campaign-button">Close Recruitment Campaign</button>}
           {opportunity?.status === "Closed" && <p className="workspace-note">{recruitmentModulesText.n_thisCampaignIsClosedApplications}</p>}
