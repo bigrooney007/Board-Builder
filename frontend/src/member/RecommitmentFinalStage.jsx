@@ -27,10 +27,12 @@ const MemberDecision = ({ row, reload }) => {
     setBusy("decision");setMessage("");
     try{
       if(!conclusion.trim()||!outcome){setMessage("Record what you agreed and choose the final outcome.");setBusy("");return}
+      if(["Continuing as an Active Board Member","Transitioning to an Advisory Role"].includes(outcome)&&!role.trim()){
+        setMessage("Confirm or edit this person's final role before continuing.");setBusy("");return;
+      }
       await memberApi.put(`/reactivation/board-members/${id}/conclusion`,{conclusion:conclusion.trim()});
       await memberApi.put(`/reactivation/board-members/${id}/outcome`,{outcome});
       if(["Continuing as an Active Board Member","Transitioning to an Advisory Role"].includes(outcome)){
-        if(!role.trim()){setMessage("Confirm or edit this person's final role before continuing.");setBusy("");return}
         await memberApi.put(`/reactivation/board-members/${id}/confirmed-role`,{role:role.trim()});
       }
       setMessage("Final outcome saved.");
