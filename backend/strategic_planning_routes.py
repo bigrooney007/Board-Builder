@@ -2246,6 +2246,19 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         now=now_iso();await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"meeting_status":"Approved","meeting_guide_text":text,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         return {"status":"Approved","guide":text}
 
+    @router.get("/facilitation-guide/pdf")
+    async def facilitation_guide_pdf(session_id: str):
+        p=await ensure_project(session_id)
+        plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if not plan.get("meeting_guide_text"):
+            raise HTTPException(404,"Generate the Strategic Planning Session Facilitation Guide first")
+        return build_portfolio_pdf(
+            "STRATEGIC PLANNING SESSION FACILITATION GUIDE",
+            p["organization_name"],
+            {"organization_name":p["organization_name"],"issued_by":p.get("founder_name","")},
+            plan["meeting_guide_text"],
+        )
+
     @router.post("/session-plan")
     async def generate_session_plan(request: Request):
         sid=(await request.json()).get("session_id","")
