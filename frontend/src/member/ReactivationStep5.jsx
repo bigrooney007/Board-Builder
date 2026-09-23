@@ -24,6 +24,7 @@ export const PortfolioWorkflow = ({ row, reload }) => {
   const [mode, setMode] = useState("");
   const [draftText, setDraftText] = useState("");
   const [emailDraft, setEmailDraft] = useState(null);
+  const [emailCopied, setEmailCopied] = useState(false);
   const status = material
     ? (material.status === "Approved" ? (material.sent_at ? "SENT" : "APPROVED") : "DRAFT")
     : row.portfolio ? row.portfolio.status.toUpperCase() : "NOT GENERATED";
@@ -90,6 +91,17 @@ export const PortfolioWorkflow = ({ row, reload }) => {
     }
   };
 
+  const copyEmail = async () => {
+    if (!emailDraft) return;
+    const body = /\[[^\]]+\]/.test(emailDraft.body)
+      ? emailDraft.body.replace(/\[[^\]]+\]/, emailDraft.portfolio_link)
+      : emailDraft.body + "\n\n" + emailDraft.portfolio_link;
+    const text = `Subject: ${emailDraft.subject}\n\n${body}`;
+    try { await navigator.clipboard.writeText(text); } catch { window.prompt("Copy this email:", text); }
+    setEmailCopied(true);
+    window.setTimeout(() => setEmailCopied(false), 2200);
+  };
+
   const sendEmail = async () => {
     setBusy("send");
     try {
@@ -146,7 +158,10 @@ export const PortfolioWorkflow = ({ row, reload }) => {
           <label className="field"><span>Subject</span><input value={emailDraft.subject} onChange={(e) => setEmailDraft({ ...emailDraft, subject: e.target.value })} data-testid={`myboard-email-subject-${id}`} /></label>
           <label className="field"><span>Email Body</span><textarea rows={12} value={emailDraft.body} onChange={(e) => setEmailDraft({ ...emailDraft, body: e.target.value })} data-testid={`myboard-email-body-${id}`} /></label>
           <p><strong>{reactivationStep5Text.portfolioLinkInsertedAutomatically}</strong> <span style={{ wordBreak: "break-all" }} data-testid={`myboard-email-link-${id}`}>{emailDraft.portfolio_link}</span></p>
-          <button type="button" className="button" onClick={sendEmail} disabled={busy === "send"} data-testid={`myboard-send-email-${id}`}>{busy === "send" ? "Sending…" : "SEND PORTFOLIO"}</button>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <button type="button" className="button button-outline" onClick={copyEmail} data-testid={`myboard-copy-email-${id}`}><Copy size={15}/> {emailCopied ? "COPIED" : "COPY EMAIL"}</button>
+            <button type="button" className="button" onClick={sendEmail} disabled={busy === "send"} data-testid={`myboard-send-email-${id}`}>{busy === "send" ? "Sending…" : "SEND PORTFOLIO FROM PLATFORM"}</button>
+          </div>
         </Modal>
       )}
     </div>
