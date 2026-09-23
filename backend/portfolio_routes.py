@@ -489,8 +489,29 @@ def create_portfolio_router(db) -> APIRouter:
             {"review_id": review_id, "review_status": {"$in": ["keep", "edited"]}}, {"_id": 0}).to_list(500) if review_id else []
         records = await db.game_board_members.find(
             {"user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0}).sort("created_at", 1).to_list(200)
-        created = 0
+        group_session = await db.group_game_sessions.find_one(
+            {"user_id": member["user_id"], "status": {"$ne": "archived"}},
+            {"_id": 0, "session_id": 1},
+            sort=[("created_at", -1)],
+        )
+        joined_ids = set()
+        if group_session:
+            joined_rows = await db.group_game_participants.find(
+                {"session_id": group_session["session_id"]},
+                {"_id": 0, "board_member_id": 1},
+            ).to_list(300)
+            joined_ids = {row.get("board_member_id") for row in joined_rows}
+        participating_records = []
         for record in records:
+            response_count = await db.game_section_responses.count_documents({
+                "user_id": member["user_id"],
+                "board_member_id": record["member_id"],
+                "completed": True,
+            })
+            if response_count > 0 or record["member_id"] in joined_ids:
+                participating_records.append(record)
+        created = 0
+        for record in participating_records:
             existing = await db.board_portfolios.find_one(
                 {"user_id": member["user_id"], "board_member_id": record["member_id"]}, {"_id": 0, "portfolio_id": 1})
             if existing:
