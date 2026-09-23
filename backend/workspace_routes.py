@@ -1031,8 +1031,7 @@ def create_workspace_router(db) -> APIRouter:
     CAMPAIGN_TYPES = ["board_recruitment_job_post", "recruitment_emails", "social_posts", "referral_request_email"]
 
     async def opportunity_readiness(user_id, opportunity):
-        material_types = await db.generated_materials.distinct(
-            "type",
+        materials = await db.generated_materials.find(
             {
                 "user_id": user_id,
                 "type": {"$in": CAMPAIGN_TYPES},
@@ -1042,12 +1041,19 @@ def create_workspace_router(db) -> APIRouter:
                     {"application_id": {"$exists": False}},
                 ],
             },
-        )
-        generated_types = {item for item in material_types if item in CAMPAIGN_TYPES}
+            {"_id": 0, "type": 1, "status": 1},
+        ).to_list(100)
+        generated_types = {item.get("type") for item in materials if item.get("type") in CAMPAIGN_TYPES}
+        approved_types = {
+            item.get("type") for item in materials
+            if item.get("type") in CAMPAIGN_TYPES and item.get("status") == "Approved"
+        }
         return {
             "application_saved": bool(opportunity.get("application_saved")),
             "materials_generated": all(item in generated_types for item in CAMPAIGN_TYPES),
             "materials_count": len(generated_types),
+            "materials_approved": all(item in approved_types for item in CAMPAIGN_TYPES),
+            "materials_approved_count": len(approved_types),
             "materials_total": len(CAMPAIGN_TYPES),
         }
 
@@ -1209,8 +1215,12 @@ def create_workspace_router(db) -> APIRouter:
         if opportunity["status"] == "Published":
             raise HTTPException(status_code=409, detail="This recruitment campaign is already published")
         readiness = await opportunity_readiness(user_id, opportunity)
-        if not (readiness["application_saved"] and readiness["materials_generated"]):
-            raise HTTPException(status_code=409, detail="Generate all four recruitment campaign materials before launching your campaign")
+        if not readiness["application_saved"]:
+            raise HTTPException(status_code=409, detail="Create your Board Application before launching your campaign")
+        if not readiness["materials_generated"]:
+            raise HTTPException(status_code=409, detail="Prepare all four recruitment campaign materials before launching your campaign")
+        if not readiness["materials_approved"]:
+            raise HTTPException(status_code=409, detail="Review and approve all four recruitment campaign materials before launching your campaign")
         board_opportunity = await get_current_material(db, user_id, "board_opportunity")
         structured = (board_opportunity["current"].get("structured") or {}) if (board_opportunity and board_opportunity["current"]) else {}
         profile = await get_profile(db, user_id)
