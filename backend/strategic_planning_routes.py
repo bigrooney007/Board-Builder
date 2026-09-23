@@ -509,6 +509,7 @@ def create_strategic_planning_router(db) -> APIRouter:
             content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
             is_lead = record.get("role") == "Lead User"
             return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""),
+                    "planning_meeting": project.get("planning_meeting") or {},
                     "submitted": record["status"] == "COMPLETED" and not is_lead,
                     "is_lead_user": is_lead,
                     "existing_answers": record.get("response", {}) if is_lead else {},
@@ -518,7 +519,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         if not project:
             raise HTTPException(status_code=404, detail="This form link is not valid")
         content = await approved_form_content(project["project_id"], 0)
-        return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""), "submitted": False,
+        return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""), "planning_meeting": project.get("planning_meeting") or {}, "submitted": False,
                 "prefill": {"full_name": "", "email": ""}, "form": content}
 
     @router.post("/strategic-planning-form/{token}", status_code=201)
@@ -1684,7 +1685,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def detail(p):
         participants=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300);form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {};plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};by={x["participant_id"]:x for x in participants};areas=[]
         for a in plan.get("areas",[]): areas.append({**a,"owner_name":by.get(a.get("owner_participant_id",""),{}).get("name",""),"collaborator_names":[by.get(pid,{}).get("name","") for pid in a.get("collaborator_participant_ids",[]) if by.get(pid)]})
-        return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text",""),"share_token":plan.get("final_share_token",""),"share_url":(f"/strategic-plan/{plan.get('final_share_token')}" if plan.get("final_share_token") else "")},"portfolios":plan.get("leadership_portfolios",[]),"presentation_meeting":plan.get("presentation_meeting",{}),"active_delegation":plan.get("active_delegation",{}),"follow_up_meeting":plan.get("follow_up_meeting",{})}
+        return {**p,"participants":participants,"form":form,"lead_form_token":next((x.get("form_token","") for x in participants if x.get("role")=="Lead User"),""),"planning_meeting":p.get("planning_meeting",{}),"plan":{"status":plan.get("status","NONE"),"display_text":plan.get("display_text",""),"share_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") else "")},"areas":areas,"meeting_guide_text":plan.get("meeting_guide_text",""),"final_plan":{"status":plan.get("final_status","NONE"),"display_text":plan.get("final_display_text",""),"share_token":plan.get("final_share_token",""),"review_url":(f"/strategic-draft/{plan.get('share_token')}" if plan.get("share_token") and plan.get("final_display_text") else ""),"share_url":(f"/strategic-plan/{plan.get('final_share_token')}" if plan.get("final_share_token") else "")},"portfolios":plan.get("leadership_portfolios",[]),"presentation_meeting":plan.get("presentation_meeting",{}),"active_delegation":plan.get("active_delegation",{}),"follow_up_meeting":plan.get("follow_up_meeting",{})}
 
     @router.get("/workspace")
     async def workspace(session_id:str):
@@ -1708,11 +1709,41 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         )
         return {"saved":True}
 
+    @router.get("/planning-meeting")
+    async def get_planning_meeting(session_id: str):
+        p=await ensure_project(session_id)
+        return {"meeting":p.get("planning_meeting") or {}}
+
+    @router.put("/planning-meeting")
+    async def save_planning_meeting(request: Request):
+        body=await request.json();sid=str(body.get("session_id",""));p=await ensure_project(sid)
+        meeting_date=str(body.get("meeting_date","")).strip()
+        start_time=str(body.get("start_time","")).strip()
+        timezone_name=str(body.get("timezone_name","")).strip()
+        if not meeting_date or not start_time or not timezone_name:
+            raise HTTPException(422,"Enter the Board meeting date, time and time zone")
+        try:
+            datetime.strptime(meeting_date,"%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(422,"Choose a valid Board meeting date")
+        meeting={"meeting_date":meeting_date,"start_time":start_time,"timezone_name":timezone_name,
+                 "saved_at":now_iso()}
+        await db.sp_projects.update_one({"project_id":p["project_id"]},{"$set":{"planning_meeting":meeting,"updated_at":now_iso()}})
+        return {"meeting":meeting}
+
     @router.post("/prepare-form")
     async def prepare_form(request:Request):
         body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);_,_,intake=await paid(sid);a=intake.get("answers") or {}
         programs=a.get("programs") or a.get("areas") or ""
-        program_lines=[x.strip(" -•\t") for x in str(programs).split("\n") if x.strip()][:12]
+        supplied_programs=a.get("program_details") if isinstance(a.get("program_details"),list) else []
+        program_details=[]
+        for item in supplied_programs[:20]:
+            if not isinstance(item,dict):continue
+            name=str(item.get("name","")).strip()
+            if not name:continue
+            program_details.append({"name":name,"description":str(item.get("description","")).strip(),"present_work":str(item.get("present_work","")).strip()})
+        if not program_details:
+            program_details=[{"name":x.strip(" -•\t"),"description":"","present_work":""} for x in str(programs).split("\n") if x.strip()][:12]
 
         sections_data=[
             ("Mission",[
@@ -1729,20 +1760,18 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             ]),
         ]
 
-        for program in program_lines:
-            sections_data.append((f"Program: {program}",[
-                f"Thinking specifically about {program}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?",
-                f"From what you have observed, what would make {program} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
+        for program in program_details:
+            name=program["name"];description=program.get("description","");present_work=program.get("present_work","")
+            starting="\n\nPresent program information: "+(" | ".join(x for x in [description,present_work] if x) or "No additional description supplied.")
+            sections_data.append((f"Program: {name}",[
+                f"Thinking specifically about {name}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?{starting}",
+                f"From what you have observed, what would make {name} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
             ]))
 
         sections_data.extend([
             ("Team & Capacity",[
                 f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {str(a.get('team_building') or '').strip()}",
                 "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
-            ]),
-            ("Operations",[
-                f"From what you have observed, which internal systems or processes help the organization work well and which ones make execution harder?\n\nPresent information: {str(a.get('operations') or '').strip()}",
-                "What operational change would make the biggest practical difference to our ability to deliver the strategy consistently?",
             ]),
             ("Marketing & Visibility",[
                 f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {str(a.get('marketing') or '').strip()}",
@@ -1765,7 +1794,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "What budget or resource decisions do you believe the Board needs to understand before committing to the strategy?",
             ]),
             ("Action Planning",[
-                f"Based on everything above, what do you believe the organization should do first, next and after that to begin executing this strategy?\n\nPresent actions already planned or underway: {str(a.get('action_planning') or '').strip()}",
+                f"Based on everything above, what should the organization do first, next and after that? Compare what is already happening with what needs to happen next.\n\nWhat the organization says it is presently doing and looking towards doing: {str(a.get('action_planning') or '').strip()}",
                 "What practical actions, decisions or resources do you believe are most important in the first 90 days after this Strategic Plan is adopted?",
             ]),
             ("Roles We Will Play",[
@@ -1824,7 +1853,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         participant=await db.sp_participants.find_one({"project_id":p["project_id"],"email":email},{"_id":0})
         if not participant:
             participant={"participant_id":str(uuid.uuid4()),"project_id":p["project_id"],"name":name,"email":email,"role":"Board Member","status":"INVITED","form_token":secrets.token_urlsafe(32),"review_status":"NOT SENT","review_token":secrets.token_urlsafe(32),"created_at":now_iso()};await db.sp_participants.insert_one(participant.copy())
-        link=f"{origin_of(request)}/strategic-planning-form/{participant['form_token']}";e=generic_form_email(p,link);await send_email(email,e["subject"],e["body"],e["button_label"],link,reply_to=p.get("founder_email",""));await db.sp_participants.update_one({"participant_id":participant["participant_id"]},{"$set":{"name":name,"status":"SENT","sent_at":now_iso()}})
+        link=f"{origin_of(request)}/strategic-planning-form/{participant['form_token']}";e=generic_form_email(p,link)
+        meeting=p.get("planning_meeting") or {}
+        if meeting.get("meeting_date"):
+            e["body"] += f"\n\nOur Strategic Planning Session is scheduled for {meeting.get('meeting_date')} at {meeting.get('start_time','')} {meeting.get('timezone_name','')}. Please complete your form before the meeting."
+        await send_email(email,e["subject"],e["body"],e["button_label"],link,reply_to=p.get("founder_email",""));await db.sp_participants.update_one({"participant_id":participant["participant_id"]},{"$set":{"name":name,"status":"SENT","sent_at":now_iso()}})
         return {"status":"sent","participant_id":participant["participant_id"]}
 
     def strategic_section_context(title: str, answers: dict, project: dict) -> str:
@@ -1832,7 +1865,13 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if "mission" in key:return str(answers.get("mission") or project.get("mission") or "").strip()
         if key=="goals":return str(answers.get("goals") or "").strip()
         if "objective" in key:return str(answers.get("objectives") or "").strip()
-        if key.startswith("program:"):return title.split(":",1)[1].strip()
+        if key.startswith("program:"):
+            name=title.split(":",1)[1].strip()
+            details=answers.get("program_details") if isinstance(answers.get("program_details"),list) else []
+            match=next((x for x in details if isinstance(x,dict) and str(x.get("name","")).strip().lower()==name.lower()),None)
+            if match:
+                return " | ".join(x for x in [str(match.get("description","")).strip(),str(match.get("present_work","")).strip()] if x) or name
+            return name
         if "team" in key:return str(answers.get("team_building") or "").strip()
         if "operation" in key:return str(answers.get("operations") or "").strip()
         if "marketing" in key:return str(answers.get("marketing") or "").strip()
@@ -2150,10 +2189,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.get("/strategic-draft/{token}")
     async def guided_public_draft(token: str):
-        plan=await db.sp_plans.find_one({"share_token":token,"status":"Approved"},{"_id":0})
+        plan=await db.sp_plans.find_one({"share_token":token,"status":{"$in":["Approved","PLAN READY"]}},{"_id":0})
         if not plan: raise HTTPException(404,"This Strategic Plan Draft link is not valid")
         project=await owned_project(plan["project_id"])
-        return {"title":"Strategic Plan Draft","organization_name":project["organization_name"],"display_text":plan.get("display_text",""),"issued_by":project.get("founder_name","")}
+        return {"title":"Strategic Plan Review","organization_name":project["organization_name"],"display_text":plan.get("final_display_text") or plan.get("display_text",""),"issued_by":project.get("founder_name","")}
 
     @router.post("/send-draft-email")
     async def send_draft_email(request:Request):
@@ -2206,6 +2245,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             raise HTTPException(409,"Complete the Strategic Planning Session first")
         if plan.get("final_status")=="Generating":
             return {"status":"Generating"}
+        if plan.get("final_status") in {"Draft","Approved"} and plan.get("final_display_text"):
+            return {"status":plan.get("final_status")}
 
         _,_,intake=await paid(sid)
         await db.sp_plans.update_one(
@@ -2228,7 +2269,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 generated=await generate_structured(
                     "strategic_session_final_plan",
                     context,
-                    "Build the professional Strategic Plan exactly from the Board's selected ideas and live session conclusions. Do not attribute the final plan to individual contributors. Do not introduce a second planning or adoption process."
+                    "Build one concise, professional, execution-ready Strategic Plan exactly from the Board's selected ideas and live session conclusions. "
+                    "Use this canonical order: Executive Summary; Mission; Goals; Objectives; Programs; Team Building / Team Structure; Technology; Marketing; Partnerships; Fundraising; Budget; Action Planning. "
+                    "Every program must be its own named subsection with its own description and Board-agreed direction. Do not create a separate Operations section. "
+                    "Action Planning must distinguish what is already happening from what the organization agreed should happen next and turn the adopted strategy into a practical sequence of work. "
+                    "Preserve the organization's and contributors' distinctive wording and logic. Do not attribute the final plan to individual contributors, invent consensus, or introduce a second planning process."
                 )
                 display=final_display(generated,p["organization_name"])
 
@@ -2340,6 +2385,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
                 await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{
                     "status":"PLAN READY","structured":generated,"display_text":display,
+                    "share_token":plan.get("share_token") or secrets.token_urlsafe(32),
                     "final_status":"Draft","final_display_text":display,"final_share_token":"",
                     "active_delegation":active,"generated_from_session_at":now_iso(),"updated_at":now_iso()
                 }})
