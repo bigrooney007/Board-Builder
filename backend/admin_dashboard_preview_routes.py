@@ -99,10 +99,6 @@ def strategic_response(lens: str) -> dict:
             "I would define which responsibilities belong to staff and which require board leadership, then recruit or develop capacity around the gaps.",
         ),
         (
-            "Our operating processes are too dependent on the founder remembering the next step.",
-            "I would document the recurring workflows for donor follow-up, partnership outreach, volunteer onboarding, program reporting and board accountability.",
-        ),
-        (
             "Our visibility is inconsistent and too focused on announcing activities instead of demonstrating outcomes and expertise.",
             "I would build a monthly content rhythm around youth outcomes, participant stories with consent, useful insight, partner visibility and clear ways to engage.",
         ),
@@ -1370,8 +1366,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "logo_data_url": PREVIEW_LOGO_DATA,
                     "mission": MISSION,
                     "organization_goals": GOALS,
+                    "why_recommit": "BrightPath is entering a growth phase and needs every continuing Board Member to move from general support into a clear, realistic responsibility the organization can rely on.",
+                    "board_help_accomplish": "Diversify revenue, build corporate partnerships, strengthen visibility and financial oversight, improve outcome measurement and hold the Strategic Plan accountable.",
+                    "need_by": "2026-11-01",
                     "direction_12_24": "Grow program reach, diversify revenue and build a board that carries strategic leadership responsibility.",
-                    "board_help_accomplish": "Fundraising, corporate partnerships, visibility, financial oversight, outcome measurement and strategic accountability.",
                     "active_board_vision": "A board where every member owns a clear contribution area and reports progress against agreed priorities.",
                     "current_skills": "Education, finance, legal, youth services and community relationships.",
                     "missing_skills": "Fundraising leadership, corporate partnerships, marketing and communications.",
@@ -1409,16 +1407,16 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
-            recommitment_yes = "Yes, I am ready to recommit and continue serving."
-            recommitment_unsure = "I am not sure yet. I need more information or would like to discuss my role before deciding."
-            recommitment_no = "No, I am not able to recommit to serving on the Board."
+            recommitment_yes = "I am ready to recommit, remain an active Board Member and step up in my role."
+            recommitment_advisory = "I would like to transition into an Advisory Board role."
+            recommitment_no = "I would like to step down from the Board."
             members = [
                 {
                     "id": f"admin-preview-recommit-maya-{tag}",
                     "name": "Maya Thompson",
                     "email": f"maya.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Board Chair",
-                    "form_variant": "standard",
+                    "form_variant": "active_advisory",
                     "direction": "Remain and Step Up",
                     "response": {
                         "full_name": "Maya Thompson",
@@ -1447,7 +1445,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "name": "Daniel Brooks",
                     "email": f"daniel.recommit-{tag}@nonprofitboardbuilder.internal",
                     "role": "Treasurer",
-                    "form_variant": "standard",
+                    "form_variant": "active_advisory",
                     "direction": "Remain and Step Up",
                     "response": {
                         "full_name": "Daniel Brooks",
@@ -1482,7 +1480,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                         "full_name": "Aisha Patel",
                         "email": f"aisha.recommit-{tag}@nonprofitboardbuilder.internal",
                         "phone": "+1 555 010 3103",
-                        "recommitment": recommitment_unsure,
+                        "recommitment": recommitment_advisory,
                         "why_joined": "I care about youth opportunity and originally joined because the organization needed marketing support.",
                         "expertise": ["Marketing", "Communications", "Brand Strategy"],
                         "expertise_other": "",
@@ -1532,6 +1530,19 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             ]
             for row in members:
                 response = row["response"]
+                if row["direction"] == "Move to Advisory Board":
+                    final_outcome = "Transitioning to an Advisory Role"
+                    confirmed_role = "Advisory Board Member — Marketing and Communications"
+                elif row["direction"] == "Step Down":
+                    final_outcome = "Stepping Down From the Board"
+                    confirmed_role = ""
+                else:
+                    final_outcome = "Continuing as an Active Board Member"
+                    confirmed_role = (
+                        "Board Chair — Corporate Partnerships and Board Accountability"
+                        if row["name"] == "Maya Thompson"
+                        else "Treasurer — Finance and Fundraising Performance"
+                    )
                 await db.reactivation_board_members.update_one(
                     {"member_record_id": row["id"]},
                     {"$setOnInsert": {
@@ -1557,12 +1568,119 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                             f"Rooney: We agreed to record the conclusion clearly and use it as the authority for the next step."
                         ),
                         "conversation_direction": row["direction"],
+                        "direction_source": "form_response",
                         "conversation_conclusion": recommitment_conclusion(row["name"], row["role"], row["direction"]),
+                        "conversation_outcome": final_outcome,
+                        "outcome_saved_at": now,
+                        "confirmed_role": confirmed_role,
+                        "confirmed_role_at": now if confirmed_role else "",
                         "internal_preview": True,
                         "created_at": now,
                     }},
                     upsert=True,
                 )
+            form_token = f"admin-preview-recommitment-form-{tag}"
+            await db.reactivation_forms.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {
+                    "user_id": member["user_id"], "status": "Approved", "generic_token": form_token,
+                    "intro_text": (
+                        f"{ORG_NAME} is asking every Board Member to make a clear decision about how they will serve in the next phase. "
+                        f"Our mission is: {MISSION}\n\nWhy recommitment matters: BrightPath is entering a growth phase and needs continuing Board Members to carry clear responsibilities. "
+                        "We need the Board to help diversify revenue, build partnerships, strengthen visibility, improve financial oversight and hold the Strategic Plan accountable. "
+                        "We need the renewed commitment in place by November 1, 2026."
+                    ),
+                    "approved_at": now, "updated_at": now, "created_at": now, "internal_preview": True,
+                }},
+                upsert=True,
+            )
+            for variant, label in [
+                ("active_advisory", "Active Board / Advisory Board"),
+                ("full", "Full Recommitment / Transition"),
+            ]:
+                await db.reactivation_email_drafts.update_one(
+                    {"user_id": member["user_id"], "variant": variant},
+                    {"$set": {
+                        "user_id": member["user_id"], "variant": variant, "status": "Approved",
+                        "subject": f"Your Board Recommitment | {ORG_NAME}",
+                        "body": (
+                            f"Dear Board Member,\n\n{ORG_NAME} is preparing for its next phase and we are asking every Board Member to make a clear decision about how they will serve. "
+                            f"Please complete the {label} form before November 1, 2026. Your response will help us prepare for a one-on-one conversation about the role that is realistic and useful for you.\n\n"
+                            "Thank you for the time, experience and relationships you have already contributed."
+                        ),
+                        "approved_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+                    }},
+                    upsert=True,
+                )
+
+            for row in members:
+                response = row["response"]
+                member_id = row["id"]
+                analysis_text = (
+                    f"RECOMMITMENT RESPONSE INTERPRETATION — {row['name']}\n\n"
+                    f"Chosen path: {response['recommitment']}\n"
+                    f"Realistic availability: {response.get('monthly_availability') or 'Not stated'}\n"
+                    f"Contribution / ownership: {response.get('ownership_area') or response.get('decision_reason') or 'Discuss in the conversation'}\n\n"
+                    f"Conversation direction: {row['direction']}. The founder should use the one-on-one conversation to confirm the actual agreement rather than treating the form as the final contract."
+                )
+                for material_type, title, display_text in [
+                    ("reactivation_response_analysis", "Recommitment Response Interpretation", analysis_text),
+                    ("reactivation_conversation_script", "One-on-One Recommitment Conversation Script",
+                     f"ONE-ON-ONE CONVERSATION WITH {row['name'].upper()}\n\nOpen by thanking them for their service. Confirm their submitted choice. Discuss what is realistic now, the exact responsibility or transition, support needed, timing and next steps.\n\nPRELOADED CONVERSATION RECORD\n{recommitment_conclusion(row['name'], row['role'], row['direction'])}"),
+                ]:
+                    material_id = f"admin-preview-{material_type}-{member_id}-{tag}"
+                    await db.generated_materials.update_one(
+                        {"user_id": member["user_id"], "type": material_type, "application_id": member_id},
+                        {"$set": {
+                            "material_id": material_id, "user_id": member["user_id"], "type": material_type,
+                            "application_id": member_id, "module": 1, "title": title, "status": "Approved",
+                            "versions": [{"version":1,"structured":{},"display_text":display_text,"source":"admin_preview_fixture","created_at":now}],
+                            "current_version": 1, "approved_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+                        }},
+                        upsert=True,
+                    )
+
+                if row["direction"] != "Step Down":
+                    portfolio_type = "Advisory Board Member Portfolio" if row["direction"] == "Move to Advisory Board" else "Board Member Portfolio"
+                    role_text = (
+                        "Advisory Board Member — Marketing and Communications"
+                        if row["direction"] == "Move to Advisory Board"
+                        else ("Board Chair — Corporate Partnerships and Board Accountability" if row["name"] == "Maya Thompson" else "Treasurer — Finance and Fundraising Performance")
+                    )
+                    portfolio_text = (
+                        f"{portfolio_type.upper()}\n\n{row['name']}\n\nYOUR ROLE ON THE BOARD\n{role_text}\n\n"
+                        f"WHY YOUR ROLE MATTERS\nThis role connects {row['name']}'s actual experience and realistic availability to a responsibility BrightPath needs in its next phase.\n\n"
+                        "WHAT YOU WILL HELP US ACCOMPLISH\n- Strengthen execution of the Strategic Plan\n- Carry the responsibility confirmed in the one-on-one conversation\n- Report progress and barriers at the agreed rhythm\n\n"
+                        f"HOW WE WILL WORK TOGETHER\n{recommitment_conclusion(row['name'], row['role'], row['direction'])}\n\n"
+                        "YOUR FIRST 90 DAYS\n- Confirm the first action\n- Complete the first agreed piece of work\n- Bring progress, evidence and barriers to the Board or founder\n\n"
+                        "Your Executive Assistant uses this approved Portfolio and the actual conversation agreement as its authority."
+                    )
+                    portfolio_id = f"admin-preview-reactivation-portfolio-{member_id}-{tag}"
+                    await db.generated_materials.update_one(
+                        {"user_id": member["user_id"], "type": "reactivation_board_member_portfolio", "application_id": member_id},
+                        {"$set": {
+                            "material_id": portfolio_id, "user_id": member["user_id"], "type": "reactivation_board_member_portfolio",
+                            "application_id": member_id, "module": 5, "title": portfolio_type, "status": "Approved",
+                            "versions": [{"version":1,"structured":{"member":row["name"],"portfolio_type":portfolio_type},"display_text":portfolio_text,"source":"admin_preview_fixture","created_at":now}],
+                            "current_version":1,"share_token":f"admin-preview-reactivation-portfolio-token-{member_id}-{tag}",
+                            "approved_at":now,"sent_at":now,"sent_to":row["email"],"sent_version":1,
+                            "created_at":now,"updated_at":now,"internal_preview":True,
+                        }},
+                        upsert=True,
+                    )
+                else:
+                    material_id = f"admin-preview-reactivation-departure-{member_id}-{tag}"
+                    await db.generated_materials.update_one(
+                        {"user_id": member["user_id"], "type": "reactivation_stepped_down_followup", "application_id": member_id},
+                        {"$set": {
+                            "material_id":material_id,"user_id":member["user_id"],"type":"reactivation_stepped_down_followup",
+                            "application_id":member_id,"module":5,"title":"Board Departure Email","status":"Approved",
+                            "versions":[{"version":1,"structured":{},"display_text":f"Thank you {row['name']} for your Board service. This confirms the respectful departure and the transition steps agreed in our conversation.","source":"admin_preview_fixture","created_at":now}],
+                            "current_version":1,"approved_at":now,"created_at":now,"updated_at":now,"internal_preview":True,
+                        }},
+                        upsert=True,
+                    )
+
         return session_id
 
     async def seed_fundraising_preview(member: dict) -> None:
