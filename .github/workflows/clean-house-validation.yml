@@ -32,6 +32,9 @@ jobs:
       - name: Validate Strategic Planning clean-house contract
         run: python tests/validate_strategic_planning_clean_house.py
 
+      - name: Validate Admin dashboard preview fixtures
+        run: python tests/validate_admin_dashboard_previews.py
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
