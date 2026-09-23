@@ -75,7 +75,8 @@ export const Module3Launch = ({ mode = "all" }) => {
   const { byType, refresh } = useMaterials();
   const [opportunity, setOpportunity] = useState(null);
   const [coreQuestions, setCoreQuestions] = useState([]);
-  const [readiness, setReadiness] = useState({});\n  const [preparation, setPreparation] = useState({});
+  const [readiness, setReadiness] = useState({});
+  const [preparation, setPreparation] = useState({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,7 +86,8 @@ export const Module3Launch = ({ mode = "all" }) => {
       const response = await memberApi.get("/workspace/opportunity");
       setOpportunity(response.data.opportunity);
       setCoreQuestions(response.data.core_questions);
-      setReadiness(response.data.readiness);\n      setPreparation(response.data.preparation || {});
+      setReadiness(response.data.readiness);
+      setPreparation(response.data.preparation || {});
     } catch { /* ignore */ }
   }, []);
   useEffect(() => { loadOpportunity(); }, [loadOpportunity]);
@@ -110,7 +112,9 @@ export const Module3Launch = ({ mode = "all" }) => {
   };
 
   const publish = async () => {
-    if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.\n\nLaunch My Recruitment Campaign?")) return;
+    if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.
+
+Launch My Recruitment Campaign?")) return;
     setBusy(true); setError(""); setMessage("");
     try {
       await memberApi.post("/workspace/opportunity/publish");
