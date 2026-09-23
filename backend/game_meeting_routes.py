@@ -30,12 +30,13 @@ The Board's explicitly selected ideas, Board-added agreed wording and explicit m
 Divide the fundraising process by audience (Individuals, Businesses, Grantors) and only include audience categories the organisation actually identified. Do not invent Businesses or Grantors the board did not identify.
 Board Priorities are only the ideas the Board explicitly selected with the Group Game checkboxes or added as agreed ideas during the discussion. Additional Board Ideas are valid contributed ideas that were visible but not selected. Preserve them separately, never discard them and never misrepresent them as adopted priorities.
 For team roles, use the supplied team, participation choices, time commitments and responsibilities from the transcript. Assign a person only where they explicitly indicated they want to help or accepted a responsibility. Where a required responsibility has nobody available, set assigned to exactly "ROLE / CAPACITY NEEDED". Never invent commitments.
-The execution timeline must start with building the fundraising system, then roughly 30 to 60 days of Know/Like/Trust activity for individuals, then roughly a 30-day concentrated ask campaign, with follow up and stewardship continuing. Businesses and grantors are worked one relationship or one funder at a time on their own timelines built from the organisation's actual strategy.
+The execution timeline is DEADLINE-DRIVEN. Use the supplied funding deadline and exact days available to determine the practical execution window. Do not force a 90-day, 120-day or other standard plan when the organisation has less or more time. A 30-day deadline needs a focused 30-day sprint; a 60-day deadline needs a realistic 60-day plan; longer windows can allocate more time to building Know/Like/Trust before asks. Start by building only the minimum system required to execute, then move the identified audiences through the Board-approved fundraising process quickly enough to pursue the goal before the deadline. Follow-up and stewardship continue throughout. Businesses and grantors are worked one relationship or one funder at a time around their real decision/application timelines.
 For the execution budget, preserve any amounts the Board actually discussed. Do not invent vendor prices. Separate what is REQUIRED NOW from what can wait. For every meaningful cost, identify the lowest-cost practical route supported by the context: reuse existing staff/Board capacity, existing subscriptions, free tiers, simple templates, structured spreadsheets/low-cost CRM, AI-assisted drafting or public research before recommending new paid capacity. If a price was not supplied, say "PRICE TO CONFIRM" instead of inventing an amount.
 Do not invent facts, funders, organisations, relationships, commitments, amounts or deadlines. Do not invent specific entities such as named businesses, foundations, LinkedIn or Facebook groups, associations, conferences or directories — where a specific entity was not supplied, give the exact search method instead.
 Inspect the organisation's present fundraising processes (Current Reality). Never discard an existing approach simply because the framework offers another: preserve what the organisation says is working, strengthen weaknesses, fill missing pieces and add better processes where needed. Where useful distinguish what they are already doing, what should be strengthened and what should be added. Do not claim something is proven to work unless the organisation indicated it produces results.
 Every fundraising_process audience MUST begin with how_this_process_works — a short organisation-specific explanation (not generic boilerplate, never one copied paragraph reused across audiences).
-Write for nonprofit leaders and board members in clear, direct, execution-ready language.
+Write for nonprofit leaders and board members in clear, direct, execution-ready language. Keep the finished strategy concise enough to function like a two-to-four-page operating roadmap when rendered. Remove generic explanation, repeated ideas and motivational filler. Every section should tell the organisation what to do, where to do it, who owns it or what capacity is missing, and how it connects to the fundraising goal.
+The Board Fundraising Process must explain how Board Members use their own networks inside the organisation's fundraising system: identify people, businesses and grantors who match the approved funder profiles; map the relationship; make or enable the introduction; then use the organisation's approved Know → Like → Trust → Ask → Follow Up → Steward process. Do not treat Board fundraising as a separate competing strategy.
 The Final Strategy is an organizational strategy, not a meeting report. Never write "X said", "Y suggested", contributor-by-contributor attribution, transcript commentary or a history of who proposed an idea. Integrate adopted thinking into the strategy itself. Individual names may appear only where the Board explicitly assigned that person an execution responsibility.
 Return only the required structured JSON."""
 
@@ -64,9 +65,9 @@ FINAL_V2_SCHEMA = {
         "budget_summary": "string — the smallest realistic launch-budget logic supported by the Board's decisions; do not invent a total",
     },
     "execution_timeline": {
-        "phase_1_build_the_system": ["string — confirm team, assign roles, set up tracking, create materials and attraction content, prepare outreach lists, complete board relationship mapping, prepare follow-up systems"],
-        "phase_2_build_know_like_trust": ["string — approximately 30 to 60 days of Know/Like/Trust activity for individuals"],
-        "phase_3_ask_campaign": ["string — approximately 30 days of concentrated asking where appropriate"],
+        "phase_1_build_the_system": ["string — deadline-driven actions to confirm owners, set up only the required tracking, create essential materials/content, prepare prospect lists and complete Board relationship mapping"],
+        "phase_2_build_know_like_trust": ["string — deadline-driven Know/Like/Trust actions sized to the actual days available; do not assume 30–60 days when the deadline is shorter"],
+        "phase_3_ask_campaign": ["string — deadline-driven asking/proposal actions timed so realistic prospects can decide before the funding deadline"],
         "follow_up_and_steward": ["string"],
         "business_timeline": ["string — business relationships worked one at a time, built from the actual business strategy; empty if no businesses identified"],
         "grantor_timeline": ["string — grantors worked one at a time around research, cultivation, deadlines, applications, follow-up and reporting; empty if no grantors identified"],
@@ -273,6 +274,15 @@ def create_game_meeting_router(db) -> APIRouter:
         try:
             profile = await get_profile(user_id)
             goal = profile.get("goal") or {}
+            today = datetime.now(timezone.utc).date()
+            deadline_raw = str(goal.get("deadline") or "").strip()
+            days_available = None
+            if deadline_raw:
+                try:
+                    deadline_date = datetime.strptime(deadline_raw, "%Y-%m-%d").date()
+                    days_available = max(0, (deadline_date - today).days)
+                except ValueError:
+                    days_available = None
             situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
             transcript = await get_transcript(user_id) or {}
             organization = profile.get("organization") or {}
@@ -282,6 +292,13 @@ def create_game_meeting_router(db) -> APIRouter:
                     "amount": f"${int(goal.get('amount') or 0):,}" if goal.get("amount") else "",
                     "currency": "USD", "deadline": goal.get("deadline", ""),
                     "purpose": goal.get("purpose", ""), "why_it_matters_now": goal.get("why_now", ""),
+                    "strategy_generated_on": today.isoformat(),
+                    "days_available_until_funding_deadline": days_available,
+                    "timeline_instruction": (
+                        f"Build the execution plan across the actual {days_available} days available before the funding deadline."
+                        if days_available is not None else
+                        "Use the supplied funding deadline as the execution anchor and avoid inventing a standard 90-day plan."
+                    ),
                 },
                 "current_fundraising_reality_and_existing_team": situation.get("sections", {}),
                 "approved_board_member_ideas_by_strategy_area": await board_ideas_by_area(user_id),
