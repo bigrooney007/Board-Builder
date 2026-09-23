@@ -74,6 +74,74 @@ const GroupGameStage = () => {
   );
 };
 
+const DelegationReviewStage = ({ ready }) => {
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const response = await memberApi.get("/game/portfolios");
+      setData(response.data);
+    } catch { /* final strategy may still be committing */ }
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    const prepare = async () => {
+      setPreparing(true);
+      try { await memberApi.post("/game/portfolios/prepare"); } catch { /* existing drafts or final commit race */ }
+      if (live) {
+        await load();
+        setPreparing(false);
+      }
+    };
+    prepare();
+    return () => { live = false; };
+  }, [ready, load]);
+
+  if (!ready) {
+    return <p className="bfg-note">Complete the Group Game first. Proposed delegations are prepared after the final strategy is ready.</p>;
+  }
+  if (!data) return <p className="bfg-note">{preparing ? "Preparing each participant's proposed fundraising delegation…" : "Opening delegation review…"}</p>;
+
+  const rows = data.portfolios || [];
+  return (
+    <div className="bfg-delegation-review" data-testid="bfg-delegation-review">
+      <div className="bfg-clean-stage">
+        <h3>Review What Will Be Delegated To Each Participant</h3>
+        <p className="bfg-panel-sub">
+          The platform combines each person's Individual Game, participation choices, Board decisions and meeting commitments. Review the proposed responsibility yourself before the strategy can be sent to that person.
+        </p>
+      </div>
+      {!rows.length && <p className="bfg-note">No participant delegations are ready yet.</p>}
+      {rows.map((row) => {
+        const approved = ["ready_to_send", "sent", "approved", "materials_ready"].includes(row.status);
+        return (
+          <div className="bfg-delegation-row" key={row.portfolio_id} data-testid={`bfg-delegation-${row.portfolio_id}`}>
+            <div>
+              <strong>{row.member_name}</strong>
+              <p>{row.system_count} system-building responsibilit{row.system_count === 1 ? "y" : "ies"} · {row.direct_count} direct fundraising activit{row.direct_count === 1 ? "y" : "ies"}</p>
+            </div>
+            <span className={approved ? "bfg-delegation-approved" : "bfg-delegation-review-needed"}>
+              {approved ? "FOUNDER APPROVED" : "REVIEW REQUIRED"}
+            </span>
+            <button className={approved ? "bfg-btn bfg-btn-ghost bfg-btn-sm" : "bfg-btn bfg-btn-primary bfg-btn-sm"}
+              onClick={() => navigate(`/game/portfolios/${row.portfolio_id}`)}>
+              {approved ? "REVIEW DELEGATION" : "REVIEW & APPROVE"}
+            </button>
+          </div>
+        );
+      })}
+      <p className="bfg-note" style={{ marginTop: 12 }}>
+        Strategy delivery stays locked for a participant until their delegation is founder-approved.
+      </p>
+    </div>
+  );
+};
+
 export default function GameDashboardPage() {
   const navigate = useNavigate();
   const { member, loading, logout } = useMemberAuth();
@@ -237,7 +305,8 @@ export default function GameDashboardPage() {
           status={meeting?.final?.status === "done" ? "Ready To Review" : meeting?.final?.status === "running" ? "Generating" : "Waiting For Group Game"}
           testId="bfg-dashboard-section-strategy"
         >
-          <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} />
+          <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} compact />
+          <DelegationReviewStage ready={meeting?.final?.status === "done"} />
         </DashboardSection>
 
         <DashboardSection
