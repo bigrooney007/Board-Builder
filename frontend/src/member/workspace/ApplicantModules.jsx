@@ -221,6 +221,65 @@ export const Module4Applicants = () => {
   );
 };
 
+export const InterviewsWorkspace = () => {
+  const { applications, refresh } = useApplications();
+  const [branding] = useBranding();
+  const [selectedId, setSelectedId] = useState("");
+  const candidates = applications.filter((application) =>
+    application.journey?.interview_invitation_generated
+    || application.emails_sent?.interview_invitation
+    || ["Interview Invited", "Interview"].includes(application.status)
+  );
+  const selected = candidates.find((application) => application.application_id === selectedId);
+
+  return (
+    <div data-testid="recruitment-interviews-workspace">
+      <section className="workspace-panel">
+        <h2>Interviews</h2>
+        <p className="material-description">A candidate appears here as soon as you generate their interview invitation. Open the person, generate their tailored interview guide and download it for the conversation.</p>
+        {candidates.length === 0 && <p className="workspace-note">Generate an interview invitation in the Applicants section to move someone here.</p>}
+        {candidates.map((application) => (
+          <button className={selectedId === application.application_id ? "button" : "button button-back"} style={{ marginRight: 8, marginBottom: 8 }} key={application.application_id} onClick={() => setSelectedId(application.application_id)}>
+            {application.profile_snapshot?.full_name || application.applicant_email}
+          </button>
+        ))}
+        {selected && <InterviewStageCandidate application={selected} branding={branding} onChanged={refresh} key={selected.application_id} />}
+      </section>
+    </div>
+  );
+};
+
+const InterviewStageCandidate = ({ application, branding, onChanged }) => {
+  const { byType, refresh } = useMaterials(application.application_id);
+  const refreshAll = async () => { await refresh(); await onChanged(); };
+  const markComplete = async () => {
+    await memberApi.patch("/workspace/applications/" + application.application_id, { interview_completed: true });
+    await onChanged();
+  };
+  return (
+    <div className="detail-section">
+      <h3>{application.profile_snapshot?.full_name || application.applicant_email}</h3>
+      <MaterialCard
+        type="interview_guide"
+        title="Tailored Interview Guide"
+        buttonLabel="Generate Tailored Interview Guide"
+        description="Built from this candidate's application, CV when available, your mission, the Board Member profiles you approved and the role being considered. It gives you a focused guide for this person rather than a generic interview sheet."
+        applicationId={application.application_id}
+        material={byType.interview_guide}
+        refresh={refreshAll}
+        approvable
+        extraActions={byType.interview_guide ? (
+          <button className="button button-back" onClick={() => printBranded("Board Candidate Interview Guide", currentVersion(byType.interview_guide).display_text, branding || {})}><Download size={14} /> Download Branded Interview Guide</button>
+        ) : null}
+      />
+      {byType.interview_guide && !application.interview_completed && (
+        <button className="button button-back" onClick={markComplete}>MARK INTERVIEW COMPLETE</button>
+      )}
+      {application.interview_completed && <p className="member-success">Interview completed.</p>}
+    </div>
+  );
+};
+
 // ---------- Module 5 ----------
 
 const REFEREE_LABELS = {
