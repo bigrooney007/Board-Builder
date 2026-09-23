@@ -85,6 +85,10 @@ class SignaturePrepare(BaseModel):
     application_id: str = Field(min_length=1)
 
 
+class OnboardingLiveSectionUpdate(BaseModel):
+    current_section_index: int = Field(ge=0)
+
+
 def create_workspace_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/workspace")
     cv_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="opportunity_cvs")
@@ -782,6 +786,82 @@ def create_workspace_router(db) -> APIRouter:
         await db.generated_materials.update_one({"material_id": material_id}, {"$set": {
             "design_spec": spec, "design_instruction_history": (material.get("design_instruction_history") or []) + [{"instruction": instruction, "applied_at": now_iso()}]}})
         return {"design_spec": spec}
+
+    async def onboarding_live_payload(user_id: str, origin: str) -> dict:
+        profile = await get_profile(db, user_id)
+        live = profile.get("onboarding_live") or {}
+        material = await get_current_material(db, user_id, "board_manual", "")
+        current = material.get("current") if material else None
+        structured = (current or {}).get("structured") or {}
+        sections = [
+            {"title": str(section.get("title") or "").strip(), "content": str(section.get("content") or "").strip()}
+            for section in (structured.get("sections") or [])
+            if str(section.get("title") or "").strip() or str(section.get("content") or "").strip()
+        ]
+        if not sections and current and str(current.get("display_text") or "").strip():
+            sections = [{"title": "Board Member Manual", "content": str(current.get("display_text") or "").strip()}]
+        index = min(max(int(live.get("current_section_index") or 0), 0), max(0, len(sections) - 1))
+        token = live.get("share_token", "")
+        return {
+            "share_token": token,
+            "viewer_url": f"{origin}/onboarding-session/{token}" if token else "",
+            "status": live.get("status", "NOT STARTED"),
+            "current_section_index": index,
+            "total_sections": len(sections),
+            "sections": sections,
+        }
+
+    @router.get("/onboarding-live")
+    async def get_onboarding_live(request: Request):
+        member = await current_member(request)
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+        return await onboarding_live_payload(member["user_id"], origin)
+
+    @router.post("/onboarding-live/start")
+    async def start_onboarding_live(request: Request):
+        member = await current_member(request)
+        manual = await get_current_material(db, member["user_id"], "board_manual", "")
+        if not manual or manual["material"].get("status") != "Approved":
+            raise HTTPException(status_code=409, detail="Approve the Board Manual before starting the live onboarding session.")
+        profile = await get_profile(db, member["user_id"])
+        session = profile.get("onboarding_session") or {}
+        if not session.get("date") or not session.get("time") or not session.get("timezone"):
+            raise HTTPException(status_code=409, detail="Save the onboarding date, time and timezone before starting the live session.")
+        live = profile.get("onboarding_live") or {}
+        token = live.get("share_token") or secrets.token_urlsafe(24)
+        now = now_iso()
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "onboarding_live.share_token": token,
+                "onboarding_live.status": "LIVE",
+                "onboarding_live.current_section_index": 0,
+                "onboarding_live.started_at": live.get("started_at") or now,
+                "onboarding_live.updated_at": now,
+            }},
+            upsert=True,
+        )
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+        return await onboarding_live_payload(member["user_id"], origin)
+
+    @router.put("/onboarding-live/section")
+    async def set_onboarding_live_section(payload: OnboardingLiveSectionUpdate, request: Request):
+        member = await current_member(request)
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+        current = await onboarding_live_payload(member["user_id"], origin)
+        if not current.get("share_token"):
+            raise HTTPException(status_code=409, detail="Start the live onboarding session first.")
+        if current["total_sections"] and payload.current_section_index >= current["total_sections"]:
+            raise HTTPException(status_code=422, detail="That onboarding section does not exist.")
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "onboarding_live.current_section_index": payload.current_section_index,
+                "onboarding_live.status": "LIVE",
+                "onboarding_live.updated_at": now_iso(),
+            }},
+        )
+        return await onboarding_live_payload(member["user_id"], origin)
 
     @router.get("/board-profile-form")
     async def board_profile_form(request: Request):
