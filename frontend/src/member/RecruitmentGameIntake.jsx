@@ -121,7 +121,10 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
     setBusy(true); setError("");
     try {
       await memberApi.put(`/recruit/free/${assessment.token}/answer`, { question: step + 1, text });
-      setAnswers((current) => ({ ...current, [question.key]: text }));
+      setAnswers((current) => ({
+        ...current,
+        [question.key]: question.key === "board_type" && current.board_type === "Other" ? "Other" : text,
+      }));
       if (step < QUESTIONS.length - 1) setStep(step + 1);
       else {
         setStep(QUESTIONS.length);
