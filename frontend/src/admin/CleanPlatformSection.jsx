@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { RefreshCw, Save } from "lucide-react";
 import { DashboardPreviewSection } from "@/admin/DashboardPreviewSection";
-import { HOMEPAGE_KEYS, RECRUITMENT_SECTION_VIDEO_KEYS, VIDEO_KEYS } from "@/clean/platform";
+import { HOMEPAGE_KEYS, RECOMMITMENT_SECTION_VIDEO_KEYS, RECRUITMENT_SECTION_VIDEO_KEYS, VIDEO_KEYS } from "@/clean/platform";
 import { MAIN_HOME_DEFAULTS } from "@/pages/MainHomePage";
 import { FACILITATED_GAME_HOME_DEFAULTS } from "@/game/FacilitatedGamePage";
 import { recruitmentHomeContent } from "@/content/siteContent";
@@ -35,6 +35,49 @@ export const BoardBuilderPathwaysSection = () => (
     <DashboardPreviewSection />
   </section>
 );
+
+function RecommitmentSectionVideosAdmin(){
+  const [videos,setVideos]=useState([]);
+  const [drafts,setDrafts]=useState({});
+  const [saving,setSaving]=useState("");
+  const [message,setMessage]=useState("");
+  const load=useCallback(async()=>{
+    setMessage("");
+    try{
+      const response=await client.get("/admin/platform/recommitment-section-videos");
+      setVideos(response.data.videos||[]);
+      setDrafts(Object.fromEntries((response.data.videos||[]).map(item=>[item.key,item.url||""])));
+    }catch(error){setMessage(error.response?.data?.detail||"Could not load Recommitment section videos.");}
+  },[]);
+  useEffect(()=>{load()},[load]);
+  const save=async(key)=>{
+    setSaving(key);setMessage("");
+    try{
+      await client.put("/admin/platform/recommitment-section-videos/"+key,{url:drafts[key]||""});
+      setMessage("Recommitment section video saved.");
+      await load();
+    }catch(error){setMessage(error.response?.data?.detail||"Could not save this Recommitment section video.");}
+    setSaving("");
+  };
+  const ordered=RECOMMITMENT_SECTION_VIDEO_KEYS.map(([key,name])=>videos.find(row=>row.key===key)||{key,name,url:""});
+  return <div className="admin-platform-subsection" data-testid="admin-recommitment-section-videos">
+    <div className="admin-funnel-numbers-head" style={{marginTop:36}}>
+      <div><h2>Board Recommitment Dashboard Section Videos</h2><p>Paste one YouTube URL for each section. The customer-facing Play Section Video button activates automatically.</p></div>
+      <button className="button button-back button-small" onClick={load}><RefreshCw size={15}/> Refresh</button>
+    </div>
+    {message&&<p className="admin-message">{message}</p>}
+    <div className="admin-preview-dashboard-grid">
+      {ordered.map((video,index)=><article className="member-card" key={video.key}>
+        <p className="eyebrow">RECOMMITMENT SECTION {index+1}</p>
+        <h3>{video.name}</h3>
+        <label className="admin-notes">YouTube URL or Video ID
+          <input value={drafts[video.key]??""} onChange={event=>setDrafts({...drafts,[video.key]:event.target.value})} placeholder="https://youtu.be/..." />
+        </label>
+        <button className="button button-small" disabled={saving===video.key} onClick={()=>save(video.key)}><Save size={14}/> {saving===video.key?"SAVING…":"SAVE SECTION VIDEO"}</button>
+      </article>)}
+    </div>
+  </div>;
+}
 
 function RecruitmentSectionVideosAdmin(){
   const [videos,setVideos]=useState([]);
@@ -204,6 +247,7 @@ export function PlatformVideosSection() {
       </article>)}
     </div>
     <RecruitmentSectionVideosAdmin/>
+    <RecommitmentSectionVideosAdmin/>
     <RecruitmentQuestionAudioAdmin/>
   </section>;
 }
