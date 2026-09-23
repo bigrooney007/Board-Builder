@@ -186,3 +186,20 @@
   .sgr-section-video-row{justify-content:flex-start}
   .sgr-question-screen{min-height:0}
 }
+
+
+/* Board Member recommendation review */
+.sgr-board-profile-review{overflow:hidden}
+.sgr-board-profile-head{display:grid;grid-template-columns:1fr auto;gap:22px;align-items:start;margin-bottom:20px}
+.sgr-board-profile-head h2{margin:4px 0 8px;font-size:clamp(26px,3vw,36px)}
+.sgr-profile-count{min-width:150px;text-align:center;padding:18px;border-radius:16px;background:#eef2ff;color:#312e81;border:1px solid #c7d2fe}
+.sgr-profile-count strong{display:block;font:900 30px/1 "Outfit",sans-serif}
+.sgr-profile-count span{display:block;margin-top:7px;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.sgr-profile-count.warning{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+.sgr-board-profile-card{margin-top:14px;padding:20px;border:1px solid #e0e7ff;border-radius:18px;background:linear-gradient(180deg,#fff,#fafaff)}
+.sgr-board-profile-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sgr-board-profile-card-top>span{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#312e81;color:#fff;font:900 13px/1 "Outfit",sans-serif}
+.sgr-board-profile-card .field{margin-top:12px}
+.sgr-board-profile-card textarea{line-height:1.55}
+.sgr-row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+@media(max-width:760px){.sgr-board-profile-head{grid-template-columns:1fr}.sgr-profile-count{min-width:0}}
