@@ -168,7 +168,6 @@ export default function StrategicPlanningDashboard(){
   const approvePlan=()=>act("approve-plan",async()=>{
     await axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:finalDraft});
     await axios.post(`${API}/guided/strategic-planning/final-plan/approve`,{session_id:sid});
-    trackPlatformEvent("strategic-planning","platform_completed");
     setEditingPlan(false);
   });
   const copy=text=>navigator.clipboard?.writeText(text);
@@ -182,6 +181,7 @@ export default function StrategicPlanningDashboard(){
   const createPortfolios=()=>act("portfolios",async()=>{
     await axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates:confirmedDelegates});
     await axios.post(`${API}/guided/strategic-planning/portfolios`,{session_id:sid});
+    trackPlatformEvent("strategic-planning","platform_completed");
   });
 
   if(!ctx)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning</h1><p>{message||"Preparing your workspace…"}</p></section></main></BfgShell>;
