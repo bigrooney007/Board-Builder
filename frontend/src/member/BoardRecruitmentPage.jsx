@@ -77,7 +77,8 @@ const Section = ({ number, title, summary, children, testId, videoKey, status = 
 export default function BoardRecruitmentPage() {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
-  const [assessment,setAssessment]=useState(null);\n  const { byType: dashboardMaterials } = useMaterials();
+  const [assessment,setAssessment]=useState(null);
+  const { byType: dashboardMaterials } = useMaterials();
 
   useEffect(() => {
     if (loading) return;
