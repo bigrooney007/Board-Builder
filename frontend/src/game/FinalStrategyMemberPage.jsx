@@ -71,7 +71,7 @@ export default function FinalStrategyMemberPage() {
           }} data-testid="bfg-member-final-sticky-cta">
             <button className="bfg-btn bfg-btn-primary" onClick={() => navigate(`/board-portfolio/${data.portfolio_token}`)}
               data-testid="bfg-see-how-involved-btn">
-              See How I Am Involved
+              How Do I Get Involved?
             </button>
           </div>
         )}
