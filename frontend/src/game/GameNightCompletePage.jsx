@@ -20,7 +20,9 @@ const fmtDateTime = (raw) => {
 };
 
 const DeliveryModal = ({ overview, onClose, onSent }) => {
-  const [selected, setSelected] = useState(() => new Set(overview.recipients.map((row) => row.member_id)));
+  const [selected, setSelected] = useState(() => new Set(
+    overview.recipients.filter((row) => row.delegation?.founder_approved).map((row) => row.member_id)
+  ));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -90,24 +92,28 @@ const DeliveryModal = ({ overview, onClose, onSent }) => {
       <div className="bfg-modal" style={{ maxWidth: 640 }}>
         <h2>Send Your Adopted Fundraising Strategy</h2>
         <p className="bfg-note" style={{ marginTop: 10 }}>
-          Your Board Fundraising Game is complete. Choose the board members who should receive the strategy your board adopted.
+          Choose the participants whose delegation you have approved. Anyone still marked Review Required must be reviewed before their strategy email can be sent.
         </p>
         <div style={{ marginTop: 14, maxHeight: 320, overflowY: "auto" }}>
-          {overview.recipients.map((row) => (
-            <label className="bfg-ht-check" key={row.member_id} style={{ color: "#374151" }} data-testid={`bfg-delivery-recipient-${row.member_id}`}>
-              <input type="checkbox" checked={selected.has(row.member_id)} onChange={() => toggle(row.member_id)} />
+          {overview.recipients.map((row) => {
+            const delegationApproved = Boolean(row.delegation?.founder_approved);
+            return (
+            <label className="bfg-ht-check" key={row.member_id} style={{ color: delegationApproved ? "#374151" : "#94a3b8" }} data-testid={`bfg-delivery-recipient-${row.member_id}`}>
+              <input type="checkbox" disabled={!delegationApproved} checked={selected.has(row.member_id)} onChange={() => toggle(row.member_id)} />
               <span style={{ textDecoration: "none", color: "#374151" }}>
                 <strong>{row.full_name}</strong> — {row.email}
                 <br />
                 <small style={{ color: "#6B7280" }}>
                   {row.game_status}
-                  {row.group_joined && " · Joined Game Night"}
+                  {row.group_joined && " · Joined Group Game"}
+                  {" · "}
+                  {delegationApproved ? "Delegation founder-approved" : "Delegation review required"}
                   {" · "}
                   {row.delivery.status === "sent" ? `Strategy sent ${fmtDateTime(row.delivery.sent_at)}` : row.delivery.status === "delivery_failed" ? "Delivery failed" : "Strategy not sent"}
                 </small>
               </span>
             </label>
-          ))}
+          )})}
         </div>
         <p style={{ marginTop: 12, fontWeight: 700 }} data-testid="bfg-delivery-selected-count">{selected.size} Board Members Selected</p>
         {error && <p className="bfg-error" data-testid="bfg-delivery-error">{error}</p>}
@@ -194,24 +200,29 @@ export default function GameNightCompletePage() {
           </div>
         </section>
 
+        <section className="bfg-panel" data-testid="bfg-gc-action-portfolios">
+          <h2>1. Review And Approve Each Participant's Delegation</h2>
+          <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
+            Review the proposed system-building responsibilities and direct fundraising activities for every participant. Edit anything that does not match what was agreed, then approve it yourself.
+          </p>
+          <p style={{ marginTop: 12, fontWeight: 700 }}>
+            {overview.recipients.filter((row) => row.delegation?.founder_approved).length} of {overview.total_recipients} Delegations Founder-Approved
+          </p>
+          <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }} onClick={() => navigate("/game/portfolios")}
+            data-testid="bfg-gc-portfolios-btn">REVIEW DELEGATIONS</button>
+        </section>
+
         <section className="bfg-panel" data-testid="bfg-gc-action-send">
-          <h2>1. Send The Strategy To Your Board</h2>
-          <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Give every participating board member access to the strategy your board adopted together.</p>
+          <h2>2. Send The Strategy To Your Board</h2>
+          <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
+            Once a person's delegation is approved, send their secure strategy link. Their strategy page contains How Do I Get Involved? which opens their personal Board Fundraising Portfolio.
+          </p>
           <p style={{ marginTop: 12, fontWeight: 700 }} data-testid="bfg-gc-delivery-count">
-            {overview.sent_count} of {overview.total_recipients} Board Members Sent
+            {overview.sent_count} of {overview.total_recipients} Participants Sent
           </p>
           <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }} onClick={() => setShowSend(true)}
             data-testid="bfg-gc-send-strategy-btn">
-            {overview.sent_count >= overview.total_recipients && overview.total_recipients > 0 ? "Manage Strategy Delivery" : "Send Adopted Strategy"}
-          </button>
-        </section>
-
-        <section className="bfg-panel" data-testid="bfg-gc-action-portfolios">
-          <h2>2. Create Board Fundraising Portfolios</h2>
-          <p className="bfg-panel-sub" style={{ marginTop: 8 }}>Turn each board member's participation choices and Game Night commitments into a clear execution role.</p>
-          <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }} onClick={() => navigate("/game/portfolios")}
-            data-testid="bfg-gc-portfolios-btn">
-            {portfolios.total > 0 ? "Manage Board Portfolios" : "Create Board Fundraising Portfolios"}
+            {overview.sent_count >= overview.total_recipients && overview.total_recipients > 0 ? "Manage Strategy Delivery" : "Send Approved Strategy"}
           </button>
         </section>
 
