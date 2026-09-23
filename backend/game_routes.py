@@ -234,6 +234,10 @@ class ProfileUpdate(BaseModel):
     primary_user: dict = Field(default_factory=dict)
 
 
+class GameBrandingUpdate(BaseModel):
+    logo_data: str = Field(default="", max_length=750000)
+
+
 class ClaimPayload(BaseModel):
     session_id: str = ""
     origin_url: str = ""
@@ -281,6 +285,29 @@ def create_game_router(db) -> APIRouter:
             "unlocked": GAME_ENTITLEMENT in member.get("entitlements", []),
             "member": {"first_name": member.get("first_name", ""), "last_name": member.get("last_name", ""), "email": member.get("email", "")},
         }
+
+    @router.get("/game/branding")
+    async def game_branding(request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {GAME_ENTITLEMENT})
+        profile = await get_profile_doc(member["user_id"])
+        return {"branding": profile.get("branding") or {}}
+
+    @router.put("/game/branding")
+    async def save_game_branding(payload: GameBrandingUpdate, request: Request):
+        member = await authenticate_member(request, db)
+        require_entitlement(member, {GAME_ENTITLEMENT})
+        logo = payload.logo_data.strip()
+        if logo and not logo.startswith("data:image/"):
+            raise HTTPException(status_code=422, detail="Choose a valid image file for your organization logo.")
+        if len(logo) > 750000:
+            raise HTTPException(status_code=413, detail="Logo is too large. Use an image under 500KB.")
+        await db.game_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"branding.logo_data": logo, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+        return {"branding": {"logo_data": logo}}
 
     @router.put("/game/profile")
     async def save_game_profile(payload: ProfileUpdate, request: Request):
