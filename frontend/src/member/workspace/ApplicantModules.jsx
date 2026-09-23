@@ -1077,20 +1077,38 @@ export const OnboardingPreparation = () => {
         )}
       </section>
 
-      <section className="workspace-panel" data-testid="live-onboarding-session-launcher">
-        <p className="eyebrow">4. FACILITATE ONBOARDING</p>
-        <h2>Prepare And Run The Board Member Onboarding Session</h2>
-        <p className="material-description">Use the facilitation guide as your presenter notes, then open the live session. Board Members can follow one shared no-login screen while you move through the onboarding experience one section at a time.</p>
+    </div>
+  );
+};
+
+export const OnboardingSessionWorkspace = () => {
+  const navigate = useNavigate();
+  const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
+  const [session, setSession] = useState({});
+  useEffect(() => {
+    memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
+  }, []);
+  const scheduleReady = Boolean(session.date && session.time && session.timezone);
+  const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
+  const ready = scheduleReady && materialsReady && orgMaterials.board_manual?.status === "Approved";
+  return (
+    <div data-testid="onboarding-session-workspace">
+      <section className="workspace-panel">
+        <h2>Prepare Your Presenter Notes</h2>
+        <p className="material-description">Keep the facilitation short and grounded in how your organization actually works. The guide gives you the structure and presenter notes while leaving room for your own words and the Board Members' questions.</p>
         <OnboardingFacilitationGuide />
-        <button
-          className="button"
-          disabled={!appointmentReady || orgMaterials.board_manual?.status !== "Approved"}
-          onClick={() => navigate("/app/board-recruitment/onboarding-session")}
-          data-testid="open-live-onboarding-session"
-        >
+      </section>
+      <section className="workspace-panel">
+        <h2>Start The Live Onboarding Session</h2>
+        <p className="material-description">Board Members open one no-login shared screen. You control the presentation and move everyone through the onboarding material section by section.</p>
+        <div className="sgr-readiness-banner">
+          <span className={scheduleReady ? "ready" : ""}>Schedule: {scheduleReady ? "Ready" : "Needed"}</span>
+          <span className={materialsReady ? "ready" : ""}>Materials: {materialsReady ? "Approved" : "Need Approval"}</span>
+        </div>
+        <button className="button" disabled={!ready} onClick={() => navigate("/app/board-recruitment/onboarding-session")}>
           START THE ONBOARDING SESSION
         </button>
-        {!appointmentReady && <p className="workspace-note">Complete the onboarding schedule and materials above before starting the live onboarding session.</p>}
+        {!ready && <p className="workspace-note">Finish the onboarding preparation section first.</p>}
       </section>
     </div>
   );
