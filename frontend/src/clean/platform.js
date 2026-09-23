@@ -33,6 +33,13 @@ export const HOMEPAGE_KEYS = [
   ["facilitated-game", "Let's Organize Your Board Fundraising Game"],
 ];
 
+export const RECOMMITMENT_SECTION_VIDEO_KEYS = [
+  ["questions", "Answer The Four Recommitment Questions"],
+  ["forms", "Prepare And Send The Recommitment Forms"],
+  ["responses", "Understand Responses And Prepare The Conversation"],
+  ["decisions", "Confirm Final Outcomes And Board Member Portfolios"],
+];
+
 export const RECRUITMENT_SECTION_VIDEO_KEYS = [
   ["questions", "Answer The Six Recruitment Questions"],
   ["identify", "Identify The Board Members You Need"],
@@ -157,6 +164,33 @@ export const useRecruitmentSectionVideo = (key) => {
   useEffect(() => {
     let live = true;
     loadRecruitmentSectionVideos().then((rows) => {
+      if (live) setVideo(rows.find((item) => item.key === key) || null);
+    });
+    return () => { live = false; };
+  }, [key]);
+  return video;
+};
+
+
+let recommitmentSectionVideosCache = null;
+let recommitmentSectionVideosPromise = null;
+
+const loadRecommitmentSectionVideos = () => {
+  if (recommitmentSectionVideosCache) return Promise.resolve(recommitmentSectionVideosCache);
+  if (!recommitmentSectionVideosPromise) {
+    recommitmentSectionVideosPromise = axios.get(`${API}/platform/recommitment-section-videos`).then((response) => {
+      recommitmentSectionVideosCache = response.data.videos || [];
+      return recommitmentSectionVideosCache;
+    }).catch(() => []);
+  }
+  return recommitmentSectionVideosPromise;
+};
+
+export const useRecommitmentSectionVideo = (key) => {
+  const [video, setVideo] = useState(() => recommitmentSectionVideosCache?.find((item) => item.key === key) || null);
+  useEffect(() => {
+    let live = true;
+    loadRecommitmentSectionVideos().then((rows) => {
       if (live) setVideo(rows.find((item) => item.key === key) || null);
     });
     return () => { live = false; };
