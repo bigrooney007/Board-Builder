@@ -417,6 +417,47 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         token = f"admin-preview-recruitment-{tag}"
         lead_id = f"admin-preview-recruitment-lead-{tag}"
         answers = recruitment_answers()
+        recommended_roles = [
+            {
+                "role_name": "Board Member — Fundraising and Major Gifts",
+                "why_this_person_is_important": "BrightPath needs Board-level fundraising experience to reduce dependence on grants and the founder, build a disciplined individual-giving pipeline and help the full Board participate confidently in fundraising.",
+                "how_this_person_can_support": "Shape major-donor strategy, help identify and cultivate qualified donors, coach Board Members on introductions and asks, strengthen stewardship and review fundraising pipeline progress at Board level.",
+            },
+            {
+                "role_name": "Board Member — Corporate Partnerships",
+                "why_this_person_is_important": "Employer and corporate relationships are central to BrightPath's youth-employment mission and growth plan, but the current Board lacks someone who has built strategic business partnerships at scale.",
+                "how_this_person_can_support": "Open employer and sponsor relationships, help define the corporate partnership proposition, join priority meetings, advise on partnership pipelines and help convert warm relationships into sustained organizational support.",
+            },
+            {
+                "role_name": "Board Member — Marketing and Communications",
+                "why_this_person_is_important": "BrightPath needs stronger visibility and clearer evidence-led messaging so funders, employers, families and community partners understand the value of the mission and can see credible results.",
+                "how_this_person_can_support": "Guide Board-level communications strategy, sharpen fundraising and partnership messaging, help turn outcomes into credible stories, strengthen digital visibility and review campaign performance.",
+            },
+        ]
+        assessment_result = {
+            "summary": "BrightPath should recruit three Board Members whose professional capability directly closes its fundraising, corporate partnership and marketing gaps.",
+            "priority_roles": recommended_roles,
+        }
+
+        async def seed_material(material_type: str, title: str, structured: dict, display_text: str, application_id: str = "", status: str = "Approved"):
+            material_id = f"admin-preview-recruitment-{material_type}-{application_id or 'org'}-{tag}"
+            version = {
+                "version": 1, "structured": structured, "display_text": display_text,
+                "source": "admin_preview_fixture", "input_context_summary": "Preloaded Admin Preview fixture", "created_at": now,
+            }
+            await db.generated_materials.update_one(
+                {"user_id": member["user_id"], "type": material_type, "application_id": application_id},
+                {"$set": {
+                    "material_id": material_id, "user_id": member["user_id"], "type": material_type,
+                    "application_id": application_id, "module": 1, "title": title,
+                    "versions": [version], "current_version": 1, "status": status,
+                    "approved_at": now if status == "Approved" else "", "internal_preview": True,
+                    "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            return material_id
+
         opportunity_id = f"admin-preview-recruitment-opportunity-{tag}"
         opportunity_slug = f"brightpath-youth-alliance-preview-{tag}"
 
@@ -436,7 +477,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "question_2_completed": True,
                     "question_3_completed": True,
                     "question_4_completed": True,
-                    "result_generated": False,
+                    "question_5_completed": True,
+                    "question_6_completed": True,
+                    "result_generated": True,
+                    "generation_status": "ready",
                     "video_page_viewed": True,
                     "checkout_started": True,
                     "paid": True,
@@ -444,7 +488,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "intake_completed": True,
                     "dashboard_entered": True,
                 },
-                "result": None,
+                "result": assessment_result,
+                "result_generated_at": now,
                 "member_user_id": member["user_id"],
                 "internal_preview": True,
                 "created_at": now,
@@ -473,10 +518,13 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "mission": answers["mission"],
                     "present_board": answers["current_board"],
                     "important_areas": answers["important_areas"],
+                    "desired_board_members": answers["desired_board_members"],
                     "accomplish": answers["support_needs"],
+                    "board_type": answers["board_type"],
+                    "why_join": answers["why_join"],
                     "new_members_needed": "3",
                 },
-                "free_assessment_result": None,
+                "free_assessment_result": assessment_result,
                 "internal_preview": True,
                 "created_at": now,
                 "updated_at": now,
@@ -498,9 +546,12 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "present_board": answers["current_board"],
                     "new_members_count": "3",
                     "current_board_strengths": "Education, finance, governance, youth services and community relationships.",
-                    "desired_board_skills": ["Fundraising", "Corporate Partnerships", "Marketing and Communications"],
+                    "desired_board_skills": [row["role_name"] for row in recommended_roles],
                     "priorities": answers["support_needs"],
                     "important_areas": answers["important_areas"],
+                    "desired_board_members_founder_view": answers["desired_board_members"],
+                    "board_kind": answers["board_type"],
+                    "why_join_board": answers["why_join"],
                     "founder_title": "Founder and Executive Director",
                     "city": "Atlanta",
                     "state_region": "Georgia",
@@ -528,8 +579,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "prepare": "Please review the Organization Overview, Board Manual and agreements before the session.",
                     "status": "Scheduled",
                 },
-                "confirmed": False,
-                "recruitment_profile_confirmed": False,
+                "confirmed": True,
+                "recruitment_profile_confirmed": True,
+                "confirmed_at": now,
                 "internal_preview": True,
                 "created_at": now,
                 "updated_at": now,
@@ -544,17 +596,54 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "user_id": member["user_id"],
                 "slug": opportunity_slug,
                 "organization_name": ORG_NAME,
-                "status": "Draft",
+                "status": "Published",
                 "custom_questions": [],
-                "application_saved": False,
-                "email_content": {},
-                "broadcast_initiated": False,
-                "broadcast_id": "",
+                "application_saved": True,
+                "email_content": {"subject": "Join the Board of BrightPath Youth Alliance", "body": "We are recruiting three Board Members with fundraising, corporate partnership and marketing experience."},
+                "broadcast_initiated": True,
+                "broadcast_id": f"admin-preview-broadcast-{tag}",
+                "broadcast_status": "Sent",
+                "broadcast_mode": "test",
+                "published_at": now,
                 "internal_preview": True,
                 "created_at": now,
                 "updated_at": now,
             }},
             upsert=True,
+        )
+
+        await seed_material(
+            "powerhouse_board_blueprint",
+            "The Board Members Your Organization Needs",
+            assessment_result,
+            "THE BOARD MEMBERS YOUR ORGANIZATION NEEDS\n\n" + "\n\n".join(
+                f"{i+1}. {role['role_name']}\nWhy this person matters: {role['why_this_person_is_important']}\nRole they can play: {role['how_this_person_can_support']}"
+                for i, role in enumerate(recommended_roles)
+            ),
+        )
+        await seed_material(
+            "board_recruitment_job_post",
+            "Recruitment Job Post",
+            {"headline": "Join the Board of BrightPath Youth Alliance", "roles": [r["role_name"] for r in recommended_roles]},
+            "JOIN THE BOARD OF BRIGHTPATH YOUTH ALLIANCE\n\nBrightPath is recruiting three Board Members with fundraising, corporate partnership and marketing/communications experience. Board Members will carry clear strategic responsibility and help expand opportunity for young people ages 12 to 24.",
+        )
+        await seed_material(
+            "recruitment_emails",
+            "Recruitment Email",
+            {"subject": "Help us find three strategic Board Members"},
+            "Subject: Help us find three strategic Board Members\n\nBrightPath Youth Alliance is recruiting experienced leaders in fundraising, corporate partnerships and marketing/communications. Please share this opportunity with people who care about youth opportunity and are ready to carry real Board-level responsibility.",
+        )
+        await seed_material(
+            "social_posts",
+            "Social Media Recruitment Post",
+            {"post": "BrightPath Youth Alliance is recruiting three strategic Board Members."},
+            "BrightPath Youth Alliance is recruiting three Board Members who can help us strengthen fundraising, corporate partnerships and marketing. We are looking for people who want to do meaningful strategic work, not simply add a Board title to their résumé.",
+        )
+        await seed_material(
+            "referral_request_email",
+            "Referral Email",
+            {"subject": "Who should we invite to consider our Board?"},
+            "Subject: Who should we invite to consider our Board?\n\nWe are looking for experienced fundraising, corporate partnership and marketing leaders who care about youth opportunity. If someone comes to mind, please introduce us or forward our Board opportunity.",
         )
 
         applicants = [
