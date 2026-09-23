@@ -112,7 +112,7 @@ export default function BoardRecruitmentPage() {
   const generationStatus=assessment?.state?.generation_status||"not_started";
 
   const questionStatus=questionsComplete?"Complete":answeredCount?"In Progress":"Start";
-  const identifyStatus=assessment?.result?"Ready To Review":questionsComplete&&["queued","generating"].includes(generationStatus)?"Generating":"Locked";
+  const identifyStatus=boardProfilesApproved?"Approved":assessment?.result?"Ready To Review":questionsComplete&&["queued","generating"].includes(generationStatus)?"Generating":"Locked";
 
   const boardProfilesApproved=dashboardMaterials.powerhouse_board_blueprint?.status==="Approved";
   const progress=useMemo(()=>{
