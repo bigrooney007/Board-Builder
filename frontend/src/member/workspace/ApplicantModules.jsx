@@ -1002,73 +1002,95 @@ export const OnboardingPreparation = () => {
     memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
   }, []);
 
-  const candidates = applications.filter((application) =>
-    application.emails_sent?.conditional_offer
-    || application.emails_sent?.unconditional_offer
-    || application.appointment_offer_type
-    || application.status === "Conditional Appointment"
-    || application.status === "Selected"
-    || application.final_outcome === "Joined Board"
-  );
+  const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
   const selected = candidates.find((application) => application.application_id === selectedId);
+  const scheduleReady = Boolean(session.date && session.time && session.timezone);
+  const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
+  const appointmentReady = scheduleReady && materialsReady;
 
   return (
     <div data-testid="onboarding-preparation-workspace">
       <section className="workspace-panel" data-testid="onboarding-date-section">
-        <h2>Set The Onboarding Date</h2>
-        <p className="material-description">Set the date, time and format for the onboarding conversation.</p>
+        <p className="eyebrow">1. ONBOARDING SESSION</p>
+        <h2>Set The Onboarding Date And Time</h2>
+        <p className="material-description">Set the session details first. These details are reused in the appointment communication so a candidate knows exactly what happens next.</p>
         <OnboardingSessionPanel session={session} setSession={setSession} />
       </section>
 
       <section className="workspace-panel" data-testid="onboarding-materials-section">
-        <h2>Generate The Onboarding Materials</h2>
-        <p className="material-description">Prepare the Organization Overview, Board Manual, agreements and Board Member Profile Form that the new Board Member will receive for onboarding.</p>
-        <ul className="readiness-list" data-testid="prepare-status-list">
-          {PREPARE_TOOLS.map(([type, title]) => <li key={type} className={docStage(orgMaterials[type]) === "Approved" ? "done" : ""}>{title}: {docStage(orgMaterials[type])}</li>)}
+        <p className="eyebrow">2. ONBOARDING MATERIALS</p>
+        <h2>Review And Approve The Onboarding Materials</h2>
+        <p className="material-description">The platform can prepare these organization-level drafts while your recruitment campaign is running. The Board Manual follows the same proven framework for every organization and is updated only with your verified organization information.</p>
+        <ul className="readiness-list">
+          {PREPARE_TOOLS.map(([type, title]) => (
+            <li key={type} className={orgMaterials[type]?.status === "Approved" ? "done" : ""}>
+              {title}: {docStage(orgMaterials[type])}
+            </li>
+          ))}
         </ul>
         {PREPARE_TOOLS.map(([type, title, buttonLabel, description]) => (
-          <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} approvable
+          <MaterialCard
+            key={type}
+            type={type}
+            title={title}
+            buttonLabel={buttonLabel}
+            description={type === "board_manual"
+              ? "A consistent Board Manual framework covering how the Board works, shared responsibilities, the organization's commitment to Board Members and the expectations that apply across the Board. Your verified organization information updates the template."
+              : description}
+            approvable
             shareable={type === "organization_overview" || type === "board_manual"}
-            material={orgMaterials[type]} refresh={refreshOrg}
+            material={orgMaterials[type]}
+            refresh={refreshOrg}
             extraActions={orgMaterials[type]?.status === "Approved" ? (
-              <button className="button button-back" onClick={() => printBranded(title, currentVersion(orgMaterials[type]).display_text, branding)} data-testid={`design-${type}`}><Download size={14} /> {type.includes("agreement") ? "Create Final Agreement PDF" : `Design ${title} PDF`}</button>
-            ) : null} />
+              <button className="button button-back" onClick={() => printBranded(title, currentVersion(orgMaterials[type]).display_text, branding)}>
+                <Download size={14} /> Download Branded Copy
+              </button>
+            ) : null}
+          />
         ))}
         <BoardProfilePanel />
       </section>
 
-      <section className="workspace-panel" data-testid="live-onboarding-session-launcher">
-        <h2>Run The Live Board Member Onboarding Session</h2>
-        <p className="material-description">Turn the approved Board Member Manual into one synchronized onboarding presentation. Create one no-login screen link for everyone in the meeting, then move through the manual one section at a time while you facilitate the conversation.</p>
-        <p className="workspace-note">This session is optional facilitation support. It does not control whether you use a conditional offer, unconditional offer or final appointment.</p>
-        <button
-          className="button"
-          disabled={orgMaterials.board_manual?.status !== "Approved"}
-          onClick={() => navigate("/app/board-recruitment/onboarding-session")}
-          data-testid="open-live-onboarding-session"
-        >
-          START LIVE ONBOARDING SESSION
-        </button>
-        {orgMaterials.board_manual?.status !== "Approved" && <p className="workspace-note">Generate and approve the Board Member Manual above to unlock the shared onboarding screen.</p>}
-      </section>
-
-      <section className="workspace-panel" data-testid="onboarding-candidate-section">
-        <h2>Onboard The New Board Member</h2>
-        <p className="material-description">Choose someone who has received an appointment offer. Generate their onboarding email, send the secure onboarding links, facilitate the session and then record exactly what was agreed.</p>
-        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after you send a conditional or unconditional appointment offer.</p>}
+      <section className="workspace-panel" data-testid="appointment-email-stage">
+        <p className="eyebrow">3. APPOINTMENT EMAIL</p>
+        <h2>Choose The Appointment Path For Each Candidate</h2>
+        <p className="material-description">Conditional and unconditional appointment emails unlock only when the onboarding schedule is saved and the onboarding materials above are approved.</p>
+        <div className="sgr-readiness-banner">
+          <span className={scheduleReady ? "ready" : ""}>Onboarding Schedule: {scheduleReady ? "Ready" : "Needed"}</span>
+          <span className={materialsReady ? "ready" : ""}>Onboarding Materials: {materialsReady ? "Approved" : "Need Approval"}</span>
+        </div>
+        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after their interview guide has been generated.</p>}
         {candidates.map((application) => (
-          <button className={`button ${selectedId === application.application_id ? "" : "button-back"}`} style={{ marginRight: 8, marginBottom: 8 }} key={application.application_id} onClick={() => setSelectedId(application.application_id)} data-testid={`select-onboarding-candidate-${application.application_id}`}>
+          <button
+            className={selectedId === application.application_id ? "button" : "button button-back"}
+            style={{ marginRight: 8, marginBottom: 8 }}
+            key={application.application_id}
+            onClick={() => setSelectedId(application.application_id)}
+          >
             {application.profile_snapshot?.full_name || application.applicant_email}
           </button>
         ))}
-
         {selected && (
-          <CandidateOnboardingPanel
-            application={selected}
-            onChanged={refreshApps}
-            key={`candidate-onboarding-${selected.application_id}-${selected.updated_at || ""}`}
-          />
+          appointmentReady
+            ? <AppointmentOfferPanel application={selected} onChanged={refreshApps} key={"offer-" + selected.application_id + "-" + (selected.updated_at || "")} />
+            : <p className="workspace-note">Finish the onboarding schedule and approve every onboarding resource above to unlock appointment emails.</p>
         )}
+      </section>
+
+      <section className="workspace-panel" data-testid="live-onboarding-session-launcher">
+        <p className="eyebrow">4. FACILITATE ONBOARDING</p>
+        <h2>Prepare And Run The Board Member Onboarding Session</h2>
+        <p className="material-description">Use the facilitation guide as your presenter notes, then open the live session. Board Members can follow one shared no-login screen while you move through the onboarding experience one section at a time.</p>
+        <OnboardingFacilitationGuide />
+        <button
+          className="button"
+          disabled={!appointmentReady || orgMaterials.board_manual?.status !== "Approved"}
+          onClick={() => navigate("/app/board-recruitment/onboarding-session")}
+          data-testid="open-live-onboarding-session"
+        >
+          START THE ONBOARDING SESSION
+        </button>
+        {!appointmentReady && <p className="workspace-note">Complete the onboarding schedule and materials above before starting the live onboarding session.</p>}
       </section>
     </div>
   );
@@ -1323,6 +1345,120 @@ export const Module6Onboarding = () => {
     </div>
   );
 };
+const RecruitmentPortfolioCandidate = ({ application, onChanged }) => {
+  const { byType, refresh } = useMaterials(application.application_id);
+  const recommendation = application.board_role_recommendation || {};
+  const [role, setRole] = useState(application.board_role || recommendation.recommended_role || "");
+  const [why, setWhy] = useState(application.portfolio_role_rationale || recommendation.why_this_role_fits || "");
+  const [busy, setBusy] = useState("");
+  const refreshAll = async () => { await refresh(); await onChanged(); };
+
+  useEffect(() => {
+    setRole(application.board_role || application.board_role_recommendation?.recommended_role || "");
+    setWhy(application.portfolio_role_rationale || application.board_role_recommendation?.why_this_role_fits || "");
+  }, [application.board_role, application.board_role_recommendation, application.portfolio_role_rationale]);
+
+  const recommend = async () => {
+    setBusy("recommend");
+    try {
+      const response = await memberApi.post("/workspace/applications/" + application.application_id + "/role-recommendation");
+      setRole(response.data.recommendation?.recommended_role || "");
+      setWhy(response.data.recommendation?.why_this_role_fits || "");
+      await onChanged();
+    } catch (error) {
+      window.alert(error.response?.data?.detail || "The Board role recommendation could not be prepared.");
+    }
+    setBusy("");
+  };
+
+  const approveRole = async () => {
+    if (!role.trim()) return;
+    setBusy("approve");
+    try {
+      await memberApi.patch("/workspace/applications/" + application.application_id, {
+        board_role: role.trim(),
+        portfolio_role_rationale: why.trim(),
+        portfolio_role_approved: true,
+      });
+      await onChanged();
+    } catch (error) {
+      window.alert(error.response?.data?.detail || "The Board role could not be approved.");
+    }
+    setBusy("");
+  };
+
+  return (
+    <div className="detail-section recruitment-portfolio-candidate">
+      <h3>{application.profile_snapshot?.full_name || application.applicant_email}</h3>
+      {!application.board_role_recommendation && !application.portfolio_role_approved && (
+        <button className="button button-back" disabled={busy === "recommend"} onClick={recommend}>
+          {busy === "recommend" ? "PREPARING…" : "RECOMMEND THEIR BOARD ROLE"}
+        </button>
+      )}
+      {(application.board_role_recommendation || role) && (
+        <div className="sgr-role-approval">
+          <label className="field"><span>Board Role / Contribution Focus</span><input value={role} onChange={(event) => setRole(event.target.value)} /></label>
+          <label className="field"><span>Why This Role Fits</span><textarea rows="3" value={why} onChange={(event) => setWhy(event.target.value)} /></label>
+          {!application.portfolio_role_approved ? (
+            <button className="button" disabled={busy === "approve" || !role.trim()} onClick={approveRole}>
+              {busy === "approve" ? "SAVING…" : "APPROVE THIS ROLE"}
+            </button>
+          ) : (
+            <p className="member-success">Role approved by the founder.</p>
+          )}
+        </div>
+      )}
+
+      {application.portfolio_role_approved && (
+        application.board_profile_completed ? (
+          <MaterialCard
+            type="board_member_portfolio"
+            title={"Board Member Portfolio — " + (application.profile_snapshot?.full_name || application.applicant_email)}
+            buttonLabel="Generate Board Member Portfolio"
+            description="Build the Portfolio from the founder-approved role, application, CV, Board Member Profile and the verified information collected through this recruitment process."
+            applicationId={application.application_id}
+            material={byType.board_member_portfolio}
+            refresh={refreshAll}
+            approvable
+          />
+        ) : (
+          <p className="workspace-note">The role is approved. Portfolio generation unlocks when this person completes the Board Member Profile during onboarding.</p>
+        )
+      )}
+
+      {byType.board_member_portfolio?.status === "Approved" && (
+        <MaterialCard
+          type="portfolio_email"
+          title="Portfolio Email"
+          buttonLabel="Generate Portfolio Email"
+          description="Generate the email wording for you to copy and send from your own inbox. The platform does not automatically send this Portfolio."
+          applicationId={application.application_id}
+          material={byType.portfolio_email}
+          refresh={refreshAll}
+          approvable
+        />
+      )}
+    </div>
+  );
+};
+
+export const RecruitmentPortfoliosWorkspace = () => {
+  const { applications, refresh } = useApplications();
+  const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
+  return (
+    <div data-testid="recruitment-portfolios-workspace">
+      <section className="workspace-panel">
+        <h2>Board Member Portfolios</h2>
+        <p className="material-description">Everyone who reached the interview-guide stage remains visible here. For the people who actually join your board, review the recommended role, edit it if needed and approve it before generating their Portfolio.</p>
+        {candidates.length === 0 && <p className="workspace-note">Interview candidates will appear here automatically.</p>}
+        {candidates.map((application) => (
+          <RecruitmentPortfolioCandidate application={application} onChanged={refresh} key={application.application_id} />
+        ))}
+      </section>
+    </div>
+  );
+};
+
 
 export const FormalAppointmentWorkspace = () => {
   const { applications, refresh } = useApplications();
