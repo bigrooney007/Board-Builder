@@ -104,7 +104,7 @@ const ResponsesView = ({ memberId }) => {
   );
 };
 
-export const BoardMembersSection = () => {
+export const BoardMembersSection = ({ onChanged = () => {} }) => {
   const [members, setMembers] = useState([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState("");
@@ -116,12 +116,13 @@ export const BoardMembersSection = () => {
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("response") || "";
     if (requested) setViewingId(requested);
-  }, []);
+  }, [onChanged]);
 
   const load = useCallback(async () => {
     try {
       const response = await memberApi.get("/game/board-members");
       setMembers(response.data.board_members || []);
+      onChanged(response.data.board_members || []);
     } catch { /* ignore */ }
   }, []);
   useEffect(() => { load(); }, [load]);
