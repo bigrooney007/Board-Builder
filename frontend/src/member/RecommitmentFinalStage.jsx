@@ -79,7 +79,6 @@ const MemberDecision = ({ row, reload }) => {
         <h4>Active Board Member Next Step</h4>
         <p>Generate the Portfolio only after the role above reflects what you actually agreed. Then prepare the Portfolio email, copy it or send it directly from the platform.</p>
         <PortfolioWorkflow row={row} reload={reload}/>
-        <OutcomeEmailWorkflow row={row} label="GENERATE RECOMMITMENT CONFIRMATION EMAIL" reload={reload}/>
       </div>
     )}
     {decisionReady&&roleReady&&row.conversation_outcome==="Transitioning to an Advisory Role"&&(
