@@ -2208,10 +2208,18 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/send-draft-email")
     async def send_draft_email(request:Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};respondents=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
-        if not plan.get("display_text"):raise HTTPException(409,"Generate the Strategic Plan Draft first")
-        sent=0
+        if not plan.get("final_display_text") or not plan.get("share_token"):raise HTTPException(409,"Generate the Strategic Plan before sending the Board review link")
+        sent=0;link=f"{origin_of(request)}/strategic-draft/{plan.get('share_token')}"
         for r in respondents:
-            link=f"{origin_of(request)}/strategic-draft/{plan.get('share_token')}";e=review_email(p,r,link);await send_email(r["email"],e["subject"],e["body"],e["button_label"],e["form_link"],reply_to=p.get("founder_email",""));sent+=1
+            first=(r.get("name") or "Board Member").split()[0]
+            body=(f"Dear {first},\n\n"
+                  f"Our Strategic Planning Session for {p['organization_name']} is complete and the Strategic Plan is ready for Board review. "
+                  "This draft reflects the ideas selected during the session and the discussion captured in the meeting.\n\n"
+                  "Please use the secure link below to read the complete plan before it is finally adopted.\n\n"
+                  "[REVIEW THE STRATEGIC PLAN]\n\n"
+                  "If you believe something does not reflect what the Board agreed, raise it with the organization leader before adoption.\n\n"
+                  f"{p.get('founder_name','')}\n{p['organization_name']}")
+            await send_email(r["email"],f"Board Review: Strategic Plan | {p['organization_name']}",body,"REVIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1
         return {"status":"sent","count":sent}
 
     @router.post("/facilitation-guide")
@@ -2281,14 +2289,12 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         async def run_generation():
             try:
                 people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
-                research=await db.sp_community_research.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
                 context=(
                     f"ORGANIZATION: {p['organization_name']}\n"
                     f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
-                    f"ORGANIZATION INTAKE / STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
+                    f"ORGANIZATION STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
                     f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
-                    f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-                    f"COMMUNITY NEED RESEARCH (context/evidence only, not Board authority):\n{json.dumps(research.get('responses') or [],default=str)}"
+                    f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}"
                 )
                 generated=await generate_structured(
                     "strategic_session_final_plan",
