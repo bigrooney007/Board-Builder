@@ -1,312 +1,341 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, ChevronDown, Copy, Download, ExternalLink, FileText, LifeBuoy, Mail, PlayCircle, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { CheckCircle2, ClipboardList, Download, FileText, Mail, Plus, Search, Users } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
-import { trackPlatformEvent } from "@/clean/platform";
+import { trackPlatformEvent, useStrategicPlanningSectionVideo } from "@/clean/platform";
 import "@/game/game.css";
 import "./guided-products.css";
 import "./strategic-planning-dashboard.css";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const ORGANIZATION_FIELDS=[
-  ["mission","What is your organization's mission? Who do you serve, how do you serve them, and what change are you trying to create?"],
-  ["goals","What are your present goals for the next 12 to 24 months? What are you trying to achieve?"],
-  ["objectives","What objectives are you presently pursuing to achieve those goals? What results is each objective meant to produce?"],
-  ["programs","List each current program or service on its own line so the Board can review every program separately."],
-  ["team_building","Who do you presently have available to support the organization? Include staff, Board Members, volunteers, contractors or other people who help you deliver the work."],
-  ["operations","What systems or processes presently keep the organization running? Where do you already see operational problems, bottlenecks or gaps?"],
-  ["marketing","How do people presently hear about the organization? Who are you trying to reach, and what are you presently doing for marketing, visibility or communications?"],
-  ["partnerships","What partnerships or important relationships do you presently have? What kinds of partners do you believe the organization needs?"],
-  ["fundraising","How are you presently raising money? What has worked, what has not worked, and what do you believe needs to improve?"],
-  ["technology","What technology or tools do you presently use? What work do you need technology to make easier, faster or more reliable?"],
-  ["budget","What is your present budget or best current understanding of what it costs to operate and grow the organization? Include only numbers you actually know."],
-  ["action_planning","What important actions are already planned or underway? What do you believe needs to happen next?"]
-];
+const Button=({children,onClick,disabled=false,secondary=false,testId="",href=""})=>{
+  const cls=`bfg-btn ${secondary?"bfg-btn-ghost":"bfg-btn-primary"} bfg-btn-sm`;
+  if(href)return <a className={cls} href={href} target="_blank" rel="noreferrer" data-testid={testId||undefined}>{children}</a>;
+  return <button type="button" className={cls} disabled={disabled} onClick={onClick} data-testid={testId||undefined}>{children}</button>;
+};
 
-const Button=({children,onClick,disabled=false,secondary=false,testId=""})=>(
-  <button type="button" className={`bfg-btn ${secondary?"bfg-btn-ghost":"bfg-btn-primary"} bfg-btn-sm`} disabled={disabled} onClick={onClick} data-testid={testId||undefined}>{children}</button>
-);
+const SectionVideo=({videoKey})=>{
+  const video=useStrategicPlanningSectionVideo(videoKey);
+  const url=video?.url?.startsWith("http")?video.url:video?.youtube_id?`https://www.youtube.com/watch?v=${video.youtube_id}`:"";
+  if(!url)return <button className="sp-section-video is-empty" disabled><PlayCircle size={15}/> SECTION VIDEO COMING SOON</button>;
+  return <a className="sp-section-video" href={url} target="_blank" rel="noreferrer"><PlayCircle size={15}/> PLAY SECTION VIDEO <ExternalLink size={12}/></a>;
+};
 
-const Step=({n,title,summary,locked=false,children,open,setOpen,testId})=>(
-  <section className={`sp-dash-card ${locked?"sp-locked":""}`} id={testId}>
-    <button type="button" className="sp-card-toggle" onClick={()=>!locked&&setOpen(!open)}>
+const Step=({n,title,summary,status,locked=false,videoKey,children,open,setOpen,testId})=>(
+  <section className={`sp-dash-card sp-clean-section ${locked?"sp-locked":""} ${open?"is-open":""}`} id={testId}>
+    <div className="sp-video-row"><SectionVideo videoKey={videoKey}/></div>
+    <button type="button" className="sp-card-toggle" onClick={()=>!locked&&setOpen(!open)} aria-expanded={open}>
       <span className="sp-step">{n}</span>
-      <span><strong>{title}</strong><small>{locked?"Complete the earlier step first.":summary}</small></span>
-      <span>{locked?"🔒":open?"−":"+"}</span>
+      <span><strong>{title}</strong><small>{locked?"Complete the earlier stage first.":summary}</small></span>
+      <span className="sp-clean-status">{status&&<em>{status}</em>}<ChevronDown size={18} className={open?"rotate":""}/></span>
     </button>
     {open&&!locked&&<div className="sp-card-body">{children}</div>}
   </section>
 );
 
+const fmtMeeting=(meeting)=>{
+  if(!meeting?.meeting_date)return "";
+  try{
+    const d=new Date(`${meeting.meeting_date}T12:00:00`);
+    return `${d.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"})} at ${meeting.start_time||""} ${meeting.timezone_name||""}`;
+  }catch{return `${meeting.meeting_date} ${meeting.start_time||""} ${meeting.timezone_name||""}`;}
+};
+
 export default function StrategicPlanningDashboard(){
   const sid=new URLSearchParams(window.location.search).get("session_id")||"";
   const navigate=useNavigate();
-  const [ctx,setCtx]=useState(null);
-  const [community,setCommunity]=useState(null);
-  const [session,setSession]=useState(null);
-  const [busy,setBusy]=useState("");
-  const [message,setMessage]=useState("");
-  const [open,setOpen]=useState("1");
-  const [invite,setInvite]=useState({name:"",email:""});
-  const [organizationOpen,setOrganizationOpen]=useState(false);
-  const [organizationName,setOrganizationName]=useState("");
-  const [organizationAnswers,setOrganizationAnswers]=useState({});
-  const [organizationLogo,setOrganizationLogo]=useState("");
-  const [finalDraft,setFinalDraft]=useState("");
-  const [editingPlan,setEditingPlan]=useState(false);
-  const [delegates,setDelegates]=useState([]);
-  const [support,setSupport]=useState({support_type:"",message:""});
-  const [supportSent,setSupportSent]=useState("");
+  const[ctx,setCtx]=useState(null);
+  const[session,setSession]=useState(null);
+  const[open,setOpen]=useState("1");
+  const[busy,setBusy]=useState("");
+  const[message,setMessage]=useState("");
+  const[invite,setInvite]=useState({name:"",email:""});
+  const[meeting,setMeeting]=useState({meeting_date:"",start_time:"",timezone_name:Intl.DateTimeFormat().resolvedOptions().timeZone||""});
+  const[finalDraft,setFinalDraft]=useState("");
+  const[editingPlan,setEditingPlan]=useState(false);
+  const[delegates,setDelegates]=useState([]);
+  const[support,setSupport]=useState({support_type:"",message:""});
+  const[supportSent,setSupportSent]=useState("");
+  const preparingForm=useRef(false);
+  const triggeringPlan=useRef(false);
 
   const load=useCallback(async()=>{
     try{
-      const workspace=await axios.get(`${API}/guided/strategic-planning/workspace`,{params:{session_id:sid}});
+      const [workspace,live]=await Promise.all([
+        axios.get(`${API}/guided/strategic-planning/workspace`,{params:{session_id:sid}}),
+        axios.get(`${API}/guided/strategic-planning/session`,{params:{session_id:sid}}).catch(()=>({data:null})),
+      ]);
       setCtx(workspace.data);
-      setCommunity(workspace.data.community_research||null);
-      setOrganizationName(workspace.data.organization_name||"");
-      setOrganizationAnswers(workspace.data.organization_answers||{});
-      setOrganizationLogo(workspace.data.project?.logo_data_url||"");
-      setFinalDraft(workspace.data.project?.final_plan?.display_text||"");
-      setDelegates(workspace.data.project?.active_delegation?.delegates||[]);
-      const live=await axios.get(`${API}/guided/strategic-planning/session`,{params:{session_id:sid}});
       setSession(live.data);
-    }catch(error){
-      setMessage(error.response?.data?.detail||"We could not load your Strategic Planning workspace.");
-    }
+      const savedMeeting=workspace.data.project?.planning_meeting||{};
+      if(savedMeeting.meeting_date)setMeeting(savedMeeting);
+      setFinalDraft(workspace.data.project?.final_plan?.display_text||"");
+
+      const participants=workspace.data.project?.participants||[];
+      const active=workspace.data.project?.active_delegation?.delegates||[];
+      const byParticipant=new Map(active.filter(x=>x.participant_id).map(x=>[x.participant_id,x]));
+      const rows=[...active];
+      participants.filter(p=>p.status==="COMPLETED").forEach(person=>{
+        if(byParticipant.has(person.participant_id))return;
+        rows.push({
+          delegation_id:`participant-${person.participant_id}`,participant_id:person.participant_id,
+          name:person.name,email:person.email||"",role:person.role==="Lead User"?"":(person.role||""),
+          responsibilities:[],areas:[],first_action:"",support_needed:"",reporting_rhythm:"",
+          source:"Participated in Strategic Planning",
+        });
+      });
+      setDelegates(rows);
+    }catch(error){setMessage(error.response?.data?.detail||"We could not load your Strategic Planning workspace.");}
   },[sid]);
 
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{if(sid)load();},[sid,load]);
+
+  const p=ctx?.project||{};
+  const answers=ctx?.organization_answers||{};
+  const participants=p.participants||[];
+  const completed=participants.filter(person=>person.status==="COMPLETED");
+  const lead=participants.find(person=>person.role==="Lead User");
+  const boardPeople=participants.filter(person=>person.role!=="Lead User");
+  const boardResponses=boardPeople.filter(person=>person.status==="COMPLETED");
+  const requiredOrg=["mission","goals","objectives","team_building","technology","marketing","partnerships","fundraising","budget","action_planning"];
+  const programs=Array.isArray(answers.program_details)?answers.program_details.filter(x=>x?.name?.trim()):String(answers.programs||"").split("\n").filter(Boolean);
+  const organizationReady=Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
+  const meetingReady=Boolean(p.planning_meeting?.meeting_date&&p.planning_meeting?.start_time&&p.planning_meeting?.timezone_name);
+  const formReady=p.form?.status==="Approved";
+  const leadDone=lead?.status==="COMPLETED";
+  const guideReady=Boolean(p.meeting_guide_text);
+  const sessionDone=session?.status==="COMPLETED";
+  const finalStatus=p.final_plan?.status||"NONE";
+  const finalReady=Boolean(p.final_plan?.display_text);
+  const approved=finalStatus==="Approved";
+  const finalGenerating=finalStatus==="Generating";
+  const finalFailed=finalStatus==="Failed";
+  const portfolios=p.portfolios||[];
+  const leadLink=p.lead_form_token?`${window.location.origin}/strategic-planning-form/${p.lead_form_token}`:"";
+  const formLink=formReady?`${window.location.origin}/strategic-planning-form/${p.generic_form_token}`:"";
+  const reviewLink=p.final_plan?.review_url?`${window.location.origin}${p.final_plan.review_url}`:"";
+
   useEffect(()=>{
-    if(ctx?.project?.final_plan?.status!=="Generating")return;
-    const timer=window.setInterval(load,10000);
+    if(!ctx||!organizationReady||!meetingReady||formReady||preparingForm.current)return;
+    preparingForm.current=true;
+    axios.post(`${API}/guided/strategic-planning/prepare-form`,{session_id:sid})
+      .then(()=>load()).catch(e=>setMessage(e.response?.data?.detail||"We could not prepare your Strategic Planning Form."))
+      .finally(()=>{preparingForm.current=false;});
+  },[ctx,organizationReady,meetingReady,formReady,sid,load]);
+
+  useEffect(()=>{
+    if(!sessionDone||finalReady||finalGenerating||triggeringPlan.current)return;
+    triggeringPlan.current=true;
+    axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid})
+      .then(()=>load()).catch(e=>setMessage(e.response?.data?.detail||"We could not start your Strategic Plan generation."))
+      .finally(()=>{triggeringPlan.current=false;});
+  },[sessionDone,finalReady,finalGenerating,sid,load]);
+
+  useEffect(()=>{
+    if(!finalGenerating)return;
+    const timer=window.setInterval(load,5000);
     return()=>window.clearInterval(timer);
-  },[ctx?.project?.final_plan?.status,load]);
+  },[finalGenerating,load]);
+
   useEffect(()=>{
-    if(window.location.hash==="#generate-strategy"){
-      setOpen("8");
-      setTimeout(()=>document.getElementById("generate-strategy")?.scrollIntoView({behavior:"smooth",block:"start"}),150);
-    }
+    const hash=window.location.hash;
+    const map={"#sp-meeting":"2","#sp-founder-form":"3","#sp-board":"4","#sp-guide":"5","#sp-session":"6","#sp-plan":"7","#generate-strategy":"7"};
+    if(map[hash]){setOpen(map[hash]);setTimeout(()=>document.querySelector(hash)?.scrollIntoView({behavior:"smooth",block:"start"}),100);}
   },[ctx]);
 
   const act=async(key,fn)=>{
     setBusy(key);setMessage("");
     try{await fn();await load();}
-    catch(error){setMessage(error.response?.data?.detail||"That action could not be completed yet.");}
+    catch(error){setMessage(error.response?.data?.detail||"That action could not be completed.");}
     setBusy("");
   };
 
-  if(!ctx)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning</h1><p>{message||"Preparing your workspace…"}</p></section></main></BfgShell>;
-
-  const p=ctx.project||{};
-  const participants=p.participants||[];
-  const completed=participants.filter(person=>person.status==="COMPLETED");
-  const lead=participants.find(person=>person.role==="Lead User");
-  const boardResponses=completed.filter(person=>person.role!=="Lead User");
-  const formReady=p.form?.status==="Approved";
-  const leadDone=lead?.status==="COMPLETED";
-  const organizationReady=Boolean(organizationName.trim()&&String(organizationAnswers.mission||p.mission||"").trim());
-  const sessionDone=session?.status==="COMPLETED";
-  const guideReady=Boolean(p.meeting_guide_text);
-  const finalReady=Boolean(p.final_plan?.display_text);
-  const finalGenerating=p.final_plan?.status==="Generating";
-  const finalFailed=p.final_plan?.status==="Failed";
-  const approved=p.final_plan?.status==="Approved";
-  const portfolios=p.portfolios||[];
-  const formLink=formReady?`${window.location.origin}/strategic-planning-form/${p.generic_form_token}`:"";
-  const leadLink=p.lead_form_token?`${window.location.origin}/strategic-planning-form/${p.lead_form_token}`:"";
-  const researchLink=community?.token?`${window.location.origin}/community-need-research/${community.token}`:"";
-
-  const copy=text=>navigator.clipboard?.writeText(text);
-
-  const uploadLogo=file=>{
-    if(!file)return;
-    const reader=new FileReader();
-    reader.onload=()=>setOrganizationLogo(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const saveOrganization=()=>act("organization",async()=>{
-    await axios.put(`${API}/guided/strategic-planning/organization`,{
-      session_id:sid,organization_name:organizationName,answers:organizationAnswers,logo_data_url:organizationLogo
-    });
-    setOrganizationOpen(false);
-  });
-
+  const saveMeeting=()=>act("meeting",()=>axios.put(`${API}/guided/strategic-planning/planning-meeting`,{session_id:sid,...meeting}));
   const sendInvite=()=>act("invite",async()=>{
     await axios.post(`${API}/guided/strategic-planning/invite`,{session_id:sid,...invite});
     setInvite({name:"",email:""});
   });
-
   const generateGuide=()=>act("guide",()=>axios.post(`${API}/guided/strategic-planning/facilitation-guide`,{session_id:sid}));
-
   const savePlan=()=>act("save-plan",()=>axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:finalDraft}));
-
   const approvePlan=()=>act("approve-plan",async()=>{
     await axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:finalDraft});
     await axios.post(`${API}/guided/strategic-planning/final-plan/approve`,{session_id:sid});
-    trackPlatformEvent("strategic-planning", "platform_completed");
+    trackPlatformEvent("strategic-planning","platform_completed");
     setEditingPlan(false);
   });
+  const copy=text=>navigator.clipboard?.writeText(text);
+  const downloadResponse=participantId=>window.open(`${API}/guided/strategic-planning-response/${participantId}/pdf`,"_blank");
 
-  const updateDelegate=(id,field,value)=>setDelegates(current=>current.map(person=>person.delegation_id===id?{...person,[field]:value}:person));
-  const removeDelegate=id=>setDelegates(current=>current.filter(person=>person.delegation_id!==id));
-  const addKnownDelegate=person=>setDelegates(current=>{
-    if(current.some(item=>item.participant_id===person.participant_id))return current;
-    return [...current,{delegation_id:`manual-${person.participant_id}`,participant_id:person.participant_id,name:person.name,email:person.email||"",role:person.role||"",responsibilities:[],areas:[],first_action:"",support_needed:"",reporting_rhythm:""}];
-  });
-  const addOtherDelegate=()=>setDelegates(current=>[...current,{delegation_id:`manual-${Date.now()}`,participant_id:"",name:"",email:"",role:"",responsibilities:[],areas:[],first_action:"",support_needed:"",reporting_rhythm:""}]);
-
-  const saveDelegates=()=>act("save-delegates",()=>axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates}));
+  const updateDelegate=(id,field,value)=>setDelegates(rows=>rows.map(x=>x.delegation_id===id?{...x,[field]:value}:x));
+  const removeDelegate=id=>setDelegates(rows=>rows.filter(x=>x.delegation_id!==id));
+  const addDelegate=()=>setDelegates(rows=>[...rows,{delegation_id:`manual-${Date.now()}`,participant_id:"",name:"",email:"",role:"",responsibilities:[],areas:[],first_action:"",support_needed:"",reporting_rhythm:"",source:"Founder added"}]);
+  const confirmedDelegates=useMemo(()=>delegates.filter(x=>x.name?.trim()&&x.role?.trim()&&(x.responsibilities||[]).length),[delegates]);
+  const saveDelegates=()=>act("save-delegates",()=>axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates:confirmedDelegates}));
   const createPortfolios=()=>act("portfolios",async()=>{
-    await axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates});
+    await axios.put(`${API}/guided/strategic-planning/active-delegation/people`,{session_id:sid,delegates:confirmedDelegates});
     await axios.post(`${API}/guided/strategic-planning/portfolios`,{session_id:sid});
   });
 
-  const card=(n,title,summary,unlocked,content,testId="")=>(
-    <Step n={n} title={title} summary={summary} locked={!unlocked} open={open===String(n)} setOpen={value=>setOpen(value?String(n):"")} testId={testId}>{content}</Step>
-  );
+  if(!ctx)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning</h1><p>{message||"Preparing your workspace…"}</p></section></main></BfgShell>;
 
-  return <BfgShell><main className="guided-page sp-dashboard">
-    <section className="guided-section sp-dash-head">
-      <p className="bfg-eyebrow">STRATEGIC PLANNING WITH YOUR BOARD</p>
-      <h1>{ctx.organization_name||"Your Strategic Planning Dashboard"}</h1>
-      <p className="guided-intro">One simple process: gather the organization's starting information, collect individual ideas, review those ideas together in one live Board session, generate the Strategic Plan, then confirm who will help carry it forward.</p>
-      {busy&&["research","form","guide","strategy","portfolios"].includes(busy)&&<p className="bfg-note"><strong>Generating your resource.</strong> This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
+  return <BfgShell><main className="guided-page sp-dashboard sp-clean-dashboard">
+    <section className="sp-clean-hero">
+      <p className="bfg-eyebrow">NONPROFIT BOARD BUILDER</p>
+      <h1>STRATEGIC PLANNING WITH YOUR BOARD</h1>
+      <p>Start with what is true about the organization today. Let every person think independently. Bring those ideas into one Board conversation, make the decisions together, then turn the decisions into a Strategic Plan and confirmed execution roles.</p>
     </section>
 
     <div className="sp-dash-stack">
-      {card(1,"Tell Us About Your Organization","Give the Board enough real information to think clearly about the future.",true,<>
-        <p>Answer these questions in plain language. Specific information gives your Board something real to react to instead of forcing them to guess what the organization needs.</p>
-        <Button onClick={()=>setOrganizationOpen(!organizationOpen)}><ClipboardList size={15}/> {organizationOpen?"CLOSE ORGANIZATION FORM":"OPEN ORGANIZATION FORM"}</Button>
-        {organizationOpen&&<div className="sp-contentbox sp-organization-form" data-testid="strategic-organization-form">
-          <label><strong>Organization Name</strong><input value={organizationName} onChange={event=>setOrganizationName(event.target.value)}/></label>
-          {ORGANIZATION_FIELDS.map(([key,label])=><label key={key}><strong>{label}</strong><textarea rows={key==="programs"?5:4} value={organizationAnswers[key]||""} onChange={event=>setOrganizationAnswers({...organizationAnswers,[key]:event.target.value})}/></label>)}
-          <label><strong>Organization Logo</strong><input type="file" accept="image/png,image/jpeg,image/webp" onChange={event=>uploadLogo(event.target.files?.[0])}/></label>
-          {organizationLogo&&<img src={organizationLogo} alt={`${organizationName||"Organization"} logo`} style={{maxWidth:180,maxHeight:100,objectFit:"contain"}}/>}
-          <Button disabled={!organizationName.trim()||!String(organizationAnswers.mission||"").trim()||busy==="organization"} onClick={saveOrganization}>{busy==="organization"?"SAVING…":"SAVE ORGANIZATION INFORMATION"}</Button>
-        </div>}
-        {!organizationOpen&&organizationReady&&<div className="sp-contentbox"><strong>Organization information saved.</strong><p>{organizationName}</p><p>{p.mission||organizationAnswers.mission}</p></div>}
-      </>)}
-
-      {card(2,"Launch Community Need Research","Listen outside the Board before the Board agrees the organization's direction.",organizationReady,<>
-        <p>Use the public research link to hear directly from people who experience, understand or work around the need your organization exists to address.</p>
-        {!community?<Button disabled={busy==="research"} onClick={()=>act("research",()=>axios.post(`${API}/guided/strategic-planning/community-research`,{session_id:sid}))}><Search size={15}/> LAUNCH COMMUNITY NEED RESEARCH</Button>:<>
-          <div className="sp-linkbox"><span>{researchLink}</span><button onClick={()=>copy(researchLink)}>COPY SURVEY LINK</button></div>
-          <div className="sp-contentbox"><h3>Community Research Promotion Kit</h3>{(community.social_posts||[]).map((post,index)=><div className="sp-promotion-post" key={index}><p>{post}</p><button onClick={()=>copy(`${post}\n\n${researchLink}`)}>COPY POST {index+1}</button></div>)}</div>
-          <p><strong>{community.response_count||0}</strong> public responses received.</p>
-        </>}
-      </>)}
-
-      {card(3,"Generate The Strategic Planning Form","Turn the organization information into personal, actionable questions for the Board.",organizationReady,<>
-        <p>The form asks people what they personally observe, what they would protect or change, and what they believe the organization should do differently. Every program is reviewed separately.</p>
-        {!formReady?<Button disabled={busy==="form"} onClick={()=>act("form",()=>axios.post(`${API}/guided/strategic-planning/prepare-form`,{session_id:sid}))}><ClipboardList size={15}/> GENERATE STRATEGIC PLANNING FORM</Button>:<div className="sp-linkbox"><span>{formLink}</span><button onClick={()=>copy(formLink)}>COPY FORM LINK</button></div>}
-      </>)}
-
-      {card(4,"Send The Form To Your Board Members","Collect each person's original thinking before the live session.",formReady,<>
-        <p>You can send the general form link yourself or email a person-specific link directly from the platform.</p>
-        <div className="sp-linkbox"><span>{formLink}</span><button onClick={()=>copy(formLink)}>COPY GENERAL FORM LINK</button></div>
-        <div className="sp-contentbox">
-          <input placeholder="Board Member Name" value={invite.name} onChange={event=>setInvite({...invite,name:event.target.value})}/>
-          <input type="email" placeholder="Board Member Email" value={invite.email} onChange={event=>setInvite({...invite,email:event.target.value})}/>
-          <Button disabled={!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={15}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
+      <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} videoKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
+        <div className="sp-clean-stage">
+          <h2>Give The Board A Real Starting Point</h2>
+          <p>The organization information is not treated as the final strategy. It gives everyone something real to test, question, protect and improve.</p>
+          {p.logo_data_url&&<img src={p.logo_data_url} className="sp-dashboard-logo" alt="Organization logo"/>}
+          <Button onClick={()=>navigate(`/strategic-planning/organization?session_id=${encodeURIComponent(sid)}`)}>{organizationReady?"REVIEW ORGANIZATION INFORMATION":"TELL US ABOUT YOUR ORGANIZATION"}</Button>
         </div>
-      </>)}
+      </Step>
 
-      {card(5,"Complete Your Own Strategic Planning Form","Your own ideas belong in the same pool as the Board's ideas.",formReady,<>
-        <p>You are a participant in the planning process too. Complete the same form so your ideas remain attributable to you and can be reviewed alongside everyone else's during the live session.</p>
-        {leadLink?<a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={leadLink}>{leadDone?"REVIEW / UPDATE MY FORM":"COMPLETE MY FORM"}</a>:<p className="sp-empty">Your lead-user form link is being prepared.</p>}
-        {leadDone&&<p className="member-success"><CheckCircle2 size={16}/> Your response is saved. You can reopen the form and update it before the session.</p>}
-      </>)}
-
-      {card(6,"Review Everyone's Responses","See exactly what each person contributed before the meeting.",formReady,<>
-        {!completed.length?<p className="sp-empty">No completed responses yet.</p>:<div className="sp-people">{completed.map(person=><article key={person.participant_id}><Users/><div><strong>{person.name}</strong><span>{person.role||"Board Participant"}</span></div><a href={`/strategic-planning-response/${person.participant_id}`} target="_blank" rel="noreferrer">VIEW RESPONSE</a></article>)}</div>}
-        <p className="workspace-note">The response page shows the real question wording and the person's full original answer. Internal IDs such as S1 Q1 are never customer-facing labels.</p>
-      </>)}
-
-      {card(7,"Run The Strategic Planning Session","Use one live Board session to review ideas, agree direction and discuss execution responsibility.",Boolean(leadDone&&boardResponses.length>0),<>
-        <p>Generate the facilitation guide first. Then open the live session workspace. There you will create the Board's shared screen link, start microphone transcription with consent, and move through Mission, Goals, Objectives, each Program, Team, Operations, Marketing, Partnerships, Fundraising, Technology, Budget, Action Planning and Roles We Will Play one screen at a time.</p>
-        <div className="sp-actions">
-          <Button disabled={busy==="guide"} onClick={generateGuide}><FileText size={15}/> {guideReady?"REGENERATE FACILITATION GUIDE":"GENERATE FACILITATION GUIDE"}</Button>
-          <Button disabled={!guideReady} onClick={()=>navigate(`/strategic-planning/session?session_id=${encodeURIComponent(sid)}`)}>{sessionDone?"VIEW COMPLETED SESSION":"OPEN STRATEGIC PLANNING SESSION"}</Button>
-        </div>
-        {guideReady&&<details className="sp-guide"><summary>View Facilitation Guide</summary><pre>{p.meeting_guide_text}</pre></details>}
-        {sessionDone&&<p className="member-success"><CheckCircle2 size={16}/> The Strategic Planning Session is complete. Board selections and the live transcript are saved.</p>}
-      </>)}
-
-      {card(8,"Generate, Review And Approve The Strategic Plan","Turn the Board's agreed direction into one professional organization Strategic Plan.",sessionDone,<>
-        <p>The generated plan uses the Board-selected ideas, the full original responses behind those ideas, the organization's starting information, community research as supporting context, and the live meeting transcript. It does not list who said what. It reads as the organization's Strategic Plan.</p>
-        {!finalReady?<>
-          <Button disabled={busy==="strategy"||finalGenerating} onClick={()=>act("strategy",()=>axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}))}>{finalGenerating?"GENERATING STRATEGIC PLAN…":busy==="strategy"?"STARTING…":finalFailed?"TRY GENERATING AGAIN":"GENERATE STRATEGIC PLAN"}</Button>
-          {finalGenerating&&<p className="workspace-note">Your Strategic Plan is being built in the background. This may take a few minutes. You can leave this page and check back in about 5 minutes.</p>}
-          {finalFailed&&<p className="bfg-error">The last generation did not complete. You can try again. No Board responses or session decisions were lost.</p>}
-        </>:<>
-          <div className="sp-plan-editor">
-            {!editingPlan?<pre className="sp-plan-preview">{finalDraft}</pre>:<textarea rows={30} value={finalDraft} disabled={approved} onChange={event=>setFinalDraft(event.target.value)}/>}
+      <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} videoKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
+        <div className="sp-clean-stage">
+          <h2>When Is Your Next Board Strategic Planning Meeting?</h2>
+          <p>That is the meeting everyone is preparing for. The date and time are carried into direct Board invitations.</p>
+          <div className="sp-meeting-grid">
+            <label>Date<input type="date" value={meeting.meeting_date||""} onChange={e=>setMeeting({...meeting,meeting_date:e.target.value})}/></label>
+            <label>Time<input type="time" value={meeting.start_time||""} onChange={e=>setMeeting({...meeting,start_time:e.target.value})}/></label>
+            <label>Timezone<input value={meeting.timezone_name||""} onChange={e=>setMeeting({...meeting,timezone_name:e.target.value})}/></label>
           </div>
+          <Button disabled={!meeting.meeting_date||!meeting.start_time||!meeting.timezone_name||busy==="meeting"} onClick={saveMeeting}>{busy==="meeting"?"SAVING…":meetingReady?"UPDATE MEETING":"SAVE MEETING"}</Button>
+          {meetingReady&&<p className="member-success"><CheckCircle2 size={15}/> {fmtMeeting(p.planning_meeting)}</p>}
+        </div>
+      </Step>
+
+      <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} videoKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
+        <div className="sp-clean-stage">
+          <h2>Your Thinking Belongs In The Same Pool As Everyone Else's</h2>
+          <p>You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer.</p>
+          {!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>}
+          {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> Your response is saved and will enter the live session with everyone else's ideas.</p>}
+        </div>
+      </Step>
+
+      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the same Strategic Planning Form to each Board Member and see every completed response in one place." status={!leadDone?"Locked":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!leadDone} videoKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
+        <div className="sp-clean-stage">
+          <h2>Invite Board Members To Think Before The Meeting</h2>
+          <p>Add each Board Member's name and email. They receive their own secure form link and the meeting date. Their original ideas remain traceable to them during the live session.</p>
+          <div className="sp-invite-grid">
+            <input placeholder="Board Member Name" value={invite.name} onChange={e=>setInvite({...invite,name:e.target.value})}/>
+            <input type="email" placeholder="Board Member Email" value={invite.email} onChange={e=>setInvite({...invite,email:e.target.value})}/>
+            <Button disabled={!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={14}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
+          </div>
+          {formLink&&<div className="sp-linkbox"><span>{formLink}</span><button onClick={()=>copy(formLink)}><Copy size={14}/> COPY GENERAL FORM LINK</button></div>}
+        </div>
+        <div className="sp-response-list">
+          {!boardPeople.length?<p className="sp-empty">No Board Members added yet.</p>:boardPeople.map(person=><article key={person.participant_id}>
+            <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small></div>
+            <div className="sp-actions">
+              {person.status==="COMPLETED"&&<Button secondary href={`/strategic-planning-response/${person.participant_id}`}>VIEW RESPONSE</Button>}
+              {person.status==="COMPLETED"&&<Button secondary onClick={()=>downloadResponse(person.participant_id)}><Download size={14}/> DOWNLOAD</Button>}
+              {person.status!=="COMPLETED"&&<Button secondary disabled={busy===`resend-${person.participant_id}`} onClick={()=>act(`resend-${person.participant_id}`,()=>axios.post(`${API}/guided/strategic-planning/invite`,{session_id:sid,name:person.name,email:person.email}))}>RESEND FORM</Button>}
+            </div>
+          </article>)}
+        </div>
+      </Step>
+
+      <Step n="5" title="PREPARE FOR THE STRATEGIC PLANNING SESSION" summary="Generate the facilitation guide from the organization context and the ideas submitted before the meeting." status={!boardResponses.length?"Locked":guideReady?"Ready":"Generate Guide"} locked={!boardResponses.length} videoKey="facilitation-guide" open={open==="5"} setOpen={v=>setOpen(v?"5":"")} testId="sp-guide">
+        <div className="sp-clean-stage">
+          <h2>Your Facilitation Guide</h2>
+          <p>The guide prepares you to facilitate Mission, Goals, Objectives, every Program, Team, Technology, Marketing, Partnerships, Fundraising, Budget, Action Planning and execution roles without flattening anybody's thinking.</p>
           <div className="sp-actions">
-            {!approved&&!editingPlan&&<Button secondary onClick={()=>setEditingPlan(true)}>EDIT PLAN</Button>}
-            {!approved&&editingPlan&&<Button secondary disabled={busy==="save-plan"} onClick={savePlan}>{busy==="save-plan"?"SAVING…":"SAVE EDITS"}</Button>}
-            {!approved&&<Button disabled={busy==="approve-plan"} onClick={approvePlan}>{busy==="approve-plan"?"APPROVING…":"APPROVE STRATEGIC PLAN"}</Button>}
-            {approved&&<a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${API}/guided/strategic-planning/final-plan/pdf?session_id=${encodeURIComponent(sid)}`}><Download size={15}/> DOWNLOAD STRATEGIC PLAN</a>}
-            {approved&&p.final_plan?.share_url&&<button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={()=>copy(`${window.location.origin}${p.final_plan.share_url}`)}>COPY STRATEGIC PLAN LINK</button>}
-            {approved&&<Button secondary disabled={busy==="send-final"} onClick={()=>act("send-final",()=>axios.post(`${API}/guided/strategic-planning/send-final-plan`,{session_id:sid}))}>{busy==="send-final"?"SENDING…":"SEND STRATEGIC PLAN TO ALL PARTICIPANTS"}</Button>}
+            <Button disabled={busy==="guide"} onClick={generateGuide}><FileText size={14}/> {busy==="guide"?"PREPARING…":guideReady?"REGENERATE FACILITATION GUIDE":"GENERATE FACILITATION GUIDE"}</Button>
+            {guideReady&&<Button secondary href={`${API}/guided/strategic-planning/facilitation-guide/pdf?session_id=${encodeURIComponent(sid)}`}><Download size={14}/> DOWNLOAD GUIDE</Button>}
           </div>
-          {approved&&<p className="member-success"><CheckCircle2 size={16}/> Strategic Plan approved. You can now confirm the responsibilities agreed during the session.</p>}
+          {guideReady&&<details className="sp-guide"><summary>View Facilitation Guide</summary><pre>{p.meeting_guide_text}</pre></details>}
+        </div>
+      </Step>
+
+      <Step n="6" title="RUN THE STRATEGIC PLANNING SESSION" summary="Share one Board screen, transcribe the discussion with consent and make one strategic decision at a time." status={!guideReady?"Locked":sessionDone?"Complete":"Ready"} locked={!guideReady} videoKey="live-session" open={open==="6"} setOpen={v=>setOpen(v?"6":"")} testId="sp-session">
+        <div className="sp-clean-stage">
+          <h2>Bring Everybody's Ideas Into One Board Conversation</h2>
+          <p>The existing live session keeps the Lead User in control of the clicks while everyone follows the shared screen. It preserves the option to leave the mission unchanged, captures the Board's selected ideas and keeps the meeting transcript as context for what people actually meant and agreed.</p>
+          <Button onClick={()=>navigate(`/strategic-planning/session?session_id=${encodeURIComponent(sid)}`)}>{sessionDone?"VIEW COMPLETED STRATEGIC PLANNING SESSION":"OPEN STRATEGIC PLANNING SESSION"}</Button>
+          {sessionDone&&<p className="member-success"><CheckCircle2 size={15}/> The Board decisions and meeting transcript are saved. Your Strategic Plan generation starts automatically.</p>}
+        </div>
+      </Step>
+
+      <Step n="7" title="REVIEW THE STRATEGIC PLAN, CONFIRM ROLES AND MOVE INTO EXECUTION" summary="Review the generated plan, give the Board a review link, adopt it when ready, then confirm each person's role before creating their Leadership Portfolio." status={!sessionDone?"Locked":approved?"Execution Ready":finalReady?"Review Plan":finalGenerating?"Generating":"Preparing"} locked={!sessionDone} videoKey="plan-execution" open={open==="7"} setOpen={v=>setOpen(v?"7":"")} testId="sp-plan">
+        {!finalReady?<div className="sp-clean-stage">
+          <h2>{finalFailed?"Strategic Plan Generation Needs Another Attempt":"Building Your Strategic Plan"}</h2>
+          <p>{finalFailed?"No Board decisions or responses were lost. Start generation again.":"The plan is being built from the organization's starting information, every original contribution behind the Board's selected ideas and the live meeting discussion. You do not need to start another planning process."}</p>
+          {finalFailed&&<Button disabled={busy==="strategy"} onClick={()=>act("strategy",()=>axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}))}>TRY AGAIN</Button>}
+        </div>:<>
+          <div className="sp-clean-stage">
+            <p className="bfg-eyebrow">YOUR STRATEGIC PLAN</p>
+            <h2>{approved?"Strategic Plan Adopted":"Review The Plan Before Adoption"}</h2>
+            <p>The plan follows the agreed structure: Executive Summary, Mission, Goals, Objectives, each Program, Team Structure, Technology, Marketing, Partnerships, Fundraising, Budget and Action Planning.</p>
+            {!editingPlan?<pre className="sp-plan-preview">{finalDraft}</pre>:<textarea rows={34} value={finalDraft} disabled={approved} onChange={e=>setFinalDraft(e.target.value)}/>}
+            <div className="sp-actions">
+              {!approved&&!editingPlan&&<Button secondary onClick={()=>setEditingPlan(true)}>EDIT STRATEGIC PLAN</Button>}
+              {!approved&&editingPlan&&<Button secondary disabled={busy==="save-plan"} onClick={savePlan}>{busy==="save-plan"?"SAVING…":"SAVE EDITS"}</Button>}
+              {reviewLink&&<Button secondary onClick={()=>copy(reviewLink)}><Copy size={14}/> COPY BOARD REVIEW LINK</Button>}
+              {reviewLink&&!approved&&<Button secondary disabled={busy==="send-review"} onClick={()=>act("send-review",()=>axios.post(`${API}/guided/strategic-planning/send-draft-email`,{session_id:sid}))}>{busy==="send-review"?"SENDING…":"SEND REVIEW LINK TO PARTICIPANTS"}</Button>}
+              {!approved&&<Button disabled={busy==="approve-plan"} onClick={approvePlan}>{busy==="approve-plan"?"ADOPTING…":"APPROVE & ADOPT STRATEGIC PLAN"}</Button>}
+              {approved&&<Button href={`${API}/guided/strategic-planning/final-plan/pdf?session_id=${encodeURIComponent(sid)}`}><Download size={14}/> DOWNLOAD STRATEGIC PLAN</Button>}
+              {approved&&p.final_plan?.share_url&&<Button secondary onClick={()=>copy(`${window.location.origin}${p.final_plan.share_url}`)}><Copy size={14}/> COPY ADOPTED PLAN LINK</Button>}
+            </div>
+          </div>
+
+          <div className={`sp-clean-stage sp-role-confirmation ${approved?"":"sp-locked-inner"}`}>
+            <p className="bfg-eyebrow">BOARD EXECUTION ROLES</p>
+            <h2>Confirm What Each Person Will Carry Forward</h2>
+            <p>Everybody who completed the planning process appears here. Anyone explicitly named in the live discussion can also appear through the meeting extraction. The platform can propose from what people volunteered and what the meeting explicitly agreed, but you confirm the actual role and responsibility before any Portfolio is generated.</p>
+            {!approved?<p className="workspace-note">Adopt the Strategic Plan before generating Leadership Portfolios.</p>:<>
+              <div className="sp-actions"><Button secondary onClick={addDelegate}><Plus size={14}/> ADD SOMEONE ELSE FROM THE SESSION</Button></div>
+              <div className="sp-delegation-list">{delegates.map(person=><article className="sp-delegate-card" key={person.delegation_id}>
+                <p className="workspace-note"><strong>Starting source:</strong> {person.source||"Strategic Planning participant"}</p>
+                <label><strong>Name</strong><input value={person.name||""} onChange={e=>updateDelegate(person.delegation_id,"name",e.target.value)}/></label>
+                <label><strong>Email</strong><input type="email" value={person.email||""} onChange={e=>updateDelegate(person.delegation_id,"email",e.target.value)}/></label>
+                <label><strong>Confirmed Board / leadership role</strong><input value={person.role||""} onChange={e=>updateDelegate(person.delegation_id,"role",e.target.value)} placeholder="Confirm or edit the role this person will carry"/></label>
+                <label><strong>Confirmed responsibilities, one per line</strong><textarea rows={5} value={(person.responsibilities||[]).join("\n")} onChange={e=>updateDelegate(person.delegation_id,"responsibilities",e.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/></label>
+                <label><strong>Strategic areas involved, one per line</strong><textarea rows={3} value={(person.areas||[]).join("\n")} onChange={e=>updateDelegate(person.delegation_id,"areas",e.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/></label>
+                <label><strong>First agreed action</strong><textarea rows={2} value={person.first_action||""} onChange={e=>updateDelegate(person.delegation_id,"first_action",e.target.value)}/></label>
+                <Button secondary onClick={()=>removeDelegate(person.delegation_id)}>REMOVE</Button>
+              </article>)}</div>
+              <div className="sp-actions">
+                <Button disabled={!confirmedDelegates.length||busy==="save-delegates"} onClick={saveDelegates}>{busy==="save-delegates"?"SAVING…":"SAVE CONFIRMED ROLES"}</Button>
+                <Button disabled={!confirmedDelegates.length||busy==="portfolios"} onClick={createPortfolios}>{busy==="portfolios"?"CREATING…":"CREATE LEADERSHIP PORTFOLIOS & ASSISTANTS"}</Button>
+              </div>
+              {delegates.some(x=>x.name?.trim()&&(!x.role?.trim()||!(x.responsibilities||[]).length))&&<p className="workspace-note">People without a confirmed role and at least one confirmed responsibility are not included when Portfolios are created.</p>}
+            </>}
+          </div>
+
+          {approved&&portfolios.length>0&&<div className="sp-clean-stage">
+            <h2>Leadership Portfolios & Executive Assistants</h2>
+            <p>Each Portfolio is grounded in the adopted Strategic Plan and the role you confirmed. The Executive Assistant is constrained to that approved responsibility.</p>
+            {portfolios.map(row=><article className="sp-portfolio-row" key={row.token}>
+              <div><strong>{row.name}</strong><p>{row.role||"Confirmed leadership role"}</p><small>{(row.responsibilities||[]).join(" · ")}</small></div>
+              <div className="sp-actions">
+                <Button secondary href={`/strategic-leadership-portfolio/${row.token}`}>OPEN PORTFOLIO</Button>
+                <Button disabled={!row.email||busy===`send-${row.token}`} onClick={()=>act(`send-${row.token}`,()=>axios.post(`${API}/guided/strategic-planning/leadership-portfolio/send`,{session_id:sid,token:row.token}))}>{busy===`send-${row.token}`?"SENDING…":row.sent_at?"RESEND PORTFOLIO":"SEND PORTFOLIO"}</Button>
+              </div>
+            </article>)}
+          </div>}
         </>}
-      </>,"generate-strategy")}
-
-      {card(9,"Confirm Delegation And Give Everyone Their Execution Tools","Confirm what was actually agreed in the meeting before anything is sent.",approved,<>
-        <p>The platform starts with what each person said they would be willing to lead, support or join on their own Strategic Planning Form. If the live session explicitly agreed a different or additional responsibility, the transcript replaces that proposal with the meeting agreement. Review every person, correct anything that needs correction, remove anything they did not agree to, add an email where necessary, and save. Nothing is sent until you confirm it.</p>
-
-        <div className="sp-actions">
-          {completed.filter(person=>!delegates.some(item=>item.participant_id===person.participant_id)).map(person=><Button secondary key={person.participant_id} onClick={()=>addKnownDelegate(person)}><Plus size={14}/> ADD {person.name.toUpperCase()}</Button>)}
-          <Button secondary onClick={addOtherDelegate}><Plus size={14}/> ADD SOMEONE ELSE FROM THE SESSION</Button>
-        </div>
-
-        {!delegates.length?<div className="sp-empty">No participant stated a role they were willing to play and no explicit delegation was captured from the session. Add anyone who agreed to carry work forward, then confirm the responsibility before creating portfolios.</div>:<div className="sp-delegation-list">{delegates.map(person=><article className="sp-delegate-card" key={person.delegation_id}>
-          {person.source&&<p className="workspace-note"><strong>Starting source:</strong> {person.source}</p>}
-          {person.declared_preferences&&Object.values(person.declared_preferences).some(Boolean)&&<details className="sp-guide"><summary>View what this person said they were willing to do</summary>
-            {person.declared_preferences.committee_or_group&&<p><strong>Committee / working group:</strong> {person.declared_preferences.committee_or_group}</p>}
-            {person.declared_preferences.willing_to_lead&&<p><strong>Willing to lead:</strong> {person.declared_preferences.willing_to_lead}</p>}
-            {person.declared_preferences.willing_to_support&&<p><strong>Willing to support:</strong> {person.declared_preferences.willing_to_support}</p>}
-          </details>}
-          <label><strong>Name</strong><input value={person.name||""} onChange={event=>updateDelegate(person.delegation_id,"name",event.target.value)}/></label>
-          <label><strong>Email</strong><input type="email" value={person.email||""} onChange={event=>updateDelegate(person.delegation_id,"email",event.target.value)}/></label>
-          <label><strong>Board / leadership role</strong><input value={person.role||""} onChange={event=>updateDelegate(person.delegation_id,"role",event.target.value)}/></label>
-          <label><strong>Confirmed responsibility / responsibilities, one per line</strong><textarea rows={6} value={(person.responsibilities||[]).join("\n")} onChange={event=>updateDelegate(person.delegation_id,"responsibilities",event.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/><small>Confirm, rewrite or remove the proposed wording so this reflects what the person is actually willing to carry.</small></label>
-          <label><strong>Strategic areas involved, one per line</strong><textarea rows={4} value={(person.areas||[]).join("\n")} onChange={event=>updateDelegate(person.delegation_id,"areas",event.target.value.split("\n").map(x=>x.trim()).filter(Boolean))}/></label>
-          <label><strong>First agreed action, if one was stated</strong><textarea rows={3} value={person.first_action||""} onChange={event=>updateDelegate(person.delegation_id,"first_action",event.target.value)}/></label>
-          <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={()=>removeDelegate(person.delegation_id)}>REMOVE</button>
-        </article>)}</div>}
-
-        <div className="sp-actions">
-          <Button disabled={!delegates.length||delegates.some(person=>!person.name?.trim()||!(person.responsibilities||[]).length)||busy==="save-delegates"} onClick={saveDelegates}>{busy==="save-delegates"?"SAVING…":"SAVE CONFIRMED DELEGATION"}</Button>
-          <Button disabled={!delegates.length||delegates.some(person=>!person.name?.trim()||!(person.responsibilities||[]).length)||busy==="portfolios"} onClick={createPortfolios}>{busy==="portfolios"?"CREATING…":"CREATE BOARD MEMBER PORTFOLIOS & ASSISTANTS"}</Button>
-        </div>
-
-        {portfolios.length>0&&<div className="sp-contentbox"><h3>Board Member Portfolios & Executive Assistants</h3>{portfolios.map(row=><article className="sp-portfolio-row" key={row.token}><div><strong>{row.name}</strong><p>{(row.responsibilities||[]).join(" · ")}</p><small>{row.email||"Add an email in the delegation list before sending."}</small></div><div className="sp-actions"><a className="bfg-btn bfg-btn-ghost bfg-btn-sm" href={`/strategic-leadership-portfolio/${row.token}`} target="_blank" rel="noreferrer">OPEN EXPERIENCE</a><Button disabled={!row.email||Boolean(row.sent_at)||busy===`send-${row.token}`} onClick={()=>act(`send-${row.token}`,()=>axios.post(`${API}/guided/strategic-planning/leadership-portfolio/send`,{session_id:sid,token:row.token}))}>{row.sent_at?"SENT":"SEND STRATEGY + ROLE"}</Button></div></article>)}</div>}
-      </>)}
-
-      {message&&<p className="bfg-error">{message}</p>}
-
-      <section className="sp-support-card">
-        <h2>Ask For Help</h2>
-        <p>If you get stuck anywhere in the process, send the question from here. Tell us what you are trying to do and where you are stuck.</p>
-        {supportSent?<p className="member-success">{supportSent}</p>:<div className="sp-support-form">
-          <select value={support.support_type} onChange={event=>setSupport({...support,support_type:event.target.value})}>
-            <option value="">Choose what you need help with</option>
-            <option>Strategic Planning process</option>
-            <option>Facilitating the Board session</option>
-            <option>Strategic Plan review</option>
-            <option>Delegation and Board Member portfolios</option>
-            <option>Using the platform</option>
-          </select>
-          <textarea rows={5} value={support.message} onChange={event=>setSupport({...support,message:event.target.value})} placeholder="Tell us what you need help with"/>
-          <Button disabled={!support.support_type||!support.message.trim()||busy==="support"} onClick={()=>act("support",async()=>{const response=await axios.post(`${API}/guided/strategic-planning/support`,{session_id:sid,...support});setSupportSent(response.data.message)})}>SEND SUPPORT REQUEST</Button>
-        </div>}
-      </section>
+      </Step>
     </div>
+
+    {message&&<p className="bfg-error">{message}</p>}
+    <section className="sp-support-card sp-clean-support">
+      <div className="sp-support-title"><LifeBuoy size={26}/><div><p className="bfg-eyebrow">SUPPORT THROUGHOUT THE PROCESS</p><h2>Need Help With Strategic Planning?</h2><p>Tell us where you are stuck and what you are trying to accomplish.</p></div></div>
+      {supportSent?<p className="member-success">{supportSent}</p>:<div className="sp-support-form">
+        <select value={support.support_type} onChange={e=>setSupport({...support,support_type:e.target.value})}>
+          <option value="">Choose what you need help with</option>
+          <option>Organization setup</option><option>Strategic Planning Form</option><option>Board participation</option><option>Facilitation Guide</option><option>Live Strategic Planning Session</option><option>Strategic Plan review</option><option>Roles and Leadership Portfolios</option><option>Using the platform</option>
+        </select>
+        <textarea rows={5} value={support.message} onChange={e=>setSupport({...support,message:e.target.value})} placeholder="Tell us what you need help with"/>
+        <Button disabled={!support.support_type||!support.message.trim()||busy==="support"} onClick={()=>act("support",async()=>{const r=await axios.post(`${API}/guided/strategic-planning/support`,{session_id:sid,...support});setSupportSent(r.data.message)})}>SEND SUPPORT REQUEST</Button>
+      </div>}
+    </section>
   </main></BfgShell>;
 }
