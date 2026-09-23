@@ -1121,7 +1121,8 @@ def create_workspace_router(db) -> APIRouter:
             context = await build_org_context(db, user_id, member)
             context += await bylaws_context(user_id)
             types = ["organization_overview", "board_manual", "board_member_agreement",
-                     "confidentiality_agreement", "conflict_of_interest_agreement"]
+                     "confidentiality_agreement", "conflict_of_interest_agreement",
+                     "onboarding_agenda", "onboarding_script"]
             await db.recruitment_preparation.update_one(
                 {"user_id": user_id},
                 {"$set": {"onboarding_status": "generating", "onboarding_stage": types[0], "updated_at": now_iso()}},
