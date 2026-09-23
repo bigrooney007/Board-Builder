@@ -40,6 +40,13 @@ VIDEO_DEFINITIONS = [
     {"key": "board_recommitment_welcome", "name": "Board Recommitment Onboarding", "flow": "board-recommitment", "stage": "onboarding"},
 ]
 
+RECOMMITMENT_SECTION_VIDEO_DEFINITIONS = [
+    {"key": "questions", "name": "Answer The Four Recommitment Questions"},
+    {"key": "forms", "name": "Prepare And Send The Recommitment Forms"},
+    {"key": "responses", "name": "Understand Responses And Prepare The Conversation"},
+    {"key": "decisions", "name": "Confirm Final Outcomes And Board Member Portfolios"},
+]
+
 RECRUITMENT_SECTION_VIDEO_DEFINITIONS = [
     {"key": "questions", "name": "Answer The Six Recruitment Questions"},
     {"key": "identify", "name": "Identify The Board Members You Need"},
@@ -167,6 +174,41 @@ def create_clean_platform_router(db) -> APIRouter:
     async def admin_videos(request: Request):
         await authenticate_admin(request, db)
         return await public_videos()
+
+    @router.get("/platform/recommitment-section-videos")
+    async def recommitment_section_videos():
+        doc = await db.marketing_settings.find_one({"key": "recommitment_section_videos"}, {"_id": 0}) or {}
+        stored = doc.get("videos") or {}
+        rows = []
+        for item in RECOMMITMENT_SECTION_VIDEO_DEFINITIONS:
+            raw = stored.get(item["key"], "")
+            try:
+                video_id = youtube_id(raw)
+            except ValueError:
+                video_id = ""
+            rows.append({**item, "url": raw, "youtube_id": video_id})
+        return {"videos": rows}
+
+    @router.get("/admin/platform/recommitment-section-videos")
+    async def admin_recommitment_section_videos(request: Request):
+        await authenticate_admin(request, db)
+        return await recommitment_section_videos()
+
+    @router.put("/admin/platform/recommitment-section-videos/{key}")
+    async def update_recommitment_section_video(key: str, payload: VideoUpdate, request: Request):
+        await authenticate_admin(request, db)
+        if key not in {item["key"] for item in RECOMMITMENT_SECTION_VIDEO_DEFINITIONS}:
+            raise HTTPException(status_code=404, detail="Unknown Recommitment section video")
+        raw = payload.url.strip()
+        if raw:
+            youtube_id(raw)
+        await db.marketing_settings.update_one(
+            {"key": "recommitment_section_videos"},
+            {"$set": {f"videos.{key}": raw, "updated_at": datetime.now(timezone.utc).isoformat()},
+             "$setOnInsert": {"key": "recommitment_section_videos"}},
+            upsert=True,
+        )
+        return {"status": "saved", "key": key, "url": raw}
 
     @router.get("/platform/recruitment-section-videos")
     async def recruitment_section_videos():
