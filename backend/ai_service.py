@@ -322,6 +322,11 @@ Follow this sequence:
 Never invent: bylaws; committees; officer roles; voting rules; meeting schedules; donation requirements; fundraising targets; programs; impact statistics; responsibilities.
 Board Members are not unpaid staff. Do not expose personal contact information, private support needs or exact capacity aloud to the group.
 Never mention AI."""},
+    "board_role_recommendation": {"module": 6, "title": "Recommended Board Role", "per_application": True, "schema": {
+        "recommended_role": "string",
+        "why_this_role_fits": "string",
+        "recommended_contribution_areas": ["string"],
+    }, "note": """Recommend a practical Board role or contribution focus for this individual using only verified information from the organization's approved Board needs, the candidate's application, CV/resume where available, interview-stage information and the organization's mission. This is a founder decision-support recommendation, not an automatic appointment. Keep the role concise. Do not invent credentials, commitments or authority. The founder must be able to edit and approve the role before a Board Member Portfolio is generated."""},
     "interview_guide": {"module": 4, "title": "Interview Guide", "per_application": True, "schema": {
         "candidate_name": "string — actual candidate name",
         "candidate_context": "string — 1 to 3 concise sentences summarizing only the verified application/CV/background information most useful before the interview. If information is limited, say only what is known.",
