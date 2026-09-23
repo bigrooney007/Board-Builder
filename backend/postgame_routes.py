@@ -107,7 +107,6 @@ def create_postgame_router(db) -> APIRouter:
             + paragraphs_html(fill(content["strategy_ready"], mapping))
             + paragraphs_html(fill(content["execution_next"], mapping))
             + game_button(f"{origin.rstrip('/')}/game/final/{record['token']}", "View Final Fundraising Strategy")
-            + game_button(f"{origin.rstrip('/')}/relationship-mapping/{record['token']}", "Complete Relationship Mapping")
             + "<p style='margin:22px 0 4px;'></p>" + signature_html(profile, member)
         )
         resend.api_key = os.environ["RESEND_API_KEY"]
