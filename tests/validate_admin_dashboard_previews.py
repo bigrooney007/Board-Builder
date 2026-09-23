@@ -76,6 +76,6 @@ require(preview, "db.game_relationships", "Board relationship mapping")
 
 # Admin must still expose all four real dashboards.
 for product in ("recruitment", "board-fundraising-game", "strategic-planning", "board-recommitment"):
-    require(admin, f'id: "{product}"', f"Admin preview card for {product}")
+    require(admin, f'key: "{product}"', f"Admin preview card for {product}")
 
 print("Admin dashboard preview fixtures contract: PASS")
