@@ -218,7 +218,7 @@ def create_payment_router(db) -> APIRouter:
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found")
         if lead["offer_source"] == "recruitment":
-            # The four-question recruitment journey is the live $497 sales flow.
+            # The clean Recruitment funnel is the live $497 sales flow.
             paid_live = payload.tier == "497" or os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true"
         else:
             paid_live = os.environ["PAID_PROGRAMS_LIVE"].lower() == "true"
