@@ -802,10 +802,20 @@ def create_workspace_router(db) -> APIRouter:
             sections = [{"title": "Board Member Manual", "content": str(current.get("display_text") or "").strip()}]
         index = min(max(int(live.get("current_section_index") or 0), 0), max(0, len(sections) - 1))
         token = live.get("share_token", "")
-        return {
+        opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}
+        organization_name = (profile.get("data") or {}).get("organization_name") or opportunity.get("organization_name", "")
+        session = {
             "share_token": token,
             "viewer_url": f"{origin}/onboarding-session/{token}" if token else "",
             "status": live.get("status", "NOT STARTED"),
+            "current_section_index": index,
+        }
+        return {
+            "organization_name": organization_name,
+            "session": session,
+            "share_token": token,
+            "viewer_url": session["viewer_url"],
+            "status": session["status"],
             "current_section_index": index,
             "total_sections": len(sections),
             "sections": sections,
@@ -817,6 +827,25 @@ def create_workspace_router(db) -> APIRouter:
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         return await onboarding_live_payload(member["user_id"], origin)
 
+    @router.post("/onboarding-live/share")
+    async def share_onboarding_live(request: Request):
+        member = await current_member(request)
+        profile = await get_profile(db, member["user_id"])
+        live = profile.get("onboarding_live") or {}
+        token = live.get("share_token") or secrets.token_urlsafe(24)
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "onboarding_live.share_token": token,
+                "onboarding_live.status": live.get("status") or "NOT STARTED",
+                "onboarding_live.current_section_index": int(live.get("current_section_index") or 0),
+                "onboarding_live.updated_at": now_iso(),
+            }},
+            upsert=True,
+        )
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+        return await onboarding_live_payload(member["user_id"], origin)
+
     @router.post("/onboarding-live/start")
     async def start_onboarding_live(request: Request):
         member = await current_member(request)
@@ -824,8 +853,8 @@ def create_workspace_router(db) -> APIRouter:
         if not manual or manual["material"].get("status") != "Approved":
             raise HTTPException(status_code=409, detail="Approve the Board Manual before starting the live onboarding session.")
         profile = await get_profile(db, member["user_id"])
-        session = profile.get("onboarding_session") or {}
-        if not session.get("date") or not session.get("time") or not session.get("timezone"):
+        session_details = profile.get("onboarding_session") or {}
+        if not session_details.get("date") or not session_details.get("time") or not session_details.get("timezone"):
             raise HTTPException(status_code=409, detail="Save the onboarding date, time and timezone before starting the live session.")
         live = profile.get("onboarding_live") or {}
         token = live.get("share_token") or secrets.token_urlsafe(24)
@@ -834,8 +863,8 @@ def create_workspace_router(db) -> APIRouter:
             {"user_id": member["user_id"]},
             {"$set": {
                 "onboarding_live.share_token": token,
-                "onboarding_live.status": "LIVE",
-                "onboarding_live.current_section_index": 0,
+                "onboarding_live.status": "IN PROGRESS",
+                "onboarding_live.current_section_index": int(live.get("current_section_index") or 0),
                 "onboarding_live.started_at": live.get("started_at") or now,
                 "onboarding_live.updated_at": now,
             }},
@@ -844,23 +873,34 @@ def create_workspace_router(db) -> APIRouter:
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         return await onboarding_live_payload(member["user_id"], origin)
 
+    @router.post("/onboarding-live/progress")
     @router.put("/onboarding-live/section")
     async def set_onboarding_live_section(payload: OnboardingLiveSectionUpdate, request: Request):
         member = await current_member(request)
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         current = await onboarding_live_payload(member["user_id"], origin)
         if not current.get("share_token"):
-            raise HTTPException(status_code=409, detail="Start the live onboarding session first.")
+            raise HTTPException(status_code=409, detail="Create the shared onboarding screen first.")
         if current["total_sections"] and payload.current_section_index >= current["total_sections"]:
             raise HTTPException(status_code=422, detail="That onboarding section does not exist.")
         await db.recruitment_profiles.update_one(
             {"user_id": member["user_id"]},
             {"$set": {
                 "onboarding_live.current_section_index": payload.current_section_index,
-                "onboarding_live.status": "LIVE",
+                "onboarding_live.status": "IN PROGRESS",
                 "onboarding_live.updated_at": now_iso(),
             }},
         )
+        return await onboarding_live_payload(member["user_id"], origin)
+
+    @router.post("/onboarding-live/complete")
+    async def complete_onboarding_live(request: Request):
+        member = await current_member(request)
+        await db.recruitment_profiles.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"onboarding_live.status": "COMPLETED", "onboarding_live.completed_at": now_iso(), "onboarding_live.updated_at": now_iso()}},
+        )
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         return await onboarding_live_payload(member["user_id"], origin)
 
     @router.get("/board-profile-form")
