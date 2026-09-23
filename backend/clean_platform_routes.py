@@ -40,6 +40,20 @@ VIDEO_DEFINITIONS = [
     {"key": "board_recommitment_welcome", "name": "Board Recommitment Onboarding", "flow": "board-recommitment", "stage": "onboarding"},
 ]
 
+RECRUITMENT_SECTION_VIDEO_DEFINITIONS = [
+    {"key": "questions", "name": "Answer The Six Recruitment Questions"},
+    {"key": "identify", "name": "Identify The Board Members You Need"},
+    {"key": "materials", "name": "Build The Application And Campaign Materials"},
+    {"key": "launch", "name": "Launch Your Recruitment Campaign"},
+    {"key": "applicants", "name": "Review Applicants"},
+    {"key": "interviews", "name": "Run Board Candidate Interviews"},
+    {"key": "references", "name": "Complete Reference Checks"},
+    {"key": "background", "name": "Complete Background Checks"},
+    {"key": "onboarding-prep", "name": "Prepare Onboarding And Appointment Emails"},
+    {"key": "onboarding-session", "name": "Facilitate The Onboarding Session"},
+    {"key": "portfolios", "name": "Create Board Member Portfolios"},
+]
+
 HOME_PAGE_KEYS = {
     "main",
     "recruitment",
@@ -153,6 +167,41 @@ def create_clean_platform_router(db) -> APIRouter:
     async def admin_videos(request: Request):
         await authenticate_admin(request, db)
         return await public_videos()
+
+    @router.get("/platform/recruitment-section-videos")
+    async def recruitment_section_videos():
+        doc = await db.marketing_settings.find_one({"key": "recruitment_section_videos"}, {"_id": 0}) or {}
+        stored = doc.get("videos") or {}
+        rows = []
+        for item in RECRUITMENT_SECTION_VIDEO_DEFINITIONS:
+            raw = stored.get(item["key"], "")
+            try:
+                video_id = youtube_id(raw)
+            except ValueError:
+                video_id = ""
+            rows.append({**item, "url": raw, "youtube_id": video_id})
+        return {"videos": rows}
+
+    @router.get("/admin/platform/recruitment-section-videos")
+    async def admin_recruitment_section_videos(request: Request):
+        await authenticate_admin(request, db)
+        return await recruitment_section_videos()
+
+    @router.put("/admin/platform/recruitment-section-videos/{key}")
+    async def update_recruitment_section_video(key: str, payload: VideoUpdate, request: Request):
+        await authenticate_admin(request, db)
+        if key not in {item["key"] for item in RECRUITMENT_SECTION_VIDEO_DEFINITIONS}:
+            raise HTTPException(status_code=404, detail="Unknown Recruitment section video")
+        raw = payload.url.strip()
+        if raw:
+            youtube_id(raw)
+        await db.marketing_settings.update_one(
+            {"key": "recruitment_section_videos"},
+            {"$set": {f"videos.{key}": raw, "updated_at": datetime.now(timezone.utc).isoformat()},
+             "$setOnInsert": {"key": "recruitment_section_videos"}},
+            upsert=True,
+        )
+        return {"status": "saved", "key": key, "url": raw}
 
     @router.put("/admin/platform/videos/{key}")
     async def update_video(key: str, payload: VideoUpdate, request: Request):
