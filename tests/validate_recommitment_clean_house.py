@@ -67,7 +67,7 @@ require(backend, '@router.put("/reactivation/recommitment-email-draft")', "edita
 require(backend, '@router.post("/reactivation/recommitment-email-draft/approve")', "outreach email approval")
 
 require(understand, "DOWNLOAD RESPONSE", "response download")
-require(understand, "ANALYZE RESPONSE", "response interpretation")
+require(understand, "INTERPRET RESPONSE", "response interpretation")
 require(understand, "GENERATE INDIVIDUAL CALL SCRIPT", "individual conversation script")
 forbid(understand, "/app/reactivation/self-guided/module/", "legacy module links")
 
@@ -81,6 +81,7 @@ require(final_stage, "Transitioning to an Advisory Role", "advisory final outcom
 require(final_stage, "Stepping Down From the Board", "step-down final outcome")
 forbid(final_stage, "Transitioning to Another Support Role", "support-role final pathway")
 require(final_stage, "confirmed-role", "founder-confirmed role save")
+require(backend, "Record what you and this Board Member actually agreed before generating their Portfolio", "Portfolio conversation-agreement gate")
 require(backend, "Confirm or edit this person's final Board role before generating their Portfolio", "Portfolio role gate")
 
 require(portfolio_workflow, "COPY EMAIL", "copy Portfolio email")
