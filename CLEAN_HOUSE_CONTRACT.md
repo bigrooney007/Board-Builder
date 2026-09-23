@@ -174,7 +174,7 @@ Board Recruitment is now the first dashboard rebuilt on top of that base. Its ca
 
 The six Recruitment Questions are the authoritative strategic input for the Recruitment dashboard. Campaign assets are generated only from founder-approved Board Member profiles. Candidate progression is action-driven so the next stage unlocks from meaningful founder actions rather than manual card-moving.
 
-Strategic Planning remains a separate rebuild phase. Board Recommitment and the Board Fundraising Game now have their own locked clean-house contracts below and must remain isolated from Recruitment and from each other.
+Strategic Planning, Board Recommitment and the Board Fundraising Game now each have their own locked clean-house contracts below and must remain isolated from Recruitment and from each other.
 
 
 ## 10. Board Fundraising Game Dashboard Contract
@@ -403,3 +403,218 @@ Every section has its own admin-managed YouTube help-video slot.
 A persistent branded support area remains at the bottom of the dashboard.
 
 Do not add the old Founder Board Audit, old separate invitation module, old separate progress module, support-role pathway or unsure pathway back into the canonical clean dashboard.
+
+
+## 12. Strategic Planning Dashboard Contract
+
+Strategic Planning is one seven-stage Board planning journey. The canonical customer dashboard must not restore the prior nine-step orchestration, Community Need Research as a required stage, a separate Generate Form stage, or the old second presentation/delegation meeting process.
+
+### Stage 1: Tell Us About Your Organization
+
+The founder completes one clean, one-area-at-a-time setup experience.
+
+The organization name is already known and is not asked again.
+
+The opening screen allows the organization logo to be uploaded. The logo follows the customer into the Strategic Planning Form and generated Strategic Plan.
+
+The organization setup captures:
+- Mission
+- Goals
+- Objectives
+- Programs
+- Team Structure
+- Technology
+- Marketing
+- Partnerships
+- Fundraising
+- Budget
+- Action Planning
+
+Programs are entered individually. Every program has:
+- Program name
+- Description
+- What the organization is presently doing through that program
+
+Each program becomes its own strategic planning section later.
+
+Action Planning asks what the organization is presently doing and what it is looking towards doing next.
+
+Operations is not a standalone canonical strategy section. Relevant operational reality belongs within Team Structure, Technology and Action Planning unless the Board itself makes a specific operational decision.
+
+The organization information is starting context, not an automatically adopted Strategic Plan.
+
+### Stage 2: Set The Next Strategic Planning Meeting
+
+The founder saves:
+- meeting date
+- meeting time
+- timezone
+
+The meeting information is attached to direct Board Member invitations and displayed on the Strategic Planning Form.
+
+The Strategic Planning Form must not be prepared for the live process until the organization setup and meeting are ready.
+
+### Stage 3: Complete The Founder Strategic Planning Form
+
+The application prepares one Strategic Planning Form from the organization's setup information.
+
+The Founder / Lead User completes the same Strategic Planning Form that Board Members complete.
+
+The founder's ideas remain attributable to the founder during the live Strategic Planning Session rather than becoming the assumed organization answer.
+
+Mission must preserve the explicit option to leave the present Mission Statement unchanged.
+
+### Stage 4: Invite The Board And Collect Their Ideas
+
+The founder adds each Board Member using name and email.
+
+Each Board Member receives a secure person-specific Strategic Planning Form link. The direct invitation includes the scheduled Strategic Planning Session date and time.
+
+The founder can also copy the general Strategic Planning Form link.
+
+Every Board Member who has been added appears in the same participation section.
+
+For every completed response the founder can:
+- view the complete original response
+- download the response
+
+For incomplete responses the founder can resend the Strategic Planning Form.
+
+Participant responses must preserve each person's original thinking and attribution.
+
+### Stage 5: Prepare For The Strategic Planning Session
+
+After the founder and at least one Board Member have completed the Strategic Planning Form, the founder can generate the Strategic Planning Session Facilitation Guide.
+
+The Facilitation Guide is viewable and downloadable.
+
+It must use:
+- organization starting information
+- founder response
+- Board Member responses
+- individual program sections
+- areas of agreement and disagreement that need discussion
+- the present mission and the option to preserve it
+
+The guide prepares the human facilitator. It does not replace the human Board conversation.
+
+### Stage 6: Run The Strategic Planning Session
+
+Preserve the live Strategic Planning Session engine.
+
+Before the session starts:
+1. Create a no-login shared Board screen.
+2. Share that link with the Board.
+3. Explain transcription and obtain consent.
+4. Start microphone transcription or use the transcript fallback.
+5. Start the live Strategic Planning Session.
+
+The Lead User controls the decisions. Board Members follow the shared screen.
+
+The live session moves through:
+- Mission
+- Goals
+- Objectives
+- every Program individually
+- Team / Capacity
+- Technology
+- Marketing
+- Partnerships
+- Fundraising
+- Budget
+- Action Planning
+- Roles We Will Play
+
+The Mission screen must preserve the explicit choice to leave the Mission Statement the way it is.
+
+For every section, participant ideas are shown with attribution. The Board discusses them and the Lead User selects the ideas the Board agrees should shape the Strategic Plan.
+
+Explicit selection is authoritative. The transcript provides meaning, clarification and explicitly agreed execution responsibility. The transcript must never silently override the Board's selected decisions.
+
+When the final live-session screen is completed, Final Strategic Plan generation starts immediately. Returning to the dashboard must not require the founder to press a separate generation button.
+
+### Stage 7: Review The Strategic Plan, Confirm Roles And Move Into Execution
+
+The generated Strategic Plan must use this canonical order:
+1. Executive Summary
+2. Mission
+3. Goals
+4. Objectives
+5. Programs
+6. Team Building / Team Structure
+7. Technology
+8. Marketing
+9. Partnerships
+10. Fundraising
+11. Budget
+12. Action Planning
+
+Every program must be its own named subsection with its own description and Board-agreed direction.
+
+The generated plan is built from:
+- organization starting information
+- full original participant contributions behind the selected ideas
+- explicit Board selections
+- the live meeting transcript for context and clarification
+
+The final document must read as the organization's Strategic Plan, not as a transcript or list of who said what.
+
+Before adoption, the founder can:
+- view the plan
+- edit the plan
+- copy the Board review link
+- send the Board review link to participants
+
+The Board may review the plan after the meeting if it chooses. The platform must not force immediate adoption.
+
+The Founder / Lead User retains the explicit final **Approve & Adopt Strategic Plan** action.
+
+### Roles, Leadership Portfolios And Execution
+
+After the Strategic Plan is adopted, everyone who completed the Strategic Planning Form appears in the role-confirmation area.
+
+Anyone explicitly given responsibility in the live transcript may also appear even if they did not complete the form.
+
+The platform may propose responsibilities from:
+- the person's own stated willingness
+- explicit live-session agreements
+
+The platform must never infer responsibility merely because a person:
+- suggested an idea
+- spoke about an area
+- has expertise in an area
+- attended the meeting
+
+The Founder / Lead User must confirm or edit:
+- Board / leadership role
+- at least one responsibility
+- strategic areas where useful
+- first agreed action where available
+
+Only people with a founder-confirmed role and responsibility are included when Leadership Portfolios are created.
+
+Each Leadership Portfolio is grounded in the adopted Strategic Plan and confirmed responsibility.
+
+The founder can send the Portfolio from the platform.
+
+The existing Strategic Leadership Executive Assistant remains connected to the Portfolio and is constrained to:
+- the adopted Strategic Plan
+- the person's confirmed Leadership Portfolio
+- Board-agreed strategic areas
+- confirmed meeting decisions
+
+### Dashboard UX
+
+The customer-facing Strategic Planning dashboard contains only seven primary collapsible sections corresponding to the seven stages above.
+
+Every section has its own admin-managed YouTube help-video slot.
+
+Persistent branded support remains at the bottom of the dashboard.
+
+The following must not return to the canonical customer dashboard:
+- Community Need Research as a required stage
+- separate Generate Strategic Planning Form stage
+- separate Review Everyone's Responses stage
+- separate second Strategic Plan presentation/delegation meeting
+- standalone Operations strategy section
+- any automatic delegation based only on idea contribution or expertise
