@@ -225,6 +225,7 @@ export default function GameDashboardPage() {
   const goalAmount = Number(data.goal?.amount || 0);
   const founderGameComplete = Boolean(data.situation_completed && data.individual_game_completed);
   const meetingReady = Boolean(data.game_night_ready);
+  const boardReady = meetingReady && Number(data.board_participant_count || 0) > 0;
 
   const openIndividualGame = async () => {
     setOpeningGame(true);
@@ -306,10 +307,12 @@ export default function GameDashboardPage() {
           number={4}
           title="RUN THE GROUP BOARD FUNDRAISING GAME"
           summary="Discuss every idea together, choose what the Board agrees to, settle the execution system and capture the meeting discussion and delegation."
-          status={meeting?.group_completed ? "Complete" : "Group Decision"}
+          status={meeting?.group_completed ? "Complete" : boardReady ? "Group Decision" : "Locked"}
           testId="bfg-dashboard-section-group"
         >
-          <GroupGameStage />
+          {boardReady
+            ? <GroupGameStage />
+            : <p className="bfg-note">Save the Board meeting and add at least one Board participant before preparing the Group Game.</p>}
         </DashboardSection>
 
         <DashboardSection
