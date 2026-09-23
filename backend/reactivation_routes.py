@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 import resend
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -74,6 +75,11 @@ class RecommitmentEmailDraftPayload(BaseModel):
     variant: str = "full"
     subject: str = Field(min_length=1, max_length=300)
     body: str = Field(min_length=1, max_length=12000)
+
+
+class RecommitmentAssistantPayload(BaseModel):
+    message: str = Field(default="", max_length=6000)
+    material_type: str = Field(default="", max_length=240)
 
 
 class RecommitmentSubmission(BaseModel):
@@ -1050,7 +1056,7 @@ def create_reactivation_router(db) -> APIRouter:
         material = await shared_portfolio(token)
         issuer = await portfolio_issuer(material)
         return {"title": material["title"], "member_name": await portfolio_member_name(material),
-                "display_text": current_display(material), **issuer}
+                "display_text": current_display(material), "assistant_url": f"/portfolio-assistant/{token}", **issuer}
 
     @router.get("/portfolio/{token}/pdf")
     async def public_portfolio_pdf(token: str):
@@ -1058,6 +1064,98 @@ def create_reactivation_router(db) -> APIRouter:
         issuer = await portfolio_issuer(material)
         member_name = await portfolio_member_name(material)
         return build_portfolio_pdf(material["title"], member_name, issuer, current_display(material))
+
+    # ---------------- RECOMMITMENT EXECUTION ASSISTANT ----------------
+
+    async def recommitment_assistant_context(material: dict) -> dict:
+        record = await db.reactivation_board_members.find_one(
+            {"member_record_id": material["application_id"]}, {"_id": 0}) or {}
+        context = await founder_context(material["user_id"])
+        return {
+            "organization": context.get("organization", ""),
+            "mission": context.get("mission", ""),
+            "why_recommitment_matters": context.get("why_recommit", ""),
+            "what_the_board_needs_to_help_accomplish": context.get("board_help_accomplish", ""),
+            "need_by": context.get("need_by", ""),
+            "board_member": record.get("name", ""),
+            "confirmed_role": record.get("confirmed_role", ""),
+            "final_outcome": record.get("conversation_outcome", ""),
+            "authoritative_conversation_agreement": record.get("conversation_conclusion", ""),
+            "approved_portfolio": current_display(material),
+        }
+
+    @router.get("/portfolio-assistant/{token}")
+    async def recommitment_portfolio_assistant(token: str):
+        material = await shared_portfolio(token)
+        history = await db.reactivation_assistant_messages.find(
+            {"material_id": material["material_id"]}, {"_id": 0, "role": 1, "text": 1}
+        ).sort("created_at", 1).to_list(120)
+        context = await recommitment_assistant_context(material)
+        suggestions = [
+            "Help me plan my first 30 days in this role",
+            "Turn my Portfolio into a practical checklist",
+            "Help me prepare for my next Board meeting",
+            "What should I work on first?",
+            "Draft a message or email I need for this responsibility",
+            "Help me break one of my responsibilities into next actions",
+        ]
+        return {
+            "member_name": context.get("board_member", ""),
+            "organization_name": context.get("organization", ""),
+            "confirmed_role": context.get("confirmed_role", ""),
+            "suggested_actions": suggestions,
+            "messages": history,
+        }
+
+    @router.post("/portfolio-assistant/{token}")
+    async def use_recommitment_portfolio_assistant(token: str, payload: RecommitmentAssistantPayload):
+        material = await shared_portfolio(token)
+        context = await recommitment_assistant_context(material)
+        request_text = (
+            f"Create or help me execute this item: {payload.material_type}.\n\nAdditional request: {payload.message}"
+            if payload.material_type else payload.message
+        ).strip()
+        if not request_text:
+            raise HTTPException(status_code=422, detail="Tell the assistant what you need help with")
+        recent = await db.reactivation_assistant_messages.find(
+            {"material_id": material["material_id"]}, {"_id": 0, "role": 1, "text": 1}
+        ).sort("created_at", -1).limit(12).to_list(12)
+        recent.reverse()
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
+        if not api_key:
+            raise HTTPException(status_code=503, detail="Executive Assistant is not configured yet")
+        provider = os.environ.get("EXECUTIVE_ASSISTANT_PROVIDER", "anthropic")
+        model = os.environ.get("EXECUTIVE_ASSISTANT_MODEL", "claude-haiku-4-5-20251001")
+        system = (
+            "You are one Board Member's secure execution assistant. Help this person execute only the responsibilities "
+            "contained in the approved Board Member Portfolio and the founder's authoritative conversation agreement. "
+            "Do not invent organization facts, authority, commitments, relationships, deadlines or responsibilities. "
+            "If a requested action falls outside the approved role, say that the founder or Board leadership should confirm it first. "
+            "Turn responsibilities into practical next actions, checklists, drafts, preparation notes and ready-to-use materials. "
+            "Use clear placeholders when a missing fact is required. Do not mention AI."
+        )
+        prompt = (
+            "AUTHORITATIVE RECOMMITMENT CONTEXT:\n" + json.dumps(context, indent=1, default=str)
+            + "\n\nRECENT CONVERSATION:\n" + json.dumps(recent, indent=1, default=str)
+            + "\n\nBOARD MEMBER REQUEST:\n" + request_text
+        )
+        try:
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=f"recommitment-assistant-{material['material_id']}-{uuid.uuid4()}",
+                system_message=system,
+            ).with_model(provider, model)
+            response = await chat.send_message(UserMessage(text=prompt))
+            answer = response if isinstance(response, str) else getattr(response, "text", str(response))
+        except Exception as exc:
+            logger.exception("Recommitment assistant failed for %s", material["material_id"])
+            raise HTTPException(status_code=502, detail="The Executive Assistant could not respond right now. Please try again.") from exc
+        now = datetime.now(timezone.utc).isoformat()
+        await db.reactivation_assistant_messages.insert_many([
+            {"message_id": str(uuid.uuid4()), "material_id": material["material_id"], "role": "user", "text": request_text, "created_at": now},
+            {"message_id": str(uuid.uuid4()), "material_id": material["material_id"], "role": "assistant", "text": answer, "created_at": datetime.now(timezone.utc).isoformat()},
+        ])
+        return {"answer": answer}
 
     # ---------------- PUBLIC SECURE FORM ----------------
 
