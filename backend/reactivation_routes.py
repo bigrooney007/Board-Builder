@@ -899,6 +899,8 @@ def create_reactivation_router(db) -> APIRouter:
     def eligible_for_portfolio(record: dict) -> str:
         outcome = record.get("conversation_outcome", "")
         if outcome in {OUTCOME_ACTIVE, OUTCOME_ADVISORY}:
+            if not str(record.get("conversation_conclusion") or "").strip():
+                raise HTTPException(status_code=409, detail="Record what you and this Board Member actually agreed before generating their Portfolio.")
             if not str(record.get("confirmed_role") or "").strip():
                 raise HTTPException(status_code=409, detail="Confirm or edit this person's final Board role before generating their Portfolio.")
             return outcome
