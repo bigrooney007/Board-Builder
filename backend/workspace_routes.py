@@ -542,6 +542,17 @@ def create_workspace_router(db) -> APIRouter:
                 raise HTTPException(status_code=502, detail=f"Generation failed: {str(exc)[:300]}. Your information is preserved — you can try again.") from exc
         structured = replace_link(structured, apply_url)
         material = await save_generation(db, user_id, payload.type, structured, context[:1500], application_id)
+        if application_id and payload.type == "interview_invitation":
+            await db.opportunity_applications.update_one(
+                {"application_id": application_id, "owner_user_id": user_id},
+                {"$set": {"status": "Interview Invited", "interview_invitation_generated_at": now_iso(), "updated_at": now_iso()}},
+            )
+        if application_id and payload.type == "interview_guide":
+            await db.opportunity_applications.update_one(
+                {"application_id": application_id, "owner_user_id": user_id},
+                {"$set": {"interview_guide.status": "Ready", "interview_guide.material_id": material["material_id"],
+                          "interview_guide.generated_at": now_iso(), "updated_at": now_iso()}},
+            )
         return material
 
     ONBOARDING_CONCLUSION_FIELDS = ["board_role", "agreed_primary_contribution_area", "agreed_responsibility", "agreed_leadership",
@@ -1009,11 +1020,28 @@ def create_workspace_router(db) -> APIRouter:
         profile_rows = await db.board_profile_responses.find({"user_id": member["user_id"]}, {"_id": 0, "application_id": 1, "data.email": 1}).to_list(500)
         profile_application_ids = {row.get("application_id") for row in profile_rows if row.get("application_id")}
         profile_emails = {str((row.get("data") or {}).get("email") or "").strip().lower() for row in profile_rows if str((row.get("data") or {}).get("email") or "").strip()}
+        application_ids = [application.get("application_id") for application in applications if application.get("application_id")]
+        material_rows = await db.generated_materials.find(
+            {"user_id": member["user_id"], "application_id": {"$in": application_ids}},
+            {"_id": 0, "application_id": 1, "type": 1, "status": 1},
+        ).to_list(2000)
+        material_map = {}
+        for row in material_rows:
+            material_map.setdefault(row.get("application_id"), set()).add(row.get("type"))
         for application in applications:
             application["board_profile_completed"] = (
                 application.get("application_id") in profile_application_ids
                 or str(application.get("applicant_email") or "").strip().lower() in profile_emails
             )
+            generated = material_map.get(application.get("application_id"), set())
+            application["journey"] = {
+                "interview_invitation_generated": "interview_invitation" in generated,
+                "rejection_generated": "before_interview_rejection" in generated,
+                "interview_guide_generated": "interview_guide" in generated,
+                "conditional_offer_generated": "conditional_offer" in generated,
+                "unconditional_offer_generated": "unconditional_offer" in generated,
+                "portfolio_generated": "board_member_portfolio" in generated,
+            }
         return {"applications": applications, "statuses": APPLICATION_STATUSES}
 
     @router.get("/applications/{application_id}")
