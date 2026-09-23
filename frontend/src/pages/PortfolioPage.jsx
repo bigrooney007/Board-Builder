@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { Download } from "lucide-react";
+import { Bot, Download } from "lucide-react";
 import { usePageMeta } from "@/seo";
 import { portfolioPageText } from "../content/appContent";
 
@@ -30,8 +30,9 @@ export default function PortfolioPage() {
   const bodyLines = data.display_text.split("\n");
   return (
     <main style={{ background: "#f2f2f2", minHeight: "100vh", padding: "34px 12px", fontFamily: "Georgia, 'Times New Roman', serif", color: "#000" }} data-testid="portfolio-page">
-      <div style={{ maxWidth: 780, margin: "0 auto 18px", textAlign: "right" }}>
+      <div style={{ maxWidth: 780, margin: "0 auto 18px", display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
         <a href={`${API}/portfolio/${token}/pdf`} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#000", color: "#fff", padding: "11px 18px", textDecoration: "none", fontWeight: 700 }} data-testid="portfolio-download-pdf"><Download size={15} /> DOWNLOAD PDF</a>
+        {data.assistant_url&&<a href={data.assistant_url} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#312e81", color: "#fff", padding: "11px 18px", textDecoration: "none", fontWeight: 700 }} data-testid="portfolio-open-assistant"><Bot size={15}/> OPEN MY EXECUTIVE ASSISTANT</a>}
       </div>
       <section style={{ maxWidth: 780, margin: "0 auto 26px", background: "#fff", border: "1.5px solid #000", outline: "1px solid #000", outlineOffset: -10, padding: "120px 56px", textAlign: "center", minHeight: 640 }} data-testid="portfolio-cover">
         <h1 style={{ fontSize: "2rem", letterSpacing: 2, margin: 0 }} data-testid="portfolio-title">{data.title.toUpperCase()}</h1>
@@ -55,6 +56,11 @@ export default function PortfolioPage() {
           return <p key={index} style={{ margin: "0 0 10px", lineHeight: 1.65 }}>{stripped}</p>;
         })}
       </section>
+      {data.assistant_url&&<section style={{ maxWidth: 780, margin: "22px auto 0", background: "#111827", color: "#fff", padding: "28px", textAlign: "center" }}>
+        <h2 style={{ marginTop: 0 }}>Ready To Start Executing?</h2>
+        <p>Your Executive Assistant works from this approved Portfolio and can help turn your responsibilities into practical next actions, checklists and working materials.</p>
+        <a href={data.assistant_url} style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 10, background: "#fff", color: "#111827", padding: "12px 18px", textDecoration: "none", fontWeight: 800 }}><Bot size={16}/> OPEN MY EXECUTIVE ASSISTANT</a>
+      </section>}
     </main>
   );
 }
