@@ -4,12 +4,13 @@ export const CompleteGameNightSection = ({ overview }) => {
   const navigate = useNavigate();
   if (!overview?.adopted) return null;
   const portfolios = overview.portfolios || {};
+  const founderApproved = overview.recipients?.filter((row) => row.delegation?.founder_approved).length || 0;
   const deliveryStatus = overview.sent_count > 0
-    ? `Sent To ${overview.sent_count} Board Member${overview.sent_count === 1 ? "" : "s"}`
+    ? `Sent To ${overview.sent_count} Participant${overview.sent_count === 1 ? "" : "s"}`
     : "Not Sent";
   const portfolioStatus = portfolios.total > 0
-    ? `${portfolios.approved_count} of ${portfolios.total} portfolios approved`
-    : "Not Started";
+    ? `${founderApproved} of ${overview.total_recipients || portfolios.total} delegations founder-approved`
+    : "Preparing";
   const executionStatus = portfolios.execution_ready
     ? "Execution Ready"
     : portfolios.total > 0
@@ -21,26 +22,25 @@ export const CompleteGameNightSection = ({ overview }) => {
       <div className="bfg-panel-head">
         <div>
           <h2>Complete Game Night</h2>
-          <p className="bfg-panel-sub">Your board has adopted its fundraising strategy. Send the final strategy to everyone who participated and move your board into execution.</p>
+          <p className="bfg-panel-sub">Your Board's fundraising strategy is ready. Confirm each participant's delegation first, then share the strategy and move into execution.</p>
         </div>
         <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 0 }} onClick={() => navigate("/game/complete")} data-testid="bfg-open-complete-page-btn">
           Open Game Night Complete
         </button>
       </div>
       <div className="bfg-night-summary" style={{ marginTop: 14 }}>
-        <div className="bfg-summary-row"><span>1. Send The Final Strategy</span><strong data-testid="bfg-cgn-delivery-status">{deliveryStatus}</strong></div>
-        <div className="bfg-summary-row"><span>2. Create Board Fundraising Portfolios</span><strong data-testid="bfg-cgn-portfolio-status">{portfolioStatus}</strong></div>
+        <div className="bfg-summary-row"><span>1. Review Participant Delegations</span><strong data-testid="bfg-cgn-portfolio-status">{portfolioStatus}</strong></div>
+        <div className="bfg-summary-row"><span>2. Send The Final Strategy</span><strong data-testid="bfg-cgn-delivery-status">{deliveryStatus}</strong></div>
         <div className="bfg-summary-row"><span>3. Move Into Execution</span><strong data-testid="bfg-cgn-execution-status">{executionStatus}</strong></div>
       </div>
-      {overview.sent_count === 0 ? (
-        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16 }} onClick={() => navigate("/game/complete?send=1")} data-testid="bfg-send-adopted-strategy-btn">
-          Send Final Strategy To Board
+      <div className="bfg-bm-actions" style={{ marginTop: 16 }}>
+        <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate("/game/portfolios")} data-testid="bfg-review-delegations-btn">
+          REVIEW PARTICIPANT DELEGATIONS
         </button>
-      ) : (
-        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 16 }} onClick={() => navigate("/game/complete?send=1")} data-testid="bfg-manage-strategy-delivery-btn">
-          Manage Strategy Delivery
+        <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/complete?send=1")} data-testid="bfg-manage-strategy-delivery-btn">
+          {overview.sent_count > 0 ? "MANAGE STRATEGY DELIVERY" : "SEND APPROVED STRATEGY"}
         </button>
-      )}
+      </div>
     </section>
   );
 };
