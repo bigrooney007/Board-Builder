@@ -92,6 +92,12 @@ export default function StrategicPlanningDashboard(){
 
   useEffect(()=>{if(sid)load();},[sid,load]);
 
+  useEffect(()=>{
+    if(!ctx||session?.status==="COMPLETED"||p?.final_plan?.display_text)return undefined;
+    const timer=window.setInterval(load,15000);
+    return()=>window.clearInterval(timer);
+  },[ctx,session?.status,p?.final_plan?.display_text,load]);
+
   const p=ctx?.project||{};
   const answers=ctx?.organization_answers||{};
   const participants=p.participants||[];
