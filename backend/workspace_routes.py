@@ -241,6 +241,10 @@ def create_workspace_router(db) -> APIRouter:
         if not org_name_check or not mission_check:
             raise HTTPException(status_code=422, detail="Add your organization name and mission statement in your Recruitment Profile first. They are required so every recruitment material is finished and organization-specific.")
         context = await build_org_context(db, user_id, member)
+        if payload.type == "interview_guide":
+            manual = await get_current_material(db, user_id, "board_manual", "")
+            if manual and manual.get("current"):
+                context += "\n\nAPPROVED BOARD MANUAL / ONBOARDING FRAMEWORK (use this to align interview questions with how this Board actually works, without turning the interview into an onboarding session):\n" + manual["current"]["display_text"][:12000]
         reference = await reference_context(db, payload.type)
         if reference:
             context = f"{context}\n\n{reference}"
