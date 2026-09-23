@@ -33,6 +33,16 @@ export const HOMEPAGE_KEYS = [
   ["facilitated-game", "Let's Organize Your Board Fundraising Game"],
 ];
 
+export const STRATEGIC_PLANNING_SECTION_VIDEO_KEYS = [
+  ["organization", "Tell Us About Your Organization"],
+  ["meeting", "Set Your Strategic Planning Meeting"],
+  ["founder-form", "Complete Your Own Strategic Planning Form"],
+  ["board-forms", "Invite The Board And Collect Their Ideas"],
+  ["facilitation-guide", "Prepare The Strategic Planning Session"],
+  ["live-session", "Run The Strategic Planning Session"],
+  ["plan-execution", "Review The Plan And Move Into Execution"],
+];
+
 export const RECOMMITMENT_SECTION_VIDEO_KEYS = [
   ["questions", "Answer The Four Recommitment Questions"],
   ["forms", "Prepare And Send The Recommitment Forms"],
@@ -191,6 +201,33 @@ export const useRecommitmentSectionVideo = (key) => {
   useEffect(() => {
     let live = true;
     loadRecommitmentSectionVideos().then((rows) => {
+      if (live) setVideo(rows.find((item) => item.key === key) || null);
+    });
+    return () => { live = false; };
+  }, [key]);
+  return video;
+};
+
+
+let strategicPlanningSectionVideosCache = null;
+let strategicPlanningSectionVideosPromise = null;
+
+const loadStrategicPlanningSectionVideos = () => {
+  if (strategicPlanningSectionVideosCache) return Promise.resolve(strategicPlanningSectionVideosCache);
+  if (!strategicPlanningSectionVideosPromise) {
+    strategicPlanningSectionVideosPromise = axios.get(`${API}/platform/strategic-planning-section-videos`).then((response) => {
+      strategicPlanningSectionVideosCache = response.data.videos || [];
+      return strategicPlanningSectionVideosCache;
+    }).catch(() => []);
+  }
+  return strategicPlanningSectionVideosPromise;
+};
+
+export const useStrategicPlanningSectionVideo = (key) => {
+  const [video, setVideo] = useState(() => strategicPlanningSectionVideosCache?.find((item) => item.key === key) || null);
+  useEffect(() => {
+    let live = true;
+    loadStrategicPlanningSectionVideos().then((rows) => {
       if (live) setVideo(rows.find((item) => item.key === key) || null);
     });
     return () => { live = false; };
