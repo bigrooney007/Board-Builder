@@ -112,9 +112,8 @@ export default function BoardRecruitmentPage() {
   const generationStatus=assessment?.state?.generation_status||"not_started";
 
   const questionStatus=questionsComplete?"Complete":answeredCount?"In Progress":"Start";
-  const identifyStatus=boardProfilesApproved?"Approved":assessment?.result?"Ready To Review":questionsComplete&&["queued","generating"].includes(generationStatus)?"Generating":"Locked";
-
   const boardProfilesApproved=dashboardMaterials.powerhouse_board_blueprint?.status==="Approved";
+  const identifyStatus=boardProfilesApproved?"Approved":assessment?.result?"Ready To Review":questionsComplete&&["queued","generating"].includes(generationStatus)?"Generating":"Locked";
   const progress=useMemo(()=>{
     if(!questionsComplete)return 0;
     if(!assessment?.result)return 1;
@@ -191,14 +190,14 @@ export default function BoardRecruitmentPage() {
 
             <Section number={3} title="BUILD YOUR BOARD APPLICATION AND RECRUITMENT MATERIALS"
               summary="Your approved Board Member profiles become the foundation for the application and campaign assets."
-              testId="br-section-materials" videoKey="materials" status={progress<2?"Locked":"Prepare"}>
-              {progress<2?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
+              testId="br-section-materials" videoKey="materials" status={progress<3?"Locked":"Prepare"}>
+              {progress<3?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
             </Section>
 
             <Section number={4} title="LAUNCH YOUR RECRUITMENT CAMPAIGN"
               summary="Review what has been prepared, publish the opportunity and begin receiving applicants."
-              testId="br-section-campaign" videoKey="launch" status={progress<2?"Locked":"Prepare"}>
-              {progress<2?<p className="workspace-note">Approve your Board Member profiles first.</p>:<RecruitmentCampaignLaunch/>}
+              testId="br-section-campaign" videoKey="launch" status={progress<3?"Locked":"Prepare"}>
+              {progress<3?<p className="workspace-note">Approve your Board Member profiles first.</p>:<RecruitmentCampaignLaunch/>}
             </Section>
 
             <Section number={5} title="APPLICANTS"
