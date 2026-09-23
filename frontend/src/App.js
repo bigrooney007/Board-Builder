@@ -34,6 +34,7 @@ import StrategicLeadershipPortfolioPage from "@/funnels/StrategicLeadershipPortf
 import StrategicLeadershipAssistantPage from "@/funnels/StrategicLeadershipAssistantPage";
 import StrategicSessionWatchPage from "@/funnels/StrategicSessionWatchPage";
 import StrategicPlanningSessionPage from "@/funnels/StrategicPlanningSessionPage";
+import StrategicOrganizationSetupPage from "@/funnels/StrategicOrganizationSetupPage";
 import StrategicPresentationWatchPage from "@/funnels/StrategicPresentationWatchPage";
 
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
@@ -175,6 +176,7 @@ function CleanRoutes() {
       <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage product="strategic-planning" />} />
       <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage product="strategic-planning" />} />
       <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
+      <Route path="/strategic-planning/organization" element={<StrategicOrganizationSetupPage />} />
       <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
       <Route path="/strategic-planning-form/:token" element={<StrategicPlanningFormPage />} />
       <Route path="/strategic-session/:token" element={<StrategicSessionWatchPage />} />
