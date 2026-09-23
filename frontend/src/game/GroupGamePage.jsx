@@ -69,6 +69,7 @@ export default function GroupGamePage() {
   const [finalState, setFinalState] = useState(null);
   const timer = useRef(null);
   const recorderController = useRef(null);
+  const status = session?.session?.status || overview?.session?.status || "";
 
   useEffect(() => { document.title = "Group Review Game | Board Fundraising Game"; }, []);
 
@@ -122,7 +123,6 @@ export default function GroupGamePage() {
 
   if (loading || !member) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
-  const status = session?.session?.status || overview?.session?.status || "";
   const round = session?.current_round;
   const groupLink = session?.session?.token ? `${window.location.origin}/group-game/${session.session.token}` : "";
 
