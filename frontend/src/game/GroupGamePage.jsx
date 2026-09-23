@@ -189,7 +189,7 @@ export default function GroupGamePage() {
   return (
     <BfgShell nav={<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/dashboard" data-testid="bfg-gg-back-dashboard">Back to Dashboard</Link>}>
       <main className="bfg-dash" data-testid="bfg-group-game-page">
-        <p className="bfg-eyebrow">STEP 6 · GAME NIGHT</p>
+        <p className="bfg-eyebrow">GROUP BOARD FUNDRAISING GAME</p>
         <h1 style={{ marginBottom: 20 }}>Board Fundraising Review Game</h1>
 
         {showResults ? <ResultsSummary /> : (
