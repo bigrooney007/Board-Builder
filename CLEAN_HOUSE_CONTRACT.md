@@ -44,7 +44,7 @@ The present recruitment dashboard and the public/support routes it requires rema
 → `/game/welcome?session_id=...`
 → `/game/dashboard`
 
-The present game dashboard and the routes required to use the Game remain available until that dashboard is rebuilt separately.
+The Board Fundraising Game dashboard has now been rebuilt on the clean-house flow defined in Section 10. Reusable Game infrastructure remains available only where it supports that canonical flow.
 
 ### Strategic Planning
 
@@ -174,4 +174,138 @@ Board Recruitment is now the first dashboard rebuilt on top of that base. Its ca
 
 The six Recruitment Questions are the authoritative strategic input for the Recruitment dashboard. Campaign assets are generated only from founder-approved Board Member profiles. Candidate progression is action-driven so the next stage unlocks from meaningful founder actions rather than manual card-moving.
 
-The Board Fundraising Game, Strategic Planning and Board Recommitment dashboards remain separate rebuild phases and must not be redesigned implicitly while working on Recruitment.
+Strategic Planning and Board Recommitment remain separate rebuild phases. The Board Fundraising Game is now rebuilt under the separate contract below and must remain isolated from Recruitment.
+
+
+## 10. Board Fundraising Game Dashboard Contract
+
+The Board Fundraising Game is one connected fundraising-strategy process. Its canonical dashboard sequence is:
+
+1. Play the founder's individual Board Fundraising Game.
+2. Set the next Board meeting and the funding deadline.
+3. Invite Board Members and other selected participants to play their individual Game.
+4. Run the nine-screen Group Board Fundraising Game.
+5. Generate and review the Final Fundraising Strategy and founder-approved participant delegations.
+6. Share the strategy and move participants into their Board Fundraising Portfolios, relationship mapping and execution assistant.
+
+### Founder Individual Game
+
+The founder begins with an introduction and organization-logo setup.
+
+The first four strategic questions are:
+- Who should fund our mission?
+- Where can we find them?
+- How should we attract them?
+- What step-by-step process should we use to raise money from them?
+
+For every strategic question, preserve the founder's original idea. AI may make the idea more actionable, but the founder chooses whether to use the actionable version, keep the original or edit the answer.
+
+After the four strategic questions, collect the organization's current fundraising reality through exactly these areas:
+- current individual donors: who gives, why they give and how the organization raises money from them
+- current business/corporate supporters: who supports, why and how the relationship works
+- current grantors/institutional funders: who funds, why and how opportunities are found/pursued
+- current fundraising team
+- current fundraising technology
+- current fundraising materials/content
+- current fundraising budget
+
+The individual-donor, business and grantor questions may be skipped when they genuinely do not apply. Team, technology, materials/content and budget require a real answer.
+
+The founder then states how they want to participate in building/managing the fundraising system, how they want to help raise money directly, their realistic time commitment and anything else they want the Board to know.
+
+Every question has a narration slot. The Game must remain fully usable when narration audio has not yet been generated.
+
+Founder answers save throughout the journey. Completing the founder Game may prepare working intelligence in the background, but a working strategy must not be surfaced as the final Board strategy before Board participation and the Group Game.
+
+### Meeting And Funding Deadline
+
+Before invitations are sent, the founder must save:
+- Board meeting date
+- start time
+- timezone
+- meeting format and meeting link/location where applicable
+- funding deadline
+
+The funding deadline becomes the fundraising goal deadline and is authoritative for execution planning. The final execution plan must use the actual days available and must not force an arbitrary 90-day or 120-day plan.
+
+### Board Member Individual Game
+
+Each invited participant receives a private Game link. The founder can send/resend invitations, copy the link, review responses and generate the existing person-specific call script.
+
+Invited participants answer the same four strategic questions and receive the same original-idea → actionable-version → participant-approval treatment.
+
+They then state:
+- how they want to help build/manage the fundraising system
+- how they want to participate directly in raising money
+- their realistic time commitment
+- anything else they want to contribute
+
+Invited participants do not repeat the founder's organization-current-reality questions.
+
+### Group Board Fundraising Game
+
+The Group Game contains nine decision screens:
+1. Who should fund us?
+2. Where will we find them?
+3. How will we attract them?
+4. What fundraising process will we use?
+5. Team
+6. Technology
+7. Materials and content
+8. Budget
+9. Execution and accountability
+
+The first four screens bring together founder ideas and participant ideas. The funding-audience screen also includes the organization's present donor, business and grantor reality.
+
+Team combines the present team, every participant's stated willingness to help and the capacity the strategy requires. Missing capacity must be shown as a role/capacity need rather than silently assigned.
+
+Technology, materials/content and budget compare the organization's current reality with the capabilities/resources the chosen strategy requires.
+
+Execution compares current fundraising practice with a deadline-driven execution recommendation based on the actual funding deadline.
+
+The host's selected checkboxes and additional agreed wording are authoritative Board decisions. Meeting transcription is optional enrichment used for clarifications, delegation and nuance. Transcript content must not silently override explicit Group Game decisions.
+
+When the final Group Game screen is adopted, final-strategy generation begins immediately in the background. The completed meeting screen may surface the Final Strategy as soon as generation is finished.
+
+### Final Fundraising Strategy
+
+The Final Strategy should function like a concise two-to-four-page operating roadmap rather than a meeting transcript.
+
+It must make the following executable:
+- fundraising goal and funding deadline
+- funding audiences
+- where/how those audiences will be found repeatedly
+- attraction approach
+- step-by-step fundraising process
+- Board network fundraising process
+- team and ownership/capacity gaps
+- technology
+- materials/content
+- budget
+- deadline-driven execution timeline
+
+The Board network process must show Board Members how to identify suitable funders in their personal/professional networks, map relationships, make or enable introductions and move prospects through the organization's agreed Know → Like → Trust → Ask → Follow Up → Steward process.
+
+### Founder Delegation Approval
+
+After the Final Strategy is generated, prepare a proposed delegation for every person who actually contributed to the Game or Group Game.
+
+Each proposed delegation separates:
+- responsibilities for building/strengthening the fundraising system
+- direct fundraising activities and network-based execution
+
+The founder must be able to edit the proposal and explicitly approve it.
+
+A participant's Final Strategy email must remain locked until that person's delegation is founder-approved.
+
+### Strategy → Portfolio → Execution
+
+The Final Strategy email sends one secure strategy link.
+
+The secure strategy contains the CTA **How Do I Get Involved?** which opens that participant's Board Fundraising Portfolio.
+
+The Portfolio shows their founder-approved system-building and direct-fundraising responsibilities. The participant may approve it or request a change.
+
+After approval, the existing relationship-mapping, execution-material and Board Fundraising Executive Assistant capabilities support execution from the adopted strategy and approved Portfolio.
+
+Do not scatter duplicate strategy-send controls back into the Board invitation section. Final strategy delivery belongs in the final Strategy / Execution stage of the dashboard.
