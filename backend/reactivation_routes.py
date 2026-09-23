@@ -614,7 +614,7 @@ def create_reactivation_router(db) -> APIRouter:
             "Stepping Down From the Board",
         ]
         org_context = {key: intake.get(key, "") for key in [
-            "organization_name", "mission", "direction_12_24", "board_help_accomplish", "active_board_vision",
+            "organization_name", "mission", "why_recommit", "board_help_accomplish", "need_by", "direction_12_24", "active_board_vision",
             "present_board", "active_board", "disengaged_board", "current_skills", "missing_skills",
             "roles_defined", "roles_description", "expected_contribution", "actually_happening",
             "strategic_plan", "board_participated_planning", "planning_involvement",
