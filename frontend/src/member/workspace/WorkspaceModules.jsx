@@ -112,9 +112,7 @@ export const Module3Launch = ({ mode = "all" }) => {
   };
 
   const publish = async () => {
-    if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.
-
-Launch My Recruitment Campaign?")) return;
+    if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.\n\nLaunch My Recruitment Campaign?")) return;
     setBusy(true); setError(""); setMessage("");
     try {
       await memberApi.post("/workspace/opportunity/publish");
