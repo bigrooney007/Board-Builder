@@ -393,7 +393,30 @@ def create_recruit_free_router(db) -> APIRouter:
             raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before answering these questions")
         key = QUESTION_KEYS[payload.question]
         text_value = payload.text.strip()
+        if str((doc.get("answers") or {}).get(key) or "").strip() == text_value:
+            return {"status": "saved", "question": payload.question, "generation_queued": False}
+
+        opportunity = await db.opportunities.find_one(
+            {"user_id": member["user_id"]}, {"_id": 0, "status": 1})
+        if opportunity and opportunity.get("status") in {"Published", "Closed"}:
+            raise HTTPException(
+                status_code=409,
+                detail="Your Recruitment campaign has already been launched. The six foundational Recruitment Questions are locked so the live campaign, applicant records and approved Board profiles stay consistent.",
+            )
+
         timestamp = now_iso()
+        await db.generated_materials.update_many(
+            {"user_id": member["user_id"], "type": {"$in": [
+                "powerhouse_board_blueprint", "board_recruitment_job_post",
+                "recruitment_emails", "social_posts", "referral_request_email",
+            ]}},
+            {"$set": {"status": "Needs Review", "updated_at": timestamp}},
+        )
+        await db.recruitment_preparation.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {"status": "stale", "stage": "six_questions_changed", "updated_at": timestamp}},
+            upsert=True,
+        )
         await collection.update_one(
             {"token": token},
             {"$set": {f"answers.{key}": text_value, f"state.question_{payload.question}_completed": True,
