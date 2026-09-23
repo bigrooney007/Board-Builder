@@ -21,7 +21,7 @@ DEFAULT_POSTGAME_EMAIL = {
     "execution_next": "Start by reviewing the final strategy.\n\nAs you review it, you will be able to see how you personally agreed to participate.\n\nWe have also created a Relationship Mapping Form for you so you can begin identifying people, businesses and grantors in your network who match the ideal funder profiles your board identified.",
 }
 
-PORTFOLIO_SENT_STATUSES = {"sent", "change_requested", "approved", "materials_ready"}
+PORTFOLIO_SENT_STATUSES = {"ready_to_send", "sent", "change_requested", "approved", "materials_ready"}
 FOUNDER_DELEGATION_APPROVED_STATUSES = {"ready_to_send", "sent", "approved", "materials_ready"}
 
 
@@ -326,7 +326,8 @@ def create_postgame_router(db) -> APIRouter:
             {"member_id": member_id, "user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Board member not found")
-        if record not in await participating_members(member["user_id"]):
+        participant_ids = {row["member_id"] for row in await participating_members(member["user_id"])}
+        if record["member_id"] not in participant_ids:
             raise HTTPException(status_code=409, detail="This person has not participated in the Board Fundraising Game yet")
         await require_founder_approved_delegation(member["user_id"], [record])
         profile = await get_profile(member["user_id"])
