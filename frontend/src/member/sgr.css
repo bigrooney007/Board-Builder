@@ -203,3 +203,50 @@
 .sgr-board-profile-card textarea{line-height:1.55}
 .sgr-row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
 @media(max-width:760px){.sgr-board-profile-head{grid-template-columns:1fr}.sgr-profile-count{min-width:0}}
+
+
+/* Clean Board Recommitment */
+.recommitment-clean-dashboard{max-width:1120px;margin:0 auto;padding-bottom:96px}
+.recommitment-questions-page{max-width:920px;margin:0 auto;padding-bottom:90px}
+.sgr-clean-stage{padding:20px;border:1px solid #e0e7ff;border-radius:18px;background:linear-gradient(135deg,#fafaff,#f8fafc)}
+.sgr-clean-stage h2{margin-top:0}
+.recommitment-dashboard-logo{display:block;max-width:190px;max-height:90px;object-fit:contain;margin:18px 0;padding:8px;border:1px solid #e0e7ff;border-radius:14px;background:#fff}
+.recommitment-forms-stage{display:grid;gap:18px}
+.recommitment-form-variants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.recommitment-form-variants>.member-card{margin:0!important}
+.recommitment-link-box{margin:14px 0;padding:12px 14px;border:1px solid #c7d2fe;border-radius:12px;background:#eef2ff;color:#312e81;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.recommitment-variant-choice{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 18px}
+.recommitment-decision-card{margin-top:16px!important;border-color:#e0e7ff!important}
+.recommitment-decision-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.recommitment-decision-head h3{margin:0}
+.recommitment-decision-head p{margin:4px 0 0;color:#64748b}
+.recommitment-response-choice{margin:16px 0;padding:14px 16px;border-left:4px solid #4f46e5;border-radius:0 12px 12px 0;background:#f8faff}
+.recommitment-response-choice span{display:block;color:#6366f1;font:800 10px/1 "Outfit",sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.recommitment-response-choice strong{display:block;margin-top:7px;line-height:1.45}
+.recommitment-next-output{margin-top:20px;padding:18px;border:1px solid #c7d2fe;border-radius:16px;background:#fafaff}
+.recommitment-next-output h4{margin:0 0 6px;font-size:17px}
+.recommitment-assistant-page{min-height:100vh;background:#f5f3ff;padding:32px 14px;color:#111827;font-family:Arial,sans-serif}
+.recommitment-assistant-shell{max-width:900px;margin:0 auto}
+.recommitment-assistant-header{padding:30px;border-radius:22px;background:linear-gradient(135deg,#111827,#312e81);color:#fff}
+.recommitment-assistant-header .eyebrow{color:#c4b5fd}
+.recommitment-assistant-header h1{font-size:clamp(30px,5vw,48px);margin:7px 0 8px}
+.recommitment-assistant-header p{color:#e2e8f0;line-height:1.6}
+.recommitment-assistant-suggestions{margin-top:16px;padding:20px;border:1px solid #ddd6fe;border-radius:18px;background:#fff}
+.recommitment-assistant-suggestions>div{display:flex;gap:8px;flex-wrap:wrap}
+.recommitment-assistant-suggestions button{border:1px solid #c7d2fe;background:#eef2ff;color:#312e81;border-radius:999px;padding:9px 12px;font-weight:700;cursor:pointer}
+.recommitment-assistant-chat{min-height:360px;margin-top:16px;padding:20px;border:1px solid #e2e8f0;border-radius:18px;background:#fff}
+.recommitment-assistant-empty{text-align:center;color:#64748b;padding:80px 20px}
+.recommitment-chat-message{max-width:78%;margin:10px 0;padding:13px 15px;border-radius:16px;line-height:1.55}
+.recommitment-chat-message strong{display:block;margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.recommitment-chat-message p{white-space:pre-wrap;margin:0}
+.recommitment-chat-message.user{margin-left:auto;background:#312e81;color:#fff}
+.recommitment-chat-message.assistant{background:#f1f5f9;color:#111827}
+.recommitment-assistant-compose{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px}
+.recommitment-assistant-compose textarea{width:100%;padding:14px;border:1px solid #cbd5e1;border-radius:15px;font:inherit;resize:vertical}
+.recommitment-assistant-compose button{align-self:end;display:inline-flex;gap:7px;align-items:center;border:0;border-radius:13px;padding:14px 18px;background:#312e81;color:#fff;font-weight:800;cursor:pointer}
+.recommitment-assistant-compose button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:760px){
+  .recommitment-form-variants,.recommitment-variant-choice{grid-template-columns:1fr}
+  .recommitment-chat-message{max-width:94%}
+  .recommitment-assistant-compose{grid-template-columns:1fr}
+}
