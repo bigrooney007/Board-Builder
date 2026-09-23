@@ -263,7 +263,7 @@ const STATUS_TEXT = {
 };
 const STATUS_COLOR = { locked: "#6B7280", preparing: "#818cf8", generating: "#818cf8", failed: "#dc2626", ready: "#059669" };
 
-export const FinalOutputsSection = ({ overview, onRefresh = () => {} }) => {
+export const FinalOutputsSection = ({ overview, onRefresh = () => {}, compact = false }) => {
   const navigate = useNavigate();
   const [retrying, setRetrying] = useState(false);
   const retryFinal = async () => {
@@ -286,7 +286,7 @@ export const FinalOutputsSection = ({ overview, onRefresh = () => {} }) => {
     <>
       <p className="bfg-eyebrow" style={{ marginTop: 30 }}>STEP 7 · AFTER THE GROUP GAME</p>
       <div className="bfg-output-grid" data-testid="bfg-final-outputs">
-        {OUTPUT_CARDS.map((card) => {
+        {(compact ? OUTPUT_CARDS.filter((card) => card.key === "final_strategy") : OUTPUT_CARDS).map((card) => {
           const state = outputs[card.key] || "locked";
           return (
             <section className={`bfg-panel bfg-output-card ${state!=="ready"?"is-locked":""}`} key={card.key} data-tour={card.tour} data-testid={`bfg-output-${card.key}`}>
