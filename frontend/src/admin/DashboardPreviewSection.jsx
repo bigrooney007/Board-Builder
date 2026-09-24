@@ -26,6 +26,7 @@ export const DashboardPreviewSection = () => {
         : `/admin/dashboard-preview/${product}`;
       const response = await client.post(endpoint);
       clearAdminPreview();
+      sessionStorage.setItem("adminClientTest", "1");
       window.location.assign(response.data.start_url || response.data.dashboard_url);
     } catch (err) {
       setError(err.response?.data?.detail || "The client test could not be opened.");
