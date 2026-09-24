@@ -16,7 +16,7 @@ ui = read("frontend/src/admin/DashboardPreviewSection.jsx")
 for version_line in (
     'RECRUITMENT_FIXTURE_VERSION = "v8"',
     'STRATEGIC_FIXTURE_VERSION = "v7"',
-    'RECOMMITMENT_FIXTURE_VERSION = "v7"',
+    'RECOMMITMENT_FIXTURE_VERSION = "v8"',
     'FUNDRAISING_FIXTURE_VERSION = "v6"',
 ):
     require(preview, version_line, f"fresh fixture version {version_line}")
@@ -24,6 +24,7 @@ for version_line in (
 require(preview, 'tag = f"{fixture_version}-{suffix(member)}"', "versioned Strategic/Recommitment fixture IDs")
 require(preview, 'tag = f"{FUNDRAISING_FIXTURE_VERSION}-{suffix(member)}"', "versioned Fundraising fixture IDs")
 require(ui, "fully preloaded test journey", "Admin explanation of preloaded test journeys")
+require(preview, 'member = await preview_member(admin, f"{product}-{fixture_version}")', "product-isolated preview identity")
 
 # Recruitment: questions, recommendations, campaign assets, applicants, onboarding and Portfolio.
 for needle, label in (
