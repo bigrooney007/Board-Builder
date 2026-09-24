@@ -143,7 +143,10 @@ export default function AdminPage() {
   const [selected,setSelected]=useState([]);
   const [profile,setProfile]=useState(null);
 
-  useEffect(()=>{client.get("/auth/me").then(response=>setUser(response.data)).catch(()=>setUser(false)).finally(()=>setChecking(false))},[]);
+  useEffect(()=>{
+    sessionStorage.removeItem("adminClientTest");
+    client.get("/auth/me").then(response=>setUser(response.data)).catch(()=>setUser(false)).finally(()=>setChecking(false));
+  },[]);
   const loadApplicants=useCallback(async()=>{const response=await client.get("/admin/applicants",{params:filters});setApplicants(response.data)},[filters]);
   useEffect(()=>{if(user)loadApplicants()},[user,loadApplicants]);
   const filterOptions=useMemo(()=>({
