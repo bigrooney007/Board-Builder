@@ -32,6 +32,9 @@ jobs:
       - name: Validate Strategic Planning clean-house contract
         run: python tests/validate_strategic_planning_clean_house.py
 
+      - name: Validate dashboard contextual audio contract
+        run: python tests/validate_dashboard_audio_clean_house.py
+
       - name: Validate homepage Board Applicant Network contract
         run: python tests/validate_homepage_applicant_network.py
 
