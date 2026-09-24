@@ -62,3 +62,13 @@
 /* Keep homepage secondary conversion buttons on the current primary button system. */
 .nBB-home .founder-calendly-button,.nBB-home .blog-all-button{background:#4f46e5!important;color:#fff!important;border-color:#4f46e5!important}
 .nBB-home .founder-calendly-button svg,.nBB-home .blog-all-button svg{color:#fff!important}
+
+
+/* Board Applicant Network homepage pathway */
+.nBB-home-closing-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+.nBB-home-closing-actions .nBB-home-primary{margin-top:22px}
+.nBB-home-secondary-cta{background:#0f172a!important;box-shadow:0 10px 24px rgba(15,23,42,.16)!important}
+@media(max-width:640px){
+  .nBB-home-closing-actions{flex-direction:column}
+  .nBB-home-closing-actions .nBB-home-primary{width:min(100%,390px);margin-top:10px}
+}
