@@ -28,7 +28,7 @@ portfolio_backend = read("backend/portfolio_routes.py")
 portfolio_edit = read("frontend/src/game/PortfolioEditPage.jsx")
 member_strategy = read("frontend/src/game/FinalStrategyMemberPage.jsx")
 assistant_page = read("frontend/src/game/BoardExecutionAssistantPage.jsx")
-voice = read("backend/voice_content.py")
+voice = read("backend/voice_content.py")\naudio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
 
 for title in (
     "PLAY THE BOARD FUNDRAISING GAME",
@@ -44,6 +44,10 @@ forbid(dashboard, "WorkingStrategyCard", "early working-strategy dashboard card"
 require(dashboard, "DelegationReviewStage", "post-strategy founder delegation review")
 require(dashboard, 'memberApi.post("/game/portfolios/prepare")', "automatic delegation draft preparation")
 require(dashboard, 'SupportBox productKey="board_fundraising_game"', "persistent support")
+require(dashboard, "DashboardAudioButton", "Fundraising dashboard audio control")
+for audio_id in ("dash_bfg_founder_game","dash_bfg_meeting","dash_bfg_board","dash_bfg_group","dash_bfg_strategy","dash_bfg_execution"):
+    require(voice, f'"{audio_id}"', f"Fundraising dashboard audio {audio_id}")
+require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
 
 for key in (
     "current_individual_donors",
