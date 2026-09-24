@@ -111,7 +111,7 @@ export default function DashboardSectionAudioAdmin(){
               </button>
             </div>
             {asset.live?.status==="ready"&&<audio controls preload="none" style={{width:"100%",marginTop:10}}
-              src={`${API}/game/voice/audio/${id}?v=live${asset.live?.version||0}`}/>}
+              src={`${API}/game/voice/audio/${id}?environment=live&v=live${asset.live?.version||0}`}/>}
           </article>;
         })}
       </div>
