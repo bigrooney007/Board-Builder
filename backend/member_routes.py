@@ -16,6 +16,7 @@ from member_auth import (
     hash_member_password, new_uuid, set_member_cookie, verify_member_password,
 )
 from course_content import ACTIVATION_MODULES, BASIC_MODULES, REACTIVATION_MODULES
+from platform_communications import notify_homepage_lead, public_origin
 
 TIER_ENTITLEMENTS = {"97": "recruitment_basic", "497": "recruitment_self_guided"}
 TIER_PRODUCTS = {"97": "Recruitment Basic", "497": "Recruitment Self-Guided"}
@@ -337,6 +338,30 @@ def create_member_router(db) -> APIRouter:
             "account_status": "guided_guest", "created_at": now, "updated_at": now,
         }
         await db.members.insert_one(member.copy())
+        resume_token = secrets.token_urlsafe(32)
+        resume_expires = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
+        await db.game_resume_tokens.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "token": resume_token, "user_id": user_id, "email": email,
+                "expires_at": resume_expires, "updated_at": now,
+            }, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        try:
+            root = public_origin()
+            await notify_homepage_lead(
+                db,
+                pathway="board-fundraising-game",
+                source_id=user_id,
+                name=payload.name,
+                email=email,
+                organization=payload.organization,
+                continue_url=f"{root}/game/resume/{resume_token}",
+                details={"fundraising_goal": f"${payload.goal_amount:,}"},
+            )
+        except Exception:
+            pass
         token = create_member_token(user_id, email)
         set_member_cookie(response, token)
         return {"existing_account": False, "token": token}
@@ -352,6 +377,20 @@ def create_member_router(db) -> APIRouter:
         existing = await db.members.find_one({"email": email}, {"_id": 0})
         if existing:
             # Never authenticate or overwrite an existing account from an email-only public form.
+            try:
+                root = public_origin()
+                await notify_homepage_lead(
+                    db,
+                    pathway="board-fundraising-game",
+                    source_id=f"existing-{existing['user_id']}",
+                    name=payload.name,
+                    email=email,
+                    organization=payload.organization,
+                    continue_url=f"{root}/login?next=%2Fgame%2Fdemonstration",
+                    details={"fundraising_goal": f"${payload.goal_amount:,}"},
+                )
+            except Exception:
+                pass
             return {"existing_account": True, "login_required": True, "token": ""}
 
         name_parts = payload.name.strip().split(None, 1)
@@ -395,6 +434,26 @@ def create_member_router(db) -> APIRouter:
         token = create_member_token(user_id, email)
         set_member_cookie(response, token)
         return {"existing_account": False, "token": token}
+
+    @router.post("/game-resume/{resume_token}")
+    async def resume_free_game(resume_token: str, response: Response):
+        record = await db.game_resume_tokens.find_one({"token": resume_token}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="This Board Fundraising Game return link is not valid")
+        if record.get("expires_at", "") < datetime.now(timezone.utc).isoformat():
+            raise HTTPException(status_code=410, detail="This Board Fundraising Game return link has expired")
+        member = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0})
+        if not member:
+            raise HTTPException(status_code=404, detail="This Board Fundraising Game journey is no longer available")
+        if member.get("account_status") != "free_game_guest" or "board_fundraising_game" in member.get("entitlements", []):
+            raise HTTPException(status_code=409, detail="This account now uses the normal login. Please log in to continue.")
+        token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, token)
+        await db.game_resume_tokens.update_one(
+            {"token": resume_token},
+            {"$set": {"last_used_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"token": token, "member": public_member(member)}
 
     @router.post("/complete-guest-account")
     async def complete_guest_account(payload: CompleteGuestAccountRequest, request: Request):
