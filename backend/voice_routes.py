@@ -166,7 +166,7 @@ def create_voice_router(db) -> APIRouter:
         if not prefix:
             raise HTTPException(status_code=404, detail="Unknown tutorial")
         settings = await get_settings()
-        environment = settings["voice_environment"]
+        environment = "live" if tutorial_name.startswith("dashboard-") else settings["voice_environment"]
         selected = [item for item in STATIC_NARRATIONS if item["narration_id"].startswith(prefix)]
         rows = await db.game_voice_audio.find(
             {"environment": environment, "status": "ready",
@@ -185,7 +185,7 @@ def create_voice_router(db) -> APIRouter:
             clips[narration_id] = {
                 "ready": ready,
                 "label": item["label"],
-                "url": f"/api/game/voice/audio/{narration_id}?v={environment[:1]}{version}",
+                "url": f"/api/game/voice/audio/{narration_id}?environment={environment}&v={environment[:1]}{version}",
             }
         return {"clips": clips}
 
@@ -223,12 +223,13 @@ def create_voice_router(db) -> APIRouter:
         }
 
     @router.get("/game/voice/audio/{narration_id}")
-    async def serve_static_audio(narration_id: str):
+    async def serve_static_audio(narration_id: str, environment: str = ""):
         if narration_id not in STATIC_BY_ID:
             raise HTTPException(status_code=404, detail="Unknown narration")
         settings = await get_settings()
+        requested_environment = environment if environment in ENVIRONMENTS else settings["voice_environment"]
         script = await text_doc(narration_id)
-        doc = await audio_doc(narration_id, settings["voice_environment"], include_audio=True)
+        doc = await audio_doc(narration_id, requested_environment, include_audio=True)
         if audio_status(doc, script) != "ready" or not doc.get("audio"):
             raise HTTPException(status_code=404, detail="Narration audio not available")
         return Response(content=bytes(doc["audio"]), media_type="audio/mpeg",
