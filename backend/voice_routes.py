@@ -157,6 +157,10 @@ def create_voice_router(db) -> APIRouter:
         prefixes = {
             "recruitment-free": "recruitment-free-",
             "recruitment": "rct_",
+            "dashboard-recruitment": "dash_rct_",
+            "dashboard-fundraising-game": "dash_bfg_",
+            "dashboard-recommitment": "dash_rec_",
+            "dashboard-strategic-planning": "dash_sp_",
         }
         prefix = prefixes.get(tutorial_name)
         if not prefix:
