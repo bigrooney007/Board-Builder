@@ -49,7 +49,7 @@ export const DashboardPreviewSection = () => {
       <p className="eyebrow">HOW TO TEST</p>
       <h3>Use Both Test Modes</h3>
       <p><strong>Start Fresh Client Test</strong> begins at the real post-payment entry point with only the information a genuine customer would already have supplied before payment. Use this to test the journey in order.</p>
-      <p><strong>Open Fully Preloaded Journey</strong> gives you completed forms, participant responses, transcripts, decisions, plans, Portfolios and downstream records so you can inspect later stages without repeating all the work.</p>
+      <p><strong>Open Fully Preloaded Journey</strong> opens a fully preloaded test journey with completed forms, participant responses, transcripts, decisions, plans, Portfolios and downstream records so you can inspect later stages without repeating all the work.</p>
       <p>Public homepages, demonstration videos and checkout pages remain normal public pages. The Admin launcher replaces only the payment step.</p>
     </div>
 
