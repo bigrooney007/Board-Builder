@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Pause, Volume2, VolumeX } from "lucide-react";
+import "./dashboard-audio.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
