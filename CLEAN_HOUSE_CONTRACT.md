@@ -624,3 +624,62 @@ The following must not return to the canonical customer dashboard:
 - separate second Strategic Plan presentation/delegation meeting
 - standalone Operations strategy section
 - any automatic delegation based only on idea contribution or expertise
+
+
+## 13. Platform Communication Contract
+
+The clean-house platform must proactively communicate important lead and participant activity by email so neither the platform owner nor product customers need to repeatedly log in just to discover that something happened.
+
+### Four Paid Homepage Lead Alerts
+
+A valid contact-details submission on each of these four paid customer homepages triggers an immediate owner notification to the configured OWNER_NOTIFICATION_EMAIL:
+- Board Recruitment
+- Board Fundraising Game
+- Strategic Planning
+- Board Recommitment
+
+The owner email identifies the pathway and includes the captured name, email, organization and the important pathway-specific detail available at capture time.
+
+The lead capture must remain successful even if an email provider is temporarily unavailable. Email delivery state is recorded separately.
+
+### Immediate Prospect Return Email
+
+At the same moment a valid homepage lead is captured, the prospect receives one immediate transactional return email before slower nurture/follow-up communication.
+
+That email:
+- names the pathway they started
+- identifies the organization where available
+- contains a direct **Continue Where I Stopped** action
+- does not replace or duplicate the existing slower nurture sequence
+
+Recruitment return links carry the secure assessment token into the Recruitment walkthrough so a different browser can restore the journey.
+
+Strategic Planning and Board Recommitment return links carry their guided journey token directly to the product demonstration.
+
+The Board Fundraising Game uses a secure temporary resume token for free-game guests. The emailed resume token:
+- can restore only a temporary free-game guest journey
+- expires
+- cannot be used as a magic login after that account becomes a normal or paid account
+- falls back to the normal login flow for existing accounts
+
+Homepage email events are recorded with idempotent delivery state so browser retries do not send duplicate copies for the same captured lead record and a failed owner/prospect half can be retried independently.
+
+### Customer Form-Response Alerts
+
+When a customer's invited participant completes one of the product forms, the customer receives an immediate email identifying the person and giving them a direct route back to the relevant response/application area.
+
+Required submission alerts:
+- Strategic Planning Form completed -> Strategic Planning customer
+- Board Fundraising Game Individual Game completed -> Fundraising Game customer
+- Board Recommitment Form completed -> Recommitment customer
+- Board Recruitment Application completed -> Recruitment customer
+
+These alerts are one-per-completed-submission and must not duplicate when a browser retries the final submit.
+
+### Other Website Applications
+
+The existing owner notifications remain active for:
+- Board Applicant Network profile/application submissions
+- Facilitated Board Fundraising Game applications
+
+Do not remove these while changing the four paid pathways.
