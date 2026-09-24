@@ -77,6 +77,7 @@ export const visitorId = () => {
 
 export const trackPlatformEvent = (flow, event, extra = {}) => {
   if (!flow || !event) return Promise.resolve();
+  if (sessionStorage.getItem("adminClientTest") === "1") return Promise.resolve();
   return axios.post(`${API}/platform-analytics/event`, {
     flow,
     event,
