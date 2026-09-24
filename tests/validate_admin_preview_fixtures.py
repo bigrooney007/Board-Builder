@@ -55,7 +55,7 @@ for needle, label in (
     ('"budget":', "Strategic budget"),
     ('"action_planning":', "Strategic action planning"),
     ('"planning_meeting": {', "Strategic meeting"),
-    ('"role": "Lead User"', "founder same-form participation"),
+    ('"Lead User",', "founder same-form participation"),
     ("strategic_response(", "Board Member Strategic responses"),
     ("strategic_transcript()", "Strategic session transcript"),
     ("strategic_preview_final_plan()", "final Strategic Plan"),
