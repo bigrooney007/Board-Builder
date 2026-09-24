@@ -30,6 +30,7 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v4"
+FRESH_TEST_VERSION = "fresh-v1"
 RECRUITMENT_FIXTURE_VERSION = "v8"
 STRATEGIC_FIXTURE_VERSION = "v7"
 RECOMMITMENT_FIXTURE_VERSION = "v8"
@@ -2421,6 +2422,129 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
+
+    async def seed_fresh_client_test(member: dict, product: str, config: dict) -> str:
+        """Create only the state a real customer would have immediately after payment."""
+        now = now_iso()
+        tag = suffix(member)
+        if config.get("entitlements"):
+            await db.members.update_one(
+                {"user_id": member["user_id"]},
+                {"$addToSet": {"entitlements": {"$each": config["entitlements"]}},
+                 "$set": {"updated_at": now, "internal_client_test": True}},
+            )
+
+        if product == "recruitment":
+            lead_id = f"admin-fresh-recruitment-lead-{tag}"
+            session_id = f"admin-fresh-recruitment-session-{tag}"
+            await db.funnel_leads.update_one(
+                {"lead_id": lead_id},
+                {"$set": {
+                    "lead_id": lead_id, "offer_source": "recruitment",
+                    "name": "Rooney Akpesiri", "email": member["email"],
+                    "organization": ORG_NAME, "desired_count": "3",
+                    "answers": {"new_members_needed": "3"},
+                    "member_user_id": member["user_id"], "internal_preview": True,
+                    "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            await db.members.update_one(
+                {"user_id": member["user_id"]},
+                {"$addToSet": {"lead_ids": lead_id}, "$set": {"updated_at": now}},
+            )
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {
+                    "session_id": session_id, "lead_id": lead_id,
+                    "offer_source": "recruitment", "purchase_source": "recruitment_497",
+                    "selected_tier": "497", "amount": 0, "currency": "usd",
+                    "status": "completed", "payment_status": "paid",
+                    "claimed_by_user_id": member["user_id"], "internal_preview": True,
+                    "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            return f"/recruit/welcome?session_id={session_id}"
+
+        if product == "board-fundraising-game":
+            await db.game_profiles.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {
+                    "user_id": member["user_id"],
+                    "organization": {"name": ORG_NAME, "mission": MISSION, "website": ""},
+                    "goal": {
+                        "amount": "500000",
+                        "purpose": "Grow programs, strengthen fundraising capacity and expand employer partnerships.",
+                        "deadline": "",
+                    },
+                    "primary_user": {
+                        "full_name": "Rooney Akpesiri", "email": member["email"],
+                        "job_title": "Founder and Executive Director",
+                    },
+                    "profile_completed": True, "situation_completed": False,
+                    "internal_preview": True, "updated_at": now,
+                }, "$setOnInsert": {"created_at": now}},
+                upsert=True,
+            )
+            return "/game/welcome"
+
+        session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"
+        lead_token = f"admin-fresh-{product}-{tag}"
+        offer_source = "strategic_planning" if product == "strategic-planning" else "board_recommitment"
+        await db.guided_product_leads.update_one(
+            {"token": lead_token},
+            {"$set": {
+                "token": lead_token, "product": product,
+                "name": "Rooney Akpesiri", "email": member["email"],
+                "organization": ORG_NAME, "board_count": 5,
+                "internal_preview": True, "followup_status": "converted",
+                "created_at": now, "updated_at": now,
+            }},
+            upsert=True,
+        )
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "session_id": session_id, "status": "completed", "payment_status": "paid",
+                "offer_source": offer_source, "purchase_source": config["purchase_source"],
+                "guided_lead_token": lead_token, "lead_email": member["email"],
+                "payment_email": member["email"], "payment_phone": "+44 7700 900123",
+                "claimed_by_user_id": member["user_id"], "amount": 0, "currency": "usd",
+                "internal_preview": True, "created_at": now, "updated_at": now,
+            }},
+            upsert=True,
+        )
+        return f"/{product}/welcome?session_id={session_id}"
+
+    @router.post("/fresh/{product}")
+    async def launch_fresh_client_test(product: str, request: Request, response: Response):
+        admin = await authenticate_admin(request, db)
+        config = PRODUCTS.get(product)
+        if not config:
+            raise HTTPException(status_code=404, detail="Unknown product dashboard")
+        run_seed = hashlib.sha256(
+            f"{admin['user_id']}:{product}:{now_iso()}".encode("utf-8")
+        ).hexdigest()[:12]
+        member = await preview_member(admin, f"{product}-{FRESH_TEST_VERSION}-{run_seed}")
+        await db.members.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {
+                "internal_client_test": True,
+                "client_test_product": product,
+                "client_test_started_at": now_iso(),
+            }},
+        )
+        member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})
+        start_url = await seed_fresh_client_test(member, product, config)
+        set_member_cookie(response, create_member_token(member["user_id"], member["email"]))
+        return {
+            "dashboard_url": start_url,
+            "start_url": start_url,
+            "product": product,
+            "mode": "fresh",
+            "test_member_email": member["email"],
+        }
 
     @router.post("/{product}")
     async def launch_dashboard_preview(product: str, request: Request, response: Response):
