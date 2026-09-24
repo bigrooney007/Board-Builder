@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ExternalLink, LifeBuoy, PlayCircle } from "lucide-react";
+import { ChevronDown, LifeBuoy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMemberAuth } from "./MemberAuthContext";
 import { MemberShell } from "./MemberShell";
@@ -17,7 +17,7 @@ import {
   OnboardingSessionWorkspace,
   RecruitmentPortfoliosWorkspace,
 } from "./workspace/ApplicantModules";
-import { useRecruitmentSectionVideo } from "@/clean/platform";
+import DashboardAudioButton from "@/clean/DashboardAudioButton";
 import "./sgr.css";
 
 const FLOW_STEPS = [
@@ -34,20 +34,25 @@ const FLOW_STEPS = [
   ["br-section-portfolios", "Board Member Portfolios"],
 ];
 
-const SectionVideoButton = ({ videoKey }) => {
-  const video = useRecruitmentSectionVideo(videoKey);
-  const watchUrl = video?.url?.startsWith("http") ? video.url : video?.youtube_id ? "https://www.youtube.com/watch?v=" + video.youtube_id : "";
-  if (!watchUrl) {
-    return <button type="button" className="sgr-section-video is-empty" disabled><PlayCircle size={16}/> SECTION VIDEO COMING SOON</button>;
-  }
-  return (
-    <a className="sgr-section-video" href={watchUrl} target="_blank" rel="noreferrer" data-testid={"section-video-" + videoKey}>
-      <PlayCircle size={16}/> PLAY SECTION VIDEO <ExternalLink size={13}/>
-    </a>
-  );
+const RECRUITMENT_AUDIO = {
+  questions: "dash_rct_questions",
+  identify: "dash_rct_identify",
+  materials: "dash_rct_materials",
+  launch: "dash_rct_launch",
+  applicants: "dash_rct_applicants",
+  interviews: "dash_rct_interviews",
+  references: "dash_rct_references",
+  background: "dash_rct_background",
+  "onboarding-prep": "dash_rct_onboarding_prep",
+  "onboarding-session": "dash_rct_onboarding_session",
+  portfolios: "dash_rct_portfolios",
 };
 
-const Section = ({ number, title, summary, children, testId, videoKey, status = "", defaultOpen = false }) => {
+const SectionAudioButton = ({ audioKey }) => (
+  <DashboardAudioButton product="recruitment" narrationId={RECRUITMENT_AUDIO[audioKey]} />
+);
+
+const Section = ({ number, title, summary, children, testId, audioKey, status = "", defaultOpen = false }) => {
   const [open,setOpen]=useState(defaultOpen);
   useEffect(() => {
     const syncHash=()=>{if(window.location.hash===`#${testId}`)setOpen(true)};
@@ -57,7 +62,7 @@ const Section = ({ number, title, summary, children, testId, videoKey, status = 
   },[testId]);
   return (
     <section id={testId} className={"member-card sgr-flow-section sgr-machine-section " + (open?"is-open":"")} data-testid={testId}>
-      <div className="sgr-section-video-row"><SectionVideoButton videoKey={videoKey}/></div>
+      <div className="sgr-section-video-row"><SectionAudioButton audioKey={audioKey}/></div>
       <button type="button" className="sgr-section-toggle" onClick={()=>setOpen(!open)} aria-expanded={open}>
         <span className="sgr-step-number">{number}</span>
         <span>
@@ -164,7 +169,7 @@ export default function BoardRecruitmentPage() {
 
             <Section number={1} title="ANSWER THE SIX RECRUITMENT QUESTIONS"
               summary="Give us the information we need to understand the board you have, the board you want and the people you need."
-              testId="br-section-questions" videoKey="questions" status={questionStatus} defaultOpen>
+              testId="br-section-questions" audioKey="questions" status={questionStatus} defaultOpen>
               <p>Answer six focused questions on separate screens. Add your organization logo before you begin if you want it carried into your recruitment materials.</p>
               <button className="button" onClick={()=>navigate("/app/board-recruitment/questions")} data-testid="start-six-questions">
                 {questionsComplete?"REVIEW MY SIX ANSWERS":answeredCount?"CONTINUE THE SIX QUESTIONS":"START THE SIX QUESTIONS"}
@@ -174,7 +179,7 @@ export default function BoardRecruitmentPage() {
 
             <Section number={2} title="IDENTIFY THE BOARD MEMBERS YOUR ORGANIZATION NEEDS"
               summary="Review the exact number of Board Member profiles built from your six answers and recruitment target."
-              testId="br-section-identify" videoKey="identify" status={identifyStatus}>
+              testId="br-section-identify" audioKey="identify" status={identifyStatus}>
               {!questionsComplete?(
                 <p className="workspace-note">Complete all six Recruitment Questions first.</p>
               ):(
@@ -190,55 +195,55 @@ export default function BoardRecruitmentPage() {
 
             <Section number={3} title="BUILD YOUR BOARD APPLICATION AND RECRUITMENT MATERIALS"
               summary="Your approved Board Member profiles become the foundation for the application and campaign assets."
-              testId="br-section-materials" videoKey="materials" status={progress<3?"Locked":"Prepare"}>
+              testId="br-section-materials" audioKey="materials" status={progress<3?"Locked":"Prepare"}>
               {progress<3?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
             </Section>
 
             <Section number={4} title="LAUNCH YOUR RECRUITMENT CAMPAIGN"
               summary="Review what has been prepared, publish the opportunity and begin receiving applicants."
-              testId="br-section-campaign" videoKey="launch" status={progress<3?"Locked":"Prepare"}>
+              testId="br-section-campaign" audioKey="launch" status={progress<3?"Locked":"Prepare"}>
               {progress<3?<p className="workspace-note">Approve your Board Member profiles first.</p>:<RecruitmentCampaignLaunch/>}
             </Section>
 
             <Section number={5} title="APPLICANTS"
               summary="Review everyone who applies, add outside candidates and decide who should receive an interview invitation."
-              testId="br-section-applicants" videoKey="applicants">
+              testId="br-section-applicants" audioKey="applicants">
               <Module4Applicants/>
             </Section>
 
             <Section number={6} title="INTERVIEWS"
               summary="Interview candidates appear here after you generate their invitation. Create a tailored guide for each person."
-              testId="br-section-interviews" videoKey="interviews">
+              testId="br-section-interviews" audioKey="interviews">
               <InterviewsWorkspace/>
             </Section>
 
             <Section number={7} title="REFERENCE CHECKS"
               summary="Candidates appear here after their interview guide is generated. Run the existing automated reference workflow."
-              testId="br-section-references" videoKey="references">
+              testId="br-section-references" audioKey="references">
               <AutomatedReferenceChecks/>
             </Section>
 
             <Section number={8} title="BACKGROUND CHECK"
               summary="Use a local background-check provider or local sheriff/police option when your organization needs one."
-              testId="br-section-background" videoKey="background">
+              testId="br-section-background" audioKey="background">
               <BackgroundChecksWorkspace/>
             </Section>
 
             <Section number={9} title="PREPARE ONBOARDING AND THE APPOINTMENT"
               summary="Set the onboarding session, approve the reusable onboarding materials, then unlock conditional or unconditional appointment emails."
-              testId="br-section-onboarding-prep" videoKey="onboarding-prep">
+              testId="br-section-onboarding-prep" audioKey="onboarding-prep">
               <OnboardingPreparation/>
             </Section>
 
             <Section number={10} title="RUN THE BOARD MEMBER ONBOARDING SESSION"
               summary="Use presenter notes and one shared screen to facilitate onboarding cleanly, one section at a time."
-              testId="br-section-onboarding-session" videoKey="onboarding-session">
+              testId="br-section-onboarding-session" audioKey="onboarding-session">
               <OnboardingSessionWorkspace/>
             </Section>
 
             <Section number={11} title="BOARD MEMBER PORTFOLIOS"
               summary="Review and approve each person's Board role before generating a tailored Portfolio for the people who join."
-              testId="br-section-portfolios" videoKey="portfolios">
+              testId="br-section-portfolios" audioKey="portfolios">
               <RecruitmentPortfoliosWorkspace/>
             </Section>
 
