@@ -41,6 +41,9 @@ jobs:
       - name: Validate Admin dashboard preview fixtures
         run: python tests/validate_admin_dashboard_previews.py
 
+      - name: Validate Admin client testing center
+        run: python tests/validate_admin_client_testing.py
+
       - name: Validate platform communications
         run: python tests/validate_platform_communications.py
 
