@@ -28,7 +28,8 @@ portfolio_backend = read("backend/portfolio_routes.py")
 portfolio_edit = read("frontend/src/game/PortfolioEditPage.jsx")
 member_strategy = read("frontend/src/game/FinalStrategyMemberPage.jsx")
 assistant_page = read("frontend/src/game/BoardExecutionAssistantPage.jsx")
-voice = read("backend/voice_content.py")\naudio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
+voice = read("backend/voice_content.py")
+audio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
 
 for title in (
     "PLAY THE BOARD FUNDRAISING GAME",
