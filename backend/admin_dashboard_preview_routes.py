@@ -32,7 +32,7 @@ PRODUCTS = {
 FIXTURE_VERSION = "v4"
 RECRUITMENT_FIXTURE_VERSION = "v8"
 STRATEGIC_FIXTURE_VERSION = "v7"
-RECOMMITMENT_FIXTURE_VERSION = "v7"
+RECOMMITMENT_FIXTURE_VERSION = "v8"
 FUNDRAISING_FIXTURE_VERSION = "v6"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
@@ -1477,28 +1477,6 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
-            audit_answers = {
-                "co_leader_1": 2, "co_leader_2": 2,
-                "co_facilitator_1": 2, "co_facilitator_2": 1,
-                "co_architect_1": 3, "co_architect_2": 2,
-                "co_mobilizer_1": 1, "co_mobilizer_2": 2,
-                "co_evaluator_1": 2, "co_evaluator_2": 2,
-                "co_reporter_1": 2, "co_reporter_2": 1,
-            }
-            await db.founder_board_audits.update_one(
-                {"user_id": member["user_id"]},
-                {"$setOnInsert": {
-                    "user_id": member["user_id"],
-                    "answers": audit_answers,
-                    "desired_outcomes": "Create a board where every continuing member has a clear reason for serving and a specific responsibility they are prepared to own.",
-                    "board_support_needed": "Help build fundraising, corporate partnerships, visibility, financial oversight and accountability for strategic priorities.",
-                    "result": None,
-                    "internal_preview": True,
-                    "created_at": now,
-                    "updated_at": now,
-                }},
-                upsert=True,
-            )
             recommitment_yes = "I am ready to recommit, remain an active Board Member and step up in my role."
             recommitment_advisory = "I would like to transition into an Advisory Board role."
             recommitment_no = "I would like to step down from the Board."
@@ -2450,14 +2428,17 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         config = PRODUCTS.get(product)
         if not config:
             raise HTTPException(status_code=404, detail="Unknown product dashboard")
-        member = await preview_member(
-            admin,
+        fixture_version = (
             RECRUITMENT_FIXTURE_VERSION if product == "recruitment"
             else STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
             else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
             else FUNDRAISING_FIXTURE_VERSION if product == "board-fundraising-game"
-            else FIXTURE_VERSION,
+            else FIXTURE_VERSION
         )
+        # Keep every product preview in its own isolated member identity. Two products may
+        # legitimately share the same fixture version number, but they must never share
+        # preview-member state, entitlements or downstream records.
+        member = await preview_member(admin, f"{product}-{fixture_version}")
         if config["entitlements"]:
             await db.members.update_one(
                 {"user_id": member["user_id"]},
