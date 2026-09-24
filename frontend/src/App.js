@@ -54,6 +54,7 @@ import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferenceP
 
 import GameHomePage from "@/game/GameHomePage";
 import GameDemonstrationPage from "@/game/GameDemonstrationPage";
+import GameResumePage from "@/game/GameResumePage";
 import GameAuthCallback from "@/game/GameAuthCallback";
 import GameSituationPage from "@/game/GameSituationPage";
 import GameWelcomePage from "@/game/GameWelcomePage";
@@ -135,6 +136,7 @@ function CleanRoutes() {
       {/* Board Fundraising Game */}
       <Route path="/board-fundraising-game" element={<GameHomePage />} />
       <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
+      <Route path="/game/resume/:token" element={<GameResumePage />} />
       <Route path="/game/welcome" element={<GameWelcomePage />} />
       <Route path="/game/setup" element={<GameSituationPage />} />
       <Route path="/game/dashboard" element={<GameDashboardPage />} />
