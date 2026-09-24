@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, Copy, Download, ExternalLink, FileText, LifeBuoy, Mail, PlayCircle, Plus, Users } from "lucide-react";
+import { CheckCircle2, ChevronDown, Copy, Download, FileText, LifeBuoy, Mail, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
-import { trackPlatformEvent, useStrategicPlanningSectionVideo } from "@/clean/platform";
+import { trackPlatformEvent } from "@/clean/platform";
+import DashboardAudioButton from "@/clean/DashboardAudioButton";
 import "@/game/game.css";
 import "./guided-products.css";
 import "./strategic-planning-dashboard.css";
@@ -16,16 +17,23 @@ const Button=({children,onClick,disabled=false,secondary=false,testId="",href=""
   return <button type="button" className={cls} disabled={disabled} onClick={onClick} data-testid={testId||undefined}>{children}</button>;
 };
 
-const SectionVideo=({videoKey})=>{
-  const video=useStrategicPlanningSectionVideo(videoKey);
-  const url=video?.url?.startsWith("http")?video.url:video?.youtube_id?`https://www.youtube.com/watch?v=${video.youtube_id}`:"";
-  if(!url)return <button className="sp-section-video is-empty" disabled><PlayCircle size={15}/> SECTION VIDEO COMING SOON</button>;
-  return <a className="sp-section-video" href={url} target="_blank" rel="noreferrer"><PlayCircle size={15}/> PLAY SECTION VIDEO <ExternalLink size={12}/></a>;
+const STRATEGIC_AUDIO={
+  organization:"dash_sp_organization",
+  meeting:"dash_sp_meeting",
+  "founder-form":"dash_sp_founder_form",
+  "board-forms":"dash_sp_board_forms",
+  "facilitation-guide":"dash_sp_facilitation",
+  "live-session":"dash_sp_session",
+  "plan-execution":"dash_sp_plan",
 };
 
-const Step=({n,title,summary,status,locked=false,videoKey,children,open,setOpen,testId})=>(
+const SectionAudio=({audioKey})=>(
+  <DashboardAudioButton product="strategic-planning" narrationId={STRATEGIC_AUDIO[audioKey]}/>
+);
+
+const Step=({n,title,summary,status,locked=false,audioKey,children,open,setOpen,testId})=>(
   <section className={`sp-dash-card sp-clean-section ${locked?"sp-locked":""} ${open?"is-open":""}`} id={testId}>
-    <div className="sp-video-row"><SectionVideo videoKey={videoKey}/></div>
+    <div className="sp-video-row"><SectionAudio audioKey={audioKey}/></div>
     <button type="button" className="sp-card-toggle" onClick={()=>!locked&&setOpen(!open)} aria-expanded={open}>
       <span className="sp-step">{n}</span>
       <span><strong>{title}</strong><small>{locked?"Complete the earlier stage first.":summary}</small></span>
@@ -194,7 +202,7 @@ export default function StrategicPlanningDashboard(){
     </section>
 
     <div className="sp-dash-stack">
-      <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} videoKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
+      <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
         <div className="sp-clean-stage">
           <h2>Give The Board A Real Starting Point</h2>
           <p>The organization information is not treated as the final strategy. It gives everyone something real to test, question, protect and improve.</p>
@@ -203,7 +211,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} videoKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
+      <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} audioKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
         <div className="sp-clean-stage">
           <h2>When Is Your Next Board Strategic Planning Meeting?</h2>
           <p>That is the meeting everyone is preparing for. The date and time are carried into direct Board invitations.</p>
@@ -217,7 +225,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} videoKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
+      <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
         <div className="sp-clean-stage">
           <h2>Your Thinking Belongs In The Same Pool As Everyone Else's</h2>
           <p>You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer.</p>
@@ -226,7 +234,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the same Strategic Planning Form to each Board Member and see every completed response in one place." status={!leadDone?"Locked":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!leadDone} videoKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
+      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the same Strategic Planning Form to each Board Member and see every completed response in one place." status={!leadDone?"Locked":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!leadDone} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
         <div className="sp-clean-stage">
           <h2>Invite Board Members To Think Before The Meeting</h2>
           <p>Add each Board Member's name and email. They receive their own secure form link and the meeting date. Their original ideas remain traceable to them during the live session.</p>
@@ -249,7 +257,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="5" title="PREPARE FOR THE STRATEGIC PLANNING SESSION" summary="Generate the facilitation guide from the organization context and the ideas submitted before the meeting." status={!boardResponses.length?"Locked":guideReady?"Ready":"Generate Guide"} locked={!boardResponses.length} videoKey="facilitation-guide" open={open==="5"} setOpen={v=>setOpen(v?"5":"")} testId="sp-guide">
+      <Step n="5" title="PREPARE FOR THE STRATEGIC PLANNING SESSION" summary="Generate the facilitation guide from the organization context and the ideas submitted before the meeting." status={!boardResponses.length?"Locked":guideReady?"Ready":"Generate Guide"} locked={!boardResponses.length} audioKey="facilitation-guide" open={open==="5"} setOpen={v=>setOpen(v?"5":"")} testId="sp-guide">
         <div className="sp-clean-stage">
           <h2>Your Facilitation Guide</h2>
           <p>The guide prepares you to facilitate Mission, Goals, Objectives, every Program, Team, Technology, Marketing, Partnerships, Fundraising, Budget, Action Planning and execution roles without flattening anybody's thinking.</p>
@@ -261,7 +269,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="6" title="RUN THE STRATEGIC PLANNING SESSION" summary="Share one Board screen, transcribe the discussion with consent and make one strategic decision at a time." status={!guideReady?"Locked":sessionDone?"Complete":"Ready"} locked={!guideReady} videoKey="live-session" open={open==="6"} setOpen={v=>setOpen(v?"6":"")} testId="sp-session">
+      <Step n="6" title="RUN THE STRATEGIC PLANNING SESSION" summary="Share one Board screen, transcribe the discussion with consent and make one strategic decision at a time." status={!guideReady?"Locked":sessionDone?"Complete":"Ready"} locked={!guideReady} audioKey="live-session" open={open==="6"} setOpen={v=>setOpen(v?"6":"")} testId="sp-session">
         <div className="sp-clean-stage">
           <h2>Bring Everybody's Ideas Into One Board Conversation</h2>
           <p>The existing live session keeps the Lead User in control of the clicks while everyone follows the shared screen. It preserves the option to leave the mission unchanged, captures the Board's selected ideas and keeps the meeting transcript as context for what people actually meant and agreed.</p>
@@ -270,7 +278,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="7" title="REVIEW THE STRATEGIC PLAN, CONFIRM ROLES AND MOVE INTO EXECUTION" summary="Review the generated plan, give the Board a review link, adopt it when ready, then confirm each person's role before creating their Leadership Portfolio." status={!sessionDone?"Locked":approved?"Execution Ready":finalReady?"Review Plan":finalGenerating?"Generating":"Preparing"} locked={!sessionDone} videoKey="plan-execution" open={open==="7"} setOpen={v=>setOpen(v?"7":"")} testId="sp-plan">
+      <Step n="7" title="REVIEW THE STRATEGIC PLAN, CONFIRM ROLES AND MOVE INTO EXECUTION" summary="Review the generated plan, give the Board a review link, adopt it when ready, then confirm each person's role before creating their Leadership Portfolio." status={!sessionDone?"Locked":approved?"Execution Ready":finalReady?"Review Plan":finalGenerating?"Generating":"Preparing"} locked={!sessionDone} audioKey="plan-execution" open={open==="7"} setOpen={v=>setOpen(v?"7":"")} testId="sp-plan">
         {!finalReady?<div className="sp-clean-stage">
           <h2>{finalFailed?"Strategic Plan Generation Needs Another Attempt":"Building Your Strategic Plan"}</h2>
           <p>{finalFailed?"No Board decisions or responses were lost. Start generation again.":"The plan is being built from the organization's starting information, every original contribution behind the Board's selected ideas and the live meeting discussion. You do not need to start another planning process."}</p>
