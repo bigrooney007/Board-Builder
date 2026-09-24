@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from auth_service import authenticate_admin
 from member_auth import authenticate_member, require_entitlement
 from member_routes import claim_recruitment_purchase
+from platform_communications import notify_homepage_lead, public_origin
 
 GAME_ENTITLEMENT = "board_fundraising_game"
 
@@ -232,6 +233,7 @@ class ProfileUpdate(BaseModel):
     organization: dict = Field(default_factory=dict)
     goal: dict = Field(default_factory=dict)
     primary_user: dict = Field(default_factory=dict)
+    homepage_capture: bool = False
 
 
 class GameBrandingUpdate(BaseModel):
@@ -326,6 +328,21 @@ def create_game_router(db) -> APIRouter:
                       "profile_completed": completed, "updated_at": now},
              "$setOnInsert": {"user_id": member["user_id"], "created_at": now}},
             upsert=True)
+        if payload.homepage_capture and completed:
+            try:
+                root = public_origin()
+                await notify_homepage_lead(
+                    db,
+                    pathway="board-fundraising-game",
+                    source_id=member["user_id"],
+                    name=primary_user.get("full_name") or member.get("first_name", ""),
+                    email=member.get("email", ""),
+                    organization=organization.get("name", ""),
+                    continue_url=f"{root}/login?next=%2Fgame%2Fdemonstration",
+                    details={"fundraising_goal": f"${int(goal.get('amount') or 0):,}"},
+                )
+            except Exception:
+                pass
         return {"profile": await get_profile_doc(member["user_id"])}
 
     @router.post("/game/claim")
