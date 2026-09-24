@@ -42,13 +42,16 @@ for retired in (
 ):
     forbid(dashboard, retired, f"retired dashboard stage: {retired}")
 
-require(dashboard, 'videoKey="organization"', "organization section video")
-require(dashboard, 'videoKey="meeting"', "meeting section video")
-require(dashboard, 'videoKey="founder-form"', "founder-form section video")
-require(dashboard, 'videoKey="board-forms"', "Board forms section video")
-require(dashboard, 'videoKey="facilitation-guide"', "facilitation-guide section video")
-require(dashboard, 'videoKey="live-session"', "live-session section video")
-require(dashboard, 'videoKey="plan-execution"', "plan/execution section video")
+require(dashboard, 'audioKey="organization"', "organization section audio")
+require(dashboard, 'audioKey="meeting"', "meeting section audio")
+require(dashboard, 'audioKey="founder-form"', "founder-form section audio")
+require(dashboard, 'audioKey="board-forms"', "Board forms section audio")
+require(dashboard, 'audioKey="facilitation-guide"', "facilitation-guide section audio")
+require(dashboard, 'audioKey="live-session"', "live-session section audio")
+require(dashboard, 'audioKey="plan-execution"', "plan/execution section audio")
+for audio_id in ("dash_sp_organization","dash_sp_meeting","dash_sp_founder_form","dash_sp_board_forms","dash_sp_facilitation","dash_sp_session","dash_sp_plan"):
+    require(voice, f'"{audio_id}"', f"Strategic Planning dashboard audio {audio_id}")
+require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
 require(dashboard, "SUPPORT THROUGHOUT THE PROCESS", "persistent support")
 
 for key in (
@@ -99,8 +102,7 @@ require(backend, '@router.post("/leadership-portfolio/send")', "Portfolio delive
 require(backend, '@router.get("/leadership-assistant/{token}")', "Strategic Leadership Assistant")
 require(backend, "Do not infer responsibility merely because somebody suggested an idea", "delegation inference protection")
 
-require(clean_backend, "STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS", "Strategic Planning section video backend")
-require(platform_js, "STRATEGIC_PLANNING_SECTION_VIDEO_KEYS", "Strategic Planning section video frontend")
-require(admin, "Strategic Planning Dashboard Section Videos", "Strategic Planning video admin")
+require(admin, "Contextual Audio For The 4 Dashboards", "dashboard audio admin")
+require(admin, "GENERATE LIVE AUDIO", "live ElevenLabs generation action")
 
 print("Strategic Planning clean-house contract: PASS")
