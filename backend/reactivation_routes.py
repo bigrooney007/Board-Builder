@@ -1247,14 +1247,14 @@ def create_reactivation_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         response = payload.model_dump()
         response["email"] = str(payload.email).lower()
-        await db.reactivation_board_members.update_one(
+        result = await db.reactivation_board_members.update_one(
             {"member_record_id": record["member_record_id"], "status": {"$ne": "COMPLETED"}},
             {"$set": {"status": "COMPLETED", "response": response, "form_variant": variant,
                       "submitted_at": now, "name": payload.full_name, "email": response["email"]}},
         )
         context = await founder_context(record["user_id"])
         try:
-            if context["founder_email"]:
+            if result.modified_count and context["founder_email"]:
                 first = payload.full_name.split(" ")[0]
                 founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
                 guided = await db.board_reactivation_intakes.find_one(
@@ -1285,7 +1285,7 @@ def create_reactivation_router(db) -> APIRouter:
             logger.exception("Founder recommitment notification failed for %s", record["member_record_id"])
             await db.reactivation_board_members.update_one(
                 {"member_record_id": record["member_record_id"]},
-                {"$set": {"owner_notification_status": "Failed"}})
+                {"$set": {"owner_notification_status": "Failed", "owner_notification_error": "Email delivery failed; response remains saved."}})
         return {"status": "submitted", "organization_name": context["organization"]}
 
     # ---------------- STEP 2: RECOMMITMENT FORM WORKFLOW ----------------
