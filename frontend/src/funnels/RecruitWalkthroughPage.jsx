@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
@@ -11,6 +11,7 @@ const BASE = process.env.REACT_APP_BACKEND_URL;
 
 export default function RecruitWalkthroughPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const video = usePlatformVideo("recruitment_demonstration");
@@ -18,7 +19,9 @@ export default function RecruitWalkthroughPage() {
 
   useEffect(() => {
     document.title = "Self-Guided Board Recruitment | Nonprofit Board Builder";
-    const token = localStorage.getItem("recruitFreeToken");
+    const emailedToken = searchParams.get("token") || "";
+    if (emailedToken) localStorage.setItem("recruitFreeToken", emailedToken);
+    const token = emailedToken || localStorage.getItem("recruitFreeToken");
     if (!token) { navigate("/recruit", { replace: true }); return undefined; }
     axios.post(`${API}/recruit/free/${token}/event`, { event: "video_page_viewed" }).catch(() => {});
     axios.get(`${API}/game/voice/tutorial/recruitment-free`).then((r) => {
@@ -30,7 +33,7 @@ export default function RecruitWalkthroughPage() {
       }
     }).catch(() => {});
     return () => { if (audioRef.current) audioRef.current.pause(); };
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const buy = async () => {
     setBusy(true); setError("");
