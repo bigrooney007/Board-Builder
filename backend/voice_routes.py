@@ -327,7 +327,9 @@ def create_voice_router(db) -> APIRouter:
                          "test": {"status": "ready" if script["text"] else "missing"},
                          "live": {"status": "ready" if script["text"] else "missing"}})
         missing_live = [row["narration_id"] for row in rows
-                        if row["kind"] == "static" and row["live"]["status"] != "ready" and row["text"]]
+                        if row["kind"] == "static"
+                        and not str(row.get("category") or "").startswith("DASHBOARD_AUDIO_")
+                        and row["live"]["status"] != "ready" and row["text"]]
         bulk = await db.marketing_settings.find_one({"key": "game_voice_bulk"}, {"_id": 0}) or {}
         personal = await db.game_voice_personal_cache.find(
             {}, {"_id": 0, "audio": 0}).sort("created_at", -1).to_list(30)
