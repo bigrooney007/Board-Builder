@@ -404,7 +404,7 @@ It must not invent responsibilities or authority outside the approved role. It m
 
 The customer-facing dashboard contains only four primary collapsible sections corresponding to the four stages above.
 
-Every section has its own admin-managed YouTube help-video slot.
+Every dashboard section has its own admin-managed contextual audio clip. The script is editable in Admin and Test/Live audio is generated explicitly through ElevenLabs. Generating a new Live clip updates the customer experience from the database without another application deployment.
 
 A persistent branded support area remains at the bottom of the dashboard.
 
@@ -613,7 +613,7 @@ The existing Strategic Leadership Executive Assistant remains connected to the P
 
 The customer-facing Strategic Planning dashboard contains only seven primary collapsible sections corresponding to the seven stages above.
 
-Every section has its own admin-managed YouTube help-video slot.
+Every dashboard section has its own admin-managed contextual audio clip. The script is editable in Admin and Test/Live audio is generated explicitly through ElevenLabs. Generating a new Live clip updates the customer experience from the database without another application deployment.
 
 Persistent branded support remains at the bottom of the dashboard.
 
@@ -725,3 +725,42 @@ Admin-launched client tests must not:
 - copy Admin credentials into a customer account
 
 The legacy application/database remains preserved. The Client Testing Center exists only to exercise the clean customer-facing system safely.
+
+
+## 13. Dashboard Contextual Audio Contract
+
+The clean product architecture uses exactly eight core videos:
+- four public demonstration videos, one for each paid pathway
+- four post-purchase onboarding videos, one for each paid pathway
+
+The numbered sections inside the four paid dashboards do not use individual YouTube help videos.
+
+Instead, every dashboard section has one contextual audio asset:
+
+- Board Recruitment: 11 dashboard section audio clips
+- Board Fundraising Game: 6 dashboard section audio clips
+- Board Recommitment: 4 dashboard section audio clips
+- Strategic Planning: 7 dashboard section audio clips
+
+Total: 28 dashboard section audio clips.
+
+Each customer-facing section shows a Play Audio control. When no Live recording exists, the section remains fully usable and the audio control indicates that audio is not yet available.
+
+Dashboard audio uses the existing server-side ElevenLabs voice architecture.
+
+For every dashboard audio asset, Admin must support:
+- the prewritten default script
+- editing the script
+- saving the revised script and incrementing its script version when text changes
+- generating or regenerating Test audio
+- generating or regenerating Live audio
+- previewing generated Live audio
+- audio status showing missing, ready or needs regeneration
+
+Audio generation is always an explicit Admin action. The platform must never spend ElevenLabs credits automatically.
+
+Generated audio is stored in the existing voice-audio persistence layer. Once a new Live clip is generated, customer dashboards load that current asset without requiring another code deployment.
+
+The old dashboard-section YouTube configuration may remain in legacy code/data for recovery, but the clean dashboards and clean Admin surface must not use it.
+
+The eight core demonstration/onboarding videos remain unchanged and continue to use the Platform Videos system.
