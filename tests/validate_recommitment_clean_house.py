@@ -24,8 +24,8 @@ portfolio_workflow = read("frontend/src/member/ReactivationStep5.jsx")
 portfolio_page = read("frontend/src/pages/PortfolioPage.jsx")
 assistant_page = read("frontend/src/pages/RecommitmentAssistantPage.jsx")
 backend = read("backend/reactivation_routes.py")
-clean_platform = read("backend/clean_platform_routes.py")
-platform_js = read("frontend/src/clean/platform.js")
+voice = read("backend/voice_content.py")
+audio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
 app = read("frontend/src/App.js")
 
 for title in (
