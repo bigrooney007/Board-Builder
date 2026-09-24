@@ -41,6 +41,7 @@ export default function GameHomePage() {
           organization: { name: lead.org.trim() },
           goal: { amount: Number(digits), purpose: "Reach our fundraising goal" },
           primary_user: { full_name: lead.name.trim(), email: member.email || lead.email.trim() },
+          homepage_capture: true,
         });
         trackPlatformEvent("board-fundraising-game", "contact_entered");
         navigate("/game/demonstration");
