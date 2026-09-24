@@ -40,7 +40,10 @@ for retired in ("FounderBoardAudit", "ProgressSummary", "ReactivationStep3", "Re
     forbid(dashboard, retired, f"old standalone dashboard stage {retired}")
 
 require(dashboard, 'SupportBox productKey="reactivation_self_guided"', "persistent Recommitment support")
-require(dashboard, "useRecommitmentSectionVideo", "per-section Recommitment videos")
+require(dashboard, "DashboardAudioButton", "per-section Recommitment audio control")
+for audio_id in ("dash_rec_questions","dash_rec_forms","dash_rec_responses","dash_rec_decisions"):
+    require(voice, f'"{audio_id}"', f"Recommitment dashboard audio {audio_id}")
+require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
 
 for key in ("mission", "why_recommit", "board_help_accomplish", "need_by"):
     require(questions, f'key: "{key}"', f"founder setup question {key}")
@@ -91,7 +94,5 @@ require(backend, '@router.post("/portfolio-assistant/{token}")', "Recommitment e
 require(portfolio_page, "OPEN MY EXECUTIVE ASSISTANT", "Portfolio-to-assistant CTA")
 require(assistant_page, "approved Board Member Portfolio", "assistant authority explanation")
 
-require(clean_platform, "RECOMMITMENT_SECTION_VIDEO_DEFINITIONS", "Recommitment section video backend")
-require(platform_js, "RECOMMITMENT_SECTION_VIDEO_KEYS", "Recommitment section video frontend")
 
 print("Board Recommitment clean-house contract: PASS")
