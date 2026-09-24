@@ -32,7 +32,7 @@ export const VoiceGuidedAdmin = () => {
     const [settingsResponse, assetsResponse] = await Promise.all([
       client.get("/admin/game/voice/settings"), client.get("/admin/game/voice/assets")]);
     setSettings(settingsResponse.data.settings);
-    setAssets(assetsResponse.data.assets);
+    setAssets((assetsResponse.data.assets || []).filter((asset) => !String(asset.category || "").startsWith("DASHBOARD_AUDIO_")));
     setMissingLive(assetsResponse.data.missing_live || []);
     setPersonalClips(assetsResponse.data.personal_clips || []);
     setBulk(assetsResponse.data.bulk || null);
