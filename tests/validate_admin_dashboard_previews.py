@@ -17,10 +17,10 @@ preview = read("backend/admin_dashboard_preview_routes.py")
 admin = read("frontend/src/admin/DashboardPreviewSection.jsx")
 
 for version, label in [
-    ('RECRUITMENT_FIXTURE_VERSION = "v7"', "Recruitment fixture version"),
-    ('STRATEGIC_FIXTURE_VERSION = "v6"', "Strategic Planning fixture version"),
-    ('RECOMMITMENT_FIXTURE_VERSION = "v6"', "Recommitment fixture version"),
-    ('FUNDRAISING_FIXTURE_VERSION = "v5"', "Fundraising fixture version"),
+    ('RECRUITMENT_FIXTURE_VERSION = "v8"', "Recruitment fixture version"),
+    ('STRATEGIC_FIXTURE_VERSION = "v7"', "Strategic Planning fixture version"),
+    ('RECOMMITMENT_FIXTURE_VERSION = "v7"', "Recommitment fixture version"),
+    ('FUNDRAISING_FIXTURE_VERSION = "v6"', "Fundraising fixture version"),
 ]:
     require(preview, version, label)
 
