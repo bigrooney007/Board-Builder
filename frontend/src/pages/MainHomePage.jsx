@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { ArrowRight, Users, Gamepad2, Map, RefreshCw, Handshake } from "lucide-react";
+import { ArrowRight, Users, Gamepad2, Map, RefreshCw, Handshake, UserRoundPlus } from "lucide-react";
 import { FounderStorySection } from "@/components/FounderStorySection";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
@@ -33,9 +33,14 @@ export const MAIN_HOME_DEFAULTS = {
     { eyebrow: "FACILITATED WITH ROONEY", title: "Let Us Organize And Facilitate Your Board Fundraising Game", text: "Apply to have Rooney organize the process, prepare your board and facilitate the Board Fundraising Game with your organization.", cta: "APPLY FOR THE FACILITATED GAME" },
   ],
   testimonialsHeading: "What Nonprofit Leaders We Have Worked With Are Saying",
+  applicantEyebrow: "SERVE ON A NONPROFIT BOARD",
+  applicantTitle: "Join The Board Applicant Network",
+  applicantText: "Create your Board Applicant profile once and make your skills, experience, causes and availability visible for nonprofit board opportunities that match how you want to serve.",
+  applicantCta: "JOIN THE BOARD APPLICANT NETWORK",
   closingHeading: "Stop Building Around Whoever Happens To Be Available.",
-  closingText: "Build intentionally around what your mission actually needs.",
+  closingText: "Build intentionally around what your mission actually needs. If you are looking to serve, join the Board Applicant Network and make yourself available to nonprofits looking for the right Board Members.",
   closingCta: "CHOOSE MY PATH",
+  closingApplicantCta: "JOIN THE BOARD APPLICANT NETWORK",
 };
 
 export default function MainHomePage() {
@@ -87,6 +92,22 @@ export default function MainHomePage() {
                 </div>
               </article>;
             })}
+            <article className="nBB-home-card" data-testid="home-board-applicant-network">
+              <img
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
+                alt="Professionals bringing different skills together around a shared mission"
+                loading="lazy"
+              />
+              <div className="nBB-home-card-body">
+                <UserRoundPlus size={30}/>
+                <p className="nBB-home-eyebrow">{copy.applicantEyebrow || MAIN_HOME_DEFAULTS.applicantEyebrow}</p>
+                <h3>{copy.applicantTitle || MAIN_HOME_DEFAULTS.applicantTitle}</h3>
+                <p>{copy.applicantText || MAIN_HOME_DEFAULTS.applicantText}</p>
+                <Link className="nBB-home-card-button" to="/join-a-board" data-testid="home-join-board-network-button">
+                  {copy.applicantCta || MAIN_HOME_DEFAULTS.applicantCta} <ArrowRight size={17}/>
+                </Link>
+              </div>
+            </article>
           </div>
         </section>
 
@@ -97,7 +118,12 @@ export default function MainHomePage() {
         <section className="nBB-home-closing">
           <h2>{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
-          <a href="#choose-path" className="nBB-home-primary">{copy.closingCta} <ArrowRight size={18}/></a>
+          <div className="nBB-home-closing-actions">
+            <a href="#choose-path" className="nBB-home-primary">{copy.closingCta} <ArrowRight size={18}/></a>
+            <Link to="/join-a-board" className="nBB-home-primary nBB-home-secondary-cta" data-testid="home-closing-join-board-network">
+              {copy.closingApplicantCta || MAIN_HOME_DEFAULTS.closingApplicantCta} <ArrowRight size={18}/>
+            </Link>
+          </div>
         </section>
       </main>
       <footer className="nBB-home-footer">
