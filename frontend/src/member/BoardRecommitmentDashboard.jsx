@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ExternalLink, LifeBuoy, PlayCircle } from "lucide-react";
+import { ChevronDown, LifeBuoy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { MemberShell } from "./MemberShell";
 import { SupportBox } from "./CoursePages";
@@ -7,24 +7,29 @@ import { memberApi } from "./api";
 import RecommitmentFormsSection from "./RecommitmentFormsSection";
 import ReactivationUnderstand from "./ReactivationUnderstand";
 import RecommitmentFinalStage from "./RecommitmentFinalStage";
-import { trackPlatformEvent, useRecommitmentSectionVideo } from "@/clean/platform";
+import { trackPlatformEvent } from "@/clean/platform";
+import DashboardAudioButton from "@/clean/DashboardAudioButton";
 import "./sgr.css";
 
-const SectionVideoButton=({videoKey})=>{
-  const video=useRecommitmentSectionVideo(videoKey);
-  const url=video?.url?.startsWith("http")?video.url:video?.youtube_id?`https://www.youtube.com/watch?v=${video.youtube_id}`:"";
-  if(!url)return <button type="button" className="sgr-section-video is-empty" disabled><PlayCircle size={16}/> SECTION VIDEO COMING SOON</button>;
-  return <a className="sgr-section-video" href={url} target="_blank" rel="noreferrer"><PlayCircle size={16}/> PLAY SECTION VIDEO <ExternalLink size={13}/></a>;
+const RECOMMITMENT_AUDIO={
+  questions:"dash_rec_questions",
+  forms:"dash_rec_forms",
+  responses:"dash_rec_responses",
+  decisions:"dash_rec_decisions",
 };
 
-const Section=({number,title,summary,status,videoKey,testId,children,defaultOpen=false})=>{
+const SectionAudioButton=({audioKey})=>(
+  <DashboardAudioButton product="recommitment" narrationId={RECOMMITMENT_AUDIO[audioKey]}/>
+);
+
+const Section=({number,title,summary,status,audioKey,testId,children,defaultOpen=false})=>{
   const[open,setOpen]=useState(defaultOpen);
   useEffect(()=>{
     const sync=()=>{if(window.location.hash===`#${testId}`)setOpen(true)};
     sync();window.addEventListener("hashchange",sync);return()=>window.removeEventListener("hashchange",sync);
   },[testId]);
   return <section id={testId} className={`member-card sgr-flow-section sgr-machine-section ${open?"is-open":""}`}>
-    <div className="sgr-section-video-row"><SectionVideoButton videoKey={videoKey}/></div>
+    <div className="sgr-section-video-row"><SectionAudioButton audioKey={audioKey}/></div>
     <button type="button" className="sgr-section-toggle" onClick={()=>setOpen(!open)} aria-expanded={open}>
       <span className="sgr-step-number">{number}</span>
       <span><strong>{title}</strong><small>{summary}</small></span>
@@ -79,7 +84,7 @@ export default function BoardRecommitmentDashboard(){
 
     <Section number="1" title="ANSWER FOUR IMPORTANT QUESTIONS"
       summary="Tell us your mission, why recommitment matters, what you need the Board to help accomplish and when you need the new commitment in place."
-      status={setupComplete?"Complete":"Start Here"} videoKey="questions" testId="recommitment-questions" defaultOpen>
+      status={setupComplete?"Complete":"Start Here"} audioKey="questions" testId="recommitment-questions" defaultOpen>
       <div className="sgr-clean-stage">
         <h2>Give The Process The Context It Needs</h2>
         <p>These four answers become the organization context used by the Recommitment Forms, response interpretation, call scripts and final Board Member Portfolios.</p>
@@ -90,19 +95,19 @@ export default function BoardRecommitmentDashboard(){
 
     <Section number="2" title="PREPARE AND SEND THE RECOMMITMENT FORMS"
       summary="Create both form versions, approve the outreach email, copy what you need or send a personal form directly from the platform."
-      status={!setupComplete?"Locked":formApproved?"Ready":"Prepare"} videoKey="forms" testId="recommitment-forms">
+      status={!setupComplete?"Locked":formApproved?"Ready":"Prepare"} audioKey="forms" testId="recommitment-forms">
       {!setupComplete?<p className="workspace-note">Complete the four questions in Section 1 first.</p>:<RecommitmentFormsSection onChanged={changed}/>}
     </Section>
 
     <Section number="3" title="REVIEW RESPONSES AND PREPARE THE CONVERSATION"
       summary="Every submitted form appears automatically. View or download the response, interpret what it means and generate the one-on-one call script for that person's chosen path."
-      status={!formApproved?"Locked":responded?`${responded} Responded`:"Waiting For Responses"} videoKey="responses" testId="recommitment-responses">
+      status={!formApproved?"Locked":responded?`${responded} Responded`:"Waiting For Responses"} audioKey="responses" testId="recommitment-responses">
       {!formApproved?<p className="workspace-note">Approve the Recommitment Forms first.</p>:<ReactivationUnderstand key={refreshKey}/>}
     </Section>
 
     <Section number="4" title="CONFIRM THE FINAL OUTCOME AND MOVE EACH PERSON FORWARD"
       summary="After the conversation, record what was actually agreed. Confirm Active Board, Advisory Board or Step Down, then create the correct Portfolio or transition email."
-      status={!responded?"Waiting For Responses":resolved===responded?"Complete":`${resolved}/${responded} Resolved`} videoKey="decisions" testId="recommitment-decisions">
+      status={!responded?"Waiting For Responses":resolved===responded?"Complete":`${resolved}/${responded} Resolved`} audioKey="decisions" testId="recommitment-decisions">
       {!responded?<p className="workspace-note">Board Members appear here automatically after submitting their Recommitment Form.</p>:<RecommitmentFinalStage key={refreshKey}/>}
     </Section>
 
