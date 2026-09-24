@@ -29,11 +29,11 @@ PRODUCTS = {
     },
 }
 
-FIXTURE_VERSION = "v3"
-RECRUITMENT_FIXTURE_VERSION = "v7"
-STRATEGIC_FIXTURE_VERSION = "v6"
-RECOMMITMENT_FIXTURE_VERSION = "v6"
-FUNDRAISING_FIXTURE_VERSION = "v5"
+FIXTURE_VERSION = "v4"
+RECRUITMENT_FIXTURE_VERSION = "v8"
+STRATEGIC_FIXTURE_VERSION = "v7"
+RECOMMITMENT_FIXTURE_VERSION = "v7"
+FUNDRAISING_FIXTURE_VERSION = "v6"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -1161,14 +1161,14 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
     async def seed_guided_product(member: dict, product: str, config: dict) -> str:
         now = now_iso()
-        tag = suffix(member)
         fixture_version = (
             STRATEGIC_FIXTURE_VERSION if product == "strategic-planning"
             else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
             else FIXTURE_VERSION
         )
-        session_id = f"admin_preview_{fixture_version}_{product.replace('-', '_')}_{tag}"
-        lead_token = f"admin-preview-{fixture_version}-{product}-{tag}"
+        tag = f"{fixture_version}-{suffix(member)}"
+        session_id = f"admin_preview_{product.replace('-', '_')}_{tag}"
+        lead_token = f"admin-preview-{product}-{tag}"
         await db.guided_product_leads.update_one(
             {"token": lead_token},
             {"$setOnInsert": {
@@ -1777,7 +1777,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
     async def seed_fundraising_preview(member: dict) -> None:
         now = now_iso()
-        tag = suffix(member)
+        tag = f"{FUNDRAISING_FIXTURE_VERSION}-{suffix(member)}"
         await db.game_profiles.update_one(
             {"user_id": member["user_id"]},
             {"$setOnInsert": {
