@@ -683,3 +683,45 @@ The existing owner notifications remain active for:
 - Facilitated Board Fundraising Game applications
 
 Do not remove these while changing the four paid pathways.
+
+
+## 13. Admin Client Testing Center
+
+The Admin area is the only privileged entry point for customer-pathway testing.
+
+Under **4 Board Builder Pathways**, every paid product exposes two isolated test modes:
+
+1. **Start Fresh Client Test**
+   - Requires an authenticated Admin session.
+   - Creates a brand-new isolated internal client identity for that test run.
+   - Never reuses or exposes the Admin password.
+   - Never calls Stripe or creates a real charge.
+   - Creates only the state a genuine customer would already have immediately after payment.
+   - Starts from the real post-payment welcome/onboarding point where practical.
+   - Recruitment carries the homepage identity, organization and desired Board count.
+   - Board Fundraising Game carries the homepage identity, organization and fundraising goal.
+   - Strategic Planning and Board Recommitment carry the paid guided-session identity and organization information captured before payment.
+   - From the welcome page onward, the tester uses the real customer routes and normal product UI.
+
+2. **Open Fully Preloaded Journey**
+   - Requires an authenticated Admin session.
+   - Creates/uses an isolated preview member for that product only.
+   - Seeds completed forms, realistic responses, transcripts, decisions, materials, plans, Portfolios and downstream execution records so later stages can be inspected without rebuilding the entire journey manually.
+
+All four products must be available in both modes:
+- Board Recruitment
+- Board Fundraising Game
+- Strategic Planning
+- Board Recommitment
+
+Admin test identities and transactions must be marked internal.
+
+Admin-launched client tests must not:
+- appear as genuine Stripe revenue or purchases
+- inflate production platform analytics
+- alter real customer records
+- share state across the four products
+- grant a public payment bypass
+- copy Admin credentials into a customer account
+
+The legacy application/database remains preserved. The Client Testing Center exists only to exercise the clean customer-facing system safely.
