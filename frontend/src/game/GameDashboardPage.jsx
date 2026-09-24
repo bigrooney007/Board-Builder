@@ -10,6 +10,16 @@ import { CompleteGameNightSection } from "./CompleteGameNightSection";
 import { BoardMembersSection } from "./BoardMembersSection";
 import { FinalOutputsSection } from "./MeetingOutputs";
 import { BfgShell, formatDate, money } from "./gameShared";
+import DashboardAudioButton from "@/clean/DashboardAudioButton";
+
+const FUNDRAISING_AUDIO = {
+  "founder-game": "dash_bfg_founder_game",
+  meeting: "dash_bfg_meeting",
+  board: "dash_bfg_board",
+  group: "dash_bfg_group",
+  strategy: "dash_bfg_strategy",
+  execution: "dash_bfg_execution",
+};
 
 const SUPPORT_TYPES = [
   "I have a question about this step",
@@ -18,10 +28,11 @@ const SUPPORT_TYPES = [
   "I would like someone to help me complete this step",
 ];
 
-const DashboardSection = ({ number, title, summary, status, children, defaultOpen = false, testId }) => {
+const DashboardSection = ({ number, title, summary, status, children, defaultOpen = false, testId, audioKey }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className={`bfg-panel bfg-machine-section ${open ? "is-open" : ""}`} data-testid={testId}>
+      <div className="bfg-dashboard-audio-row"><DashboardAudioButton product="board-fundraising-game" narrationId={FUNDRAISING_AUDIO[audioKey]}/></div>
       <button type="button" className="bfg-machine-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="bfg-machine-number">{String(number).padStart(2, "0")}</span>
         <span className="bfg-machine-title">
@@ -272,6 +283,7 @@ export default function GameDashboardPage() {
           status={founderGameComplete ? "Complete" : "Start Here"}
           defaultOpen
           testId="bfg-dashboard-section-founder-game"
+          audioKey="founder-game"
         >
           <div className="bfg-clean-stage">
             <h3>Your Thinking Comes First</h3>
@@ -288,6 +300,7 @@ export default function GameDashboardPage() {
           summary="Set the meeting your Board will use to make final decisions and tell us when the money is needed so the execution plan is built backward from the real deadline."
           status={!founderGameComplete ? "Locked" : meetingReady ? "Complete" : "Set Meeting"}
           testId="bfg-dashboard-section-meeting"
+          audioKey="meeting"
         >
           {founderGameComplete
             ? <GameNightSection onSaved={refreshDashboard} />
@@ -300,6 +313,7 @@ export default function GameDashboardPage() {
           summary="Add each Board Member, send their private Game invitation, resend when needed and use a person-specific call script for follow-up."
           status={!founderGameComplete ? "Locked" : meetingReady ? "Invite Board" : "Locked"}
           testId="bfg-dashboard-section-board"
+          audioKey="board"
         >
           {!founderGameComplete ? (
             <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>
@@ -316,6 +330,7 @@ export default function GameDashboardPage() {
           summary="Discuss every idea together, choose what the Board agrees to, settle the execution system and capture the meeting discussion and delegation."
           status={meeting?.group_completed ? "Complete" : boardReady ? "Group Decision" : "Locked"}
           testId="bfg-dashboard-section-group"
+          audioKey="group"
         >
           {boardReady
             ? <GroupGameStage />
@@ -328,6 +343,7 @@ export default function GameDashboardPage() {
           summary="Turn the Board's adopted decisions into a concise execution strategy, then review the responsibility proposed for every participant before sharing it."
           status={meeting?.final?.status === "done" ? "Ready To Review" : meeting?.final?.status === "running" ? "Generating" : "Waiting For Group Game"}
           testId="bfg-dashboard-section-strategy"
+          audioKey="strategy"
         >
           <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} compact />
           <DelegationReviewStage ready={meeting?.final?.status === "done"} />
@@ -339,6 +355,7 @@ export default function GameDashboardPage() {
           summary="Send the final strategy, activate Board Fundraising Portfolios and give Board Members the execution tools and assistant support tied to their approved responsibilities."
           status={postgame?.adopted ? "Execution" : "Waiting For Strategy"}
           testId="bfg-dashboard-section-execution"
+          audioKey="execution"
         >
           <CompleteGameNightSection overview={postgame} />
           {postgame?.adopted && (
