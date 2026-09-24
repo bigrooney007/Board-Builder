@@ -19,9 +19,9 @@ form_page = read("frontend/src/funnels/StrategicPlanningFormPage.jsx")
 session_page = read("frontend/src/funnels/StrategicPlanningSessionPage.jsx")
 backend = read("backend/strategic_planning_routes.py")
 guided = read("frontend/src/funnels/GuidedProductPages.jsx")
-clean_backend = read("backend/clean_platform_routes.py")
-platform_js = read("frontend/src/clean/platform.js")
-admin = read("frontend/src/admin/PlatformVideosSection.jsx")
+voice = read("backend/voice_content.py")
+audio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
+admin = read("frontend/src/admin/DashboardSectionAudioAdmin.jsx")
 app = read("frontend/src/App.js")
 
 for title in (
