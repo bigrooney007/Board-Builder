@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ai_service import generate_structured
 from member_auth import authenticate_member, new_uuid, require_entitlement
+from platform_communications import notify_homepage_lead, public_origin
 
 
 ASSESSMENT_COLLECTION_NAMES = (
@@ -242,6 +243,19 @@ def create_recruit_free_router(db) -> APIRouter:
             await collection.update_one({"token": existing["token"]}, {"$set": updates})
             existing.update(updates)
             await sync_funnel_lead(db, existing)
+            try:
+                await notify_homepage_lead(
+                    db,
+                    pathway="recruitment",
+                    source_id=existing["lead_id"],
+                    name=existing["name"],
+                    email=existing["email"],
+                    organization=existing["organization"],
+                    continue_url=f"{public_origin()}/recruit/walkthrough?token={existing['token']}",
+                    details={"new_board_members_needed": str(existing.get("desired_count") or "Not sure")},
+                )
+            except Exception:
+                pass
             return public_assessment(existing)
 
         timestamp = now_iso()
@@ -276,6 +290,19 @@ def create_recruit_free_router(db) -> APIRouter:
         }
         await primary.insert_one(doc.copy())
         await sync_funnel_lead(db, doc)
+        try:
+            await notify_homepage_lead(
+                db,
+                pathway="recruitment",
+                source_id=doc["lead_id"],
+                name=doc["name"],
+                email=doc["email"],
+                organization=doc["organization"],
+                continue_url=f"{public_origin()}/recruit/walkthrough?token={doc['token']}",
+                details={"new_board_members_needed": str(doc.get("desired_count") or "Not sure")},
+            )
+        except Exception:
+            pass
         return public_assessment(doc)
 
     @router.get("/{token}")
