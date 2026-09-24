@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from member_auth import authenticate_member, hash_member_password, new_uuid, require_entitlement
+from platform_communications import notify_homepage_lead, public_origin
 
 class GuidedLead(BaseModel):
     product: str
@@ -128,6 +129,22 @@ def create_guided_product_router(db):
         doc={"token":token,**payload.model_dump(mode="json"),"email":str(payload.email).lower(),"created_at":now,"updated_at":now,
              "followup_status":"active","followup_step":0,"next_followup_at":now,"converted_at":""}
         await db.guided_product_leads.insert_one(doc.copy())
+        try:
+            root=public_origin(payload.origin_url or "")
+            pathway=payload.product
+            next_url=f"{root}/{payload.product}/video?token={token}"
+            await notify_homepage_lead(
+                db,
+                pathway=pathway,
+                source_id=token,
+                name=payload.name,
+                email=str(payload.email).lower(),
+                organization=payload.organization,
+                continue_url=next_url,
+                details={"board_count": str(payload.board_count)},
+            )
+        except Exception:
+            pass
         return {"token":token}
 
     @router.get("/context/{token}")
