@@ -21,7 +21,7 @@ backend = read("backend/strategic_planning_routes.py")
 guided = read("frontend/src/funnels/GuidedProductPages.jsx")
 clean_backend = read("backend/clean_platform_routes.py")
 platform_js = read("frontend/src/clean/platform.js")
-admin = read("frontend/src/admin/CleanPlatformSection.jsx")
+admin = read("frontend/src/admin/PlatformVideosSection.jsx")
 app = read("frontend/src/App.js")
 
 for title in (
