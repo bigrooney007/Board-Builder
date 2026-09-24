@@ -17,6 +17,12 @@ The clean public house has six home pages:
 
 The Main Home Page is the shared entry point for the product house.
 
+The Main Home Page must also surface the independent Board Applicant Network at `/join-a-board` in two places:
+- a full pathway card alongside the other homepage pathways
+- a second call-to-action in the final homepage CTA section
+
+This does not make the Board Applicant Network a paid pathway and does not change the six-homepage admin content count.
+
 The four paid Board Builder pathways do not cross-link to one another. The only product-to-product exception is the existing link from the Board Fundraising Game home page to Board Recruitment at `/recruit`.
 
 Legacy public offers may remain in source while they are being retired, but they must not be restored to the clean live router unless the product contract is intentionally changed.
@@ -56,7 +62,7 @@ The Board Fundraising Game dashboard has now been rebuilt on the clean-house flo
 → `/strategic-planning/welcome?session_id=...`
 → `/strategic-planning/dashboard?session_id=...`
 
-The present Strategic Planning dashboard and its participant/session/public-plan routes remain available because an active organization is using this product.
+The Strategic Planning dashboard has now been rebuilt under the clean-house flow defined in Section 12. Reusable participant/session/public-plan infrastructure remains only where it supports that canonical seven-stage journey or preserves existing records.
 
 ### Board Recommitment
 
@@ -82,7 +88,7 @@ This pathway stops after the application. It does not enter Stripe and it does n
 
 Canonical route: `/join-a-board`.
 
-The Board Applicant Network remains independent of the four paid pathways.
+The Board Applicant Network remains independent of the four paid pathways, while the Main Home Page actively drives prospective Board applicants into it.
 
 Required behavior:
 
