@@ -24,7 +24,7 @@ questions = read("frontend/src/member/RecruitmentGameIntake.jsx")
 workspace = read("backend/workspace_routes.py")
 member = read("backend/member_routes.py")
 voice = read("backend/voice_content.py")
-platform = read("frontend/src/clean/platform.js")
+audio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
 
 require(app, 'path="/app/board-recruitment/questions"', "six-question route")
 require(app, 'path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions"', "legacy game redirect")
@@ -71,7 +71,13 @@ require(member, 'lead_updates["phone"] = purchase["payment_phone"]', "Stripe pho
 
 for audio in range(1, 7):
     require(voice, f'"rct_question_{audio}"', f"Recruitment question {audio} voice asset")
-for key in ("questions", "identify", "materials", "launch", "applicants", "interviews", "references", "background", "onboarding-prep", "onboarding-session", "portfolios"):
-    require(platform, f'["{key}",', f"section video key {key}")
+for audio_id in (
+    "dash_rct_questions","dash_rct_identify","dash_rct_materials","dash_rct_launch","dash_rct_applicants",
+    "dash_rct_interviews","dash_rct_references","dash_rct_background","dash_rct_onboarding_prep",
+    "dash_rct_onboarding_session","dash_rct_portfolios",
+):
+    require(voice, f'"{audio_id}"', f"Recruitment dashboard audio {audio_id}")
+require(dashboard, "DashboardAudioButton", "Recruitment dashboard audio control")
+require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
 
 print("Recruitment clean-house contract: PASS")
