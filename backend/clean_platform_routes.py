@@ -351,9 +351,12 @@ def create_clean_platform_router(db) -> APIRouter:
         if not contract:
             return {"stripe_sessions": 0, "purchases": 0}
         source_match = {
-            "$or": [
-                {"offer_source": {"$in": list(contract["offer_source"])}},
-                {"purchase_source": {"$in": list(contract["purchase_source"])}},
+            "$and": [
+                {"internal_preview": {"$ne": True}},
+                {"$or": [
+                    {"offer_source": {"$in": list(contract["offer_source"])}},
+                    {"purchase_source": {"$in": list(contract["purchase_source"])}},
+                ]},
             ]
         }
         stripe_sessions = await db.payment_transactions.count_documents(source_match)
