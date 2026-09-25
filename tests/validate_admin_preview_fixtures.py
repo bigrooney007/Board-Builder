@@ -16,12 +16,14 @@ ui = read("frontend/src/admin/DashboardPreviewSection.jsx")
 for version_line in (
     'RECRUITMENT_FIXTURE_VERSION = "v8"',
     'STRATEGIC_FIXTURE_VERSION = "v7"',
-    'RECOMMITMENT_FIXTURE_VERSION = "v8"',
+    'RECOMMITMENT_FIXTURE_VERSION = "v9"',
     'FUNDRAISING_FIXTURE_VERSION = "v6"',
 ):
     require(preview, version_line, f"fresh fixture version {version_line}")
 
-require(preview, 'tag = f"{fixture_version}-{suffix(member)}"', "versioned Strategic/Recommitment fixture IDs")
+require(preview, 'if product == "board-recommitment"', "isolated Recommitment fixture identity")
+require(preview, 'hashlib.sha256(member["user_id"].encode("utf-8")).hexdigest()[:16]', "Recommitment fixture full-member identity hash")
+require(preview, 'tag = f"{fixture_version}-{identity_suffix}"', "versioned guided-product fixture IDs")
 require(preview, 'tag = f"{FUNDRAISING_FIXTURE_VERSION}-{suffix(member)}"', "versioned Fundraising fixture IDs")
 require(ui, "fully preloaded test journey", "Admin explanation of preloaded test journeys")
 require(preview, 'member = await preview_member(admin, f"{product}-{fixture_version}")', "product-isolated preview identity")
