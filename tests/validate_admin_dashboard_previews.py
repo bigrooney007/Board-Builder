@@ -19,7 +19,7 @@ admin = read("frontend/src/admin/DashboardPreviewSection.jsx")
 for version, label in [
     ('RECRUITMENT_FIXTURE_VERSION = "v8"', "Recruitment fixture version"),
     ('STRATEGIC_FIXTURE_VERSION = "v7"', "Strategic Planning fixture version"),
-    ('RECOMMITMENT_FIXTURE_VERSION = "v8"', "Recommitment fixture version"),
+    ('RECOMMITMENT_FIXTURE_VERSION = "v9"', "Recommitment fixture version"),
     ('FUNDRAISING_FIXTURE_VERSION = "v6"', "Fundraising fixture version"),
 ]:
     require(preview, version, label)
