@@ -33,7 +33,7 @@ FIXTURE_VERSION = "v4"
 FRESH_TEST_VERSION = "fresh-v1"
 RECRUITMENT_FIXTURE_VERSION = "v8"
 STRATEGIC_FIXTURE_VERSION = "v7"
-RECOMMITMENT_FIXTURE_VERSION = "v8"
+RECOMMITMENT_FIXTURE_VERSION = "v9"
 FUNDRAISING_FIXTURE_VERSION = "v6"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
@@ -1167,7 +1167,12 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             else RECOMMITMENT_FIXTURE_VERSION if product == "board-recommitment"
             else FIXTURE_VERSION
         )
-        tag = f"{fixture_version}-{suffix(member)}"
+        identity_suffix = (
+            hashlib.sha256(member["user_id"].encode("utf-8")).hexdigest()[:16]
+            if product == "board-recommitment"
+            else suffix(member)
+        )
+        tag = f"{fixture_version}-{identity_suffix}"
         session_id = f"admin_preview_{product.replace('-', '_')}_{tag}"
         lead_token = f"admin-preview-{product}-{tag}"
         await db.guided_product_leads.update_one(
@@ -1451,7 +1456,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         elif product == "board-recommitment":
             await db.board_reactivation_intakes.update_one(
                 {"guided_session_id": session_id},
-                {"$setOnInsert": {
+                {"$set": {
                     "user_id": member["user_id"],
                     "organization_name": ORG_NAME,
                     "founder_title": "Founder and Executive Director",
@@ -1475,7 +1480,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "guided_answers": answers,
                     "internal_preview": True,
                     "submitted_at": now,
-                }},
+                    "updated_at": now,
+                }, "$setOnInsert": {"created_at": now}},
                 upsert=True,
             )
             recommitment_yes = "I am ready to recommit, remain an active Board Member and step up in my role."
@@ -1616,7 +1622,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     )
                 await db.reactivation_board_members.update_one(
                     {"member_record_id": row["id"]},
-                    {"$setOnInsert": {
+                    {"$set": {
                         "member_record_id": row["id"],
                         "user_id": member["user_id"],
                         "name": row["name"],
@@ -1646,8 +1652,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                         "confirmed_role": confirmed_role,
                         "confirmed_role_at": now if confirmed_role else "",
                         "internal_preview": True,
-                        "created_at": now,
-                    }},
+                        "updated_at": now,
+                    }, "$setOnInsert": {"created_at": now}},
                     upsert=True,
                 )
             form_token = f"admin-preview-recommitment-form-{tag}"
