@@ -20,7 +20,7 @@ export const MAIN_HOME_DEFAULTS = {
   heroHeadline: "Build The Board And Systems Your Nonprofit Needs To Grow And Raise Money Exponentially.",
   heroLead: "Your nonprofit cannot grow beyond the people making the decisions and the systems helping them execute. We help you build stronger boards, activate them around fundraising and turn organizational priorities into strategy.",
   heroCta: "CHOOSE WHAT YOU NEED",
-  problemIntro: "You do need another expensive consultant.",
+  problemIntro: "You do not need another expensive consultant.",
   problemHeading: "What you need is the right board members providing you the right kind of support.",
   problemText: "At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs so you can work with them to raise money exponentially and scale your organization.",
   pathsEyebrow: "CHOOSE YOUR PATH",

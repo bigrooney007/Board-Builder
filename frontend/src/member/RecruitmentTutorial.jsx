@@ -85,11 +85,10 @@ export const RecruitmentTutorial = () => {
             </div>
             <div style={{ marginTop: 14 }}>
               {ITEMS.map((item) => {
-                const ready = clips[item.clip]?.ready;
                 return (
                   <button key={`${item.clip}-${item.target}`} className="sgr-tutorial-item" onClick={() => select(item)} data-testid={`sgr-tutorial-item-${item.target}`}>
                     <span>{item.label}</span>
-                    {!ready && <em>audio coming soon</em>}
+                    <Volume2 size={16} aria-hidden="true" />
                   </button>
                 );
               })}

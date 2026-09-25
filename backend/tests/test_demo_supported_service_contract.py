@@ -56,5 +56,16 @@ class DemoSupportedServiceContractTests(unittest.TestCase):
         self.assertIn("GO TO MY DASHBOARD", game)
         self.assertIn("GO TO MY DASHBOARD", guided)
 
+    def test_verified_live_ui_copy_and_actions_are_clean(self):
+        home = source("frontend/src/pages/MainHomePage.jsx")
+        dashboard = source("frontend/src/game/GameDashboardPage.jsx")
+        completion = source("frontend/src/game/CompleteGameNightSection.jsx")
+        tutorial = source("frontend/src/member/RecruitmentTutorial.jsx")
+        self.assertIn('problemIntro: "You do not need another expensive consultant."', home)
+        self.assertNotIn("MANAGE STRATEGY DELIVERY", dashboard)
+        self.assertEqual(completion.count("MANAGE STRATEGY DELIVERY"), 1)
+        self.assertNotIn("audio coming soon", tutorial.lower())
+        self.assertIn('<Volume2 size={16} aria-hidden="true" />', tutorial)
+
 if __name__ == "__main__":
     unittest.main()

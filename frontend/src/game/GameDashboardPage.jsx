@@ -358,12 +358,6 @@ export default function GameDashboardPage() {
           audioKey="execution"
         >
           <CompleteGameNightSection overview={postgame} />
-          {postgame?.adopted && (
-            <div className="bfg-bm-actions" style={{ marginTop: 16 }}>
-              <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate("/game/portfolios")}>MANAGE BOARD FUNDRAISING PORTFOLIOS</button>
-              <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => navigate("/game/complete?send=1")}>MANAGE STRATEGY DELIVERY</button>
-            </div>
-          )}
         </DashboardSection>
 
         <section className="bfg-persistent-support" data-testid="bfg-dashboard-support">
