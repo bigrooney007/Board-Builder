@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { Volume2 } from "lucide-react";
 
 const MUTE_KEY = "bfg_narration_muted";
 const PLAYED_KEY = "bfg_played_clips";
@@ -11,41 +10,19 @@ export const markClipPlayed = (key) => {
   if (!played.includes(key)) sessionStorage.setItem(PLAYED_KEY, [...played, key].join(","));
 };
 
-export const NarrationControl = ({ audioRef, onReplay }) => {
-  const [muted, setMuted] = useState(isNarrationMuted());
-  useEffect(() => {
-    const sync = () => setMuted(isNarrationMuted());
-    window.addEventListener("bfg-mute-changed", sync);
-    return () => window.removeEventListener("bfg-mute-changed", sync);
-  }, []);
-  const toggle = () => {
-    const next = !isNarrationMuted();
-    sessionStorage.setItem(MUTE_KEY, next ? "1" : "0");
-    if (next && audioRef?.current) audioRef.current.pause();
-    window.dispatchEvent(new Event("bfg-mute-changed"));
-    setMuted(next);
-    if (!next) onReplay?.();
-  };
+export const NarrationControl = ({ onReplay }) => {
   const replay = () => {
     sessionStorage.setItem(MUTE_KEY, "0");
     window.dispatchEvent(new Event("bfg-mute-changed"));
-    setMuted(false);
     onReplay?.();
   };
   return (
-    <span style={{ display: "inline-flex", gap: 2, alignItems: "center" }}>
-      <button onClick={toggle} aria-label={muted ? "Turn narration on" : "Turn narration off"}
+    <span style={{ display: "inline-flex", alignItems: "center" }}>
+      <button onClick={replay} aria-label="Play audio instructions" title="Play audio instructions"
         data-testid="bfg-narration-toggle"
         style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6B7280", padding: 6 }}>
-        {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+        <Volume2 size={18} />
       </button>
-      {onReplay && (
-        <button onClick={replay} aria-label="Replay narration" title="Replay narration"
-          data-testid="bfg-narration-replay"
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: "#6B7280", padding: 6 }}>
-          <RotateCcw size={17} />
-        </button>
-      )}
     </span>
   );
 };

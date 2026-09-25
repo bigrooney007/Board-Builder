@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { STRATEGY_SECTIONS, SectionBody } from "./strategyRender";
+import { STRATEGY_SECTIONS, SectionBody, StrategyDocument, getStrategySections } from "./strategyRender";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const SectionContent = ({ section }) => {
-  const definition = STRATEGY_SECTIONS.find((item) => item.key === section.key);
+  const definition = [...getStrategySections({ schema_version: 4 }), ...STRATEGY_SECTIONS]
+    .find((item) => item.key === section.key);
   if (section.edit) return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line", textAlign: "left" }}>{section.edit}</p>;
+  if (!definition) return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line", textAlign: "left" }}>{String(section.data || "")}</p>;
   return <div style={{ textAlign: "left" }}><SectionBody section={definition} data={section.data} mode={section.mode} /></div>;
 };
 
@@ -168,9 +170,9 @@ const PostGameComplete = ({ token, identity, organizationName }) => {
     return (
       <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gr-adopted">
         <p className="bfg-gg-eyebrow">Game Night</p>
-        <h1>Your Fundraising Strategy Is Ready</h1>
-        <p style={{ marginTop: 14 }}>{organizationName} has adopted its fundraising strategy.</p>
-        <p className="bfg-gg-rule" style={{ marginTop: 14 }}>You will receive your personal Board Fundraising Portfolio when it is ready.</p>
+        <h1>Your Fundraising Strategy Is Being Finalized</h1>
+        <p style={{ marginTop: 14 }}>{organizationName} is completing the adoption process.</p>
+        <p className="bfg-gg-rule" style={{ marginTop: 14 }}>This screen will update when the adopted strategy and your next steps are ready.</p>
       </div>
     );
   }
@@ -235,9 +237,9 @@ export const GroupReviewStage = ({ token, identity }) => {
     return (
       <div className="bfg-gg-card" style={{ textAlign: "center" }} data-testid="bfg-gg-complete">
         <p className="bfg-gg-eyebrow">Game Night</p>
-        <h1>Review Game Complete</h1>
-        <p style={{ marginTop: 14 }}>Your board has now identified the fundraising ideas it wants to prioritize.</p>
-        <p style={{ marginTop: 10 }}>Stay with your board as you move into the next part of Game Night.</p>
+        <h1>Creating Your Fundraising Strategy</h1>
+        <p style={{ marginTop: 14 }}>Your Board's agreed ideas and the full meeting transcript are being turned into the final fundraising plan.</p>
+        <p style={{ marginTop: 10, fontWeight: 700 }}>Return to this screen in 5 minutes. It will update automatically when the strategy is ready.</p>
       </div>
     );
   }
@@ -288,7 +290,8 @@ export const GroupReviewStage = ({ token, identity }) => {
       return (
         <div className="bfg-gg-card" data-testid="bfg-gr-final-response-card">
           <p className="bfg-gg-eyebrow">Final Strategy Review</p>
-          <h1>Final Strategy Review</h1>
+          <h1>Review And Adopt The Final Fundraising Strategy</h1>
+          {data.final_strategy && <div style={{ marginTop: 18 }}><StrategyDocument strategy={data.final_strategy} /></div>}
           <FinalResponseBlock token={token} identity={identity} organizationName={data.organization_name}
             myResponse={data.my_final_response} onSubmitted={poll} />
         </div>

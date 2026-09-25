@@ -82,19 +82,17 @@ LEGACY_FINAL_V2_SCHEMA = {
 }
 
 FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
-The Board has completed its Individual Games and explicitly selected its ideas during the four-round Group Game.
-Create exactly four strategy parts:
-1. Who the organisation will raise money from.
-2. Where the organisation will find them.
-3. How the organisation will attract them.
-4. How the organisation will raise money from them.
-Use the Board's selected ideas as the authority. Preserve the Board's distinctive language and logic wherever practical.
+The Board has completed its Individual Games and explicitly selected its ideas during the six-round Group Game.
+Create a proper fundraising plan, not meeting minutes. It must contain an executive summary with the exact goal, purpose and deadline; who the organisation will raise money from across individuals, businesses and grantors and why; where to find them; how to attract them and build credibility; what to ask each audience to fund and how much to ask; the step-by-step fundraising process; and the agreed role of every participating Board Member.
+Use the Board's selected ideas and explicit transcript decisions as the sole authority. Preserve their distinctive language, intent and logic. Your job is to present their ideas clearly and make them practical and actionable only where their own context supports the detail. Do not replace their ideas with your own.
 Use the lead user's present donors, business supporters, grantors and current fundraising methods as valid options where the Board selected or retained them.
-Do not add sections about team, technology, materials, resources, budget, timeline, delegation, portfolios or an execution system.
-Do not invent funders, organisations, relationships, commitments or results.
+Do not write "the Board discussed", "a participant said", names of contributors outside agreed roles, or any meeting-history language.
+Do not add generic advice or invent funders, organisations, relationships, commitments, actions, amounts or results. Leave unsupported parts empty.
+Write proper explanatory paragraphs in Rooney Akpesiri's clear, direct and practical style.
 Return only the required structured JSON."""
 
 FINAL_V2_SCHEMA = {
+    "executive_summary": "Two or three proper paragraphs explaining the exact fundraising amount, purpose, deadline and agreed strategic approach without describing the meeting",
     "fundraising_audiences": {
         "individuals": [{"title": "Audience profile", "explanation": "Why they have a reason to give", "focus": "What the organisation will focus on"}],
         "businesses": [{"title": "Business audience profile", "explanation": "Why they have a reason to support", "focus": "What the organisation will focus on"}],
@@ -102,14 +100,20 @@ FINAL_V2_SCHEMA = {
     },
     "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "How it connects to the chosen audience", "focus": "How the organisation will use it consistently"}], "additional_ideas": ["string"]},
     "attraction": {"priorities": [{"title": "Attraction idea", "explanation": "Why it matters to the chosen audience", "focus": "How the organisation will use it"}], "additional_ideas": ["string"]},
+    "funding_ask": {
+        "individuals": [{"title": "What to fund", "explanation": "Exact amount or range agreed", "focus": "How the ask connects to the goal"}],
+        "businesses": [{"title": "What to sponsor or fund", "explanation": "Exact amount or range agreed", "focus": "How the ask connects to the goal"}],
+        "grantors": [{"title": "What to fund", "explanation": "Exact amount or range agreed", "focus": "How the request connects to the goal"}],
+    },
     "fundraising_process": {
         "individuals": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
         "businesses": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
         "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
     },
+    "board_roles": [{"name": "Board Member's real name", "role": "Agreed role", "responsibility": "Specific agreed action and timing from the Group Game or transcript"}],
 }
 
-CORE_STRATEGY_KEYS = ["fundraising_audiences", "where_to_find", "attraction", "fundraising_process"]
+CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"]
 
 BOARD_FUNDRAISING_PROCESS = {
     "know": [
@@ -229,46 +233,37 @@ def create_game_meeting_router(db) -> APIRouter:
 
     async def board_ideas_by_area(user_id: str) -> dict:
         members = await db.game_board_members.find(
-            {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1}).to_list(200)
-        member_ids = [record["member_id"] for record in members]
-        collected = {}
-        for definition in AREA_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition["key"])
-            responses = await db.game_section_responses.find(
-                {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id}, {"_id": 0}).to_list(300)
-            ideas = []
-            for response in responses:
-                if definition["key"] == "who_should_fund":
-                    for audience_type, label in (("individual", "Individual"), ("business", "Business"), ("grantor", "Grantor")):
-                        ideas.extend(f"{label}: {text}" for text in area_ideas(response, definition["key"], audience_type))
-                else:
-                    ideas.extend(area_ideas(response, definition["key"]))
-            seen = set()
-            unique = []
-            for idea in ideas:
-                key = " ".join(str(idea).lower().split())
-                if key and key not in seen:
-                    seen.add(key)
-                    unique.append(str(idea).strip()[:400])
-            collected[definition["key"]] = unique
+            {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1, "full_name": 1}).to_list(200)
+        names = {record["member_id"]: record.get("full_name") or "Board Member" for record in members}
+        rows = await db.game_audience_responses.find(
+            {"user_id": user_id, "board_member_id": {"$in": list(names)}, "completed": True}, {"_id": 0}).to_list(300)
+        collected = {definition["key"]: [] for definition in AREA_DEFS}
+        field_map = {"funding_audiences": "audience", "where_to_find": "where", "attraction": "attraction",
+                     "funding_ask": "funding_ask", "fundraising_process": "process"}
+        labels = {"individuals": "Individuals", "businesses": "Businesses", "grantors": "Grantors"}
+        for row in rows:
+            for audience_key, answer in (row.get("audiences") or {}).items():
+                if audience_key not in labels or (audience_key != "individuals" and not answer.get("enabled")):
+                    continue
+                for area_key, field in field_map.items():
+                    value = str(answer.get(field) or "").strip()
+                    if value:
+                        reason = str(answer.get("reason") or "").strip()
+                        collected[area_key].append(f"{labels[audience_key]}: {value}" + (f" | Why: {reason}" if area_key == "funding_audiences" and reason else ""))
+            if row.get("involvement"):
+                collected["board_roles"].append(f"{names.get(row['board_member_id'], 'Board Member')}: {row['involvement']}")
         return collected
 
     async def participation_choices(user_id: str) -> list:
-        rows = await db.game_section_responses.find(
-            {"user_id": user_id, "section_id": 5, "completed": True}, {"_id": 0, "extras": 1, "board_member_id": 1}).to_list(300)
         members = {record["member_id"]: record["full_name"] for record in await db.game_board_members.find(
             {"user_id": user_id}, {"_id": 0, "member_id": 1, "full_name": 1}).to_list(300)}
         choices = []
+        rows = await db.game_audience_responses.find(
+            {"user_id": user_id, "completed": True}, {"_id": 0, "board_member_id": 1, "involvement": 1}).to_list(300)
         for row in rows:
-            extras = row.get("extras") or {}
-            if extras.get("raise") or extras.get("time") or extras.get("additional_idea"):
-                choices.append({
-                    "board_member_name": members.get(row.get("board_member_id"), ""),
-                    "wants_to_help_raise_money": extras.get("raise", []),
-                    "raise_other": extras.get("raise_other", ""),
-                    "monthly_time_commitment": extras.get("time", ""),
-                    "additional_comments": extras.get("additional_idea", ""),
-                })
+            if row.get("involvement"):
+                choices.append({"board_member_name": members.get(row.get("board_member_id"), ""),
+                                "preferred_involvement": row["involvement"]})
         return choices
 
     async def group_results_by_area(user_id: str) -> dict:
@@ -311,9 +306,9 @@ def create_game_meeting_router(db) -> APIRouter:
             organization = profile.get("organization") or {}
             current_reality = (situation.get("sections") or {}).get("current_reality") or {}
             current_funder_keys = {
-                "current_individual_donor_profile", "current_individual_donor_motivation", "current_individual_donor_process",
-                "current_business_profile", "current_business_support", "current_business_process",
-                "current_grantor_profile", "current_grantor_support", "current_grantor_process",
+                "current_individual_donor_profile", "current_individual_donor_where", "current_individual_donor_attraction", "current_individual_donor_support", "current_individual_donor_process",
+                "current_business_profile", "current_business_where", "current_business_attraction", "current_business_support", "current_business_process",
+                "current_grantor_profile", "current_grantor_where", "current_grantor_attraction", "current_grantor_support", "current_grantor_process",
                 "current_individual_donors", "current_businesses", "current_grantors",
                 "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
             }
@@ -332,13 +327,13 @@ def create_game_meeting_router(db) -> APIRouter:
                 "board_meeting_transcript": (transcript.get("text") or "")[:120000],
             }
             api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
-            model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+            model = os.environ.get("FUNDRAISING_STRATEGY_MODEL", "claude-haiku-4-5-20251001")
             chat = LlmChat(api_key=api_key, session_id=f"bfg-final-compile-{uuid.uuid4()}",
                            system_message=FINAL_SYSTEM_MESSAGE).with_model("anthropic", model)
             prompt = (
                 "FINAL STRATEGY CONTEXT (the only information you may use):\n"
                 f"{json.dumps(context, indent=1)}\n\n"
-                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. If a meeting transcript is supplied, use it only to identify clarifications or changes to the four strategic decisions. "
+                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. Use the full meeting transcript to identify clarifications, final decisions and agreed Board Member roles across all six decisions. "
                 "Do not invent decisions that are not present.\n\n"
                 "Respond with ONE JSON object matching exactly this schema (descriptions explain each field). "
                 "Return only JSON — no markdown, no commentary:\n"
@@ -352,15 +347,26 @@ def create_game_meeting_router(db) -> APIRouter:
             now = now_iso()
             record = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": "final",
-                "status": "adopted", "version": version, "schema_version": 3,
+                "status": "final_draft", "version": version, "schema_version": 4,
                 "share_token": secrets.token_urlsafe(24),
                 "prepared_by": f"The Board of {organization.get('name', '').strip()}".strip(),
                 "data": data, "section_edits": {},
                 "source": "group_game_final_compile",
-                "generated_at": now, "created_at": now, "adopted_at": now,
+                "generated_at": now, "created_at": now,
                 "last_edited_at": "", "last_edited_by": "", "review_completed_at": "",
             }
             await db.game_strategies.insert_one(record.copy())
+            session = await completed_group_session(user_id)
+            existing_review = await db.meeting_review_sessions.find_one(
+                {"user_id": user_id, "group_session_id": (session or {}).get("session_id", "")}, {"_id": 0}) or {}
+            review_id = existing_review.get("review_id") or new_uuid()
+            await db.meeting_review_sessions.update_one(
+                {"review_id": review_id},
+                {"$set": {"user_id": user_id, "group_session_id": (session or {}).get("session_id", ""),
+                          "strategy_id": record["strategy_id"], "final_strategy_id": record["strategy_id"],
+                          "status": "final_strategy_created", "final_review_status": "response",
+                          "final_strategy_created_at": now, "updated_at": now},
+                 "$setOnInsert": {"started_at": now, "created_at": now}}, upsert=True)
             try:
                 from rooney_intelligence import store_strategy_patterns
                 await store_strategy_patterns(db, user_id=user_id,

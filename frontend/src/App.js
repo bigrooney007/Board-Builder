@@ -78,6 +78,7 @@ import FacilitatedGameApplicationPage from "@/game/FacilitatedGameApplicationPag
 import RelationshipMapDashboardPage from "@/game/RelationshipMapDashboardPage";
 import RelationshipMappingPage from "@/game/RelationshipMappingPage";
 import FinalStrategyMemberPage from "@/game/FinalStrategyMemberPage";
+import FinalStrategyPage from "@/game/FinalStrategyPage";
 
 import PlatformAnalytics from "@/clean/PlatformAnalytics";
 
@@ -164,7 +165,7 @@ function CleanRoutes() {
       <Route path="/game/board-review" element={<Navigate to="/game/dashboard" replace />} />
       <Route path="/game/meeting-review" element={<Navigate to="/game/dashboard" replace />} />
       <Route path="/game/meeting-review/decisions" element={<Navigate to="/game/dashboard" replace />} />
-      <Route path="/game/meeting-review/final" element={<Navigate to="/game/dashboard" replace />} />
+      <Route path="/game/meeting-review/final" element={<FinalStrategyPage />} />
       <Route path="/game/strategy/priorities" element={<Navigate to="/game/dashboard" replace />} />
       <Route path="/game/execution-materials" element={<Navigate to="/game/portfolios" replace />} />
 

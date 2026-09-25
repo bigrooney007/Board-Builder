@@ -65,7 +65,7 @@ const GroupGameStage = () => {
         <h3>Bring The Board's Ideas Into One Room</h3>
         <p className="bfg-panel-sub">
           {completed
-            ? "Your Board completed all nine decision screens. The final strategy is being built from the decisions the Board adopted."
+            ? "Your Board completed all six decision screens. The final strategy is being built from the Board's agreed ideas and meeting transcript."
             : inProgress
               ? "Your Group Game is in progress. Continue from the exact screen where the Board stopped."
               : "The Group Game brings together the founder's thinking, Board Member ideas, current fundraising reality and execution recommendations so the Board can decide what actually moves forward."}
@@ -114,7 +114,7 @@ const DelegationReviewStage = ({ ready }) => {
   }, [ready, load]);
 
   if (!ready) {
-    return <p className="bfg-note">Complete the Group Game first. Proposed delegations are prepared after the final strategy is ready.</p>;
+    return <p className="bfg-note">Adopt the final fundraising strategy first. Proposed delegations are prepared only after adoption.</p>;
   }
   if (!data) return <p className="bfg-note">{preparing ? "Preparing each participant's proposed fundraising delegation…" : "Opening delegation review…"}</p>;
 
@@ -268,7 +268,7 @@ export default function GameDashboardPage() {
         <header className="bfg-clean-dashboard-hero">
           <p className="bfg-eyebrow">NONPROFIT BOARD BUILDER</p>
           <h1>BOARD FUNDRAISING GAME</h1>
-          <p>Build the fundraising strategy with your Board, agree the system required to execute it and give every Board Member a clear role in raising money and strengthening that system.</p>
+          <p>Build the fundraising strategy with your Board, agree how the organization will reach its goal and give every Board Member a clear role in raising money.</p>
           <div className="bfg-goal-chip">
             <span>Fundraising Goal</span>
             <strong>{goalAmount ? money(goalAmount) : "Not set yet"}</strong>
@@ -279,7 +279,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={1}
           title="PLAY THE BOARD FUNDRAISING GAME"
-          summary="Answer the four strategy questions, document your present donors, business supporters and grantors, then choose how you want to help raise money."
+          summary="Build complete ideas for individual donors and any business or grantor audiences you know, document your present fundraising process, then explain how you would like to help."
           status={founderGameComplete ? "Complete" : "Start Here"}
           defaultOpen
           testId="bfg-dashboard-section-founder-game"
@@ -287,7 +287,7 @@ export default function GameDashboardPage() {
         >
           <div className="bfg-clean-stage">
             <h3>Your Thinking Comes First</h3>
-            <p className="bfg-panel-sub">Answer who to raise money from, where to find them, how to attract them and how to raise money from them. The lead user also records the organization's present donors, business supporters and grantors before choosing how to participate.</p>
+            <p className="bfg-panel-sub">Identify the individuals, businesses and grantors with the strongest reason to support the goal. Explain why, where to find them, how to attract them, what to ask them to fund, the process for raising the money and how you would like to help. The Lead User also records the organization's present fundraising circumstances.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>
@@ -318,7 +318,7 @@ export default function GameDashboardPage() {
           {!founderGameComplete ? (
             <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>
           ) : !meetingReady ? (
-            <p className="bfg-note">Save the Board meeting date, time, timezone and funding deadline in Section 2 before inviting participants.</p>
+            <p className="bfg-note">Save the Board meeting date, time and fundraising deadline in Section 2 before inviting participants.</p>
           ) : (
             <BoardMembersSection onChanged={refreshDashboard} />
           )}
@@ -327,7 +327,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={4}
           title="RUN THE GROUP BOARD FUNDRAISING GAME"
-          summary="Discuss every idea together, choose what the Board agrees to, settle the execution system and capture the meeting discussion and delegation."
+          summary="Discuss every idea together, select the Board's six fundraising decisions and capture the meeting discussion and agreed roles."
           status={meeting?.group_completed ? "Complete" : boardReady ? "Group Decision" : "Locked"}
           testId="bfg-dashboard-section-group"
           audioKey="group"
@@ -346,7 +346,7 @@ export default function GameDashboardPage() {
           audioKey="strategy"
         >
           <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} compact />
-          <DelegationReviewStage ready={meeting?.final?.status === "done"} />
+          <DelegationReviewStage ready={Boolean(postgame?.adopted)} />
         </DashboardSection>
 
         <DashboardSection

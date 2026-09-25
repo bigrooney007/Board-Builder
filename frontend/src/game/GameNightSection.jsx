@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { memberApi } from "@/member/api";
 
-const TIMEZONES = ["Eastern Time (ET)", "Central Time (CT)", "Mountain Time (MT)", "Pacific Time (PT)", "Alaska Time (AKT)", "Hawaii Time (HT)", "UTC"];
-const FORMATS = [{ value: "in_person", label: "In Person" }, { value: "online", label: "Virtual" }, { value: "hybrid", label: "Hybrid" }];
-
 const fmtDate = (raw) => {
   if (!raw) return "";
   const date = new Date(`${raw}T00:00:00`);
@@ -39,11 +36,7 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
       meeting_date: night?.meeting_date || "",
       funding_deadline: night?.funding_deadline || "",
       start_time: night?.start_time || "",
-      timezone_name: night?.timezone || "Eastern Time (ET)",
-      meeting_format: night?.meeting_format || "in_person",
-      meeting_link: night?.meeting_link || "",
-      meeting_location: night?.meeting_location || "",
-      note: night?.note || "",
+      timezone_name: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
     });
     setEditing(true);
   };
@@ -51,12 +44,11 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
   const save = async () => {
     setError("");
     if (!form.meeting_date) { setError("Meeting date is required."); return; }
-    if (!form.funding_deadline) { setError("Funding deadline is required."); return; }
+    if (!form.funding_deadline) { setError("Fundraising deadline is required."); return; }
     if (new Date(form.funding_deadline + "T00:00:00") < new Date(form.meeting_date + "T00:00:00")) {
-      setError("The funding deadline cannot be before the Board meeting date."); return;
+      setError("The fundraising deadline cannot be before the Board meeting date."); return;
     }
     if (!form.start_time) { setError("Start time is required."); return; }
-    if (!form.timezone_name) { setError("Time zone is required."); return; }
     setBusy(true);
     try {
       const response = await memberApi.put("/game/night", form);
@@ -72,14 +64,12 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
   if (!loaded) return null;
   const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
   const saved = night?.meeting_date;
-  const formatLabel = (FORMATS.find((item) => item.value === night?.meeting_format) || {}).label || night?.meeting_format;
-
   return (
     <section className="bfg-panel" data-testid="bfg-game-night-section">
       <div className="bfg-panel-head">
         <div>
           <><p className="bfg-eyebrow">BOARD MEETING</p><h2>Set Your Board Fundraising Day/Night</h2></>
-          <p className="bfg-panel-sub">Set the next Board meeting and tell us when the money is needed. The funding deadline becomes the anchor for the execution timeline in your final fundraising strategy.</p>
+          <p className="bfg-panel-sub">Set the date and time for the Group Game and the deadline for reaching the fundraising goal. That deadline will flow into the final strategy.</p>
         </div>
         {saved && !editing && (
           <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={startEdit} data-testid="bfg-edit-game-night-btn">Edit Meeting Details</button>
@@ -94,16 +84,8 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
         <div className="bfg-night-summary" data-testid="bfg-game-night-summary">
           <p className="bfg-eyebrow" style={{ margin: "8px 0 4px" }}>Your Next Board Fundraising Day/Night</p>
           <div className="bfg-summary-row"><span>Board Meeting Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
-          <div className="bfg-summary-row"><span>Funding Deadline</span><strong>{fmtDate(night.funding_deadline)}</strong></div>
-          <div className="bfg-summary-row"><span>Time</span><strong>{fmtTime(night.start_time)} {night.timezone}</strong></div>
-          <div className="bfg-summary-row"><span>Format</span><strong>{formatLabel}</strong></div>
-          {["online", "hybrid"].includes(night.meeting_format) && night.meeting_link && (
-            <div className="bfg-summary-row"><span>Meeting Link</span><strong>{night.meeting_link}</strong></div>
-          )}
-          {["in_person", "hybrid"].includes(night.meeting_format) && night.meeting_location && (
-            <div className="bfg-summary-row"><span>Location</span><strong>{night.meeting_location}</strong></div>
-          )}
-          {night.note && <div className="bfg-summary-row"><span>Meeting Notes</span><strong>{night.note}</strong></div>}
+          <div className="bfg-summary-row"><span>Time</span><strong>{fmtTime(night.start_time)}</strong></div>
+          <div className="bfg-summary-row"><span>Fundraising Deadline</span><strong>{fmtDate(night.funding_deadline)}</strong></div>
         </div>
       )}
 
@@ -113,41 +95,13 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
             <label className="bfg-field"><span>Meeting Date <b>*</b></span>
               <input type="date" value={form.meeting_date} onChange={set("meeting_date")} data-testid="bfg-night-date" />
             </label>
-            <label className="bfg-field"><span>When Do You Need The Money? <b>*</b></span>
-              <input type="date" min={form.meeting_date || undefined} value={form.funding_deadline} onChange={set("funding_deadline")} data-testid="bfg-funding-deadline" />
-              <small>This deadline determines whether your execution plan should be 30, 60, 90, 120 days or another realistic period.</small>
-            </label>
-          </div>
-          <div className="bfg-two-col">
             <label className="bfg-field"><span>Start Time <b>*</b></span>
               <input type="time" value={form.start_time} onChange={set("start_time")} data-testid="bfg-night-time" />
             </label>
           </div>
-          <div className="bfg-two-col">
-            <label className="bfg-field"><span>Time Zone <b>*</b></span>
-              <select value={form.timezone_name} onChange={set("timezone_name")} data-testid="bfg-night-timezone">
-                {TIMEZONES.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-              </select>
-            </label>
-            <label className="bfg-field"><span>Meeting Format <b>*</b></span>
-              <select value={form.meeting_format} onChange={set("meeting_format")} data-testid="bfg-night-format">
-                {FORMATS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </label>
-          </div>
-          {["online", "hybrid"].includes(form.meeting_format) && (
-            <label className="bfg-field"><span>Meeting Link</span>
-              <input value={form.meeting_link} onChange={set("meeting_link")} data-testid="bfg-night-link" />
-            </label>
-          )}
-          {["in_person", "hybrid"].includes(form.meeting_format) && (
-            <label className="bfg-field"><span>Meeting Location</span>
-              <input value={form.meeting_location} onChange={set("meeting_location")} data-testid="bfg-night-location" />
-            </label>
-          )}
-          <label className="bfg-field"><span>Optional Meeting Notes</span>
-            <textarea rows={3} value={form.note} placeholder="Add anything you want your board members to know before the meeting."
-              onChange={set("note")} data-testid="bfg-night-note" />
+          <label className="bfg-field"><span>Fundraising Deadline <b>*</b></span>
+            <input type="date" min={form.meeting_date || undefined} value={form.funding_deadline} onChange={set("funding_deadline")} data-testid="bfg-funding-deadline" />
+            <small>The final strategy will use this deadline in its executive summary and action plan.</small>
           </label>
           {error && <p className="bfg-error" data-testid="bfg-night-error">{error}</p>}
           <div className="bfg-form-actions">

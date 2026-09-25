@@ -233,7 +233,7 @@ GAME_V3 = {
         "play_first_text": "Your fundraising strategy is created from the answers you give while playing the game. Play your game first, then come back to complete your setup.",
         "play_first_button": "Play My Board Fundraising Game",
         "generate_heading": "Generate Your Working Fundraising Strategy",
-        "generate_text": "We will combine your approved ideas with what you shared about your present donors, business supporters and grantors to build your four-part working fundraising strategy.",
+        "generate_text": "We will combine your approved ideas with what you shared about your present donors, business supporters and grantors to build your complete working fundraising plan.",
         "generate_button": "Generate My Working Fundraising Strategy",
         "generating_text": "Building your working fundraising strategy… This can take a minute. Please keep this page open.",
         "generated_heading": "Your Working Fundraising Strategy Is Ready",
@@ -245,7 +245,7 @@ GAME_V3 = {
     },
     "group_complete": {
         "heading": "Your Board Has Completed The Fundraising Game",
-        "supporting": "Your board reviewed everyone's ideas across the four strategic areas and selected the direction your organization will use. The next step is turning those decisions into your final four-part fundraising strategy.",
+        "supporting": "Your board reviewed everyone's ideas across the six fundraising decisions and selected the direction your organization will use. The next step is presenting those decisions as your complete fundraising plan.",
         "cta": "Generate Our Final Fundraising Strategy",
     },
     "guided": {

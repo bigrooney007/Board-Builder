@@ -297,19 +297,19 @@ export default function GroupGamePage() {
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
                 <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board has now made explicit decisions about who to raise money from, where to find them, how to attract them and how to raise money from them. Final strategy generation has started from those Board decisions.
+                  Your board has now decided which funding audiences to pursue and why, where to find them, how to attract them, what to ask them to fund, how to raise the money and the role each Board Member will play. Final strategy generation has started from those decisions.
                 </p>
-                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 4} of {session?.total_rounds || 4} Review Rounds Completed</p>
+                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
                   <h3 style={{ fontSize: 17 }}>{finalState?.status === "done" ? "Your Final Fundraising Strategy Is Ready" : "Your Final Fundraising Strategy Is Being Prepared"}</h3>
                   <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
                     {finalState?.status === "done"
-                      ? "The strategy now reflects the Board's adopted decisions across the four fundraising areas. You can open it now and review it together before leaving the meeting."
-                      : "The final four-part strategy is being created from the organization's present fundraising context, Board ideas and the decisions adopted during the Group Game. You can stay here and it will surface automatically, or return to the dashboard."}
+                      ? "The strategy now reflects the Board's agreed audiences, channels, attraction approach, funding asks, fundraising process and individual roles. You can open it now and review it together before leaving the meeting."
+                      : "The final fundraising plan is being created from the organization's present fundraising context, the Board's six decisions and the full meeting transcript. You can stay here and it will surface automatically, or return to the dashboard."}
                   </p>
                   {finalState?.status === "done" && finalState?.strategy_id ? (
                     <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }}
-                      onClick={() => navigate(`/game/strategy/view/${finalState.strategy_id}`)} data-testid="bfg-gg-view-final-strategy-now">
+                      onClick={() => navigate("/game/meeting-review/final")} data-testid="bfg-gg-view-final-strategy-now">
                       VIEW FINAL STRATEGY TOGETHER
                     </button>
                   ) : (

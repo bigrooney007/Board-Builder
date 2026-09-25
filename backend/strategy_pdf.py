@@ -30,6 +30,15 @@ V3_SECTIONS = [
     ("attraction", "How We Will Attract Their Attention"),
     ("fundraising_process", "How We Will Raise Money From Them"),
 ]
+V4_SECTIONS = [
+    ("executive_summary", "Executive Summary"),
+    ("fundraising_audiences", "Who We Will Raise Money From And Why"),
+    ("where_to_find", "Where We Will Find Them"),
+    ("attraction", "How We Will Attract Them And Build Credibility"),
+    ("funding_ask", "What We Will Ask Them To Fund And How Much"),
+    ("fundraising_process", "How We Will Raise Money From Them"),
+    ("board_roles", "The Role Each Board Member Will Play"),
+]
 V1_STAGES = {
     "fundraising_process": [("know", "KNOW"), ("like", "LIKE"), ("trust", "TRUST"), ("ask", "ASK"),
                             ("follow_up", "FOLLOW UP"), ("steward", "STEWARD")],
@@ -81,6 +90,22 @@ def section_blocks(key: str, data, schema_version: int) -> list:
                 blocks.append(("sub", label.upper()))
                 for item in items:
                     blocks.append(("bullet", _item_text(item)))
+        return blocks
+    if key == "funding_ask" and schema_version >= 4:
+        for field, label in AUDIENCE_LABELS:
+            items = data.get(field) or []
+            if items:
+                blocks.append(("sub", label.upper()))
+                for item in items:
+                    blocks.append(("bullet", _item_text(item)))
+        return blocks
+    if key == "board_roles" and schema_version >= 4:
+        for row in data if isinstance(data, list) else []:
+            name = str(row.get("name") or "Board Member")
+            role = str(row.get("role") or "Fundraising support")
+            blocks.append(("sub", f"{name} — {role}"))
+            if row.get("responsibility"):
+                blocks.append(("body", str(row["responsibility"])))
         return blocks
     if key == "fundraising_process" and schema_version >= 2:
         for field, label in AUDIENCE_LABELS:
@@ -207,7 +232,7 @@ class _StrategyDoc(BaseDocTemplate):
 
 def build_strategy_pdf(strategy: dict, org_name: str) -> bytes:
     schema_version = int(strategy.get("schema_version") or 1)
-    sections = V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
+    sections = V4_SECTIONS if schema_version >= 4 else V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
     data = strategy.get("data") or {}
     edits = strategy.get("section_edits") or {}
     prepared_by = strategy.get("prepared_by") or (

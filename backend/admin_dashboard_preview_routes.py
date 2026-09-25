@@ -34,7 +34,7 @@ FRESH_TEST_VERSION = "fresh-v1"
 RECRUITMENT_FIXTURE_VERSION = "v8"
 STRATEGIC_FIXTURE_VERSION = "v7"
 RECOMMITMENT_FIXTURE_VERSION = "v9"
-FUNDRAISING_FIXTURE_VERSION = "v7"
+FUNDRAISING_FIXTURE_VERSION = "v8"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -1794,20 +1794,28 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         situation_sections = {
             "current_reality": {
                 "current_individual_donor_profile": "About 35 recurring or repeat individual donors, mostly personal contacts and former volunteers.",
+                "current_individual_donor_where": "Founder, Board and volunteer relationships, community events and former program participants.",
+                "current_individual_donor_attraction": "Personal introductions, youth impact stories, event invitations and direct founder outreach.",
                 "current_individual_donor_motivation": "They care about youth opportunity, have seen the programs directly or trust the founder and volunteers who introduced them.",
+                "current_individual_donor_support": "They support program delivery and participant needs, usually with gifts between $100 and $2,500.",
                 "current_individual_donor_process": "Most gifts come through personal outreach, year-end emails and occasional event follow-up.",
                 "current_individual_donors": "We have about 35 recurring or repeat individual donors, mostly personal contacts and former volunteers. There is no formal major-donor pipeline yet.",
                 "individual_fundraising_process": "Most individual gifts come through personal outreach, year-end emails and occasional event follow-up. We do not yet have a consistent cultivation, ask, follow-up and stewardship rhythm.",
                 "current_business_profile": "Three small business sponsors and several warm employer relationships.",
+                "current_business_where": "Board introductions, employer associations, chambers of commerce and local business events.",
+                "current_business_attraction": "Employer briefings, youth talent outcomes and partnership opportunities connected to workforce needs.",
                 "current_business_support": "They sponsor youth-employment activities, provide employer access and support selected events.",
                 "current_business_process": "Support usually begins through a warm introduction, followed by a short overview, a conversation and manual follow-up.",
                 "current_businesses": "We have three small business sponsors and several warm employer relationships, but no structured corporate partnership pipeline.",
                 "business_fundraising_process": "Business support usually begins through a warm introduction from the founder or a Board Member. We send a short overview, hold a conversation and follow up manually, but there is no shared pipeline or standard partnership process yet.",
                 "current_grantor_profile": "Foundation and government grantors focused on youth employment, education access and economic mobility.",
+                "current_grantor_where": "Community foundations, public funding notices, funder databases and existing grant relationships.",
+                "current_grantor_attraction": "Outcome evidence, aligned program design, credible budgets and communication before application deadlines.",
                 "current_grantor_support": "They fund program delivery, participant support and selected capacity costs.",
                 "current_grantor_process": "Staff monitor familiar funders and public opportunities, then prepare tailored applications and follow up through each decision cycle.",
                 "current_grantors": "About 55% of current revenue comes from foundation and government grants. Grant prospecting is mostly reactive.",
                 "grant_fundraising_process": "Staff monitor familiar funders and public opportunities, then prepare applications when a relevant deadline appears. We need a more proactive research, cultivation, calendar and follow-up process.",
+                "reviewed": "yes",
             },
             "participation": {
                 "raise": ["Join fundraising meetings", "Make direct asks with support", "Help steward relationships"],
@@ -1856,8 +1864,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "email": member["email"],
                 "board_title": "Founder and Executive Director",
                 "is_primary": True,
-                "game_version": 3,
-                "total_sections": 4,
+                "game_version": 4,
+                "total_sections": 7,
                 "invitation_status": "self",
                 "invited_at": "",
                 "last_reminder_at": "",
@@ -1902,6 +1910,20 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
+        await db.game_audience_responses.update_one(
+            {"board_member_id": primary_id},
+            {"$set": {
+                "response_id": f"admin-preview-audience-primary-{tag}", "board_member_id": primary_id,
+                "user_id": member["user_id"], "game_version": 4,
+                "audiences": {
+                    "individuals": {"enabled": True, "audience": "Professionals, business owners, alumni and former volunteers who care about youth opportunity and economic mobility.", "reason": "They understand the barriers facing young people and can see how their support creates education and employment pathways.", "where": "Board and staff networks, alumni communities, professional associations, local business communities and mission-connected events.", "attraction": "Credible youth outcomes, practical youth-employment insight, participant stories with consent and small briefings led through warm introductions.", "funding_ask": "Ask qualified individuals to fund participant support and program growth with gifts between $1,000 and $25,000, matched to capacity.", "process": "Use a warm introduction, share relevant impact, invite a conversation or briefing, build trust with evidence, make a specific ask, follow up and report the impact of every gift."},
+                    "businesses": {"enabled": True, "audience": "Employers and local or regional businesses that need early-career talent or have youth and community-investment priorities.", "reason": "The mission connects to their workforce, customers, employees and visible community-impact commitments.", "where": "Employer associations, chambers of commerce, professional networks, Board relationships and local business events.", "attraction": "Offer youth-talent insight, measurable community outcomes, employee engagement and partnership opportunities tied to a specific program.", "funding_ask": "Ask businesses to sponsor youth-employment cohorts, participant support or employer-engagement activity at levels between $10,000 and $50,000.", "process": "Identify the right decision maker, secure a warm introduction, hold a discovery conversation, present a tailored partnership case, follow up through the decision timeline and steward the partnership with outcome reporting."},
+                    "grantors": {"enabled": True, "audience": "Foundations and public funders focused on youth employment, education access, mentoring and economic mobility.", "reason": "Their stated populations and outcomes align with BrightPath's mission and program results.", "where": "Community foundations, public opportunity portals, funder databases, existing grantee lists and funder information sessions.", "attraction": "Demonstrate aligned outcomes, credible delivery capacity, community voice, a realistic budget and evidence that the program can achieve the promised results.", "funding_ask": "Request support for program delivery, participant support, evaluation and eligible capacity costs in amounts that match each grantor's published range.", "process": "Qualify fit, study priorities and deadlines, build the relationship where possible, prepare the case and evidence before the application, submit a tailored request, follow up and report results."},
+                },
+                "involvement": "Coordinate the shared fundraising pipeline, confirm owners and next actions, prepare the core materials and keep the Board accountable for the roles it accepts.",
+                "current_audience": "complete", "current_question": 7, "completed": True,
+                "completed_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+            }}, upsert=True)
         board_people = [
             (
                 f"admin-preview-game-maya-{tag}",
@@ -1956,8 +1978,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "email": email,
                     "board_title": title,
                     "participant_role": "board_member",
-                    "game_version": 3,
-                    "total_sections": 5,
+                    "game_version": 4,
+                    "total_sections": 7,
                     "invitation_status": "invited",
                     "invited_at": now,
                     "last_reminder_at": "",
@@ -2014,6 +2036,20 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
+            await db.game_audience_responses.update_one(
+                {"board_member_id": person_id},
+                {"$set": {
+                    "response_id": f"admin-preview-audience-{person_id}-{tag}", "board_member_id": person_id,
+                    "user_id": member["user_id"], "game_version": 4,
+                    "audiences": {
+                        "individuals": {"enabled": True, "audience": audience_ideas[0], "reason": "They have a personal or professional connection to youth opportunity and can see the direct outcome their support would create.", "where": section_texts[2][0], "attraction": section_texts[3][0], "funding_ask": "Ask qualified individuals to fund participant support or program growth with a gift matched to their capacity.", "process": section_texts[4][0] + " " + section_texts[4][1]},
+                        "businesses": {"enabled": True, "audience": audience_ideas[1], "reason": "Their workforce, customer base or community-investment priorities connect to young people and employment outcomes.", "where": "Employer networks, chambers, professional associations and warm Board introductions.", "attraction": "A specific partnership opportunity supported by youth outcomes, employer value and credible delivery evidence.", "funding_ask": "Ask for sponsorship of a youth-employment cohort, employer-engagement activity or participant support at an amount appropriate to the business.", "process": "Reach the right decision maker through a warm introduction, understand priorities, present a tailored partnership, follow up and steward the relationship with outcomes."},
+                        "grantors": {"enabled": True, "audience": audience_ideas[2], "reason": "Their funding priorities, population focus and intended outcomes align with the mission.", "where": "Community foundations, funder databases, public funding portals, existing grantee lists and information sessions.", "attraction": "Show alignment, credible outcomes, community voice, delivery capacity and a realistic case for support before applying.", "funding_ask": "Request program, participant, evaluation or eligible capacity funding within each grantor's published range.", "process": "Research and qualify fit, build familiarity, prepare evidence and budget, submit a tailored application, follow up and report results."},
+                    },
+                    "involvement": f"{name} will use their strengths and relationships to support qualified introductions, selected fundraising meetings and stewardship, with a clear prospect list and next action before each Board meeting.",
+                    "current_audience": "complete", "current_question": 7, "completed": True,
+                    "completed_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
+                }}, upsert=True)
         await db.game_nights.update_one(
             {"user_id": member["user_id"]},
             {"$setOnInsert": {
@@ -2042,7 +2078,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             {"session_id": group_session_id},
             {"$set": {
                 "session_id": group_session_id, "user_id": member["user_id"], "token": group_token,
-                "status": "completed", "current_round": 4, "game_version": "four-area-v1",
+                "status": "completed", "current_round": 6, "game_version": "audience-strategy-v1",
                 "started_at": now, "completed_at": now,
                 "updated_at": now, "created_at": now, "internal_preview": True,
             }},
@@ -2066,25 +2102,31 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             )
 
         group_rounds = [
-            ("who_should_fund", "Who Should Fund Our Mission", [
-                "Professionals and business owners who care about youth opportunity, workforce mobility and mentoring.",
-                "Employers that need early-career talent and want visible local community impact.",
-                "Foundations and public funders focused on youth employment, education access and economic mobility.",
+            ("funding_audiences", "Who Has The Strongest Reason To Support Our Goal, And Why?", [
+                "INDIVIDUALS: Professionals and business owners who care about youth opportunity, workforce mobility and mentoring. WHY: They understand the barriers facing young people and can see the direct outcome of their support.",
+                "BUSINESSES: Employers that need early-career talent and want visible local community impact. WHY: The mission connects to their workforce and community-investment priorities.",
+                "GRANTORS: Foundations and public funders focused on youth employment, education access and economic mobility. WHY: Their stated populations and outcomes align with BrightPath's programs.",
                 "PRESENT INDIVIDUAL DONORS: About 35 recurring or repeat donors, mostly personal contacts and former volunteers who care about youth opportunity.",
                 "PRESENT CORPORATE SPONSORS / BUSINESS PARTNERS: Three small business sponsors and several warm employer relationships supporting youth-employment activities and selected events.",
                 "PRESENT GRANTORS: Foundation and government funders focused on youth employment, education access and economic mobility.",
             ]),
-            ("where_to_find", "Where We Can Consistently Find Them", [
+            ("where_to_find", "Where Will We Find Them?", [
                 "Start with Board and staff networks, employer associations, chambers of commerce and professional groups.",
                 "Use a weekly prospect-research routine and assign every qualified prospect to a relationship owner.",
                 "Use community foundations and funder databases to identify grantors whose priorities and geography match the mission.",
             ]),
-            ("attract_attention", "How We Will Attract Their Attention", [
+            ("attraction", "How Will We Attract Them And Build Credibility?", [
                 "Publish credible youth outcomes, employer stories and useful youth-employment insight before making most asks.",
                 "Use warm introductions and small mission-connected briefings to create direct relationships.",
                 "Give businesses a clear partnership proposition tied to youth talent, community impact and measurable outcomes.",
             ]),
-            ("fundraising_process", "The Process We Will Use To Raise Money", [
+            ("funding_ask", "What Will We Ask Them To Fund, And How Much?", [
+                "INDIVIDUALS: Ask qualified people to fund participant support and program growth with gifts between $1,000 and $25,000.",
+                "BUSINESSES: Ask employers to sponsor youth-employment cohorts and employer-engagement activity at $10,000 to $50,000.",
+                "GRANTORS: Request program delivery, participant support, evaluation and eligible capacity costs within each funder's published range.",
+                "PRESENT SUPPORT: Preserve the program-delivery and participant-support purposes current donors, businesses and grantors already fund.",
+            ]),
+            ("fundraising_process", "What Process Will Turn First Contact Into Funding?", [
                 "Use Know, Like, Trust, Ask, Follow Up and Steward as the common relationship pathway.",
                 "Every prospect must have a relationship owner, stage, next action and follow-up point.",
                 "Stewardship begins immediately after support is secured and should prepare the relationship for the next gift or partnership.",
@@ -2092,34 +2134,13 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "PRESENT BUSINESS / SPONSOR METHOD: Warm introductions, a short overview, a conversation and manual follow-up.",
                 "PRESENT GRANTOR METHOD: Monitor relevant opportunities, prepare tailored applications and follow up through each decision cycle.",
             ]),
-            ("team", "Team", [
-                "Rooney coordinates the fundraising system and staff follow-up.",
-                "Maya opens and develops corporate and employer relationships.",
-                "Daniel helps maintain fundraising performance visibility and Board accountability.",
-                "Aisha strengthens fundraising messaging, partner stories and campaign visibility.",
+            ("board_roles", "How Will Each Board Member Support The Strategy?", [
+                "Rooney: Coordinate the fundraising pipeline, staff follow-up, materials and Board accountability.",
+                "Maya: Open at least five qualified employer relationships and join selected partnership asks.",
+                "Daniel: Maintain fundraising performance visibility and Board accountability.",
+                "Aisha: Strengthen the case for support, evidence-led content and partner stories.",
             ]),
-            ("technology", "Technology", [
-                "Use one lightweight CRM for prospects, relationship owners, stages and next actions.",
-                "Use one shared fundraising dashboard for monthly Board review.",
-                "Keep fundraising materials in one shared cloud folder so Board Members can find current versions quickly.",
-            ]),
-            ("materials", "Materials", [
-                "Complete one case for support tied to the $500,000 goal and youth outcomes.",
-                "Create a corporate partnership one-pager and employer briefing deck.",
-                "Prepare major-donor conversation guides, follow-up messages and stewardship templates.",
-            ]),
-            ("budget", "Budget", [
-                "Fund the smallest CRM and prospect-research setup the team will actually maintain.",
-                "Budget for communications support, donor stewardship and only the cultivation activities required by the strategy.",
-                "Use existing staff, Board leadership, templates and current subscriptions before buying additional capacity.",
-            ]),
-            ("execution", "Execution And Accountability", [
-                "Days 1–30: configure the system, finalize core materials, map warm relationships and confirm owners.",
-                "Days 31–60: launch visibility, introductions, prospect research and cultivation.",
-                "Days 61–90: move ready relationships into meetings, proposals and asks while continuing follow-up and stewardship.",
-                "Review fundraising responsibilities, evidence, barriers and next actions at every Board meeting until the June 30, 2027 deadline.",
-            ]),
-        ][:4]
+        ]
         for round_number, (section_key, title, ideas) in enumerate(group_rounds, 1):
             round_id = f"admin-preview-group-round-{round_number}-{tag}"
             idea_rows = []
@@ -2225,6 +2246,11 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 ],
                 "additional_ideas": ["Site visits and selected mission-connected events for qualified prospects."],
             },
+            "funding_ask": {
+                "individuals": [{"title": "Participant support and program growth", "explanation": "$1,000 to $25,000 from each qualified individual, matched to capacity and relationship maturity.", "focus": "Connect every ask to the number of young people and program outcomes the gift will support."}],
+                "businesses": [{"title": "Youth-employment cohort sponsorship", "explanation": "$10,000 to $50,000 for a defined partnership, cohort or employer-engagement activity.", "focus": "Present the youth, workforce and community outcomes attached to the sponsorship."}],
+                "grantors": [{"title": "Program delivery, participant support, evaluation and eligible capacity", "explanation": "Request an amount within each grantor's published range and eligible-cost rules.", "focus": "Match the request to the goal, the actual program budget and the grantor's priorities."}],
+            },
             "fundraising_process": {
                 "individuals": {
                     "how_this_process_works": "Use warm relationships and evidence to move qualified individuals from awareness to an appropriate gift, then steward the relationship for long-term support.",
@@ -2268,6 +2294,12 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 {"role": "Finance and fundraising performance", "assigned": "Daniel Brooks", "responsibility": "Help build the fundraising dashboard and review pipeline, revenue and budget performance with the Board."},
                 {"role": "Fundraising communications and visibility", "assigned": "Aisha Patel", "responsibility": "Strengthen the case for support, publish evidence-led content and develop partner stories."},
             ],
+            "board_roles": [
+                {"name": "Rooney Akpesiri", "role": "Fundraising System Coordinator", "responsibility": "Coordinate the fundraising pipeline, staff follow-up, materials and Board accountability."},
+                {"name": "Maya Thompson", "role": "Corporate Partnerships Lead", "responsibility": "Open at least five qualified corporate or employer relationships in the first month and join selected partnership asks."},
+                {"name": "Daniel Brooks", "role": "Fundraising Performance Lead", "responsibility": "Maintain the fundraising dashboard and review pipeline, revenue and next actions with the Board."},
+                {"name": "Aisha Patel", "role": "Fundraising Communications Lead", "responsibility": "Strengthen the case for support, publish evidence-led content and develop partner stories."},
+            ],
             "execution_resources": {
                 "people": ["Founder/fundraising coordinator", "Board relationship owners", "Board finance oversight", "Board communications support"],
                 "technology": ["One lightweight CRM", "Shared fundraising dashboard", "Email platform", "Shared cloud files"],
@@ -2304,13 +2336,13 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             "next_step": "Your final fundraising strategy is ready. Review it with your board, send it to every participant and move into execution using the Board Portfolios, Execution Materials and Relationship Mapping.",
         }
         strategy_data = {key: strategy_data[key] for key in (
-            "fundraising_audiences", "where_to_find", "attraction", "fundraising_process"
+            "executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"
         )}
         await db.game_strategies.update_one(
             {"strategy_id": strategy_id},
             {"$set": {
                 "strategy_id": strategy_id, "user_id": member["user_id"], "mode": "final",
-                "status": "adopted", "version": 1, "schema_version": 3,
+                "status": "adopted", "version": 1, "schema_version": 4,
                 "prepared_by": f"The Board of {ORG_NAME}", "generated_at": now, "adopted_at": now,
                 "share_token": f"admin-preview-fundraising-strategy-share-{tag}", "data": strategy_data,
                 "section_edits": {}, "source": "admin_preview_fixture", "internal_preview": True,
@@ -2326,6 +2358,23 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
+        review_id = f"admin-preview-fundraising-review-{tag}"
+        await db.meeting_review_sessions.update_one(
+            {"review_id": review_id},
+            {"$set": {
+                "review_id": review_id, "user_id": member["user_id"], "group_session_id": group_session_id,
+                "strategy_id": strategy_id, "final_strategy_id": strategy_id, "status": "adopted",
+                "final_review_status": "response", "final_section_index": 6,
+                "final_strategy_created_at": now, "adopted_at": now, "updated_at": now,
+                "started_at": now, "created_at": now, "internal_preview": True,
+            }}, upsert=True)
+        for board_member_id, _slot_id, first_name in participant_rows:
+            await db.final_board_approvals.update_one(
+                {"strategy_id": strategy_id, "board_member_id": board_member_id},
+                {"$set": {"approval_id": f"admin-preview-approval-{board_member_id}-{tag}",
+                          "strategy_id": strategy_id, "board_member_id": board_member_id,
+                          "review_id": review_id, "name": first_name, "approval_status": "approved",
+                          "change_request": "", "submitted_at": now, "internal_preview": True}}, upsert=True)
 
         portfolio_specs = {
             primary_id: {
@@ -2420,6 +2469,11 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
+            await db.game_relationship_deliveries.update_one(
+                {"user_id": member["user_id"], "board_member_id": board_member_id},
+                {"$set": {"user_id": member["user_id"], "board_member_id": board_member_id,
+                          "email": spec["email"], "status": "sent", "sent_at": now,
+                          "created_at": now, "updated_at": now, "internal_preview": True}}, upsert=True)
 
         relationship_rows = [
             (board_people[0][0], "Maya Thompson", "Business", "Jordan Wells", "Fictional Regional Employers Council", "Former employer-network colleague", "Strong fit because the council represents employers hiring early-career talent."),
@@ -2532,14 +2586,21 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "sections": {
                         "current_reality": {
                             "current_individual_donor_profile": "About 35 repeat individual donors, mostly personal contacts and former volunteers.",
+                            "current_individual_donor_where": "Founder, Board and volunteer relationships and community events.",
+                            "current_individual_donor_attraction": "Personal introductions, impact stories and event invitations.",
+                            "current_individual_donor_support": "Program delivery and participant support, usually between $100 and $2,500.",
                             "current_individual_donor_motivation": "They care about youth opportunity and trust people already connected to the organization.",
                             "current_individual_donor_process": "Personal outreach, year-end emails and event follow-up.",
                             "current_individual_donors": "About 35 repeat individual donors, mostly personal contacts and former volunteers. We do not yet have a formal major-donor pipeline.",
                             "current_business_profile": "Three small business sponsors and several warm employer relationships.",
+                            "current_business_where": "Board introductions, employer associations and local business events.",
+                            "current_business_attraction": "Employer briefings, youth talent outcomes and practical partnership opportunities.",
                             "current_business_support": "They support youth-employment activity, selected events and employer access.",
                             "current_business_process": "Warm introductions, a short overview, a conversation and manual follow-up.",
                             "current_businesses": "Three small business sponsors and several warm employer relationships. Corporate outreach is still informal.",
                             "current_grantor_profile": "Foundation and government grantors focused on youth employment and education.",
+                            "current_grantor_where": "Community foundations, public funding portals and funder databases.",
+                            "current_grantor_attraction": "Aligned outcomes, credible evidence, realistic budgets and early funder communication.",
                             "current_grantor_support": "They fund program delivery, participant support and selected capacity costs.",
                             "current_grantor_process": "Research relevant opportunities, prepare tailored applications and follow up through each decision cycle.",
                             "current_grantors": "Foundation and government grants provide more than half of current revenue. Prospecting is mostly reactive.",
@@ -2562,7 +2623,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "member_id": primary_id, "user_id": member["user_id"], "token": primary_token,
                     "full_name": "Rooney Akpesiri", "email": member["email"],
                     "board_title": "Founder and Executive Director", "is_primary": True,
-                    "game_version": 3, "total_sections": 4, "invitation_status": "self",
+                    "game_version": 4, "total_sections": 7, "invitation_status": "self",
                     "removed": False, "internal_preview": True, "created_at": now, "updated_at": now,
                 }},
                 upsert=True,
@@ -2584,6 +2645,20 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     }},
                     upsert=True,
                 )
+            await db.game_audience_responses.update_one(
+                {"board_member_id": primary_id},
+                {"$set": {
+                    "response_id": f"admin-fresh-audience-{tag}", "board_member_id": primary_id,
+                    "user_id": member["user_id"], "game_version": 4,
+                    "audiences": {
+                        "individuals": {"enabled": True, "audience": "Professionals, business owners, alumni and former volunteers who care about youth opportunity.", "reason": "They understand the barriers facing young people and value practical education and employment pathways.", "where": "Board and staff networks, alumni communities, professional associations and local business communities.", "attraction": "Credible youth outcomes, useful youth-employment insight, participant stories and small briefings.", "funding_ask": "Ask for participant support and program growth with gifts matched to each person's capacity.", "process": "Use a warm introduction, share relevant impact, invite a conversation, build trust, make a specific ask, follow up and report impact."},
+                        "businesses": {"enabled": True, "audience": "Employers and businesses that need early-career talent or have youth-focused community priorities.", "reason": "The mission connects to their workforce and community-investment goals.", "where": "Employer associations, chambers, professional networks and Board introductions.", "attraction": "Youth-talent insight, measurable outcomes and a clear partnership opportunity.", "funding_ask": "Ask them to sponsor a youth-employment cohort or participant-support activity.", "process": "Reach the decision maker, hold a discovery conversation, present a tailored partnership, follow up and steward results."},
+                        "grantors": {"enabled": True, "audience": "Foundations and public funders focused on youth employment, education and economic mobility.", "reason": "Their funding priorities and outcomes align with the mission.", "where": "Community foundations, public portals, funder databases and information sessions.", "attraction": "Demonstrate alignment, outcomes, delivery capacity, community voice and a realistic budget.", "funding_ask": "Request program, participant, evaluation or eligible capacity funding within each grantor's published range.", "process": "Qualify fit, build familiarity, prepare evidence and budget, submit a tailored application, follow up and report results."},
+                    },
+                    "involvement": "Coordinate the fundraising pipeline and help the Board maintain clear owners and next actions.",
+                    "current_audience": "individuals", "current_question": 0, "completed": False,
+                    "internal_preview": True, "created_at": now, "updated_at": now,
+                }}, upsert=True)
             return "/game/welcome"
 
         session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"

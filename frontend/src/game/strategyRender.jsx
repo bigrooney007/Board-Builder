@@ -7,6 +7,16 @@ export const STRATEGY_SECTIONS = [
   { key: "fundraising_process", title: "How We Will Raise Money From Them", v2: "process" },
 ];
 
+export const V4_STRATEGY_SECTIONS = [
+  { key: "executive_summary", title: "Executive Summary" },
+  { key: "fundraising_audiences", title: "Who We Will Raise Money From And Why", v2: "audiences" },
+  { key: "where_to_find", title: "Where We Will Find Them", priorityLabel: "Agreed Places, Channels And Networks", additionalLabel: "Additional Ideas" },
+  { key: "attraction", title: "How We Will Attract Them And Build Credibility", priorityLabel: "Agreed Attraction And Credibility Actions", additionalLabel: "Additional Ideas" },
+  { key: "funding_ask", title: "What We Will Ask Them To Fund And How Much", v2: "audience_cards" },
+  { key: "fundraising_process", title: "How We Will Raise Money From Them", v2: "process" },
+  { key: "board_roles", title: "The Role Each Board Member Will Play", v2: "board_roles" },
+];
+
 export const V2_STRATEGY_SECTIONS = STRATEGY_SECTIONS;
 
 const LEGACY_CORE_STRATEGY_SECTIONS = [
@@ -16,8 +26,9 @@ const LEGACY_CORE_STRATEGY_SECTIONS = [
   { key: "fundraising_process", title: "How We Will Raise Money From Them", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
 ];
 
-export const getStrategySections = (strategy) => Number(strategy?.schema_version || 1) >= 2
-  ? STRATEGY_SECTIONS
+export const getStrategySections = (strategy) => Number(strategy?.schema_version || 1) >= 4
+  ? V4_STRATEGY_SECTIONS
+  : Number(strategy?.schema_version || 1) >= 2 ? STRATEGY_SECTIONS
   : LEGACY_CORE_STRATEGY_SECTIONS;
 
 export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritized Draft", final: "Final Board Fundraising Strategy" };
@@ -78,6 +89,8 @@ const isEmptySection = (section, data) => {
   if (!data) return true;
   if (section.key === "executive_summary" || section.key === "next_step") return !String(data).trim();
   if (section.v2 === "audiences") return AUDIENCE_LABELS.every(([field]) => !(data[field] || []).length);
+  if (section.v2 === "audience_cards") return AUDIENCE_LABELS.every(([field]) => !(data[field] || []).length);
+  if (section.v2 === "board_roles") return !(Array.isArray(data) && data.length);
   if (section.v2 === "process") return AUDIENCE_LABELS.every(([field]) => !hasStageContent(data[field]));
   if (section.v2 === "team") return !(Array.isArray(data) && data.length);
   if (section.v2 === "resources") return RESOURCE_LABELS.every(([field]) => !(data[field] || []).length);
@@ -105,7 +118,7 @@ const Stages = ({ stages, data }) => (
 
 export const SectionBody = ({ section, data, mode }) => {
   if (isEmptySection(section, data)) return <p className="bfg-doc-empty">{EMPTY_MESSAGE}</p>;
-  if (section.key === "executive_summary" || section.key === "next_step") return <p className="bfg-doc-text">{data}</p>;
+  if (section.key === "executive_summary" || section.key === "next_step") return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line" }}>{data}</p>;
   if (section.key === "fundraising_goal") {
     return (
       <div>
@@ -131,6 +144,12 @@ export const SectionBody = ({ section, data, mode }) => {
         ))}
       </div>
     );
+  }
+  if (section.v2 === "audience_cards") {
+    return <div>{AUDIENCE_LABELS.map(([field, label]) => (data[field] || []).length > 0 && <div key={field} className="bfg-doc-stage"><h4>{label.toUpperCase()}</h4><PriorityList items={data[field]} mode={mode} /></div>)}</div>;
+  }
+  if (section.v2 === "board_roles") {
+    return <div className="bfg-doc-cards">{data.map((row, index) => <div className="bfg-doc-card" key={index}><div className="bfg-doc-card-head"><strong>{row.name}</strong></div>{row.role && <p><strong>{row.role}</strong></p>}{row.responsibility && <p className="bfg-doc-focus">{row.responsibility}</p>}</div>)}</div>;
   }
   if (section.v2 === "process") {
     return (
@@ -263,6 +282,12 @@ export const sectionToText = (section, data) => {
   if (section.v2 === "audiences") {
     return AUDIENCE_LABELS.map(([field, label]) =>
       (data[field] || []).length ? `${label.toUpperCase()}\n${data[field].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+  }
+  if (section.v2 === "audience_cards") {
+    return AUDIENCE_LABELS.map(([field, label]) => (data[field] || []).length ? `${label.toUpperCase()}\n${data[field].map((item) => `- ${itemText(item)}`).join("\n")}` : "").filter(Boolean).join("\n\n");
+  }
+  if (section.v2 === "board_roles") {
+    return (Array.isArray(data) ? data : []).map((row) => `${row.name || "Board Member"}${row.role ? ` — ${row.role}` : ""}\n${row.responsibility || ""}`).join("\n\n");
   }
   if (section.v2 === "process") {
     return AUDIENCE_LABELS.map(([field, label]) => {

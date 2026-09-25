@@ -1,7 +1,7 @@
 """Board Fundraising Game Phase 9: post-game handoff — adopted strategy delivery and board post-game pages."""
 import html
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import resend
 from fastapi import APIRouter, HTTPException, Request
@@ -18,7 +18,7 @@ DEFAULT_POSTGAME_EMAIL = {
     "subject": "Your Board Fundraising Strategy Is Ready",
     "opening": "Thank you for participating in [Organization Name]'s Board Fundraising Game.",
     "strategy_ready": "Your board's final fundraising strategy is now ready.\n\nThe strategy brings together the ideas contributed by the board, the priorities selected during the Group Game and the decisions made during your board meeting.",
-    "execution_next": "Start by reviewing the final strategy.\n\nAs you review it, you will be able to see how you personally agreed to participate.\n\nWe have also created a Relationship Mapping Form for you so you can begin identifying people, businesses and grantors in your network who match the ideal funder profiles your board identified.",
+    "execution_next": "Your strategy, personal Board Fundraising Portfolio and fundraising assistant are ready below. Please bookmark this email so you can return to all three throughout execution.",
 }
 
 PORTFOLIO_SENT_STATUSES = {"ready_to_send", "sent", "change_requested", "approved", "materials_ready"}
@@ -101,12 +101,22 @@ def create_postgame_router(db) -> APIRouter:
     async def send_strategy_email(member: dict, record: dict, profile: dict, strategy: dict, origin: str, content: dict):
         first = record["full_name"].split(" ")[0]
         mapping = token_map(profile, first)
+        portfolio = await db.board_portfolios.find_one(
+            {"user_id": record["user_id"], "board_member_id": record["member_id"]},
+            {"_id": 0, "token": 1}, sort=[("created_at", -1)]) or {}
+        if not portfolio.get("token"):
+            raise RuntimeError("Board Fundraising Portfolio is not ready")
+        portfolio_link = f"{origin.rstrip('/')}/board-portfolio/{portfolio['token']}"
+        assistant_link = f"{origin.rstrip('/')}/board-assistant/{portfolio['token']}"
         body = (
             f"<p style='margin:14px 0;'>Hi {html.escape(first)},</p>"
             + paragraphs_html(fill(content["opening"], mapping))
             + paragraphs_html(fill(content["strategy_ready"], mapping))
             + paragraphs_html(fill(content["execution_next"], mapping))
             + game_button(f"{origin.rstrip('/')}/game/final/{record['token']}", "View Final Fundraising Strategy")
+            + game_button(portfolio_link, "Open My Board Fundraising Portfolio")
+            + game_button(assistant_link, "Open My Personal Fundraising Assistant")
+            + "<p style='margin:14px 0;'><strong>Bookmark this email.</strong> It is your direct access to the strategy, your role and the assistant that will help you execute it.</p>"
             + "<p style='margin:22px 0 4px;'></p>" + signature_html(profile, member)
         )
         resend.api_key = os.environ["RESEND_API_KEY"]
@@ -143,6 +153,41 @@ def create_postgame_router(db) -> APIRouter:
             await record_delivery(member["user_id"], strategy["strategy_id"], record, "delivery_failed", str(exc))
             return False
 
+    async def send_relationship_email(member: dict, record: dict, profile: dict, origin: str):
+        first = record["full_name"].split(" ")[0]
+        organization = (profile.get("organization") or {}).get("name") or "your organization"
+        link = f"{origin.rstrip('/')}/relationship-mapping/{record['token']}"
+        body = (
+            f"<p>Hi {html.escape(first)},</p>"
+            f"<p>Now that {html.escape(organization)} has adopted its fundraising strategy, please help identify people, businesses and grantors in your network who match the funding audiences the Board agreed to pursue.</p>"
+            "<p>This relationship map is separate from your strategy and Portfolio. Use it to recommend suitable contacts and tell the organization how you would be willing to help with an introduction or conversation.</p>"
+            + game_button(link, "Open My Relationship Mapping Form")
+            + "<p>Please complete it while the Game Night decisions are still fresh.</p>"
+            + f"<div style='margin-top:26px;'>{signature_html(profile, member)}</div>"
+        )
+        resend.api_key = os.environ["RESEND_API_KEY"]
+        await resend.Emails.send_async({
+            "from": os.environ["GAME_EMAIL_SENDER"], "to": [record["email"]], "reply_to": member["email"],
+            "subject": f"Relationship Mapping For {organization}",
+            "html": f"<div style='max-width:600px;margin:auto;font-family:Arial,sans-serif;color:#111;line-height:1.6;'>{body}</div>",
+        })
+
+    async def deliver_relationship(member: dict, record: dict, profile: dict, origin: str) -> bool:
+        now = now_iso()
+        try:
+            await send_relationship_email(member, record, profile, origin)
+            await db.game_relationship_deliveries.update_one(
+                {"user_id": member["user_id"], "board_member_id": record["member_id"]},
+                {"$set": {"status": "sent", "sent_at": now, "email": record["email"], "updated_at": now},
+                 "$setOnInsert": {"created_at": now}}, upsert=True)
+            return True
+        except Exception as exc:
+            await db.game_relationship_deliveries.update_one(
+                {"user_id": member["user_id"], "board_member_id": record["member_id"]},
+                {"$set": {"status": "delivery_failed", "error": str(exc)[:600], "updated_at": now},
+                 "$setOnInsert": {"created_at": now}}, upsert=True)
+            return False
+
     async def active_members(user_id: str) -> list:
         return await db.game_board_members.find(
             {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0}).sort("created_at", 1).to_list(200)
@@ -153,12 +198,10 @@ def create_postgame_router(db) -> APIRouter:
         joined = await group_joined_ids(user_id)
         output = []
         for record in records:
-            response_count = await db.game_section_responses.count_documents({
-                "user_id": user_id,
-                "board_member_id": record["member_id"],
-                "completed": True,
-            })
-            if response_count > 0 or record["member_id"] in joined:
+            response = await db.game_audience_responses.find_one(
+                {"user_id": user_id, "board_member_id": record["member_id"], "completed": True},
+                {"_id": 0, "response_id": 1})
+            if response or record["member_id"] in joined:
                 output.append(record)
         return output
 
@@ -230,6 +273,10 @@ def create_postgame_router(db) -> APIRouter:
         return "Setting Up"
 
     async def game_status_for(member_id: str, invitation_status: str, total: int = 0) -> str:
+        audience = await db.game_audience_responses.find_one(
+            {"board_member_id": member_id}, {"_id": 0, "completed": 1})
+        if audience:
+            return "Game Completed" if audience.get("completed") else "Game In Progress"
         done = await db.game_section_responses.count_documents(
             {"board_member_id": member_id, "completed": True})
         if done >= (total or TOTAL_SECTIONS):
@@ -257,11 +304,22 @@ def create_postgame_router(db) -> APIRouter:
             return {**base, "adopted": False}
         deliveries = {row["board_member_id"]: row for row in await db.game_strategy_deliveries.find(
             {"strategy_id": strategy["strategy_id"]}, {"_id": 0}).to_list(300)}
+        relationship_deliveries = {row["board_member_id"]: row for row in await db.game_relationship_deliveries.find(
+            {"user_id": member["user_id"]}, {"_id": 0}).to_list(300)}
+        strategy_sent_times = [row.get("sent_at") for row in deliveries.values() if row.get("sent_at")]
+        relationship_recommended_at = ""
+        if strategy_sent_times:
+            try:
+                latest_sent = max(datetime.fromisoformat(value.replace("Z", "+00:00")) for value in strategy_sent_times)
+                relationship_recommended_at = (latest_sent + timedelta(hours=24)).isoformat()
+            except (TypeError, ValueError):
+                relationship_recommended_at = ""
         joined = await group_joined_ids(member["user_id"])
         recipients = []
         sent_count = 0
         for record in await participating_members(member["user_id"]):
             delivery = deliveries.get(record["member_id"]) or {}
+            relationship_delivery = relationship_deliveries.get(record["member_id"]) or {}
             delegation = await delegation_for(member["user_id"], record["member_id"])
             if delivery.get("status") == "sent":
                 sent_count += 1
@@ -280,6 +338,11 @@ def create_postgame_router(db) -> APIRouter:
                     "last_resend_at": delivery.get("last_resend_at", ""),
                     "error": delivery.get("error", ""),
                 },
+                "relationship_delivery": {
+                    "status": relationship_delivery.get("status", "not_sent"),
+                    "sent_at": relationship_delivery.get("sent_at", ""),
+                    "error": relationship_delivery.get("error", ""),
+                },
             })
         return {
             **base, "adopted": True,
@@ -287,6 +350,7 @@ def create_postgame_router(db) -> APIRouter:
             "strategy_id": strategy["strategy_id"],
             "recipients": recipients,
             "sent_count": sent_count, "total_recipients": len(recipients),
+            "relationship_recommended_at": relationship_recommended_at,
         }
 
     # ---------- Strategy delivery ----------
@@ -334,6 +398,40 @@ def create_postgame_router(db) -> APIRouter:
         if await deliver_to(member, record, profile, strategy, payload.origin_url, content):
             return {"status": "sent"}
         raise HTTPException(status_code=502, detail="The strategy email could not be sent. Please try again.")
+
+    # ---------- Separate relationship-mapping delivery ----------
+
+    @router.post("/game/postgame/relationships/send")
+    async def send_relationships(payload: SendSelected, request: Request):
+        member = await game_member(request)
+        strategy = await adopted_strategy(member["user_id"])
+        if not strategy:
+            raise HTTPException(status_code=409, detail="Adopt the fundraising strategy first")
+        selected = {str(value) for value in payload.member_ids}
+        eligible = [record for record in await participating_members(member["user_id"]) if record["member_id"] in selected]
+        if not eligible:
+            raise HTTPException(status_code=422, detail="Select at least one participant")
+        profile = await get_profile(member["user_id"])
+        sent = 0
+        failed = []
+        for record in eligible:
+            if await deliver_relationship(member, record, profile, payload.origin_url):
+                sent += 1
+            else:
+                failed.append({"member_id": record["member_id"], "full_name": record["full_name"], "email": record["email"]})
+        return {"sent": sent, "failed": failed}
+
+    @router.post("/game/postgame/relationships/send/{member_id}")
+    async def send_one_relationship(member_id: str, payload: SendOne, request: Request):
+        member = await game_member(request)
+        record = await db.game_board_members.find_one(
+            {"user_id": member["user_id"], "member_id": member_id, "removed": {"$ne": True}}, {"_id": 0})
+        if not record:
+            raise HTTPException(status_code=404, detail="Board member not found")
+        profile = await get_profile(member["user_id"])
+        if await deliver_relationship(member, record, profile, payload.origin_url):
+            return {"status": "sent"}
+        raise HTTPException(status_code=502, detail="The relationship-mapping email could not be sent")
 
     # ---------- Board member post-game page (public via Group Game link + slot) ----------
 

@@ -134,6 +134,8 @@ export default function GameNightCompletePage() {
   const { member, loading } = useMemberAuth();
   const [overview, setOverview] = useState(null);
   const [showSend, setShowSend] = useState(false);
+  const [relationshipBusy, setRelationshipBusy] = useState(false);
+  const [relationshipNotice, setRelationshipNotice] = useState("");
 
   useEffect(() => { document.title = "Game Night Complete | Board Fundraising Game"; }, []);
 
@@ -161,6 +163,17 @@ export default function GameNightCompletePage() {
 
   if (!overview) return <div className="bfg" style={{ minHeight: "100vh" }} />;
   const portfolios = overview.portfolios || {};
+  const relationshipSent = overview.recipients.filter((row) => row.relationship_delivery?.status === "sent").length;
+  const sendRelationshipMapping = async () => {
+    setRelationshipBusy(true); setRelationshipNotice("");
+    try {
+      const eligible = overview.recipients.filter((row) => row.delivery?.status === "sent").map((row) => row.member_id);
+      const response = await memberApi.post("/game/postgame/relationships/send", { member_ids: eligible, origin_url: window.location.origin });
+      setRelationshipNotice(`Relationship-mapping email sent to ${response.data.sent} participant${response.data.sent === 1 ? "" : "s"}.`);
+      load();
+    } catch (err) { setRelationshipNotice(err.response?.data?.detail || "The relationship-mapping emails could not be sent."); }
+    setRelationshipBusy(false);
+  };
 
   return (
     <BfgShell nav={
@@ -215,19 +228,32 @@ export default function GameNightCompletePage() {
         <section className="bfg-panel" data-testid="bfg-gc-action-send">
           <h2>2. Send The Strategy To Your Board</h2>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
-            Once a person's delegation is approved, send their secure strategy link. Their strategy page contains How Do I Get Involved? which opens their personal Board Fundraising Portfolio.
+            Once a person's delegation is approved, send one email containing their final strategy link, Board Fundraising Portfolio link and personal fundraising assistant link. Ask them to bookmark it.
           </p>
           <p style={{ marginTop: 12, fontWeight: 700 }} data-testid="bfg-gc-delivery-count">
             {overview.sent_count} of {overview.total_recipients} Participants Sent
           </p>
           <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }} onClick={() => setShowSend(true)}
             data-testid="bfg-gc-send-strategy-btn">
-            {overview.sent_count >= overview.total_recipients && overview.total_recipients > 0 ? "Manage Strategy Delivery" : "Send Approved Strategy"}
+            {overview.sent_count >= overview.total_recipients && overview.total_recipients > 0 ? "Manage Delivery" : "Send Strategy, Portfolio And Assistant"}
           </button>
         </section>
 
         <section className="bfg-panel" data-testid="bfg-gc-action-execution">
-          <h2>3. Equip Your Board To Execute</h2>
+          <h2>3. Start Relationship Mapping</h2>
+          <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
+            Send this as a separate email about 24 hours after the strategy, Portfolio and assistant email. Board Members will recommend people, businesses and grantors in their networks who match the funding audiences your Board agreed to pursue.
+          </p>
+          {overview.relationship_recommended_at && <p style={{ marginTop: 10 }}><strong>Recommended send time:</strong> {new Date(overview.relationship_recommended_at).toLocaleString()}</p>}
+          <p style={{ marginTop: 10, fontWeight: 700 }}>{relationshipSent} of {overview.total_recipients} Relationship-Mapping Emails Sent</p>
+          {relationshipNotice && <p className="bfg-note" style={{ marginTop: 10 }}>{relationshipNotice}</p>}
+          <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }} disabled={relationshipBusy || overview.sent_count === 0} onClick={sendRelationshipMapping} data-testid="bfg-send-relationship-mapping">
+            {relationshipBusy ? "SENDING…" : relationshipSent ? "RESEND RELATIONSHIP MAPPING" : "START RELATIONSHIP MAPPING"}
+          </button>
+        </section>
+
+        <section className="bfg-panel" data-testid="bfg-gc-action-execution">
+          <h2>4. Equip Your Board To Execute</h2>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
             Once board members approve their portfolios, they can generate the tools, scripts, templates and resources required to perform their role.
           </p>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { RoundProgress } from "./groupShared";
+import { GroupReviewStage } from "./GroupReviewStage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -159,7 +160,7 @@ export default function GroupPlayPage() {
         )}
 
         {identity && state?.status === "completed" && (
-          <div className="bfg-gg-card" style={{ textAlign: "center" }}><h1>The Group Game Is Complete</h1><p style={{ marginTop: 12 }}>The host will now create and share the final fundraising strategy from the Board's checked decisions, the ideas added during the discussion and the meeting transcript.</p></div>
+          <GroupReviewStage token={token} identity={identity} />
         )}
       </main>
     </div>

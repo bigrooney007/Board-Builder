@@ -24,16 +24,16 @@ MODES = {"working": "working", "board_prioritized": "board_prioritized_draft"}
 STRATEGY_SYSTEM_MESSAGE = """You are the Fundraising Strategy Engine for the Board Fundraising Game.
 You think like an experienced nonprofit fundraising strategist using Rooney Akpesiri's fundraising process. Everything you produce must be exact, specific, actionable, practical, realistic and executable for this organization — ask internally: WHO exactly? WHERE exactly? WHY this audience? HOW exactly? What does the person responsible do next? What process needs to run consistently?
 Never invent specific entities (businesses, foundations, grantmakers, LinkedIn or Facebook groups, associations, conferences, directories, networks, events, funders or donor names): use entities the organization supplied, otherwise give the exact search method.
-Inspect the organization's current fundraising reality and existing processes: never discard what the organization says is working — preserve it, strengthen weaknesses, fill missing pieces and add better processes where needed. Where useful, distinguish what they are already doing, what should be strengthened and what should be added. Never claim something is proven to work unless the organization indicated it produces results.
+Inspect the organization's current fundraising reality and existing processes. Preserve what the organization says is working and present it clearly. Do not fill missing pieces with your own recommendations. Never claim something is proven to work unless the organization indicated it produces results.
 Where fundraising_process is produced, begin it with a how_this_process_works explanation: a short organization-specific description of who the process is for, why they have a reason to care, how it moves them toward financial support and why it fits — never generic boilerplate.
 Your job is to turn structured organisation information and board fundraising ideas into a practical fundraising strategy that the organisation can actually use.
 The strategy must be grounded in the organisation's fundraising goal, mission, current fundraising situation and the ideas contributed by its board.
 When strategy_mode is board_prioritized, Board Priorities represent the strongest collective direction chosen during the Group Review Game. Build the main strategy around those priorities. Additional Board Ideas must remain secondary and must be preserved separately rather than discarded.
 When strategy_mode is working, create the best working strategy possible from all information currently available. Do not describe any idea as board-approved, board-prioritised or adopted unless the supplied data explicitly establishes that status.
-Do not invent facts, funders, organisations, relationships, commitments, results or financial information.
-Where strategic information is missing, you may provide a concise recommendation, but clearly identify it as a recommendation rather than something supplied by the organisation or board.
-The finished strategy has exactly four parts: who the organisation will raise money from, where it will find them, how it will attract them and how it will raise money from them. Do not add team, technology, materials, resources, budget, timeline, delegation or execution-system sections. Use the organisation's present donors, business supporters, grantors and present fundraising methods as valid strategic options. Preserve what is useful and strengthen it only where the supplied ideas support doing so.
-Write for nonprofit leaders and board members. Use clear, direct, execution-ready language.
+Do not invent facts, funders, organisations, relationships, commitments, results, financial information, tactics or recommendations.
+You are an editor and strategist presenting the Board's own decisions. Preserve the substance and intent of every adopted idea. You may combine repetition, correct grammar, explain the connection between supplied ideas, and turn vague wording into practical action only when the supplied context supports the detail. Never replace a Board idea with your own.
+The finished strategy is a proper plan, not meeting minutes. It contains: an executive summary stating the fundraising amount, purpose and deadline; who the organisation will raise money from across individuals, businesses and grantors and why each audience will support; where to find them; how to attract them and build credibility; what to ask each audience to fund and how much to ask; the step-by-step process for raising money from them; and the agreed role of every participating Board Member.
+Write in Rooney Akpesiri's clear, direct, practical and explanatory style. Use complete paragraphs where explanation is needed and specific actions where execution is required.
 Return only the required structured strategy output."""
 
 GENERATION_RULES = """RULES:
@@ -43,27 +43,34 @@ GENERATION_RULES = """RULES:
 - Keep the writing direct and professional. Avoid fundraising jargon where plain language works. Avoid generic filler. Avoid repeating the same idea across multiple sections unnecessarily.
 - Never invent donor names, company names, grantmaker names, existing relationships, board commitments, or amounts other than the fundraising goal supplied.
 - Never claim the organisation currently has a system, material, person or relationship unless the supplied data says so.
-- Where board information is missing for a section and a recommendation is genuinely useful, provide it with "source": "recommendation" (or prefix plain-string items with "Recommended Action: "). If there is truly not enough information, return an empty array for that part — do not fabricate content.
-- Do not expose individual board member names inside the strategy. It is a collective organisational document.
+- If information is missing, leave that part empty. Do not add a generic recommendation.
+- Board Member names may appear only in board_roles, using the responsibilities they agreed to during the Group Game.
 - In working mode do not label any idea as a board priority; in board_prioritized mode keep priorities and additional ideas clearly separate."""
 
 OUTPUT_SCHEMA = {
+    "executive_summary": "Two or three proper paragraphs explaining the exact fundraising amount, purpose, deadline and the Board's agreed approach without describing the meeting.",
     "fundraising_audiences": {
         "individuals": [{"title": "Audience profile", "explanation": "Why they have a reason to give", "focus": "What the organisation should focus on"}],
         "businesses": [{"title": "Business audience profile", "explanation": "Why they have a reason to support", "focus": "What the organisation should focus on"}],
         "grantors": [{"title": "Grantor profile", "explanation": "Why the mission and funding focus align", "focus": "What the organisation should focus on"}],
     },
-    "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "How it connects the chosen audiences to the organisation", "focus": "The repeatable way the organisation will use it"}], "additional_ideas": ["string"]},
-    "attraction": {"priorities": [{"title": "Attraction idea", "explanation": "Why it will matter to the chosen audience", "focus": "How the organisation will use it"}], "additional_ideas": ["string"]},
+    "where_to_find": {"priorities": [{"title": "Audience and place, channel or network", "explanation": "Where that audience can be found", "focus": "The practical repeatable way the organisation will reach that place"}], "additional_ideas": []},
+    "attraction": {"priorities": [{"title": "Audience and attraction approach", "explanation": "The value, experience, content or credibility that will matter to them", "focus": "The practical action the organisation will take"}], "additional_ideas": []},
+    "funding_ask": {
+        "individuals": [{"title": "Funding purpose", "explanation": "The amount or range the Board agreed to ask", "focus": "How the ask connects to the goal"}],
+        "businesses": [{"title": "Sponsorship or funding purpose", "explanation": "The amount or range the Board agreed to ask", "focus": "How the ask connects to the goal"}],
+        "grantors": [{"title": "Grant funding purpose", "explanation": "The amount or range the Board agreed to request", "focus": "How the request connects to the goal"}],
+    },
     "fundraising_process": {
         "individuals": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
         "businesses": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
         "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
     },
+    "board_roles": [{"name": "Board Member's real name", "role": "Agreed fundraising role", "responsibility": "Specific agreed action and timing, using only the discussion and transcript"}],
 }
 
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
-CORE_STRATEGY_KEYS = ["fundraising_audiences", "where_to_find", "attraction", "fundraising_process"]
+CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"]
 EDITABLE_SECTION_KEYS = CORE_STRATEGY_KEYS
 
 
@@ -138,42 +145,38 @@ def create_strategy_router(db) -> APIRouter:
 
     async def board_ideas_by_area(user_id: str) -> dict:
         members = await db.game_board_members.find(
-            {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1}).to_list(200)
-        member_ids = [record["member_id"] for record in members]
-        collected = {}
-        for definition in AREA_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition["key"])
-            responses = await db.game_section_responses.find(
-                {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id}, {"_id": 0}).to_list(300)
-            ideas = []
-            for response in responses:
-                if definition["key"] == "who_should_fund":
-                    for audience_type, label in (("individual", "Individual"), ("business", "Business"), ("grantor", "Grantor")):
-                        ideas.extend(f"{label}: {text}" for text in area_ideas(response, definition["key"], audience_type))
-                else:
-                    ideas.extend(area_ideas(response, definition["key"]))
-            seen = set()
-            unique = []
-            for idea in ideas:
-                key = " ".join(str(idea).lower().split())
-                if key and key not in seen:
-                    seen.add(key)
-                    unique.append(str(idea).strip()[:400])
-            collected[definition["key"]] = unique
+            {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1, "full_name": 1}).to_list(200)
+        names = {record["member_id"]: record.get("full_name") or "Board Member" for record in members}
+        responses = await db.game_audience_responses.find(
+            {"user_id": user_id, "board_member_id": {"$in": list(names)}, "completed": True}, {"_id": 0}).to_list(300)
+        collected = {definition["key"]: [] for definition in AREA_DEFS}
+        field_map = {"funding_audiences": "audience", "where_to_find": "where", "attraction": "attraction",
+                     "funding_ask": "funding_ask", "fundraising_process": "process"}
+        labels = {"individuals": "Individuals", "businesses": "Businesses", "grantors": "Grantors"}
+        for response in responses:
+            for audience_key, answer in (response.get("audiences") or {}).items():
+                if audience_key not in labels or (audience_key != "individuals" and not answer.get("enabled")):
+                    continue
+                for area_key, field in field_map.items():
+                    value = str(answer.get(field) or "").strip()
+                    if value:
+                        reason = str(answer.get("reason") or "").strip()
+                        suffix = f" | Why: {reason}" if area_key == "funding_audiences" and reason else ""
+                        collected[area_key].append(f"{labels[audience_key]}: {value}{suffix}")
+            if response.get("involvement"):
+                collected["board_roles"].append(f"{names.get(response['board_member_id'], 'Board Member')}: {response['involvement']}")
         return collected
 
     async def participation_choices(user_id: str) -> list:
-        rows = await db.game_section_responses.find(
-            {"user_id": user_id, "section_id": 5, "completed": True}, {"_id": 0, "extras": 1}).to_list(300)
+        members = await db.game_board_members.find(
+            {"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1, "full_name": 1}).to_list(200)
         choices = []
-        for row in rows:
-            extras = row.get("extras") or {}
-            if extras.get("raise") or extras.get("time"):
-                choices.append({
-                    "wants_to_help_raise_money": extras.get("raise", []),
-                    "raise_other": extras.get("raise_other", ""),
-                    "monthly_time_commitment": extras.get("time", ""),
-                })
+        for record in members:
+            response = await db.game_audience_responses.find_one(
+                {"board_member_id": record["member_id"], "completed": True}, {"_id": 0, "involvement": 1}) or {}
+            if response.get("involvement"):
+                choices.append({"name": record.get("full_name") or "Board Member",
+                                "preferred_involvement": response["involvement"]})
         return choices
 
     async def assemble_context(user_id: str, mode: str) -> tuple:
@@ -184,9 +187,9 @@ def create_strategy_router(db) -> APIRouter:
         board_ideas = await board_ideas_by_area(user_id)
         current_reality = (situation.get("sections") or {}).get("current_reality") or {}
         current_funder_keys = {
-            "current_individual_donor_profile", "current_individual_donor_motivation", "current_individual_donor_process",
-            "current_business_profile", "current_business_support", "current_business_process",
-            "current_grantor_profile", "current_grantor_support", "current_grantor_process",
+            "current_individual_donor_profile", "current_individual_donor_where", "current_individual_donor_attraction", "current_individual_donor_support", "current_individual_donor_process",
+            "current_business_profile", "current_business_where", "current_business_attraction", "current_business_support", "current_business_process",
+            "current_grantor_profile", "current_grantor_where", "current_grantor_attraction", "current_grantor_support", "current_grantor_process",
             "current_individual_donors", "current_businesses", "current_grantors",
             "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
         }
@@ -221,7 +224,7 @@ def create_strategy_router(db) -> APIRouter:
         try:
             context, group_session_id = await assemble_context(user_id, mode)
             api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
-            model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+            model = os.environ.get("FUNDRAISING_STRATEGY_MODEL", "claude-haiku-4-5-20251001")
             chat = LlmChat(api_key=api_key, session_id=f"bfg-strategy-{uuid.uuid4()}",
                            system_message=STRATEGY_SYSTEM_MESSAGE).with_model("anthropic", model)
             prompt = (
@@ -241,7 +244,7 @@ def create_strategy_router(db) -> APIRouter:
             prepared_by = f"{member_doc.get('first_name', '')} {member_doc.get('last_name', '')}".strip()
             strategy = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": mode,
-                "status": MODES[mode], "version": version, "schema_version": 3,
+                "status": MODES[mode], "version": version, "schema_version": 4,
                 "prepared_by": prepared_by,
                 "share_token": secrets.token_urlsafe(24),
                 "data": data, "section_edits": {},

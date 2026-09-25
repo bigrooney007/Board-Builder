@@ -278,7 +278,7 @@ export const FinalOutputsSection = ({ overview, onRefresh = () => {}, compact = 
   const outputs = overview?.outputs || {};
   const finalId = overview?.final?.strategy_id || "";
   const destinations = {
-    final_strategy: finalId ? `/game/strategy/view/${finalId}` : "",
+    final_strategy: finalId ? "/game/meeting-review/final" : "",
     board_portfolios: "/game/portfolios",
     relationship_mapping: "/game/relationships",
   };

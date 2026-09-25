@@ -10,29 +10,37 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 
 GAME_ENTITLEMENT = "board_fundraising_game"
-TOTAL_ROUNDS = 4
-GROUP_GAME_VERSION = "four-area-v1"
+TOTAL_ROUNDS = 6
+GROUP_GAME_VERSION = "audience-strategy-v1"
 
 ROUND_DEFS = [
-    {"round_number": 1, "section_key": "who_should_fund", "source_key": "who_should_fund",
-     "title": "Who Should Fund Our Mission",
-     "instruction": "Review every funding-audience idea together, including the organization's present donor, business and grantor reality. Discuss what the board agrees should move forward."},
-    {"round_number": 2, "section_key": "where_to_find", "source_key": "where_to_find",
-     "title": "Where We Can Consistently Find Them",
-     "instruction": "Review the places, networks and channels suggested by the board. Discuss what is realistic for {organization}."},
-    {"round_number": 3, "section_key": "attract_attention", "source_key": "attract_attention",
-     "title": "How We Will Attract Their Attention",
-     "instruction": "Review the board's attraction ideas and agree on the approaches that fit the audiences and the mission."},
-    {"round_number": 4, "section_key": "fundraising_process", "source_key": "fundraising_process",
-     "title": "How We Will Raise Money From Them",
-     "instruction": "Review everyone's fundraising-process ideas together with the ways the organization presently raises money from its donors, business supporters and grantors. Keep the present methods that should continue and select or add stronger methods where needed."},
+    {"round_number": 1, "section_key": "funding_audiences", "answer_field": "audience",
+     "title": "Who Has The Strongest Reason To Support Our Goal, And Why?",
+     "instruction": "Review each person's individual, business and grantor ideas and the reason behind each one. Compare them with the organization's present supporters, then select or add the audiences the Board agrees to pursue."},
+    {"round_number": 2, "section_key": "where_to_find", "answer_field": "where",
+     "title": "Where Will We Find Them?",
+     "instruction": "Review where each proposed audience can be found, including the places and relationships that already produce support. Select the channels the Board agrees to use."},
+    {"round_number": 3, "section_key": "attraction", "answer_field": "attraction",
+     "title": "How Will We Attract Them And Build Credibility?",
+     "instruction": "Review the value, content, experiences, partnership benefits and credibility ideas. Select what {organization} will use to earn attention and trust."},
+    {"round_number": 4, "section_key": "funding_ask", "answer_field": "funding_ask",
+     "title": "What Will We Ask Them To Fund, And How Much?",
+     "instruction": "Agree on a relevant funding purpose and realistic ask amount for each selected individual, business and grantor audience."},
+    {"round_number": 5, "section_key": "fundraising_process", "answer_field": "process",
+     "title": "What Process Will Turn First Contact Into Funding?",
+     "instruction": "Review the proposed step-by-step pathways and the organization's current methods. Select or write the practical process the Board agrees to follow for each audience."},
+    {"round_number": 6, "section_key": "board_roles", "answer_field": "involvement",
+     "title": "How Will Each Board Member Support The Strategy?",
+     "instruction": "Review how each participant said they would feel comfortable and useful helping. Discuss the specific role, action and timing each person agrees to accept, then record the final agreement."},
 ]
 
 AREA_DEFS = [
-    {"key": "who_should_fund", "title": "The Exact Type Of People, Businesses and Grantors Meant To Fund The Mission"},
+    {"key": "funding_audiences", "title": "Funding Audiences And Why They Will Support The Goal"},
     {"key": "where_to_find", "title": "Where To Consistently Find Them"},
-    {"key": "attract_attention", "title": "How To Attract Their Attention"},
-    {"key": "fundraising_process", "title": "The Exact Process To Raise Money Exponentially"},
+    {"key": "attraction", "title": "How To Attract Them And Build Credibility"},
+    {"key": "funding_ask", "title": "What To Ask Them To Fund And How Much"},
+    {"key": "fundraising_process", "title": "The Step-By-Step Fundraising Process"},
+    {"key": "board_roles", "title": "Agreed Board Roles"},
 ]
 
 AUDIENCE_BUCKETS = {"individual": "people", "business": "businesses", "grantor": "grantors"}
@@ -247,81 +255,80 @@ def create_group_game_router(db) -> APIRouter:
         member_names = {record["member_id"]: record["full_name"].split(" ")[0] for record in members}
         member_ids = list(member_names.keys())
         situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
-        situation_sections = situation.get("sections") or {}
-        working = await db.game_strategies.find_one({"user_id":user_id,"mode":"working"},{"_id":0},sort=[("generated_at",-1)]) or {}
-        working_data=working.get("data") or {}
+        reality = ((situation.get("sections") or {}).get("current_reality") or {})
+        responses = await db.game_audience_responses.find(
+            {"user_id": user_id, "board_member_id": {"$in": member_ids}, "completed": True}, {"_id": 0}).to_list(300)
+        audience_labels = {"individuals": "INDIVIDUALS", "businesses": "BUSINESSES", "grantors": "GRANTORS"}
+        reality_fields = {
+            "funding_audiences": {
+                "individuals": ["current_individual_donor_profile"],
+                "businesses": ["current_business_profile"],
+                "grantors": ["current_grantor_profile"],
+            },
+            "where_to_find": {
+                "individuals": ["current_individual_donor_where"],
+                "businesses": ["current_business_where"],
+                "grantors": ["current_grantor_where"],
+            },
+            "attraction": {
+                "individuals": ["current_individual_donor_attraction"],
+                "businesses": ["current_business_attraction"],
+                "grantors": ["current_grantor_attraction"],
+            },
+            "funding_ask": {
+                "individuals": ["current_individual_donor_support"],
+                "businesses": ["current_business_support"],
+                "grantors": ["current_grantor_support"],
+            },
+            "fundraising_process": {
+                "individuals": ["current_individual_donor_process"],
+                "businesses": ["current_business_process"],
+                "grantors": ["current_grantor_process"],
+            },
+        }
         for definition in ROUND_DEFS:
-            section_id = SECTION_ID_BY_KEY.get(definition.get("source_key", ""))
-            responses = []
-            if section_id:
-                responses = await db.game_section_responses.find(
-                    {"user_id": user_id, "board_member_id": {"$in": member_ids}, "section_id": section_id},
-                    {"_id": 0}).to_list(300)
             pool = {}
             order = 0
+
+            def add_idea(text, contributor, contributor_id=""):
+                nonlocal order
+                text = str(text or "").strip()[:1200]
+                key = normalise(text)
+                if not key:
+                    return
+                if key not in pool:
+                    pool[key] = {"idea_id": new_uuid(), "session_id": session_id,
+                                 "round_number": definition["round_number"], "section_key": definition["section_key"],
+                                 "text": text, "normalized": key, "contributor_names": [],
+                                 "contributor_ids": [], "order": order}
+                    order += 1
+                if contributor not in pool[key]["contributor_names"]:
+                    pool[key]["contributor_names"].append(contributor)
+                if contributor_id and contributor_id not in pool[key]["contributor_ids"]:
+                    pool[key]["contributor_ids"].append(contributor_id)
+
             for response in responses:
                 name = member_names.get(response["board_member_id"], "Board Member")
-                for raw in area_ideas(response, definition.get("source_key", ""), definition.get("audience_type", "")):
-                    text = str(raw).strip()[:400]
-                    key = normalise(text)
-                    if not key:
+                if definition["section_key"] == "board_roles":
+                    add_idea(response.get("involvement"), name, response["board_member_id"])
+                    continue
+                for audience_key, answer in (response.get("audiences") or {}).items():
+                    if audience_key not in audience_labels or (audience_key != "individuals" and not answer.get("enabled")):
                         continue
-                    if key not in pool:
-                        pool[key] = {"idea_id": new_uuid(), "session_id": session_id,
-                                     "round_number": definition["round_number"],
-                                     "section_key": definition["section_key"],
-                                     "text": text, "normalized": key,
-                                     "contributor_names": [], "contributor_ids": [], "order": order}
-                        order += 1
-                    if response["board_member_id"] not in pool[key]["contributor_ids"]:
-                        pool[key]["contributor_ids"].append(response["board_member_id"])
-                        pool[key]["contributor_names"].append(name)
-            v3_reality = situation_sections.get("current_reality") or {}
+                    value = str(answer.get(definition["answer_field"]) or "").strip()
+                    if not value:
+                        continue
+                    if definition["section_key"] == "funding_audiences":
+                        reason = str(answer.get("reason") or "").strip()
+                        value = f"{audience_labels[audience_key]}: {value}" + (f" | WHY: {reason}" if reason else "")
+                    else:
+                        value = f"{audience_labels[audience_key]}: {value}"
+                    add_idea(value, name, response["board_member_id"])
 
-            def add_reality(value, label="Organization reality"):
-                nonlocal order
-                if str(value or "").strip():
-                    text = str(value).strip()[:800]
-                    key = normalise(text)
-                    if key and key not in pool:
-                        pool[key] = {"idea_id": new_uuid(), "session_id": session_id,
-                                     "round_number": definition["round_number"], "section_key": definition["section_key"],
-                                     "text": text, "normalized": key, "contributor_names": [label],
-                                     "contributor_ids": [], "order": order}
-                        order += 1
-
-            if definition["section_key"] == "who_should_fund":
-                present_funders = [
-                    ("Organization's present individual donors", "PRESENT INDIVIDUAL DONORS", ["current_individual_donor_profile", "current_individual_donor_motivation"], "current_individual_donors"),
-                    ("Organization's present business supporters", "PRESENT CORPORATE SPONSORS / BUSINESS PARTNERS", ["current_business_profile", "current_business_support"], "current_businesses"),
-                    ("Organization's present grantors", "PRESENT GRANTORS", ["current_grantor_profile", "current_grantor_support"], "current_grantors"),
-                ]
-                for label, heading, fields, legacy_key in present_funders:
-                    parts = [str(v3_reality.get(field) or "").strip() for field in fields if str(v3_reality.get(field) or "").strip()]
-                    if not parts and str(v3_reality.get(legacy_key) or "").strip():
-                        parts = [str(v3_reality.get(legacy_key)).strip()]
-                    if parts:
-                        add_reality(f"{heading}: " + " | ".join(parts), label)
-            elif definition["section_key"] == "fundraising_process":
-                present_processes = [
-                    ("Organization's present individual-donor method", "PRESENT INDIVIDUAL DONOR METHOD", "current_individual_donor_process", "individual_fundraising_process", "current_individual_donors"),
-                    ("Organization's present business-support method", "PRESENT BUSINESS / SPONSOR METHOD", "current_business_process", "business_fundraising_process", "current_businesses"),
-                    ("Organization's present grant-fundraising method", "PRESENT GRANTOR METHOD", "current_grantor_process", "grant_fundraising_process", "current_grantors"),
-                ]
-                for label, heading, field, old_field, legacy_key in present_processes:
-                    value = v3_reality.get(field) or v3_reality.get(old_field) or v3_reality.get(legacy_key) or ""
-                    if str(value).strip():
-                        add_reality(f"{heading}: {str(value).strip()}", label)
-            for recommendation in working_strategy_ideas(working_data,definition["section_key"]):
-                key=normalise(recommendation)
-                if key not in pool:
-                    pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],
-                        "text":recommendation[:800],"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation based on your working strategy"],"contributor_ids":[],"order":order};order+=1
-            recommendations = ROONEY_RECOMMENDATIONS.get(definition["section_key"], [])
-            for recommendation in recommendations:
-                key=normalise(recommendation)
-                if key not in pool:
-                    pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":recommendation,"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation"],"contributor_ids":[],"order":order};order+=1
+            for audience_key, fields in (reality_fields.get(definition["section_key"]) or {}).items():
+                values = [str(reality.get(field) or "").strip() for field in fields if str(reality.get(field) or "").strip()]
+                if values:
+                    add_idea(f"PRESENT {audience_labels[audience_key]}: " + " | ".join(values), "Present fundraising process")
             ideas = sorted(pool.values(), key=lambda item: item["order"])
             if ideas:
                 await db.group_game_ideas.insert_many([idea.copy() for idea in ideas])
@@ -391,16 +398,14 @@ def create_group_game_router(db) -> APIRouter:
         completed = 0
         in_progress = 0
         ideas_ready = 0
-        strategy_ids = list({SECTION_ID_BY_KEY[definition["source_key"]] for definition in ROUND_DEFS if definition.get("source_key")})
         for record in members:
-            done = await db.game_section_responses.count_documents(
-                {"board_member_id": record["member_id"], "completed": True})
-            if done >= (record.get("total_sections") or 10):
+            audience = await db.game_audience_responses.find_one(
+                {"board_member_id": record["member_id"]}, {"_id": 0, "completed": 1})
+            if audience and audience.get("completed"):
                 completed += 1
-            elif done > 0:
+                ideas_ready += 1
+            elif audience:
                 in_progress += 1
-            ideas_ready += await db.game_section_responses.count_documents(
-                {"board_member_id": record["member_id"], "section_id": {"$in": strategy_ids}, "completed": True})
         session = await active_session(member["user_id"])
         session_summary = None
         if session:

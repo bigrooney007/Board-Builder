@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
-import { STRATEGY_SECTIONS, SectionBody, StrategyDocument, sectionToText } from "./strategyRender";
+import { SectionBody, StrategyDocument, getStrategySections, sectionToText } from "./strategyRender";
 
 export default function FinalStrategyPage() {
   const navigate = useNavigate();
@@ -18,12 +18,10 @@ export default function FinalStrategyPage() {
   const [showAdopt, setShowAdopt] = useState(false);
   const [adoptChecked, setAdoptChecked] = useState(false);
   const [adopting, setAdopting] = useState(false);
-  const [revising, setRevising] = useState(false);
-  const [reviseFailed, setReviseFailed] = useState(false);
-  const reviseTimer = useRef(null);
+  const [delegating, setDelegating] = useState(false);
+  const [adoptError, setAdoptError] = useState("");
 
   useEffect(() => { document.title = "Final Fundraising Strategy | Board Fundraising Game"; }, []);
-  useEffect(() => () => clearInterval(reviseTimer.current), []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -63,7 +61,9 @@ export default function FinalStrategyPage() {
   const adopted = strategy.status === "adopted";
   const finalReviewing = review.final_review_status === "reviewing";
   const finalIndex = review.final_section_index || 0;
-  const section = STRATEGY_SECTIONS[finalIndex];
+  const sections = getStrategySections(strategy);
+  const section = sections[finalIndex];
+  const everyParticipantApproved = Boolean(approvals && approvals.approved_count === approvals.participant_count);
 
   const copyLink = async () => {
     const link = `${window.location.origin}/strategy/${strategy.share_token}`;
@@ -97,33 +97,27 @@ export default function FinalStrategyPage() {
     } catch { setSaveState("error"); }
   };
 
-  const generateRevised = async () => {
-    setRevising(true); setReviseFailed(false);
-    try {
-      await memberApi.post("/game/meeting-review/generate-final");
-      clearInterval(reviseTimer.current);
-      reviseTimer.current = setInterval(async () => {
-        try {
-          const data = (await memberApi.get("/game/meeting-review/final-status")).data;
-          if (data.status === "done" && data.final_strategy_id) {
-            clearInterval(reviseTimer.current); setRevising(false); await loadAll();
-          } else if (data.status === "failed") {
-            clearInterval(reviseTimer.current); setRevising(false); setReviseFailed(true);
-          }
-        } catch { /* keep polling */ }
-      }, 4000);
-    } catch { setRevising(false); setReviseFailed(true); }
-  };
-
   const adopt = async () => {
     setAdopting(true);
+    setAdoptError("");
     try {
       await memberApi.post("/game/meeting-review/adopt", { confirmed: true });
       setShowAdopt(false);
       await loadAll();
       window.scrollTo({ top: 0 });
-    } catch { /* ignore */ }
+    } catch (err) { setAdoptError(err.response?.data?.detail || "The strategy cannot be adopted yet."); }
     setAdopting(false);
+  };
+
+  const startDelegation = async () => {
+    setDelegating(true); setAdoptError("");
+    try {
+      await memberApi.post("/game/portfolios/prepare");
+      navigate("/game/portfolios");
+    } catch (err) {
+      setAdoptError(err.response?.data?.detail || "The delegation process could not be started. Please try again.");
+      setDelegating(false);
+    }
   };
 
   return (
@@ -139,9 +133,15 @@ export default function FinalStrategyPage() {
             <p className="bfg-note" style={{ marginTop: 8 }}>
               This is your organization's current working fundraising strategy. It is now read-only.
             </p>
-            <button className="bfg-btn bfg-btn-ghost" style={{ marginTop: 14 }} onClick={copyLink} data-testid="bfg-adopted-copy-link-btn">
-              {copied ? "Link Copied" : "Copy Strategy Link"}
-            </button>
+            <div className="bfg-bm-actions" style={{ justifyContent: "center", marginTop: 14 }}>
+              <button className="bfg-btn bfg-btn-primary" disabled={delegating} onClick={startDelegation} data-testid="bfg-start-delegation-btn">
+                {delegating ? "PREPARING DELEGATIONS…" : "START DELEGATION PROCESS"}
+              </button>
+              <button className="bfg-btn bfg-btn-ghost" onClick={copyLink} data-testid="bfg-adopted-copy-link-btn">
+                {copied ? "Link Copied" : "Copy Strategy Link"}
+              </button>
+            </div>
+            {adoptError && <p className="bfg-error">{adoptError}</p>}
           </div>
         )}
 
@@ -192,33 +192,20 @@ export default function FinalStrategyPage() {
                 <p className="bfg-note" style={{ marginTop: 10 }}>Board member responses will appear here after you review the final strategy with your board.</p>
               )}
               <p className="bfg-note" style={{ marginTop: 8 }}>
-                Not every participant is required to approve before adoption — your organization's normal board decision-making process applies.
+                Every participant who joined the Group Game must select Adopt before the Lead User can complete adoption and begin delegation.
               </p>
               <div className="bfg-bm-actions" style={{ marginTop: 14 }}>
-                {revising ? (
-                  <div data-testid="bfg-revising">
-                    <p className="bfg-note" style={{ fontWeight: 700 }}>Generating Revised Final Draft...</p>
-                    <div className="bfg-doc-loading"><span /><span /><span /></div>
-                  </div>
-                ) : (
-                  <>
-                    <button className="bfg-btn bfg-btn-primary" onClick={() => setShowAdopt(true)} data-testid="bfg-adopt-btn">
-                      Adopt This Fundraising Strategy
-                    </button>
-                    <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={generateRevised} data-testid="bfg-revise-final-btn">
-                      Generate Revised Final Draft
-                    </button>
-                  </>
-                )}
+                <button className="bfg-btn bfg-btn-primary" disabled={!everyParticipantApproved} onClick={() => setShowAdopt(true)} data-testid="bfg-adopt-btn">
+                  Adopt This Fundraising Strategy
+                </button>
               </div>
-              {reviseFailed && <p className="bfg-error">We could not generate a revised final draft. Please try again.</p>}
             </div>
           </>
         )}
 
         {!adopted && finalReviewing && (
           <div className="bfg-panel" data-testid="bfg-final-review-panel">
-            <p className="bfg-eyebrow">Final Strategy Review — Section {finalIndex + 1} of {STRATEGY_SECTIONS.length}</p>
+            <p className="bfg-eyebrow">Final Strategy Review — Section {finalIndex + 1} of {sections.length}</p>
             <h2>{section.title}</h2>
             {!editing ? (
               <>
@@ -234,7 +221,7 @@ export default function FinalStrategyPage() {
                   <button className="bfg-btn bfg-btn-ghost" style={{ visibility: finalIndex === 0 ? "hidden" : "visible" }}
                     onClick={() => finalReviewAction("section", finalIndex - 1)} data-testid="bfg-final-prev-btn">Previous Section</button>
                   <button className="bfg-btn bfg-btn-ghost" onClick={startEdit} data-testid="bfg-final-edit-btn">Edit Section</button>
-                  {finalIndex < STRATEGY_SECTIONS.length - 1 ? (
+                  {finalIndex < sections.length - 1 ? (
                     <button className="bfg-btn bfg-btn-primary" onClick={() => finalReviewAction("section", finalIndex + 1)} data-testid="bfg-final-next-btn">Next Section</button>
                   ) : (
                     <button className="bfg-btn bfg-btn-primary" onClick={() => finalReviewAction("finish")} data-testid="bfg-final-finish-btn">Finish Final Review</button>
@@ -280,6 +267,7 @@ export default function FinalStrategyPage() {
                   {adopting ? "Adopting…" : "Adopt Fundraising Strategy"}
                 </button>
               </div>
+              {adoptError && <p className="bfg-error">{adoptError}</p>}
             </div>
           </div>
         )}

@@ -18,10 +18,13 @@ from strategy_routes import OUTPUT_SCHEMA, EDITABLE_SECTION_KEYS
 GAME_ENTITLEMENT = "board_fundraising_game"
 
 STRATEGY_SECTIONS = [
-    ("fundraising_audiences", "Who We Will Raise Money From"),
+    ("executive_summary", "Executive Summary"),
+    ("fundraising_audiences", "Who We Will Raise Money From And Why"),
     ("where_to_find", "Where We Will Find Them"),
-    ("attraction", "How We Will Attract Their Attention"),
+    ("attraction", "How We Will Attract Them And Build Credibility"),
+    ("funding_ask", "What We Will Ask Them To Fund And How Much"),
     ("fundraising_process", "How We Will Raise Money From Them"),
+    ("board_roles", "The Role Each Board Member Will Play"),
 ]
 SECTION_KEYS = [key for key, _ in STRATEGY_SECTIONS]
 SECTION_TITLES = dict(STRATEGY_SECTIONS)
@@ -395,7 +398,7 @@ def create_meeting_review_router(db) -> APIRouter:
         try:
             context = await assemble_analysis_context(user_id, review)
             api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
-            model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+            model = os.environ.get("FUNDRAISING_STRATEGY_MODEL", "claude-haiku-4-5-20251001")
             chat = LlmChat(api_key=api_key, session_id=f"bfg-meeting-{uuid.uuid4()}",
                            system_message=ANALYSIS_SYSTEM_MESSAGE).with_model("anthropic", model)
             prompt = (
@@ -596,7 +599,7 @@ def create_meeting_review_router(db) -> APIRouter:
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": "final"}) + 1
             record = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": "final",
-                "status": "final_draft", "version": version, "schema_version": 3,
+                "status": "final_draft", "version": version, "schema_version": 4,
                 "share_token": secrets.token_urlsafe(24),
                 "data": data, "section_edits": {},
                 "group_session_id": review.get("group_session_id", ""),
@@ -649,6 +652,8 @@ def create_meeting_review_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="No final strategy to review yet")
         if payload.action == "start":
             updates = {"final_review_status": "reviewing", "final_section_index": 0}
+            if review.get("final_strategy_id"):
+                await db.final_board_approvals.delete_many({"strategy_id": review["final_strategy_id"]})
         elif payload.action == "section":
             updates = {"final_section_index": payload.index}
         elif payload.action == "finish":
@@ -689,6 +694,12 @@ def create_meeting_review_router(db) -> APIRouter:
             return {"status": "adopted"}
         approvals = await db.final_board_approvals.find(
             {"strategy_id": review["final_strategy_id"]}, {"_id": 0}).to_list(300)
+        joined = await db.group_game_participants.find(
+            {"session_id": review["group_session_id"]}, {"_id": 0, "board_member_id": 1}).to_list(300)
+        approved_ids = {row.get("board_member_id") for row in approvals if row.get("approval_status") == "approved"}
+        missing = [row for row in joined if row.get("board_member_id") not in approved_ids]
+        if missing:
+            raise HTTPException(status_code=409, detail="Every participant must adopt the final strategy before the delegation process can begin")
         adopted_at = now_iso()
         await db.game_strategies.update_one(
             {"strategy_id": review["final_strategy_id"], "user_id": member["user_id"]},
@@ -748,6 +759,15 @@ def create_meeting_review_router(db) -> APIRouter:
             payload["my_feedback"] = my_feedback
         elif review["status"] == "final_strategy_created":
             payload["final_review_status"] = review.get("final_review_status", "")
+            if review.get("final_strategy_id"):
+                final = await get_strategy(session["user_id"], review["final_strategy_id"])
+                payload["final_strategy"] = {
+                    "mode": final.get("mode", "final"), "status": final.get("status", "final_draft"),
+                    "version": final.get("version", 1), "schema_version": final.get("schema_version", 4),
+                    "prepared_by": final.get("prepared_by", ""), "generated_at": final.get("generated_at", ""),
+                    "data": final.get("data", {}), "section_edits": final.get("section_edits", {}),
+                    "organization_name": (profile.get("organization") or {}).get("name", ""),
+                }
             if review.get("final_review_status") == "reviewing" and review.get("final_strategy_id"):
                 index = review.get("final_section_index", 0)
                 key = SECTION_KEYS[index]

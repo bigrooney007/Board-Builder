@@ -30,7 +30,7 @@ DEFAULT_CONTENT = {
     "video_enabled": True,
     "video_label": "Watch",
     "video_heading": "See How The Board Fundraising Game Works",
-    "video_text": "See exactly how you and your board move from a fundraising goal to an adopted four-part fundraising strategy and clear participation choices.",
+    "video_text": "See exactly how you and your board move from a fundraising goal to an adopted, practical fundraising plan and clear participation choices.",
     "stages_label": "How It Works",
     "stages_heading": "One Game. One Fundraising Goal. Your Entire Board Behind It.",
     "stages": [
@@ -117,7 +117,7 @@ DEFAULT_CONTENT = {
         "saved_heading": "Your Board Fundraising Game Is Ready",
         "saved_supporting": "You have set your fundraising goal. Now play the game yourself and create the fundraising strategy your organization will use to reach it.",
         "next_heading": "Play The Game And Create Your Fundraising Strategy",
-        "next_supporting": "Answer four guided questions across four strategic areas. By the end, you will have created the thinking behind your organization's fundraising strategy.",
+        "next_supporting": "For each fundraising audience you choose, answer six guided questions about who they are, why they will give, where to find them, how to attract them, what to ask them to fund and the process for raising money from them. You will finish by choosing how you want to participate.",
         "invite_cta": "Play My Board Fundraising Game",
     },
     "upgrade_page": {
@@ -147,12 +147,12 @@ DEFAULT_CONTENT = {
                 "You will also tell us how you want to be involved in raising money."]},
             {"heading": "3. Invite Your Board Members To Play", "paragraphs": [
                 "Each board member receives their own secure Individual Game link.",
-                "They answer the same four strategy questions, learn how fundraising works while playing the game, contribute their ideas and tell us how they want to be involved in raising money."]},
+                "For each audience they select, they contribute ideas about who should give, why they will give, where to find them, how to attract them, what to ask them to fund, the process for raising money and how they would feel comfortable supporting fundraising."]},
             {"heading": "4. Play Together During Your Next Board Meeting", "paragraphs": [
-                "During your next board meeting, you and your board review the ideas contributed by everyone across the four areas that drive your fundraising strategy.",
-                "Your board prioritizes the strongest ideas together. Because the Group Game is now focused on only four areas, the game itself can be completed in about 10 minutes."]},
-            {"heading": "5. Generate The Four-Part Fundraising Strategy", "paragraphs": [
-                "The platform turns the Board's decisions into one focused strategy covering who to raise money from, where to find them, how to attract them and how to raise money from them.",
+                "During your next board meeting, you and your board review the ideas contributed by everyone across six focused decisions: audiences and reasons, where to find them, how to attract them, what to ask them to fund and how much to ask, the fundraising process and each Board Member's role.",
+                "Your board discusses the attributed ideas, compares them with your present fundraising circumstances and prioritizes the strongest direction together."]},
+            {"heading": "5. Generate The Complete Fundraising Plan", "paragraphs": [
+                "The platform presents the Board's own decisions as a practical plan with an executive summary, funding audiences and reasons, where to find them, how to attract them, what to ask for, the fundraising process and Board roles.",
                 "Your present donors, business supporters, grantors and current fundraising methods are preserved wherever the Board chooses to continue using them."]},
             {"heading": "6. Adopt The Strategy And Start Raising Money", "paragraphs": [
                 "You and your board review the final fundraising strategy, make the final decisions and adopt it as your organization's working fundraising strategy.",
@@ -251,12 +251,10 @@ class SituationUpdate(BaseModel):
 
 
 def situation_is_complete(doc: dict) -> bool:
-    if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 4:
+    if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 3:
         return False
     sections = doc.get("sections") or {}
-    participation = sections.get("participation") or {}
-    involvement = participation.get("raise") or participation.get("build") or []
-    return bool(involvement) and bool(str(participation.get("time") or "").strip())
+    return bool((sections.get("current_reality") or {}).get("reviewed"))
 
 
 def create_game_router(db) -> APIRouter:
@@ -429,11 +427,15 @@ def create_game_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
         situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        primary = await db.game_board_members.find_one(
+            {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1})
+        audience_complete = bool(primary and await db.game_audience_responses.find_one(
+            {"board_member_id": primary["member_id"], "completed": True}, {"_id": 0, "response_id": 1}))
         candidate = {**situation, "completed": True}
-        if not situation_is_complete(candidate):
+        if not audience_complete or not situation_is_complete(candidate):
             raise HTTPException(
                 status_code=409,
-                detail="Complete the present donor, business and grantor review and tell us how you will help raise money before finishing the Board Fundraising Game.",
+                detail="Complete your audience game and the present donor, business and grantor review before finishing.",
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.game_situations.update_one(
@@ -463,19 +465,13 @@ def create_game_router(db) -> APIRouter:
             {"user_id": member["user_id"]},
             {"_id": 0, "meeting_date": 1, "funding_deadline": 1, "start_time": 1, "timezone": 1},
         ) or {}
-        game_night_ready = bool(night.get("meeting_date") and night.get("funding_deadline") and night.get("start_time") and night.get("timezone"))
+        game_night_ready = bool(night.get("meeting_date") and night.get("start_time") and night.get("funding_deadline"))
         board_participant_count = await db.game_board_members.count_documents({
             "user_id": member["user_id"], "removed": {"$ne": True}, "is_primary": {"$ne": True},
         })
         if primary:
-            rows = await db.game_section_responses.find(
-                {"board_member_id": primary["member_id"], "section_id": {"$in": [1, 2, 3, 4]}},
-                {"_id": 0, "section_id": 1, "fine_tuning.completed": 1}).to_list(10)
-            completed_sections = {
-                row.get("section_id") for row in rows
-                if (row.get("fine_tuning") or {}).get("completed")
-            }
-            individual_game_completed = all(section_id in completed_sections for section_id in [1, 2, 3, 4])
+            individual_game_completed = bool(await db.game_audience_responses.find_one(
+                {"board_member_id": primary["member_id"], "completed": True}, {"_id": 0, "response_id": 1}))
         return {
             "first_name": member.get("first_name", ""),
             "organization": profile.get("organization", {}),

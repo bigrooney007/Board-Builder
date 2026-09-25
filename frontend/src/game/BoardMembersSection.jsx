@@ -62,9 +62,28 @@ const ResponsesView = ({ memberId }) => {
     memberApi.get(`/game/board-members/${memberId}/responses`).then((r) => setData(r.data)).catch(() => setData({ responses: [] }));
   }, [memberId]);
   if (!data) return <p className="bfg-note">Loading responses…</p>;
-  if (!data.responses.length) return <p className="bfg-note">No responses yet.</p>;
+  const audienceResponse = data.audience_response || {};
+  if (!data.responses.length && !audienceResponse.audiences) return <p className="bfg-note">No responses yet.</p>;
+  const labels = { individuals: "Individuals", businesses: "Businesses", grantors: "Grantors" };
+  const fieldLabels = {
+    audience: "Who should support the goal", reason: "Why they would support",
+    where: "Where to find them", attraction: "How to attract them or build credibility",
+    funding_ask: "What to ask them to fund and how much", process: "Step-by-step fundraising process",
+  };
   return (
     <div className="bfg-responses-view" data-testid="bfg-responses-view">
+      {audienceResponse.audiences && <>
+        {Object.entries(audienceResponse.audiences).map(([key, answer]) => (key === "individuals" || answer.enabled) && (
+          <div key={key} className="bfg-card" style={{ marginBottom: 14, padding: 16 }}>
+            <h4>{labels[key]}</h4>
+            {Object.entries(fieldLabels).map(([field, label]) => <div key={field} style={{ marginTop: 10 }}>
+              <p className="bfg-note"><strong>{label}</strong></p><p style={{ whiteSpace: "pre-wrap" }}>{answer[field]}</p>
+            </div>)}
+          </div>
+        ))}
+        <div className="bfg-card" style={{ marginBottom: 14, padding: 16 }}><h4>How This Person Would Like To Support Fundraising</h4><p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.involvement}</p></div>
+        <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`} data-testid="bfg-download-response">Download Response</a>
+      </>}
       {data.responses.map((response) => (
         <div key={response.section_id} style={{ marginBottom: 14 }}>
           <h4>{response.section_id}. {response.section_title} {response.completed ? "— Completed" : "— In Progress"}</h4>
@@ -134,7 +153,7 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
     catch (err) {
       const detail = err.response?.data?.detail;
       if (detail === "meeting_details_required") {
-        setNotice("ADD YOUR BOARD MEETING AND FUNDING DEADLINE FIRST — Save the meeting date, time and the date the money is needed so the invitation carries the full context and the execution plan can be built to the deadline.");
+        setNotice("ADD YOUR BOARD MEETING FIRST. Save the meeting date and time so every invitation carries the Game Night details.");
         document.querySelector('[data-tour="prepare-meeting"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
       } else {
         setNotice(typeof detail === "string" ? detail : "Something went wrong. Please try again.");

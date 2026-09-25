@@ -343,7 +343,10 @@ def create_portfolio_router(db) -> APIRouter:
         return portfolio
 
     def strategy_audiences(strategy: dict) -> list:
-        priorities = ((strategy.get("data") or {}).get("fundraising_audiences") or {}).get("priorities") or []
+        data = (strategy.get("data") or {}).get("fundraising_audiences") or {}
+        priorities = data.get("priorities") or []
+        if not priorities:
+            priorities = [item for key in ("individuals", "businesses", "grantors") for item in (data.get(key) or [])]
         return [str(item.get("title", "")).strip() for item in priorities if isinstance(item, dict) and item.get("title")][:10]
 
     async def toolkit_for(portfolio: dict) -> dict:
@@ -363,6 +366,8 @@ def create_portfolio_router(db) -> APIRouter:
         participation_response = await db.game_section_responses.find_one(
             {"user_id": user_id, "board_member_id": member_id, "section_id": 5}, {"_id": 0}) or {}
         participation = participation_response.get("extras") or {}
+        audience_response = await db.game_audience_responses.find_one(
+            {"user_id": user_id, "board_member_id": member_id, "completed": True}, {"_id": 0}) or {}
         system_roles = []
         for pref in system_response.get("preferences") or []:
             mapping = SYSTEM_ROLE_BY_OPTION.get(str(pref.get("option", "")).strip())
@@ -430,13 +435,13 @@ def create_portfolio_router(db) -> APIRouter:
                             break
             if not attached:
                 additional.append({"text": text, "deadline": str(commitment.get("deadline", ""))})
-        final_team_roles=(strategy.get("data") or {}).get("team_roles") or []
+        final_team_roles=(strategy.get("data") or {}).get("board_roles") or (strategy.get("data") or {}).get("team_roles") or []
         full_name=str(record.get("full_name","")).strip()
         full_key=re.sub(r"[^a-z0-9 ]","",full_name.lower()).strip()
         first_key=(full_key.split() or [""])[0]
         for final_role in final_team_roles:
             if not isinstance(final_role,dict):continue
-            assigned=str(final_role.get("assigned","")).strip()
+            assigned=str(final_role.get("name") or final_role.get("assigned","")).strip()
             assigned_key=re.sub(r"[^a-z0-9 ]","",assigned.lower()).strip()
             if not assigned_key or assigned_key=="role capacity needed":continue
             if assigned_key!=full_key and assigned_key!=first_key and full_key not in assigned_key:continue
@@ -462,6 +467,9 @@ def create_portfolio_router(db) -> APIRouter:
                     system_roles.append({"item_id":new_uuid(),"role_key":"custom","label":role_title,"source":"meeting_commitment",
                         "involvement":"Board-agreed responsibility","member_note":"","commitment":responsibility,"deadline":"",
                         "requires_confirmation":False,"active":True})
+        involvement = str(audience_response.get("involvement") or "").strip()
+        if involvement and not any(involvement in str(item.get("commitment") or "") for item in system_roles + direct_activities):
+            additional.append({"text": involvement, "deadline": ""})
         if str(participation.get("additional_idea","")).strip():
             additional.append({"text":str(participation.get("additional_idea","")).strip(),"deadline":""})
         return {
@@ -503,12 +511,17 @@ def create_portfolio_router(db) -> APIRouter:
             joined_ids = {row.get("board_member_id") for row in joined_rows}
         participating_records = []
         for record in records:
+            audience_response = await db.game_audience_responses.find_one({
+                "user_id": member["user_id"],
+                "board_member_id": record["member_id"],
+                "completed": True,
+            }, {"_id": 0, "response_id": 1})
             response_count = await db.game_section_responses.count_documents({
                 "user_id": member["user_id"],
                 "board_member_id": record["member_id"],
                 "completed": True,
             })
-            if response_count > 0 or record["member_id"] in joined_ids:
+            if audience_response or response_count > 0 or record["member_id"] in joined_ids:
                 participating_records.append(record)
         created = 0
         for record in participating_records:
@@ -1012,7 +1025,7 @@ def create_portfolio_router(db) -> APIRouter:
         if execution_access_state(access)=="renewal_required":raise HTTPException(402,"Your organization's included Executive Assistant access has ended. Please ask your organization leader to renew Board Execution Support.")
         context=await assistant_context(portfolio);request_text=(f"Create this ready-to-use fundraising material: {payload.material_type}.\n\nAdditional instruction: {payload.message}" if payload.material_type else payload.message)
         api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","");model=os.environ.get("EXECUTIVE_ASSISTANT_MODEL","claude-haiku-4-5-20251001");provider=os.environ.get("EXECUTIVE_ASSISTANT_PROVIDER","anthropic")
-        system=("You are one delegated leader's secure fundraising execution assistant. Use only the supplied organization, adopted strategy, approved portfolio, this person's relationships and conversation. Give practical, ready-to-use help only for responsibilities this person actually approved or was delegated. Never invent facts, people, relationships, commitments, results or authority. Use clear placeholders when missing facts are required. Do not mention AI.")
+        system=("You are one delegated leader's secure fundraising execution assistant. Use only the supplied organization, adopted strategy, approved Board Fundraising Portfolio, this person's relationships and conversation. The Portfolio is the authority for understanding this person's role and for recommending the scripts, messages, checklists, research templates, tracking tools and other execution materials that will help them perform it. Give practical, ready-to-use help only for responsibilities this person actually approved or was delegated. Never invent facts, people, relationships, commitments, results or authority. Use clear placeholders when missing facts are required. Do not mention AI.")
         history=await db.board_assistant_messages.find({"portfolio_id":portfolio["portfolio_id"]},{"_id":0}).sort("created_at",-1).limit(12).to_list(12);history.reverse()
         prompt=f"AUTHORITATIVE CONTEXT:\n{json.dumps(context,default=str)}\n\nRECENT CONVERSATION:\n{json.dumps(history,default=str)}\n\nDELEGATED LEADER REQUEST:\n{request_text}"
         chat=LlmChat(api_key=api_key,session_id=f"board-assistant-{portfolio['portfolio_id']}-{uuid.uuid4()}",system_message=system).with_model(provider,model);response=await chat.send_message(UserMessage(text=prompt));answer=response if isinstance(response,str) else getattr(response,"text",str(response));now=now_iso()

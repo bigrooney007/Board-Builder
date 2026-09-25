@@ -24,7 +24,7 @@ export default function BoardStrategyReviewPage() {
     try { setReview((await memberApi.get("/game/review")).data); }
     catch (err) {
       setError(err.response?.status === 409
-        ? "Complete your Group Game first. The Board Strategy Review becomes available after all four areas are ranked."
+        ? "Complete your Group Game first. The Board Strategy Review becomes available after all six decisions are completed."
         : "We could not load the Board Strategy Review.");
     }
   }, []);
