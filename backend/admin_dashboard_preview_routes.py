@@ -1458,6 +1458,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 {"guided_session_id": session_id},
                 {"$set": {
                     "user_id": member["user_id"],
+                    "session_id": session_id,
                     "organization_name": ORG_NAME,
                     "founder_title": "Founder and Executive Director",
                     "phone": "+44 7700 900123",
