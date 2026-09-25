@@ -84,7 +84,7 @@ const ResponsesView = ({ memberId }) => {
         <div className="bfg-card" style={{ marginBottom: 14, padding: 16 }}><h4>How This Person Would Like To Support Fundraising</h4><p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.involvement}</p></div>
         <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`} data-testid="bfg-download-response">Download Response</a>
       </>}
-      {data.responses.map((response) => (
+      {!audienceResponse.audiences && data.responses.map((response) => (
         <div key={response.section_id} style={{ marginBottom: 14 }}>
           <h4>{response.section_id}. {response.section_title} {response.completed ? "— Completed" : "— In Progress"}</h4>
           {(response.first_response || []).length > 0 && (

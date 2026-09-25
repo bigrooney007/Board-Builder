@@ -62,7 +62,11 @@ def now_iso() -> str:
 
 
 def suffix(member: dict) -> str:
-    return member["user_id"][-16:]
+    # Include the complete product-scoped preview identity. Admin accounts share
+    # the same trailing fingerprint across products, so slicing the final
+    # characters caused otherwise isolated Recruitment and Fundraising fixtures
+    # to reuse identifiers from earlier preview runs.
+    return hashlib.sha256(member["user_id"].encode("utf-8")).hexdigest()[:16]
 
 
 def strategic_response(lens: str) -> dict:
@@ -2438,6 +2442,19 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 upsert=True,
             )
             toolkit_id = f"admin-preview-toolkit-{portfolio_id}"
+            toolkit_materials = [
+                {
+                    "material_type": "action_plan",
+                    "title": f"{activity} Action Plan",
+                    "purpose": f"A practical starting plan for {spec['name']} to carry out this approved responsibility.",
+                    "content": (
+                        f"RESPONSIBILITY\n{activity}\n\n"
+                        "FIRST ACTION\nChoose the first person, organization or internal task connected to this responsibility and record the next action.\n\n"
+                        "FOLLOW-THROUGH\nComplete the action, record the result in the shared fundraising pipeline and agree the next follow-up date with the Fundraising System Coordinator."
+                    ),
+                }
+                for activity in spec["activities"]
+            ]
             await db.execution_toolkits.update_one(
                 {"toolkit_id": toolkit_id},
                 {"$set": {
@@ -2445,16 +2462,18 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "board_member_id": board_member_id, "strategy_id": strategy_id, "portfolio_version": 1,
                     "status": "ready",
                     "data": {
-                        "quick_start": [
-                            "Review the responsibility in your approved Board Fundraising Portfolio.",
-                            "Choose the first relationship, material or execution task you will move this week.",
-                            "Record progress and the next action before the next Board meeting.",
-                        ],
-                        "scripts_and_templates": [
-                            "Warm introduction message", "Fundraising meeting preparation checklist",
-                            "Follow-up message", "Stewardship thank-you and impact update",
-                        ],
-                        "relationship_mapping": "Use your professional, business and community network to identify people, businesses and grantors that match the Board-approved funding audiences.",
+                        "board_member_name": spec["name"],
+                        "organisation_name": ORG_NAME,
+                        "portfolio_summary": (
+                            f"{spec['name']} will serve as {spec['role']} for the Board-approved fundraising strategy. "
+                            f"These materials turn the approved commitment into clear first actions and follow-through steps."
+                        ),
+                        "material_packs": [{
+                            "role_key": "custom",
+                            "role_title": spec["role"],
+                            "pack_title": f"{spec['role']} Execution Pack",
+                            "materials": toolkit_materials,
+                        }],
                     },
                     "ready_email_sent": True, "generated_at": now, "created_at": now, "updated_at": now, "internal_preview": True,
                 }},

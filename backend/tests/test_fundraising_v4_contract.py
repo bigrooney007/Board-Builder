@@ -75,6 +75,18 @@ class FundraisingV4ContractTests(unittest.TestCase):
         self.assertIn('"schema_version": 4', final)
         self.assertIn("Do not replace their ideas with your own", final)
         self.assertIn("Leave unsupported parts empty", final)
+        self.assertIn('"schema_version": strategy.get("schema_version", 1)', strategy)
+
+    def test_v4_response_view_does_not_repeat_legacy_sections(self):
+        responses = source("frontend/src/game/BoardMembersSection.jsx")
+        self.assertIn("!audienceResponse.audiences && data.responses.map", responses)
+
+    def test_admin_previews_are_product_isolated_and_toolkits_use_current_schema(self):
+        fixtures = source("backend/admin_dashboard_preview_routes.py")
+        self.assertIn('hashlib.sha256(member["user_id"].encode("utf-8")).hexdigest()[:16]', fixtures)
+        self.assertIn('"portfolio_summary": (', fixtures)
+        self.assertIn('"material_packs": [{', fixtures)
+        self.assertNotIn('"scripts_and_templates": [', fixtures)
 
     def test_final_review_adoption_and_delegation_are_connected_in_customer_ui(self):
         app = source("frontend/src/App.js")
