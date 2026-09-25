@@ -292,20 +292,7 @@ export default function PortfolioEditPage() {
                 <p className="bfg-success" style={{ fontWeight: 700 }}>
                   Board Member approved this Portfolio{portfolio.approved_at ? ` on ${new Date(portfolio.approved_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}` : ""}. It now drives their execution support.
                 </p>
-                {detail.toolkit_status === "ready" ? (
-                  <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={() => navigate(`/game/portfolios/${portfolioId}/toolkit`)}
-                    data-testid="bfg-pe-view-toolkit-btn">View Execution Materials</button>
-                ) : (
-                  <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={busy}
-                    onClick={async () => {
-                      setBusy(true);
-                      try { await memberApi.post(`/game/portfolios/${portfolioId}/generate-updated-toolkit`, { origin_url: window.location.origin }); setNotice("Execution material generation started."); }
-                      catch { setNotice("We could not start the generation. Please try again."); }
-                      setBusy(false);
-                    }} data-testid="bfg-pe-generate-toolkit-btn">
-                    Generate Updated Execution Materials
-                  </button>
-                )}
+                <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`/board-assistant/${portfolio.token}`} target="_blank" rel="noreferrer" data-testid="bfg-pe-open-assistant-btn">Open Their Executive Assistant</a>
               </>
             )}
           </div>

@@ -14,6 +14,30 @@ from auth_service import authenticate_admin
 logger = logging.getLogger(__name__)
 
 DWM_OFFERS = {
+    "recruitment_supported_2997": {
+        "product": "recruitment", "engagement_type": "recruitment_supported",
+        "offer": "Board Recruitment With Rooney ($2,997)", "entitlement": "recruitment_self_guided",
+        "intake_collection": "recruitment_free_assessments", "intake_user_field": "member_user_id",
+        "entry_route": "/app/board-recruitment",
+    },
+    "board_recommitment_supported_2497": {
+        "product": "board-recommitment", "engagement_type": "board_recommitment_supported",
+        "offer": "Board Recommitment With Rooney ($2,497)", "entitlement": "reactivation_self_guided",
+        "intake_collection": "board_reactivation_intakes", "intake_user_field": "user_id",
+        "entry_route": "/board-recommitment/dashboard",
+    },
+    "board_fundraising_game_supported_2997": {
+        "product": "board-fundraising-game", "engagement_type": "fundraising_game_supported",
+        "offer": "Board Fundraising Game With Rooney ($2,997)", "entitlement": "board_fundraising_game",
+        "intake_collection": "game_situations", "intake_user_field": "user_id",
+        "entry_route": "/game/dashboard",
+    },
+    "strategic_planning_supported_2997": {
+        "product": "strategic-planning", "engagement_type": "strategic_planning_supported",
+        "offer": "Strategic Planning With Rooney ($2,997)", "entitlement": "strategic_planning",
+        "intake_collection": "guided_product_intakes", "intake_user_field": "session_id",
+        "entry_route": "/strategic-planning/dashboard",
+    },
     "direct_board_recruitment_project": {
         "product": "recruitment", "offer": "Board Recruitment Project ($1,997)",
         "entitlement": "recruitment_self_guided", "intake_collection": "board_recruitment_intakes",
@@ -68,8 +92,12 @@ class ActivationDeliverySettings(BaseModel):
 def create_admin_service_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/admin")
 
-    async def intake_for(session_id: str, collection: str) -> dict:
-        return await db[collection].find_one({"session_id": session_id}, {"_id": 0}) or {}
+    async def intake_for(session_id: str, meta: dict, tx: dict = None) -> dict:
+        field = meta.get("intake_user_field", "session_id")
+        value = session_id if field == "session_id" else (tx or {}).get("claimed_by_user_id", "")
+        if not value:
+            return {}
+        return await db[meta["intake_collection"]].find_one({field: value}, {"_id": 0}, sort=[("updated_at", -1)]) or {}
 
     @router.get("/dwm-clients")
     async def dwm_clients(request: Request):
@@ -95,7 +123,8 @@ def create_admin_service_router(db) -> APIRouter:
         for tx in transactions:
             meta = DWM_OFFERS[tx["purchase_source"]]
             session_id = tx.get("session_id", "")
-            intake = await intake_for(session_id, meta["intake_collection"])
+            intake = await intake_for(session_id, meta, tx)
+            supported_service = bool(tx.get("supported_service"))
             workspace = await db.members.find_one(
                 {"operator_workspace": True, "workspace_session_id": session_id},
                 {"_id": 0, "user_id": 1, "organization_name": 1})
@@ -108,7 +137,7 @@ def create_admin_service_router(db) -> APIRouter:
                 "founder_name": intake.get("your_name", "") or intake.get("full_name", "") or tx.get("lead_name", ""),
                 "founder_email": intake.get("your_email", "") or intake.get("email", "") or tx.get("email", "") or tx.get("lead_email", ""),
                 "organization_name": intake.get("organization_name", "") or tx.get("lead_organization", ""),
-                "intake_status": "Completed" if intake else "Not Started",
+                "intake_status": ("Completed" if tx.get("supported_service_handoff_complete") else "In Progress" if intake else "Not Started") if supported_service else ("Completed" if intake else "Not Started"),
                 "engagement_status": tx.get("dfy_engagement_status", "Active"),
                 "first_meeting": tx.get("dfy_first_meeting", "Not Booked"),
                 "current_step": tx.get("dfy_current_step", ""),
@@ -125,7 +154,7 @@ def create_admin_service_router(db) -> APIRouter:
         if not tx or tx.get("purchase_source") not in DWM_OFFERS:
             raise HTTPException(status_code=404, detail="Client not found")
         meta = DWM_OFFERS[tx["purchase_source"]]
-        intake = await db[meta["intake_collection"]].find_one({"session_id": session_id}, {"_id": 0})
+        intake = await intake_for(session_id, meta, tx)
         if not intake:
             raise HTTPException(status_code=404, detail="This client has not completed their intake yet")
         return {"offer": meta["offer"], "intake_collection": meta["intake_collection"], "intake": intake}
@@ -190,20 +219,21 @@ def create_admin_service_router(db) -> APIRouter:
         if claimed_uid:
             real = await db.members.find_one({"user_id": claimed_uid}, {"_id": 0, "password_hash": 0})
             if real:
-                intake = await intake_for(session_id, meta["intake_collection"])
-                if not real.get("operator_workspace"):
-                    await db.members.update_one(
-                        {"user_id": claimed_uid},
-                        {"$set": {"operator_workspace": True, "workspace_session_id": session_id,
-                                  "workspace_product": meta["product"],
-                                  "organization_name": real.get("organization_name", "") or intake.get("organization_name", "")}})
-                    real["organization_name"] = real.get("organization_name", "") or intake.get("organization_name", "")
+                intake = await intake_for(session_id, meta, tx)
+                await db.members.update_one(
+                    {"user_id": claimed_uid},
+                    {"$set": {"operator_workspace": True, "workspace_session_id": session_id,
+                              "workspace_product": meta["product"],
+                              "organization_name": real.get("organization_name", "") or intake.get("organization_name", "")}})
+                real["organization_name"] = real.get("organization_name", "") or intake.get("organization_name", "")
+                real["workspace_session_id"] = session_id
+                real["workspace_product"] = meta["product"]
                 return {"status": "exists", "workspace": _workspace_view(real, meta)}
         existing = await db.members.find_one(
             {"operator_workspace": True, "workspace_session_id": session_id}, {"_id": 0, "password_hash": 0})
         if existing:
             return {"status": "exists", "workspace": _workspace_view(existing, meta)}
-        intake = await intake_for(session_id, meta["intake_collection"])
+        intake = await intake_for(session_id, meta, tx)
         now = datetime.now(timezone.utc).isoformat()
         user_id = f"dwm-{uuid.uuid4()}"
         founder_name = (intake.get("your_name", "") or intake.get("full_name", "") or "Client Founder").strip()
@@ -230,11 +260,14 @@ def create_admin_service_router(db) -> APIRouter:
         return {"status": "created", "workspace": _workspace_view(member, meta)}
 
     def _workspace_view(member: dict, meta: dict) -> dict:
+        entry_route = meta["entry_route"]
+        if meta["product"] == "strategic-planning":
+            entry_route = f"{entry_route}?session_id={member.get('workspace_session_id', '')}"
         return {
             "user_id": member["user_id"],
             "organization_name": member.get("organization_name", ""),
             "product": meta["product"],
-            "entry_route": meta["entry_route"],
+            "entry_route": entry_route,
         }
 
     return router

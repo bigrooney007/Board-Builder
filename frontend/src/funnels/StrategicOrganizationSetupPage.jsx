@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "@/game/gameShared";
 import "./strategic-planning-dashboard.css";
 
@@ -25,6 +26,7 @@ const emptyProgram=()=>({name:"",description:"",present_work:""});
 
 export default function StrategicOrganizationSetupPage(){
   const nav=useNavigate(),location=useLocation();
+  const {member}=useMemberAuth();
   const sid=new URLSearchParams(location.search).get("session_id")||"";
   const[organization,setOrganization]=useState("");
   const[answers,setAnswers]=useState({program_details:[emptyProgram()]});
@@ -85,7 +87,7 @@ export default function StrategicOrganizationSetupPage(){
         session_id:sid,organization_name:organization,answers:nextAnswers,logo_data_url:logo
       });
       setAnswers(nextAnswers);
-      if(finish)nav(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-meeting`,{replace:true});
+      if(finish)nav(member?.supported_service_product==="strategic-planning"?"/supported-service/thank-you":`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-meeting`,{replace:true});
       else{setIndex(index+1);window.scrollTo({top:0,behavior:"smooth"});}
     }catch(e){setMessage(e.response?.data?.detail||"We could not save this information.");}
     setBusy(false);

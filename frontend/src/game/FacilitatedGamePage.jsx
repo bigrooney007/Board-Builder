@@ -37,7 +37,7 @@ export const FACILITATED_GAME_HOME_DEFAULTS = {
     "A board that understands and helped build the strategy",
     "Clear fundraising priorities and board participation",
     "Individual Board Fundraising Portfolios",
-    "Personalized Execution Materials",
+    "Personal Executive Assistants With On-Demand Materials",
     "Relationship Mapping for potential funders in each board member's network",
   ],
   offerEyebrow: "LET US RUN IT WITH YOU",

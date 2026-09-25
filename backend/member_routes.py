@@ -147,6 +147,19 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         entitlement = "board_fundraising_game"
         product_name = "Facilitated Board Fundraising Game"
         extra_entitlements.append("facilitated_board_fundraising_game")
+    elif offer_source == "recruitment_supported_2997":
+        entitlement = "recruitment_self_guided"
+        product_name = "Board Recruitment With Rooney"
+        extra_entitlements.append("recruitment_selection_onboarding")
+    elif offer_source == "board_recommitment_supported_2497":
+        entitlement = "reactivation_self_guided"
+        product_name = "Board Recommitment With Rooney"
+    elif offer_source == "board_fundraising_game_supported_2997":
+        entitlement = "board_fundraising_game"
+        product_name = "Board Fundraising Game With Rooney"
+    elif offer_source == "strategic_planning_supported_2997":
+        entitlement = "strategic_planning"
+        product_name = "Strategic Planning With Rooney"
     elif offer_source == "recruitment" and tier in TIER_ENTITLEMENTS:
         entitlement = TIER_ENTITLEMENTS[tier]
         product_name = TIER_PRODUCTS[tier]
@@ -246,6 +259,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "purchase_source": "facilitated_board_fundraising_game_3497",
             "offer": "Facilitated Board Fundraising Game", "price_paid": 3497,
         })
+    elif offer_source in {"recruitment_supported_2997", "board_recommitment_supported_2497", "board_fundraising_game_supported_2997", "strategic_planning_supported_2997"}:
+        purchase.update({
+            "purchase_source": offer_source, "offer": product_name,
+            "price_paid": int((session.amount_total or 0) / 100), "supported_service": True,
+        })
     elif offer_source == "recruitment":
         purchase.update({
             "purchase_source": f"recruitment_{tier}",
@@ -257,6 +275,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     if lead_id:
         add_to_set["lead_ids"] = lead_id
     update = {"$addToSet": add_to_set, "$set": {"updated_at": now}}
+    if purchase.get("supported_service"):
+        update["$set"].update({"supported_service_product": metadata.get("product", ""),
+                                "supported_service_session_id": session_id,
+                                "supported_service_handoff_complete": False})
     if purchase.get("payment_phone"):
         update["$set"]["phone"] = purchase["payment_phone"]
     if offer_source == "facilitated_board_fundraising_game":
@@ -316,6 +338,9 @@ def public_member(member: dict) -> dict:
         "internal_client_test": bool(member.get("internal_client_test")),
         "client_test_product": member.get("client_test_product", "") if member.get("internal_client_test") else "",
         "internal_dashboard_preview": bool(member.get("internal_dashboard_preview")),
+        "supported_service_product": member.get("supported_service_product", ""),
+        "supported_service_session_id": member.get("supported_service_session_id", ""),
+        "supported_service_handoff_complete": bool(member.get("supported_service_handoff_complete")),
     }
 
 
@@ -574,6 +599,21 @@ def create_member_router(db) -> APIRouter:
         fresh = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0, "password_hash": 0})
         return {"member": public_member(fresh), "claimed": purchase["entitlement"],
                 "claimed_source": purchase.get("purchase_source", "")}
+
+    @router.post("/supported-service/handoff-complete")
+    async def supported_service_handoff_complete(request: Request):
+        member = await authenticate_member(request, db)
+        if not member.get("supported_service_product"):
+            raise HTTPException(status_code=409, detail="This account does not have an active supported-service engagement")
+        now = datetime.now(timezone.utc).isoformat()
+        await db.members.update_one({"user_id": member["user_id"]}, {"$set": {
+            "supported_service_handoff_complete": True, "supported_service_handoff_completed_at": now, "updated_at": now,
+        }})
+        await db.payment_transactions.update_one(
+            {"session_id": member.get("supported_service_session_id", "")},
+            {"$set": {"supported_service_handoff_complete": True, "supported_service_handoff_completed_at": now, "updated_at": now}},
+        )
+        return {"status": "complete", "product": member.get("supported_service_product", "")}
 
     @router.get("/dashboard")
     async def dashboard(request: Request):

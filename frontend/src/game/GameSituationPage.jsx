@@ -83,7 +83,7 @@ export default function GameSituationPage() {
         setToken(self.data.token);
         const response = (await axios.get(`${API}/game/play/${self.data.token}/audience-response`)).data.response || {};
         if (!response.completed) { setPhase("play_first"); return; }
-        if (situation.data.completed && !reviewMode) { navigate("/game/dashboard", { replace: true }); return; }
+        if (situation.data.completed && !reviewMode) { navigate(member?.supported_service_product === "board-fundraising-game" ? "/supported-service/thank-you" : "/game/dashboard", { replace: true }); return; }
         setIndex(reviewMode ? 0 : Math.min(2, Math.max(0, Number(situation.data.current_step || 0))));
         setPhase("reality");
       } catch { setError("We could not load your game. Please refresh the page."); setPhase("error"); }
@@ -109,7 +109,7 @@ export default function GameSituationPage() {
       await memberApi.put("/game/situation", { sections: { current_reality: savedReality }, current_step: final ? 3 : index + 1 });
       if (final) {
         await memberApi.post("/game/situation/complete");
-        navigate("/game/dashboard", { replace: true });
+        navigate(member?.supported_service_product === "board-fundraising-game" ? "/supported-service/thank-you" : "/game/dashboard", { replace: true });
       } else { setIndex(index + 1); window.scrollTo({ top: 0 }); }
     } catch (err) { setError(err.response?.data?.detail || "We could not save your answers. Please try again."); }
     setBusy(false);

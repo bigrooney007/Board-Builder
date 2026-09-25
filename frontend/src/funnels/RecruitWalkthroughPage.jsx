@@ -4,6 +4,8 @@ import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import { trackPlatformEvent, usePlatformVideo } from "@/clean/platform";
+import DemoOfferCards from "@/components/DemoOfferCards";
+import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import "@/game/game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -12,13 +14,13 @@ const BASE = process.env.REACT_APP_BACKEND_URL;
 export default function RecruitWalkthroughPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const video = usePlatformVideo("recruitment_demonstration");
   const audioRef = useRef(null);
 
   useEffect(() => {
-    document.title = "Self-Guided Board Recruitment | Nonprofit Board Builder";
+    document.title = "Board Recruitment Options | Nonprofit Board Builder";
     const emailedToken = searchParams.get("token") || "";
     if (emailedToken) localStorage.setItem("recruitFreeToken", emailedToken);
     const token = emailedToken || localStorage.getItem("recruitFreeToken");
@@ -35,8 +37,8 @@ export default function RecruitWalkthroughPage() {
     return () => { if (audioRef.current) audioRef.current.pause(); };
   }, [navigate, searchParams]);
 
-  const buy = async () => {
-    setBusy(true); setError("");
+  const buy = async (pathway = "self-guided") => {
+    setBusy(pathway); setError("");
     if (audioRef.current) audioRef.current.pause();
     const token = localStorage.getItem("recruitFreeToken");
     try {
@@ -48,19 +50,23 @@ export default function RecruitWalkthroughPage() {
         leadId = assessment.data.lead_id || "";
       }
       if (!leadId) { navigate("/recruit"); return; }
-      const response = await axios.post(`${API}/payments/checkout`, {
-        lead_id: leadId, tier: "497", origin_url: window.location.origin,
-      }, { withCredentials: true });
+      const response = pathway === "supported"
+        ? await axios.post(`${API}/payments/supported-checkout`, {
+          product: "recruitment", origin_url: window.location.origin, result_token: token || "",
+        }, { withCredentials: true })
+        : await axios.post(`${API}/payments/checkout`, {
+          lead_id: leadId, tier: "497", origin_url: window.location.origin,
+        }, { withCredentials: true });
       window.location.href = response.data.checkout_url;
     } catch (err) {
       setError(err.response?.status === 403 ? "Program Access Opening Soon" : "We could not open checkout. Please try again.");
-      setBusy(false);
+      setBusy("");
     }
   };
 
   return (
     <BfgShell>
-      <main className="bfg-flow" style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="recruit-walkthrough-page">
+      <main className="bfg-flow" style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="recruit-walkthrough-page">
         <h1 style={{ fontSize: "clamp(30px, 6vw, 48px)", lineHeight: 1.08, maxWidth: 680, margin: "0 auto" }} data-testid="recruit-walkthrough-heading">
           See How To Recruit The Board Members Your Organization Needs Yourself
         </h1>
@@ -69,19 +75,21 @@ export default function RecruitWalkthroughPage() {
           <TrackedYouTubeVideo video={video} flow="recruitment" testId="recruit-walkthrough-video" title="Board Recruitment Demonstration" placeholder="Demonstration video has not been added yet." />
         </div>
 
-        <h2 style={{ marginTop: 36, fontSize: "clamp(24px, 4vw, 32px)" }}>Start Recruiting The Board Members Your Organization Needs</h2>
-        <div className="bfg-card" style={{ marginTop: 20, padding: "26px 22px", textAlign: "left" }}>
-          <p style={{ fontWeight: 800, fontSize: 18, color: "#111827", textAlign: "center" }}>Your Self-Guided Board Recruitment System</p>
-          <p style={{ marginTop: 18 }}><strong>See the process executed step by step.</strong> Know exactly what to do from recruitment campaign to selection and onboarding.</p>
-          <p style={{ marginTop: 14 }}><strong>Use the materials we provide to execute it yourself.</strong> Get the forms, campaign materials, interview tools, reference process and onboarding materials you need at each stage.</p>
-          <p style={{ marginTop: 14 }}><strong>Get support throughout the entire process.</strong> When you need help, request support without handing the whole process over to someone else.</p>
-          <p style={{ marginTop: 24, textAlign: "center", fontFamily: "Outfit", fontWeight: 800, fontSize: 38, color: "#111827" }} data-testid="recruit-walkthrough-price">$497 One Time</p>
-          <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 16, width: "100%", minHeight: 58, fontSize: 16 }} disabled={busy} onClick={buy} data-testid="recruit-walkthrough-buy-btn">
-            {busy ? "Opening Secure Checkout…" : "START MY BOARD RECRUITMENT — $497"}
-          </button>
-          <p style={{ marginTop: 12, textAlign: "center", fontSize: 13 }}>One payment. Follow the complete recruitment process inside your dashboard.</p>
-        </div>
-        {error && <p className="bfg-error" data-testid="recruit-walkthrough-error">{error}</p>}
+        <DemoOfferCards product="recruitment" busy={busy} onBuy={buy} error={error}
+          selfGuided={{
+            title:"Recruit The Board Members You Need Using The Platform",
+            description:"Get the complete self-guided recruitment system and execute it with confidence.",
+            features:["Follow the recruitment process step by step","Use the application, campaign, interview, reference and onboarding tools","Get instructions and real-time support as you execute","Recruit and onboard the Board Members your organization needs"],
+            guarantee:"Complete the guided process. If the platform does not help you produce and launch a usable Board recruitment campaign, tell us and we will refund 100% of your purchase.",
+            button:"START MY SELF-GUIDED RECRUITMENT — $497",
+          }}
+          supported={{
+            title:"Launch Your Board Recruitment With Rooney",
+            description:"Rooney works directly with you to move the recruitment from planning through onboarding.",
+            features:["Launch the Board recruitment campaign with you","Support the interview and selection process","Guide reference checks and final decisions","Help you onboard the Board Members you select"],
+            price:"$2,997", button:"WORK WITH ROONEY — $2,997",
+          }}/>
+        <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix="recruitment-demo"/>
       </main>
     </BfgShell>
   );

@@ -76,7 +76,7 @@ export default function RecommitmentQuestionsPage() {
     try {
       await memberApi.put("/reactivation/setup", answers);
       if (finish) {
-        navigate("/board-recommitment/dashboard#recommitment-forms", { replace:true });
+        navigate(member?.supported_service_product === "board-recommitment" ? "/supported-service/thank-you" : "/board-recommitment/dashboard#recommitment-forms", { replace:true });
       } else {
         setIndex((value)=>value+1);
         window.scrollTo({top:0,behavior:"smooth"});

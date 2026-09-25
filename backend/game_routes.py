@@ -156,7 +156,7 @@ DEFAULT_CONTENT = {
                 "Your present donors, business supporters, grantors and current fundraising methods are preserved wherever the Board chooses to continue using them."]},
             {"heading": "6. Adopt The Strategy And Start Raising Money", "paragraphs": [
                 "You and your board review the final fundraising strategy, make the final decisions and adopt it as your organization's working fundraising strategy.",
-                "After the meeting, every board member receives the adopted strategy, their personal Board Fundraising Portfolio and the personalized scripts, templates, checklists and execution materials they need to perform the role they agreed to play."]},
+                "After the meeting, every board member receives the adopted strategy, their personal Board Fundraising Portfolio and an Executive Assistant that recommends and creates the specific materials they need when they are ready to use them."]},
         ],
         "repeat_heading": "Ready To Bring Your Board Into The Process?",
         "repeat_supporting": "Unlock your Board Fundraising Game and start preparing your board to build, adopt and execute the fundraising strategy your organization needs.",
@@ -173,7 +173,7 @@ DEFAULT_CONTENT = {
             {"heading": "Your Present Fundraising Strengths Preserved", "paragraphs": ["Keep the present donors, business supporters, grantors and fundraising methods the Board wants to continue using."]},
             {"heading": "More Ideas From Your Entire Board", "paragraphs": ["The more people who play the game, the more ideas you have about who to raise money from, where to find them, how to attract them and how to raise money from them."]},
             {"heading": "A Clear Role For Every Board Member", "paragraphs": ["Every Board Member chooses how they want to help raise money."]},
-            {"heading": "The Tools To Execute", "paragraphs": ["Board members receive their Board Fundraising Portfolio and personalized scripts, templates, checklists and execution materials based on the role they agreed to perform."]},
+            {"heading": "On-Demand Execution Support", "paragraphs": ["Each Board Member's Executive Assistant recommends useful materials from the role in their approved Portfolio, creates only what they choose to use and answers questions as they execute."]},
         ],
         "features_heading": "Everything You Need To Run Your Board Fundraising Game",
         "features": [
@@ -182,7 +182,7 @@ DEFAULT_CONTENT = {
             {"heading": "Board-Prioritized Fundraising Strategy", "description": "Turn the board's decisions into a complete fundraising strategy."},
             {"heading": "Strategy Review and Adoption", "description": "Review the strategy together, capture board decisions and adopt the final plan."},
             {"heading": "Board Fundraising Portfolios", "description": "Give every board member a clear role in helping the organization raise money."},
-            {"heading": "Personalized Execution Toolkits", "description": "Equip board members with the scripts, templates, checklists and resources required to perform their role."},
+            {"heading": "Personal Executive Assistants", "description": "Recommend and create the scripts, templates, checklists and resources each Board Member needs for the role they accepted."},
             {"heading": "Game Night Host Tools", "description": "Use your call script, facilitation guide and preparation checklist to confidently lead the process."},
         ],
         "steps_heading": "What Happens After You Unlock?",
@@ -197,7 +197,7 @@ DEFAULT_CONTENT = {
         "payment_onetime": "One-time payment",
         "payment_org_line": "One organization. Your entire board participates.",
         "payment_subscription_line": "No subscription.",
-        "payment_includes": "Includes the complete Board Fundraising Game, a Clear Fundraising Strategy, Fun Filled Moment With Board Members, Board Fundraising Portfolios and personalized Execution Toolkits for each Board Member.",
+        "payment_includes": "Includes the complete Board Fundraising Game, a Clear Fundraising Strategy, Fun Filled Moment With Board Members, Board Fundraising Portfolios and a personal Executive Assistant for each Board Member.",
         "payment_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
     },
 }
@@ -210,7 +210,7 @@ SITUATION_SECTIONS = ["financial", "activities", "team", "donors", "corporate", 
 GAME_AREAS = [
     {"key": "final_strategy", "name": "Final Fundraising Strategy", "description": "The strategy your board reviews, refines and adopts."},
     {"key": "portfolios", "name": "Board Portfolios", "description": "Each board member's role in executing the strategy."},
-    {"key": "execution_materials", "name": "Execution Materials", "description": "The tools and resources your board needs to execute."},
+    {"key": "executive_assistants", "name": "Board Executive Assistants", "description": "Role-specific recommendations and on-demand materials that help each Board Member execute."},
 ]
 
 

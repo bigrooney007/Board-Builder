@@ -11,11 +11,9 @@ export const CompleteGameNightSection = ({ overview }) => {
   const portfolioStatus = portfolios.total > 0
     ? `${founderApproved} of ${overview.total_recipients || portfolios.total} delegations founder-approved`
     : "Preparing";
-  const executionStatus = portfolios.execution_ready
-    ? "Execution Ready"
-    : portfolios.total > 0
-      ? `${portfolios.toolkit_ready_count} of ${portfolios.total} execution toolkits ready`
-      : "Waiting for portfolios";
+  const executionStatus = portfolios.total > 0
+    ? `${portfolios.approved_count || 0} of ${portfolios.total} Portfolios approved, assistants available on approval`
+    : "Waiting for Portfolios";
 
   return (
     <section className="bfg-panel" data-testid="bfg-complete-game-night-section">

@@ -41,10 +41,12 @@ export default function RecruitWelcomePage() {
     <BfgShell>
       <main className="bfg-flow" style={{ maxWidth: 720, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="recruit-welcome-page">
         <p className="bfg-eyebrow">SELF-GUIDED BOARD RECRUITMENT</p>
+        <h1 style={{fontSize:"clamp(30px,6vw,46px)",lineHeight:1.08,margin:"8px auto 0"}}>Welcome To Your Board Recruitment Platform</h1>
+        <p style={{maxWidth:620,margin:"16px auto 0",fontSize:17}}>Watch this short onboarding to see how your dashboard guides you from the six recruitment questions through campaign launch, selection and onboarding.</p>
         <div style={{ marginTop: 24 }}>
           <TrackedYouTubeVideo video={video} flow="recruitment" testId="recruit-welcome-video" title="Board Recruitment Onboarding" placeholder="Onboarding video has not been added yet." />
         </div>
-        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 28 }} onClick={proceed} data-testid="recruit-welcome-continue-btn">OPEN MY BOARD RECRUITMENT DASHBOARD</button>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 28 }} onClick={proceed} data-testid="recruit-welcome-continue-btn">GO TO MY DASHBOARD</button>
       </main>
     </BfgShell>
   );

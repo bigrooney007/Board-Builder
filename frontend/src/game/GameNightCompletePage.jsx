@@ -207,9 +207,6 @@ export default function GameNightCompletePage() {
             <div className="bfg-summary-row"><span>Board Portfolios</span>
               <strong data-testid="bfg-gc-journey-portfolios">{portfolios.total > 0 ? `${portfolios.approved_count} of ${portfolios.total} approved` : "Not Started"}</strong>
             </div>
-            <div className="bfg-summary-row"><span>Execution Toolkits</span>
-              <strong data-testid="bfg-gc-journey-toolkits">{portfolios.total > 0 ? `${portfolios.toolkit_ready_count} of ${portfolios.total} ready` : "Not Started"}</strong>
-            </div>
           </div>
         </section>
 
@@ -253,13 +250,12 @@ export default function GameNightCompletePage() {
         </section>
 
         <section className="bfg-panel" data-testid="bfg-gc-action-execution">
-          <h2>4. Equip Your Board To Execute</h2>
+          <h2>4. Help Your Board Execute</h2>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
-            Once board members approve their portfolios, they can generate the tools, scripts, templates and resources required to perform their role.
+            Once Board Members approve their Portfolios, their Executive Assistant recommends useful materials at the top. They create only what they need when they are ready to use it, or ask the assistant for help.
           </p>
           <div className="bfg-night-summary" style={{ marginTop: 12 }}>
             <div className="bfg-summary-row"><span>Portfolios Approved</span><strong data-testid="bfg-gc-approved-count">{portfolios.approved_count} of {portfolios.total}</strong></div>
-            <div className="bfg-summary-row"><span>Execution Toolkits Ready</span><strong data-testid="bfg-gc-toolkits-count">{portfolios.toolkit_ready_count} of {portfolios.total}</strong></div>
           </div>
           <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 12 }} onClick={() => navigate("/game/portfolios")}
             data-testid="bfg-gc-readiness-btn">View Board Execution Readiness</button>

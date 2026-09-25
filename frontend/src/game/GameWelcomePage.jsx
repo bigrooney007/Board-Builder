@@ -90,7 +90,7 @@ export default function GameWelcomePage() {
               <p className="bfg-eyebrow">Payment confirmed</p>
               <h1 style={{ fontSize: "clamp(28px, 4.5vw, 42px)" }}>Welcome To Your Board Fundraising Game</h1>
               <p style={{ maxWidth: 560, margin: "14px auto 0" }}>
-                This tutorial explains how to use the platform, prepare your board and run the game. We have also emailed it to you so you can come back to it anytime.
+                Watch this short onboarding to see how your dashboard helps you prepare your board, run the live game, adopt the strategy and delegate the agreed roles.
               </p>
             </div>
             <GameVideo video={video} testId="bfg-welcome-video" />
@@ -108,9 +108,8 @@ export default function GameWelcomePage() {
               {detail && <p className="bfg-error" style={{ marginBottom: 14 }}>{detail}</p>}
               <button className="bfg-btn bfg-btn-primary" data-testid="bfg-play-game-btn"
                 disabled={securing} onClick={playGame}>
-                {securing ? "Securing My Account…" : "CONTINUE TO MY DASHBOARD"}
+                {securing ? "Securing My Account…" : "GO TO MY DASHBOARD"}
               </button>
-              <p style={{ fontSize: 13.5, marginTop: 14 }}>Your complete Board Fundraising Game begins inside your dashboard.</p>
             </div>
           </div>
         )}

@@ -8,6 +8,12 @@ import { MemberShell } from "./MemberShell";
 import { purchaseSuccessText, purchaseSuccessPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const supportedEntry = (source, sessionId) => ({
+  recruitment_supported_2997: "/app/board-recruitment/questions?supported=1",
+  board_recommitment_supported_2497: "/board-recommitment/questions?supported=1",
+  board_fundraising_game_supported_2997: "/game/setup?supported=1",
+  strategic_planning_supported_2997: `/strategic-planning/organization?session_id=${encodeURIComponent(sessionId)}&supported=1`,
+}[source] || "");
 
 export const PurchaseSuccessPage = () => {
   const location = useLocation();
@@ -47,7 +53,10 @@ export const PurchaseSuccessPage = () => {
         const response = await memberApi.post("/members/claim-purchase", { session_id: sessionId });
         setClaimed(response.data.claimed);
         await refresh();
-        if (response.data.claimed_source === "recruit_with_rooney_997") {
+        const supportedRoute = supportedEntry(response.data.claimed_source, sessionId);
+        if (supportedRoute) {
+          navigate(supportedRoute);
+        } else if (response.data.claimed_source === "recruit_with_rooney_997") {
           navigate("/app/recruitment/self-guided/module/1");
         } else if (response.data.claimed_source === "recruitment_497") {
           navigate(`/recruit/welcome?session_id=${encodeURIComponent(sessionId)}`);
@@ -98,6 +107,10 @@ export const PurchaseSuccessPage = () => {
         claimedSource = response.claimed_source || "";
         setClaimed(claimedNow);
       }
+      const supportedRoute = supportedEntry(claimedSource, sessionId);
+      if (supportedRoute) {
+        navigate(supportedRoute);
+      } else
       if (claimedSource === "direct_diy_board_recruitment_497" || claimedSource === "recruitment_campaign_diy_297") {
         navigate("/app/board-recruitment");
       } else if (claimedSource === "recruitment_497") {

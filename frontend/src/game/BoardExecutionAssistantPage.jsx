@@ -64,7 +64,8 @@ export default function BoardExecutionAssistantPage() {
           </section>
         ) : data?.suggested_materials?.length > 0 && (
           <section className="bfg-pf-section">
-            <h2>Create A Material</h2>
+            <h2>Recommended For Your Role</h2>
+            <p className="bfg-pf-sub">Choose a material only when you are ready to use it. Your assistant will create it from the adopted strategy and the responsibilities in your approved Portfolio.</p>
             <div className="bfg-pf-actions">
               {data.suggested_materials.map((item) => <button className="bfg-pf-btn ghost" disabled={busy} onClick={() => send(item)} key={item}>{item}</button>)}
             </div>

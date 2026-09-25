@@ -6,6 +6,7 @@ import { BfgShell } from "@/game/gameShared";
 import { memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import DemoOfferCards from "@/components/DemoOfferCards";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import { trackPlatformEvent, useHomepageContent, usePlatformVideo } from "@/clean/platform";
 import "@/game/game.css";
@@ -28,6 +29,13 @@ export const GUIDED_PRODUCT_CONFIG={
     onboardingTitle:"Welcome To Strategic Planning With Your Board",
     intakeTitle:"Tell Us Where Your Organization Is Going",
     dashboardTitle:"Your Strategic Planning Dashboard",
+    supportedPrice:"$2,997",
+    selfGuidedTitle:"Build And Adopt Your Strategic Plan With Your Board",
+    selfGuidedFeatures:["Complete the Strategic Planning Form with your Board","Facilitate the Board planning and adoption session","Create, edit and download the final Strategic Plan","Delegate responsibilities and give each leader a Portfolio and Executive Assistant"],
+    supportedTitle:"Build Your Strategic Plan With Rooney",
+    supportedDescription:"Rooney works with you and your Board to facilitate the planning process and carry it through adoption and delegation.",
+    supportedFeatures:["Prepare the planning process with you","Facilitate the Strategic Planning session","Create the final Strategic Plan from the Board's decisions","Support adoption, delegation and Board leadership handoff"],
+    guarantee:"Complete the guided process. If the platform does not help your Board produce an adopted, usable Strategic Plan with clear next responsibilities, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Give The Board The Real Starting Information","Tell the platform about your mission, goals, objectives, programs, people, systems, fundraising, technology, budget and present reality."],
       ["2","Everyone Contributes Their Own Thinking","You and your Board Members complete the same Strategic Planning Form before the meeting so every person's original ideas are preserved."],
@@ -65,6 +73,13 @@ export const GUIDED_PRODUCT_CONFIG={
     onboardingTitle:"Welcome To Your Board Recommitment Process",
     intakeTitle:"Tell Us About The Board You Need To Recommit",
     dashboardTitle:"Your Board Recommitment Dashboard",
+    supportedPrice:"$2,497",
+    selfGuidedTitle:"Recommit Your Board Using The Guided Platform",
+    selfGuidedFeatures:["Send the Recommitment Form and email","Understand and interpret every response","Use the personalized one-on-one conversation script","Help each Board Member recommit clearly or step down gracefully"],
+    supportedTitle:"Recommit Your Board With Rooney",
+    supportedDescription:"Rooney works directly with you to initiate the process, guide the conversations and help rebuild an active Board.",
+    supportedFeatures:["Initiate the Board recommitment process with you","Work through each Board Member's response","Guide the one-on-one recommitment conversations","Help get active members working with you again"],
+    guarantee:"Complete the guided process. If the platform does not help you reach a clear, usable recommitment decision and next step for each participating Board Member, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Send The Recommitment Form","Use the email and form we provide to invite each disengaged, inactive or passive board member to respond."],
       ["2","Let Them Tell You The Truth","They explain why they disengaged, whether they are ready to recommit, how they can contribute satisfactorily or whether they want to step down."],
@@ -99,10 +114,13 @@ export function GuidedLandingPage({ product: explicitProduct }){
  </main></BfgShell>
 }
 export function GuidedVideoPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(false),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");
+ const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(""),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");
  useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product]);
- const buy=async()=>{setBusy(true);setError("");try{trackPlatformEvent(product,"checkout_started");let r=await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy(false)}};
- return <BfgShell><main className="guided-page"><section className="guided-video-page"><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><div className="guided-pay-card"><h2>{c.payTitle}</h2><div className="guided-price">$497 <small>ONE TIME</small></div><p>You see the process step by step, use the forms, scripts and materials we provide, and get guided support throughout the process.</p><button className="bfg-btn bfg-btn-primary" disabled={busy||!validToken} onClick={buy}>{busy?"OPENING SECURE CHECKOUT…":product==="strategic-planning"?"START MY STRATEGIC PLANNING PROCESS — $497":"START MY BOARD RECOMMITMENT — $497"}</button>{error&&<p className="bfg-error">{error}</p>}</div></section></main></BfgShell>
+ const buy=async(pathway)=>{setBusy(pathway);setError("");try{trackPlatformEvent(product,"checkout_started");let r=pathway==="supported"?await axios.post(`${API}/payments/supported-checkout`,{origin_url:window.location.origin,result_token:token,product}):await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy("")}};
+ return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{maxWidth:1120}}><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
+ selfGuided={{title:c.selfGuidedTitle,description:"Use the complete platform with your Board and work through the process yourselves.",features:c.selfGuidedFeatures,guarantee:c.guarantee,button:product==="strategic-planning"?"START MY SELF-GUIDED PLANNING — $497":"START MY SELF-GUIDED RECOMMITMENT — $497"}}
+ supported={{title:c.supportedTitle,description:c.supportedDescription,features:c.supportedFeatures,price:c.supportedPrice,button:`WORK WITH ROONEY — ${c.supportedPrice}`}}/>
+ <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`}/></section></main></BfgShell>
 }
 
 export function GuidedPaymentConfirmedPage({ product: explicitProduct }){

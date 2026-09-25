@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { ToolkitView } from "./ToolkitView";
 import "./game.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -22,49 +21,19 @@ export default function BoardPortfolioPage() {
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [notFound, setNotFound] = useState(false);
-  const [toolkit, setToolkit] = useState(null);
   const [showApprove, setShowApprove] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [genFailed, setGenFailed] = useState(false);
-  const pollTimer = useRef(null);
 
   useEffect(() => { document.title = "Your Board Fundraising Portfolio"; }, []);
-  useEffect(() => () => clearInterval(pollTimer.current), []);
-
-  const loadToolkit = useCallback(async () => {
-    try {
-      const result = (await axios.get(`${API}/board-portfolio/${token}/toolkit`)).data;
-      setToolkit(result);
-      return result;
-    } catch { return null; }
-  }, [token]);
-
   const load = useCallback(async () => {
     try {
       const result = (await axios.get(`${API}/board-portfolio/${token}`)).data;
       setData(result);
-      if (result.toolkit_status === "ready") await loadToolkit();
-      if (result.toolkit_status === "generating") { setGenerating(true); startPolling(); }
     } catch { setNotFound(true); }
-  }, [token, loadToolkit]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const startPolling = () => {
-    clearInterval(pollTimer.current);
-    pollTimer.current = setInterval(async () => {
-      const result = await loadToolkit();
-      if (result?.status === "ready") {
-        clearInterval(pollTimer.current); setGenerating(false);
-        const fresh = (await axios.get(`${API}/board-portfolio/${token}`)).data;
-        setData(fresh);
-      } else if (result?.status === "failed") {
-        clearInterval(pollTimer.current); setGenerating(false); setGenFailed(true);
-      }
-    }, 4000);
-  };
+  }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -91,16 +60,7 @@ export default function BoardPortfolioPage() {
     setBusy(false);
   };
 
-  const generate = async () => {
-    setGenerating(true); setGenFailed(false);
-    try {
-      await axios.post(`${API}/board-portfolio/${token}/generate-materials`, { origin_url: window.location.origin });
-      startPolling();
-    } catch { setGenerating(false); setGenFailed(true); }
-  };
-
   const approved = data.status === "approved" || data.status === "materials_ready";
-  const toolkitReady = toolkit?.status === "ready" && toolkit.toolkit;
   const reviewable = ["draft", "ready_to_send", "sent"].includes(data.status);
   const hasContent = data.system_roles.length > 0 || data.direct_activities.length > 0 || data.additional_commitments.length > 0;
 
@@ -216,40 +176,11 @@ export default function BoardPortfolioPage() {
           </section>
         )}
 
-        {approved && !toolkitReady && (
+        {approved && (
           <section className="bfg-pf-section bfg-no-print" data-testid="bfg-bp-approved-section">
-            <h2>Your Portfolio Is Approved</h2>
-            <p className="bfg-pf-sub">Now let's equip you with the materials you need to execute your role.</p>
-            {generating ? (
-              <p className="bfg-pf-sub" style={{ fontWeight: 700, marginTop: 12 }} data-testid="bfg-bp-generating">
-                Preparing Your Execution Materials...
-              </p>
-            ) : genFailed ? (
-              <div style={{ marginTop: 12 }} data-testid="bfg-bp-gen-failed">
-                <p className="bfg-pf-sub" style={{ fontWeight: 700, color: "#dc2626" }}>We Couldn't Prepare Your Execution Materials</p>
-                <p className="bfg-pf-sub">Your portfolio is safe. Please try again.</p>
-                <button className="bfg-pf-btn" style={{ marginTop: 10 }} onClick={generate} data-testid="bfg-bp-try-again-btn">Try Again</button>
-              </div>
-            ) : (
-              <button className="bfg-pf-btn" style={{ marginTop: 12 }} onClick={generate} data-testid="bfg-bp-generate-btn">
-                Generate My Execution Materials
-              </button>
-            )}
-          </section>
-        )}
-
-        {toolkitReady && (
-          <section className="bfg-pf-section" data-testid="bfg-bp-toolkit-section">
-            <p className="bfg-pf-eyebrow">WHAT I NEED TO EXECUTE</p>
-            <h2>Your Execution Toolkit</h2>
-            <p className="bfg-pf-sub">
-              These materials were created specifically for the role you approved in {data.organization_name}'s fundraising strategy.
-            </p>
-            <ToolkitView toolkit={toolkit.toolkit} />
-            <a className="bfg-pf-btn bfg-no-print" style={{ marginTop: 14, display: "inline-block" }}
-              href={`${API}/board-portfolio/${token}/toolkit/download`} data-testid="bfg-bp-download-materials-btn">
-              Download My Execution Materials
-            </a>
+            <h2>Ready To Carry Out Your Role?</h2>
+            <p className="bfg-pf-sub">Your Executive Assistant recommends the materials most useful for the responsibilities in this Portfolio. Create only what you need, when you need it, or ask the assistant for help with your next action.</p>
+            <a className="bfg-pf-btn" style={{marginTop:12,display:"inline-block"}} href={`/board-assistant/${token}`} data-testid="bfg-bp-open-assistant">OPEN MY EXECUTIVE ASSISTANT</a>
           </section>
         )}
 

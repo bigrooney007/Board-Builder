@@ -12,7 +12,7 @@ const TEST_JOURNEYS = [
   { key: "activation", label: "Activation", route: "/app/activation/self-guided/module/1" },
 ];
 
-const ENGAGEMENT_LABELS = { recruitment: "Board Recruitment", reactivation: "Board Reactivation", activation: "Board Fundraising Activation", recruitment_campaign_launch: "Recruitment Campaign Launch" };
+const ENGAGEMENT_LABELS = { recruitment: "Board Recruitment", reactivation: "Board Reactivation", activation: "Board Fundraising Activation", recruitment_campaign_launch: "Recruitment Campaign Launch", recruitment_supported:"Board Recruitment With Rooney", board_recommitment_supported:"Board Recommitment With Rooney", fundraising_game_supported:"Board Fundraising Game With Rooney", strategic_planning_supported:"Strategic Planning With Rooney" };
 const ENGAGEMENT_STATUSES = ["Active", "Paused", "Completed"];
 const MEETING_STATUSES = ["Not Booked", "Booking Link Sent", "Booked"];
 
@@ -103,14 +103,14 @@ export const ClientDeliverySection = () => {
         <button className="button button-small" onClick={saveLeadDays} data-testid="activation-lead-days-save">Save</button>
         {leadDaysMessage && <span className="admin-message" data-testid="activation-lead-days-message">{leadDaysMessage}</span>}
       </div>
-      <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Done-For-You Clients</h2>
-      <p className="admin-message">Every verified individual-engagement client. Open a client workspace to operate their Board Ultimate Fix pathway on their behalf.</p>
+      <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="dfy-clients-heading">Supported-Service Clients</h2>
+      <p className="admin-message">Every verified client who chose to work with Rooney. Open their real customer workspace and carry the process forward with them.</p>
       {message && <p className="submit-error" data-testid="dwm-error">{message}</p>}
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead><tr>{["Founder", "Organization", "Engagement", "Purchase Date", "Intake", "First Meeting", "Status", "Current Step", ""].map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
           <tbody>
-            {clients.length === 0 && <tr><td colSpan="9" data-testid="dwm-empty">No verified Done-For-You clients yet.</td></tr>}
+            {clients.length === 0 && <tr><td colSpan="9" data-testid="dwm-empty">No verified supported-service clients yet.</td></tr>}
             {clients.map((row) => (
               <tr key={row.session_id} data-testid={`dwm-row-${row.session_id.slice(-8)}`}>
                 <td>{row.founder_name || row.founder_email}</td>
@@ -132,7 +132,7 @@ export const ClientDeliverySection = () => {
                   <input defaultValue={row.current_step || ""} placeholder={row.workspace_status === "Open" ? "In workspace" : "Not started"} onBlur={(e) => { if (e.target.value !== (row.current_step || "")) updateClient(row, { current_step: e.target.value }); }} style={{ width: 130 }} data-testid={`dwm-step-${row.session_id.slice(-8)}`} />
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
-                  <button className="button button-small" onClick={() => openWorkspace(row)} data-testid={`open-workspace-${row.session_id.slice(-8)}`}>Open Client Workspace</button>{" "}
+                  <button className="button button-small" onClick={() => openWorkspace(row)} data-testid={`open-workspace-${row.session_id.slice(-8)}`}>Take Me To This Client's Dashboard</button>{" "}
                   {row.intake_status === "Completed" && (
                     <button className="button button-small button-outline" onClick={() => viewIntake(row)} data-testid={`view-intake-${row.session_id.slice(-8)}`}>View Client Intake</button>
                   )}

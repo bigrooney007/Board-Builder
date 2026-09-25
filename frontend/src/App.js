@@ -11,6 +11,7 @@ import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 import RecruitFreePage from "@/funnels/RecruitFreePage";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
 import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
+import SupportedServiceThankYouPage from "@/funnels/SupportedServiceThankYouPage";
 import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
 import RecommitmentQuestionsPage from "@/member/RecommitmentQuestionsPage";
 import PortfolioPage from "@/pages/PortfolioPage";
@@ -66,7 +67,6 @@ import SharedStrategyPage from "@/game/SharedStrategyPage";
 import GroupPlayPage from "@/game/GroupPlayPage";
 import PortfoliosPage from "@/game/PortfoliosPage";
 import PortfolioEditPage from "@/game/PortfolioEditPage";
-import PortfolioToolkitPage from "@/game/PortfolioToolkitPage";
 import BoardPortfolioPage from "@/game/BoardPortfolioPage";
 import BoardExecutionAssistantPage from "@/game/BoardExecutionAssistantPage";
 import HostCallScriptPage from "@/game/HostCallScriptPage";
@@ -118,6 +118,7 @@ function CleanRoutes() {
       <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
       <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
+      <Route path="/supported-service/thank-you" element={<SupportedServiceThankYouPage />} />
       <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
       <Route path="/app/board-recruitment/questions" element={<RecruitmentGamePage />} />
       <Route path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions" replace />} />
@@ -147,7 +148,7 @@ function CleanRoutes() {
       <Route path="/game/strategy/view/:strategyId" element={<StrategyPage />} />
       <Route path="/game/portfolios" element={<PortfoliosPage />} />
       <Route path="/game/portfolios/:portfolioId" element={<PortfolioEditPage />} />
-      <Route path="/game/portfolios/:portfolioId/toolkit" element={<PortfolioToolkitPage />} />
+      <Route path="/game/portfolios/:portfolioId/toolkit" element={<Navigate to="/game/portfolios" replace />} />
       <Route path="/board-portfolio/:token" element={<BoardPortfolioPage />} />
       <Route path="/board-assistant/:token" element={<BoardExecutionAssistantPage />} />
       <Route path="/game/host/call-script" element={<HostCallScriptPage />} />

@@ -145,7 +145,7 @@ export const AdoptedStrategyCard = ({ goalDisplay }) => {
         </p>
         {portfolioSummary && portfolioSummary.total > 0 && (
           <p className="bfg-note" data-testid="bfg-dash-portfolio-counts">
-            {portfolioSummary.approved_count} of {portfolioSummary.total} portfolios approved · {portfolioSummary.toolkit_ready_count} of {portfolioSummary.total} execution toolkits ready
+            {portfolioSummary.approved_count} of {portfolioSummary.total} Portfolios approved · Executive Assistants available from each approved Portfolio
           </p>
         )}
         <button className="bfg-btn bfg-btn-primary bfg-btn-sm" style={{ marginTop: 12 }}

@@ -114,12 +114,6 @@ export default function PortfoliosPage() {
                       {founderApproved ? "REVIEW DELEGATION" : "REVIEW & APPROVE DELEGATION"}
                     </button>
                   </div>
-                  {row.toolkit_status === "ready" && (
-                    <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" style={{ marginTop: 12 }}
-                      onClick={() => navigate(`/game/portfolios/${row.portfolio_id}/toolkit`)}>
-                      View Execution Materials
-                    </button>
-                  )}
                 </section>
               );
             })}

@@ -81,12 +81,16 @@ class FundraisingV4ContractTests(unittest.TestCase):
         responses = source("frontend/src/game/BoardMembersSection.jsx")
         self.assertIn("!audienceResponse.audiences && data.responses.map", responses)
 
-    def test_admin_previews_are_product_isolated_and_toolkits_use_current_schema(self):
+    def test_admin_previews_are_product_isolated_and_materials_are_on_demand(self):
         fixtures = source("backend/admin_dashboard_preview_routes.py")
+        portfolio = source("frontend/src/game/BoardPortfolioPage.jsx")
+        assistant = source("frontend/src/game/BoardExecutionAssistantPage.jsx")
         self.assertIn('hashlib.sha256(member["user_id"].encode("utf-8")).hexdigest()[:16]', fixtures)
-        self.assertIn('"portfolio_summary": (', fixtures)
-        self.assertIn('"material_packs": [{', fixtures)
-        self.assertNotIn('"scripts_and_templates": [', fixtures)
+        self.assertIn('delete_many({"user_id": member["user_id"], "internal_preview": True})', fixtures)
+        self.assertNotIn('"material_packs": [{', fixtures)
+        self.assertNotIn("<ToolkitView", portfolio)
+        self.assertIn("Recommended For Your Role", assistant)
+        self.assertIn("suggested_materials", assistant)
 
     def test_final_review_adoption_and_delegation_are_connected_in_customer_ui(self):
         app = source("frontend/src/App.js")

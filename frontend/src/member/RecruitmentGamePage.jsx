@@ -58,7 +58,7 @@ export default function RecruitmentGamePage() {
     setBrandingBusy(false);
   };
 
-  const finish = () => navigate("/app/board-recruitment#br-section-identify", { replace: true });
+  const finish = () => navigate(member?.supported_service_product === "recruitment" ? "/supported-service/thank-you" : "/app/board-recruitment#br-section-identify", { replace: true });
 
   if (loading || !member) return null;
 

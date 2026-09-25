@@ -6,9 +6,9 @@ import DashboardSectionAudioAdmin from "@/admin/DashboardSectionAudioAdmin";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
+const RECRUITMENT_QUESTION_AUDIO_IDS = ["rct_question_1", "rct_question_2", "rct_question_3", "rct_question_4", "rct_question_5", "rct_question_6"];
 
 function RecruitmentQuestionAudioAdmin() {
-  const IDS = ["rct_question_1", "rct_question_2", "rct_question_3", "rct_question_4", "rct_question_5", "rct_question_6"];
   const [assets, setAssets] = useState([]);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
@@ -17,7 +17,7 @@ function RecruitmentQuestionAudioAdmin() {
     setMessage("");
     try {
       const response = await client.get("/admin/game/voice/assets");
-      setAssets((response.data.assets || []).filter((asset) => IDS.includes(asset.narration_id)));
+      setAssets((response.data.assets || []).filter((asset) => RECRUITMENT_QUESTION_AUDIO_IDS.includes(asset.narration_id)));
     } catch (error) {
       setMessage(error.response?.data?.detail || "Could not load Recruitment Question audio.");
     }
