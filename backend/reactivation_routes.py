@@ -250,13 +250,21 @@ def create_reactivation_router(db) -> APIRouter:
         )
         now = datetime.now(timezone.utc).isoformat()
         if existing:
+            session_key = existing.get("session_id") or existing.get("guided_session_id") or f"recommitment-{member['user_id']}"
             await db.board_reactivation_intakes.update_one(
-                {"user_id": member["user_id"], "guided_session_id": existing.get("guided_session_id", "")},
-                {"$set": {"organization_name": payload.organization_name.strip(), "logo_data_url": logo, "submitted_at": now}},
+                {"user_id": member["user_id"]},
+                {"$set": {
+                    "session_id": session_key,
+                    "organization_name": payload.organization_name.strip(),
+                    "logo_data_url": logo,
+                    "submitted_at": now,
+                }},
             )
         else:
             await db.board_reactivation_intakes.insert_one({
-                "user_id": member["user_id"], "organization_name": payload.organization_name.strip(),
+                "user_id": member["user_id"],
+                "session_id": f"recommitment-{member['user_id']}",
+                "organization_name": payload.organization_name.strip(),
                 "logo_data_url": logo, "mission": "", "organization_goals": "", "submitted_at": now,
             })
         return {"saved": True, "organization_name": payload.organization_name.strip(), "logo_data_url": logo}
@@ -293,9 +301,9 @@ def create_reactivation_router(db) -> APIRouter:
         ) or {}
         now = datetime.now(timezone.utc).isoformat()
         query = {"user_id": member["user_id"]}
-        if existing.get("guided_session_id"):
-            query["guided_session_id"] = existing["guided_session_id"]
+        session_key = existing.get("session_id") or existing.get("guided_session_id") or f"recommitment-{member['user_id']}"
         updates = {
+            "session_id": session_key,
             "mission": payload.mission.strip(),
             "why_recommit": payload.why_recommit.strip(),
             "board_help_accomplish": payload.board_help_accomplish.strip(),
