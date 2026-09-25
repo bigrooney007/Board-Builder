@@ -110,7 +110,8 @@ def create_guided_product_router(db):
         )
         await db.board_reactivation_intakes.update_one(
             {"guided_session_id": payload.session_id},
-            {"$set": {"user_id": member["user_id"], "guided_session_id": payload.session_id,
+            {"$set": {"user_id": member["user_id"], "session_id": payload.session_id,
+                      "guided_session_id": payload.session_id,
                       "payment_contact": payment_contact, "submitted_at": now},
              "$setOnInsert": {
                  "organization_name": lead.get("organization", ""),
@@ -169,7 +170,7 @@ def create_guided_product_router(db):
         payment_contact={"email":tx.get("payment_email") or lead.get("email", ""),"phone":tx.get("payment_phone", "")}
         await db.guided_product_intakes.update_one({"session_id":payload.session_id},{"$set":{"session_id":payload.session_id,"product":payload.product,"answers":payload.answers,"payment_contact":payment_contact,"updated_at":now},"$setOnInsert":{"created_at":now}},upsert=True)
         if payload.product=="board-recommitment":
-            await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":authenticated["user_id"],"organization_name":lead.get("organization",""),"founder_title":"","mission":payload.answers.get("mission",""),"organization_goals":payload.answers.get("goals",""),"guided_session_id":payload.session_id,"guided_answers":payload.answers,"payment_contact":payment_contact,"submitted_at":now}},upsert=True)
+            await db.board_reactivation_intakes.update_one({"guided_session_id":payload.session_id},{"$set":{"user_id":authenticated["user_id"],"session_id":payload.session_id,"organization_name":lead.get("organization",""),"founder_title":"","mission":payload.answers.get("mission",""),"organization_goals":payload.answers.get("goals",""),"guided_session_id":payload.session_id,"guided_answers":payload.answers,"payment_contact":payment_contact,"submitted_at":now}},upsert=True)
         elif payload.product=="strategic-planning":
             lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
             existing=await db.sp_projects.find_one({"guided_session_id":payload.session_id},{"_id":0})
