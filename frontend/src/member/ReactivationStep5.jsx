@@ -43,6 +43,8 @@ export const PortfolioWorkflow = ({ row, reload }) => {
     try {
       const res = await memberApi.post(`/reactivation/board-members/${id}/portfolio`);
       setMaterial(res.data);
+      setDraftText(res.data.display_text || "");
+      setMode("edit");
       reload();
     } catch (err) {
       window.alert(err.response?.data?.detail || "Generation failed. Please try again.");
@@ -51,7 +53,6 @@ export const PortfolioWorkflow = ({ row, reload }) => {
   };
 
   const openEdit = async () => { const m = material?.display_text ? material : await loadMaterial(); if (m) { setDraftText(m.display_text); setMode("edit"); } };
-  const openView = async () => { const m = material?.display_text ? material : await loadMaterial(); if (m) setMode("view"); };
 
   const saveEdit = async () => {
     setBusy("save");
@@ -65,6 +66,7 @@ export const PortfolioWorkflow = ({ row, reload }) => {
   const approve = async () => {
     setBusy("approve");
     await memberApi.post(`/reactivation/materials/${materialId}/approve-portfolio`);
+    setMaterial((current) => current ? { ...current, status: "Approved" } : current);
     setBusy("");
     reload();
   };
@@ -116,39 +118,32 @@ export const PortfolioWorkflow = ({ row, reload }) => {
 
   return (
     <div style={{ marginTop: 12 }}>
-      <p className="eyebrow" data-testid={`myboard-portfolio-status-${id}`}>Portfolio: {status}{row.portfolio?.sent_at ? ` · sent ${new Date(row.portfolio.sent_at).toLocaleString()}` : ""}</p>
+      <p className="eyebrow" data-testid={`myboard-portfolio-status-${id}`}>Board Portfolio: {status}{row.portfolio?.sent_at ? ` · sent ${new Date(row.portfolio.sent_at).toLocaleString()}` : ""}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-generate-portfolio-${id}`}>
-          {busy === "generate" ? "Generating…" : status === "NOT GENERATED" ? <><FileText size={15} />{reactivationStep5Text.generateBoardMemberPortfolio}</> : <><RefreshCw size={15} /> REGENERATE</>}
-        </button>
+        {status === "NOT GENERATED" && <button type="button" className="button" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-generate-portfolio-${id}`}>
+          <FileText size={15} /> {busy === "generate" ? "GENERATING BOARD PORTFOLIO…" : "GENERATE BOARD PORTFOLIO"}
+        </button>}
         {busy === "generate" && <p className="workspace-note" data-testid={`portfolio-generation-wait-${id}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
         {status !== "NOT GENERATED" && (
           <>
-            <button type="button" className="button button-outline" onClick={openEdit} data-testid={`myboard-edit-${id}`}>EDIT</button>
-            <button type="button" className="button button-outline" onClick={approve} disabled={busy === "approve" || status !== "DRAFT"} data-testid={`myboard-approve-${id}`}>{status === "DRAFT" ? "APPROVE PORTFOLIO" : "APPROVED"}</button>
-            {row.portfolio?.share_token ? (
-              <a className="button button-outline" href={`/portfolio/${row.portfolio.share_token}`} target="_blank" rel="noreferrer" data-testid={`myboard-view-online-${id}`}>VIEW ONLINE</a>
-            ) : (
-              <button type="button" className="button button-outline" onClick={openView} data-testid={`myboard-view-draft-${id}`}>VIEW DRAFT</button>
-            )}
-            <button type="button" className="button button-outline" onClick={download} data-testid={`myboard-download-${id}`}><Download size={15} /> DOWNLOAD PDF</button>
+            <button type="button" className="button" onClick={openEdit} data-testid={`myboard-edit-${id}`}>VIEW / EDIT BOARD PORTFOLIO</button>
             {status !== "DRAFT" && (
-              <button type="button" className="button" onClick={prepareEmail} data-testid={`myboard-prepare-email-${id}`}><Mail size={15} /> PREPARE PORTFOLIO EMAIL</button>
+              <button type="button" className="button" onClick={prepareEmail} data-testid={`myboard-prepare-email-${id}`}><Mail size={15} /> PREPARE EMAIL TO SEND BOARD PORTFOLIO</button>
             )}
           </>
         )}
       </div>
-      {mode === "view" && material && (
-        <Modal onClose={() => setMode("")} testId={`myboard-view-modal-${id}`} wide>
-          <h2>{material.title} — {row.name}</h2>
-          <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, maxHeight: 520, overflowY: "auto" }}>{material.display_text}</div>
-        </Modal>
-      )}
       {mode === "edit" && (
         <Modal onClose={() => setMode("")} testId={`myboard-edit-modal-${id}`} wide>
-          <h2>Edit Portfolio</h2>
+          <h2>View / Edit Board Portfolio — {row.name}</h2>
           <textarea rows={22} value={draftText} onChange={(e) => setDraftText(e.target.value)} style={{ width: "100%" }} data-testid={`myboard-edit-text-${id}`} />
-          <button type="button" className="button" onClick={saveEdit} disabled={busy === "save"} data-testid={`myboard-save-edit-${id}`}>{busy === "save" ? "Saving…" : "SAVE"}</button>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+            <button type="button" className="button" onClick={saveEdit} disabled={busy === "save"} data-testid={`myboard-save-edit-${id}`}>{busy === "save" ? "SAVING…" : "SAVE BOARD PORTFOLIO"}</button>
+            <button type="button" className="button button-outline" onClick={generate} disabled={busy === "generate"} data-testid={`myboard-regenerate-portfolio-${id}`}><RefreshCw size={15}/> REGENERATE BOARD PORTFOLIO</button>
+            <button type="button" className="button button-outline" onClick={approve} disabled={busy === "approve" || status !== "DRAFT"} data-testid={`myboard-approve-${id}`}>{status === "DRAFT" ? "APPROVE BOARD PORTFOLIO" : "BOARD PORTFOLIO APPROVED"}</button>
+            {row.portfolio?.share_token && <a className="button button-outline" href={`/portfolio/${row.portfolio.share_token}`} target="_blank" rel="noreferrer" data-testid={`myboard-view-online-${id}`}>VIEW BOARD PORTFOLIO ONLINE</a>}
+            <button type="button" className="button button-outline" onClick={download} data-testid={`myboard-download-${id}`}><Download size={15} /> DOWNLOAD BOARD PORTFOLIO</button>
+          </div>
         </Modal>
       )}
       {mode === "email" && emailDraft && (

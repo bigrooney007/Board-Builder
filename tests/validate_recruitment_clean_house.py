@@ -23,6 +23,8 @@ dashboard = read("frontend/src/member/BoardRecruitmentPage.jsx")
 questions = read("frontend/src/member/RecruitmentGameIntake.jsx")
 workspace = read("backend/workspace_routes.py")
 member = read("backend/member_routes.py")
+welcome = read("frontend/src/funnels/RecruitWelcomePage.jsx")
+preview = read("backend/admin_dashboard_preview_routes.py")
 voice = read("backend/voice_content.py")
 audio_button = read("frontend/src/clean/DashboardAudioButton.jsx")
 
@@ -68,6 +70,9 @@ require(workspace, 'asyncio.create_task(background_prepare_board_role', "backgro
 
 require(member, 'extra_entitlements.append("recruitment_selection_onboarding")', "$497 selection/onboarding entitlement")
 require(member, 'lead_updates["phone"] = purchase["payment_phone"]', "Stripe phone preservation")
+require(member, '"client_test_product"', "product-specific internal test identity")
+require(welcome, 'member?.client_test_product==="recruitment"', "Recruitment-only test welcome access")
+require(preview, "recruitment_answers", "prefilled Recruitment test questions")
 
 for audio in range(1, 7):
     require(voice, f'"rct_question_{audio}"', f"Recruitment question {audio} voice asset")

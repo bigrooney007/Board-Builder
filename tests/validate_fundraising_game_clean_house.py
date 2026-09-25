@@ -63,8 +63,13 @@ for key in (
 
 require(game_content, '"skippable": True', "skippable existing-funder questions")
 require(game_routes, '@router.put("/game/branding")', "organization logo storage")
+require(game_routes, "situation_is_complete", "validated full-Game completion state")
+require(game_routes, "REQUIRED_REALITY_FIELDS", "team, technology, materials and budget completion gate")
 require(situation, "START MY BOARD FUNDRAISING GAME", "founder Game introduction")
 require(situation, "Skip — We Don't Have This Yet", "founder skippable funder questions")
+require(situation, 'get("review") === "1"', "completed Game review mode")
+require(play, 'get("review") === "1"', "strategic-answer review mode")
+require(dashboard, "?review=1", "dashboard review action opens the saved Game")
 
 for clip in (
     "a1_deeper", "a2_deeper", "a3_deeper", "a4_deeper",

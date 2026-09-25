@@ -5,27 +5,36 @@ import { BfgShell } from "@/game/gameShared";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import { usePlatformVideo } from "@/clean/platform";
 import { memberApi } from "@/member/api";
+import { useMemberAuth } from "@/member/MemberAuthContext";
 import "@/game/game.css";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function RecruitWelcomePage() {
   const navigate = useNavigate();
+  const { member, loading } = useMemberAuth();
   const sessionId = new URLSearchParams(useLocation().search).get("session_id") || "";
   const [allowed,setAllowed]=useState(null);
   const video=usePlatformVideo("recruitment_welcome");
+  const internalRecruitTest=Boolean(
+    member?.internal_client_test
+    && member?.client_test_product==="recruitment"
+    && member?.entitlements?.some((key)=>["recruitment_self_guided","recruitment_selection_onboarding"].includes(key))
+  );
   useEffect(() => {
     document.title = "Welcome | Self-Guided Board Recruitment";
+    if(loading)return;
+    if(internalRecruitTest){setAllowed(true);return}
     if(!sessionId){setAllowed(false);return}
     axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:"recruitment"}})
       .then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false));
-  }, [sessionId]);
+  }, [sessionId,loading,internalRecruitTest]);
 
   const proceed = async () => {
     try { await memberApi.post("/recruit/free/member-event/welcome_completed"); } catch { /* best effort */ }
     navigate("/app/board-recruitment");
   };
-  if(allowed===null)return <BfgShell><main className="bfg-flow" style={{maxWidth:720,margin:"0 auto",padding:"60px 20px",textAlign:"center"}}><p>Confirming your Board Recruitment access…</p></main></BfgShell>;
+  if(loading||allowed===null)return <BfgShell><main className="bfg-flow" style={{maxWidth:720,margin:"0 auto",padding:"60px 20px",textAlign:"center"}}><p>Confirming your Board Recruitment access…</p></main></BfgShell>;
   if(!allowed)return <BfgShell><main className="bfg-flow" style={{maxWidth:720,margin:"0 auto",padding:"60px 20px",textAlign:"center"}}><h1>This Link Does Not Belong To The Board Recruitment Flow.</h1><button className="bfg-btn bfg-btn-primary" onClick={()=>navigate("/recruit")}>RETURN TO BOARD RECRUITMENT</button></main></BfgShell>;
 
   return (

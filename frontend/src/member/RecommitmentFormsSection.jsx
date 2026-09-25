@@ -143,6 +143,7 @@ export default function RecommitmentFormsSection({ onChanged = () => {} }) {
           {email&&<>
             <label className="field"><span>Subject</span><input value={email.subject||""} onChange={e=>setEmail({...email,subject:e.target.value,status:"Draft"})}/></label>
             <label className="field"><span>Email</span><textarea rows="13" value={email.body||""} onChange={e=>setEmail({...email,body:e.target.value,status:"Draft"})}/></label>
+            <p className="workspace-note"><strong>Email signature:</strong> {[email.sender_name,email.sender_role,email.organization_name].filter(Boolean).join(" · ")}</p>
             <p className="workspace-note"><strong>Form link inserted automatically:</strong> {email.form_link}</p>
             <div className="sgr-row-actions">
               <button className="button button-outline" onClick={saveEmail} disabled={busy==="email-save"}><Save size={14}/> SAVE EMAIL</button>

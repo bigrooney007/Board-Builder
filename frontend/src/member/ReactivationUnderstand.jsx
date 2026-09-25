@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Brain, Download, Eye, FileText, X } from "lucide-react";
+import { Brain, Download, Eye, FileText, RefreshCw, X } from "lucide-react";
 import { memberApi } from "./api";
 import { useMemberAuth } from "./MemberAuthContext";
 import { ResponseView } from "./ReactivationStep2";
@@ -129,14 +129,16 @@ const MemberUnderstanding = ({ row, reload }) => {
       {row.contribution_interests?.length > 0 && <p style={{ margin: "6px 0 0" }}><strong>{reactivationUnderstandText.wantsToContributeIn}</strong> {row.contribution_interests.slice(0, 4).join(", ")}</p>}
       {row.monthly_availability && <p style={{ margin: "6px 0 0" }}><strong>Availability:</strong> {row.monthly_availability}</p>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
-        <button type="button" className="button" onClick={generate} disabled={busy} data-testid={`understand-generate-${id}`}>
-          <Brain size={15} /> {busy ? C.analyzingLabel : (row.analysis || material) ? "REINTERPRET RESPONSE" : "INTERPRET RESPONSE"}
+        <button type="button" className="button button-outline" onClick={async () => setResponse((await memberApi.get(`/reactivation/board-members/${id}/response`)).data)} data-testid={`understand-view-response-${id}`}>
+          <Eye size={15}/> VIEW FULL RESPONSE
         </button>
-        {ready && <button type="button" className="button button-outline" onClick={openView} data-testid={`understand-view-${id}`}><Eye size={15} /> {C.viewUnderstandingButton}</button>}
-        <button type="button" className="button button-outline" onClick={async () => setResponse((await memberApi.get(`/reactivation/board-members/${id}/response`)).data)} data-testid={`understand-view-response-${id}`}>{C.viewResponseButton}</button>
-        <button type="button" className="button button-outline" onClick={downloadResponse} data-testid={`understand-download-response-${id}`}><Download size={15}/> DOWNLOAD RESPONSE</button>
-        {ready && <button type="button" className="button" onClick={generateScript} disabled={busy} data-testid={`understand-generate-script-${id}`}><FileText size={15}/> {row.script||script?"REGENERATE CALL SCRIPT":"GENERATE INDIVIDUAL CALL SCRIPT"}</button>}
-        {(row.script||script)&&!busy&&<><button type="button" className="button button-outline" onClick={openScript} data-testid={`understand-view-script-${id}`}>VIEW CALL SCRIPT</button><button type="button" className="button button-outline" onClick={downloadScript} data-testid={`understand-download-script-${id}`}><Download size={15}/> DOWNLOAD</button></>}
+        <button type="button" className="button" onClick={ready ? openView : generate} disabled={busy} data-testid={`understand-generate-${id}`}>
+          <Brain size={15} /> {busy ? C.analyzingLabel : "INTERPRET RESPONSE"}
+        </button>
+        <button type="button" className="button" onClick={(row.script || script) ? openScript : generateScript}
+          disabled={busy || (!ready && !(row.script || script))} data-testid={`understand-generate-script-${id}`}>
+          <FileText size={15}/> {(row.script || script) ? "VIEW CALL SCRIPT" : "CREATE CALL SCRIPT"}
+        </button>
       </div>
       {busy && <p className="workspace-note" data-testid={`understand-generation-wait-${id}`}>We are preparing this now. You can leave this card and return when it is ready.</p>}
       {analysisStatus === "Failed" && !busy && <p style={{ marginTop: 8 }} data-testid={`understand-failed-${id}`}>{C.failedLabel}</p>}
@@ -151,9 +153,17 @@ const MemberUnderstanding = ({ row, reload }) => {
         <Modal onClose={() => setResponse(null)} testId={`understand-response-modal-${id}`}>
           <h2>{row.name} — Recommitment Response</h2>
           <ResponseView data={response} testPrefix="understand" />
+          <button type="button" className="button button-outline" onClick={downloadResponse} data-testid={`understand-download-response-${id}`}><Download size={15}/> DOWNLOAD FULL RESPONSE</button>
         </Modal>
       )}
-      {scriptViewing && script && <Modal onClose={() => setScriptViewing(false)} testId={`understand-script-modal-${id}`}><h2>{row.name}'s Individual Call Script</h2><div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }}>{script.display_text}</div></Modal>}
+      {scriptViewing && script && <Modal onClose={() => setScriptViewing(false)} testId={`understand-script-modal-${id}`}>
+        <h2>{row.name}'s Individual Call Script</h2>
+        <div style={{ whiteSpace: "pre-wrap", border: "1px solid #ddd", padding: 18, borderRadius: 6, maxHeight: 520, overflowY: "auto" }}>{script.display_text}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+          <button type="button" className="button button-outline" onClick={generateScript} disabled={busy} data-testid={`understand-regenerate-script-${id}`}><RefreshCw size={15}/> REGENERATE CALL SCRIPT</button>
+          <button type="button" className="button button-outline" onClick={downloadScript} data-testid={`understand-download-script-${id}`}><Download size={15}/> DOWNLOAD CALL SCRIPT</button>
+        </div>
+      </Modal>}
     </article>
   );
 };

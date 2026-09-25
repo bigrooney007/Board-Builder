@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { FineTuneReview } from "./FineTuneReview";
 import { NarrationControl, isNarrationMuted, wasClipPlayed, markClipPlayed } from "./NarrationControl";
@@ -17,6 +17,7 @@ const EMPTY_PAYLOAD = {
 export default function GamePlayPage() {
   const { token } = useParams();
   const navigate = useNavigate();
+  const reviewMode = new URLSearchParams(useLocation().search).get("review") === "1";
   const [ctx, setCtx] = useState(null);
   const [phase, setPhase] = useState("loading");
   useWakeLock(["welcome", "section", "direction", "participation", "ministrategy"].includes(phase));
@@ -65,6 +66,12 @@ export default function GamePlayPage() {
         raise: sections[5].extras?.raise || [], raiseOther: sections[5].extras?.raise_other || "",
         time: sections[5].extras?.time || "", additional: sections[5].extras?.additional_idea || "",
       });
+      if (reviewMode && context.member?.is_primary && context.paid) {
+        setSec(1);
+        setStage("first");
+        setPhase("section");
+        return;
+      }
       const freshGame = !sections[1].first_move_locked && !(sections[1].first_response || []).length && !sections[1].completed;
       if (freshGame) {
         setSec(1); setStage("first"); setPhase("welcome"); return;
@@ -84,7 +91,7 @@ export default function GamePlayPage() {
       } else if (sections[5].completed) setPhase("board_done");
       else { setPIdx(0); setPhase("participation"); }
     } catch { setError("This game link is not valid."); setPhase("error"); }
-  }, [token, navigate]);
+  }, [token, navigate, reviewMode]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { document.title = "Board Fundraising Game"; }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); }, [phase, sec, stage, pIdx]);
@@ -145,7 +152,7 @@ export default function GamePlayPage() {
     set({ approved: { ...state.approved, [sec]: entries } });
     if (sec < 4) { setSec(sec + 1); setStage("first"); }
     else if (isPrimary) {
-      if (ctx.paid) navigate("/game/setup", { replace: true });
+      if (ctx.paid) navigate(reviewMode ? "/game/setup?review=1" : "/game/setup", { replace: true });
       else setPhase("lead_done");
     } else setPhase("direction");
   };

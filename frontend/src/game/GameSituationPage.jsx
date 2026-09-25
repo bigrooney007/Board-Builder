@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
@@ -12,6 +12,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function GameSituationPage() {
   const navigate = useNavigate();
+  const reviewMode = new URLSearchParams(useLocation().search).get("review") === "1";
   const { member, loading } = useMemberAuth();
   const [phase, setPhase] = useState("loading");
   const [token, setToken] = useState("");
@@ -58,7 +59,7 @@ export default function GameSituationPage() {
       try {
         const situation = (await memberApi.get("/game/situation")).data;
         memberApi.get("/game/branding").then((response) => setBranding(response.data.branding || { logo_data: "" })).catch(() => {});
-        if (situation.completed) { navigate("/game/dashboard", { replace: true }); return; }
+        if (situation.completed && !reviewMode) { navigate("/game/dashboard", { replace: true }); return; }
         const loadedReality = situation.sections?.current_reality || {};
         if (loadedReality.current_resources) {
           if (!loadedReality.current_technology) loadedReality.current_technology = loadedReality.current_resources;
@@ -91,7 +92,7 @@ export default function GameSituationPage() {
         setError("We could not load your game setup. Please refresh the page.");
       }
     })();
-  }, [loading, member, navigate]);
+  }, [loading, member, navigate, reviewMode]);
 
   const startGeneration = async () => {
     setPhase("generating"); setError("");

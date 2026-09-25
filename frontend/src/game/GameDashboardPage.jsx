@@ -251,7 +251,7 @@ export default function GameDashboardPage() {
       const situation = (await memberApi.get("/game/situation")).data;
       if (situation.completed) {
         const token = (await memberApi.post("/game/self-play")).data.token;
-        navigate(`/play/${token}`);
+        navigate(`/play/${token}?review=1`);
       } else {
         navigate("/game/setup");
       }
@@ -279,7 +279,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={1}
           title="PLAY THE BOARD FUNDRAISING GAME"
-          summary="Build your starting fundraising direction, document the fundraising system you already have and tell us how you want to participate."
+          summary="Answer the strategy questions, document your current donors, sponsors, grantors, team, technology, materials and budget, then choose how you want to participate."
           status={founderGameComplete ? "Complete" : "Start Here"}
           defaultOpen
           testId="bfg-dashboard-section-founder-game"
@@ -287,7 +287,7 @@ export default function GameDashboardPage() {
         >
           <div className="bfg-clean-stage">
             <h3>Your Thinking Comes First</h3>
-            <p className="bfg-panel-sub">Answer each strategic question in your own words. The platform makes the idea actionable without replacing your thinking. You decide what becomes part of the strategy.</p>
+            <p className="bfg-panel-sub">Answer each strategic question in your own words, then review your current donors, sponsors, grantors, team, technology, materials, budget and participation. The platform makes your thinking actionable without replacing it.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>

@@ -313,6 +313,9 @@ def public_member(member: dict) -> dict:
         "first_name": member["first_name"], "last_name": member["last_name"],
         "entitlements": member.get("entitlements", []),
         "account_status": member.get("account_status", "active"),
+        "internal_client_test": bool(member.get("internal_client_test")),
+        "client_test_product": member.get("client_test_product", "") if member.get("internal_client_test") else "",
+        "internal_dashboard_preview": bool(member.get("internal_dashboard_preview")),
     }
 
 

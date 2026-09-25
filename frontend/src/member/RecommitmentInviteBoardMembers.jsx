@@ -4,7 +4,7 @@ import { memberApi } from "./api";
 
 export default function RecommitmentInviteBoardMembers({ onChanged }) {
   const [roster, setRoster] = useState([]);
-  const [form, setForm] = useState({ name: "", email: "", form_variant: "active_advisory" });
+  const [form, setForm] = useState({ name: "", email: "", role: "", form_variant: "active_advisory" });
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const load = useCallback(() => memberApi.get("/reactivation/roster").then((r) => setRoster(r.data.members || [])).catch(() => setRoster([])), []);
@@ -16,7 +16,7 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
       const created = await memberApi.post("/reactivation/board-members", form);
       const person = created.data.member;
       await memberApi.post(`/reactivation/board-members/${person.member_record_id}/send`, { type: "initial" });
-      setForm({ name: "", email: "", form_variant: "active_advisory" });
+      setForm({ name: "", email: "", role: "", form_variant: "active_advisory" });
       setMessage(`The Recommitment Form was sent to ${person.name}.`);
       await load(); if (onChanged) onChanged();
     } catch (error) { setMessage(error.response?.data?.detail || "The invitation could not be sent."); }
@@ -37,6 +37,7 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
     <div className="member-card">
       <label className="field"><span>Board Member Name</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
       <label className="field"><span>Board Member Email</span><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+      <label className="field"><span>Board Member Role</span><input value={form.role} placeholder="Example: Board Treasurer" onChange={(e) => setForm({ ...form, role: e.target.value })} /></label>
       <label className="field"><span>Which form should this person receive?</span><select value={form.form_variant} onChange={(e) => setForm({ ...form, form_variant: e.target.value })}>
         <option value="active_advisory">Active Board / Advisory Board Form — no step-down option</option>
         <option value="full">Full Recommitment Form — includes step-down option</option>

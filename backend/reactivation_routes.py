@@ -214,14 +214,21 @@ def create_reactivation_router(db) -> APIRouter:
     async def founder_context(user_id: str) -> dict:
         founder = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1, "email": 1})
         intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)])
+        profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
+        profile_data = profile.get("data", {}) or {}
         organization = (intake or {}).get("organization_name", "")
         if not organization:
-            profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data.organization_name": 1}) or {}
-            organization = profile.get("data", {}).get("organization_name", "")
+            organization = profile_data.get("organization_name", "")
         return {
             "founder_name": f"{founder['first_name']} {founder['last_name']}".strip() if founder else "",
             "founder_email": (founder or {}).get("email", ""),
-            "founder_title": (intake or {}).get("founder_title", ""),
+            "founder_title": (
+                (intake or {}).get("founder_title", "")
+                or (intake or {}).get("your_role", "")
+                or profile_data.get("founder_title", "")
+                or profile_data.get("your_role", "")
+                or profile_data.get("job_title", "")
+            ),
             "founder_phone": (intake or {}).get("phone", "") or ((await db.funnel_leads.find_one({"email": (founder or {}).get("email", "")}, {"_id": 0, "phone": 1}, sort=[("created_at", -1)]) or {}).get("phone", "")),
             "organization": organization or "your organization",
             "transition_options": [ADVISORY_OPTION, "Step Down From the Board"],
@@ -231,6 +238,22 @@ def create_reactivation_router(db) -> APIRouter:
             "organization_goals": (intake or {}).get("board_help_accomplish", "") or (intake or {}).get("organization_goals", ""),
             "need_by": (intake or {}).get("need_by", ""),
             "logo_data_url": (intake or {}).get("logo_data_url", ""),
+        }
+
+    def email_with_current_identity(email: dict, context: dict) -> dict:
+        body = str(email.get("body") or "").strip()
+        signature_lines = [context.get("founder_name", ""), context.get("founder_title", ""), context.get("organization", "")]
+        signature = "\n".join(line.strip() for line in signature_lines if str(line or "").strip())
+        tail = "\n".join(body.splitlines()[-6:])
+        required = [context.get("founder_name", ""), context.get("founder_title", ""), context.get("organization", "")]
+        if signature and any(value and value not in tail for value in required):
+            body = f"{body}\n\nThank you,\n{signature}"
+        return {
+            **email,
+            "body": body,
+            "sender_name": context.get("founder_name", ""),
+            "sender_role": context.get("founder_title", ""),
+            "organization_name": context.get("organization", ""),
         }
 
     @router.get("/reactivation/branding")
@@ -1399,15 +1422,15 @@ def create_reactivation_router(db) -> APIRouter:
         context = await founder_context(user_id)
         form_link = f"{origin}/board-recommitment/{form['generic_token']}?variant={clean_variant}"
         if saved.get("subject") and saved.get("body"):
-            return {**saved, "form_link": form_link}
+            return email_with_current_identity({**saved, "form_link": form_link}, context)
         generated = recommitment_outreach_email(
             "initial", "", context["founder_name"], context["founder_title"], context["organization"],
             mission=context.get("mission", ""), goals=context.get("board_help_accomplish", ""),
         )
-        return {
+        return email_with_current_identity({
             "variant": clean_variant, "status": "Draft",
             "subject": generated["subject"], "body": generated["body"], "form_link": form_link,
-        }
+        }, context)
 
     @router.get("/reactivation/recommitment-email-draft")
     async def get_recommitment_email_draft(request: Request, variant: str = "full"):

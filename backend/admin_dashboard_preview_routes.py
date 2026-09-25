@@ -2444,14 +2444,35 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         if product == "recruitment":
             lead_id = f"admin-fresh-recruitment-lead-{tag}"
             session_id = f"admin-fresh-recruitment-session-{tag}"
+            assessment_token = f"admin-fresh-recruitment-assessment-{tag}"
+            recruitment_answers = {
+                "mission": MISSION,
+                "current_board": "We have five Board Members. The Board Chair and Treasurer are active, while the remaining members participate inconsistently and the founder still carries most relationship-building work.",
+                "desired_board_members": "We need Board Members with fundraising, employer/corporate partnership and marketing or communications experience.",
+                "support_needs": "Build diversified revenue, expand employer partnerships, strengthen visibility and help the Board carry clear strategic responsibilities.",
+                "board_type": "A strategic Board that helps govern, opens relationships, strengthens fundraising and follows through on agreed responsibilities.",
+                "why_join": "The mission gives experienced professionals a concrete opportunity to expand education and employment pathways for young people.",
+            }
             await db.funnel_leads.update_one(
                 {"lead_id": lead_id},
                 {"$set": {
                     "lead_id": lead_id, "offer_source": "recruitment",
                     "name": "Rooney Akpesiri", "email": member["email"],
                     "organization": ORG_NAME, "desired_count": "3",
-                    "answers": {"new_members_needed": "3"},
+                    "answers": {"new_members_needed": "3", **recruitment_answers},
                     "member_user_id": member["user_id"], "internal_preview": True,
+                    "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            await db.recruitment_free_assessments.update_one(
+                {"lead_id": lead_id},
+                {"$set": {
+                    "token": assessment_token, "lead_id": lead_id, "name": "Rooney Akpesiri",
+                    "email": member["email"], "organization": ORG_NAME, "desired_count": 3,
+                    "answers": recruitment_answers,
+                    "state": {"paid": True, "result_generated": False, "generation_status": "not_started"},
+                    "result": None, "member_user_id": member["user_id"], "internal_preview": True,
                     "created_at": now, "updated_at": now,
                 }},
                 upsert=True,
@@ -2494,6 +2515,60 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }, "$setOnInsert": {"created_at": now}},
                 upsert=True,
             )
+            await db.game_situations.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {
+                    "sections": {
+                        "current_reality": {
+                            "current_individual_donors": "About 35 repeat individual donors, mostly personal contacts and former volunteers. We do not yet have a formal major-donor pipeline.",
+                            "current_businesses": "Three small business sponsors and several warm employer relationships. Corporate outreach is still informal.",
+                            "current_grantors": "Foundation and government grants provide more than half of current revenue. Prospecting is mostly reactive.",
+                            "current_team": "The founder leads fundraising with a part-time coordinator. The Board Chair and Treasurer support selected relationships and reporting.",
+                            "current_technology": "Spreadsheets, an email platform and website donation forms. We need one simple CRM and shared dashboard.",
+                            "current_materials": "Participant stories, outcome data, a website and presentation deck. We still need a unified case for support and consistent follow-up templates.",
+                            "current_budget": "A lean budget is available for essential CRM, research, communications support and selected cultivation activity.",
+                        },
+                        "participation": {
+                            "build": ["Make introductions", "Research potential funders", "Help build fundraising materials"],
+                            "build_other": "", "raise": ["Join fundraising meetings", "Help steward relationships"],
+                            "raise_other": "", "time": "2–4 hours per month", "anything_else": "I want every Board Member to leave with a role that fits their strengths and relationships.",
+                        },
+                    },
+                    "current_step": 0, "completed": False, "internal_preview": True,
+                    "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            primary_id = f"admin-fresh-game-primary-{tag}"
+            primary_token = f"admin-fresh-game-primary-token-{tag}"
+            await db.game_board_members.update_one(
+                {"member_id": primary_id},
+                {"$set": {
+                    "member_id": primary_id, "user_id": member["user_id"], "token": primary_token,
+                    "full_name": "Rooney Akpesiri", "email": member["email"],
+                    "board_title": "Founder and Executive Director", "is_primary": True,
+                    "game_version": 3, "total_sections": 4, "invitation_status": "self",
+                    "removed": False, "internal_preview": True, "created_at": now, "updated_at": now,
+                }},
+                upsert=True,
+            )
+            fresh_game_answers = {
+                1: "Individuals who care about youth opportunity, employers seeking early-career talent, local businesses and grant funders focused on education, workforce development and economic mobility.",
+                2: "Board and staff networks, chambers of commerce, employer associations, alumni networks, community foundations, professional groups and relevant funder databases.",
+                3: "Use credible youth outcomes, employer stories, practical insight, mission-connected events and warm introductions to earn attention before asking for money.",
+                4: "Move each prospect through a clear relationship process: know, like, trust, ask, follow up and steward.",
+            }
+            for section_id, answer in fresh_game_answers.items():
+                await db.game_section_responses.update_one(
+                    {"board_member_id": primary_id, "section_id": section_id},
+                    {"$set": {
+                        "board_member_id": primary_id, "user_id": member["user_id"], "section_id": section_id,
+                        "first_response": [answer], "first_move_locked": False, "final_response": [],
+                        "fine_tuning": {"completed": False}, "completed": False,
+                        "internal_preview": True, "created_at": now, "updated_at": now,
+                    }},
+                    upsert=True,
+                )
             return "/game/welcome"
 
         session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"

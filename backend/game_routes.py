@@ -250,6 +250,20 @@ class SituationUpdate(BaseModel):
     current_step: int = Field(default=0, ge=0, le=20)
 
 
+REQUIRED_REALITY_FIELDS = ("current_team", "current_technology", "current_materials", "current_budget")
+
+
+def situation_is_complete(doc: dict) -> bool:
+    if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 6:
+        return False
+    sections = doc.get("sections") or {}
+    reality = sections.get("current_reality") or {}
+    participation = sections.get("participation") or {}
+    return all(str(reality.get(key) or "").strip() for key in REQUIRED_REALITY_FIELDS) and bool(
+        str(participation.get("time") or "").strip()
+    )
+
+
 def create_game_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -389,7 +403,9 @@ def create_game_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
         doc = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0})
-        return doc or {"sections": {}, "current_step": 0, "completed": False}
+        if not doc:
+            return {"sections": {}, "current_step": 0, "completed": False}
+        return {**doc, "completed": situation_is_complete(doc)}
 
     @router.put("/game/situation")
     async def save_game_situation(payload: SituationUpdate, request: Request):
@@ -417,6 +433,13 @@ def create_game_router(db) -> APIRouter:
     async def complete_game_situation(request: Request):
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
+        situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        candidate = {**situation, "completed": True}
+        if not situation_is_complete(candidate):
+            raise HTTPException(
+                status_code=409,
+                detail="Complete the current team, technology, materials, budget and participation sections before finishing the Board Fundraising Game.",
+            )
         now = datetime.now(timezone.utc).isoformat()
         await db.game_situations.update_one(
             {"user_id": member["user_id"]},
@@ -435,7 +458,8 @@ def create_game_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
         profile = await get_profile_doc(member["user_id"])
-        situation_completed = bool(profile.get("situation_completed"))
+        situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        situation_completed = situation_is_complete(situation)
         primary = await db.game_board_members.find_one(
             {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}},
             {"_id": 0, "member_id": 1})
