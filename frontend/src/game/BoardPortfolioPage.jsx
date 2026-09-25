@@ -115,7 +115,7 @@ export default function BoardPortfolioPage() {
             {data.goal_deadline && <> by <strong>{data.goal_deadline}</strong></>}.
           </p>
           <p className="bfg-pf-sub">
-            Your portfolio shows the role you agreed to play in helping build the fundraising system and raise money toward this goal.
+            Your portfolio shows the role you agreed to play in helping the organization raise money toward this goal.
           </p>
           <div className="bfg-pf-actions bfg-no-print">
             {data.strategy_share_token && (

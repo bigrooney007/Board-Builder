@@ -10,7 +10,8 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 
 GAME_ENTITLEMENT = "board_fundraising_game"
-TOTAL_ROUNDS = 9
+TOTAL_ROUNDS = 4
+GROUP_GAME_VERSION = "four-area-v1"
 
 ROUND_DEFS = [
     {"round_number": 1, "section_key": "who_should_fund", "source_key": "who_should_fund",
@@ -23,18 +24,8 @@ ROUND_DEFS = [
      "title": "How We Will Attract Their Attention",
      "instruction": "Review the board's attraction ideas and agree on the approaches that fit the audiences and the mission."},
     {"round_number": 4, "section_key": "fundraising_process", "source_key": "fundraising_process",
-     "title": "The Process We Will Use To Raise Money",
-     "instruction": "Discuss how potential funders will move through know, like, trust, ask, follow up and stewardship."},
-    {"round_number": 5, "section_key": "team", "situation_key": "team", "title": "Team",
-     "instruction": "Discuss who will lead, support and remain accountable for executing the fundraising strategy."},
-    {"round_number": 6, "section_key": "technology", "situation_key": "technology", "title": "Technology",
-     "instruction": "Discuss the technology and tracking systems required to execute the strategy consistently."},
-    {"round_number": 7, "section_key": "materials", "situation_key": "materials", "title": "Materials",
-     "instruction": "Discuss the messages, proof, presentations and other fundraising materials the strategy requires."},
-    {"round_number": 8, "section_key": "budget", "situation_key": "financial", "title": "Budget",
-     "instruction": "Discuss the realistic resources and budget required to put the fundraising system in place."},
-    {"round_number": 9, "section_key": "execution", "situation_key": "reflections", "title": "Execution And Accountability",
-     "instruction": "Agree on the immediate sequence, timeline, ownership and accountability needed to begin execution."},
+     "title": "How We Will Raise Money From Them",
+     "instruction": "Review everyone's fundraising-process ideas together with the ways the organization presently raises money from its donors, business supporters and grantors. Keep the present methods that should continue and select or add stronger methods where needed."},
 ]
 
 AREA_DEFS = [
@@ -53,12 +44,7 @@ ROONEY_RECOMMENDATIONS = {
     "who_should_fund": ["Prioritize people whose lived experience, values or personal story connects directly to the mission.", "Identify businesses whose customers, employees, location or social-impact priorities connect to the people the organization serves.", "Focus grant research on funders whose stated priorities, geography and eligible costs match the mission and the purpose of the fundraising goal."],
     "where_to_find": ["Map the Board's existing personal, professional, business and community networks before starting cold outreach.", "Use trusted places where each priority audience already gathers, learns or makes decisions.", "Build a repeatable prospect-research routine instead of relying on occasional searches."],
     "attract_attention": ["Create useful mission-connected content or experiences that give potential funders a reason to engage before an ask.", "Use credible impact evidence, stories and leadership visibility to build attention and trust.", "Create a clear corporate or grantor-facing value proposition for each priority audience."],
-    "fundraising_process": ["Use the relationship pathway KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD for every priority audience.", "Define the next action, owner and follow-up point for every prospect relationship.", "Treat stewardship as the beginning of the next gift or partnership rather than the end of the process."],
-    "team": ["Fundraising coordination / accountability: one named person keeps the strategy moving, tracks next actions and brings progress back to the Board.", "Prospect research and relationship mapping: identify the right individuals, businesses and grantors and connect them to people already in the organization's network.", "Fundraising communications and materials: prepare the case for support, audience messages, partnership materials and campaign content the agreed strategy actually requires.", "Relationship development and asks: use Board and organizational relationships to make introductions, attend meetings, cultivate, ask, follow up and steward according to each person's stated willingness.", "Where nobody present has accepted a required responsibility, mark it as ROLE / CAPACITY NEEDED instead of silently assigning it."],
-    "technology": ["Use one reliable prospect / donor tracking system for names, relationships, next actions, asks, follow-up and stewardship. Start with the smallest CRM or structured tracker the team can consistently maintain.", "Use an email and contact system the organization already understands before adding another platform.", "Use shared cloud files for the case for support, partnership materials, scripts, templates and Board execution resources.", "Use an AI writing / research tool only to accelerate drafts, research structure and execution support; people remain responsible for facts, relationships and final decisions.", "Use the smallest meeting, scheduling, design and reporting stack that supports the chosen fundraising process; reuse existing paid tools or free tiers before buying new software."],
-    "materials": ["Case for Support: one clear explanation of the need, solution, evidence, funding goal and what support makes possible.", "Audience-specific outreach messages for individuals, businesses and grantors actually chosen by the Board.", "Corporate partnership / sponsorship material only where businesses are a chosen audience.", "Grant research / application materials only where grantors are a chosen audience.", "Follow-up, thank-you and stewardship messages so relationships do not stop after the first conversation or ask.", "Impact evidence, stories, simple presentation material and campaign content required by the Board's chosen attraction strategy."],
-    "budget": ["People: use existing staff, Board leadership and volunteers for responsibilities they explicitly accept; budget only for capacity that is genuinely missing.", "Technology: start with existing subscriptions, free tiers or one low-cost tracking system before paying for a large fundraising stack.", "Content and design: use existing brand assets, templates and AI-assisted drafting before outsourcing routine materials.", "Prospect research: begin with Board networks, public sources and structured search methods before paying for expensive databases.", "Events and outreach: choose only activities the Board's strategy requires and cost each one against the fundraising goal.", "Keep a separate REQUIRED NOW versus LATER list so the Board can see the smallest realistic launch budget."],
-    "execution": ["Days 1–30: confirm owners, fill only the capacity gaps the strategy requires, complete relationship mapping, set up tracking and create the essential fundraising materials.", "Days 31–60: launch the agreed visibility, introductions, prospect research and Know / Like / Trust activity; begin business and grantor cultivation on their actual timelines.", "Days 61–90: move ready relationships into meetings, proposals and asks while continuing follow-up and stewardship.", "Days 91–120: review results, repair weak parts of the system, repeat what is working and set the next execution cycle.", "At every Board meeting, review each delegated responsibility, evidence of progress, barriers, decisions required and the next action."],
+    "fundraising_process": ["Use the relationship pathway KNOW, LIKE, TRUST, ASK, FOLLOW UP and STEWARD for every priority audience.", "Define the next action and follow-up point for every prospect relationship.", "Treat stewardship as the beginning of the next gift or partnership rather than the end of the process."],
 }
 
 
@@ -69,35 +55,6 @@ def now_iso() -> str:
 def normalise(text: str) -> str:
     cleaned = re.sub(r"[^\w\s]", "", str(text).lower())
     return re.sub(r"\s+", " ", cleaned).strip()
-
-
-def deadline_execution_recommendations(profile: dict) -> list:
-    goal = profile.get("goal") or {}
-    deadline_raw = str(goal.get("deadline") or "").strip()
-    if not deadline_raw:
-        return [
-            "Set the funding deadline before finalizing the execution calendar. The deadline should determine the length and intensity of the plan.",
-            "Build only the minimum fundraising system needed to begin execution, then move the chosen audiences through the Board-approved fundraising process.",
-            "Review progress at every Board meeting and adjust owners, capacity and next actions without changing the agreed strategic direction casually.",
-        ]
-    try:
-        deadline = datetime.strptime(deadline_raw, "%Y-%m-%d").date()
-        today = datetime.now(timezone.utc).date()
-        days = max(0, (deadline - today).days)
-    except ValueError:
-        return [f"Build the execution calendar backward from the supplied funding deadline: {deadline_raw}."]
-    if days == 0:
-        return [f"The stated funding deadline is {deadline_raw}. Treat execution as an immediate sprint and prioritize only prospects and actions that can realistically move now."]
-    setup_days = max(2, min(21, round(days * 0.18)))
-    ask_days = max(5, min(30, round(days * 0.30)))
-    relationship_days = max(1, days - setup_days - ask_days)
-    return [
-        f"Execution window: {days} days, ending {deadline_raw}. Build the action plan backward from this date rather than forcing a standard 90- or 120-day plan.",
-        f"First approximately {setup_days} days: confirm owners, complete Board relationship mapping, set up tracking and finish only the essential fundraising materials needed to begin.",
-        f"Next approximately {relationship_days} days: run the agreed attraction, introductions, prospect research and Know / Like / Trust activity while business and grant opportunities move on their real timelines.",
-        f"Protect roughly the final {ask_days} days for qualified asks, proposals, decisions, follow-up and closing activity, while stewardship begins immediately after support is secured.",
-        "At every Board meeting, review each delegated responsibility, evidence of progress, barriers, decisions required and the next action.",
-    ]
 
 
 def required_rank_for(idea_count: int) -> int:
@@ -145,6 +102,15 @@ def working_strategy_ideas(data: dict, section_key: str) -> list:
     if not isinstance(data, dict):
         return []
     if section_key == "who_should_fund":
+        audiences = data.get("fundraising_audiences") or {}
+        if any(audiences.get(key) for key in ("individuals", "businesses", "grantors")):
+            ideas = []
+            for key, label in (("individuals", "INDIVIDUALS"), ("businesses", "BUSINESSES"), ("grantors", "GRANTORS")):
+                for item in audiences.get(key) or []:
+                    text = strategy_item_text(item)
+                    if text:
+                        ideas.append(f"{label}: {text}")
+            return ideas
         return [strategy_item_text(item) for item in ((data.get("fundraising_audiences") or {}).get("priorities") or []) if strategy_item_text(item)]
     if section_key in {"where_to_find", "attract_attention", "technology", "materials"}:
         source_key={"attract_attention":"attraction"}.get(section_key,section_key)
@@ -152,10 +118,14 @@ def working_strategy_ideas(data: dict, section_key: str) -> list:
     if section_key == "fundraising_process":
         process=data.get("fundraising_process") or [];ideas=[]
         if isinstance(process, dict):
-            for stage in ("know","like","trust","ask","follow_up","steward"):
-                for item in process.get(stage) or []:
-                    text=strategy_item_text(item)
-                    if text:ideas.append(f"{stage.replace('_',' ').upper()}: {text}")
+            audience_processes = [("", process)]
+            if any(isinstance(process.get(key), dict) for key in ("individuals", "businesses", "grantors")):
+                audience_processes = [(key.upper(), process.get(key) or {}) for key in ("individuals", "businesses", "grantors")]
+            for audience, audience_process in audience_processes:
+                for stage in ("know","like","trust","ask","follow_up","steward"):
+                    for item in audience_process.get(stage) or []:
+                        text=strategy_item_text(item)
+                        if text:ideas.append(f"{audience + ': ' if audience else ''}{stage.replace('_',' ').upper()}: {text}")
         return ideas
     if section_key == "team":
         return [strategy_item_text(item) for item in ((data.get("fundraising_team") or {}).get("priorities") or []) if strategy_item_text(item)]
@@ -280,7 +250,6 @@ def create_group_game_router(db) -> APIRouter:
         situation_sections = situation.get("sections") or {}
         working = await db.game_strategies.find_one({"user_id":user_id,"mode":"working"},{"_id":0},sort=[("generated_at",-1)]) or {}
         working_data=working.get("data") or {}
-        profile = await get_profile(user_id)
         for definition in ROUND_DEFS:
             section_id = SECTION_ID_BY_KEY.get(definition.get("source_key", ""))
             responses = []
@@ -307,36 +276,12 @@ def create_group_game_router(db) -> APIRouter:
                     if response["board_member_id"] not in pool[key]["contributor_ids"]:
                         pool[key]["contributor_ids"].append(response["board_member_id"])
                         pool[key]["contributor_names"].append(name)
-            reality = situation_sections.get(definition.get("situation_key", ""), {})
-            v3_reality=situation_sections.get("current_reality") or {}
-            if definition["section_key"] == "who_should_fund":
-                reality = {key: situation_sections.get(key, {}) for key in ("donors", "corporate", "grantors")}
-                if not any(reality.values()):
-                    reality={"current_individual_donors":v3_reality.get("current_individual_donors",""),
-                             "current_businesses":v3_reality.get("current_businesses",""),
-                             "current_grantors":v3_reality.get("current_grantors","")}
-            elif definition["section_key"]=="team" and v3_reality.get("current_team"):
-                reality={"current_team":v3_reality.get("current_team","")}
-            elif definition["section_key"] == "technology":
-                reality = {"current_technology": v3_reality.get("current_technology") or v3_reality.get("current_resources", "")}
-            elif definition["section_key"] == "materials":
-                reality = {"current_materials": v3_reality.get("current_materials") or v3_reality.get("current_resources", "")}
-            elif definition["section_key"] == "budget":
-                reality = {"current_budget": v3_reality.get("current_budget", "")}
-            elif definition["section_key"] == "execution":
-                reality = {
-                    "current_individual_donor_process": v3_reality.get("current_individual_donors", ""),
-                    "current_business_process": v3_reality.get("current_businesses", ""),
-                    "current_grant_process": v3_reality.get("current_grantors", ""),
-                }
+            v3_reality = situation_sections.get("current_reality") or {}
+
             def add_reality(value, label="Organization reality"):
                 nonlocal order
-                if isinstance(value, dict):
-                    for child in value.values(): add_reality(child, label)
-                elif isinstance(value, list):
-                    for child in value: add_reality(child, label)
-                elif str(value).strip():
-                    text = str(value).strip()[:400]
+                if str(value or "").strip():
+                    text = str(value).strip()[:800]
                     key = normalise(text)
                     if key and key not in pool:
                         pool[key] = {"idea_id": new_uuid(), "session_id": session_id,
@@ -344,34 +289,35 @@ def create_group_game_router(db) -> APIRouter:
                                      "text": text, "normalized": key, "contributor_names": [label],
                                      "contributor_ids": [], "order": order}
                         order += 1
-            add_reality(reality)
-            if definition["section_key"]=="team":
-                participation_rows=await db.game_section_responses.find(
-                    {"user_id":user_id,"board_member_id":{"$in":member_ids},"section_id":5,"completed":True},{"_id":0}).to_list(300)
-                for row in participation_rows:
-                    name=member_names.get(row.get("board_member_id"),"Board Member");extras=row.get("extras") or {};time=str(extras.get("time","")).strip()
-                    suffix=f" ({time} per month)" if time else ""
-                    for option in extras.get("build") or []:
-                        text=f"{name} — help build/manage: {str(option).strip()}{suffix}"
-                        key=normalise(text)
-                        if key and key not in pool:
-                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
-                    for option in extras.get("raise") or []:
-                        text=f"{name} — help raise money: {str(option).strip()}{suffix}"
-                        key=normalise(text)
-                        if key and key not in pool:
-                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
-                    if str(extras.get("additional_idea","")).strip():
-                        text=f"{name} — additional role / contribution: {str(extras.get('additional_idea')).strip()}"
-                        key=normalise(text)
-                        if key and key not in pool:
-                            pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],"text":text[:400],"normalized":key,"contributor_names":[name],"contributor_ids":[row.get("board_member_id")],"order":order};order+=1
+
+            if definition["section_key"] == "who_should_fund":
+                present_funders = [
+                    ("Organization's present individual donors", "PRESENT INDIVIDUAL DONORS", ["current_individual_donor_profile", "current_individual_donor_motivation"], "current_individual_donors"),
+                    ("Organization's present business supporters", "PRESENT CORPORATE SPONSORS / BUSINESS PARTNERS", ["current_business_profile", "current_business_support"], "current_businesses"),
+                    ("Organization's present grantors", "PRESENT GRANTORS", ["current_grantor_profile", "current_grantor_support"], "current_grantors"),
+                ]
+                for label, heading, fields, legacy_key in present_funders:
+                    parts = [str(v3_reality.get(field) or "").strip() for field in fields if str(v3_reality.get(field) or "").strip()]
+                    if not parts and str(v3_reality.get(legacy_key) or "").strip():
+                        parts = [str(v3_reality.get(legacy_key)).strip()]
+                    if parts:
+                        add_reality(f"{heading}: " + " | ".join(parts), label)
+            elif definition["section_key"] == "fundraising_process":
+                present_processes = [
+                    ("Organization's present individual-donor method", "PRESENT INDIVIDUAL DONOR METHOD", "current_individual_donor_process", "individual_fundraising_process", "current_individual_donors"),
+                    ("Organization's present business-support method", "PRESENT BUSINESS / SPONSOR METHOD", "current_business_process", "business_fundraising_process", "current_businesses"),
+                    ("Organization's present grant-fundraising method", "PRESENT GRANTOR METHOD", "current_grantor_process", "grant_fundraising_process", "current_grantors"),
+                ]
+                for label, heading, field, old_field, legacy_key in present_processes:
+                    value = v3_reality.get(field) or v3_reality.get(old_field) or v3_reality.get(legacy_key) or ""
+                    if str(value).strip():
+                        add_reality(f"{heading}: {str(value).strip()}", label)
             for recommendation in working_strategy_ideas(working_data,definition["section_key"]):
                 key=normalise(recommendation)
                 if key not in pool:
                     pool[key]={"idea_id":new_uuid(),"session_id":session_id,"round_number":definition["round_number"],"section_key":definition["section_key"],
                         "text":recommendation[:800],"normalized":key,"contributor_names":["Nonprofit Board Builder recommendation based on your working strategy"],"contributor_ids":[],"order":order};order+=1
-            recommendations = deadline_execution_recommendations(profile) if definition["section_key"] == "execution" else ROONEY_RECOMMENDATIONS.get(definition["section_key"], [])
+            recommendations = ROONEY_RECOMMENDATIONS.get(definition["section_key"], [])
             for recommendation in recommendations:
                 key=normalise(recommendation)
                 if key not in pool:
@@ -481,6 +427,12 @@ def create_group_game_router(db) -> APIRouter:
         profile = await get_profile(member["user_id"])
         organization = (profile.get("organization") or {}).get("name", "your organization")
         session = await active_session(member["user_id"])
+        if session and session.get("game_version") != GROUP_GAME_VERSION:
+            await db.group_game_sessions.update_one(
+                {"session_id": session["session_id"]},
+                {"$set": {"status": "archived", "updated_at": now_iso()}},
+            )
+            session = None
         if session and session["status"] == "in_progress":
             return {"session": session}
         if session and session["status"] in {"prepared", "waiting"}:
@@ -495,6 +447,7 @@ def create_group_game_router(db) -> APIRouter:
         record = {
             "session_id": session_id, "user_id": member["user_id"],
             "token": secrets.token_urlsafe(24), "status": "waiting", "current_round": 0,
+            "game_version": GROUP_GAME_VERSION,
             "created_at": now_iso(), "started_at": "", "completed_at": "", "updated_at": now_iso(),
         }
         await db.group_game_sessions.insert_one(record.copy())

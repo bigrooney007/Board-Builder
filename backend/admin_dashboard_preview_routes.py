@@ -34,7 +34,7 @@ FRESH_TEST_VERSION = "fresh-v1"
 RECRUITMENT_FIXTURE_VERSION = "v8"
 STRATEGIC_FIXTURE_VERSION = "v7"
 RECOMMITMENT_FIXTURE_VERSION = "v9"
-FUNDRAISING_FIXTURE_VERSION = "v6"
+FUNDRAISING_FIXTURE_VERSION = "v7"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -1793,20 +1793,23 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         )
         situation_sections = {
             "current_reality": {
+                "current_individual_donor_profile": "About 35 recurring or repeat individual donors, mostly personal contacts and former volunteers.",
+                "current_individual_donor_motivation": "They care about youth opportunity, have seen the programs directly or trust the founder and volunteers who introduced them.",
+                "current_individual_donor_process": "Most gifts come through personal outreach, year-end emails and occasional event follow-up.",
                 "current_individual_donors": "We have about 35 recurring or repeat individual donors, mostly personal contacts and former volunteers. There is no formal major-donor pipeline yet.",
                 "individual_fundraising_process": "Most individual gifts come through personal outreach, year-end emails and occasional event follow-up. We do not yet have a consistent cultivation, ask, follow-up and stewardship rhythm.",
+                "current_business_profile": "Three small business sponsors and several warm employer relationships.",
+                "current_business_support": "They sponsor youth-employment activities, provide employer access and support selected events.",
+                "current_business_process": "Support usually begins through a warm introduction, followed by a short overview, a conversation and manual follow-up.",
                 "current_businesses": "We have three small business sponsors and several warm employer relationships, but no structured corporate partnership pipeline.",
                 "business_fundraising_process": "Business support usually begins through a warm introduction from the founder or a Board Member. We send a short overview, hold a conversation and follow up manually, but there is no shared pipeline or standard partnership process yet.",
+                "current_grantor_profile": "Foundation and government grantors focused on youth employment, education access and economic mobility.",
+                "current_grantor_support": "They fund program delivery, participant support and selected capacity costs.",
+                "current_grantor_process": "Staff monitor familiar funders and public opportunities, then prepare tailored applications and follow up through each decision cycle.",
                 "current_grantors": "About 55% of current revenue comes from foundation and government grants. Grant prospecting is mostly reactive.",
                 "grant_fundraising_process": "Staff monitor familiar funders and public opportunities, then prepare applications when a relevant deadline appears. We need a more proactive research, cultivation, calendar and follow-up process.",
-                "current_team": "The founder leads fundraising with support from one part-time coordinator. The Board Chair helps with selected corporate relationships and the Treasurer reviews fundraising performance. Board participation is otherwise inconsistent and request-based.",
-                "current_technology": "We use spreadsheets, our email platform and basic website forms. We do not yet have one prospect CRM that shows relationship owner, stage and next action.",
-                "current_materials": "We have participant stories, basic outcome data, a website, email list and presentation deck. We still need a unified case for support, corporate partnership one-pager, donor conversation guide and consistent follow-up templates.",
-                "current_budget": "There is no large dedicated fundraising systems budget yet. We can fund essential CRM, prospect research, communications support and selected cultivation activities, but we want to start lean and confirm prices before committing.",
             },
             "participation": {
-                "build": ["Make introductions", "Research potential funders", "Help build fundraising materials"],
-                "build_other": "",
                 "raise": ["Join fundraising meetings", "Make direct asks with support", "Help steward relationships"],
                 "raise_other": "",
                 "time": "2–4 hours per month",
@@ -2000,8 +2003,6 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "completed": True,
                     "completed_at": now,
                     "extras": {
-                        "build": ["Make introductions", "Research potential funders"],
-                        "build_other": "",
                         "raise": ["Join fundraising meetings", "Help steward relationships"],
                         "raise_other": "",
                         "time": "2–4 hours per month",
@@ -2041,7 +2042,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             {"session_id": group_session_id},
             {"$set": {
                 "session_id": group_session_id, "user_id": member["user_id"], "token": group_token,
-                "status": "completed", "current_round": 9, "started_at": now, "completed_at": now,
+                "status": "completed", "current_round": 4, "game_version": "four-area-v1",
+                "started_at": now, "completed_at": now,
                 "updated_at": now, "created_at": now, "internal_preview": True,
             }},
             upsert=True,
@@ -2068,6 +2070,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "Professionals and business owners who care about youth opportunity, workforce mobility and mentoring.",
                 "Employers that need early-career talent and want visible local community impact.",
                 "Foundations and public funders focused on youth employment, education access and economic mobility.",
+                "PRESENT INDIVIDUAL DONORS: About 35 recurring or repeat donors, mostly personal contacts and former volunteers who care about youth opportunity.",
+                "PRESENT CORPORATE SPONSORS / BUSINESS PARTNERS: Three small business sponsors and several warm employer relationships supporting youth-employment activities and selected events.",
+                "PRESENT GRANTORS: Foundation and government funders focused on youth employment, education access and economic mobility.",
             ]),
             ("where_to_find", "Where We Can Consistently Find Them", [
                 "Start with Board and staff networks, employer associations, chambers of commerce and professional groups.",
@@ -2083,6 +2088,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "Use Know, Like, Trust, Ask, Follow Up and Steward as the common relationship pathway.",
                 "Every prospect must have a relationship owner, stage, next action and follow-up point.",
                 "Stewardship begins immediately after support is secured and should prepare the relationship for the next gift or partnership.",
+                "PRESENT INDIVIDUAL DONOR METHOD: Personal outreach, year-end emails and event follow-up.",
+                "PRESENT BUSINESS / SPONSOR METHOD: Warm introductions, a short overview, a conversation and manual follow-up.",
+                "PRESENT GRANTOR METHOD: Monitor relevant opportunities, prepare tailored applications and follow up through each decision cycle.",
             ]),
             ("team", "Team", [
                 "Rooney coordinates the fundraising system and staff follow-up.",
@@ -2111,7 +2119,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "Days 61–90: move ready relationships into meetings, proposals and asks while continuing follow-up and stewardship.",
                 "Review fundraising responsibilities, evidence, barriers and next actions at every Board meeting until the June 30, 2027 deadline.",
             ]),
-        ]
+        ][:4]
         for round_number, (section_key, title, ideas) in enumerate(group_rounds, 1):
             round_id = f"admin-preview-group-round-{round_number}-{tag}"
             idea_rows = []
@@ -2295,11 +2303,14 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             ],
             "next_step": "Your final fundraising strategy is ready. Review it with your board, send it to every participant and move into execution using the Board Portfolios, Execution Materials and Relationship Mapping.",
         }
+        strategy_data = {key: strategy_data[key] for key in (
+            "fundraising_audiences", "where_to_find", "attraction", "fundraising_process"
+        )}
         await db.game_strategies.update_one(
             {"strategy_id": strategy_id},
             {"$set": {
                 "strategy_id": strategy_id, "user_id": member["user_id"], "mode": "final",
-                "status": "adopted", "version": 1, "schema_version": 2,
+                "status": "adopted", "version": 1, "schema_version": 3,
                 "prepared_by": f"The Board of {ORG_NAME}", "generated_at": now, "adopted_at": now,
                 "share_token": f"admin-preview-fundraising-strategy-share-{tag}", "data": strategy_data,
                 "section_edits": {}, "source": "admin_preview_fixture", "internal_preview": True,
@@ -2520,17 +2531,21 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 {"$set": {
                     "sections": {
                         "current_reality": {
+                            "current_individual_donor_profile": "About 35 repeat individual donors, mostly personal contacts and former volunteers.",
+                            "current_individual_donor_motivation": "They care about youth opportunity and trust people already connected to the organization.",
+                            "current_individual_donor_process": "Personal outreach, year-end emails and event follow-up.",
                             "current_individual_donors": "About 35 repeat individual donors, mostly personal contacts and former volunteers. We do not yet have a formal major-donor pipeline.",
+                            "current_business_profile": "Three small business sponsors and several warm employer relationships.",
+                            "current_business_support": "They support youth-employment activity, selected events and employer access.",
+                            "current_business_process": "Warm introductions, a short overview, a conversation and manual follow-up.",
                             "current_businesses": "Three small business sponsors and several warm employer relationships. Corporate outreach is still informal.",
+                            "current_grantor_profile": "Foundation and government grantors focused on youth employment and education.",
+                            "current_grantor_support": "They fund program delivery, participant support and selected capacity costs.",
+                            "current_grantor_process": "Research relevant opportunities, prepare tailored applications and follow up through each decision cycle.",
                             "current_grantors": "Foundation and government grants provide more than half of current revenue. Prospecting is mostly reactive.",
-                            "current_team": "The founder leads fundraising with a part-time coordinator. The Board Chair and Treasurer support selected relationships and reporting.",
-                            "current_technology": "Spreadsheets, an email platform and website donation forms. We need one simple CRM and shared dashboard.",
-                            "current_materials": "Participant stories, outcome data, a website and presentation deck. We still need a unified case for support and consistent follow-up templates.",
-                            "current_budget": "A lean budget is available for essential CRM, research, communications support and selected cultivation activity.",
                         },
                         "participation": {
-                            "build": ["Make introductions", "Research potential funders", "Help build fundraising materials"],
-                            "build_other": "", "raise": ["Join fundraising meetings", "Help steward relationships"],
+                            "raise": ["Join fundraising meetings", "Help steward relationships"],
                             "raise_other": "", "time": "2–4 hours per month", "anything_else": "I want every Board Member to leave with a role that fits their strengths and relationships.",
                         },
                     },

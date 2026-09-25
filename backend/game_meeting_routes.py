@@ -20,7 +20,7 @@ GAME_ENTITLEMENT = "board_fundraising_game"
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
 FUNDER_TYPES = {"Individual", "Business", "Grantor"}
 
-FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
+LEGACY_FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
 The board has completed Individual Games and explicitly selected the ideas it agreed with across the Group Game. A meeting transcript may also be supplied, but it is optional enrichment rather than a prerequisite.
 Reconcile all supplied information into one execution-ready ORGANIZATION fundraising strategy.
 Where a supplied transcript clearly changes something during the meeting, that explicit meeting decision overrides earlier drafts and ideas. When no transcript is available, the Group Game selections and Board-added agreed wording are the authoritative decisions.
@@ -44,7 +44,7 @@ The Board Fundraising Process must explain how Board Members use their own netwo
 The Final Strategy is an organizational strategy, not a meeting report. Never write "X said", "Y suggested", contributor-by-contributor attribution, transcript commentary or a history of who proposed an idea. Integrate adopted thinking into the strategy itself. Individual names may appear only where the Board explicitly assigned that person an execution responsibility.
 Return only the required structured JSON."""
 
-FINAL_V2_SCHEMA = {
+LEGACY_FINAL_V2_SCHEMA = {
     "executive_summary": "string — the organisation, the fundraising goal, the deadline, what the money supports, the strategic direction the board decided on and the primary priorities",
     "fundraising_goal": {"amount": "string — exactly as supplied", "currency": "USD", "deadline": "string", "purpose": "string",
                          "summary": "string — concise explanation of what the organisation is working to accomplish"},
@@ -80,6 +80,36 @@ FINAL_V2_SCHEMA = {
     "additional_board_ideas": [{"area": "Strategic area title", "items": ["string — contributed ideas shown to the Board but not explicitly adopted"]}],
     "next_step": "string — exactly: 'Your final fundraising strategy is ready. Review it with your board, send it to every participant and move into execution using the Board Portfolios, Execution Materials and Relationship Mapping.'",
 }
+
+FINAL_SYSTEM_MESSAGE = """You are compiling the Final Board Fundraising Strategy for a nonprofit organisation.
+The Board has completed its Individual Games and explicitly selected its ideas during the four-round Group Game.
+Create exactly four strategy parts:
+1. Who the organisation will raise money from.
+2. Where the organisation will find them.
+3. How the organisation will attract them.
+4. How the organisation will raise money from them.
+Use the Board's selected ideas as the authority. Preserve the Board's distinctive language and logic wherever practical.
+Use the lead user's present donors, business supporters, grantors and current fundraising methods as valid options where the Board selected or retained them.
+Do not add sections about team, technology, materials, resources, budget, timeline, delegation, portfolios or an execution system.
+Do not invent funders, organisations, relationships, commitments or results.
+Return only the required structured JSON."""
+
+FINAL_V2_SCHEMA = {
+    "fundraising_audiences": {
+        "individuals": [{"title": "Audience profile", "explanation": "Why they have a reason to give", "focus": "What the organisation will focus on"}],
+        "businesses": [{"title": "Business audience profile", "explanation": "Why they have a reason to support", "focus": "What the organisation will focus on"}],
+        "grantors": [{"title": "Grantor profile", "explanation": "Why the mission and funding focus align", "focus": "What the organisation will focus on"}],
+    },
+    "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "How it connects to the chosen audience", "focus": "How the organisation will use it consistently"}], "additional_ideas": ["string"]},
+    "attraction": {"priorities": [{"title": "Attraction idea", "explanation": "Why it matters to the chosen audience", "focus": "How the organisation will use it"}], "additional_ideas": ["string"]},
+    "fundraising_process": {
+        "individuals": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "businesses": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+    },
+}
+
+CORE_STRATEGY_KEYS = ["fundraising_audiences", "where_to_find", "attraction", "fundraising_process"]
 
 BOARD_FUNDRAISING_PROCESS = {
     "know": [
@@ -231,11 +261,9 @@ def create_game_meeting_router(db) -> APIRouter:
         choices = []
         for row in rows:
             extras = row.get("extras") or {}
-            if extras.get("build") or extras.get("raise") or extras.get("time") or extras.get("additional_idea"):
+            if extras.get("raise") or extras.get("time") or extras.get("additional_idea"):
                 choices.append({
                     "board_member_name": members.get(row.get("board_member_id"), ""),
-                    "wants_to_help_build_and_manage_the_fundraising_system": extras.get("build", []),
-                    "build_other": extras.get("build_other", ""),
                     "wants_to_help_raise_money": extras.get("raise", []),
                     "raise_other": extras.get("raise_other", ""),
                     "monthly_time_commitment": extras.get("time", ""),
@@ -278,33 +306,25 @@ def create_game_meeting_router(db) -> APIRouter:
         try:
             profile = await get_profile(user_id)
             goal = profile.get("goal") or {}
-            today = datetime.now(timezone.utc).date()
-            deadline_raw = str(goal.get("deadline") or "").strip()
-            days_available = None
-            if deadline_raw:
-                try:
-                    deadline_date = datetime.strptime(deadline_raw, "%Y-%m-%d").date()
-                    days_available = max(0, (deadline_date - today).days)
-                except ValueError:
-                    days_available = None
             situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
             transcript = await get_transcript(user_id) or {}
             organization = profile.get("organization") or {}
+            current_reality = (situation.get("sections") or {}).get("current_reality") or {}
+            current_funder_keys = {
+                "current_individual_donor_profile", "current_individual_donor_motivation", "current_individual_donor_process",
+                "current_business_profile", "current_business_support", "current_business_process",
+                "current_grantor_profile", "current_grantor_support", "current_grantor_process",
+                "current_individual_donors", "current_businesses", "current_grantors",
+                "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
+            }
             context = {
                 "organisation_profile": organization,
                 "fundraising_goal": {
                     "amount": f"${int(goal.get('amount') or 0):,}" if goal.get("amount") else "",
                     "currency": "USD", "deadline": goal.get("deadline", ""),
                     "purpose": goal.get("purpose", ""), "why_it_matters_now": goal.get("why_now", ""),
-                    "strategy_generated_on": today.isoformat(),
-                    "days_available_until_funding_deadline": days_available,
-                    "timeline_instruction": (
-                        f"Build the execution plan across the actual {days_available} days available before the funding deadline."
-                        if days_available is not None else
-                        "Use the supplied funding deadline as the execution anchor and avoid inventing a standard 90-day plan."
-                    ),
                 },
-                "current_fundraising_reality_and_existing_team": situation.get("sections", {}),
+                "current_funder_context": {key: value for key, value in current_reality.items() if key in current_funder_keys},
                 "approved_board_member_ideas_by_strategy_area": await board_ideas_by_area(user_id),
                 "participation_choices_and_time_commitments": await participation_choices(user_id),
                 "group_game_results": await group_results_by_area(user_id),
@@ -318,9 +338,7 @@ def create_game_meeting_router(db) -> APIRouter:
             prompt = (
                 "FINAL STRATEGY CONTEXT (the only information you may use):\n"
                 f"{json.dumps(context, indent=1)}\n\n"
-                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. If a meeting transcript is supplied, use it to identify clarifications, changes to those decisions, additional ideas, "
-                "assignments, responsibilities, clarifications, execution decisions, timing decisions and decisions about "
-                "who will make introductions or asks. Integrate those decisions into the relevant strategy sections. "
+                "Treat the Group Game checkbox selections and Board-added agreed ideas as explicit Board decisions and preserve their wording and logic as closely as practical. If a meeting transcript is supplied, use it only to identify clarifications or changes to the four strategic decisions. "
                 "Do not invent decisions that are not present.\n\n"
                 "Respond with ONE JSON object matching exactly this schema (descriptions explain each field). "
                 "Return only JSON — no markdown, no commentary:\n"
@@ -328,13 +346,13 @@ def create_game_meeting_router(db) -> APIRouter:
             )
             response = await chat.send_message(UserMessage(text=prompt))
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
-            data = parse_json_response(text)
-            data["board_fundraising_process"] = BOARD_FUNDRAISING_PROCESS
+            generated = parse_json_response(text)
+            data = {key: generated.get(key, {}) for key in CORE_STRATEGY_KEYS}
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": "final"}) + 1
             now = now_iso()
             record = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": "final",
-                "status": "adopted", "version": version, "schema_version": 2,
+                "status": "adopted", "version": version, "schema_version": 3,
                 "share_token": secrets.token_urlsafe(24),
                 "prepared_by": f"The Board of {organization.get('name', '').strip()}".strip(),
                 "data": data, "section_edits": {},

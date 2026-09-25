@@ -1,12 +1,4 @@
-"""Board Fundraising Game V3: simplified 4-round / 8-question game. All customer copy lives here (admin-editable defaults)."""
-
-PARTICIPATION_BUILD_OPTIONS = [
-    "Identify potential funders", "Research potential funders", "Recruit people to help with fundraising",
-    "Manage or coordinate the fundraising team", "Build or manage the CRM / donor database",
-    "Set up or manage fundraising technology", "Create or improve fundraising materials", "Create fundraising content",
-    "Manage follow-up and relationship tracking", "Help organize fundraising events",
-    "Track fundraising activity and results", "Help improve the fundraising strategy and process", "Other",
-]
+"""Board Fundraising Game V3: four strategy questions plus role-specific follow-through."""
 
 PARTICIPATION_RAISE_OPTIONS = [
     "Introduce the organization to people I know", "Introduce the organization to businesses I know",
@@ -24,8 +16,8 @@ GAME_V3 = {
     "intro": {
         "heading": "Build Your Fundraising Strategy By Playing The Game",
         "paragraphs": [
-            "To raise money exponentially, you need to build your organization's fundraising system.",
-            "To build your organization's fundraising system, you need to know the exact type of people, businesses and grantors meant to fund your mission, where to find them, how to attract them and the exact process to raise money from them.",
+            "To raise money consistently, your organization needs a clear fundraising strategy.",
+            "That strategy identifies the exact type of people, businesses and grantors meant to fund your mission, where to find them, how to attract them and the exact process to raise money from them.",
         ],
         "strategy_heading": "That's What We Call The Fundraising Strategy",
         "completion_text": "By completing this game, you will create a clear fundraising strategy to reach your organization's fundraising goal.",
@@ -140,7 +132,7 @@ GAME_V3 = {
             "The exact process to raise money exponentially for your organization",
         ],
         "imagine_heading": "Now Imagine Your Entire Board Doing This With You.",
-        "more_people_statement": "The more the people that play the game, the more ideas you have on how to raise money and the more support you have when raising money and building the system that drives the strategy.",
+        "more_people_statement": "The more people who play the game, the more ideas your organization has about who to raise money from, where to find them, how to attract them and how to raise money from them.",
         "locked_sections": [
             "The Exact Type Of People, Businesses and Grantors Meant To Fund Your Mission",
             "Where To Consistently Find Them",
@@ -152,65 +144,43 @@ GAME_V3 = {
         "upgrade_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
     },
     "current_reality": {
-        "heading": "Tell Us What You Already Have",
-        "supporting": "You have decided who you want to raise money from, where to find them, how to attract them and the process to raise money from them. Now tell us what already exists so the strategy we build strengthens your real fundraising system instead of pretending you are starting from zero.",
+        "heading": "Tell Us About Your Present Funders",
+        "supporting": "You have answered the four strategy questions. Now tell us about the individuals, businesses and grantors already supporting your organization so their value and your present fundraising methods are not lost.",
         "questions": [
             {
                 "key": "current_individual_donors",
-                "heading": "Your Present Individual Donor Base",
-                "question": "Describe the individual donors who currently support your organization, why they give and how you presently raise money from them.",
-                "hint": "Tell us the types of people who give, what appears to motivate them, how they first find or connect with your organization, how you ask, how they normally give and what seems to keep them involved.",
+                "heading": "Your Present Individual Donors",
+                "fields": [
+                    {"key": "current_individual_donor_profile", "question": "Who are your present individual donors, and how would you describe them?", "hint": "Describe the types of people who currently give to your organization."},
+                    {"key": "current_individual_donor_motivation", "question": "Why do you think they give to your organization?", "hint": "Tell us what appears to connect them to the mission or motivates their support."},
+                    {"key": "current_individual_donor_process", "question": "How do you presently raise money from them?", "hint": "Describe how they connect, how you ask, how they give, how you follow up and what keeps them involved."},
+                ],
                 "skippable": True,
             },
             {
                 "key": "current_businesses",
-                "heading": "Your Present Business And Corporate Support",
-                "question": "Describe the businesses that currently support your organization, why they support you and how that support is developed.",
-                "hint": "Include the types of businesses, what they care about, whether they provide money, sponsorship, services, products or introductions, how the relationship began and how you presently ask for or develop support.",
+                "heading": "Your Present Corporate Sponsors And Business Partners",
+                "fields": [
+                    {"key": "current_business_profile", "question": "Who are your present corporate sponsors or business partners, and how would you describe them?", "hint": "Describe the types of businesses currently supporting your organization."},
+                    {"key": "current_business_support", "question": "What do they give to or support?", "hint": "Include money, sponsorship, programs, events, products, services, introductions or another form of support."},
+                    {"key": "current_business_process", "question": "How do you presently raise money or secure support from them?", "hint": "Describe how the relationship begins, how you present the opportunity, how you ask and how you follow up."},
+                ],
                 "skippable": True,
             },
             {
                 "key": "current_grantors",
-                "heading": "Your Present Grantors And Institutional Funders",
-                "question": "Describe the grantors that currently fund or have funded your organization, why they fund the work and how you presently find and pursue those opportunities.",
-                "hint": "Include the types of funders, what they fund, how you identify opportunities, what happens before an application, how you apply, follow up and maintain the relationship.",
+                "heading": "Your Present Grantors",
+                "fields": [
+                    {"key": "current_grantor_profile", "question": "Who are your present grantors, and how would you describe them?", "hint": "Describe the types of foundations, government funders or institutions currently funding your organization."},
+                    {"key": "current_grantor_support", "question": "What do they give to or fund?", "hint": "Describe the programs, outcomes, costs or parts of your work they support."},
+                    {"key": "current_grantor_process", "question": "How do you presently raise money from them?", "hint": "Describe how you identify the opportunity, build the relationship, apply, follow up and maintain the funding relationship."},
+                ],
                 "skippable": True,
-            },
-            {
-                "key": "current_team",
-                "heading": "Your Present Fundraising Team",
-                "question": "Who currently helps your organization raise money and what does each person actually do?",
-                "hint": "Include staff, Board Members, volunteers, consultants or partners who currently contribute to fundraising.",
-                "skippable": False,
-            },
-            {
-                "key": "current_technology",
-                "heading": "Your Present Fundraising Technology",
-                "question": "What technology or tools are you presently using to find prospects, manage relationships, communicate with funders, receive money or track follow-up?",
-                "hint": "Include CRM or spreadsheets, email tools, research tools, payment tools, donor databases, scheduling, design, AI tools or anything else you actually use.",
-                "skippable": False,
-            },
-            {
-                "key": "current_materials",
-                "heading": "Your Present Fundraising Materials And Content",
-                "question": "What fundraising materials and content do you already have to explain the mission, show impact, attract funders or ask for support?",
-                "hint": "Examples include a case for support, pitch deck, sponsorship material, impact report, donor emails, grant material, stories, videos, social content or campaign material. Only tell us what you actually have.",
-                "skippable": False,
-            },
-            {
-                "key": "current_budget",
-                "heading": "Your Present Fundraising Budget",
-                "question": "What are you already spending on fundraising, and what financial capacity is realistically available to execute this strategy?",
-                "hint": "Include current subscriptions, contractors, events, advertising, research, design or other costs you know about. If there is no dedicated fundraising budget yet, say that clearly.",
-                "skippable": False,
             },
         ],
     },
     "participation": {
         "heading": "How Do You Want To Be Involved?",
-        "build_question": "How do you want to be involved in building and managing your organization's fundraising system?",
-        "build_options": PARTICIPATION_BUILD_OPTIONS,
-        "build_other_prompt": "Tell us how else you want to help build or manage the fundraising system.",
         "raise_question": "How do you want to be involved in raising money for your organization?",
         "raise_options": PARTICIPATION_RAISE_OPTIONS,
         "raise_other_prompt": "Tell us how else you want to help raise money.",
@@ -220,7 +190,7 @@ GAME_V3 = {
     "board_completion": {
         "heading": "YOU COMPLETED YOUR BOARD FUNDRAISING GAME",
         "supporting": "Your ideas are now part of your organization's Board Fundraising Game.",
-        "more_people_statement": "The more the people that play the game, the more ideas you have on how to raise money and the more support you have when raising money and building the system that drives the strategy.",
+        "more_people_statement": "The more people who play the game, the more fundraising ideas and willing participants your organization can bring into the final strategy.",
         "game_night_text": "During Game Night, your board will review everyone's ideas, prioritize the strongest opportunities and use those decisions to build the fundraising strategy your organization will execute together.",
     },
     "fine_tuning": {
@@ -251,7 +221,6 @@ GAME_V3 = {
         "find_heading": "Where To Consistently Find Them",
         "attract_heading": "How To Attract Their Attention",
         "process_heading": "The Exact Process To Raise Money Exponentially For The Organization",
-        "build_heading": "How I Want To Help Build And Manage The Fundraising System",
         "raise_heading": "How I Want To Help Raise Money",
         "time_heading": "My Time Commitment",
         "continue_button": "Continue",
@@ -263,11 +232,11 @@ GAME_V3 = {
         "play_first_heading": "Play Your Board Fundraising Game First",
         "play_first_text": "Your fundraising strategy is created from the answers you give while playing the game. Play your game first, then come back to complete your setup.",
         "play_first_button": "Play My Board Fundraising Game",
-        "generate_heading": "Generate Your Complete Working Fundraising Strategy",
-        "generate_text": "We will combine your approved ideal funders, where to consistently find them, how to attract their attention, your exact process to raise money, your fundraising goal and deadline, your current donors, business supporters, grantors, team and resources, and how you want to participate — then build the complete working fundraising strategy your organization can start executing, including the people, technology, materials, resources and timeline needed to execute it.",
-        "generate_button": "Generate My Complete Working Fundraising Strategy",
-        "generating_text": "Building your complete working fundraising strategy… This can take a minute. Please keep this page open.",
-        "generated_heading": "Your Complete Working Fundraising Strategy Is Ready",
+        "generate_heading": "Generate Your Working Fundraising Strategy",
+        "generate_text": "We will combine your approved ideas with what you shared about your present donors, business supporters and grantors to build your four-part working fundraising strategy.",
+        "generate_button": "Generate My Working Fundraising Strategy",
+        "generating_text": "Building your working fundraising strategy… This can take a minute. Please keep this page open.",
+        "generated_heading": "Your Working Fundraising Strategy Is Ready",
         "generated_text": "Review your complete strategy. When you are ready, set your Game Night and invite your board members to play — their ideas will make the strategy even stronger.",
         "generated_button": "View My Complete Working Fundraising Strategy",
         "failed_heading": "We Couldn't Generate Your Strategy",
@@ -276,8 +245,8 @@ GAME_V3 = {
     },
     "group_complete": {
         "heading": "Your Board Has Completed The Fundraising Game",
-        "supporting": "Your board reviewed everyone's ideas across the four strategic areas and prioritized the strongest opportunities. The next step is turning those decisions into your organization's complete fundraising strategy — including the team, technology, materials, resources and timeline needed to execute it.",
-        "cta": "Generate Our Complete Fundraising Strategy",
+        "supporting": "Your board reviewed everyone's ideas across the four strategic areas and selected the direction your organization will use. The next step is turning those decisions into your final four-part fundraising strategy.",
+        "cta": "Generate Our Final Fundraising Strategy",
     },
     "guided": {
         "sections": [
@@ -308,7 +277,7 @@ GAME_V3 = {
                 "heading": "WHERE CAN YOU CONSISTENTLY FIND THEM?",
                 "why": [
                     "Knowing who should fund your mission is only useful if you know where to consistently find them.",
-                    "To build a fundraising system, you need repeatable places where the exact people, businesses and grantors you want already gather, work, network, learn or can be identified.",
+                    "To use a fundraising strategy consistently, you need repeatable places where the exact people, businesses and grantors you want already gather, work, network, learn or can be identified.",
                     "If you are looking for Christians, you go to the church.",
                     "If you are looking for Muslims, you go to the mosque.",
                     "The same principle applies to your funders.",
@@ -332,7 +301,7 @@ GAME_V3 = {
                 "why": [
                     "Finding potential funders is not enough.",
                     "If every interaction begins with asking people for money, you will spend your time chasing people.",
-                    "A fundraising system gives the exact people, businesses and grantors you want a reason to notice your organization, connect with you and give you the opportunity to build the relationship.",
+                    "Your attraction strategy gives the exact people, businesses and grantors you want a reason to notice your organization, connect with you and give you the opportunity to build the relationship.",
                 ],
                 "q1": "What can your organization offer the people, businesses and grantors you identified that would make them want to stop, pay attention and connect with you?",
                 "q1_hint": "Share your first ideas.",
@@ -394,7 +363,6 @@ GAME_V3 = {
             "cta": "Continue",
         },
         "participation_screens": {
-            "build_heading": "HOW DO YOU WANT TO HELP BUILD AND MANAGE THE FUNDRAISING SYSTEM?",
             "raise_heading": "HOW DO YOU WANT TO HELP RAISE MONEY?",
             "time_heading": "HOW MUCH TIME CAN YOU REALISTICALLY COMMIT EACH MONTH?",
             "share_heading": "IS THERE ANYTHING ELSE YOU WANT TO SHARE?",
@@ -436,7 +404,6 @@ GAME_V3["guided"] = {
         "cta": "CONTINUE",
     },
     "participation_screens": {
-        "build_heading": "HOW DO YOU WANT TO HELP BUILD AND MANAGE THE FUNDRAISING SYSTEM?",
         "raise_heading": "HOW DO YOU WANT TO HELP RAISE MONEY?",
         "time_heading": "HOW MUCH TIME CAN YOU REALISTICALLY COMMIT EACH MONTH?",
         "share_heading": "IS THERE ANYTHING ELSE YOU WANT TO SHARE?",

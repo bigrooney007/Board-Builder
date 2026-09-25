@@ -282,7 +282,6 @@ export default function GroupGamePage() {
                 </div>
                 {round.status === "open" && (
                   <>
-                    {round.round_number===5&&<p className="bfg-note" style={{ marginTop: 14 }}><strong>Team discussion:</strong> Confirm what each person already said they are willing to do, change it if the person changes their mind, identify any role nobody can take, and say the final delegation aloud so the transcript captures it.</p>}
                     <p className="bfg-note" style={{ marginTop: 14 }}>Continue only after the Board has checked at least one agreed idea or added its agreed wording from the discussion. Every participant screen will advance with yours.</p>
                     <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 18 }} disabled={busy === "next"||(!(round.selected_idea_ids||[]).length&&!(round.additional_agreed_ideas||[]).length)}
                       onClick={() => run("next", continueMeeting)} data-testid="bfg-gg-next-round-btn">
@@ -298,15 +297,15 @@ export default function GroupGamePage() {
               <div className="bfg-panel" style={{ textAlign: "center" }} data-testid="bfg-gg-host-complete">
                 <h2>The Group Game Is Complete</h2>
                 <p className="bfg-panel-sub" style={{ marginTop: 12 }}>
-                  Your board has now made explicit decisions across the complete fundraising strategy and execution system. Final strategy generation has started in the background from those Board decisions. The meeting transcript is used when available to add context and delegation detail.
+                  Your board has now made explicit decisions about who to raise money from, where to find them, how to attract them and how to raise money from them. Final strategy generation has started from those Board decisions.
                 </p>
-                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 6} of {session?.total_rounds || 6} Review Rounds Completed</p>
+                <p style={{ marginTop: 14, fontWeight: 700, color: "#059669" }}>{session?.total_rounds || 4} of {session?.total_rounds || 4} Review Rounds Completed</p>
                 <div className="bfg-panel" style={{ marginTop: 18, textAlign: "center" }}>
                   <h3 style={{ fontSize: 17 }}>{finalState?.status === "done" ? "Your Final Fundraising Strategy Is Ready" : "Your Final Fundraising Strategy Is Being Prepared"}</h3>
                   <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
                     {finalState?.status === "done"
-                      ? "The strategy now reflects the Board's adopted decisions, the fundraising goal and deadline, the execution system and the meeting discussion where available. You can open it now and review it together before leaving the meeting."
-                      : "The final strategy is being created from the complete upward stream of organization information, Board ideas and the decisions adopted during the Group Game. You can stay here and it will surface automatically, or return to the dashboard."}
+                      ? "The strategy now reflects the Board's adopted decisions across the four fundraising areas. You can open it now and review it together before leaving the meeting."
+                      : "The final four-part strategy is being created from the organization's present fundraising context, Board ideas and the decisions adopted during the Group Game. You can stay here and it will surface automatically, or return to the dashboard."}
                   </p>
                   {finalState?.status === "done" && finalState?.strategy_id ? (
                     <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 14 }}

@@ -660,7 +660,7 @@ def create_portfolio_router(db) -> APIRouter:
             f"<p>Hi {html.escape(first_name)},</p>"
             f"<p>Thank you for helping {html.escape(organization)} build and adopt its fundraising strategy.</p>"
             f"<p>Your Board Fundraising Portfolio is now ready.</p>"
-            f"<p>Your portfolio shows how you will help build our fundraising system, how you will support fundraising directly and any commitments you made during Game Night.</p>"
+            f"<p>Your portfolio shows how you will help raise money for our organization and the commitments you made during Game Night.</p>"
             f"<p>Please review your portfolio and confirm that it accurately reflects how you want to participate.</p>"
             f"{game_button(link, 'Review My Board Fundraising Portfolio')}"
             f"<p>You can also view the fundraising strategy your board adopted during Game Night from inside your portfolio.</p>"

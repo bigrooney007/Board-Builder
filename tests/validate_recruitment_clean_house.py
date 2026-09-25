@@ -83,6 +83,6 @@ for audio_id in (
 ):
     require(voice, f'"{audio_id}"', f"Recruitment dashboard audio {audio_id}")
 require(dashboard, "DashboardAudioButton", "Recruitment dashboard audio control")
-require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
+require(audio_button, "<Volume2", "shared dashboard audio icon control")
 
 print("Recruitment clean-house contract: PASS")

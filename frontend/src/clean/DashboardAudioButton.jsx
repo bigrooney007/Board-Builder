@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Pause, Volume2, VolumeX } from "lucide-react";
+import { Pause, Volume2 } from "lucide-react";
 import "./dashboard-audio.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -76,22 +76,12 @@ export default function DashboardAudioButton({ product, narrationId, className =
     }
   };
 
-  if (!clip?.ready) {
-    return (
-      <button type="button" className={`dashboard-audio-button is-empty ${className}`} disabled
-        title="Section audio has not been generated yet" aria-label="Section audio not ready">
-        <VolumeX size={16}/><span>AUDIO COMING SOON</span>
-      </button>
-    );
-  }
-
   return (
     <button type="button" className={`dashboard-audio-button ${playing ? "is-playing" : ""} ${className}`}
       onClick={toggle} title={playing ? "Pause section audio" : "Play section audio"}
       aria-label={playing ? "Pause section audio" : "Play section audio"}
       data-testid={`dashboard-audio-${narrationId}`}>
       {playing ? <Pause size={16}/> : <Volume2 size={16}/>}
-      <span>{playing ? "PAUSE AUDIO" : "PLAY AUDIO"}</span>
     </button>
   );
 }

@@ -29,7 +29,7 @@ export default function GamePlayPage() {
   const [state, setState] = useState({
     firsts: { 1: "", 2: "", 3: "", 4: "" }, seconds: { 1: "", 2: "", 3: "", 4: "" },
     approved: { 1: [], 2: [], 3: [], 4: [] }, displays: { 1: "", 2: "", 3: "", 4: "" },
-    build: [], buildOther: "", raise: [], raiseOther: "", time: "", additional: "",
+    raise: [], raiseOther: "", time: "", additional: "",
   });
   const [clips, setClips] = useState({});
   const audioRef = useRef(null);
@@ -62,7 +62,6 @@ export default function GamePlayPage() {
         seconds: { 1: secondOf(sections[1]), 2: secondOf(sections[2]), 3: secondOf(sections[3]), 4: secondOf(sections[4]) },
         approved: { 1: sections[1].approved_entries || [], 2: sections[2].approved_entries || [], 3: sections[3].approved_entries || [], 4: sections[4].approved_entries || [] },
         displays: { 1: sections[1].approved_display || "", 2: sections[2].approved_display || "", 3: sections[3].approved_display || "", 4: sections[4].approved_display || "" },
-        build: sections[5].extras?.build || [], buildOther: sections[5].extras?.build_other || "",
         raise: sections[5].extras?.raise || [], raiseOther: sections[5].extras?.raise_other || "",
         time: sections[5].extras?.time || "", additional: sections[5].extras?.additional_idea || "",
       });
@@ -104,7 +103,7 @@ export default function GamePlayPage() {
     else if (phase === "section" && stage === "first") playClip(`a${sec}_deeper`);
     else if (phase === "lead_done") playClip("lead_free_complete");
     else if (phase === "board_done") playClip((ctx?.member?.participant_role || "board_member") === "board_member" ? "board_complete" : "");
-    else if (phase === "participation") playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx]);
+    else if (phase === "participation") playClip(["part_raise", "part_time", "part_anything"][pIdx]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sec, stage, pIdx, clips]);
 
@@ -287,15 +286,15 @@ export default function GamePlayPage() {
       try {
         await axios.post(`${API}/game/play/${token}/section/5/complete`, {
           ...EMPTY_PAYLOAD, first_move_locked: true,
-          extras: { build: state.build, build_other: state.buildOther, raise: state.raise, raise_other: state.raiseOther, time: state.time, additional_idea: state.additional || "" },
+          extras: { raise: state.raise, raise_other: state.raiseOther, time: state.time, additional_idea: state.additional || "" },
         });
         setPhase("ministrategy");
       } catch { setError("We could not save your answers. Please try again."); }
       setBusy(false);
     };
     const screens = [
-      { heading: ps.build_heading, body: options(pp.build_options, "build", "buildOther", pp.build_other_prompt, "bfg-part-build"), can: true },
-      { heading: ps.raise_heading, body: options(pp.raise_options, "raise", "raiseOther", pp.raise_other_prompt, "bfg-part-raise"), can: true },
+      { heading: ps.raise_heading, body: options(pp.raise_options, "raise", "raiseOther", pp.raise_other_prompt, "bfg-part-raise"),
+        can: state.raise.length > 0 && (!state.raise.includes("Other") || Boolean(state.raiseOther.trim())) },
       { heading: ps.time_heading, body: (
         <div style={{ marginTop: 16, textAlign: "left" }}>
           {(pp.time_options || []).map((option) => (
@@ -314,7 +313,7 @@ export default function GamePlayPage() {
     const screen = screens[pIdx];
     const last = pIdx === screens.length - 1;
     return shell(<>
-      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(["part_build", "part_raise", "part_time", "part_anything"][pIdx], true)} /></div>
+      <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => playClip(["part_raise", "part_time", "part_anything"][pIdx], true)} /></div>
       <h1 data-testid={`bfg-part-heading-${pIdx}`}>{screen.heading}</h1>
       {screen.body}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 22 }}>
@@ -349,9 +348,7 @@ export default function GamePlayPage() {
       <Section heading={ms.attract_heading} id={3} />
       <Section heading={ms.process_heading} id={4} />
       <div className="bfg-card" style={{ marginTop: 16, padding: 18, textAlign: "left" }}>
-        <h3>{ms.build_heading}</h3>
-        <p style={{ marginTop: 8 }}>{[...state.build.filter((option) => option !== "Other"), state.buildOther].filter(Boolean).join(", ") || "Not specified"}</p>
-        <h3 style={{ marginTop: 14 }}>{ms.raise_heading}</h3>
+        <h3>{ms.raise_heading}</h3>
         <p style={{ marginTop: 8 }}>{[...state.raise.filter((option) => option !== "Other"), state.raiseOther].filter(Boolean).join(", ") || "Not specified"}</p>
         <h3 style={{ marginTop: 14 }}>{ms.time_heading}</h3>
         <p style={{ marginTop: 8, fontWeight: 600 }}>{state.time || "Not specified"}</p>

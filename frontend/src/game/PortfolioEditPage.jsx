@@ -179,7 +179,7 @@ export default function PortfolioEditPage() {
           {!locked && (
             <div className="bfg-pe-add">
               <select value={addRoleKey} onChange={(event) => setAddRoleKey(event.target.value)} data-testid="bfg-pe-add-role-select">
-                <option value="">Add system-building responsibility…</option>
+                <option value="">Add fundraising responsibility…</option>
                 {catalog.system_roles.map((role) => <option key={role.role_key} value={role.role_key}>{role.label}</option>)}
                 <option value="custom">Custom responsibility…</option>
               </select>

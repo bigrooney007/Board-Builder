@@ -1,12 +1,8 @@
 .dashboard-audio-button{
-  display:inline-flex;align-items:center;gap:7px;border:1px solid #c7d2fe;border-radius:999px;
-  background:#eef2ff;color:#3730a3;padding:8px 11px;font-size:10px;font-weight:900;
-  letter-spacing:.05em;cursor:pointer;line-height:1;transition:background .15s ease,transform .15s ease;
+  display:inline-flex;align-items:center;justify-content:center;border:1px solid #c7d2fe;border-radius:999px;
+  width:36px;height:36px;background:#eef2ff;color:#3730a3;padding:0;cursor:pointer;
+  line-height:1;transition:background .15s ease,transform .15s ease;
 }
-.dashboard-audio-button:hover:not(:disabled){background:#e0e7ff;transform:translateY(-1px)}
+.dashboard-audio-button:hover{background:#e0e7ff;transform:translateY(-1px)}
 .dashboard-audio-button.is-playing{background:#312e81;color:#fff;border-color:#312e81}
-.dashboard-audio-button.is-empty{opacity:.55;cursor:not-allowed;background:#f8fafc;color:#64748b;border-color:#e2e8f0}
 .sgr-section-video-row,.sp-video-row,.bfg-dashboard-audio-row{display:flex;justify-content:flex-end;margin:0 0 8px}
-@media(max-width:640px){
-  .dashboard-audio-button span{font-size:9px}
-}

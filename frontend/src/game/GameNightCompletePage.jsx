@@ -203,7 +203,7 @@ export default function GameNightCompletePage() {
         <section className="bfg-panel" data-testid="bfg-gc-action-portfolios">
           <h2>1. Review And Approve Each Participant's Delegation</h2>
           <p className="bfg-panel-sub" style={{ marginTop: 8 }}>
-            Review the proposed system-building responsibilities and direct fundraising activities for every participant. Edit anything that does not match what was agreed, then approve it yourself.
+            Review the proposed fundraising responsibilities and activities for every participant. Edit anything that does not match what was agreed, then approve it yourself.
           </p>
           <p style={{ marginTop: 12, fontWeight: 700 }}>
             {overview.recipients.filter((row) => row.delegation?.founder_approved).length} of {overview.total_recipients} Delegations Founder-Approved

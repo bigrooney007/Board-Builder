@@ -1,40 +1,24 @@
 import "./game.css";
 
 export const STRATEGY_SECTIONS = [
-  { key: "executive_summary", title: "Executive Summary" },
-  { key: "fundraising_goal", title: "Our Fundraising Goal" },
-  { key: "fundraising_audiences", title: "Who We Will Raise Money From", priorityLabel: "Priority Fundraising Audiences", additionalLabel: "Additional Board Ideas" },
+  { key: "fundraising_audiences", title: "Who We Will Raise Money From", v2: "audiences" },
   { key: "where_to_find", title: "Where We Will Find Them", priorityLabel: "Priority Places And Channels", additionalLabel: "Additional Places And Channels To Consider" },
   { key: "attraction", title: "How We Will Attract Their Attention", priorityLabel: "Priority Attraction Activities", additionalLabel: "Additional Ideas To Consider" },
-  { key: "fundraising_process", title: "Our Fundraising Process", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
-  { key: "technology", title: "Technology We Need To Execute", priorityLabel: "Priority Technology", additionalLabel: "Additional Technology To Consider" },
-  { key: "fundraising_team", title: "The Fundraising Team We Need", priorityLabel: "Priority Team Roles", additionalLabel: "Additional Roles To Consider" },
-  { key: "materials", title: "Fundraising Materials We Need", priorityLabel: "Priority Materials", additionalLabel: "Additional Materials To Consider" },
-  { key: "execution_budget", title: "Execution Budget", v2: "budget" },
-  { key: "execution_timeline", title: "Execution Timeline", stages: [["set_up", "SET UP"], ["launch", "LAUNCH"], ["execute", "EXECUTE"], ["review_and_improve", "REVIEW AND IMPROVE"]] },
-  { key: "additional_board_ideas", title: "Additional Ideas From Your Board" },
-  { key: "next_step", title: "Next Step" },
+  { key: "fundraising_process", title: "How We Will Raise Money From Them", v2: "process" },
 ];
 
-export const V2_STRATEGY_SECTIONS = [
-  { key: "executive_summary", title: "Executive Summary" },
-  { key: "fundraising_goal", title: "Fundraising Goal" },
-  { key: "fundraising_audiences", title: "Ideal Funding Audiences", v2: "audiences" },
-  { key: "where_to_find", title: "Where To Find Potential Funders", priorityLabel: "Priority Places And Channels", additionalLabel: "Additional Places And Channels To Consider" },
-  { key: "attraction", title: "Attraction Strategy", priorityLabel: "Priority Attraction Activities", additionalLabel: "Additional Ideas To Consider" },
-  { key: "fundraising_process", title: "Fundraising Process", v2: "process" },
-  { key: "board_fundraising_process", title: "Board Fundraising Process", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
-  { key: "team_roles", title: "Team, Roles & Responsibilities", v2: "team" },
-  { key: "execution_resources", title: "Technology, Materials, Resources & Content", v2: "resources" },
-  { key: "execution_budget", title: "Lean Execution Budget", v2: "budget" },
-  { key: "execution_timeline", title: "Execution Timeline", stages: [["phase_1_build_the_system", "PHASE 1: BUILD THE SYSTEM"], ["phase_2_build_know_like_trust", "PHASE 2: BUILD KNOW, LIKE AND TRUST"], ["phase_3_ask_campaign", "PHASE 3: ASK CAMPAIGN"], ["follow_up_and_steward", "FOLLOW UP AND STEWARD"], ["business_timeline", "BUSINESS TIMELINE"], ["grantor_timeline", "GRANTOR TIMELINE"]] },
-  { key: "board_priorities", title: "Board Priorities", v2: "grouped" },
-  { key: "additional_board_ideas", title: "Additional Board Ideas", v2: "grouped" },
-  { key: "next_step", title: "Next Step" },
+export const V2_STRATEGY_SECTIONS = STRATEGY_SECTIONS;
+
+const LEGACY_CORE_STRATEGY_SECTIONS = [
+  { key: "fundraising_audiences", title: "Who We Will Raise Money From", priorityLabel: "Priority Fundraising Audiences", additionalLabel: "Additional Audiences To Consider" },
+  { key: "where_to_find", title: "Where We Will Find Them", priorityLabel: "Priority Places And Channels", additionalLabel: "Additional Places And Channels To Consider" },
+  { key: "attraction", title: "How We Will Attract Their Attention", priorityLabel: "Priority Attraction Activities", additionalLabel: "Additional Ideas To Consider" },
+  { key: "fundraising_process", title: "How We Will Raise Money From Them", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
 ];
 
-export const getStrategySections = (strategy) =>
-  (strategy?.schema_version || 1) >= 2 ? V2_STRATEGY_SECTIONS : STRATEGY_SECTIONS;
+export const getStrategySections = (strategy) => Number(strategy?.schema_version || 1) >= 2
+  ? STRATEGY_SECTIONS
+  : LEGACY_CORE_STRATEGY_SECTIONS;
 
 export const MODE_LABELS = { working: "Working Strategy", board_prioritized: "Board-Prioritized Draft", final: "Final Board Fundraising Strategy" };
 

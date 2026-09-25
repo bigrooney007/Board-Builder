@@ -24,6 +24,12 @@ V2_SECTIONS = [
     ("board_priorities", "Board Priorities"), ("additional_board_ideas", "Additional Board Ideas"),
     ("next_step", "Next Step"),
 ]
+V3_SECTIONS = [
+    ("fundraising_audiences", "Who We Will Raise Money From"),
+    ("where_to_find", "Where We Will Find Them"),
+    ("attraction", "How We Will Attract Their Attention"),
+    ("fundraising_process", "How We Will Raise Money From Them"),
+]
 V1_STAGES = {
     "fundraising_process": [("know", "KNOW"), ("like", "LIKE"), ("trust", "TRUST"), ("ask", "ASK"),
                             ("follow_up", "FOLLOW UP"), ("steward", "STEWARD")],
@@ -201,7 +207,7 @@ class _StrategyDoc(BaseDocTemplate):
 
 def build_strategy_pdf(strategy: dict, org_name: str) -> bytes:
     schema_version = int(strategy.get("schema_version") or 1)
-    sections = V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
+    sections = V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
     data = strategy.get("data") or {}
     edits = strategy.get("section_edits") or {}
     prepared_by = strategy.get("prepared_by") or (

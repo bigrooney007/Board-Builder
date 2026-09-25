@@ -195,7 +195,6 @@ const PostGameComplete = ({ token, identity, organizationName }) => {
         </p>
         <p style={{ marginTop: 12 }}>Your portfolio will combine:</p>
         <ul style={{ marginTop: 8, paddingLeft: 22 }}>
-          <li>How you said you want to help build the fundraising system</li>
           <li>How you said you want to help raise money</li>
           <li>Commitments you made during Game Night</li>
           <li>Any final responsibilities agreed with the organization</li>

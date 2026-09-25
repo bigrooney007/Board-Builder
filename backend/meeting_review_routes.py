@@ -18,18 +18,10 @@ from strategy_routes import OUTPUT_SCHEMA, EDITABLE_SECTION_KEYS
 GAME_ENTITLEMENT = "board_fundraising_game"
 
 STRATEGY_SECTIONS = [
-    ("executive_summary", "Executive Summary"),
-    ("fundraising_goal", "Our Fundraising Goal"),
     ("fundraising_audiences", "Who We Will Raise Money From"),
     ("where_to_find", "Where We Will Find Them"),
     ("attraction", "How We Will Attract Their Attention"),
-    ("fundraising_process", "Our Fundraising Process"),
-    ("technology", "Technology We Need To Execute"),
-    ("fundraising_team", "The Fundraising Team We Need"),
-    ("materials", "Fundraising Materials We Need"),
-    ("execution_timeline", "Execution Timeline"),
-    ("additional_board_ideas", "Additional Ideas From Your Board"),
-    ("next_step", "Next Step"),
+    ("fundraising_process", "How We Will Raise Money From Them"),
 ]
 SECTION_KEYS = [key for key, _ in STRATEGY_SECTIONS]
 SECTION_TITLES = dict(STRATEGY_SECTIONS)
@@ -86,8 +78,7 @@ Keep the same structured fundraising strategy format as the Board-Prioritised Dr
 Write clearly, directly and professionally.
 Return only the required structured JSON."""
 
-FINAL_OUTPUT_SCHEMA = {**OUTPUT_SCHEMA,
-                      "next_step": "string — exactly: 'Your board has reviewed this strategy and it is ready for adoption. Once adopted, the next step is turning the strategy into clear roles and resources for each board member.'"}
+FINAL_OUTPUT_SCHEMA = OUTPUT_SCHEMA
 
 
 def now_iso() -> str:
@@ -600,13 +591,12 @@ def create_meeting_review_router(db) -> APIRouter:
             )
             response = await chat.send_message(UserMessage(text=prompt))
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
-            data = parse_json_response(text)
-            for key in EDITABLE_SECTION_KEYS:
-                data.setdefault(key, {} if key not in {"executive_summary", "next_step"} else "")
+            generated = parse_json_response(text)
+            data = {key: generated.get(key, {}) for key in EDITABLE_SECTION_KEYS}
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": "final"}) + 1
             record = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": "final",
-                "status": "final_draft", "version": version,
+                "status": "final_draft", "version": version, "schema_version": 3,
                 "share_token": secrets.token_urlsafe(24),
                 "data": data, "section_edits": {},
                 "group_session_id": review.get("group_session_id", ""),

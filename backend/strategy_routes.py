@@ -32,7 +32,7 @@ When strategy_mode is board_prioritized, Board Priorities represent the stronges
 When strategy_mode is working, create the best working strategy possible from all information currently available. Do not describe any idea as board-approved, board-prioritised or adopted unless the supplied data explicitly establishes that status.
 Do not invent facts, funders, organisations, relationships, commitments, results or financial information.
 Where strategic information is missing, you may provide a concise recommendation, but clearly identify it as a recommendation rather than something supplied by the organisation or board.
-The board supplies only four human strategic decisions: the exact type of people, businesses and grantors meant to fund the mission, where to consistently find them, how to attract their attention, and the exact process to raise money. YOU must turn those decisions into the complete execution system: fundraising team, technology, materials, resources, execution budget and execution timeline — grounded in the organisation's current reality (current donors, business supporters, grantors, team, technology, materials and budget) and the stated participation choices and time commitments of the people involved. Mark every derived item that supports the human decisions with "source": "recommendation" where that field exists.
+The finished strategy has exactly four parts: who the organisation will raise money from, where it will find them, how it will attract them and how it will raise money from them. Do not add team, technology, materials, resources, budget, timeline, delegation or execution-system sections. Use the organisation's present donors, business supporters, grantors and present fundraising methods as valid strategic options. Preserve what is useful and strengthen it only where the supplied ideas support doing so.
 Write for nonprofit leaders and board members. Use clear, direct, execution-ready language.
 Return only the required structured strategy output."""
 
@@ -48,32 +48,23 @@ GENERATION_RULES = """RULES:
 - In working mode do not label any idea as a board priority; in board_prioritized mode keep priorities and additional ideas clearly separate."""
 
 OUTPUT_SCHEMA = {
-    "executive_summary": "string — concise: the organisation, the fundraising goal, the deadline, what the money will support, the overall fundraising direction and the primary fundraising priorities",
-    "fundraising_goal": {"amount": "string — exactly as supplied", "currency": "string", "deadline": "string", "purpose": "string",
-                         "summary": "string — concise explanation of what the organisation is working to accomplish"},
-    "fundraising_audiences": {"priorities": [{"title": "Audience Name", "explanation": "Why They Are A Good Fit — grounded in supplied information", "focus": "What We Should Focus On — concise strategic direction", "source": "board_priority | board_idea | recommendation"}], "additional_ideas": ["string"]},
-    "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "How it connects the chosen audiences to the organisation — practical", "focus": "string", "source": "string"}], "additional_ideas": ["string — Additional Places And Channels To Consider"]},
-    "attraction": {"priorities": [{"title": "Attraction activity", "explanation": "How it creates visibility, relevance and interest", "focus": "string", "source": "string"}], "additional_ideas": ["string — Additional Ideas To Consider"]},
-    "fundraising_process": {"know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
-    "technology": {"priorities": [{"title": "Technology category (specific products only if the organisation or board named them)", "explanation": "What it is needed for", "focus": "How it supports execution", "source": "string"}], "additional_ideas": ["string"]},
-    "fundraising_team": {"priorities": [{"title": "Role", "explanation": "Primary Responsibility", "focus": "Why This Role Matters", "source": "string"}], "additional_ideas": ["string — Additional Roles To Consider"]},
-    "materials": {"priorities": [{"title": "Material", "explanation": "What It Will Be Used For", "focus": "Who It Supports", "source": "string"}], "additional_ideas": ["string — Additional Materials To Consider"]},
-    "execution_budget": {
-        "required_now": [{"item": "string — only something actually needed to begin executing this strategy", "why_needed": "string", "lowest_cost_approach": "string — first use existing capacity, existing subscriptions, free/low-cost tools, templates, public research or AI-assisted drafting where appropriate", "cost": "exact supplied amount or exactly 'PRICE TO CONFIRM'"}],
-        "later_or_optional": [{"item": "string", "why_later": "string", "lowest_cost_approach": "string", "cost": "exact supplied amount or exactly 'PRICE TO CONFIRM'"}],
-        "cost_reduction_options": ["string — practical ways to execute the plan without unnecessary new spending"],
-        "budget_summary": "string — concise organization-specific explanation of the smallest realistic budget approach supported by the supplied information; never invent a total"
+    "fundraising_audiences": {
+        "individuals": [{"title": "Audience profile", "explanation": "Why they have a reason to give", "focus": "What the organisation should focus on"}],
+        "businesses": [{"title": "Business audience profile", "explanation": "Why they have a reason to support", "focus": "What the organisation should focus on"}],
+        "grantors": [{"title": "Grantor profile", "explanation": "Why the mission and funding focus align", "focus": "What the organisation should focus on"}],
     },
-    "execution_timeline": {"set_up": ["string — use relative periods such as Weeks 1-2 / Month 2 unless exact dates are safely calculable from the deadline"], "launch": ["string"], "execute": ["string"], "review_and_improve": ["string"]},
-    "additional_board_ideas": {"fundraising_audiences": ["string"], "where_to_find": ["string"], "attraction": ["string"], "fundraising_process": ["string"], "technology": ["string"], "fundraising_team": ["string"], "materials": ["string"], "execution_timeline": ["string"]},
-    "next_step": "string — for working mode use exactly: 'This is a working strategy created from the information currently available. Continue collecting board input and update the strategy as your fundraising planning develops.' For board_prioritized mode use exactly: 'Your board has prioritised the ideas behind this strategy. The next step is to review the strategy together, make any final changes and adopt it as your organisation's working fundraising plan.'",
+    "where_to_find": {"priorities": [{"title": "Place / channel / network", "explanation": "How it connects the chosen audiences to the organisation", "focus": "The repeatable way the organisation will use it"}], "additional_ideas": ["string"]},
+    "attraction": {"priorities": [{"title": "Attraction idea", "explanation": "Why it will matter to the chosen audience", "focus": "How the organisation will use it"}], "additional_ideas": ["string"]},
+    "fundraising_process": {
+        "individuals": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "businesses": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+        "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
+    },
 }
 
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
-EDITABLE_SECTION_KEYS = ["executive_summary", "fundraising_goal", "fundraising_audiences", "where_to_find", "attraction",
-                         "fundraising_process", "technology", "fundraising_team", "materials", "execution_timeline",
-                         "additional_board_ideas", "next_step", "board_fundraising_process", "team_roles",
-                         "execution_resources", "execution_budget", "board_priorities"]
+CORE_STRATEGY_KEYS = ["fundraising_audiences", "where_to_find", "attraction", "fundraising_process"]
+EDITABLE_SECTION_KEYS = CORE_STRATEGY_KEYS
 
 
 def now_iso() -> str:
@@ -177,10 +168,8 @@ def create_strategy_router(db) -> APIRouter:
         choices = []
         for row in rows:
             extras = row.get("extras") or {}
-            if extras.get("build") or extras.get("raise") or extras.get("time"):
+            if extras.get("raise") or extras.get("time"):
                 choices.append({
-                    "wants_to_help_build_and_manage_the_fundraising_system": extras.get("build", []),
-                    "build_other": extras.get("build_other", ""),
                     "wants_to_help_raise_money": extras.get("raise", []),
                     "raise_other": extras.get("raise_other", ""),
                     "monthly_time_commitment": extras.get("time", ""),
@@ -193,6 +182,14 @@ def create_strategy_router(db) -> APIRouter:
         organization = profile.get("organization") or {}
         goal = profile.get("goal") or {}
         board_ideas = await board_ideas_by_area(user_id)
+        current_reality = (situation.get("sections") or {}).get("current_reality") or {}
+        current_funder_keys = {
+            "current_individual_donor_profile", "current_individual_donor_motivation", "current_individual_donor_process",
+            "current_business_profile", "current_business_support", "current_business_process",
+            "current_grantor_profile", "current_grantor_support", "current_grantor_process",
+            "current_individual_donors", "current_businesses", "current_grantors",
+            "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
+        }
         context = {
             "strategy_mode": mode,
             "organisation_profile": organization,
@@ -201,7 +198,7 @@ def create_strategy_router(db) -> APIRouter:
                 "currency": "USD", "deadline": goal.get("deadline", ""),
                 "purpose": goal.get("purpose", ""), "why_it_matters_now": goal.get("why_now", ""),
             },
-            "current_fundraising_situation": situation.get("sections", {}),
+            "current_funder_context": {key: value for key, value in current_reality.items() if key in current_funder_keys},
             "board_member_submitted_ideas_by_strategy_area": board_ideas,
             "participation_choices_of_people_playing_the_game": await participation_choices(user_id),
         }
@@ -237,15 +234,14 @@ def create_strategy_router(db) -> APIRouter:
             )
             response = await chat.send_message(UserMessage(text=prompt))
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
-            data = parse_json_response(text)
-            for key in EDITABLE_SECTION_KEYS:
-                data.setdefault(key, {} if key not in {"executive_summary", "next_step"} else "")
+            generated = parse_json_response(text)
+            data = {key: generated.get(key, {}) for key in CORE_STRATEGY_KEYS}
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": mode}) + 1
             member_doc = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1}) or {}
             prepared_by = f"{member_doc.get('first_name', '')} {member_doc.get('last_name', '')}".strip()
             strategy = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": mode,
-                "status": MODES[mode], "version": version, "schema_version": 1,
+                "status": MODES[mode], "version": version, "schema_version": 3,
                 "prepared_by": prepared_by,
                 "share_token": secrets.token_urlsafe(24),
                 "data": data, "section_edits": {},

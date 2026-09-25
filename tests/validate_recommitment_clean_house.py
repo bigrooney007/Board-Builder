@@ -44,7 +44,7 @@ require(dashboard, 'SupportBox productKey="reactivation_self_guided"', "persiste
 require(dashboard, "DashboardAudioButton", "per-section Recommitment audio control")
 for audio_id in ("dash_rec_questions","dash_rec_forms","dash_rec_responses","dash_rec_decisions"):
     require(voice, f'"{audio_id}"', f"Recommitment dashboard audio {audio_id}")
-require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
+require(audio_button, "<Volume2", "shared dashboard audio icon control")
 
 for key in ("mission", "why_recommit", "board_help_accomplish", "need_by"):
     require(questions, f'key: "{key}"', f"founder setup question {key}")

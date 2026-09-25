@@ -122,7 +122,15 @@ def create_game_night_router(db) -> APIRouter:
     async def merged_v3() -> dict:
         doc = await db.marketing_settings.find_one({"key": "game_v3_content"}, {"_id": 0}) or {}
         stored = doc.get("content") if isinstance(doc.get("content"), dict) else {}
-        return {**GAME_V3, **{key: value for key, value in stored.items() if key in GAME_V3}}
+        structural_keys = {
+            "current_reality", "participation", "guided", "mini_strategy",
+            "primary_review", "group_complete", "board_completion",
+        }
+        editable = {
+            key: value for key, value in stored.items()
+            if key in GAME_V3 and key not in structural_keys
+        }
+        return {**GAME_V3, **editable}
 
     async def member_row(record: dict) -> dict:
         total = record.get("total_sections") or TOTAL_SECTIONS

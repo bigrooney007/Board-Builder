@@ -20,7 +20,7 @@ for version, label in [
     ('RECRUITMENT_FIXTURE_VERSION = "v8"', "Recruitment fixture version"),
     ('STRATEGIC_FIXTURE_VERSION = "v7"', "Strategic Planning fixture version"),
     ('RECOMMITMENT_FIXTURE_VERSION = "v9"', "Recommitment fixture version"),
-    ('FUNDRAISING_FIXTURE_VERSION = "v6"', "Fundraising fixture version"),
+    ('FUNDRAISING_FIXTURE_VERSION = "v7"', "Fundraising fixture version"),
 ]:
     require(preview, version, label)
 
@@ -65,9 +65,9 @@ forbid(preview, "I am not sure yet. I need more information or would like to dis
 # Fundraising Game must be testable after the individual games, meeting, Group Game and execution.
 require(preview, '"fine_tuning": {"completed": True}', "completed founder Fundraising Game")
 require(preview, '"funding_deadline": "2027-06-30"', "funding deadline")
-require(preview, '"status": "completed", "current_round": 9', "completed nine-screen Group Game")
+require(preview, '"status": "completed", "current_round": 4, "game_version": "four-area-v1"', "completed four-round Group Game")
 require(preview, "fundraising_meeting_transcript()", "Board Fundraising meeting transcript")
-require(preview, '"schema_version": 2', "current Fundraising Strategy schema")
+require(preview, '"schema_version": 3', "current Fundraising Strategy schema")
 require(preview, '"status": "adopted"', "adopted Fundraising Strategy")
 require(preview, '"status": "materials_ready"', "approved Board Fundraising Portfolios")
 require(preview, "db.execution_toolkits", "execution toolkit collection")

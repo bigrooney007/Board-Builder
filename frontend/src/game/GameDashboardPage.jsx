@@ -134,7 +134,7 @@ const DelegationReviewStage = ({ ready }) => {
           <div className="bfg-delegation-row" key={row.portfolio_id} data-testid={`bfg-delegation-${row.portfolio_id}`}>
             <div>
               <strong>{row.member_name}</strong>
-              <p>{row.system_count} system-building responsibilit{row.system_count === 1 ? "y" : "ies"} · {row.direct_count} direct fundraising activit{row.direct_count === 1 ? "y" : "ies"}</p>
+              <p>{row.system_count + row.direct_count} fundraising responsibilit{row.system_count + row.direct_count === 1 ? "y" : "ies"}</p>
             </div>
             <span className={approved ? "bfg-delegation-approved" : "bfg-delegation-review-needed"}>
               {approved ? "FOUNDER APPROVED" : "REVIEW REQUIRED"}
@@ -279,7 +279,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={1}
           title="PLAY THE BOARD FUNDRAISING GAME"
-          summary="Answer the strategy questions, document your current donors, sponsors, grantors, team, technology, materials and budget, then choose how you want to participate."
+          summary="Answer the four strategy questions, document your present donors, business supporters and grantors, then choose how you want to help raise money."
           status={founderGameComplete ? "Complete" : "Start Here"}
           defaultOpen
           testId="bfg-dashboard-section-founder-game"
@@ -287,7 +287,7 @@ export default function GameDashboardPage() {
         >
           <div className="bfg-clean-stage">
             <h3>Your Thinking Comes First</h3>
-            <p className="bfg-panel-sub">Answer each strategic question in your own words, then review your current donors, sponsors, grantors, team, technology, materials, budget and participation. The platform makes your thinking actionable without replacing it.</p>
+            <p className="bfg-panel-sub">Answer who to raise money from, where to find them, how to attract them and how to raise money from them. The lead user also records the organization's present donors, business supporters and grantors before choosing how to participate.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>

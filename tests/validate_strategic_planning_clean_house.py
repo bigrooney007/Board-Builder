@@ -51,7 +51,7 @@ require(dashboard, 'audioKey="live-session"', "live-session section audio")
 require(dashboard, 'audioKey="plan-execution"', "plan/execution section audio")
 for audio_id in ("dash_sp_organization","dash_sp_meeting","dash_sp_founder_form","dash_sp_board_forms","dash_sp_facilitation","dash_sp_session","dash_sp_plan"):
     require(voice, f'"{audio_id}"', f"Strategic Planning dashboard audio {audio_id}")
-require(audio_button, "PLAY AUDIO", "shared dashboard audio play control")
+require(audio_button, "<Volume2", "shared dashboard audio icon control")
 require(dashboard, "SUPPORT THROUGHOUT THE PROCESS", "persistent support")
 
 for key in (
