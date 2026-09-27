@@ -100,6 +100,36 @@ function RecruitmentQuestionAudioAdmin() {
   );
 }
 
+function RecruitmentLaunchVideoAdmin() {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    client.get("/admin/platform/recruitment-section-videos")
+      .then(({ data }) => { setUrl(data.videos?.find((video) => video.key === "launch")?.url || ""); setLoaded(true); })
+      .catch(() => setMessage("Could not load the recruitment launch video. Refresh to try again."));
+  }, []);
+  const save = async () => {
+    setBusy(true); setMessage("");
+    try {
+      await client.put("/admin/platform/recruitment-section-videos/launch", { url });
+      window.dispatchEvent(new Event("recruitment-videos-changed"));
+      setMessage("Saved. The Launch Your Campaign section now uses this video.");
+    } catch (error) { setMessage(error.response?.data?.detail || "Could not save the launch video."); }
+    setBusy(false);
+  };
+  return <section className="member-card" data-testid="admin-recruitment-launch-video">
+    <h2>Launch Your Recruitment Campaign In The Next 30 Minutes</h2>
+    <p>This video appears in Launch Your Campaign on the client Recruitment dashboard. Replace the link here whenever you want to update it.</p>
+    <label className="admin-notes">YouTube URL or Video ID
+      <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://youtu.be/..." data-testid="recruitment-launch-video-url" />
+    </label>
+    <button className="button button-small" disabled={busy || !loaded} onClick={save} data-testid="save-recruitment-launch-video"><Save size={14} /> {busy ? "SAVING…" : "SAVE CAMPAIGN VIDEO"}</button>
+    {message && <p className="admin-message" role="status">{message}</p>}
+  </section>;
+}
+
 export function PlatformVideosSection() {
   const [videos, setVideos] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -141,7 +171,7 @@ export function PlatformVideosSection() {
       <div className="admin-funnel-numbers-head">
         <div>
           <h2>The 8 Core Videos Within The Platform</h2>
-          <p>Keep only the four public demonstration videos and four post-purchase onboarding videos here. Dashboard teaching is now handled by contextual audio below.</p>
+          <p>Manage the four demonstration videos and four onboarding videos here. The Recruitment campaign-launch video and contextual audio are below.</p>
         </div>
         <button className="button button-back button-small" onClick={load}><RefreshCw size={15} /> Refresh</button>
       </div>
@@ -162,6 +192,7 @@ export function PlatformVideosSection() {
           </article>
         ))}
       </div>
+      <RecruitmentLaunchVideoAdmin />
       <DashboardSectionAudioAdmin />
       <RecruitmentQuestionAudioAdmin />
     </section>

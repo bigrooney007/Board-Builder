@@ -10,11 +10,11 @@ import resend
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, TypeAdapter, ValidationError
 
 from ai_service import extract_cv_text
 from opportunity_emails import send_application_receipt
-from workspace_service import CORE_QUESTIONS, get_current_material, new_id, now_iso
+from workspace_service import CORE_QUESTIONS, LEGACY_APPLICATION_FIELDS, get_current_material, new_id, now_iso
 from opportunity_emails import send_signature_confirmations
 from reactivation_routes import email_html
 
@@ -155,20 +155,31 @@ def create_public_opportunity_router(db) -> APIRouter:
         return view
 
     @router.post("/board-opportunities/{slug}/apply", status_code=201)
-    async def public_apply(slug: str, background: BackgroundTasks, payload: str = Form(...), cv: UploadFile = File(...)):
+    async def public_apply(slug: str, background: BackgroundTasks, payload: str = Form(...), cv: Optional[UploadFile] = File(None)):
         opportunity = await published_opportunity(slug, allow_closed=False)
         try:
             answers = json.loads(payload)
         except json.JSONDecodeError as exc:
             raise HTTPException(status_code=422, detail="Invalid application payload") from exc
-        missing = [q["label"] for q in CORE_QUESTIONS if q["required"] and not str(answers.get(q["id"], "")).strip()]
+        if not isinstance(answers, dict):
+            raise HTTPException(status_code=422, detail="Invalid application payload")
+        # Accept the previous location fields for applications already open during deployment.
+        if not answers.get("location"):
+            answers["location"] = ", ".join(str(answers.get(key) or "").strip() for key in ("city", "state_region", "country") if answers.get(key))
+        missing = [q["label"] for q in CORE_QUESTIONS if q["required"] and
+                   (not isinstance(answers.get(q["id"]), str) or not answers[q["id"]].strip())]
         if missing:
             raise HTTPException(status_code=422, detail=f"Required answers missing: {', '.join(missing)}")
-        snapshot = {q["id"]: answers.get(q["id"], "") for q in CORE_QUESTIONS[:9]}
+        try:
+            answers["email"] = str(TypeAdapter(EmailStr).validate_python(answers["email"])).strip().lower()
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail="Enter a valid email address") from exc
+        snapshot = {key: answers.get(key, "") for key in ("full_name", "email", "location", "profession", "phone", "city", "state_region", "country", "employer", "linkedin")}
         snapshot["full_name"] = answers.get("full_name", "")
         custom_answers = {q["id"]: answers.get(q["id"], "") for q in opportunity.get("custom_questions", [])}
         core_answers = {q["id"]: answers.get(q["id"], "") for q in CORE_QUESTIONS}
-        cv_data = await store_cv(cv, "pending")
+        core_answers.update({key: answers[key] for key in LEGACY_APPLICATION_FIELDS if key in answers})
+        cv_data = await store_cv(cv, "pending") if cv and cv.filename else {}
         application = await create_application(opportunity, "Public Application", snapshot,
                                                {**core_answers, "custom": custom_answers}, cv_data, background)
         return {"application_id": application["application_id"], "status": "Applied",
@@ -262,7 +273,7 @@ def create_public_opportunity_router(db) -> APIRouter:
         except json.JSONDecodeError as exc:
             raise HTTPException(status_code=422, detail="Invalid payload") from exc
         answers_input = body.get("answers", {})
-        snapshot = {**applicant_snapshot(applicant), **{k: v for k, v in answers_input.items() if k in {"full_name", "email", "phone", "city", "state_region", "country", "profession", "employer", "linkedin"} and str(v).strip()}}
+        snapshot = {**applicant_snapshot(applicant), **{k: v for k, v in answers_input.items() if k in {"full_name", "email", "phone", "location", "city", "state_region", "country", "profession", "employer", "linkedin"} and str(v).strip()}}
         answers = {**applicant_answers(applicant), **{k: v for k, v in answers_input.items() if str(v).strip()}}
         if cv and cv.filename:
             cv_data = await store_cv(cv, "pending")

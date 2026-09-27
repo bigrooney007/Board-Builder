@@ -218,7 +218,7 @@ export default function BoardRecruitmentPage() {
             </Section>
 
             <Section number={7} title="REFERENCE CHECKS"
-              summary="Candidates appear here after their interview guide is generated. Run the existing automated reference workflow."
+              summary="Candidates appear here after their interview guide is generated. Prepare emails to request and confirm their references."
               testId="br-section-references" audioKey="references">
               <AutomatedReferenceChecks/>
             </Section>

@@ -8,13 +8,16 @@ def script_hash(text: str) -> str:
     return hashlib.sha256(str(text or "").strip().encode("utf-8")).hexdigest()
 
 
-def resolve_script(default_text: str, stored: dict, force_revision: bool = False) -> dict:
+def resolve_script(default_text: str, stored: dict, force_revision: bool = False, superseded_hashes=()) -> dict:
     """Adopt revised defaults while preserving deliberate admin edits (version 2+)."""
     stored = stored or {}
     stored_text = str(stored.get("text") or "").strip()
     stored_version = max(1, int(stored.get("script_version") or 1))
     stored_revision = str(stored.get("source_revision") or "")
-    if stored_text and (stored_revision == SOURCE_REVISION or stored_version > 1):
+    if stored_text and script_hash(stored_text) in superseded_hashes:
+        text = str(default_text or "").strip()
+        version = stored_version + 1
+    elif stored_text and (stored_revision == SOURCE_REVISION or stored_version > 1):
         text = stored_text
         version = stored_version
     else:

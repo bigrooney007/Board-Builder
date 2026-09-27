@@ -141,7 +141,7 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
         from workspace_service import save_generation
         existing_material = await db.generated_materials.find_one(
             {"user_id": member["user_id"], "type": "powerhouse_board_blueprint", "application_id": ""},
-            {"_id": 0, "versions": 1, "current_version": 1},
+            {"_id": 0, "versions": 1, "current_version": 1, "status": 1},
         )
         current_structured = None
         if existing_material:
@@ -150,7 +150,8 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
                  if version.get("version") == existing_material.get("current_version")),
                 None,
             )
-        if json.dumps(current_structured, sort_keys=True, default=str) != json.dumps(result, sort_keys=True, default=str):
+        # Reopening a cached assessment must preserve the founder's edited/approved profiles.
+        if (not existing_material or existing_material.get("status") == "Needs Review") and json.dumps(current_structured, sort_keys=True, default=str) != json.dumps(result, sort_keys=True, default=str):
             await save_generation(
                 db,
                 member["user_id"],
@@ -175,7 +176,7 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
     }
     existing = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
     data = existing.get("data") or {}
-    merged = {**incoming, **{key: value for key, value in data.items() if value not in (None, "", [])}}
+    merged = {**data, **{key: value for key, value in incoming.items() if value not in (None, "", [])}}
     await db.recruitment_profiles.update_one(
         {"user_id": member["user_id"]},
         {"$set": {"data": merged, "confirmed": True, "recruitment_profile_confirmed": True,
@@ -333,7 +334,9 @@ def create_recruit_free_router(db) -> APIRouter:
             "new_members_count": exact_count if exact_count else "Not sure",
         }
         instructions = (
-            "Act as a nonprofit board-building strategist. Use every supplied answer together rather than treating each answer independently. "
+            "Apply Rooney's board-building method to this founder's own information. Read all six answers together. "
+            "Find the mix of people who can build the kind of Board this founder wants at this stage and provide the support they actually asked for. "
+            "Preserve the founder's priorities and reasoning. Explain each recommendation in words they will recognize from their own situation. "
             "Begin with the mission and desired board model, then assess what the present board already contributes, what the founder believes is missing, "
             "the areas where the organization needs support, and the value proposition for joining. Recommend a balanced team, not a list of generic job titles. "
             "Professional or fiduciary capability can matter, including fundraising, partnerships, marketing, finance/accounting, legal, technology, operations, "

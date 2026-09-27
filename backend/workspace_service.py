@@ -9,24 +9,14 @@ from ai_service import GENERATION_TYPES, structured_to_display
 
 CORE_QUESTIONS = [
     {"id": "full_name", "label": "Full name", "type": "text", "required": True},
-    {"id": "email", "label": "Email", "type": "email", "required": True},
-    {"id": "phone", "label": "Phone", "type": "text", "required": True},
-    {"id": "city", "label": "City", "type": "text", "required": True},
-    {"id": "state_region", "label": "State/region", "type": "text", "required": True},
-    {"id": "country", "label": "Country", "type": "text", "required": True},
-    {"id": "profession", "label": "Current profession/job title", "type": "text", "required": True},
-    {"id": "employer", "label": "Current organization/employer", "type": "text", "required": False},
-    {"id": "linkedin", "label": "LinkedIn profile", "type": "text", "required": False},
-    {"id": "board_experience", "label": "Previous nonprofit board experience", "type": "textarea", "required": True},
-    {"id": "why_interested", "label": "Why are you interested in joining this board?", "type": "textarea", "required": True},
-    {"id": "skills_experience", "label": "Which skills and professional experience would you bring?", "type": "textarea", "required": True},
-    {"id": "fundraising_support", "label": "Which fundraising activities are you willing to support?", "type": "textarea", "required": True},
-    {"id": "relationships", "label": "Which professional, business or community relationships could help advance the mission?", "type": "textarea", "required": True},
-    {"id": "monthly_time", "label": "How much time can you commit each month?", "type": "text", "required": True},
-    {"id": "attend_meetings", "label": "Are you willing to attend board meetings consistently?", "type": "yes_no", "required": True},
-    {"id": "accept_responsibility", "label": "Are you willing to accept responsibility for agreed assignments?", "type": "yes_no", "required": True},
-    {"id": "causes", "label": "What causes or communities are you especially passionate about?", "type": "textarea", "required": True},
+    {"id": "email", "label": "Email address", "type": "email", "required": True},
+    {"id": "location", "label": "Where are you based? (City and country)", "type": "text", "required": True},
+    {"id": "profession", "label": "What do you presently do?", "type": "text", "required": True},
+    {"id": "why_interested", "label": "How do you see yourself supporting this organization?", "type": "textarea", "required": True},
 ]
+
+# Preserve answers from older application pages still open during deployment.
+LEGACY_APPLICATION_FIELDS = {"phone", "city", "state_region", "country", "employer", "linkedin", "board_experience", "skills_experience", "fundraising_support", "relationships", "monthly_time", "attend_meetings", "accept_responsibility", "causes"}
 
 APPLICATION_STATUSES = ["Applied", "Reviewing", "Interview Invited", "Not Moving to Interview", "Interview", "Moving Forward", "Not Moving Forward", "Conditional Appointment", "Selected", "Not Selected", "Withdrawn"]
 OPPORTUNITY_STATUSES = ["Draft", "Ready to Publish", "Published", "Closed"]
@@ -222,6 +212,41 @@ async def get_current_material(db, user_id: str, generation_type: str, applicati
     return {"material": material, "current": current}
 
 
+def appointment_onboarding_packet(session: dict, links: list) -> str:
+    """Attach the same approved resources and saved meeting details to either offer."""
+    labels = {"date": "Date", "time": "Time", "timezone": "Timezone", "format": "Meeting format", "link": "Join the meeting", "location": "Meeting location", "prepare": "Before the session"}
+    details = [f"{label}: {session[key]}" for key, label in labels.items() if session.get(key)]
+    return "YOUR ONBOARDING SESSION\n" + "\n".join(details) + "\n\nYOUR ONBOARDING MATERIALS\n\n" + "\n\n".join(links)
+
+
+def campaign_material_with_link(generation_type: str, structured: dict, application_url: str) -> dict:
+    """Use the hosted application URL in every campaign asset, including every social post."""
+    def replace(value):
+        if isinstance(value, str):
+            return value.replace("[APPLICATION LINK]", application_url)
+        if isinstance(value, list):
+            return [replace(item) for item in value]
+        if isinstance(value, dict):
+            return {key: replace(item) for key, item in value.items()}
+        return value
+
+    result = replace(structured)
+    fields = {"board_recruitment_job_post": "post_body", "recruitment_emails": "body", "referral_request_email": "message"}
+    if generation_type == "social_posts":
+        posts = result.get("posts")
+        if not isinstance(posts, list) or len(posts) != 3:
+            raise ValueError("Expected three complete social recruitment posts")
+        targets = [(post, "post_text") for post in posts]
+    else:
+        targets = [(result, fields[generation_type])] if generation_type in fields else []
+    for target, key in targets:
+        if not isinstance(target, dict) or not isinstance(target.get(key), str) or not target[key].strip():
+            raise ValueError("The recruitment material is incomplete")
+        if application_url not in target[key]:
+            target[key] = target[key].rstrip() + "\n\nApply here: " + application_url
+    return result
+
+
 async def save_generation(db, user_id: str, generation_type: str, structured: dict, context_summary: str, application_id: str = "") -> dict:
     meta = GENERATION_TYPES[generation_type]
     display = structured_to_display(generation_type, structured)
@@ -266,15 +291,19 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     parts.insert(1, "FOUNDER CONTACT (sign every generated email with these actual details; omit empty items; never placeholders):\n" + json.dumps(founder_contact, indent=1))
     if profile.get("strategy_intake"):
         parts.append("BOARD RECRUITMENT LOGISTICS AND NETWORK (the founder's saved answers about board logistics, their network and recruitment channels — collected once through the Board Recruitment Intake):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
+    if profile.get("onboarding_session"):
+        parts.append("SAVED ONBOARDING SESSION (use only the actual date, time, timezone, format and meeting details provided):\n" + json.dumps(profile["onboarding_session"], indent=1, default=str))
     blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
-    if blueprint and blueprint["current"]:
-        structured = blueprint["current"].get("structured") or {}
-        parts.append("MODULE 1 BOARD RECRUITMENT ANALYSIS (internal — the exact priority board roles to recruit and detailed profiles):\n" + json.dumps(structured, indent=1, default=str)[:14000])
+    if blueprint and blueprint["current"] and blueprint["material"].get("status") == "Approved":
+        current = blueprint["current"]
+        roles = (current.get("structured") or {}).get("priority_roles")
+        approved_content = json.dumps(roles, indent=1, default=str) if roles else current.get("display_text", "")
+        parts.append("FOUNDER-APPROVED BOARD MEMBER PROFILES (the final authority for WHO to recruit; preserve every approved profile and the founder's edits, even where they differ from an earlier suggestion):\n" + approved_content)
     strategy = await get_current_material(db, user_id, "recruitment_strategy")
-    if strategy and strategy["current"]:
+    if strategy and strategy["current"] and strategy["material"].get("status") == "Approved":
         parts.append("APPROVED RECRUITMENT STRATEGY:\n" + strategy["current"]["display_text"][:12000])
     opportunity_material = await get_current_material(db, user_id, "board_opportunity")
-    if opportunity_material and opportunity_material["current"]:
+    if opportunity_material and opportunity_material["current"] and opportunity_material["material"].get("status") == "Approved":
         parts.append("BOARD OPPORTUNITY:\n" + opportunity_material["current"]["display_text"][:8000])
     return "\n\n".join(parts)
 

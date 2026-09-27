@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Download, FileText, UserCheck } from "lucide-react";
 import { memberApi } from "../api";
@@ -17,7 +17,11 @@ export const useApplications = () => {
       setStatuses(response.data.statuses);
     } catch { /* ignore */ }
   }, []);
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+    window.addEventListener("recruitment-applications-changed", refresh);
+    return () => window.removeEventListener("recruitment-applications-changed", refresh);
+  }, [refresh]);
   return { applications, statuses, refresh };
 };
 
@@ -30,88 +34,90 @@ const downloadCv = async (application) => {
   } catch { window.alert("CV could not be opened."); }
 };
 
-const CandidateActions = ({ application, refresh, branding }) => {
-  const { byType, refresh: refreshMaterials } = useMaterials(application.application_id);
-  const name = application.profile_snapshot?.full_name || "this applicant";
-  const email = application.applicant_email || application.profile_snapshot?.email || "";
-  const interviewed = Boolean(application.interview_completed);
-  const refreshAll = async () => { await refreshMaterials(); await refresh(); };
-
-  const markInterviewComplete = async () => {
-    if (!window.confirm(`Mark the interview with ${name} as complete? You control this — nothing is inferred automatically.`)) return;
-    await memberApi.patch(`/workspace/applications/${application.application_id}`, { interview_completed: true });
-    await refreshAll();
-  };
-
-  return (
-    <>
-      <div className="detail-section" data-testid="interview-invitation-section">
-        <MaterialCard type="interview_invitation" title={`Interview Invitation — ${name}`} buttonLabel="Generate Interview Invitation"
-          description="A finished, candidate-specific invitation to the interview stage. If no scheduling link is stored, the email says your organization will coordinate the interview time directly — you can edit anything before sending. Nothing is sent automatically."
-          applicationId={application.application_id} material={byType.interview_invitation} refresh={refreshAll} approvable
-          extraActions={byType.interview_invitation ? (
-            <SendMaterialButton type="interview_invitation" applicationId={application.application_id} recipientEmail={email}
-              label={application.emails_sent?.interview_invitation ? "Send Again" : `Send Interview Invitation${email ? ` to ${email}` : ""}`}
-              sentAt={application.emails_sent?.interview_invitation} onSent={refreshAll} />
-          ) : null} />
-      </div>
-
-      <div className="detail-section" data-testid="before-interview-rejection-section">
-        <MaterialCard type="before_interview_rejection" title={`Before-Interview Rejection — ${name}`} buttonLabel="Generate Before-Interview Rejection"
-          description="Use this only when YOU have decided not to invite this applicant to interview. A respectful, relationship-preserving email with no invented rejection reason. Sending it marks the applicant Not Moving to Interview — their record is always preserved."
-          applicationId={application.application_id} material={byType.before_interview_rejection} refresh={refreshAll} approvable
-          extraActions={byType.before_interview_rejection ? (
-            <SendMaterialButton type="before_interview_rejection" applicationId={application.application_id} recipientEmail={email}
-              label={application.emails_sent?.before_interview_rejection ? "Send Again" : "Send Before-Interview Rejection"}
-              sentAt={application.emails_sent?.before_interview_rejection} onSent={refreshAll} />
-          ) : null} />
-      </div>
-
-    </>
-  );
+const CandidateEmailResource = ({ application, type, title, onChanged }) => {
+  const { byType, refresh, loaded } = useMaterials(application.application_id);
+  const attempted = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const refreshAll = useCallback(async () => {
+    await refresh();
+    if (onChanged) await onChanged();
+    window.dispatchEvent(new Event("recruitment-applications-changed"));
+  }, [refresh, onChanged]);
+  useEffect(() => {
+    if (!loaded || attempted.current) return;
+    attempted.current = true;
+    const savedText = currentVersion(byType[type])?.display_text || "";
+    const legacyReferenceForm = ["candidate_referee_request", "reference_request_email"].includes(type)
+      && /\/(reference-form|reference-check|referee-form)\//.test(savedText);
+    if (byType[type] && !legacyReferenceForm) return;
+    setBusy(true);
+    memberApi.post("/workspace/generate", { type, application_id: application.application_id })
+      .then(refreshAll)
+      .catch((err) => setError(err.response?.data?.detail || "We could not prepare the email. Please try again."))
+      .finally(() => setBusy(false));
+  }, [loaded, byType, type, application.application_id, refreshAll]);
+  if (!loaded) return <p role="status">Opening email…</p>;
+  const canSend = ["interview_invitation", "before_interview_rejection"].includes(type);
+  return <div className="detail-section" style={{ width: "100%" }} data-testid={`candidate-email-${type}`}>
+    {busy ? <p role="status">Preparing {title.toLowerCase()}…</p> : <>
+      {error && <p className="submit-error" role="alert">{error}</p>}
+      <MaterialCard type={type} title={title} buttonLabel={`Generate ${title}`} applicationId={application.application_id}
+        material={byType[type]} refresh={refreshAll} approvable
+        description={canSend ? "Review and edit the email, then copy it or send it when you are ready." : "Review the email and copy it into your own inbox to send. The recipient replies directly to your email."}
+        extraActions={canSend && byType[type] ? <SendMaterialButton type={type} applicationId={application.application_id}
+          recipientEmail={application.applicant_email || application.profile_snapshot?.email || ""}
+          label={application.emails_sent?.[type] ? "Send Again" : "Send Email"}
+          sentAt={application.emails_sent?.[type]} onSent={refreshAll} /> : null} />
+    </>}
+  </div>;
 };
 
-export const ApplicantDetail = ({ applicationId, onChanged, branding, initialShowApplication = false }) => {
+export const ApplicantDetail = ({ applicationId }) => {
   const [detail, setDetail] = useState(null);
-  const [notes, setNotes] = useState("");
-  const [showApplication, setShowApplication] = useState(initialShowApplication);
-  const { byType: byTypeApp, refresh: refreshApp } = useMaterials(applicationId);
-  const refresh = useCallback(async () => {
-    const response = await memberApi.get(`/workspace/applications/${applicationId}`);
-    setDetail(response.data);
-    setNotes(response.data.application.notes || "");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let live = true;
+    memberApi.get(`/workspace/applications/${applicationId}`)
+      .then(({ data }) => { if (live) setDetail(data.application); })
+      .catch(() => { if (live) setError("Could not load this application. Close it and try again."); });
+    return () => { live = false; };
   }, [applicationId]);
-  useEffect(() => { refresh(); }, [refresh]);
-  if (!detail) return <p>Loading applicant…</p>;
-  const application = detail.application;
-  const snapshot = application.profile_snapshot || {};
-  const hasAnswers = Object.keys(application.answers || {}).length > 0;
-  const saveNotes = async () => { await memberApi.patch(`/workspace/applications/${applicationId}`, { notes }); };
-  return (
-    <div className="applicant-detail" data-testid="applicant-detail">
-      <div className="detail-section">
-        <h3>{recruitmentWorkspaceText.h_applicantProfile}</h3>
-        <dl>{Object.entries(snapshot).filter(([, value]) => value).map(([key, value]) => <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{value}</dd></div>)}</dl>
-        <div className="material-actions">
-          {hasAnswers && <button className="button button-back" onClick={() => setShowApplication(!showApplication)} data-testid="view-application-button"><FileText size={14} /> {showApplication ? "Hide Application" : "View Application"}</button>}
-          {application.cv_file_id && <button className="button button-back" onClick={() => downloadCv(application)} data-testid="download-cv-button"><FileText size={14} /> View CV ({application.cv_filename})</button>}
-        </div>
-      </div>
-      {showApplication && hasAnswers && (
-        <div className="detail-section" data-testid="application-answers">
-          <h3>{recruitmentWorkspaceText.h_applicationAnswers}</h3>
-          <dl>{Object.entries(application.answers || {}).map(([key, value]) => key === "custom" ? null : <div key={key}><dt>{key.replace(/_/g, " ")}</dt><dd>{String(value) || "—"}</dd></div>)}</dl>
-          {application.answers?.custom && Object.keys(application.answers.custom).length > 0 && <dl>{Object.entries(application.answers.custom).map(([key, value]) => <div key={key}><dt>Custom question</dt><dd>{String(value) || "—"}</dd></div>)}</dl>}
-        </div>
-      )}
-      <CandidateActions application={application} refresh={async () => { await refresh(); if (onChanged) onChanged(); }} branding={branding} />
-      <div className="detail-section">
-        <h3>{recruitmentWorkspaceText.h_privateNotesNeverShownTo}</h3>
-        <textarea rows="4" value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="applicant-notes" />
-        <button className="button button-back" onClick={saveNotes} data-testid="save-notes-button">Save Notes</button>
-      </div>
-    </div>
-  );
+  if (error) return <p className="submit-error" role="alert">{error}</p>;
+  if (!detail) return <p role="status">Loading application…</p>;
+  const labels = { full_name: "Full name", email: "Email address", location: "Location", profession: "What they presently do", why_interested: "How they see themselves supporting the organization" };
+  const values = { ...(detail.profile_snapshot || {}), ...(detail.answers || {}) };
+  return <div className="applicant-detail" data-testid="application-answers">
+    <h3>Application: {detail.profile_snapshot?.full_name || detail.applicant_email}</h3>
+    <dl>{Object.entries(values).filter(([key, value]) => key !== "custom" && value).map(([key, value]) =>
+      <div key={key}><dt>{labels[key] || key.replace(/_/g, " ")}</dt><dd style={{ whiteSpace: "pre-wrap" }}>{String(value)}</dd></div>
+    )}</dl>
+    {Object.entries(values.custom || {}).map(([key, value]) => <dl key={key}><dt>Additional response</dt><dd>{String(value)}</dd></dl>)}
+  </div>;
+};
+
+const ApplicantCvPreview = ({ application }) => {
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let live = true;
+    let objectUrl = "";
+    memberApi.get(`/workspace/applications/${application.application_id}/cv`, { responseType: "blob" })
+      .then(({ data }) => {
+        if (!live) return;
+        objectUrl = URL.createObjectURL(data); setUrl(objectUrl);
+      }).catch(() => { if (live) setError("This CV could not be opened. Please try again."); });
+    return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [application.application_id]);
+  return <div className="detail-section" data-testid="applicant-cv-preview">
+    <h3>CV: {application.profile_snapshot?.full_name || application.applicant_email}</h3>
+    {error && <p className="submit-error" role="alert">{error}</p>}
+    {!url && !error && <p role="status">Opening CV…</p>}
+    {url && <>
+      {/\.(pdf|txt)$/i.test(application.cv_filename || "") && <iframe src={url} title="Applicant CV" style={{ width: "100%", height: 520, border: 0 }} />}
+      <a className="button button-back" href={url} download={application.cv_filename || "Applicant-CV"}>Download {application.cv_filename || "CV"}</a>
+    </>}
+  </div>;
 };
 
 const ExternalApplicantForm = ({ refresh }) => {
@@ -123,13 +129,12 @@ const ExternalApplicantForm = ({ refresh }) => {
   const submit = async () => {
     setMessage("");
     if (!name.trim()) { setMessage("Applicant name is required."); return; }
-    if (!cvFile) { setMessage("Please upload the applicant's CV / résumé."); return; }
     setBusy(true);
     try {
       const payload = new FormData();
       payload.append("name", name);
       payload.append("email", email.trim());
-      payload.append("cv", cvFile);
+      if (cvFile) payload.append("cv", cvFile);
       await memberApi.post("/workspace/applications/external", payload);
       setName(""); setEmail(""); setCvFile(null);
       setMessage("Applicant added. They now use the exact same interview actions as your hosted applicants.");
@@ -144,7 +149,7 @@ const ExternalApplicantForm = ({ refresh }) => {
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
         <label className="field"><span>Applicant Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
-        <label className="field"><span>CV / Résumé <b>*</b></span><input type="file" accept=".pdf,.doc,.docx" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
+        <label className="field"><span>CV / Résumé (optional)</span><input type="file" accept=".pdf,.doc,.docx" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add Applicant"}</button>
       {message && <p className="member-success" data-testid="external-applicant-message">{message}</p>}
@@ -154,71 +159,47 @@ const ExternalApplicantForm = ({ refresh }) => {
 
 export const Module4Applicants = () => {
   const { applications, refresh } = useApplications();
-  const [branding] = useBranding();
-  const [openId, setOpenId] = useState("");
-  const [openApplication, setOpenApplication] = useState(false);
+  const [active, setActive] = useState({ id: "", action: "" });
+  const openedFromLink = useRef(false);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("application_id") || "";
-    if (requested && applications.some((application) => application.application_id === requested)) setOpenId(requested);
+    if (!openedFromLink.current && requested && applications.some((item) => item.application_id === requested)) {
+      openedFromLink.current = true; setActive({ id: requested, action: "application" });
+    }
   }, [applications]);
-  const interviewLabel = (application) => application.interview_completed ? "Interview Completed"
-    : application.emails_sent?.interview_invitation ? "Interview Invited"
-    : application.status === "Not Moving to Interview" ? "Not Moving to Interview" : "New";
-  return (
-    <div data-testid="module4-workspace">
-      <ExternalApplicantForm refresh={refresh} />
-      <section className="workspace-panel">
-        <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
-        <p className="material-description">{recruitmentWorkspaceText.d_everyoneWhoAppliesThroughYour}</p>
-        {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">{applicantModulesText.noApplicationsYetWhenYour}</p>}
-        {applications.map((application) => {
-          const hasApplication = Object.keys(application.answers || {}).length > 0
-            && !(application.source || "").toLowerCase().includes("external");
-          const hasCv = Boolean(application.cv_file_id || application.cv_filename);
-          const openRecord = (showApplication) => {
-            setOpenApplication(Boolean(showApplication));
-            setOpenId(openId === application.application_id && openApplication === Boolean(showApplication) ? "" : application.application_id);
-          };
-          return (
-            <div className={`applicant-row ${openId === application.application_id ? "open" : ""}`} key={application.application_id} data-testid={`applicant-row-${application.application_id}`}>
-              <div className="applicant-row-head">
-                <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
-                <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
-                <span>{application.profile_snapshot?.location || application.profile_snapshot?.city || ""}</span>
-                <span className="source-tag">{application.source}</span>
-                <div className="material-actions">
-                  {hasApplication && (
-                    <button className="button button-back button-small" onClick={() => openRecord(true)} data-testid={`view-full-application-${application.application_id}`}>
-                      <FileText size={14} /> View Full Application
-                    </button>
-                  )}
-                  {hasCv && (
-                    <button className="button button-back button-small" onClick={() => { setOpenApplication(false); setOpenId(application.application_id); downloadCv(application); }} data-testid={`view-cv-${application.application_id}`}>
-                      <FileText size={14} /> View CV
-                    </button>
-                  )}
-                  {!hasApplication && (
-                    <button className="button button-back button-small" onClick={() => openRecord(false)} data-testid={`open-interview-tools-${application.application_id}`}>
-                      Open Interview Tools
-                    </button>
-                  )}
-                </div>
-              </div>
-              {openId === application.application_id && (
-                <ApplicantDetail
-                  applicationId={application.application_id}
-                  onChanged={refresh}
-                  branding={branding}
-                  initialShowApplication={openApplication}
-                  key={`${application.application_id}-${openApplication ? "application" : "tools"}`}
-                />
-              )}
+  const open = (id, action) => setActive((current) => current.id === id && current.action === action ? { id: "", action: "" } : { id, action });
+  return <div data-testid="module4-workspace">
+    <ExternalApplicantForm refresh={refresh} />
+    <section className="workspace-panel">
+      <h2>{recruitmentWorkspaceText.h_yourBoardApplicants}</h2>
+      <p className="material-description">View an application or CV, then prepare the email for the decision you want to make.</p>
+      {applications.length === 0 && <p className="workspace-note" data-testid="no-applicants">{applicantModulesText.noApplicationsYetWhenYour}</p>}
+      {applications.map((application) => {
+        const id = application.application_id;
+        const expanded = active.id === id;
+        const hasCv = Boolean(application.cv_file_id || application.cv_filename);
+        return <div className={`applicant-row ${expanded ? "open" : ""}`} key={id} data-testid={`applicant-row-${id}`}>
+          <div className="applicant-row-head">
+            <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
+            <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ")}</span>
+            <span>{application.profile_snapshot?.location || application.profile_snapshot?.city || ""}</span>
+            <span className="source-tag">{application.status}</span>
+            <div className="material-actions">
+              <button className="button button-back button-small" onClick={() => open(id, "application")} aria-expanded={expanded && active.action === "application"} data-testid={`view-full-application-${id}`}><FileText size={14} /> View Application</button>
+              <button className="button button-back button-small" disabled={!hasCv} title={hasCv ? "Open this applicant's CV" : "No CV supplied"} onClick={() => open(id, "cv")} aria-expanded={expanded && active.action === "cv"} data-testid={`view-cv-${id}`}><FileText size={14} /> View CV</button>
+              <button className="button button-back button-small" onClick={() => open(id, "interview_invitation")} aria-expanded={expanded && active.action === "interview_invitation"} data-testid={`interview-invite-${id}`}>Generate Interview Invite Email</button>
+              <button className="button button-back button-small" onClick={() => open(id, "before_interview_rejection")} aria-expanded={expanded && active.action === "before_interview_rejection"} data-testid={`interview-reject-${id}`}>Generate Interview Rejection Email</button>
             </div>
-          );
-        })}
-      </section>
-    </div>
-  );
+          </div>
+          {expanded && active.action === "application" && <ApplicantDetail applicationId={id} key={`application-${id}`} />}
+          {expanded && active.action === "cv" && <ApplicantCvPreview application={application} key={`cv-${id}`} />}
+          {expanded && ["interview_invitation", "before_interview_rejection"].includes(active.action) && <CandidateEmailResource
+            key={`${id}-${active.action}`} application={application} type={active.action} onChanged={refresh}
+            title={active.action === "interview_invitation" ? "Interview Invite Email" : "Interview Rejection Email"} />}
+        </div>;
+      })}
+    </section>
+  </div>;
 };
 
 export const InterviewsWorkspace = () => {
@@ -251,7 +232,7 @@ export const InterviewsWorkspace = () => {
 
 const InterviewStageCandidate = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
-  const refreshAll = async () => { await refresh(); await onChanged(); };
+  const refreshAll = async () => { await refresh(); await onChanged(); window.dispatchEvent(new Event("recruitment-applications-changed")); };
   const markComplete = async () => {
     await memberApi.patch("/workspace/applications/" + application.application_id, { interview_completed: true });
     await onChanged();
@@ -622,11 +603,20 @@ const docStage = (material) => !material ? "Not Started" : material.status === "
 
 const TIMEZONES = ["Eastern Time (ET)", "Central Time (CT)", "Mountain Time (MT)", "Pacific Time (PT)", "Alaska Time", "Hawaii Time", "UTC", "Other"];
 
-const OnboardingSessionPanel = ({ session, setSession }) => {
+const OnboardingSessionPanel = ({ session, setSession, onSaved }) => {
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
   const save = async () => {
-    await memberApi.put("/workspace/onboarding-session", session);
-    setMessage("Onboarding session saved. It is reused automatically for every candidate joining this session.");
+    setBusy(true); setMessage("");
+    try {
+      const response = await memberApi.put("/workspace/onboarding-session", session);
+      const saved = response.data.session || session;
+      setSession(saved);
+      if (onSaved) onSaved(saved);
+      window.dispatchEvent(new Event("recruitment-session-changed"));
+      setMessage("Onboarding session saved. It is reused automatically for every candidate joining this session.");
+    } catch (error) { setMessage(error.response?.data?.detail || "Could not save the onboarding session. Please try again."); }
+    setBusy(false);
   };
   return (
     <div className="detail-section" data-testid="onboarding-session-panel">
@@ -643,7 +633,7 @@ const OnboardingSessionPanel = ({ session, setSession }) => {
         {(session.format === "In Person" || session.format === "Hybrid") && <label className="field"><span>{applicantModulesText.whereWillTheOnboardingSession}</span><input value={session.location || ""} onChange={(event) => setSession({ ...session, location: event.target.value })} data-testid="session-location" /></label>}
       </div>
       <label className="field"><span>{applicantModulesText.isThereAnythingYouWould}</span><textarea rows="2" value={session.prepare || ""} onChange={(event) => setSession({ ...session, prepare: event.target.value })} data-testid="session-prepare" /></label>
-      <button className="button button-back" onClick={save} data-testid="save-session-button">Save Onboarding Session</button>
+      <button className="button button-back" disabled={busy} onClick={save} data-testid="save-session-button">{busy ? "Saving…" : "Save Onboarding Session"}</button>
       {message && <p className="member-success">{message}</p>}
     </div>
   );
@@ -830,46 +820,24 @@ export const Module5References = () => {
 export const AutomatedReferenceChecks = () => {
   const { applications } = useApplications();
   const eligible = applications.filter((application) => application.journey?.interview_guide_generated);
-  const [selectedId, setSelectedId] = useState("");
-  const [startingId, setStartingId] = useState("");
-
-  const startReference = async (application) => {
-    setStartingId(application.application_id);
-    try {
-      await memberApi.post("/workspace/reference-process", { application_id: application.application_id });
-      setSelectedId(application.application_id);
-    } catch (error) {
-      window.alert(error.response?.data?.detail || "The reference check could not be started.");
-    }
-    setStartingId("");
-  };
-
-  const selected = eligible.find((application) => application.application_id === selectedId);
-
-  return (
-    <div data-testid="automated-reference-workspace">
-      <section className="workspace-panel">
-        <h2>Reference Checks</h2>
-        <p className="material-description">Candidates appear here after their tailored interview guide has been generated. Start the reference process and the platform first checks the candidate's CV for explicit referee details. If no usable references are found, the secure reference-information workflow continues from here.</p>
-        {eligible.length === 0 && <p className="workspace-note">Generate a candidate's interview guide to unlock their reference check.</p>}
-        {eligible.map((application) => (
-          <div className="candidate-card" key={application.application_id} data-testid={`reference-candidate-${application.application_id}`}>
-            <div className="candidate-card-info">
-              <strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong>
-              <span>{[application.profile_snapshot?.profession, application.profile_snapshot?.employer].filter(Boolean).join(" · ") || "—"}</span>
-              <span>Reference Check: <b>{application.reference_check_status || "Not Started"}</b></span>
-            </div>
-            <div className="candidate-card-actions">
-              <button className="button button-small" disabled={startingId === application.application_id} onClick={() => startReference(application)} data-testid={`start-reference-${application.application_id}`}>
-                {startingId === application.application_id ? "CHECKING CV…" : application.reference_check_status === "Completed" ? "VIEW COMPLETED REFERENCE CHECK" : "START REFERENCE CHECK"}
-              </button>
-            </div>
-          </div>
-        ))}
-        {selected && <ReferenceProcessPanel application={selected} key={`reference-panel-${selected.application_id}`} />}
-      </section>
-    </div>
-  );
+  const [active, setActive] = useState({ id: "", type: "" });
+  const open = (id, type) => setActive((current) => current.id === id && current.type === type ? { id: "", type: "" } : { id, type });
+  return <div data-testid="reference-email-workspace">
+    <section className="workspace-panel">
+      <h2>Reference Checks</h2>
+      <p className="material-description">Ask the applicant for references if you need them. When you have their referee details, prepare the confirmation email and send it from your own inbox. Referees reply directly to you.</p>
+      {eligible.length === 0 && <p className="workspace-note">Generate a candidate's interview guide to open their reference emails.</p>}
+      {eligible.map((application) => <div className="candidate-card" key={application.application_id} data-testid={`reference-candidate-${application.application_id}`}>
+        <div className="candidate-card-info"><strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong></div>
+        <div className="material-actions">
+          <button className="button button-small" onClick={() => open(application.application_id, "candidate_referee_request")} data-testid={`ask-references-${application.application_id}`}>ASK FOR REFERENCES</button>
+          <button className="button button-back button-small" onClick={() => open(application.application_id, "reference_request_email")} data-testid={`confirm-references-${application.application_id}`}>CONFIRM REFERENCES</button>
+        </div>
+        {active.id === application.application_id && <CandidateEmailResource key={`${active.id}-${active.type}`} application={application} type={active.type}
+          title={active.type === "candidate_referee_request" ? "Ask For References Email" : "Reference Confirmation Email"} />}
+      </div>)}
+    </section>
+  </div>;
 };
 
 export const BackgroundChecksWorkspace = () => {
@@ -940,7 +908,11 @@ export const AppointmentOffersWorkspace = () => {
 const AppointmentOfferPanel = ({ application, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const name = application.profile_snapshot?.full_name || application.applicant_email;
-  const refreshAll = async () => { await refresh(); if (onChanged) await onChanged(); };
+  const refreshAll = async () => {
+    await refresh();
+    if (onChanged) await onChanged();
+    window.dispatchEvent(new Event("recruitment-applications-changed"));
+  };
 
   return (
     <div className="detail-section" data-testid="appointment-offer-panel">
@@ -949,7 +921,7 @@ const AppointmentOfferPanel = ({ application, onChanged }) => {
         type="conditional_offer"
         title="Conditional Board Appointment Email"
         buttonLabel="Generate Conditional Appointment Email"
-        description="Use this when you want to offer the Board position but keep an outstanding reference check and/or required background check as a condition."
+        description="Congratulate the candidate on their conditional Board appointment, pending the outstanding reference and background checks. Includes the onboarding materials, date, time and meeting details."
         applicationId={application.application_id}
         material={byType.conditional_offer}
         refresh={refreshAll}
@@ -970,7 +942,7 @@ const AppointmentOfferPanel = ({ application, onChanged }) => {
         type="unconditional_offer"
         title="Unconditional Board Appointment Offer Email"
         buttonLabel="Generate Unconditional Appointment Offer"
-        description="Use this when you have decided to offer the Board position without making reference or background-check completion a condition of the offer. Onboarding still follows as its own stage."
+        description="Welcome the candidate to the Board and move them into onboarding. Includes the same onboarding materials, date, time and meeting details, with no reference or background-check conditions."
         applicationId={application.application_id}
         material={byType.unconditional_offer}
         refresh={refreshAll}
@@ -996,10 +968,15 @@ export const OnboardingPreparation = () => {
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   const [branding] = useBranding();
   const [session, setSession] = useState({});
+  const [savedSession, setSavedSession] = useState(null);
   const [selectedId, setSelectedId] = useState("");
+  const [openResource, setOpenResource] = useState("");
 
   useEffect(() => {
-    memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
+    memberApi.get("/workspace/onboarding-session").then((response) => {
+      const saved = response.data.session || {};
+      setSession(saved); setSavedSession(saved);
+    }).catch(() => {});
   }, []);
   useEffect(() => {
     let timer;
@@ -1019,9 +996,10 @@ export const OnboardingPreparation = () => {
 
   const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
   const selected = candidates.find((application) => application.application_id === selectedId);
-  const scheduleReady = Boolean(session.date && session.time && session.timezone);
+  const scheduleReady = Boolean(session.date && session.time && session.timezone && session.format && (!["Virtual", "Hybrid"].includes(session.format) || session.link?.trim()) && (!["In Person", "Hybrid"].includes(session.format) || session.location?.trim()));
   const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
-  const appointmentReady = scheduleReady && materialsReady;
+  const sessionSaved = savedSession !== null && JSON.stringify(session) === JSON.stringify(savedSession);
+  const appointmentReady = scheduleReady && sessionSaved && materialsReady;
 
   return (
     <div data-testid="onboarding-preparation-workspace">
@@ -1029,21 +1007,23 @@ export const OnboardingPreparation = () => {
         <p className="eyebrow">1. ONBOARDING SESSION</p>
         <h2>Set The Onboarding Date And Time</h2>
         <p className="material-description">Set the session details first. These details are reused in the appointment communication so a candidate knows exactly what happens next.</p>
-        <OnboardingSessionPanel session={session} setSession={setSession} />
+        <OnboardingSessionPanel session={session} setSession={setSession} onSaved={setSavedSession} />
+        {!sessionSaved && savedSession !== null && <p className="workspace-note">Save your updated meeting details before generating an appointment email.</p>}
       </section>
 
       <section className="workspace-panel" data-testid="onboarding-materials-section">
         <p className="eyebrow">2. ONBOARDING MATERIALS</p>
         <h2>Review And Approve The Onboarding Materials</h2>
-        <p className="material-description">The platform can prepare these organization-level drafts while your recruitment campaign is running. The Board Manual follows the same proven framework for every organization and is updated only with your verified organization information.</p>
+        <p className="material-description">Choose a resource to generate or review it. Each document uses your organization's information and Board expectations. The same approved agreements apply to everyone joining this Board, and everyone completes the same Board Member Profile form.</p>
         <ul className="readiness-list">
           {PREPARE_TOOLS.map(([type, title]) => (
             <li key={type} className={orgMaterials[type]?.status === "Approved" ? "done" : ""}>
-              {title}: {docStage(orgMaterials[type])}
+              <button className="button button-back button-small" onClick={() => setOpenResource(openResource === type ? "" : type)} aria-expanded={openResource === type} data-testid={`open-onboarding-${type}`}>{title}</button>
+              <span> {docStage(orgMaterials[type])}</span>
             </li>
           ))}
         </ul>
-        {PREPARE_TOOLS.map(([type, title, buttonLabel, description]) => (
+        {PREPARE_TOOLS.filter(([type]) => type === openResource).map(([type, title, buttonLabel, description]) => (
           <MaterialCard
             key={type}
             type={type}
@@ -1063,7 +1043,8 @@ export const OnboardingPreparation = () => {
             ) : null}
           />
         ))}
-        <BoardProfilePanel />
+        <button className="button button-back" onClick={() => setOpenResource(openResource === "profile" ? "" : "profile")} aria-expanded={openResource === "profile"} data-testid="open-board-profile-form">Board Member Profile Form</button>
+        {openResource === "profile" && <BoardProfilePanel />}
       </section>
 
       <section className="workspace-panel" data-testid="appointment-email-stage">
@@ -1071,7 +1052,7 @@ export const OnboardingPreparation = () => {
         <h2>Choose The Appointment Path For Each Candidate</h2>
         <p className="material-description">Conditional and unconditional appointment emails unlock only when the onboarding schedule is saved and the onboarding materials above are approved.</p>
         <div className="sgr-readiness-banner">
-          <span className={scheduleReady ? "ready" : ""}>Onboarding Schedule: {scheduleReady ? "Ready" : "Needed"}</span>
+          <span className={scheduleReady && sessionSaved ? "ready" : ""}>Onboarding Schedule: {scheduleReady && sessionSaved ? "Ready" : "Needed"}</span>
           <span className={materialsReady ? "ready" : ""}>Onboarding Materials: {materialsReady ? "Approved" : "Need Approval"}</span>
         </div>
         {candidates.length === 0 && <p className="workspace-note">Candidates appear here after their interview guide has been generated.</p>}
@@ -1102,9 +1083,12 @@ export const OnboardingSessionWorkspace = () => {
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();
   const [session, setSession] = useState({});
   useEffect(() => {
-    memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
+    const load = () => memberApi.get("/workspace/onboarding-session").then((response) => setSession(response.data.session || {})).catch(() => {});
+    load();
+    window.addEventListener("recruitment-session-changed", load);
+    return () => window.removeEventListener("recruitment-session-changed", load);
   }, []);
-  const scheduleReady = Boolean(session.date && session.time && session.timezone);
+  const scheduleReady = Boolean(session.date && session.time && session.timezone && session.format && (!["Virtual", "Hybrid"].includes(session.format) || session.link?.trim()) && (!["In Person", "Hybrid"].includes(session.format) || session.location?.trim()));
   const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
   const appointmentReady = applications.some((application) =>
     application.journey?.conditional_offer_generated

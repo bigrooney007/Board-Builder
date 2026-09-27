@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, Globe } from "lucide-react";
+import { ExternalLink, Globe, PlayCircle } from "lucide-react";
+import { useRecruitmentSectionVideo } from "@/clean/platform";
 import { memberApi } from "../api";
 import { MaterialCard } from "./MaterialCard";
 import { recruitmentModulesText, workspaceModulesText } from "../../content/appContent";
@@ -8,7 +9,7 @@ import { recruitmentModulesText, workspaceModulesText } from "../../content/appC
 export const useMaterials = (applicationId = "") => {
   const [byType, setByType] = useState({});
   const [loaded, setLoaded] = useState(false);
-  const refresh = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       const response = await memberApi.get("/workspace/materials", { params: applicationId ? { application_id: applicationId } : {} });
       const map = {};
@@ -17,14 +18,23 @@ export const useMaterials = (applicationId = "") => {
     } catch { /* ignore */ }
     setLoaded(true);
   }, [applicationId]);
-  useEffect(() => { refresh(); }, [refresh]);
+  const refresh = useCallback(async () => {
+    await load();
+    window.dispatchEvent(new CustomEvent("recruitment-materials-changed", { detail: { applicationId } }));
+  }, [load, applicationId]);
+  useEffect(() => {
+    load();
+    const onChanged = (event) => { if (event.detail?.applicationId === applicationId) load(); };
+    window.addEventListener("recruitment-materials-changed", onChanged);
+    return () => window.removeEventListener("recruitment-materials-changed", onChanged);
+  }, [load, applicationId]);
   return { byType, refresh, loaded };
 };
 
 const CAMPAIGN_TOOLS = [
   ["board_recruitment_job_post", "Recruitment Job Post", "Generate My Recruitment Job Post", "Your primary professional board opportunity, ready for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch. Your application link is inserted automatically."],
   ["recruitment_emails", "Recruitment Email", "Generate My Recruitment Email", "A professional email to send to your network, supporters, colleagues and community contacts inviting qualified people to consider the board opportunity."],
-  ["social_posts", "Social Media Recruitment Post", "Generate My Social Media Recruitment Post", "A shareable recruitment post written as a real nonprofit recruitment announcement for your social channels, with your application call to action and link."],
+  ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Posts", "Three tailored posts for your social channels. Each introduces the Board opportunity from a different angle and includes your application link."],
   ["referral_request_email", "Referral Email", "Generate My Referral Email", "A ready-to-forward message your board members, supporters, partners and colleagues can send to people who may be a strong fit — with your application link included."],
 ];
 
@@ -58,7 +68,7 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, onGene
           {preview && (
             <div className="application-preview" data-testid="application-preview">
               <h3>Application Preview — {opportunity?.organization_name}</h3>
-              {[...coreQuestions.map((q) => q.label + (q.required ? " *" : "")), "Upload résumé/CV *"].map((label) => (
+              {[...coreQuestions.map((q) => q.label + (q.required ? " *" : "")), "Upload résumé/CV (optional)"].map((label) => (
                 <div className="preview-question" key={label}><span>{label}</span><i /></div>
               ))}
             </div>
@@ -72,6 +82,7 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, onGene
 };
 
 export const Module3Launch = ({ mode = "all" }) => {
+  const launchVideo = useRecruitmentSectionVideo("launch");
   const { byType, refresh } = useMaterials();
   const [opportunity, setOpportunity] = useState(null);
   const [coreQuestions, setCoreQuestions] = useState([]);
@@ -155,6 +166,11 @@ export const Module3Launch = ({ mode = "all" }) => {
 
       {mode !== "materials" && <section className="workspace-panel publish-panel" data-testid="publish-panel">
         <h2>{recruitmentModulesText.h_launchMyRecruitmentCampaign}</h2>
+        {launchVideo?.youtube_id && (
+          <a className="button button-back" href={`https://www.youtube.com/watch?v=${launchVideo.youtube_id}`} target="_blank" rel="noreferrer" data-testid="launch-recruitment-video">
+            <PlayCircle size={18} /> WATCH: LAUNCH YOUR RECRUITMENT CAMPAIGN IN THE NEXT 30 MINUTES
+          </a>
+        )}
         <p className="material-description">{recruitmentModulesText.d_launchingIsTheOnlyAction}</p>
         <p>Status: <strong className={`opportunity-status status-${(opportunity?.status || "Draft").replace(/\s/g, "-").toLowerCase()}`} data-testid="opportunity-status">{launched ? "Live" : opportunity?.status || "Draft"}</strong></p>
         <ul className="readiness-list">

@@ -71,6 +71,8 @@ RECRUITMENT_SECTION_VIDEO_DEFINITIONS = [
     {"key": "portfolios", "name": "Create Board Member Portfolios"},
 ]
 
+RECRUITMENT_SECTION_VIDEO_DEFAULTS = {"launch": "https://youtu.be/tESJV4jJVWs"}
+
 HOME_PAGE_KEYS = {
     "main",
     "recruitment",
@@ -261,7 +263,7 @@ def create_clean_platform_router(db) -> APIRouter:
         stored = doc.get("videos") or {}
         rows = []
         for item in RECRUITMENT_SECTION_VIDEO_DEFINITIONS:
-            raw = stored.get(item["key"], "")
+            raw = stored.get(item["key"], RECRUITMENT_SECTION_VIDEO_DEFAULTS.get(item["key"], ""))
             try:
                 video_id = youtube_id(raw)
             except ValueError:

@@ -21,7 +21,7 @@ from opportunity_emails import send_opportunity_broadcast, send_signature_reques
 from reactivation_routes import email_html as portfolio_email_html
 from workspace_service import (
     APPLICATION_STATUSES, BACKGROUND_STATUSES, CORE_QUESTIONS, REFERENCE_OUTCOMES,
-    application_context_text, build_org_context, get_current_material, get_lead, get_profile,
+    application_context_text, appointment_onboarding_packet, build_org_context, campaign_material_with_link, get_current_material, get_lead, get_profile,
     new_id, now_iso, reference_context, run_interview_guide, save_generation, slugify,
 )
 
@@ -237,8 +237,7 @@ def create_workspace_router(db) -> APIRouter:
 
     GOVERNANCE_BYLAWS_TYPES = {"formal_appointment_letter", "formal_appointment_email", "board_manual",
                                "board_member_agreement", "conflict_of_interest_agreement", "confidentiality_agreement", "onboarding_script"}
-    MANUAL_REFERENCE_MATERIAL_TYPES = {"candidate_referee_request", "reference_request_email",
-                                       "referee_confirmation_email", "reference_call_script", "reference_evaluation_form"}
+    RETIRED_REFERENCE_MATERIAL_TYPES = {"reference_call_script", "reference_evaluation_form"}
 
     async def bylaws_context(user_id: str) -> str:
         intake = await db.board_reactivation_intakes.find_one(
@@ -268,8 +267,8 @@ def create_workspace_router(db) -> APIRouter:
     async def generate(payload: GenerateRequest, request: Request):
         member = await current_member(request)
         user_id = member["user_id"]
-        if payload.type in MANUAL_REFERENCE_MATERIAL_TYPES:
-            raise HTTPException(status_code=410, detail="Manual reference materials have been replaced by the automated reference-check process.")
+        if payload.type in RETIRED_REFERENCE_MATERIAL_TYPES:
+            raise HTTPException(status_code=410, detail="Use Ask For References or Confirm References to prepare an email.")
         if payload.type not in GENERATION_TYPES:
             raise HTTPException(status_code=422, detail="Unknown generation type")
         meta = GENERATION_TYPES[payload.type]
@@ -283,10 +282,14 @@ def create_workspace_router(db) -> APIRouter:
         mission_check = profile.get("data", {}).get("mission", "")
         if not org_name_check or not mission_check:
             raise HTTPException(status_code=422, detail="Add your organization name and mission statement in your Recruitment Profile first. They are required so every recruitment material is finished and organization-specific.")
+        if payload.type in MODULE3_LINK_TYPES:
+            approved_profiles = await get_current_material(db, user_id, "powerhouse_board_blueprint")
+            if not approved_profiles or approved_profiles["material"].get("status") != "Approved":
+                raise HTTPException(status_code=409, detail="Approve the Board Members you need before creating recruitment materials.")
         context = await build_org_context(db, user_id, member)
         if payload.type == "interview_guide":
             manual = await get_current_material(db, user_id, "board_manual", "")
-            if manual and manual.get("current"):
+            if manual and manual.get("current") and manual["material"].get("status") == "Approved":
                 context += "\n\nAPPROVED BOARD MANUAL / ONBOARDING FRAMEWORK (use this to align interview questions with how this Board actually works, without turning the interview into an onboarding session):\n" + manual["current"]["display_text"][:12000]
         reference = await reference_context(db, payload.type)
         if reference:
@@ -366,12 +369,7 @@ def create_workspace_router(db) -> APIRouter:
         if payload.type in {"interview_invitation", "interview_invitation_message", "before_interview_rejection"} and application and application.get("board_role"):
             context += f"\n\nBOARD ROLE / EXPERTISE AREA THIS CANDIDATE APPLIED FOR: {application['board_role']}"
         if payload.type == "candidate_referee_request":
-            process = await db.reference_processes.find_one(
-                {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "candidate_token": 1, "status": 1})
-            if process and process.get("candidate_token") and process.get("status") not in {"Completed", "References Submitted"}:
-                context += f"\n\nSECURE REFERENCE INFORMATION FORM URL FOR THIS CANDIDATE (include this exact link): {origin}/reference-form/{process['candidate_token']}"
-            else:
-                context += "\n\nNO SECURE REFERENCE FORM LINK EXISTS YET — ask the candidate to reply to this email with their referee details."
+            context += "\n\nREFERENCE METHOD: Ask this candidate to reply directly to the founder's email with two professional references. No form, portal, upload or link is used. Requesting references does not establish that an interview or appointment has been completed."
         if payload.type in {"reference_request_email", "reference_call_script", "reference_evaluation_form", "referee_confirmation_email"} and application_id:
             import json as _json
             process = await db.reference_processes.find_one(
@@ -388,9 +386,9 @@ def create_workspace_router(db) -> APIRouter:
                 context += ("\n\nTHE SELECTED REFEREE FOR THIS RESOURCE (use ONLY this referee's actual details — never mix in another referee's information):\n"
                             + _json.dumps(_referee_details(selected), indent=1, default=str))
             elif referees:
-                context += ("\n\nREFEREES SUPPLIED BY THE CANDIDATE (this resource is produced for ONE referee at a time. Because a single referee has "
-                            "not been indicated, address the referee as [Referee Name] and NEVER merge or mix details from different referees):\n"
-                            + _json.dumps([_referee_details(r) for r in referees], indent=1, default=str))
+                context += "\n\nRECIPIENT: This email will be copied separately to each referee. Begin with Hello, and do not select a referee or combine their information."
+            if payload.type == "reference_request_email":
+                context += "\n\nREFERENCE METHOD: This is an email asking a referee to confirm their experience with the candidate by replying directly. Include the questions in the email itself. Never include a form link, claim a reference was received, or treat generation as a completed check. Use Hello, if no single referee was selected."
         if payload.type == "powerhouse_board_blueprint":
             context += ("\n\nPRESENT BOARD COMPOSITION RULE: Where the supplied information shows the founder/executive director is a serving "
                         "member of the governing Board, include the founder — with their actual skills, experience and role — as part of the "
@@ -437,33 +435,7 @@ def create_workspace_router(db) -> APIRouter:
                             "parameters or officer structure where explicitly stated; never invent legal requirements or legal conclusions; "
                             "where sources conflict, use the verified information conservatively):\n"
                             + reactivation_intake["bylaws_text"][:10000])
-        if payload.type in {"conditional_offer", "unconditional_offer"}:
-            required_types = ["organization_overview", "board_manual", "board_member_agreement",
-                              "confidentiality_agreement", "conflict_of_interest_agreement"]
-            missing = []
-            for doc_type in required_types:
-                document = await db.generated_materials.find_one(
-                    {"user_id": user_id, "type": doc_type, "application_id": "", "status": "Approved"},
-                    {"_id": 0, "material_id": 1})
-                if not document:
-                    missing.append(GENERATION_TYPES[doc_type]["title"])
-            onboarding_session = profile.get("onboarding_session") or {}
-            if not onboarding_session.get("date") or not onboarding_session.get("time") or not onboarding_session.get("timezone"):
-                missing.append("Onboarding date, time and timezone")
-            if missing:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Prepare the onboarding session before generating the appointment email: " + ", ".join(missing),
-                )
-            context += (
-                "\n\nONBOARDING SESSION DETAILS (include these actual details in the appointment email):\n"
-                f"Date: {onboarding_session.get('date', '')}\n"
-                f"Time: {onboarding_session.get('time', '')}\n"
-                f"Timezone: {onboarding_session.get('timezone', '')}\n"
-                f"Format: {onboarding_session.get('format', '')}\n"
-                f"Meeting link: {onboarding_session.get('link', '')}\n"
-                f"Location: {onboarding_session.get('location', '')}"
-            )
+        onboarding_packet = ""
 
         if payload.type == "conditional_offer":
             process = await db.reference_processes.find_one(
@@ -474,11 +446,11 @@ def create_workspace_router(db) -> APIRouter:
                 "\n\nCONDITIONAL APPOINTMENT STATUS (authoritative):"
                 f"\nREFERENCE PROCESS STATUS: {reference_status}."
                 f"\nBACKGROUND CHECK STATUS: {background_status}."
-                "\nThe founder is choosing a CONDITIONAL appointment offer. State only the actual conditions that remain outstanding. "
-                "If the reference process is not Completed, it may be stated as an outstanding condition. "
-                "If a background check is explicitly required and not Completed, it may be stated as an outstanding condition. "
-                "If Background Check is Not Required, do not mention it as a condition. "
-                "Onboarding is a separate next stage after this appointment offer."
+                "\nThe founder selected the CONDITIONAL appointment path: reference and background checks are conditions of this offer. "
+                "State the reference check as outstanding unless Completed or Not Required. "
+                "State the background check as outstanding unless Completed or Not Required. "
+                "When an earlier status is blank, Not started or Not decided, this conditional-offer choice establishes that the check is required. "
+                "Invite the candidate into onboarding now using the complete packet supplied below."
             )
             if application.get("board_role"):
                 context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
@@ -492,7 +464,7 @@ def create_workspace_router(db) -> APIRouter:
             if application.get("board_role"):
                 context += f"\nBOARD ROLE / PRIORITY EXPERTISE PROFILE FOR THIS CANDIDATE: {application['board_role']}"
 
-        if payload.type == "onboarding_email":
+        if payload.type in {"onboarding_email", "conditional_offer", "unconditional_offer"}:
             required_types = ["organization_overview", "board_manual", "board_member_agreement",
                               "confidentiality_agreement", "conflict_of_interest_agreement"]
             missing = []
@@ -505,6 +477,12 @@ def create_workspace_router(db) -> APIRouter:
             session = profile.get("onboarding_session") or {}
             if not session.get("date") or not session.get("time") or not session.get("timezone"):
                 missing.append("Onboarding date, time and timezone")
+            if not session.get("format"):
+                missing.append("Onboarding meeting format")
+            if session.get("format") in {"Virtual", "Hybrid"} and not str(session.get("link") or "").strip():
+                missing.append("Onboarding meeting link")
+            if session.get("format") in {"In Person", "Hybrid"} and not str(session.get("location") or "").strip():
+                missing.append("Onboarding meeting location")
             if missing:
                 raise HTTPException(status_code=409, detail="Prepare and approve the onboarding items first: " + ", ".join(missing))
 
@@ -545,7 +523,7 @@ def create_workspace_router(db) -> APIRouter:
                     "token": profile_link["token"], "user_id": user_id, "application_id": application_id,
                     "prefill": {"full_name": snapshot.get("full_name", ""), "email": application.get("applicant_email", ""),
                                 "professional_title": snapshot.get("profession", ""), "employer": snapshot.get("employer", ""),
-                                "linkedin": snapshot.get("linkedin", ""), "location": f"{snapshot.get('city', '')} {snapshot.get('state_region', '')}".strip()},
+                                "linkedin": snapshot.get("linkedin", ""), "location": snapshot.get("location") or f"{snapshot.get('city', '')} {snapshot.get('state_region', '')}".strip()},
                     "status": "Created", "created_at": now_iso(),
                 })
             links.append(f"Board Member Profile Form (Complete Your Profile): {origin}/board-profile/{profile_link['token']}")
@@ -556,6 +534,8 @@ def create_workspace_router(db) -> APIRouter:
                 + "\n\nONBOARDING LINKS (copy every URL exactly):\n"
                 + "\n".join(links)
             )
+            if payload.type in {"conditional_offer", "unconditional_offer"}:
+                onboarding_packet = appointment_onboarding_packet(session, links)
         if payload.type in {"formal_appointment_letter", "formal_appointment_email"}:
             process = await db.reference_processes.find_one(
                 {"owner_user_id": user_id, "application_id": application_id}, {"_id": 0, "status": 1})
@@ -628,6 +608,16 @@ def create_workspace_router(db) -> APIRouter:
             except Exception as exc:
                 raise HTTPException(status_code=502, detail=f"Generation failed: {str(exc)[:300]}. Your information is preserved — you can try again.") from exc
         structured = replace_link(structured, apply_url)
+        if onboarding_packet:
+            body = str(structured.get("body") or "").strip()
+            if not body:
+                raise HTTPException(status_code=503, detail="The appointment email was incomplete. Please generate it again.")
+            structured["body"] = body + "\n\n" + onboarding_packet
+        if payload.type in CAMPAIGN_TYPES:
+            try:
+                structured = campaign_material_with_link(payload.type, structured, apply_url)
+            except ValueError as exc:
+                raise HTTPException(status_code=503, detail="The recruitment material was incomplete. Please generate it again.") from exc
         material = await save_generation(db, user_id, payload.type, structured, context[:1500], application_id)
         if application_id and payload.type == "interview_invitation":
             await db.opportunity_applications.update_one(
@@ -766,7 +756,7 @@ def create_workspace_router(db) -> APIRouter:
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
-    async def add_external_applicant(request: Request, name: str = Form(...), cv: UploadFile = File(...), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
+    async def add_external_applicant(request: Request, name: str = Form(...), cv: Optional[UploadFile] = File(None), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
         member = await selection_member(request)
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
@@ -1014,10 +1004,16 @@ def create_workspace_router(db) -> APIRouter:
             )
         existing = await get_current_material(db, member["user_id"], "powerhouse_board_blueprint")
         existing_structured = ((existing or {}).get("current") or {}).get("structured") or {}
+        if existing and existing_structured.get("priority_roles") == roles:
+            return {"material": existing["material"], "priority_roles": roles, "desired_count": desired_count}
         material = await save_generation(
             db, member["user_id"], "powerhouse_board_blueprint",
             {**existing_structured, "priority_roles": roles},
             "Founder-edited Board Member profiles from the six Recruitment Questions.",
+        )
+        await db.generated_materials.update_many(
+            {"user_id": member["user_id"], "type": {"$in": CAMPAIGN_TYPES}},
+            {"$set": {"status": "Needs Review", "updated_at": now_iso()}},
         )
         return {"material": material, "priority_roles": roles, "desired_count": desired_count}
 
@@ -1052,7 +1048,8 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Material not found")
         if payload.version not in {v["version"] for v in material["versions"]}:
             raise HTTPException(status_code=422, detail="Unknown version")
-        await db.generated_materials.update_one({"material_id": material_id}, {"$set": {"current_version": payload.version, "updated_at": now_iso()}})
+        if payload.version != material["current_version"]:
+            await db.generated_materials.update_one({"material_id": material_id}, {"$set": {"current_version": payload.version, "status": "Needs Review", "updated_at": now_iso()}})
         return {"status": "ok", "current_version": payload.version}
 
     # ---------- Opportunity ----------
@@ -1111,6 +1108,9 @@ def create_workspace_router(db) -> APIRouter:
             member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
             if not member:
                 return
+            profiles = await get_current_material(db, user_id, "powerhouse_board_blueprint")
+            if not profiles or profiles["material"].get("status") != "Approved":
+                return
             await db.recruitment_preparation.update_one(
                 {"user_id": user_id},
                 {"$set": {"status": "generating", "stage": "application", "updated_at": now_iso()}},
@@ -1132,6 +1132,9 @@ def create_workspace_router(db) -> APIRouter:
 
             failures = []
             for generation_type in CAMPAIGN_TYPES:
+                existing = await get_current_material(db, user_id, generation_type)
+                if existing and existing["material"].get("status") in {"Generated", "Edited", "Approved"}:
+                    continue
                 await db.recruitment_preparation.update_one(
                     {"user_id": user_id},
                     {"$set": {"stage": generation_type, "updated_at": now_iso()}},
@@ -1147,6 +1150,7 @@ def create_workspace_router(db) -> APIRouter:
                         "Prepare a finished organization-specific recruitment asset from the founder-approved Board Member profiles. "
                         "Use the organization's actual mission, board needs, value proposition and application link. Do not invent facts.",
                     )
+                    structured = campaign_material_with_link(generation_type, structured, apply_url)
                     await save_generation(db, user_id, generation_type, structured, context[:1500])
                 except Exception as exc:
                     failures.append({"type": generation_type, "error": str(exc)[:300]})

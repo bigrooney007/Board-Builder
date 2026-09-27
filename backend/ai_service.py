@@ -25,6 +25,7 @@ CAMPAIGN_STANDARD = (
 )
 
 RECRUITMENT_POSITIONING = """You are an exceptional nonprofit Board recruitment strategist and positioning writer creating finished recruitment copy for a real nonprofit organization.
+Invite professionals to help steer the organization's strategic direction and shape its next phase, using the founder's actual ambitions. Present the approved mix of expertise as Board leadership. Fundraising expertise belongs where the founder approved it; the overall invitation must represent the whole Board opportunity.
 Your job is not simply to announce that Board positions are available. Your job is to position the organization, its mission and the opportunity to contribute so powerfully and truthfully that the RIGHT professional can see why becoming part of this Board could be a meaningful use of their experience.
 Before writing, understand: 1. What this organization exists to accomplish. 2. Who or what it exists to impact. 3. What it is trying to build or accomplish next. 4. Why strengthening the Board matters at this stage. 5. The exact Board expertise/profiles identified through the approved Powerhouse Board gap analysis. 6. What those professionals could help the organization shape, strengthen, build, open, guide or accomplish at Board level.
 Find the strongest VERIFIED positioning available. Make the organization feel significant because of the WORK, VISION and OPPORTUNITY supplied — never because you added hype.
@@ -145,12 +146,14 @@ NEVER mention AI."""},
 
 CHANNEL BRIEF — LINKEDIN RECRUITMENT POST (founder/professional-network voice):
 Write ONE strong LinkedIn recruitment post in the founder/organization leader's natural professional voice. Do not turn the long Recruitment Job Post into a shorter version. Choose ONE compelling angle — only where supported: what the organization is trying to build; the next phase the organization is entering; why the founder is intentionally strengthening the Board; the opportunity for experienced professionals to help shape the mission; a compelling mission outcome; the significance of the work ahead. Lead with a thought or statement that earns attention. Then introduce the Board opportunity naturally. Mention only the most important expertise being recruited rather than dumping a long list. Show what joining the Board allows someone to help shape. End with a clear invitation to apply and the supplied application link. 150-300 words. Short paragraphs. Professional and human. Maximum 3 useful hashtags; use none where they add nothing."""},
-    "social_posts": {"module": 3, "title": "Social Media Recruitment Post", "per_application": False, "schema": {
-        "post_text": "string — ONE concise board recruitment post suitable for Facebook, Instagram and similar general social channels, including the application link placeholder [APPLICATION LINK]. NOT a copy of the LinkedIn post: slightly more accessible and shareable while remaining professional. Structure: a strong opening; 2-5 short paragraphs; if useful a SHORT list of key expertise being recruited and why those people matter; direct invitation to apply. 100-220 words. Human, simple, mobile-readable, easy to share. Prefer no emojis. No unnecessary hashtags. Never sound like a commercial advertisement.",
+    "social_posts": {"module": 3, "title": "Social Media Recruitment Posts", "per_application": False, "schema": {
+        "posts": [{"post_text": "string - one complete social media recruitment post, with its own opening and the supplied application link"}],
     }, "note": RECRUITMENT_POSITIONING + CAMPAIGN_STANDARD + """
-
-CHANNEL BRIEF — SOCIAL MEDIA RECRUITMENT POST (accessible, shareable public invitation):
-Write ONE highly shareable general social-media Board recruitment post. It should be more accessible and direct than the LinkedIn post while remaining professional. Choose a strong human angle around: the mission; what is being built; the future the organization is working toward; or the kind of people being invited to help shape it. Do not duplicate the LinkedIn opening. Do not overload the post with every Board profile — if expertise is listed, include only the priority areas that make sense for a concise social post. Make the right person want to click because the mission and opportunity resonate with them. Include the application link. 100-220 words. Mobile-readable. Prefer no emojis. No hashtag wall."""},
+Create THREE distinct posts the founder can publish across Facebook, Instagram and similar social channels.
+Use the original six answers and founder-approved Board profiles. Each post must stand alone and carry the exact application link.
+Give each a different natural opening: the mission and its meaning; the opportunity to help lead the next phase; the professional expertise and perspective being invited. Use only angles supported by the founder's information.
+Describe strategic leadership and the contribution these people can make. Keep the tone respectful, personal and captivating, with clear language the founder could actually say.
+Aim for 100-180 words per post, in short paragraphs. Include only genuine expectations. Never frame Board Members as volunteer staff or make fundraising the whole invitation. Return exactly three entries in posts."""},
     "recruitment_emails": {"module": 3, "title": "Recruitment Email", "per_application": False, "schema": {
         "subject": "string — ONE strong professional subject line, not ten alternatives",
         "body": "string — a finished professional email the founder can send to their network, supporters, colleagues and professional relationships inviting qualified people to consider the board opportunity, including the application link placeholder [APPLICATION LINK]. Use a natural GENERAL greeting such as 'Hello,' — never [First Name] and never fake personalization. Body: (1) briefly why the founder is reaching out; (2) the organization is recruiting/building its board; (3) the mission briefly; (4) the kinds of professional experience being sought; (5) what board members will help accomplish; (6) invite recipients whose experience aligns to apply; (7) make it natural to forward the opportunity to another suitable professional; (8) the application link; (9) sign with the actual founder/contact information supplied. Never claim the founder personally admires the recipient or that they were specially selected. 225-400 words. Warm, professional, personal without pretending intimacy.",
@@ -163,10 +166,10 @@ Write a finished professional network email announcing the Board opportunity. Th
     }},
     "board_recruitment_job_post": {"module": 3, "title": "Recruitment Job Post", "per_application": False, "schema": {
         "title": "string — a professional opportunity title using the organization's actual board terminology, e.g. 'Founding Board Member | Help Shape [Mission Area]' or 'Board Member Opportunity | Help Build [Meaningful Outcome]'. No clickbait.",
-        "post_body": "string — the organization's PRIMARY professional board recruitment opportunity, suitable for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch (never claim it has already been published anywhere). Written for a professional who may never have heard of the nonprofit. 450-750 words depending on available information. Organize it naturally around the mission, the Board opportunity, the professional experience being sought, verified expectations/practical details, and a direct invitation to apply using [APPLICATION LINK]. Use only reader-facing headings that sound natural for this specific organization where headings help. NEVER output internal production labels such as OPENING, MAIN BODY, BODY, CALL TO ACTION, TEST, BACKEND, PROMPT, SECTION PURPOSE or similar drafting labels. Professional, credible, specific, human and purpose-driven. Clearly represent the actual nature of the board opportunity; NEVER describe an unpaid nonprofit board role as salaried employment.",
+        "post_body": "string — the organization's PRIMARY professional board recruitment opportunity, suitable for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch (never claim it has already been published anywhere). Written for a professional who may never have heard of the nonprofit. 250-400 words depending on available information. Capture the mission, the founder's intent and the approved expertise without turning this into a long job specification. Organize it naturally around the mission, the Board opportunity, the professional experience being sought, verified expectations/practical details, and a direct invitation to apply using [APPLICATION LINK]. Use only reader-facing headings that sound natural for this specific organization where headings help. NEVER output internal production labels such as OPENING, MAIN BODY, BODY, CALL TO ACTION, TEST, BACKEND, PROMPT, SECTION PURPOSE or similar drafting labels. Professional, credible, specific, human and purpose-driven. Clearly represent the actual nature of the board opportunity; NEVER describe an unpaid nonprofit board role as salaried employment.",
     }, "note": RECRUITMENT_POSITIONING + CAMPAIGN_STANDARD + """
 
-CHANNEL BRIEF — RECRUITMENT JOB POST (primary long-form professional listing; must work where someone has never heard of the organization):
+CHANNEL BRIEF — RECRUITMENT JOB POST (focused professional LinkedIn job listing; must work where someone has never heard of the organization):
 Write the organization's primary professional Board recruitment listing. This is not an ordinary vacancy notice. Position the organization first. The opening must immediately establish why the work matters and why this is an important opportunity for accomplished professionals. Where the organization has a compelling verified mission outcome or ambition, consider building the title and opening around it. The reader must understand the significance of the mission before being given a list of qualifications. Use the organization-specific structure: OPENING — make the opportunity feel consequential using the strongest verified mission, direction, stage or future outcome. ABOUT THE ORGANIZATION — explain clearly what the organization exists to do, who it serves and the meaningful direction it is building toward. THE OPPORTUNITY — explain what joining this Board allows a strong professional to help shape and strengthen. WHO WE ARE LOOKING FOR — use ONLY the priority recruitment profiles from the approved Powerhouse Board Blueprint; focus on the most important professional capability areas; where one candidate could naturally bring experience across several requested areas, say so naturally. HOW BOARD MEMBERS WILL CONTRIBUTE — show meaningful Board-level contribution, not unpaid staff work. BOARD MEMBER EXPECTATIONS — include only verified expectations. PRACTICAL DETAILS — include only supplied details; omit unknown information completely. APPLICATION — end naturally with a direct invitation to apply and include the supplied application link. Never print the phrase "CALL TO ACTION" or other internal drafting labels. The writing should make a capable professional feel: "I can see what they are building, why it matters, and how my experience could help shape it." Never use internal gap-analysis language. Never mention weakness in the existing Board. Never sound desperate for applicants."""},
     "personal_invitation_email": {"module": 3, "title": "Personal Invitation Email", "per_application": False, "schema": {
         "subject": "string", "body": "string — a warm personal email inviting someone the founder already knows to consider the board opportunity, includes the application link placeholder [APPLICATION LINK]",
@@ -237,31 +240,27 @@ Do NOT invent missing names, roles, relationships, emails, phones or organizatio
 Return an empty references array when the CV does not explicitly provide professional referees.
 Copy contact details exactly where supplied. Never mention AI."""},
     "conditional_offer": {"module": 5, "title": "Conditional Board Appointment Email", "per_application": True, "schema": {
-        "subject": "string — exactly: Congratulations! Your Conditional Appointment as [the organization's actual Board terminology]",
-        "body": "string — a finished candidate-specific Conditional Board Appointment Email. Clearly state that the founder has selected the candidate for conditional appointment; briefly connect their verified experience to the organization's actual Board need; state ONLY the actual outstanding Reference Check and/or required Background Check conditions supplied by the system; explain that formal appointment and onboarding follow only after applicable conditions are completed and the organization confirms appointment; do not include onboarding documents, profile forms, agreements, signature links or invented requirements.",
-    }, "note": """You are an experienced nonprofit Board recruitment consultant writing a CONDITIONAL BOARD APPOINTMENT EMAIL to ONE candidate whom the founder has already selected for appointment.
-The founder has made the selection decision. AI does not evaluate, score or select the candidate.
-The appointment is CONDITIONAL because one or more actual appointment requirements are still outstanding.
-Use only verified supplied information about: the candidate; their application and CV/resume; the relevant Board expertise/profile; the organization; its mission and direction; the actual Board terminology; the founder/contact information; the actual Reference Check status; the actual Background Check status.
-The email must accomplish five things.
-FIRST — COMMUNICATE THE SELECTION: Congratulate the candidate and clearly state that the organization is pleased to offer them a CONDITIONAL APPOINTMENT to the organization's actual Board type. Make clear that the founder/organization has chosen them. Do not describe this as merely another interview stage.
-SECOND — EXPLAIN WHY THEIR CONTRIBUTION MATTERS: Include one concise, personalized paragraph connecting ACTUAL verified candidate experience to an ACTUAL Board capability or organization priority. Never invent experience. Never manufacture interview praise. Never say "we were impressed" unless actual founder-entered interview information supports that statement. Never compare the candidate with another applicant.
-THIRD — STATE THE ACTUAL CONDITIONS: Identify ONLY the appointment requirements that the supplied status context shows are genuinely outstanding. If the Reference Check is completed, do not list it. If references are submitted but reference checking remains incomplete, state that the organization's reference process remains outstanding. If the organization requires a Background Check and that process is outstanding, state it. If Background Check status is Not Required, blank, unknown or not recorded, do NOT invent a requirement. If the organization supplied the actual name of a specific clearance, use that exact name. Never invent legal requirements. Never expose detailed reference responses or background-check findings. Describe these as outstanding appointment requirements or remaining steps in our appointment process — never as "final onboarding requirements".
-FOURTH — EXPLAIN WHAT CONDITIONAL MEANS: State clearly and naturally that once the applicable outstanding requirements are completed and the organization confirms the appointment, the candidate will receive their formal appointment and onboarding information. This email is not the Formal Appointment. Do not describe the candidate as already being a fully appointed Board Member/Director. Do not use vague wording that could make them think the appointment is final — but do not sound uncertain about whether the organization wants them.
-FIFTH — CLOSE POSITIVELY: Thank them for the time they have invested in the process and reinforce that the organization looks forward to completing the remaining appointment steps with them. Sign with the founder's actual supplied contact details.
-DO NOT include: Board onboarding-session details; Board Manual; Organization Overview; Board Member Profile Form; Board Member Agreement; Confidentiality Agreement; Conflict of Interest Agreement; first Board meeting information; fundraising planning resources; onboarding links; signature links. Those belong after Formal Appointment.
-Do not assign detailed Board responsibilities (no committee chairs, organizational functions, donors, fundraising targets, teams or officer positions unless that exact appointment was formally established and supplied). Do not invent deadlines. Do not invent links. Do not invent legal conditions. Do not expose confidential due-diligence information. Do not ask the candidate to provide references again if the status shows they were already submitted. Do not tell the candidate that a background check is required unless the supplied organization/candidate status establishes that it is.
-Never mention AI.
-Keep the email approximately 225-350 words. Professional, warm, significant and clear."""},
+        "subject": "string - Congratulations! Your Conditional Board Appointment with the actual organization name",
+        "body": "string - a warm, candidate-specific conditional appointment email; the platform appends the complete onboarding packet after this body",
+    }, "note": """The founder has selected this person for a CONDITIONAL Board appointment before onboarding.
+Begin with congratulations and welcome them as a Board Member whose appointment is subject to the outstanding reference and background checks listed in the supplied conditions. Use the organization's actual Board terminology.
+Connect their verified experience or stated contribution to the mission and the approved Board need in one clear paragraph.
+State the supplied outstanding conditions clearly. A completed or explicitly waived check is not outstanding. Explain that the organization will confirm completion of the conditions. Do not claim checks were completed or an interview happened without evidence.
+Invite the person into onboarding now. Explain that the onboarding details and materials follow below: review the Organization Overview and Board Manual, review and sign the shared Board agreements, and complete their Board Member Profile before the session.
+The platform appends the actual session date, time, timezone, meeting format/location/link and all six resource links. Do not repeat the packet in the body or say the documents will arrive later. Never describe linked documents as file attachments.
+Close warmly with the founder's actual name, role and organization/contact details.
+Do not invent officer titles, duties, deadlines, legal requirements or praise. Keep the main email around 180-260 words, with complete natural paragraphs. Never mention AI."""},
     "unconditional_offer": {"module": 5, "title": "Unconditional Board Appointment Offer Email", "per_application": True, "schema": {
-        "subject": "string — professional subject confirming the organization is offering the person a Board appointment without making reference/background completion a condition",
-        "body": "string — concise candidate-specific appointment-offer email. Clearly state that the organization is offering the Board position without reference/background completion being a condition of the offer; connect the candidate's verified experience to the mission/Board need; explain that onboarding is the next stage; do not call this the final appointment letter and do not include onboarding links unless supplied."
-    }, "note": """The founder/organization has deliberately chosen to make an UNCONDITIONAL Board appointment offer to this candidate.
-Do not evaluate or select the person. The human already made the decision.
-Write a professional, warm email that: confirms the organization is offering the person the Board position; makes clear that the offer itself is not conditional on completing reference/background checks; briefly connects verified candidate experience to the organization's actual mission or Board need; explains that onboarding is the next stage; and signs with the founder's actual supplied details.
-Do not imply that reference/background checks were completed when they were not. Do not expose reference responses or background-check details. Do not invent legal requirements, terms, officer titles, responsibilities, dates or links.
-This is the organization's appointment OFFER before onboarding. It is not the final post-onboarding appointment letter/email.
-Never mention AI. Keep it concise and professional."""},
+        "subject": "string - Congratulations and welcome to the actual organization's Board",
+        "body": "string - a warm, candidate-specific welcome and Board appointment offer; the platform appends the complete onboarding packet after this body",
+    }, "note": """The founder has selected this person for an UNCONDITIONAL Board appointment before onboarding.
+Begin with congratulations, welcome them to the organization's actual Board type and clearly confirm the Board appointment offer. The human has made the decision.
+Explain why their verified experience or stated contribution matters to this organization's mission and approved Board need.
+Move directly into onboarding. Ask them to review the Organization Overview and Board Manual, review and sign the shared Board agreements, and complete their Board Member Profile before the session.
+Omit reference and background checks entirely. Do not require them, discuss waivers, or claim they have been completed.
+The platform appends the actual session date, time, timezone, meeting format/location/link and all six resource links. Do not repeat the packet in the body or say the documents will be sent later. Never describe linked documents as file attachments.
+Sign with the founder's actual name, role and organization/contact details. Do not invent terms, responsibilities or officer titles.
+Keep the main email around 180-260 words, professional and welcoming. Never mention AI."""},
     "onboarding_email": {"module": 5, "title": "Board Onboarding Email", "per_application": True, "schema": {
         "subject": "string — professional onboarding subject using the actual organization name",
         "body": "string — complete candidate-specific onboarding email using the supplied onboarding date/time/session details and every exact secure link supplied for Organization Overview, Board Manual, Board Member Agreement, Confidentiality Agreement, Conflict of Interest Agreement and Board Member Profile Form. Do not invent or omit supplied links."
@@ -531,13 +530,13 @@ Do not invent: background-check providers; forms; links; deadlines; number of re
 Do not exaggerate praise. Do not state that the candidate was the strongest applicant. Do not compare them with anyone else. Never expose evaluation ratings, founder notes or internal analysis.
 Approximately 140-220 words. Warm, clear, professional and forward-moving.
 NEVER mention AI."""},
-    "reference_request_email": {"module": 5, "title": "Reference Check Email", "per_application": True, "schema": {
+    "reference_request_email": {"module": 5, "title": "Reference Confirmation Email", "per_application": True, "schema": {
         "subject": "Exactly: Reference Request | [actual candidate full name] — [actual organization name]",
         "body": "The complete professional email to the supplied referee requesting responses to the five standardized reference questions. Make clear the candidate is being considered, not already appointed.",
     }, "note": """You are writing a professional reference request from a nonprofit founder or executive director to a professional referee supplied by ONE Board candidate.
 The candidate named this person as a professional reference. Use only supplied information.
 The email should:
-1. Address the actual referee by name where supplied. Use [Referee Name] only where the reusable resource genuinely does not have the name.
+1. Address the actual selected referee by name where supplied. Otherwise begin with Hello, so the founder can use the email separately for each referee. Never guess a recipient.
 2. Introduce the founder/organization briefly.
 3. State that [actual candidate name] is being considered through the organization's Board appointment process and supplied the referee as a professional reference.
 4. Explain that the organization would value the referee's perspective based on their actual experience with the candidate.
@@ -547,7 +546,7 @@ The email should:
 - What strengths have you observed in [Candidate Name] when working with other people, providing leadership, solving problems or contributing to shared goals?
 - Is there anything relevant to [Candidate Name]'s professional conduct, reliability or ability to carry a position of responsibility that you believe we should understand as we consider their Board application?
 - Based on your direct experience with [Candidate Name], would you be comfortable recommending them for a position of responsibility such as nonprofit Board service? Please briefly explain your answer.
-6. Explain that they may reply directly to the email with their responses OR, where appropriate, arrange a short reference conversation with the founder.
+6. Ask them to reply directly to this email with their responses. Include the questions in the email. Never include a form, portal, upload request or questionnaire link. This email requests a reference; it does not confirm that one has already been received.
 7. Thank them for their time.
 8. Sign with the founder's actual supplied contact details.
 Do not invent the referee's relationship to the candidate. Do not tell the referee the candidate has already been appointed. Do not reveal private interview information. Do not tell the referee what answer the organization hopes to receive. Do not request protected/private personal information.
@@ -563,24 +562,16 @@ Do not reveal: whether the reference was positive or negative; what another refe
 Do not promise confidentiality in absolute legal terms. Where appropriate, say their input will be handled with appropriate discretion as part of the organization's process.
 Keep this 80-140 words. Warm and professional.
 NEVER mention AI."""},
-    "candidate_referee_request": {"module": 5, "title": "Candidate Referee Request Email", "per_application": True, "schema": {
-        "subject": "Exactly: Next Step: Your References | [actual organization name]",
-        "body": "The complete candidate-specific email requesting exactly two professional references. Use the exact secure Reference Information Form URL where supplied; otherwise ask the candidate to reply with the referee details. Never imply final Board appointment.",
-    }, "note": """You are writing a professional email from a nonprofit founder or executive director to ONE Board candidate who has successfully moved beyond the interview stage and is now completing the organization's reference process.
-The founder has already decided to move this candidate to this stage. Do not evaluate that decision.
-Use: candidate's actual first name; actual organization name; actual Board terminology; founder's actual supplied contact information; and the exact secure Reference Information Form URL where supplied.
-The email should:
-1. Thank the candidate for continuing through the Board recruitment process.
-2. Explain that the next step is the organization's professional reference process.
-3. Ask the candidate to provide TWO professional references.
-4. Explain briefly that the references should be people who know their professional work/conduct sufficiently well to provide a meaningful reference.
-5. Ask for: referee name; role/organization; relationship to candidate; email; phone.
-6. If the secure Reference Information Form URL is supplied, direct the candidate to submit the information through that exact link.
-7. If no secure form URL exists, ask them to reply to the email with the information.
-8. Close warmly with the founder's actual supplied signature.
-Do not tell the candidate they have already been appointed. Do not describe references as a legal requirement unless that was explicitly supplied. Do not invent deadlines. Do not invent links. Do not request references again if supplied system context indicates References Submitted or Completed.
-Approximately 130-200 words.
-NEVER mention AI."""},
+    "candidate_referee_request": {"module": 5, "title": "Ask For References Email", "per_application": True, "schema": {
+        "subject": "string - a professional subject using the actual organization name",
+        "body": "string - a complete email to this candidate asking them to reply with two professional references",
+    }, "note": """Write an email from the founder to this Board applicant asking for two professional references.
+Use the candidate's actual name, the organization's name and Board type, and the founder's actual signature.
+Thank them for their interest. Explain that the founder would like to hear from people who know their professional work and can speak about their contribution and reliability.
+Ask for each referee's name, role/organization, how they know the candidate and email address. A phone number is optional.
+Ask the candidate to send the details by replying directly to this email. No form, link or portal is used.
+Do not imply an interview has happened or an appointment has been made unless the supplied record confirms it. Never invent a deadline or legal requirement.
+Keep the email warm, clear and around 120-180 words. Never mention AI."""},
     "reference_call_script": {"module": 5, "title": "Reference Call Guide", "per_application": True, "schema": {
         "reference_context": {
             "candidate_name": "string — actual candidate name",
@@ -1537,6 +1528,24 @@ GENERATION_TYPES["activation_followup_email"] = {"module": 5, "title": "Board Me
     "body": "string — the complete follow-up email from the founder to this ONE Board Member. It should: thank them for helping build, review and adopt the fundraising plan; reference what was actually agreed during the adoption meeting using ONLY the supplied adoption conclusions; confirm the specific area(s) or responsibility this member agreed to support where supplied — NEVER invent or expand a responsibility; connect their part to the adopted strategy; and close with the practical next step. Where no responsibility was recorded for this member, thank them and invite the follow-up conversation instead of assigning anything. Warm, natural, plain-text paragraphs. End with the founder's name, title where supplied, and organization. NEVER mention AI. NO unresolved placeholders.",
 }, "note": "You write an individual follow-up email from a nonprofit founder to ONE Board Member after the Board adopted the fundraising strategy. Use ONLY: the adopted Fundraising Strategy Plan, the founder's recorded adoption meeting conclusions, the member's recorded agreed responsibility, and the member's own planning response and review. NEVER use another member's answers. NEVER invent commitments, meetings, amounts, donors or relationships."}
 
+RESOURCE_EXPLANATION_STANDARD = """
+CONTENT DEPTH: Develop the supplied ideas into clear, useful explanations. For each substantial section, write two or three focused paragraphs where the source material supports that depth. Explain what the idea means for this organization, why it matters and how the agreed approach works in practice. Short sections may remain shorter.
+Use plain language a ten-year-old could follow while addressing adult Board leaders respectfully. Keep the person's original intent and distinctive reasoning recognizable. Use concrete explanation instead of jargon or skeletal phrases.
+Expand the explanation of supplied facts and decisions, without inventing new decisions, programs, people, commitments, dates, targets or resources. Preserve the exact mission when the Board decided to keep it. Use lists for practical steps and assignments, with enough explanation to make each useful. Avoid repetition and padding.
+"""
+
+for _resource_type in (
+    "board_member_portfolio", "organization_overview", "board_manual", "board_member_agreement",
+    "confidentiality_agreement", "conflict_of_interest_agreement", "strategic_planning_foundational",
+    "strategic_final_plan", "strategic_session_final_plan", "strategic_detailed_area_plan",
+    "strategic_plan_synchronized", "activation_fundraising_strategy", "activation_revised_strategy",
+):
+    GENERATION_TYPES[_resource_type]["note"] += "\n" + RESOURCE_EXPLANATION_STANDARD
+
+GENERATION_TYPES["interview_guide"]["note"] += """
+PERSONALIZATION: Read this person's own explanation of how they see themselves supporting the organization, together with their CV where supplied, the founder's six answers and approved recruitment profiles. Build a focused conversation around the connection between these sources. Questions should reveal how they think about the mission, how they would work with this Board and whether their intended contribution fits what the founder is building. Invite concrete examples of following through and collaborating. Do not assume a missing CV means missing capability, invent experience, decide whether the candidate fits, or replace the founder's judgment with a score.
+"""
+
 SYSTEM_MESSAGE = (
     "You are the Nonprofit Board Builder recruitment assistant. You work ONLY from the information provided in the prompt: "
     "the nonprofit's submitted information, the confirmed recruitment profile, previously approved recruitment materials, and "
@@ -1804,10 +1813,13 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
         body = str(structured.get("body", "")).strip()
         return _flush_left("\n\n".join(part for part in [f"Subject: {subject}" if subject else "", body] if part))
     if generation_type == "social_posts":
+        posts = structured.get("posts") or []
+        if posts:
+            return _flush_left("\n\n".join(f"POST {index}\n\n{post.get('post_text', '').strip()}" for index, post in enumerate(posts, 1)))
         return _flush_left(str(structured.get("post_text", "")).strip())
     if generation_type == "referral_request_email":
         return _flush_left(str(structured.get("message", "")).strip())
-    if generation_type in {"conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "interview_invitation", "before_interview_rejection", "after_interview_thank_you", "after_interview_email", "after_interview_rejection"}:
+    if generation_type in {"candidate_referee_request", "reference_request_email", "referee_confirmation_email", "conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "interview_invitation", "before_interview_rejection", "after_interview_thank_you", "after_interview_email", "after_interview_rejection"}:
         subject = str(structured.get("subject", "")).strip()
         body = str(structured.get("body", "")).strip()
         return _flush_left("\n\n".join(part for part in [f"Subject: {subject}" if subject else "", body] if part))

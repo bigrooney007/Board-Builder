@@ -1,88 +1,45 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
 import { opportunityPagesText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const chunkQuestions = (questions, size = 6) => {
-  const steps = [];
-  for (let index = 0; index < questions.length; index += size) steps.push(questions.slice(index, index + size));
-  return steps;
-};
-
-export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, onSubmit, requireCv = true }) => {
-  const steps = useMemo(() => chunkQuestions(questions), [questions]);
-  const totalSteps = steps.length + (requireCv ? 1 : 0);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [answers, setAnswers] = useState(() => {
-    const initial = {};
-    questions.forEach((question) => { initial[question.id] = initialAnswers[question.id] || ""; });
-    return initial;
-  });
-  const [errors, setErrors] = useState({});
+export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, onSubmit, requireCv = false }) => {
+  const [answers, setAnswers] = useState(() => Object.fromEntries(questions.map((question) => [question.id, initialAnswers[question.id] || ""])));
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const cvRef = useRef(null);
-
-  const validate = () => {
-    const found = {};
-    if (stepIndex < steps.length) {
-      steps[stepIndex].forEach((question) => {
-        if (question.required !== false && !String(answers[question.id] || "").trim()) found[question.id] = "This field is required.";
-      });
-    } else if (requireCv && !cvRef.current?.files?.length) {
-      found.cv = "Please upload your résumé/CV (PDF, DOC or DOCX).";
-    }
-    setErrors(found);
-    return !Object.keys(found).length;
-  };
-
-  const next = async () => {
-    if (!validate()) return;
-    if (stepIndex < totalSteps - 1) { setStepIndex(stepIndex + 1); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const submit = async (event) => {
+    event.preventDefault();
+    if (busy) return;
     setBusy(true); setSubmitError("");
     try { await onSubmit(answers, cvRef.current?.files?.[0] || null); }
     catch (error) { setSubmitError(error.response?.data?.detail || "We could not submit your application. Please try again."); setBusy(false); }
   };
-
   return (
-    <div className="funnel-lead-form step-form public-application-form">
-      <div className="step-progress">
-        <span className="step-count" data-testid="application-step-count">Step {stepIndex + 1} of {totalSteps}</span>
-        <div className="step-progress-bar"><i style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }} /></div>
+    <form className="funnel-lead-form public-application-form" onSubmit={submit}>
+      <div className="step-fields">
+        {questions.map((question) => <label className="field" key={question.id} data-testid={`application-${question.id}`}>
+          <span>{question.label}{question.required !== false && <b> *</b>}</span>
+          {question.type === "textarea" ? (
+            <textarea rows="5" required={question.required !== false} value={answers[question.id] || ""} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} />
+          ) : question.type === "yes_no" ? (
+            <select required={question.required !== false} value={answers[question.id] || ""} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })}><option value="">Select one</option><option>Yes</option><option>No</option></select>
+          ) : (
+            <input type={question.type === "email" ? "email" : "text"} required={question.required !== false} value={answers[question.id] || ""} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} />
+          )}
+        </label>)}
+        <label className="field" data-testid="application-cv">
+          <span>Upload résumé/CV {requireCv ? <b>*</b> : "(optional)"}</span>
+          <input type="file" ref={cvRef} accept=".pdf,.doc,.docx" required={requireCv} />
+        </label>
       </div>
-      {stepIndex < steps.length ? (
-        <div className="step-fields" key={stepIndex}>
-          {steps[stepIndex].map((question) => (
-            <label className="field" key={question.id} data-testid={`application-${question.id}`}>
-              <span>{question.label}{question.required !== false && <b> *</b>}</span>
-              {question.type === "textarea" && <textarea rows="3" value={answers[question.id]} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} />}
-              {question.type === "yes_no" && <select value={answers[question.id]} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })}><option value="">Select one</option><option>Yes</option><option>No</option></select>}
-              {(question.type === "text" || question.type === "email" || !["textarea", "yes_no"].includes(question.type)) && ["text", "email"].includes(question.type) && <input type={question.type} value={answers[question.id]} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} />}
-              {errors[question.id] && <p className="field-error">{errors[question.id]}</p>}
-            </label>
-          ))}
-        </div>
-      ) : (
-        <div className="step-fields">
-          <label className="field" data-testid="application-cv">
-            <span>{opportunityPagesText.uploadRSumCv}<b>*</b></span>
-            <input type="file" ref={cvRef} accept=".pdf,.doc,.docx" />
-            {errors.cv && <p className="field-error">{errors.cv}</p>}
-          </label>
-        </div>
-      )}
-      {submitError && <p className="submit-error" data-testid="application-submit-error">{submitError}</p>}
-      <div className="step-actions">
-        {stepIndex > 0 ? <button type="button" className="button button-back" onClick={() => setStepIndex(stepIndex - 1)} data-testid="application-back"><ArrowLeft size={15} /> Back</button> : <span />}
-        <button type="button" className="button funnel-submit" disabled={busy} onClick={next} data-testid={stepIndex === totalSteps - 1 ? "application-submit" : "application-continue"}>
-          {busy ? "Submitting…" : stepIndex === totalSteps - 1 ? submitLabel : <>Continue <ArrowRight size={15} /></>}
-        </button>
-      </div>
-    </div>
+      {submitError && <p className="submit-error" role="alert" data-testid="application-submit-error">{submitError}</p>}
+      <button type="submit" className="button funnel-submit" disabled={busy} data-testid="application-submit">{busy ? "Submitting…" : submitLabel}</button>
+    </form>
   );
 };
 

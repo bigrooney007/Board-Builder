@@ -156,28 +156,21 @@ export const usePlatformVideo = (key) => {
 };
 
 
-let recruitmentSectionVideosCache = null;
-let recruitmentSectionVideosPromise = null;
-
-const loadRecruitmentSectionVideos = () => {
-  if (recruitmentSectionVideosCache) return Promise.resolve(recruitmentSectionVideosCache);
-  if (!recruitmentSectionVideosPromise) {
-    recruitmentSectionVideosPromise = axios.get(`${API}/platform/recruitment-section-videos`).then((response) => {
-      recruitmentSectionVideosCache = response.data.videos || [];
-      return recruitmentSectionVideosCache;
-    }).catch(() => []);
-  }
-  return recruitmentSectionVideosPromise;
-};
-
 export const useRecruitmentSectionVideo = (key) => {
-  const [video, setVideo] = useState(() => recruitmentSectionVideosCache?.find((item) => item.key === key) || null);
+  const [video, setVideo] = useState(null);
   useEffect(() => {
     let live = true;
-    loadRecruitmentSectionVideos().then((rows) => {
-      if (live) setVideo(rows.find((item) => item.key === key) || null);
-    });
-    return () => { live = false; };
+    const refresh = () => axios.get(`${API}/platform/recruitment-section-videos`)
+      .then(({ data }) => { if (live) setVideo((data.videos || []).find((item) => item.key === key) || null); })
+      .catch(() => {});
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("recruitment-videos-changed", refresh);
+    return () => {
+      live = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("recruitment-videos-changed", refresh);
+    };
   }, [key]);
   return video;
 };

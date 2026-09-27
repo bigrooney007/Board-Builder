@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from ai_service import parse_json_response
+from ai_service import RESOURCE_EXPLANATION_STANDARD, parse_json_response
 from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 from group_game_routes import AREA_DEFS, ROUND_DEFS, area_ideas
@@ -35,6 +35,8 @@ You are an editor and strategist presenting the Board's own decisions. Preserve 
 The finished strategy is a proper plan, not meeting minutes. It contains: an executive summary stating the fundraising amount, purpose and deadline; who the organisation will raise money from across individuals, businesses and grantors and why each audience will support; where to find them; how to attract them and build credibility; what to ask each audience to fund and how much to ask; the step-by-step process for raising money from them; and the agreed role of every participating Board Member.
 Write in Rooney Akpesiri's clear, direct, practical and explanatory style. Use complete paragraphs where explanation is needed and specific actions where execution is required.
 Return only the required structured strategy output."""
+
+STRATEGY_SYSTEM_MESSAGE += "\n" + RESOURCE_EXPLANATION_STANDARD
 
 GENERATION_RULES = """RULES:
 - Use the organisation's actual information. Use the fundraising goal exactly as provided — never change the amount.

@@ -11,7 +11,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
-from ai_service import parse_json_response
+from ai_service import RESOURCE_EXPLANATION_STANDARD, parse_json_response
 from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import GAME_SECTION_DEFAULTS
 from group_game_routes import AREA_DEFS, area_ideas
@@ -90,6 +90,8 @@ Do not write "the Board discussed", "a participant said", names of contributors 
 Do not add generic advice or invent funders, organisations, relationships, commitments, actions, amounts or results. Leave unsupported parts empty.
 Write proper explanatory paragraphs in Rooney Akpesiri's clear, direct and practical style.
 Return only the required structured JSON."""
+
+FINAL_SYSTEM_MESSAGE += "\n" + RESOURCE_EXPLANATION_STANDARD
 
 FINAL_V2_SCHEMA = {
     "executive_summary": "Two or three proper paragraphs explaining the exact fundraising amount, purpose, deadline and agreed strategic approach without describing the meeting",
