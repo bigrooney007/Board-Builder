@@ -3,14 +3,17 @@ import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
-import { PAGE_META, usePageMeta } from "@/seo";
+import { useBlogMeta } from "@/seo";
 import { blogPagesText } from "../content/siteContent";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const ORIGIN = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
+const API = `${ORIGIN}/api`;
+const imageSrc = (post) => post.image_path ? ORIGIN + post.image_path : post.image_url;
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
 
 const PostCard = ({ post }) => (
   <article className="blog-card" data-testid={`blog-card-${post.slug}`}>
+    {post.image_url && <Link to={`/blog/${post.slug}`} tabIndex={-1} aria-hidden="true"><img className="blog-cover" src={imageSrc(post)} alt="" loading="lazy" width="1200" height="630"/></Link>}
     <span className="blog-category-tag">{post.category}</span>
     <h2><Link to={`/blog/${post.slug}`}>{post.title}</Link></h2>
     <p className="blog-date">{formatDate(post.published_at)}</p>
@@ -20,15 +23,18 @@ const PostCard = ({ post }) => (
 );
 
 export const BlogPage = () => {
-  usePageMeta(...PAGE_META.blog);
+  useBlogMeta();
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const load = useCallback((category) => {
+    setLoading(true); setError("");
     axios.get(`${API}/blog/posts`, { params: category ? { category } : {} }).then((response) => {
       setPosts(response.data.posts);
       setCategories(response.data.categories);
-    }).catch(() => {});
+    }).catch(() => setError("The articles could not load. Please refresh to try again.")).finally(() => setLoading(false));
   }, []);
   useEffect(() => { load(filter); }, [filter, load]);
   return (
@@ -45,7 +51,9 @@ export const BlogPage = () => {
             <button className={filter === category.key ? "active" : ""} onClick={() => setFilter(category.key)} key={category.key} data-testid={`blog-filter-${category.key}`}>{category.name}</button>
           ))}
         </div>
-        {posts.length === 0 && <p className="workspace-note" data-testid="blog-empty">{blogPagesText.articlesAreComingSoon}</p>}
+        {loading && <p>Loading articles...</p>}
+        {error && <p role="alert">{error}</p>}
+        {!loading && !error && posts.length === 0 && <p className="workspace-note" data-testid="blog-empty">{blogPagesText.articlesAreComingSoon}</p>}
         <div className="blog-grid">{posts.map((post) => <PostCard post={post} key={post.slug} />)}</div>
       </main>
     </FunnelLayout>
@@ -56,8 +64,15 @@ export const BlogPostPage = () => {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState(200);
+  useBlogMeta(post, status);
   useEffect(() => {
-    axios.get(`${API}/blog/posts/${slug}`).then((response) => setPost(response.data)).catch(() => setError("This article could not be found."));
+    let active = true;
+    setPost(null); setError(""); setStatus(200);
+    axios.get(`${API}/blog/posts/${encodeURIComponent(slug)}`).then((response) => { if (active) setPost(response.data); }).catch((err) => {
+      if (active) { setStatus(err.response?.status === 404 ? 404 : 503); setError(err.response?.status === 404 ? "This article could not be found." : "This article could not load. Please try again shortly."); }
+    });
+    return () => { active = false; };
   }, [slug]);
   const renderBody = (body) => (body || "").split(/\n{2,}|\n(?=## )/).map((block, index) => {
     const trimmed = block.trim();
@@ -69,17 +84,20 @@ export const BlogPostPage = () => {
     <FunnelLayout>
       <main className="member-page blog-article-page" data-testid="blog-article-page">
         {error && <div className="member-card"><h2>{error}</h2><Link className="button" to="/blog">{blogPagesText.backToAllArticles}</Link></div>}
+        {!post && !error && <p>Loading article...</p>}
         {post && (
           <>
+            {post.image_url && <img className="blog-cover blog-article-cover" src={imageSrc(post)} alt={post.image_alt} width="1200" height="630" fetchPriority="high"/>}
             <header className="member-page-heading">
               <span className="blog-category-tag">{post.category}</span>
               <h1 data-testid="article-title">{post.title}</h1>
               <p className="blog-date" data-testid="article-date">{formatDate(post.published_at)}</p>
+              <p className="blog-byline">By Rooney Akpesiri</p>
             </header>
             <article className="blog-article-body" data-testid="article-body">{renderBody(post.body)}</article>
             <section className="blog-cta" data-testid="article-cta">
-              <h2>Let us show you the top 3 mistakes you are making with your board that are limiting your organization's ability to raise money exponentially.</h2>
-              <a className="button" href="/fundraising-system" data-testid="article-cta-button">SHOW ME THE 3 BOARD MISTAKES <ArrowRight size={16} /></a>
+              <h2>{post.cta_label}</h2>
+              <a className="button" href={post.cta_url} data-testid="article-cta-button">{post.cta_button} <ArrowRight size={16} /></a>
             </section>
             <p><Link to="/blog" className="blog-read-link">Read All Articles</Link></p>
           </>

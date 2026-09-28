@@ -9,8 +9,9 @@ import {
   PlatformVideosSection,
 } from "@/admin/CleanPlatformSection";
 import { adminPageText } from "../content/appContent";
+import BlogAdminSection from "@/admin/BlogAdminSection";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "")}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
 const statuses = ["New Applicant", "Active", "Under Review", "Contacted", "Presented to Nonprofit", "Interviewing", "Placed on Board", "Paused", "Withdrawn"];
 const blankFilters = { search: "", country: "", state_region: "", cause: "", skill: "", board_type: "", fundraising: "", availability: "" };
@@ -137,7 +138,7 @@ function ApplicantsSection({ applicants, filters, setFilters, selected, setSelec
 export default function AdminPage() {
   const [user,setUser]=useState(null);
   const [checking,setChecking]=useState(true);
-  const [tab,setTab]=useState("pathways");
+  const [tab,setTab]=useState(() => new URLSearchParams(window.location.search).get("tab") === "blog" ? "blog" : "pathways");
   const [applicants,setApplicants]=useState([]);
   const [filters,setFilters]=useState(blankFilters);
   const [selected,setSelected]=useState([]);
@@ -169,6 +170,7 @@ export default function AdminPage() {
     ["homepages","6 Home Page Text"],
     ["analytics","Platform Analytics"],
     ["applicants","Board Applicant Network"],
+    ["blog","Blog Post Generator"],
     ["strategic","Strategic Planning"],
   ];
 
@@ -180,6 +182,7 @@ export default function AdminPage() {
     {tab==="homepages"&&<HomepageTextSection/>}
     {tab==="analytics"&&<PlatformAnalyticsSection/>}
     {tab==="strategic"&&<StrategicPlanningSection/>}
+    {tab==="blog"&&<BlogAdminSection client={client}/>}
     {tab==="applicants"&&<ApplicantsSection applicants={applicants} filters={filters} setFilters={setFilters} selected={selected} setSelected={setSelected} filterOptions={filterOptions} loadApplicants={loadApplicants} openProfile={openProfile}/>}
     {profile&&<Profile applicant={profile} close={()=>setProfile(null)} refresh={loadApplicants}/>}
   </main>;

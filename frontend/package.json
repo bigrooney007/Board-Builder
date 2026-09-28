@@ -63,7 +63,8 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build && node scripts/prerender-landings.cjs",
-    "test": "craco test"
+    "test": "craco test",
+    "serve": "node scripts/serve-public.cjs"
   },
   "browserslist": {
     "production": [

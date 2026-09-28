@@ -74,7 +74,7 @@ function renderLandingHtml(template, pathname) {
 function robotsTxt() {
   const privatePaths = ["/api/", "/admin", "/app/", "/login", "/forgot-password", "/reset-password/", "/purchase/", "/apply/", "/sign/", "/shared/", "/board-profile/", "/reference-form/", "/referee-form/", "/onboarding-session/", "/game/", "/play/", "/group-game/", "/strategic-planning/dashboard", "/strategic-planning/intake", "/board-recommitment/dashboard", "/board-recommitment/intake"];
   // The wildcard rules allow Googlebot and OAI-SearchBot to crawl every public landing page.
-  return ["User-agent: *", "Allow: /", ...privatePaths.map((path) => `Disallow: ${path}`), "", `Sitemap: ${SITE_ORIGIN}/sitemap.xml`, ""].join("\n");
+  return ["User-agent: *", "Allow: /", ...privatePaths.map((path) => `Disallow: ${path}`), "Allow: /api/blog/images/", "Allow: /api/blog/sitemap.xml", "", `Sitemap: ${SITE_ORIGIN}/sitemap.xml`, `Sitemap: ${SITE_ORIGIN}/api/blog/sitemap.xml`, ""].join("\n");
 }
 
 function sitemapXml() {

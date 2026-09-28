@@ -62,3 +62,8 @@ the sitemap or initiate search-engine indexing.
 Metadata and preview cards describe the offers without prices or changing refund
 terms. When an offer's positioning changes, update its manifest entry alongside the
 landing page so the public description remains accurate.
+
+The blog now has dynamic article HTML and article-specific cover images. See
+`docs/blog-workstation.md` for the original admin generator and deployment check.
+Static-only hosting must use the included production frontend server for fresh blog
+metadata; the existing Emergent `yarn start` command already handles it.

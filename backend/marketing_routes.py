@@ -1,27 +1,36 @@
-"""Phase 4 routes: public blog + admin-triggered test generation/sends. No admin dashboard."""
+"""Public articles and the original admin's blog workstation."""
+from datetime import date, datetime, timedelta
+from html import escape
 from typing import Optional
-
-from fastapi import APIRouter, HTTPException, Request
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field, field_validator
-
+from starlette.concurrency import run_in_threadpool
 from auth_service import authenticate_admin
-from board_content_topics import BOARD_CONTENT_TOPICS
-from marketing_service import CATEGORIES, run_weekly_nurture, create_scheduled_blog_post, generate_linkedin_snippet, next_topic_for, now_tz, regenerate_blog_post, slugify_title
-
-PUBLIC_FIELDS = {"_id": 0, "blog_post_id": 1, "title": 1, "slug": 1, "category": 1, "category_key": 1, "excerpt": 1, "published_at": 1, "cta_label": 1, "cta_button": 1, "cta_url": 1}
+from blog_content import BLOG_CATEGORIES
+from blog_media import ORIGIN, cover_png, image_version, present_post
+from blog_service import (CATEGORIES, blog_settings, claim_regeneration, generate_linkedin_snippet,
+    generate_reserved_blog_post, next_topic_for, now_tz, reserve_blog_post, slugify_title, topic_usage)
+from marketing_service import run_weekly_nurture
 
 
 class BlogGenerate(BaseModel):
     category: str
-    scheduled_date: Optional[str] = ""
+    scheduled_date: Optional[date] = None
+    topic_id: str = ""
     publish_now: bool = False
 
     @field_validator("category")
     @classmethod
-    def valid_category(cls, value: str) -> str:
-        if value not in CATEGORIES:
-            raise ValueError("Unknown category")
+    def valid_category(cls, value):
+        if value not in BLOG_CATEGORIES:
+            raise ValueError("Choose one of the five current blog topics.")
         return value
+
+    @field_validator("scheduled_date", mode="before")
+    @classmethod
+    def blank_date(cls, value):
+        return value or None
 
 
 class NurtureTestSend(BaseModel):
@@ -30,147 +39,197 @@ class NurtureTestSend(BaseModel):
 
 class BlogEdit(BaseModel):
     title: str = Field(min_length=3, max_length=200)
-    excerpt: str = ""
-    body: str = Field(min_length=50)
+    excerpt: str = Field(min_length=10, max_length=200)
+    body: str = Field(min_length=50, max_length=20000)
+    graphic_headline: str = Field(default="", max_length=85)
+    graphic_subtitle: str = Field(default="", max_length=110)
+
+    @field_validator("title", "excerpt", "body", "graphic_headline", "graphic_subtitle", mode="before")
+    @classmethod
+    def trim_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class BlogSettings(BaseModel):
+    enabled: bool
+    time: str = Field(pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+    timezone: str
+
+    @field_validator("timezone")
+    @classmethod
+    def valid_timezone(cls, value):
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Use a valid timezone, such as Europe/London or America/New_York.")
+        return value
 
 
 def create_marketing_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
+    async def find_post(post_id):
+        post = await db.blog_posts.find_one({"blog_post_id": post_id}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Blog post not found")
+        return post
+
     @router.get("/blog/posts")
-    async def list_posts(category: str = "", limit: int = 50):
+    async def list_posts(category: str = "", limit: int = Query(default=50, ge=1, le=100)):
         query = {"publication_status": "Published"}
-        if category and category in CATEGORIES:
+        if category:
+            if category not in CATEGORIES:
+                raise HTTPException(status_code=400, detail="Unknown blog topic")
             query["category_key"] = category
-        posts = await db.blog_posts.find(query, PUBLIC_FIELDS).sort("published_at", -1).to_list(min(limit, 100))
-        return {"posts": posts, "categories": [{"key": key, "name": config["name"]} for key, config in CATEGORIES.items()]}
+        posts = await db.blog_posts.find(query, {"_id": 0, "body": 0}).sort("published_at", -1).to_list(limit)
+        return {"posts": [present_post(p, public=True) for p in posts],
+                "categories": [{"key": key, "name": config["name"]} for key, config in BLOG_CATEGORIES.items()]}
 
     @router.get("/blog/posts/{slug}")
     async def get_post(slug: str):
-        post = await db.blog_posts.find_one({"slug": slug, "publication_status": "Published"}, {"_id": 0, "error": 0})
+        post = await db.blog_posts.find_one({"slug": slug, "publication_status": "Published"}, {"_id": 0})
         if not post:
             raise HTTPException(status_code=404, detail="Article not found")
-        return post
+        return present_post(post, public=True)
 
-    @router.post("/blog/generate", status_code=201)
-    async def generate_post(payload: BlogGenerate, request: Request):
+    @router.get("/blog/images/{slug}.png")
+    async def public_image(slug: str, request: Request):
+        post = await db.blog_posts.find_one({"slug": slug, "publication_status": "Published"}, {"_id": 0})
+        if not post:
+            raise HTTPException(status_code=404, detail="Article not found")
+        etag = '"' + image_version(post) + '"'
+        headers = {"ETag": etag, "Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"}
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        return Response(await run_in_threadpool(cover_png, post), media_type="image/png", headers=headers)
+
+    @router.get("/blog/sitemap.xml")
+    async def blog_sitemap():
+        posts = await db.blog_posts.find({"publication_status": "Published", "slug": {"$ne": ""}}, {"_id": 0, "slug": 1, "edited_at": 1, "published_at": 1}).sort("published_at", -1).to_list(49000)
+        urls = [f"<url><loc>{ORIGIN}/blog</loc></url>"]
+        for post in posts:
+            updated = post.get("edited_at") or post.get("published_at")
+            lastmod = f"<lastmod>{escape(updated)}</lastmod>" if updated else ""
+            urls.append(f"<url><loc>{ORIGIN}/blog/{escape(post['slug'])}</loc>{lastmod}</url>")
+        xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + "".join(urls) + "</urlset>"
+        return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=300"})
+
+    @router.post("/blog/generate", status_code=202)
+    async def generate_post(payload: BlogGenerate, request: Request, background_tasks: BackgroundTasks):
         await authenticate_admin(request, db)
-        scheduled_date = payload.scheduled_date or now_tz().strftime("%Y-%m-%d")
-        result = await create_scheduled_blog_post(db, payload.category, scheduled_date, publish_now=payload.publish_now)
-        if result.get("skipped"):
-            raise HTTPException(status_code=409, detail=result["reason"])
-        return result
+        if payload.publish_now:
+            raise HTTPException(status_code=400, detail="Generate the draft, then use Publish after reviewing it.")
+        settings = await blog_settings(db)
+        scheduled_date = str(payload.scheduled_date or datetime.now(ZoneInfo(settings["timezone"])).date())
+        try:
+            post, created = await reserve_blog_post(db, payload.category, scheduled_date, payload.topic_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        if created:
+            background_tasks.add_task(generate_reserved_blog_post, db, post)
+        return {"status": post["publication_status"], "reused": not created, "post": present_post(post)}
 
     @router.get("/admin/blog/topics")
     async def admin_topic_schedule(request: Request):
         await authenticate_admin(request, db)
+        settings = await blog_settings(db)
+        today = datetime.now(ZoneInfo(settings["timezone"])).date()
         schedule = []
-        day_names = {0: "Monday", 2: "Wednesday", 4: "Friday", 5: "Saturday"}
-        for key, config in CATEGORIES.items():
-            published_posts = await db.blog_posts.find(
-                {"category_key": key, "topic_number": {"$gte": 1}, "publication_status": "Published"},
-                {"_id": 0, "topic_number": 1, "topic_title": 1, "published_at": 1, "slug": 1}).sort("published_at", 1).to_list(200)
-            latest = {}
-            for post in published_posts:
-                latest[post["topic_number"]] = post
-            upcoming = await next_topic_for(db, key)
-            topics = []
-            for number, title in enumerate(BOARD_CONTENT_TOPICS[key], start=1):
-                record = latest.get(number)
-                topics.append({
-                    "topic_number": number, "topic_title": title,
-                    "publication_status": "Published" if record else ("Next" if number == upcoming["topic_number"] else "Unpublished"),
-                    "published_at": (record or {}).get("published_at", ""),
-                    "slug": (record or {}).get("slug", ""),
-                })
-            schedule.append({
-                "category_key": key, "category": config["name"],
-                "publish_day": day_names.get(config["day"], ""), "cta_url": config["cta_url"],
-                "published_count": upcoming["published_in_category"],
-                "next_topic_number": upcoming["topic_number"], "next_topic_title": upcoming["topic_title"],
-                "topics": topics,
-            })
-        return {"schedule": schedule}
+        for key, config in BLOG_CATEGORIES.items():
+            next_topic = await next_topic_for(db, key)
+            usage = await topic_usage(db, key)
+            schedule.append({"category_key": key, "category": config["name"], "publish_day": config["publish_day"],
+                "cta_url": config["cta_url"], "audience": config["audience"], "mechanism": config["mechanism"],
+                "scheduled_date": str(today + timedelta(days=(config["day"] - today.weekday()) % 7)),
+                "next_topic_id": next_topic["topic_id"], "topics": [{**angle, "drafts_and_posts": usage[angle["topic_id"]]} for angle in config["angles"]]})
+        return {"schedule": schedule, "settings": settings}
+
+    @router.put("/admin/blog/settings")
+    async def save_settings(payload: BlogSettings, request: Request):
+        await authenticate_admin(request, db)
+        await db.marketing_settings.update_one({"key": "blog_weekday_drafts"}, {"$set": payload.model_dump()}, upsert=True)
+        return {"settings": await blog_settings(db)}
 
     @router.get("/admin/blog/posts")
-    async def admin_list_posts(request: Request):
+    async def admin_list_posts(request: Request, limit: int = Query(default=100, ge=1, le=100), skip: int = Query(default=0, ge=0)):
         await authenticate_admin(request, db)
-        posts = await db.blog_posts.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
-        return {"posts": posts, "categories": [{"key": key, "name": config["name"]} for key, config in CATEGORIES.items()]}
+        posts = await db.blog_posts.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).to_list(limit)
+        return {"posts": [present_post(p) for p in posts], "has_more": len(posts) == limit}
+
+    @router.get("/admin/blog/posts/{blog_post_id}")
+    async def admin_get_post(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        return {"post": present_post(await find_post(blog_post_id))}
+
+    @router.get("/admin/blog/posts/{blog_post_id}/image")
+    async def admin_image(blog_post_id: str, request: Request):
+        await authenticate_admin(request, db)
+        return Response(await run_in_threadpool(cover_png, await find_post(blog_post_id)), media_type="image/png", headers={"Cache-Control": "private, no-store"})
 
     @router.patch("/admin/blog/posts/{blog_post_id}")
     async def admin_edit_post(blog_post_id: str, payload: BlogEdit, request: Request):
         await authenticate_admin(request, db)
-        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        if not post:
-            raise HTTPException(status_code=404, detail="Blog post not found")
-        update = {"title": payload.title.strip(), "excerpt": payload.excerpt.strip(), "body": payload.body.strip(), "edited_at": now_tz().isoformat()}
+        post = await find_post(blog_post_id)
+        if post["publication_status"] == "Generating":
+            raise HTTPException(status_code=409, detail="Wait for generation to finish before editing this draft.")
+        update = {**payload.model_dump(), "edited_at": now_tz().isoformat(), "error": "", "linkedin_snippet": ""}
         if post["publication_status"] != "Published":
-            new_slug = slugify_title(update["title"])
-            conflict = await db.blog_posts.find_one({"slug": new_slug, "blog_post_id": {"$ne": blog_post_id}}, {"_id": 1})
-            if conflict:
-                raise HTTPException(status_code=409, detail="Another post already uses this title. Choose a different title.")
-            update["slug"] = new_slug
-        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
-        post.update(update)
-        return {"post": post}
+            update.update({"slug": f"{slugify_title(payload.title) or 'board-insight'}-{blog_post_id[:8]}", "publication_status": "Pending Review"})
+        try:
+            await run_in_threadpool(cover_png, {**post, **update})
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        result = await db.blog_posts.update_one({"blog_post_id": blog_post_id, "publication_status": post["publication_status"]}, {"$set": update})
+        if not result.matched_count:
+            raise HTTPException(status_code=409, detail="This article changed. Refresh before saving.")
+        return {"post": present_post({**post, **update})}
 
     @router.post("/admin/blog/posts/{blog_post_id}/approve")
     async def admin_approve_post(blog_post_id: str, request: Request):
         await authenticate_admin(request, db)
-        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        if not post:
-            raise HTTPException(status_code=404, detail="Blog post not found")
-        if post["publication_status"] == "Published":
-            raise HTTPException(status_code=409, detail="This article is already published")
-        if not post.get("title") or not post.get("body"):
-            raise HTTPException(status_code=400, detail="This draft has no content to publish. Regenerate it first.")
-        update = {"publication_status": "Published", "published_at": now_tz().isoformat(), "approved_at": now_tz().isoformat(), "error": ""}
-        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
-        try:
-            snippet = await generate_linkedin_snippet(db, {**post, **update})
-            update["linkedin_snippet"] = snippet
-        except Exception:
-            pass
-        return {"post": {**post, **update}}
+        post = await find_post(blog_post_id)
+        if post["publication_status"] != "Pending Review":
+            raise HTTPException(status_code=409, detail="Save or generate a draft ready for review before publishing.")
+        if not all(post.get(key, "").strip() for key in ["title", "excerpt", "body", "slug"]):
+            raise HTTPException(status_code=400, detail="The title, description and article must be complete before publishing.")
+        await run_in_threadpool(cover_png, post)
+        stamp = now_tz().isoformat()
+        update = {"publication_status": "Published", "published_at": stamp, "approved_at": stamp, "error": ""}
+        result = await db.blog_posts.update_one({"blog_post_id": blog_post_id, "publication_status": "Pending Review"}, {"$set": update})
+        if not result.modified_count:
+            raise HTTPException(status_code=409, detail="This draft changed. Refresh it before publishing.")
+        return {"post": present_post({**post, **update})}
 
     @router.post("/admin/blog/posts/{blog_post_id}/linkedin-snippet")
     async def admin_generate_snippet(blog_post_id: str, request: Request):
         await authenticate_admin(request, db)
-        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        if not post:
-            raise HTTPException(status_code=404, detail="Blog post not found")
+        post = await find_post(blog_post_id)
         if post["publication_status"] != "Published":
-            raise HTTPException(status_code=409, detail="LinkedIn posts are created for published articles only")
+            raise HTTPException(status_code=409, detail="Publish the article before creating its share text.")
         try:
-            snippet = await generate_linkedin_snippet(db, post)
+            snippet = post.get("linkedin_snippet") or await generate_linkedin_snippet(db, post)
         except Exception:
-            raise HTTPException(status_code=502, detail="Could not generate the LinkedIn post. Please try again.")
-        return {"post": {**post, "linkedin_snippet": snippet}, "snippet": snippet}
+            raise HTTPException(status_code=502, detail="Could not generate share text. Please try again.")
+        return {"post": present_post({**post, "linkedin_snippet": snippet}), "snippet": snippet}
 
     @router.post("/admin/blog/posts/{blog_post_id}/reject")
     async def admin_reject_post(blog_post_id: str, request: Request):
         await authenticate_admin(request, db)
-        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        if not post:
-            raise HTTPException(status_code=404, detail="Blog post not found")
-        if post["publication_status"] == "Published":
-            raise HTTPException(status_code=409, detail="Published articles cannot be rejected")
+        post = await find_post(blog_post_id)
+        if post["publication_status"] in ["Published", "Generating"]:
+            raise HTTPException(status_code=409, detail="This article cannot be archived in its current state.")
         update = {"publication_status": "Rejected", "rejected_at": now_tz().isoformat()}
-        await db.blog_posts.update_one({"blog_post_id": blog_post_id}, {"$set": update})
-        return {"post": {**post, **update}}
+        await db.blog_posts.update_one({"blog_post_id": blog_post_id, "publication_status": post["publication_status"]}, {"$set": update})
+        return {"post": present_post({**post, **update})}
 
-    @router.post("/admin/blog/posts/{blog_post_id}/regenerate")
-    async def admin_regenerate_post(blog_post_id: str, request: Request):
+    @router.post("/admin/blog/posts/{blog_post_id}/regenerate", status_code=202)
+    async def admin_regenerate_post(blog_post_id: str, request: Request, background_tasks: BackgroundTasks):
         await authenticate_admin(request, db)
-        post = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        if not post:
-            raise HTTPException(status_code=404, detail="Blog post not found")
-        if post["publication_status"] == "Published":
-            raise HTTPException(status_code=409, detail="Published articles cannot be regenerated")
-        result = await regenerate_blog_post(db, post)
-        fresh = await db.blog_posts.find_one({"blog_post_id": blog_post_id}, {"_id": 0})
-        return {**result, "post": fresh}
+        claimed = await claim_regeneration(db, await find_post(blog_post_id))
+        if not claimed:
+            raise HTTPException(status_code=409, detail="This article is already generating or published.")
+        background_tasks.add_task(generate_reserved_blog_post, db, claimed)
+        return {"status": "Generating", "post": present_post(claimed)}
 
     @router.post("/nurture/test-send")
     async def nurture_test(payload: NurtureTestSend, request: Request):

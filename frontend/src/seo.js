@@ -1,11 +1,28 @@
 import { useEffect } from "react";
 import { pageForPath, canonicalUrl, metaTags, structuredData } from "./seo/landingMetadata";
+import { blogMetadata } from "./seo/blogMetadata";
 
 const setMeta = (attr, name, content) => {
   let el = document.head.querySelector(`meta[${attr}="${name}"]`);
   if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
   el.setAttribute("content", content);
   return el;
+};
+
+export const useBlogMeta = (post = null, status = 200) => {
+  useEffect(() => {
+    const metadata = blogMetadata(post, status);
+    document.title = metadata.title;
+    document.getElementById("landing-page-schema")?.remove();
+    document.getElementById("blog-page-schema")?.remove();
+    const owned = metadata.tags.map(([attr, name, value]) => setMeta(attr, name, value));
+    let canonical = document.head.querySelector('link[rel="canonical"]');
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = metadata.canonical;
+    const schema = document.createElement("script"); schema.id = "blog-page-schema"; schema.type = "application/ld+json";
+    if (metadata.schema) { schema.textContent = JSON.stringify(metadata.schema); document.head.appendChild(schema); }
+    return () => { owned.forEach((element) => element.remove()); canonical.remove(); schema.remove(); };
+  }, [post, status]);
 };
 
 export const useLandingPageMeta = (pathname) => {
