@@ -1,0 +1,166 @@
+[
+  {
+    "path": "/",
+    "name": "Nonprofit Board Builder",
+    "title": "Nonprofit Board Builder | Build a Board That Builds With You",
+    "description": "Build a board that helps your nonprofit grow and raise money. Find the right path for board recruitment, fundraising, strategic planning or recommitment.",
+    "headline": "Build the Board Your Mission Needs",
+    "eyebrow": "NONPROFIT LEADERSHIP",
+    "image": "nonprofit-board-builder-v1.png",
+    "imageLines": [
+      "Build the Board",
+      "Your Mission Needs."
+    ],
+    "imageSub": "Get the right people building with you.",
+    "paragraphs": [
+      "Nonprofit Board Builder helps nonprofit founders and executive directors build the board and systems their organizations need to grow and raise money.",
+      "Choose the support your organization needs: recruit new board members, build a fundraising strategy with your board, create an actionable strategic plan, or help your present members recommit. Professionals who want to serve can join the Board Applicant Network."
+    ],
+    "steps": []
+  },
+  {
+    "path": "/recruit",
+    "name": "Board Recruitment",
+    "title": "Nonprofit Board Recruitment | Nonprofit Board Builder",
+    "description": "Recruit the board members your nonprofit needs. Identify the right mix, launch your campaign and bring committed leaders through interviews into onboarding.",
+    "headline": "Recruit the Board Members Your Organization Needs",
+    "eyebrow": "BOARD RECRUITMENT",
+    "image": "board-recruitment-v1.png",
+    "imageLines": [
+      "Recruit the Board",
+      "Members You Need."
+    ],
+    "imageSub": "Build your board around the support your mission needs.",
+    "paragraphs": [
+      "Answer six focused questions about your organization and the board you want to build. Identify the mix of experience and perspectives that fits the support you are looking for.",
+      "Review and approve the board member profiles, then create your application and tailored recruitment materials. The platform helps you launch the campaign and carry candidates through interviews, reference checks where required, appointment and onboarding."
+    ],
+    "steps": [
+      "Identify and approve the board member profiles you need.",
+      "Create the application and recruitment materials, then launch your campaign.",
+      "Review applicants and prepare a tailored interview guide for each candidate.",
+      "Prepare the onboarding materials and send a conditional or unconditional board offer before the session."
+    ]
+  },
+  {
+    "path": "/board-fundraising-game",
+    "name": "Board Fundraising Game",
+    "title": "Board Fundraising Game | Get Your Board Raising Money",
+    "description": "Get your board raising money with a fundraising strategy they help build. Play the Board Fundraising Game and give each member a clear way to contribute.",
+    "headline": "Get Your Board Raising Money With a Strategy They Help Build",
+    "eyebrow": "BOARD FUNDRAISING GAME",
+    "image": "board-fundraising-game-v1.png",
+    "imageLines": [
+      "Get Your Board",
+      "Raising Money."
+    ],
+    "imageSub": "People who plan together execute together.",
+    "paragraphs": [
+      "The Board Fundraising Game brings your board into building the fundraising strategy they will help execute. Start with your organization's fundraising goal and present reality.",
+      "You and your board contribute ideas about who should fund your mission, where to find them, how to attract them and how to raise money from them. Review those ideas together and agree on how each board member wants to participate."
+    ],
+    "steps": [
+      "Contribute your own fundraising ideas before the board meeting.",
+      "Discuss the ideas and agree on the fundraising approach together.",
+      "Review the strategy and confirm each board member's contribution.",
+      "Give each member a fundraising portfolio and execution support."
+    ]
+  },
+  {
+    "path": "/strategic-planning",
+    "name": "Strategic Planning",
+    "title": "Nonprofit Strategic Planning | Build the Plan With Your Board",
+    "description": "Build and adopt your nonprofit's strategic plan with your board. Preserve their ideas and turn agreed priorities into clear leadership responsibilities.",
+    "headline": "Build and Adopt Your Strategic Plan With Your Board",
+    "eyebrow": "STRATEGIC PLANNING",
+    "image": "nonprofit-strategic-planning-v1.png",
+    "imageLines": [
+      "Build a Strategic Plan",
+      "Your Board Will Execute."
+    ],
+    "imageSub": "Turn your board's thinking into a shared direction.",
+    "paragraphs": [
+      "Bring your board into creating the roadmap for your organization. Start with the mission, goals, programs and present reality so everyone understands what the organization is building.",
+      "Each person contributes their own ideas. The board reviews them together, selects the direction it wants to adopt and agrees on responsibilities. The platform turns those decisions into a strategic plan for the leader to review, edit and approve."
+    ],
+    "steps": [
+      "Provide your organization's starting information.",
+      "Invite the board to contribute its own thinking.",
+      "Discuss the ideas together and select the agreed direction.",
+      "Approve the strategic plan and confirm who will lead each responsibility."
+    ]
+  },
+  {
+    "path": "/board-recommitment",
+    "name": "Board Recommitment",
+    "title": "Board Recommitment | Get Your Board Building With You Again",
+    "description": "Help your nonprofit board recommit to the mission. Understand each member's response and agree how they will contribute or make a respectful transition.",
+    "headline": "Get Your Board Members to Recommit and Build With You",
+    "eyebrow": "BOARD RECOMMITMENT",
+    "image": "board-recommitment-v1.png",
+    "imageLines": [
+      "Get Your Board",
+      "to Recommit",
+      "and Build With You."
+    ],
+    "imageSub": "Turn willingness to serve into clear responsibility.",
+    "paragraphs": [
+      "Give your present board members space to tell you honestly whether they are ready to recommit and how they want to contribute. Begin with your mission and what the organization needs to accomplish.",
+      "Use the recommitment form and each person's response to prepare a meaningful conversation. Agree on clear responsibilities with members who are ready to build with you, and support a respectful transition where somebody chooses to step down."
+    ],
+    "steps": [
+      "Explain the mission and why you are asking the board to recommit.",
+      "Invite each member to complete the recommitment form.",
+      "Use their responses to guide the individual conversations.",
+      "Confirm their contribution and move forward with clarity."
+    ]
+  },
+  {
+    "path": "/join-a-board",
+    "name": "Board Applicant Network",
+    "title": "Join a Nonprofit Board | Board Applicant Network",
+    "description": "Bring your professional experience to a nonprofit board. Join the Board Applicant Network to receive opportunities that fit the contribution you want to make.",
+    "headline": "Bring Your Professional Experience to a Nonprofit Board",
+    "eyebrow": "BOARD APPLICANT NETWORK",
+    "image": "board-applicant-network-v1.png",
+    "imageLines": [
+      "Bring Your Experience",
+      "to a Nonprofit Board."
+    ],
+    "imageSub": "Find a mission where your contribution matters.",
+    "paragraphs": [
+      "The Board Applicant Network connects professionals who want to serve with board opportunities from nonprofits using Nonprofit Board Builder. It is open to professionals living in the United States and United Kingdom.",
+      "Create your profile with your experience, the causes you care about and how you want to contribute. Receive relevant board opportunities by email and apply to the organizations you want to support. Completing a profile does not guarantee a board appointment."
+    ],
+    "steps": [
+      "Create your professional profile.",
+      "Share the causes you want to support and how you want to serve.",
+      "Receive matching opportunities and apply to the boards that interest you.",
+      "Each nonprofit reviews applications and makes its own appointment decisions."
+    ]
+  },
+  {
+    "path": "/organize-board-fundraising-game",
+    "name": "Facilitated Board Fundraising Game",
+    "title": "Facilitated Board Fundraising Game | Nonprofit Board Builder",
+    "description": "Let Rooney Akpesiri organize and facilitate your Board Fundraising Game. Build the strategy with your board and leave with clear ways for everyone to contribute.",
+    "headline": "Let Us Organize and Facilitate Your Board Fundraising Game",
+    "eyebrow": "FACILITATED WITH ROONEY",
+    "image": "facilitated-board-fundraising-game-v1.png",
+    "imageLines": [
+      "Let Us Organize Your",
+      "Board Fundraising Game."
+    ],
+    "imageSub": "Build the strategy with Rooney and your board.",
+    "paragraphs": [
+      "Apply to have Rooney Akpesiri organize and facilitate the Board Fundraising Game for your nonprofit. We prepare the process around your fundraising goal and help your board contribute before the meeting.",
+      "During your Board Fundraising Day or Night, Rooney guides the discussion so the board can agree on its fundraising approach and participation. You leave with the final strategy, individual board portfolios and practical execution support."
+    ],
+    "steps": [
+      "Apply for the facilitated Board Fundraising Game.",
+      "Prepare your organization and invite the board's contributions.",
+      "Build and agree on the strategy during the facilitated session.",
+      "Confirm each person's role and move into execution."
+    ]
+  }
+]

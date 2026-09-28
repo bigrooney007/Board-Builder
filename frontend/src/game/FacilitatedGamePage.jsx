@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BfgShell } from "./gameShared";
 import { useHomepageContent } from "@/clean/platform";
+import { useLandingPageMeta } from "@/seo";
 
 export const FACILITATED_GAME_HOME_DEFAULTS = {
   badge: "FACILITATED BOARD FUNDRAISING GAME",
@@ -49,9 +49,9 @@ export const FACILITATED_GAME_HOME_DEFAULTS = {
 };
 
 export default function FacilitatedGamePage() {
+  useLandingPageMeta("/organize-board-fundraising-game");
   const navigate=useNavigate();
   const copy=useHomepageContent("facilitated-game", FACILITATED_GAME_HOME_DEFAULTS);
-  useEffect(()=>{document.title="Facilitated Board Fundraising Game";},[]);
   const Cta=({id,label="APPLY TO ORGANIZE YOUR BOARD FUNDRAISING GAME"})=><button className="bfg-btn bfg-btn-primary facilitated-cta" onClick={()=>navigate("/organize-board-fundraising-game/apply")} data-testid={id}>{label}</button>;
 
   return <BfgShell><main className="facilitated-page" data-testid="bfg-facilitated-page">

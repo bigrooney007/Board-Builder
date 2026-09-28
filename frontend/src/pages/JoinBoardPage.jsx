@@ -5,6 +5,7 @@ import { ApplicantForm } from "@/components/ApplicantForm";
 import { ApplicantConfirmation } from "@/components/ApplicantConfirmation";
 import { joinBoardText } from "../content/appContent";
 import { joinBoardPageText } from "../content/siteContent";
+import { useLandingPageMeta } from "@/seo";
 
 const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
 const steps = [[UserRound, "Create Your Professional Profile", "Tell us about your career, skills, experience and the professional relationships you can bring to a nonprofit board."], [Target, "Tell Us Where You Want to Make an Impact", "Choose the causes, communities and types of nonprofit organizations you would like to support."], [HeartHandshake, "Tell Us How You Want to Serve", "Share the board roles, fundraising activities, time commitment and working arrangements that fit you."], [Mail, "Receive Matching Board Opportunities", "Receive real-time email updates when nonprofits using our platform launch new board opportunities."]];
@@ -14,6 +15,7 @@ const PublicHeader = () => <nav className="site-nav join-nav" data-testid="join-
 const PublicFooter = () => <footer className="footer" data-testid="join-page-footer"><a className="brand footer-brand" href="/"><img src={logoUrl} alt={joinBoardPageText.nonprofitBoardBuilder2} /></a><p>Nonprofit Board Builder connects professionals who want to serve with active board opportunities from nonprofits using our recruitment platform.</p><div className="footer-links"><a href="/">Nonprofit Board Builder</a><a href="/privacy-policy">Privacy Policy</a><a href="/terms">Terms</a></div></footer>;
 
 export default function JoinBoardPage() {
+  useLandingPageMeta("/join-a-board");
   const [result, setResult] = useState(null);
   const navigate = useNavigate();
   const scrollToForm = () => document.getElementById("applicant-form")?.scrollIntoView({ behavior: "smooth" });

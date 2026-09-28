@@ -145,7 +145,14 @@ if (isDevServer) {
 }
 
 const configureDevServer = webpackConfig.devServer;
-webpackConfig.devServer = (devServerConfig) =>
-  makeDevServerV5Compatible(configureDevServer(devServerConfig));
+webpackConfig.devServer = (devServerConfig) => {
+  const compatible = makeDevServerV5Compatible(configureDevServer(devServerConfig));
+  const previousSetup = compatible.setupMiddlewares;
+  compatible.setupMiddlewares = (middlewares, server) => {
+    const configured = previousSetup ? previousSetup(middlewares, server) : middlewares;
+    return [require("./scripts/landing-seo-middleware.cjs")(server), ...configured];
+  };
+  return compatible;
+};
 
 module.exports = webpackConfig;

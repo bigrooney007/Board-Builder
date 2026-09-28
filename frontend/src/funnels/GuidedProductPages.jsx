@@ -13,6 +13,7 @@ import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
 import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
+import { useLandingPageMeta } from "@/seo";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 export const GUIDED_PRODUCT_CONFIG={
@@ -100,7 +101,7 @@ const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null
 
 export function GuidedLandingPage({ product: explicitProduct }){
  const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
- useEffect(()=>{document.title=`${c.eyebrow} | Nonprofit Board Builder`},[c]);
+ useLandingPageMeta(`/${product}`);
  const start=async()=>{if(!form.name||!form.email||!form.organization||!form.board_count){setError("Complete your name, email, organization and number of board members.");return}setBusy(true);setError("");try{const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token);let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count),origin_url:window.location.origin});trackPlatformEvent(product,"contact_entered");nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
  const scrollToForm=()=>document.getElementById(`${product}-lead-form`)?.scrollIntoView({behavior:"smooth",block:"start"});
  return <BfgShell><main className="guided-page">

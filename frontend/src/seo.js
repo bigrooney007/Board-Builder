@@ -1,9 +1,30 @@
 import { useEffect } from "react";
+import { pageForPath, canonicalUrl, metaTags, structuredData } from "./seo/landingMetadata";
 
 const setMeta = (attr, name, content) => {
   let el = document.head.querySelector(`meta[${attr}="${name}"]`);
   if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
   el.setAttribute("content", content);
+  return el;
+};
+
+export const useLandingPageMeta = (pathname) => {
+  useEffect(() => {
+    const page = pageForPath(pathname);
+    if (!page) return undefined;
+    document.title = page.title;
+    const owned = metaTags(page).map(([attr, key, value]) => setMeta(attr, key, value));
+    let canonical = document.head.querySelector('link[rel="canonical"]');
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = canonicalUrl(page);
+    let schema = document.getElementById("landing-page-schema");
+    if (!schema) { schema = document.createElement("script"); schema.id = "landing-page-schema"; schema.type = "application/ld+json"; document.head.appendChild(schema); }
+    schema.textContent = JSON.stringify(structuredData(page));
+    return () => {
+      owned.forEach((element) => element.remove());
+      canonical.remove(); schema.remove();
+    };
+  }, [pathname]);
 };
 
 export const usePageMeta = (title, description, noindex = false) => {

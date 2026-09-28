@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -6,10 +6,12 @@ import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money, useGameContent } from "./gameShared";
 import { trackPlatformEvent, useHomepageContent } from "@/clean/platform";
+import { useLandingPageMeta } from "@/seo";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
 
 export default function GameHomePage() {
+  useLandingPageMeta("/board-fundraising-game");
   const navigate = useNavigate();
   const { member, loading: authLoading, refresh } = useMemberAuth();
   const sourceContent = useGameContent();
@@ -18,8 +20,6 @@ export default function GameHomePage() {
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
-
-  useEffect(() => { document.title = "The Board Fundraising Game | Nonprofit Board Builder"; }, []);
 
   if (!sourceContent) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 

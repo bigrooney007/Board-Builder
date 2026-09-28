@@ -5,6 +5,7 @@ import { FounderStorySection } from "@/components/FounderStorySection";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
 import { useHomepageContent } from "@/clean/platform";
+import { useLandingPageMeta } from "@/seo";
 import "./MainHomePage.css";
 
 const PRODUCT_META = [
@@ -44,6 +45,7 @@ export const MAIN_HOME_DEFAULTS = {
 };
 
 export default function MainHomePage() {
+  useLandingPageMeta("/");
   const navigate = useNavigate();
   const copy = useHomepageContent("main", MAIN_HOME_DEFAULTS);
   const { member, loading, logout } = useMemberAuth();

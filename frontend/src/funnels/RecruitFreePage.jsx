@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import { trackPlatformEvent } from "@/clean/platform";
+import { useLandingPageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function RecruitFreePage() {
+  useLandingPageMeta("/recruit");
   const navigate = useNavigate();
   const [lead, setLead] = useState({ name: "", email: "", organization: "", count: "", notSure: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    document.title = "Board Recruitment | Nonprofit Board Builder";
     localStorage.removeItem("recruitFreeToken");
   }, []);
 
