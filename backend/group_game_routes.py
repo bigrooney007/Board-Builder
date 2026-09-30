@@ -15,8 +15,8 @@ GROUP_GAME_VERSION = "audience-strategy-v1"
 
 ROUND_DEFS = [
     {"round_number": 1, "section_key": "funding_audiences", "answer_field": "audience",
-     "title": "Who Has The Strongest Reason To Support Our Goal, And Why?",
-     "instruction": "Review each person's individual, business and grantor ideas and the reason behind each one. Compare them with the organization's present supporters, then select or add the audiences the Board agrees to pursue."},
+     "title": "Which Funding Audiences Will We Pursue?",
+     "instruction": "Review the one audience each person proposed, compare those ideas with the organization's present supporters, then select or add the opportunities the Board agrees to pursue."},
     {"round_number": 2, "section_key": "where_to_find", "answer_field": "where",
      "title": "Where Will We Find Them?",
      "instruction": "Review where each proposed audience can be found, including the places and relationships that already produce support. Select the channels the Board agrees to use."},
@@ -292,7 +292,7 @@ def create_group_game_router(db) -> APIRouter:
 
             def add_idea(text, contributor, contributor_id=""):
                 nonlocal order
-                text = str(text or "").strip()[:1200]
+                text = str(text or "").strip()[:6000]
                 key = normalise(text)
                 if not key:
                     return
@@ -311,6 +311,12 @@ def create_group_game_router(db) -> APIRouter:
                 name = member_names.get(response["board_member_id"], "Board Member")
                 if definition["section_key"] == "board_roles":
                     add_idea(response.get("involvement"), name, response["board_member_id"])
+                    continue
+                if response.get("game_version") == 5:
+                    question_by_field = {"audience": "1", "where": "2", "attraction": "3",
+                                         "funding_ask": "4", "process": "5"}
+                    answer = (response.get("original_answers") or {}).get(question_by_field[definition["answer_field"]])
+                    add_idea(answer, name, response["board_member_id"])
                     continue
                 for audience_key, answer in (response.get("audiences") or {}).items():
                     if audience_key not in audience_labels or (audience_key != "individuals" and not answer.get("enabled")):

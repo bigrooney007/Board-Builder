@@ -2635,7 +2635,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "member_id": primary_id, "user_id": member["user_id"], "token": primary_token,
                     "full_name": "Rooney Akpesiri", "email": member["email"],
                     "board_title": "Founder and Executive Director", "is_primary": True,
-                    "game_version": 4, "total_sections": 7, "invitation_status": "self",
+                    "game_version": 5, "total_sections": 6, "invitation_status": "self",
                     "removed": False, "internal_preview": True, "created_at": now, "updated_at": now,
                 }},
                 upsert=True,
@@ -2661,14 +2661,15 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 {"board_member_id": primary_id},
                 {"$set": {
                     "response_id": f"admin-fresh-audience-{tag}", "board_member_id": primary_id,
-                    "user_id": member["user_id"], "game_version": 4,
-                    "audiences": {
-                        "individuals": {"enabled": True, "audience": "Professionals, business owners, alumni and former volunteers who care about youth opportunity.", "reason": "They understand the barriers facing young people and value practical education and employment pathways.", "where": "Board and staff networks, alumni communities, professional associations and local business communities.", "attraction": "Credible youth outcomes, useful youth-employment insight, participant stories and small briefings.", "funding_ask": "Ask for participant support and program growth with gifts matched to each person's capacity.", "process": "Use a warm introduction, share relevant impact, invite a conversation, build trust, make a specific ask, follow up and report impact."},
-                        "businesses": {"enabled": True, "audience": "Employers and businesses that need early-career talent or have youth-focused community priorities.", "reason": "The mission connects to their workforce and community-investment goals.", "where": "Employer associations, chambers, professional networks and Board introductions.", "attraction": "Youth-talent insight, measurable outcomes and a clear partnership opportunity.", "funding_ask": "Ask them to sponsor a youth-employment cohort or participant-support activity.", "process": "Reach the decision maker, hold a discovery conversation, present a tailored partnership, follow up and steward results."},
-                        "grantors": {"enabled": True, "audience": "Foundations and public funders focused on youth employment, education and economic mobility.", "reason": "Their funding priorities and outcomes align with the mission.", "where": "Community foundations, public portals, funder databases and information sessions.", "attraction": "Demonstrate alignment, outcomes, delivery capacity, community voice and a realistic budget.", "funding_ask": "Request program, participant, evaluation or eligible capacity funding within each grantor's published range.", "process": "Qualify fit, build familiarity, prepare evidence and budget, submit a tailored application, follow up and report results."},
+                    "user_id": member["user_id"], "game_version": 5,
+                    "original_answers": {
+                        "1": "Local employers who care about youth employment and economic mobility.",
+                        "2": "Employer associations, local business networks and warm Board introductions.",
+                        "3": "Share credible youth outcomes and invite employers to a small conversation about the program.",
+                        "4": "Ask each employer to sponsor a youth-employment cohort at an amount that fits their capacity.",
+                        "5": "Make an introduction, listen to their priorities, share the program's results, invite a visit, then make a specific ask and follow up.",
                     },
-                    "involvement": "Coordinate the fundraising pipeline and help the Board maintain clear owners and next actions.",
-                    "current_audience": "individuals", "current_question": 0, "completed": False,
+                    "involvement": "", "current_question": 5, "completed": False,
                     "internal_preview": True, "created_at": now, "updated_at": now,
                 }}, upsert=True)
             return "/game/welcome"

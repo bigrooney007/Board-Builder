@@ -55,12 +55,14 @@ import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferenceP
 
 import GameHomePage from "@/game/GameHomePage";
 import GameDemonstrationPage from "@/game/GameDemonstrationPage";
+import GameFreeQuestionsPage from "@/game/GameFreeQuestionsPage";
+import GameUpgradePage from "@/game/GameUpgradePage";
 import GameResumePage from "@/game/GameResumePage";
 import GameAuthCallback from "@/game/GameAuthCallback";
 import GameSituationPage from "@/game/GameSituationPage";
 import GameWelcomePage from "@/game/GameWelcomePage";
 import GameDashboardPage from "@/game/GameDashboardPage";
-import GamePlayPage from "@/game/GamePlayPage";
+import GamePlayRoute from "@/game/GamePlayRoute";
 import GroupGamePage from "@/game/GroupGamePage";
 import StrategyPage from "@/game/StrategyPage";
 import SharedStrategyPage from "@/game/SharedStrategyPage";
@@ -138,11 +140,12 @@ function CleanRoutes() {
       {/* Board Fundraising Game */}
       <Route path="/board-fundraising-game" element={<GameHomePage />} />
       <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
+      <Route path="/game/questions" element={<GameFreeQuestionsPage />} />
       <Route path="/game/resume/:token" element={<GameResumePage />} />
       <Route path="/game/welcome" element={<GameWelcomePage />} />
       <Route path="/game/setup" element={<GameSituationPage />} />
       <Route path="/game/dashboard" element={<GameDashboardPage />} />
-      <Route path="/play/:token" element={<GamePlayPage />} />
+      <Route path="/play/:token" element={<GamePlayRoute />} />
       <Route path="/game/group" element={<GroupGamePage />} />
       <Route path="/group-game/:token" element={<GroupPlayPage />} />
       <Route path="/game/strategy/view/:strategyId" element={<StrategyPage />} />
@@ -161,7 +164,7 @@ function CleanRoutes() {
       <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
       <Route path="/game/signup" element={<Navigate to="/board-fundraising-game" replace />} />
       <Route path="/game/start" element={<Navigate to="/board-fundraising-game" replace />} />
-      <Route path="/game/upgrade" element={<Navigate to="/game/demonstration" replace />} />
+      <Route path="/game/upgrade" element={<GameUpgradePage />} />
       <Route path="/game/unlock" element={<Navigate to="/game/demonstration" replace />} />
       <Route path="/game/board-review" element={<Navigate to="/game/dashboard" replace />} />
       <Route path="/game/meeting-review" element={<Navigate to="/game/dashboard" replace />} />

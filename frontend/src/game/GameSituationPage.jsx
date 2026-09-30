@@ -47,6 +47,7 @@ export default function GameSituationPage() {
   const reviewMode = new URLSearchParams(useLocation().search).get("review") === "1";
   const { member, loading } = useMemberAuth();
   const [phase, setPhase] = useState("loading");
+  const [fiveIdeasSaved, setFiveIdeasSaved] = useState(false);
   const [token, setToken] = useState("");
   const [index, setIndex] = useState(0);
   const [reality, setReality] = useState({});
@@ -82,6 +83,7 @@ export default function GameSituationPage() {
         setBranding(brand.data.branding || { logo_data: "" });
         setToken(self.data.token);
         const response = (await axios.get(`${API}/game/play/${self.data.token}/audience-response`)).data.response || {};
+        setFiveIdeasSaved(response.game_version === 5 && ["1", "2", "3", "4", "5"].every((key) => (response.original_answers?.[key] || "").trim()));
         if (!response.completed) { setPhase("play_first"); return; }
         if (situation.data.completed && !reviewMode) { navigate(member?.supported_service_product === "board-fundraising-game" ? "/supported-service/thank-you" : "/game/dashboard", { replace: true }); return; }
         setIndex(reviewMode ? 0 : Math.min(2, Math.max(0, Number(situation.data.current_step || 0))));
@@ -141,8 +143,8 @@ export default function GameSituationPage() {
     };
     return shell(<>
       <p className="bfg-eyebrow">YOUR INDIVIDUAL BOARD FUNDRAISING GAME</p>
-      <h1>Start With Your Ideas For Reaching The Fundraising Goal</h1>
-      <p style={{ marginTop: 14, fontSize: 17 }}>You will identify the strongest individual, business and grantor audiences, then decide where to find them, how to attract them, what to ask them to fund, and the process that can turn a first contact into support.</p>
+      <h1>{fiveIdeasSaved ? "Your Five Fundraising Ideas Are Saved" : "Start With Your Ideas For Reaching The Fundraising Goal"}</h1>
+      <p style={{ marginTop: 14, fontSize: 17 }}>{fiveIdeasSaved ? "Continue with your part of the Board Fundraising Game by telling us how you would be comfortable participating. Then review your present fundraising before inviting your board." : "Answer five questions about one funding audience, where to find them, how to attract them, what to ask and how to build a relationship toward giving."}</p>
       <div className="bfg-card bfg-game-opening-card" style={{ marginTop: 22 }}>
         <h2>Add Your Organization Logo</h2>
         <div className="bfg-game-logo-control">
@@ -150,7 +152,7 @@ export default function GameSituationPage() {
           <label className="bfg-btn bfg-btn-ghost bfg-btn-sm">CHOOSE LOGO<input type="file" accept="image/*" hidden onChange={chooseLogo} /></label>
         </div>
       </div>
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={begin}>{busy ? "SAVING…" : "START MY BOARD FUNDRAISING GAME"}</button>
+      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy} onClick={begin}>{busy ? "SAVING…" : fiveIdeasSaved ? "CONTINUE TO MY PARTICIPATION" : "START MY BOARD FUNDRAISING GAME"}</button>
     </>, "bfg-setup-play-first");
   }
 

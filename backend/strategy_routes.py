@@ -156,6 +156,15 @@ def create_strategy_router(db) -> APIRouter:
                      "funding_ask": "funding_ask", "fundraising_process": "process"}
         labels = {"individuals": "Individuals", "businesses": "Businesses", "grantors": "Grantors"}
         for response in responses:
+            if response.get("game_version") == 5:
+                for area_key, index in (("funding_audiences", "1"), ("where_to_find", "2"),
+                                        ("attraction", "3"), ("funding_ask", "4"), ("fundraising_process", "5")):
+                    value = (response.get("original_answers") or {}).get(index)
+                    if value and str(value).strip():
+                        collected[area_key].append(f"{names.get(response['board_member_id'], 'Board Member')}: {value}")
+                if response.get("involvement"):
+                    collected["board_roles"].append(f"{names.get(response['board_member_id'], 'Board Member')}: {response['involvement']}")
+                continue
             for audience_key, answer in (response.get("audiences") or {}).items():
                 if audience_key not in labels or (audience_key != "individuals" and not answer.get("enabled")):
                     continue

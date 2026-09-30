@@ -111,6 +111,14 @@ class AudienceResponseSave(BaseModel):
     current_question: int = Field(default=0, ge=0, le=30)
 
 
+class FiveIdeaAnswer(BaseModel):
+    answer: str = Field(min_length=1, max_length=6000)
+
+
+class FiveIdeaParticipation(BaseModel):
+    involvement: str = Field(min_length=1, max_length=6000)
+
+
 AUDIENCE_KEYS = ("individuals", "businesses", "grantors")
 AUDIENCE_FIELDS = ("audience", "reason", "where", "attraction", "funding_ask", "process")
 
@@ -248,7 +256,7 @@ def create_game_night_router(db) -> APIRouter:
             "board_title": payload.board_title.strip(),
             "participant_role": payload.participant_role if payload.participant_role in
             {"board_member", "staff", "volunteer", "other_leader"} else "board_member",
-            "game_version": 4, "total_sections": 7,
+            "game_version": 5, "total_sections": 6,
             "invitation_status": "not_invited", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
         }
@@ -257,7 +265,7 @@ def create_game_night_router(db) -> APIRouter:
 
     @router.post("/game/self-play", status_code=201)
     async def self_play(request: Request):
-        member = await authenticate_member(request, db)
+        member = await game_member(request)
         profile = await db.game_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         if not profile.get("profile_completed"):
             raise HTTPException(status_code=409, detail="Save your Fundraising Game Profile before playing")
@@ -276,11 +284,25 @@ def create_game_night_router(db) -> APIRouter:
             "token": secrets.token_urlsafe(24),
             "full_name": primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip() or "Primary User",
             "email": member["email"], "board_title": primary.get("job_title", ""),
-            "is_primary": True, "game_version": 4, "total_sections": 7,
+            "is_primary": True, "game_version": 5, "total_sections": 6,
             "invitation_status": "self", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
         }
         await db.game_board_members.insert_one(record.copy())
+        free = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        original = free.get("answers") or {}
+        if all(str(original.get(str(index), "")).strip() for index in range(1, 6)):
+            await db.game_board_members.update_one(
+                {"member_id": record["member_id"]},
+                {"$set": {"game_version": 5, "total_sections": 6, "updated_at": now}},
+            )
+            await db.game_audience_responses.update_one(
+                {"board_member_id": record["member_id"]},
+                {"$setOnInsert": {"response_id": new_uuid(), "board_member_id": record["member_id"],
+                                  "user_id": member["user_id"], "created_at": now, "completed": False,
+                                  "game_version": 5, "current_question": 5, "original_answers": original,
+                                  "involvement": "", "updated_at": now}}, upsert=True,
+            )
         return {"token": record["token"], "member_id": record["member_id"]}
 
     @router.put("/game/board-members/{member_id}")
@@ -529,13 +551,18 @@ def create_game_night_router(db) -> APIRouter:
             "process": "Step-by-step fundraising process",
         }
         lines = [f"BOARD FUNDRAISING GAME RESPONSE", "", record.get("full_name", "Board Member"), record.get("board_title", ""), ""]
-        for key in AUDIENCE_KEYS:
-            answer = (response.get("audiences") or {}).get(key) or {}
-            if key != "individuals" and not answer.get("enabled"):
-                continue
-            lines.extend([labels[key].upper(), ""])
-            for field in AUDIENCE_FIELDS:
-                lines.extend([f"{labels[field]}:", str(answer.get(field) or "Not answered"), ""])
+        if response.get("game_version") == 5:
+            for index, label in enumerate(("Who could fund us", "Where to find them", "How to attract them",
+                                           "What to ask and how much", "Relationship process"), 1):
+                lines.extend([f"{label}:", str((response.get("original_answers") or {}).get(str(index)) or "Not answered"), ""])
+        else:
+            for key in AUDIENCE_KEYS:
+                answer = (response.get("audiences") or {}).get(key) or {}
+                if key != "individuals" and not answer.get("enabled"):
+                    continue
+                lines.extend([labels[key].upper(), ""])
+                for field in AUDIENCE_FIELDS:
+                    lines.extend([f"{labels[field]}:", str(answer.get(field) or "Not answered"), ""])
         lines.extend(["HOW I WOULD LIKE TO SUPPORT FUNDRAISING:", str(response.get("involvement") or "Not answered"), ""])
         filename = re.sub(r"[^A-Za-z0-9_-]+", "-", record.get("full_name", "board-member")).strip("-").lower()
         return Response(
@@ -578,6 +605,80 @@ def create_game_night_router(db) -> APIRouter:
         if not record:
             raise HTTPException(status_code=404, detail="This game link is not valid")
         return record
+
+    @router.get("/game/play/{token}/ideas")
+    async def read_five_ideas(token: str):
+        record = await playing_member(token)
+        if int(record.get("game_version") or 0) != 5:
+            raise HTTPException(status_code=404, detail="This game uses an earlier individual journey")
+        response = await db.game_audience_responses.find_one(
+            {"board_member_id": record["member_id"]}, {"_id": 0}) or {}
+        answers = response.get("original_answers") or {}
+        next_question = next((index for index in range(1, 6)
+                              if not str(answers.get(str(index), "")).strip()), 6)
+        return {"answers": answers, "next_question": next_question, "involvement": response.get("involvement", ""),
+                "completed": bool(response.get("completed"))}
+
+    @router.put("/game/play/{token}/ideas/answer/{question_number}")
+    async def save_five_idea(token: str, question_number: int, payload: FiveIdeaAnswer):
+        record = await playing_member(token)
+        if int(record.get("game_version") or 0) != 5 or not 1 <= question_number <= 5 or not payload.answer.strip():
+            raise HTTPException(status_code=422, detail="Answer one of the five questions in your own words")
+        existing = await db.game_audience_responses.find_one(
+            {"board_member_id": record["member_id"]}, {"_id": 0}) or {}
+        if existing.get("completed"):
+            raise HTTPException(status_code=409, detail="This individual game is already complete")
+        answers = existing.get("original_answers") or {}
+        if any(not str(answers.get(str(index), "")).strip() for index in range(1, question_number)):
+            raise HTTPException(status_code=409, detail="Please answer the earlier question first")
+        now = now_iso()
+        await db.game_audience_responses.update_one(
+            {"board_member_id": record["member_id"]},
+            {"$set": {f"original_answers.{question_number}": payload.answer,
+                      "current_question": question_number, "game_version": 5, "updated_at": now},
+             "$setOnInsert": {"response_id": new_uuid(), "board_member_id": record["member_id"],
+                              "user_id": record["user_id"], "created_at": now, "completed": False}}, upsert=True,
+        )
+        return {"next_question": question_number + 1}
+
+    @router.post("/game/play/{token}/ideas/complete")
+    async def complete_five_ideas(token: str, payload: FiveIdeaParticipation):
+        record = await playing_member(token)
+        if int(record.get("game_version") or 0) != 5 or not payload.involvement.strip():
+            raise HTTPException(status_code=422, detail="Tell us how you would be comfortable participating")
+        response = await db.game_audience_responses.find_one(
+            {"board_member_id": record["member_id"]}, {"_id": 0}) or {}
+        if any(not str((response.get("original_answers") or {}).get(str(index), "")).strip() for index in range(1, 6)):
+            raise HTTPException(status_code=409, detail="Complete all five questions first")
+        if response.get("completed"):
+            return {"status": "completed"}
+        now = now_iso()
+        await db.game_audience_responses.update_one(
+            {"board_member_id": record["member_id"], "completed": {"$ne": True}},
+            {"$set": {"involvement": payload.involvement, "current_question": 6,
+                      "completed": True, "completed_at": now, "updated_at": now}},
+        )
+        await db.game_board_members.update_one(
+            {"member_id": record["member_id"]},
+            {"$set": {"game_version": 5, "total_sections": 6, "completed_at": now, "updated_at": now}},
+        )
+        if not record.get("is_primary"):
+            try:
+                owner = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0, "email": 1, "first_name": 1}) or {}
+                if owner.get("email"):
+                    origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+                    resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+                    await resend.Emails.send_async({
+                        "from": os.environ["NONPROFIT_SENDER"], "to": [owner["email"]],
+                        "subject": f"Board Fundraising Game Response Received | {record['full_name']}",
+                        "html": email_html(
+                            f"Hi {owner.get('first_name') or 'there'},\n\n{record['full_name']} completed their Board Fundraising Game. "
+                            "You can now view or download their original answers.\n\nNonprofit Board Builder",
+                            "VIEW RESPONSE", f"{origin}/game/dashboard?response={record['member_id']}#bfg-board-members-section"),
+                    })
+            except Exception:
+                logger.exception("Five-question response notification failed for %s", record["member_id"])
+        return {"status": "completed"}
 
     @router.get("/game/play/{token}")
     async def play_context(token: str):

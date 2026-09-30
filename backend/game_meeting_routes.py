@@ -244,6 +244,15 @@ def create_game_meeting_router(db) -> APIRouter:
                      "funding_ask": "funding_ask", "fundraising_process": "process"}
         labels = {"individuals": "Individuals", "businesses": "Businesses", "grantors": "Grantors"}
         for row in rows:
+            if row.get("game_version") == 5:
+                for area_key, index in (("funding_audiences", "1"), ("where_to_find", "2"),
+                                        ("attraction", "3"), ("funding_ask", "4"), ("fundraising_process", "5")):
+                    value = (row.get("original_answers") or {}).get(index)
+                    if value and str(value).strip():
+                        collected[area_key].append(f"{names.get(row['board_member_id'], 'Board Member')}: {value}")
+                if row.get("involvement"):
+                    collected["board_roles"].append(f"{names.get(row['board_member_id'], 'Board Member')}: {row['involvement']}")
+                continue
             for audience_key, answer in (row.get("audiences") or {}).items():
                 if audience_key not in labels or (audience_key != "individuals" and not answer.get("enabled")):
                     continue

@@ -46,7 +46,7 @@ export default function GameWelcomePage() {
 
   const playGame = async () => {
     if (member?.account_status !== "free_game_guest") {
-      navigate("/game/dashboard");
+      navigate("/game/setup");
       return;
     }
     if (password.password.length < 8 || password.password !== password.confirm_password) {
@@ -57,7 +57,7 @@ export default function GameWelcomePage() {
     try {
       await memberApi.post("/members/complete-guest-account", password);
       await refresh();
-      navigate("/game/dashboard");
+      navigate("/game/setup");
     } catch (err) {
       setDetail(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "We could not secure your account. Please try again.");
       setSecuring(false);
@@ -90,7 +90,7 @@ export default function GameWelcomePage() {
               <p className="bfg-eyebrow">Payment confirmed</p>
               <h1 style={{ fontSize: "clamp(28px, 4.5vw, 42px)" }}>Welcome To Your Board Fundraising Game</h1>
               <p style={{ maxWidth: 560, margin: "14px auto 0" }}>
-                Watch this short onboarding to see how your dashboard helps you prepare your board, run the live game, adopt the strategy and delegate the agreed roles.
+                Your five original ideas are saved. Continue with your part of the game, share how you want to participate and review your organization's present fundraising before inviting your board.
               </p>
             </div>
             <GameVideo video={video} testId="bfg-welcome-video" />
@@ -108,7 +108,7 @@ export default function GameWelcomePage() {
               {detail && <p className="bfg-error" style={{ marginBottom: 14 }}>{detail}</p>}
               <button className="bfg-btn bfg-btn-primary" data-testid="bfg-play-game-btn"
                 disabled={securing} onClick={playGame}>
-                {securing ? "Securing My Account…" : "GO TO MY DASHBOARD"}
+                {securing ? "Securing My Account…" : "CONTINUE MY BOARD FUNDRAISING GAME"}
               </button>
             </div>
           </div>

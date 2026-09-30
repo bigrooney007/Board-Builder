@@ -657,6 +657,15 @@
 .bfg-goal-lead { display: grid; gap: 10px; margin: 14px 0 16px; text-align: left; }
 .bfg-goal-lead input { width: 100%; padding: 11px 14px; border: 1px solid #d1d5db; border-radius: 10px; background: #fff; color: #111827; font-size: 15px; }
 .bfg-goal-lead input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+.bfg-home .bfg-hero-inner { max-width: 880px; padding-top: clamp(36px, 6vw, 68px); }
+.bfg-hero-explanation { max-width: 720px; margin: 18px auto 0; color: #e2e8f0; font-size: 17px; line-height: 1.65; }
+.bfg-home .bfg-goal-box { color: #111827; margin-top: 26px; text-align: left; }
+.bfg-home .bfg-goal-box h2 { color: #111827; font-size: 21px; margin-bottom: 12px; }
+.bfg-home .bfg-goal-box label { margin-bottom: 10px; }
+.bfg-start-supporting { margin: 14px 0 0; color: #374151; font-size: 14px; line-height: 1.55; text-align: center; }
+.bfg-demo-link { display: inline-block; margin-top: 16px; color: #4338ca; font-weight: 700; text-decoration: underline; }
+.bfg-home .bfg-agent-intro { max-width: 730px; margin: 32px auto 0; text-align: left; color: #e2e8f0; line-height: 1.6; }
+.bfg-agent-intro ol { display: grid; gap: 5px; margin: 12px 0; padding-left: 25px; }
 .bfg-ft-card { border-left: 3px solid #4f46e5; }
 
 /* Recruitment assessment guidance stays optional because narration leads each question. */

@@ -16,11 +16,11 @@ export default function GameResumePage() {
         const response = await memberApi.post(`/members/game-resume/${token}`);
         if (!live) return;
         if (response.data.token) storeMemberToken(response.data.token);
-        window.location.replace("/game/demonstration");
+        window.location.replace("/game/questions");
       } catch (err) {
         if (!live) return;
         if (err.response?.status === 409) {
-          navigate("/login?next=" + encodeURIComponent("/game/demonstration"), { replace: true });
+          navigate("/login?next=" + encodeURIComponent("/game/questions"), { replace: true });
           return;
         }
         setError(err.response?.data?.detail || "This Board Fundraising Game return link is not available.");

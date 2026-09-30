@@ -279,7 +279,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={1}
           title="PLAY THE BOARD FUNDRAISING GAME"
-          summary="Build complete ideas for individual donors and any business or grantor audiences you know, document your present fundraising process, then explain how you would like to help."
+          summary="Your five ideas start the game. Share how you can participate and review your organization's present fundraising before inviting the board."
           status={founderGameComplete ? "Complete" : "Start Here"}
           defaultOpen
           testId="bfg-dashboard-section-founder-game"
@@ -287,7 +287,7 @@ export default function GameDashboardPage() {
         >
           <div className="bfg-clean-stage">
             <h3>Your Thinking Comes First</h3>
-            <p className="bfg-panel-sub">Identify the individuals, businesses and grantors with the strongest reason to support the goal. Explain why, where to find them, how to attract them, what to ask them to fund, the process for raising the money and how you would like to help. The Lead User also records the organization's present fundraising circumstances.</p>
+            <p className="bfg-panel-sub">Start with one audience you believe can help fund the goal. Your five answers stay in your own words. After you upgrade, tell us how you can participate and review your present fundraising so the board can build from both new ideas and what already works.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
             </button>

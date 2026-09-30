@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { memberApi } from "@/member/api";
+import { FIVE_QUESTIONS } from "./gameFiveQuestions";
 
 const statusClass = (status) => {
   if (status === "Game Completed") return "completed";
@@ -63,7 +64,7 @@ const ResponsesView = ({ memberId }) => {
   }, [memberId]);
   if (!data) return <p className="bfg-note">Loading responses…</p>;
   const audienceResponse = data.audience_response || {};
-  if (!data.responses.length && !audienceResponse.audiences) return <p className="bfg-note">No responses yet.</p>;
+  if (!data.responses.length && !audienceResponse.audiences && !audienceResponse.original_answers) return <p className="bfg-note">No responses yet.</p>;
   const labels = { individuals: "Individuals", businesses: "Businesses", grantors: "Grantors" };
   const fieldLabels = {
     audience: "Who should support the goal", reason: "Why they would support",
@@ -72,6 +73,14 @@ const ResponsesView = ({ memberId }) => {
   };
   return (
     <div className="bfg-responses-view" data-testid="bfg-responses-view">
+      {audienceResponse.original_answers && <>
+        {FIVE_QUESTIONS.map((item, index) => <div key={item.key} className="bfg-card" style={{ marginBottom: 14, padding: 16 }}>
+          <h4>{index + 1}. {item.title}</h4>
+          <p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.original_answers[String(index + 1)] || "Not answered yet"}</p>
+        </div>)}
+        <div className="bfg-card" style={{ marginBottom: 14, padding: 16 }}><h4>How This Person Would Like To Support Fundraising</h4><p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.involvement || "Not answered yet"}</p></div>
+        <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`} data-testid="bfg-download-response">Download Response</a>
+      </>}
       {audienceResponse.audiences && <>
         {Object.entries(audienceResponse.audiences).map(([key, answer]) => (key === "individuals" || answer.enabled) && (
           <div key={key} className="bfg-card" style={{ marginBottom: 14, padding: 16 }}>
@@ -84,7 +93,7 @@ const ResponsesView = ({ memberId }) => {
         <div className="bfg-card" style={{ marginBottom: 14, padding: 16 }}><h4>How This Person Would Like To Support Fundraising</h4><p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.involvement}</p></div>
         <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`} data-testid="bfg-download-response">Download Response</a>
       </>}
-      {!audienceResponse.audiences && data.responses.map((response) => (
+      {!audienceResponse.audiences && !audienceResponse.original_answers && data.responses.map((response) => (
         <div key={response.section_id} style={{ marginBottom: 14 }}>
           <h4>{response.section_id}. {response.section_title} {response.completed ? "— Completed" : "— In Progress"}</h4>
           {(response.first_response || []).length > 0 && (

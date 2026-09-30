@@ -114,7 +114,8 @@ export function HomepageTextSection() {
       if (key === "board-fundraising-game") {
         defaults = (await axios.get(`${API}/game/content`)).data.content || {};
       }
-      setContent({ ...cloneContent(defaults), ...cloneContent(stored) });
+      const current = key === "board-fundraising-game" && stored.content_version !== defaults.content_version ? {} : stored;
+      setContent({ ...cloneContent(defaults), ...cloneContent(current) });
     } catch (error) {
       setMessage(error.response?.data?.detail || "Could not load this home page text.");
     }

@@ -15,64 +15,70 @@ from platform_communications import notify_homepage_lead, public_origin
 GAME_ENTITLEMENT = "board_fundraising_game"
 
 DEFAULT_CONTENT = {
+    "content_version": 2,
     "hero_badge": "THE BOARD FUNDRAISING GAME",
-    "headline": "Get Your Board Members To Help Build The Fundraising Strategy And Start Raising Money",
-    "subheadline": "Play the Board Fundraising Game with your board, decide who to raise money from, where to find them, how to attract them and how to raise money from them, then equip each Board Member to participate.",
-    "intro_heading": "Those That Plan Together, Execute Together.",
+    "headline": "GET YOUR BOARD WORKING WITH YOU TO RAISE MONEY",
+    "subheadline": "Fundraising should not depend entirely on you.",
+    "hero_explanation": "The Board Fundraising Game helps you and your board build the fundraising strategy your organization will use to consistently find potential funders, attract them, build relationships and raise money.",
+    "agent_intro": "Your Board Fundraising Agent will guide you and your board through five practical questions:",
+    "agent_questions": [
+        "Who do you think can help fund your organization?",
+        "Where can you find them?",
+        "How can you attract them and get them interested in your organization?",
+        "What should you ask them for, and how much should you ask?",
+        "How do you move them from first discovering your organization to eventually funding it?",
+    ],
+    "agent_followup": "Then your board members will share their own ideas. You will bring everyone's thinking together, agree on the strongest fundraising strategy and decide how each person will participate.",
+    "start_supporting": "It starts with you. Answer five questions about how you think your organization can reach this fundraising goal. Then invite your board to bring their ideas into the strategy.",
+    "intro_heading": "Fundraising Is Not A One-Person Job",
     "intro_paragraphs": [
-        "The first step to get your board to start raising money with you is creating your organization's fundraising strategy with them.",
-        "I mean a clear strategy that identifies the exact type of people, businesses and grantors with the strongest reason to fund your mission, where to find them, how to attract them consistently, and the exact process to raise money from them.",
-        "The Board Fundraising Game helps you create this strategy with your board and gives every Board Member a clear way to participate in raising money.",
+        "You start with one audience you believe can help fund your work and share your thinking in your own words.",
+        "Your board members each do the same. The Board Fundraising Game brings those perspectives into one meeting where you decide what to pursue together.",
+        "Your Board Fundraising Agent guides the process and turns the board's adopted decisions into a strategy with a clear role for each participant.",
     ],
     "goal_label": "How Much Does Your Organization Want To Raise?",
     "goal_placeholder": "500,000",
-    "cta_label": "Start My Board Fundraising Game",
+    "cta_label": "START MY BOARD FUNDRAISING GAME",
     "video_enabled": True,
     "video_label": "Watch",
     "video_heading": "See How The Board Fundraising Game Works",
     "video_text": "See exactly how you and your board move from a fundraising goal to an adopted, practical fundraising plan and clear participation choices.",
     "stages_label": "How It Works",
-    "stages_heading": "One Game. One Fundraising Goal. Your Entire Board Behind It.",
+    "stages_heading": "From Your Ideas To A Fundraising System Built With Your Board",
     "stages": [
-        {"key": "before", "number": "1", "title": "Before Game Night", "items": [
-            "Each board member receives their own Individual Game link before your next board meeting.",
-            "They learn how fundraising works, contribute ideas for reaching your fundraising goal and choose how they want to participate.",
-            "Everyone arrives at the meeting already thinking seriously about how your organization can raise the money.",
+        {"key": "start", "number": "1", "title": "Start The Game Yourself", "items": [
+            "Choose your fundraising goal and answer five practical questions about how you think your organization can raise the money.",
+            "Your answers are saved exactly as you give them. Your thinking comes into the game before you ask anybody else to participate.",
         ]},
-        {"key": "during", "number": "2", "title": "During Game Night", "items": [
-            "Your board turns individual ideas into collective decisions.",
-            "Everyone reviews the ideas contributed by the board and prioritizes the strongest opportunities.",
-            "The platform turns those priorities into your fundraising strategy.",
-            "Your board reviews it, makes the final decisions and adopts the strategy together.",
+        {"key": "invite", "number": "2", "title": "Invite Your Board", "items": [
+            "Upgrade and invite each board member to answer the same five questions independently and say how they would be comfortable participating.",
+            "Bring the thinking, relationships and perspectives of your board into the strategy.",
         ]},
-        {"key": "after", "number": "3", "title": "After Game Night", "items": [
-            "Your organization leaves with an adopted fundraising strategy.",
-            "Each board member receives a personal Board Fundraising Portfolio showing how they will help raise money.",
-            "They also receive the scripts, templates, checklists and resources they need to execute their role.",
+        {"key": "group", "number": "3", "title": "Play The Group Board Fundraising Game", "items": [
+            "Bring everyone's proposed audiences and ideas into your board meeting.",
+            "Decide which opportunities are strongest, where to find and attract funders, what to ask and how to build the relationship toward giving.",
+            "Your board makes the decisions together.",
+        ]},
+        {"key": "execute", "number": "4", "title": "Build And Execute Your Fundraising Strategy", "items": [
+            "Your Board Fundraising Agent turns the board's adopted decisions into your organization's fundraising strategy.",
+            "Each member receives a clear role based on what the strategy needs and how they said they can participate, with a Board Fundraising Portfolio and execution support.",
         ]},
     ],
-    "stages_cta_label": "Launch My Board Fundraising Game",
+    "stages_cta_label": "START MY BOARD FUNDRAISING GAME",
     "outcomes_label": "Outcomes",
-    "outcomes_heading": "Your Board Meeting Ends With More Than A Conversation",
+    "outcomes_heading": "What You And Your Board Build Together",
     "outcomes": [
-        {"key": "strategy", "heading": "1. A Clear Fundraising Strategy", "paragraphs": [
-            "Know who you will raise money from, where to find them, how to attract them and how you will raise money from them.",
+        {"key": "strategy", "heading": "A Fundraising Strategy Built With Your Board", "paragraphs": [
+            "Know who you are trying to raise money from, where to find them, how to attract them, what to ask for and the process for turning relationships into funding.",
         ]},
-        {"key": "knowledge", "heading": "2. A Board That Knows How To Raise Money", "paragraphs": [
-            "Your board learns how fundraising works by actually helping build the strategy.",
-            "Instead of simply asking board members to fundraise, you equip them to do it.",
+        {"key": "people", "heading": "More People Helping You Build The Fundraising System", "paragraphs": [
+            "Fundraising no longer sits entirely with the Executive Director. Your board contributes ideas, relationships and execution capacity.",
         ]},
-        {"key": "system", "heading": "3. A Fundraising System That Does Not Depend Entirely On You", "paragraphs": [
-            "Build a system for consistently finding potential funders, attracting them, building relationships, asking for support, following up and stewarding them.",
-            "Fundraising becomes an organizational responsibility instead of yours alone.",
+        {"key": "roles", "heading": "A Clear Role For Every Board Member", "paragraphs": [
+            "Board members tell you how they can participate, help build the strategy and receive responsibilities connected to it.",
         ]},
-        {"key": "roles", "heading": "4. A Clear Role For Every Board Member", "paragraphs": [
-            "Each board member chooses how they want to help raise money.",
-            "Then they receive their personal role and the tools required to execute it.",
-        ]},
-        {"key": "trust", "heading": "5. A Board That Trusts Your Leadership", "paragraphs": [
-            "You are not simply asking your board to do more.",
-            "You are leading them through a process that teaches them, involves them in decisions and equips them to contribute.",
+        {"key": "system", "heading": "A Fundraising System You Can Keep Building", "paragraphs": [
+            "Create a repeatable process for finding potential funders, attracting them, developing relationships, making the right ask, following up and stewarding them.",
         ]},
     ],
     "benefits_heading": "What Your Organization Walks Away With",
@@ -101,8 +107,8 @@ DEFAULT_CONTENT = {
     ],
     "testimonials_heading": "What Nonprofit Leaders Say",
     "closing_heading": "Ready To Stop Carrying Fundraising Alone?",
-    "closing_text": "Bring your board together around one fundraising goal and leave with a shared strategy and clear fundraising roles.",
-    "closing_cta_label": "Start My Board Fundraising Game",
+    "closing_text": "Start with your fundraising goal and five questions. Your own ideas are the beginning of a strategy you and your board can build together.",
+    "closing_cta_label": "START MY BOARD FUNDRAISING GAME",
     "footer_recruit_label": "Recruit Board Members With Fundraising Experience",
     "footer_recruit_url": "/recruit",
     "profile_flow": {
@@ -115,20 +121,21 @@ DEFAULT_CONTENT = {
         "review_supporting": "Make sure everything is correct before saving your Fundraising Game Profile.",
         "save_button": "Save My Fundraising Game Profile",
         "saved_heading": "Your Board Fundraising Game Is Ready",
-        "saved_supporting": "You have set your fundraising goal. Now play the game yourself and create the fundraising strategy your organization will use to reach it.",
-        "next_heading": "Play The Game And Create Your Fundraising Strategy",
-        "next_supporting": "For each fundraising audience you choose, answer six guided questions about who they are, why they will give, where to find them, how to attract them, what to ask them to fund and the process for raising money from them. You will finish by choosing how you want to participate.",
+        "saved_supporting": "You have set your fundraising goal. Answer five questions in your own words to start your Board Fundraising Game.",
+        "next_heading": "Start With Your Own Fundraising Ideas",
+        "next_supporting": "Identify one audience, where to find them, how to attract them, what to ask and how to build a relationship toward giving. Your board will later answer the same five questions independently.",
         "invite_cta": "Play My Board Fundraising Game",
     },
     "upgrade_page": {
-        "label": "YOUR FUNDRAISING STRATEGY IS READY",
-        "heading": "Bring Your Board Into The Game",
-        "supporting": "You have completed your game and created the thinking your fundraising strategy will be built around. Unlock the full Board Fundraising Game to see your strategy, invite your board members and bring everyone's ideas together during your next board meeting.",
+        "label": "YOUR IDEAS ARE SAVED",
+        "heading": "You've Shared Your Fundraising Ideas. Now Let's Bring In Your Board.",
+        "supporting": "That's your perspective. Upgrade to invite your board members to answer the same questions independently, bring everyone's ideas into the group game and build the strategy together.",
         "completed_areas": [
-            "The exact type of people, businesses and grantors meant to fund your mission or with the greatest reason to fund your organization",
-            "Where to consistently find potential funders",
-            "How to attract their attention",
-            "The exact process to raise money exponentially for your organization",
+            "Who you believe can help fund your organization",
+            "Where you believe you can find them",
+            "How you believe you can attract them",
+            "What you think you should ask for and how much",
+            "How you think you can build a relationship toward giving",
         ],
         "more_people_statement": "The more people who play the game, the more ideas you have about who to raise money from, where to find them, how to attract them and how to raise money from them.",
         "goal_label": "Your Fundraising Goal",
@@ -139,15 +146,14 @@ DEFAULT_CONTENT = {
         "process_heading": "What Happens After You Unlock",
         "process_supporting": "From the moment you unlock your game, the platform leads you and your board through the entire process.",
         "process_steps": [
-            {"heading": "1. See The Fundraising Strategy You Just Created", "paragraphs": [
-                "Your answers are turned into your fundraising strategy around the goal your organization wants to reach.",
-                "You can now see the exact type of people, businesses and grantors meant to fund your mission, where to consistently find them, how to attract their attention and the exact process to raise money exponentially for your organization."]},
+            {"heading": "1. Continue Your Part Of The Game", "paragraphs": [
+                "Your five original answers are saved. Tell us how you would be comfortable participating and review your present fundraising circumstances."]},
             {"heading": "2. Tell Us What You Already Have", "paragraphs": [
                 "Tell us about your present donor base, the businesses and grantors already giving to your organization, why they support you and how you presently raise money from them.",
-                "You will also tell us how you want to be involved in raising money."]},
+                "Keep the present methods that already work available for the Board's decisions."]},
             {"heading": "3. Invite Your Board Members To Play", "paragraphs": [
                 "Each board member receives their own secure Individual Game link.",
-                "For each audience they select, they contribute ideas about who should give, why they will give, where to find them, how to attract them, what to ask them to fund, the process for raising money and how they would feel comfortable supporting fundraising."]},
+                "Each board member answers the same five questions about one audience and says how they would be comfortable participating."]},
             {"heading": "4. Play Together During Your Next Board Meeting", "paragraphs": [
                 "During your next board meeting, you and your board review the ideas contributed by everyone across six focused decisions: audiences and reasons, where to find them, how to attract them, what to ask them to fund and how much to ask, the fundraising process and each Board Member's role.",
                 "Your board discusses the attributed ideas, compares them with your present fundraising circumstances and prioritizes the strongest direction together."]},
@@ -160,7 +166,7 @@ DEFAULT_CONTENT = {
         ],
         "repeat_heading": "Ready To Bring Your Board Into The Process?",
         "repeat_supporting": "Unlock your Board Fundraising Game and start preparing your board to build, adopt and execute the fundraising strategy your organization needs.",
-        "repeat_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
+        "repeat_cta": "Invite My Board And Continue — $497",
         "intro_heading": "Stop Carrying Fundraising Alone",
         "intro_paragraphs": [
             "Your board is less likely to take ownership of fundraising when they had no role in creating the strategy they are being asked to execute.",
@@ -169,7 +175,7 @@ DEFAULT_CONTENT = {
         "outcomes_label": "Outcomes",
         "outcomes_heading": "What Your Organization Walks Away With",
         "outcomes": [
-            {"heading": "A Clear Fundraising Strategy", "paragraphs": ["Know the exact type of people, businesses and grantors meant to fund your mission, where to find them, how to attract them and the exact process to raise money exponentially for your organization."]},
+            {"heading": "A Clear Fundraising Strategy", "paragraphs": ["Know the audiences your board chooses, where to find and attract them, what to ask and how to build the relationships that lead to funding."]},
             {"heading": "Your Present Fundraising Strengths Preserved", "paragraphs": ["Keep the present donors, business supporters, grantors and fundraising methods the Board wants to continue using."]},
             {"heading": "More Ideas From Your Entire Board", "paragraphs": ["The more people who play the game, the more ideas you have about who to raise money from, where to find them, how to attract them and how to raise money from them."]},
             {"heading": "A Clear Role For Every Board Member", "paragraphs": ["Every Board Member chooses how they want to help raise money."]},
@@ -198,7 +204,7 @@ DEFAULT_CONTENT = {
         "payment_org_line": "One organization. Your entire board participates.",
         "payment_subscription_line": "No subscription.",
         "payment_includes": "Includes the complete Board Fundraising Game, a Clear Fundraising Strategy, Fun Filled Moment With Board Members, Board Fundraising Portfolios and a personal Executive Assistant for each Board Member.",
-        "payment_cta": "Unlock My Fundraising Strategy + Board Fundraising Game — $497",
+        "payment_cta": "Invite My Board And Continue — $497",
     },
 }
 
@@ -250,6 +256,13 @@ class SituationUpdate(BaseModel):
     current_step: int = Field(default=0, ge=0, le=20)
 
 
+class FreeGameAnswer(BaseModel):
+    answer: str = Field(min_length=1, max_length=6000)
+
+
+FREE_QUESTION_COUNT = 5
+
+
 def situation_is_complete(doc: dict) -> bool:
     if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 3:
         return False
@@ -294,6 +307,44 @@ def create_game_router(db) -> APIRouter:
             "unlocked": GAME_ENTITLEMENT in member.get("entitlements", []),
             "member": {"first_name": member.get("first_name", ""), "last_name": member.get("last_name", ""), "email": member.get("email", "")},
         }
+
+    @router.get("/game/free")
+    async def free_game(request: Request):
+        member = await authenticate_member(request, db)
+        profile = await get_profile_doc(member["user_id"])
+        if not profile.get("profile_completed"):
+            raise HTTPException(status_code=409, detail="Choose your fundraising goal and save your organization first")
+        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        answers = saved.get("answers") or {}
+        first_unanswered = next((index for index in range(1, FREE_QUESTION_COUNT + 1)
+                                 if not str(answers.get(str(index), "")).strip()), FREE_QUESTION_COUNT + 1)
+        return {
+            "answers": answers, "next_question": first_unanswered, "complete": first_unanswered > FREE_QUESTION_COUNT,
+            "organization_name": (profile.get("organization") or {}).get("name", ""),
+            "goal_amount": (profile.get("goal") or {}).get("amount", 0),
+            "unlocked": GAME_ENTITLEMENT in member.get("entitlements", []),
+        }
+
+    @router.put("/game/free/{question_number}")
+    async def save_free_game_answer(question_number: int, payload: FreeGameAnswer, request: Request):
+        member = await authenticate_member(request, db)
+        profile = await get_profile_doc(member["user_id"])
+        if not profile.get("profile_completed"):
+            raise HTTPException(status_code=409, detail="Choose your fundraising goal and save your organization first")
+        if not 1 <= question_number <= FREE_QUESTION_COUNT or not payload.answer.strip():
+            raise HTTPException(status_code=422, detail="Answer this question in your own words")
+        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        answers = saved.get("answers") or {}
+        if any(not str(answers.get(str(index), "")).strip() for index in range(1, question_number)):
+            raise HTTPException(status_code=409, detail="Please answer the earlier question first")
+        now = datetime.now(timezone.utc).isoformat()
+        # Keep the original response byte-for-byte as a string. No AI, scoring or rewriting runs here.
+        await db.game_free_responses.update_one(
+            {"user_id": member["user_id"]},
+            {"$set": {f"answers.{question_number}": payload.answer, "updated_at": now},
+             "$setOnInsert": {"user_id": member["user_id"], "created_at": now}}, upsert=True,
+        )
+        return {"next_question": question_number + 1, "complete": question_number == FREE_QUESTION_COUNT}
 
     @router.get("/game/branding")
     async def game_branding(request: Request):
@@ -345,7 +396,7 @@ def create_game_router(db) -> APIRouter:
                     name=primary_user.get("full_name") or member.get("first_name", ""),
                     email=member.get("email", ""),
                     organization=organization.get("name", ""),
-                    continue_url=f"{root}/login?next=%2Fgame%2Fdemonstration",
+                    continue_url=f"{root}/login?next=%2Fgame%2Fquestions",
                     details={"fundraising_goal": f"${int(goal.get('amount') or 0):,}"},
                 )
             except Exception:

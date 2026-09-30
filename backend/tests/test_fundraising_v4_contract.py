@@ -79,7 +79,7 @@ class FundraisingV4ContractTests(unittest.TestCase):
 
     def test_v4_response_view_does_not_repeat_legacy_sections(self):
         responses = source("frontend/src/game/BoardMembersSection.jsx")
-        self.assertIn("!audienceResponse.audiences && data.responses.map", responses)
+        self.assertIn("!audienceResponse.audiences && !audienceResponse.original_answers && data.responses.map", responses)
 
     def test_admin_previews_are_product_isolated_and_materials_are_on_demand(self):
         fixtures = source("backend/admin_dashboard_preview_routes.py")

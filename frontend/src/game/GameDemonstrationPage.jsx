@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
@@ -10,6 +10,7 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 
 export default function GameDemonstrationPage() {
   const { member, loading } = useMemberAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const video = useFlowVideo("game_homepage");
   const [busy, setBusy] = useState("");
@@ -17,10 +18,8 @@ export default function GameDemonstrationPage() {
 
   useEffect(() => { document.title = "See How The Board Fundraising Game Works"; }, []);
 
-  if (loading) return <div className="bfg" style={{ minHeight: "100vh" }} />;
-  if (!member) return <Navigate to="/board-fundraising-game" replace />;
-
   const buy = async (pathway = "self-guided") => {
+    if (!member) { navigate("/board-fundraising-game"); return; }
     setBusy(pathway); setError("");
     try {
       const organization = sessionStorage.getItem("bfgOrg") || "";
@@ -58,6 +57,7 @@ export default function GameDemonstrationPage() {
           </p>
         )}
         <div style={{ marginTop: 26 }}><GameVideo video={video} testId="bfg-demonstration-video" /></div>
+        {!member && !loading && <p style={{ marginTop: 22 }}><Link className="bfg-btn bfg-btn-primary" to="/board-fundraising-game">START MY BOARD FUNDRAISING GAME</Link></p>}
         <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={buy} error={error}
           selfGuided={{title:"Run The Board Fundraising Game With Your Board",description:"Use the platform to guide your board from individual ideas to one adopted fundraising strategy.",features:["Get every Board Member's original fundraising ideas","Facilitate the live group game with the built-in guide","Create, edit and adopt a practical fundraising strategy","Delegate roles and give every member their Portfolio and Executive Assistant"],guarantee:"Complete the Board Fundraising Game and follow the guided process. If the platform does not help your board produce a usable fundraising strategy you can begin executing, tell us and we will refund 100% of your purchase.",button:"START MY SELF-GUIDED GAME — $497"}}
           supported={{title:"Run Your Board Fundraising Game With Rooney",description:"Rooney works with you and your board to facilitate the process and turn the decisions into action.",features:["Prepare your organization and Board Members for the game","Facilitate the live Board Fundraising Game","Create the final fundraising strategy from the Board's decisions","Help delegate the agreed roles so the Board can start raising money"],price:"$2,997",button:"WORK WITH ROONEY — $2,997"}}/>

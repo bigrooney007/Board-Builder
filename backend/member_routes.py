@@ -91,6 +91,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         raise HTTPException(status_code=402, detail="This payment has not been completed yet")
     metadata = session.metadata or {}
     offer_source = metadata.get("offer_source", "")
+    if offer_source == "board_fundraising_game" and metadata.get("member_user_id") and metadata["member_user_id"] != member["user_id"]:
+        raise HTTPException(status_code=409, detail="This Board Fundraising Game purchase belongs to another account")
     tier = metadata.get("selected_tier", "")
     extra_entitlements = []
     if offer_source == "recruit_with_rooney" and tier == "997":
@@ -414,7 +416,7 @@ def create_member_router(db) -> APIRouter:
                     name=payload.name,
                     email=email,
                     organization=payload.organization,
-                    continue_url=f"{root}/login?next=%2Fgame%2Fdemonstration",
+                    continue_url=f"{root}/login?next=%2Fgame%2Fquestions",
                     details={"fundraising_goal": f"${payload.goal_amount:,}"},
                 )
             except Exception:
@@ -459,9 +461,27 @@ def create_member_router(db) -> APIRouter:
             }, "$setOnInsert": {"user_id": user_id, "created_at": now}},
             upsert=True,
         )
+        resume_token = secrets.token_urlsafe(32)
+        await db.game_resume_tokens.update_one(
+            {"user_id": user_id},
+            {"$set": {"token": resume_token, "email": email,
+                      "expires_at": (datetime.now(timezone.utc) + timedelta(days=14)).isoformat(),
+                      "updated_at": now},
+             "$setOnInsert": {"user_id": user_id, "created_at": now}}, upsert=True,
+        )
+        try:
+            root = public_origin()
+            await notify_homepage_lead(
+                db, pathway="board-fundraising-game", source_id=user_id,
+                name=payload.name, email=email, organization=payload.organization,
+                continue_url=f"{root}/game/resume/{resume_token}",
+                details={"fundraising_goal": f"${payload.goal_amount:,}"},
+            )
+        except Exception:
+            pass
         token = create_member_token(user_id, email)
         set_member_cookie(response, token)
-        return {"existing_account": False, "token": token}
+        return {"existing_account": False, "token": token, "member": public_member(member)}
 
     @router.post("/game-resume/{resume_token}")
     async def resume_free_game(resume_token: str, response: Response):
