@@ -6,6 +6,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
 import { NarrationControl, isNarrationMuted } from "./NarrationControl";
 import { SpeakButton } from "./SpeakButton";
+import { GameNightSection } from "./GameNightSection";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -18,6 +19,8 @@ const GROUPS = [
       ["current_individual_donor_attraction", "How do you presently attract them or get their attention?"],
       ["current_individual_donor_support", "What do they currently give to or help fund, and about how much do they give?"],
       ["current_individual_donor_process", "How do you presently move them from first contact to making a donation?"],
+      ["current_individual_donor_seeking", "What are you hoping to raise from individual donors now, and what would their support make possible?"],
+      ["current_individual_donor_motivation", "Why do you think these donors choose to give to your organization?"],
     ],
   },
   {
@@ -28,6 +31,7 @@ const GROUPS = [
       ["current_business_attraction", "How do you presently attract them or earn their interest?"],
       ["current_business_support", "What do they currently sponsor, fund or contribute, and about how much do they give?"],
       ["current_business_process", "What process do you presently use to secure and maintain their support?"],
+      ["current_business_seeking", "What are you hoping to raise from businesses now, and how would you like them to help?"],
     ],
   },
   {
@@ -38,6 +42,7 @@ const GROUPS = [
       ["current_grantor_attraction", "How do you presently demonstrate credibility or build a relationship with them?"],
       ["current_grantor_support", "What do they currently fund, and about how much do they award?"],
       ["current_grantor_process", "What process do you presently follow before, during and after applying for their funding?"],
+      ["current_grantor_seeking", "What are you hoping to raise from grantmakers now, and what would that fund?"],
     ],
   },
 ];
@@ -51,6 +56,11 @@ export default function GameSituationPage() {
   const [token, setToken] = useState("");
   const [index, setIndex] = useState(0);
   const [reality, setReality] = useState({});
+  const [capacity, setCapacity] = useState({ team: {}, technology: {}, materials: {} });
+  const [meetingReady, setMeetingReady] = useState(false);
+  const [setupStep, setSetupStep] = useState(0);
+  const [situationComplete, setSituationComplete] = useState(false);
+  const [leadParticipationComplete, setLeadParticipationComplete] = useState(false);
   const [branding, setBranding] = useState({ logo_data: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -76,18 +86,30 @@ export default function GameSituationPage() {
     if (!member) { navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
     (async () => {
       try {
-        const [situation, brand, self] = await Promise.all([
-          memberApi.get("/game/situation"), memberApi.get("/game/branding"), memberApi.post("/game/self-play"),
+        const [situation, brand, self, meeting] = await Promise.all([
+          memberApi.get("/game/situation"), memberApi.get("/game/branding"), memberApi.post("/game/self-play"), memberApi.get("/game/night"),
         ]);
         setReality(situation.data.sections?.current_reality || {});
+        setCapacity({
+          team: situation.data.sections?.team || {}, technology: situation.data.sections?.technology || {},
+          materials: situation.data.sections?.materials || {},
+        });
         setBranding(brand.data.branding || { logo_data: "" });
         setToken(self.data.token);
         const response = (await axios.get(`${API}/game/play/${self.data.token}/audience-response`)).data.response || {};
         setFiveIdeasSaved(response.game_version === 5 && ["1", "2", "3", "4", "5"].every((key) => (response.original_answers?.[key] || "").trim()));
-        if (!response.completed) { setPhase("play_first"); return; }
-        if (situation.data.completed && !reviewMode) { navigate(member?.supported_service_product === "board-fundraising-game" ? "/supported-service/thank-you" : "/game/dashboard", { replace: true }); return; }
+        setSituationComplete(Boolean(situation.data.completed));
+        setLeadParticipationComplete(Boolean(response.completed));
+        if (situation.data.completed && response.completed && !reviewMode) { navigate("/game/dashboard#bfg-board-members-section", { replace: true }); return; }
+        const ready = Boolean(meeting.data.night?.meeting_date && meeting.data.night?.start_time && meeting.data.night?.funding_deadline);
+        setMeetingReady(ready);
+        setSetupStep(Number(situation.data.current_step || 0));
         setIndex(reviewMode ? 0 : Math.min(2, Math.max(0, Number(situation.data.current_step || 0))));
-        setPhase("reality");
+        if (!ready) setPhase("meeting");
+        else if (situation.data.completed && !reviewMode) setPhase("play_first");
+        else if (reviewMode) setPhase("reality");
+        else if (Number(situation.data.current_step || 0) >= 3) setPhase("capacity");
+        else setPhase("reality");
       } catch { setError("We could not load your game. Please refresh the page."); setPhase("error"); }
     })();
   }, [loading, member, navigate, reviewMode]);
@@ -100,18 +122,20 @@ export default function GameSituationPage() {
     audioRef.current.play().catch(() => {});
   };
 
-  const saveGroup = async () => {
+  const saveGroup = async (answers = reality) => {
     const group = GROUPS[index];
-    const complete = group.fields.every(([key]) => String(reality[key] || "").trim());
+    const complete = answers[`${group.key}_status`] === "none" || group.fields.every(([key]) => String(answers[key] || "").trim());
     if (!complete) { setError("Answer each question, or use the button if you do not have this type of supporter yet."); return; }
     setBusy(true); setError("");
     try {
       const final = index === GROUPS.length - 1;
-      const savedReality = final ? { ...reality, reviewed: "yes" } : reality;
-      await memberApi.put("/game/situation", { sections: { current_reality: savedReality }, current_step: final ? 3 : index + 1 });
+      const savedReality = { ...answers, [`${group.key}_status`]: answers[`${group.key}_status`] === "none" ? "none" : "current",
+        ...(reviewMode && situationComplete && !reality.setup_version ? {} : { setup_version: "post_payment_v2" }) };
+      await memberApi.put("/game/situation", { sections: { current_reality: savedReality },
+        current_step: reviewMode && situationComplete ? Math.max(4, setupStep) : index + 1 });
+      setReality(savedReality);
       if (final) {
-        await memberApi.post("/game/situation/complete");
-        navigate(member?.supported_service_product === "board-fundraising-game" ? "/supported-service/thank-you" : "/game/dashboard", { replace: true });
+        setPhase("capacity"); window.scrollTo({ top: 0 });
       } else { setIndex(index + 1); window.scrollTo({ top: 0 }); }
     } catch (err) { setError(err.response?.data?.detail || "We could not save your answers. Please try again."); }
     setBusy(false);
@@ -119,15 +143,63 @@ export default function GameSituationPage() {
 
   const noCurrent = () => {
     const group = GROUPS[index];
-    const label = group.key === "individuals" ? "individual donors" : group.key === "businesses" ? "business sponsors or partners" : "grantors";
-    const next = { ...reality };
-    group.fields.forEach(([key]) => { next[key] = `We do not currently have ${label}.`; });
-    setReality(next); setError("");
+    const next = { ...reality, [`${group.key}_status`]: "none" };
+    group.fields.forEach(([key]) => { next[key] = ""; });
+    saveGroup(next);
+  };
+
+  const saveCapacity = async () => {
+    const needed = [["team", "who_handles"], ["team", "board_involvement"], ["technology", "tools"],
+      ["technology", "tech_working"], ["materials", "materials"]];
+    if (needed.some(([section, key]) => !String(capacity[section]?.[key] || "").trim())) {
+      setError("Please describe each part of your current capacity. If you don't have something yet, you can say so."); return;
+    }
+    setBusy(true); setError("");
+    try {
+      await memberApi.put("/game/situation", { sections: { ...capacity, current_reality: { ...reality, reviewed: "yes", setup_version: "post_payment_v2" } }, current_step: 4 });
+      await memberApi.post("/game/situation/complete");
+      if (leadParticipationComplete) navigate("/game/dashboard#bfg-board-members-section");
+      else { setPhase("play_first"); window.scrollTo({ top: 0 }); }
+    } catch (err) { setError(err.response?.data?.detail || "We could not save your current resources. Please try again."); }
+    finally { setBusy(false); }
   };
 
   const shell = (children, testId) => <BfgShell><main className="bfg-flow" style={{ maxWidth: 760, margin: "0 auto", padding: "30px 20px 80px", textAlign: "center" }} data-testid={testId}>{children}{error && <p className="bfg-error">{error}</p>}</main></BfgShell>;
   if (loading || phase === "loading") return shell(<p style={{ marginTop: 40 }}>Loading your game…</p>, "bfg-situation-loading");
   if (phase === "error") return shell(null, "bfg-situation-error");
+
+  if (phase === "meeting") return shell(<>
+    <p className="bfg-eyebrow">BOARD FUNDRAISING GAME SETUP • STEP 1</p>
+    <h1>When Is Your Next Board Meeting?</h1>
+    <p style={{ margin: "14px auto 22px" }}>Your board members will play individually before this meeting. Tell us when the board meets and when you need to raise your fundraising goal, so your final strategy works toward a real deadline.</p>
+    <div style={{ textAlign: "left" }}><GameNightSection onSaved={() => setMeetingReady(true)} /></div>
+    {meetingReady && <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={() => { setPhase(reviewMode ? "reality" : situationComplete ? "play_first" : setupStep >= 3 ? "capacity" : "reality"); window.scrollTo({ top: 0 }); }}>CONTINUE TO MY PRESENT FUNDRAISING</button>}
+  </>, "bfg-setup-meeting");
+
+  if (phase === "capacity") {
+    const fields = [
+      ["team", "who_handles", "Who currently handles fundraising and donor relationships for your organization?"],
+      ["team", "board_involvement", "How is your board involved in fundraising today?"],
+      ["technology", "tools", "What tools or systems do you already use to track funders and fundraising?"],
+      ["technology", "tech_working", "What works well with those tools, and where do you need more support?"],
+      ["materials", "materials", "What fundraising materials, stories, evidence or campaign resources do you already have?"],
+    ];
+    return shell(<>
+      <p className="bfg-eyebrow">YOUR PRESENT FUNDRAISING • TEAM & RESOURCES</p>
+      <h1>What Can You Already Build On?</h1>
+      <p style={{ marginTop: 12 }}>Tell us what exists today. If you don't have a team, tool or material yet, say so. Your board can then make a practical plan with the resources you actually have.</p>
+      {fields.map(([section, key, question]) => <div key={`${section}-${key}`} className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
+        <label className="bfg-field"><span style={{ fontSize: 16 }}>{question}</span>
+          <textarea rows={4} value={capacity[section]?.[key] || ""} onChange={(event) => setCapacity((current) => ({ ...current, [section]: { ...current[section], [key]: event.target.value } }))} placeholder="Describe what exists today, or say none yet…" />
+        </label>
+        <SpeakButton value={capacity[section]?.[key] || ""} onChange={(value) => setCapacity((current) => ({ ...current, [section]: { ...current[section], [key]: value } }))} />
+      </div>)}
+      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 22 }}>
+        <button className="bfg-btn bfg-btn-ghost" onClick={() => { setIndex(2); setPhase("reality"); }}>BACK</button>
+        <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={saveCapacity}>{busy ? "SAVING…" : "CONTINUE TO MY PARTICIPATION"}</button>
+      </div>
+    </>, "bfg-current-capacity");
+  }
 
   if (phase === "play_first") {
     const chooseLogo = (event) => {
@@ -143,8 +215,8 @@ export default function GameSituationPage() {
     };
     return shell(<>
       <p className="bfg-eyebrow">YOUR INDIVIDUAL BOARD FUNDRAISING GAME</p>
-      <h1>{fiveIdeasSaved ? "Your Five Fundraising Ideas Are Saved" : "Start With Your Ideas For Reaching The Fundraising Goal"}</h1>
-      <p style={{ marginTop: 14, fontSize: 17 }}>{fiveIdeasSaved ? "Continue with your part of the Board Fundraising Game by telling us how you would be comfortable participating. Then review your present fundraising before inviting your board." : "Answer five questions about one funding audience, where to find them, how to attract them, what to ask and how to build a relationship toward giving."}</p>
+      <h1>{fiveIdeasSaved ? "How Will You Personally Participate?" : "Start With Your Ideas For Reaching The Fundraising Goal"}</h1>
+      <p style={{ marginTop: 14, fontSize: 17 }}>{fiveIdeasSaved ? "Your five ideas and present fundraising reality are saved. Now tell us which part of the process you can personally take responsibility for. Then you can invite your board." : "Answer five questions about one funding audience, where to find them, how to attract them, what to ask and how to build a relationship toward giving."}</p>
       <div className="bfg-card bfg-game-opening-card" style={{ marginTop: 22 }}>
         <h2>Add Your Organization Logo</h2>
         <div className="bfg-game-logo-control">
@@ -157,21 +229,25 @@ export default function GameSituationPage() {
   }
 
   const group = GROUPS[index];
+  const groupStatus = reality[`${group.key}_status`] || (group.fields.some(([key]) => String(reality[key] || "").trim()) ? "current" : "");
   return shell(<>
     <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => play(true)} /></div>
     <p className="bfg-eyebrow">YOUR PRESENT FUNDRAISING • {index + 1} OF 3</p>
     <h1>{group.title}</h1>
-    <p style={{ marginTop: 12 }}>This information will appear beside the new ideas during the Group Game, so your Board can keep what already works and improve what needs to change.</p>
-    {group.fields.map(([key, question]) => <div key={key} className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
+    <p style={{ marginTop: 12 }}>Do you currently receive support from this group? If you do, tell us about those relationships so your Board can build on what exists. If you do not, you can move straight to the next section.</p>
+    <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
+      <button className="bfg-btn bfg-btn-ghost" onClick={() => setReality((current) => ({ ...current, [`${group.key}_status`]: "current" }))}>YES, WE HAVE THESE SUPPORTERS</button>
+      <button className="bfg-btn bfg-btn-ghost" disabled={busy} onClick={noCurrent}>WE DO NOT HAVE THESE SUPPORTERS YET</button>
+    </div>
+    {groupStatus === "current" && group.fields.map(([key, question]) => <div key={key} className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
       <label className="bfg-field"><span style={{ fontSize: 16 }}>{question}</span>
-        <textarea rows={4} value={reality[key] || ""} onChange={(event) => setReality((current) => ({ ...current, [key]: event.target.value }))} placeholder="Type your answer here..." />
+        <textarea rows={4} value={reality[key] || ""} onChange={(event) => setReality((current) => ({ ...current, [key]: event.target.value, [`${group.key}_status`]: "current" }))} placeholder="Type your answer here..." />
       </label>
-      <SpeakButton value={reality[key] || ""} onChange={(value) => setReality((current) => ({ ...current, [key]: value }))} testId={`bfg-reality-${key}-speak`} />
+      <SpeakButton value={reality[key] || ""} onChange={(value) => setReality((current) => ({ ...current, [key]: value, [`${group.key}_status`]: "current" }))} testId={`bfg-reality-${key}-speak`} />
     </div>)}
-    <button className="bfg-btn bfg-btn-ghost" style={{ marginTop: 18 }} onClick={noCurrent}>WE DO NOT HAVE THESE SUPPORTERS YET</button>
     <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 22 }}>
       {index > 0 && <button className="bfg-btn bfg-btn-ghost" onClick={() => setIndex(index - 1)}>Back</button>}
-      <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={saveGroup}>{busy ? "SAVING…" : index === 2 ? "SAVE AND RETURN TO DASHBOARD" : "CONTINUE"}</button>
+      {groupStatus === "current" && <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={() => saveGroup()}>{busy ? "SAVING…" : index === 2 ? "CONTINUE TO TEAM & RESOURCES" : "CONTINUE"}</button>}
     </div>
   </>, "bfg-current-fundraising");
 }

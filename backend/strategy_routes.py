@@ -203,6 +203,9 @@ def create_strategy_router(db) -> APIRouter:
             "current_grantor_profile", "current_grantor_where", "current_grantor_attraction", "current_grantor_support", "current_grantor_process",
             "current_individual_donors", "current_businesses", "current_grantors",
             "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
+            "individuals_status", "businesses_status", "grantors_status",
+            "current_individual_donor_motivation", "current_individual_donor_seeking",
+            "current_business_seeking", "current_grantor_seeking",
         }
         context = {
             "strategy_mode": mode,
@@ -213,6 +216,8 @@ def create_strategy_router(db) -> APIRouter:
                 "purpose": goal.get("purpose", ""), "why_it_matters_now": goal.get("why_now", ""),
             },
             "current_funder_context": {key: value for key, value in current_reality.items() if key in current_funder_keys},
+            "current_team_and_resources": {key: (situation.get("sections") or {}).get(key) or {}
+                                           for key in ("team", "technology", "materials")},
             "board_member_submitted_ideas_by_strategy_area": board_ideas,
             "participation_choices_of_people_playing_the_game": await participation_choices(user_id),
         }

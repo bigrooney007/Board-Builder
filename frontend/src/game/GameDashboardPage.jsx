@@ -243,15 +243,14 @@ export default function GameDashboardPage() {
   const goalAmount = Number(data.goal?.amount || 0);
   const founderGameComplete = Boolean(data.situation_completed && data.individual_game_completed);
   const meetingReady = Boolean(data.game_night_ready);
-  const boardReady = meetingReady && Number(data.board_participant_count || 0) > 0;
+  const boardReady = founderGameComplete && meetingReady && Number(data.board_participant_count || 0) > 0;
 
   const openIndividualGame = async () => {
     setOpeningGame(true);
     try {
       const situation = (await memberApi.get("/game/situation")).data;
-      if (situation.completed) {
-        const token = (await memberApi.post("/game/self-play")).data.token;
-        navigate(`/play/${token}?review=1`);
+      if (situation.completed && data.individual_game_completed) {
+        navigate("/game/setup?review=1");
       } else {
         navigate("/game/setup");
       }
@@ -278,47 +277,44 @@ export default function GameDashboardPage() {
 
         <DashboardSection
           number={1}
-          title="PLAY THE BOARD FUNDRAISING GAME"
-          summary="Your five ideas start the game. Share how you can participate and review your organization's present fundraising before inviting the board."
-          status={founderGameComplete ? "Complete" : "Start Here"}
+          title="SET YOUR BOARD MEETING AND FUNDRAISING DEADLINE"
+          summary="Set your next Board meeting and tell us when you need to reach the fundraising goal. The deadline stays connected to your final strategy."
+          status={meetingReady ? "Complete" : "Start Here"}
           defaultOpen
-          testId="bfg-dashboard-section-founder-game"
-          audioKey="founder-game"
+          testId="bfg-dashboard-section-meeting"
+          audioKey="meeting"
         >
-          <div className="bfg-clean-stage">
-            <h3>Your Thinking Comes First</h3>
-            <p className="bfg-panel-sub">Start with one audience you believe can help fund the goal. Your five answers stay in your own words. After you upgrade, tell us how you can participate and review your present fundraising so the board can build from both new ideas and what already works.</p>
-            <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
-              {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "PLAY MY BOARD FUNDRAISING GAME"}
-            </button>
-          </div>
+          <GameNightSection onSaved={refreshDashboard} />
         </DashboardSection>
 
         <DashboardSection
           number={2}
-          title="SET YOUR BOARD MEETING AND FUNDING DEADLINE"
-          summary="Set the meeting your Board will use to make final decisions and tell us when the money is needed so the execution plan is built backward from the real deadline."
-          status={!founderGameComplete ? "Locked" : meetingReady ? "Complete" : "Set Meeting"}
-          testId="bfg-dashboard-section-meeting"
-          audioKey="meeting"
+          title="COMPLETE YOUR PRESENT REALITY AND PARTICIPATION"
+          summary="Review your individual donors, businesses and grantors separately, describe your current team and resources, then say how you will personally participate."
+          status={!meetingReady ? "Locked" : founderGameComplete ? "Complete" : "Continue Setup"}
+          testId="bfg-dashboard-section-founder-game"
+          audioKey="founder-game"
         >
-          {founderGameComplete
-            ? <GameNightSection onSaved={refreshDashboard} />
-            : <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>}
+          {meetingReady ? <div className="bfg-clean-stage">
+            <h3>Build From What Is Already Happening</h3>
+            <p className="bfg-panel-sub">Your five ideas are saved. Tell us how your organization currently works with each type of funder, what you are trying to raise now and what resources you already have. Then choose your own part in the process.</p>
+            <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
+              {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "CONTINUE MY GAME SETUP"}
+            </button>
+          </div> : <p className="bfg-note">Confirm your Board meeting and fundraising deadline in Section 1 first.</p>}
         </DashboardSection>
 
         <DashboardSection
           number={3}
           title="INVITE YOUR BOARD MEMBERS TO PLAY"
           summary="Add each Board Member, send their private Game invitation, resend when needed and use a person-specific call script for follow-up."
-          status={!founderGameComplete ? "Locked" : meetingReady ? "Invite Board" : "Locked"}
+          status={founderGameComplete && meetingReady ? "Invite Board" : "Locked"}
           testId="bfg-dashboard-section-board"
           audioKey="board"
+          defaultOpen={founderGameComplete && meetingReady && window.location.hash === "#bfg-board-members-section"}
         >
-          {!founderGameComplete ? (
-            <p className="bfg-note">Complete your individual Board Fundraising Game first.</p>
-          ) : !meetingReady ? (
-            <p className="bfg-note">Save the Board meeting date, time and fundraising deadline in Section 2 before inviting participants.</p>
+          {!meetingReady || !founderGameComplete ? (
+            <p className="bfg-note">Complete the meeting, fundraising deadline, relevant present-reality pages, team and resources, and your own participation before inviting participants.</p>
           ) : (
             <BoardMembersSection onChanged={refreshDashboard} />
           )}
@@ -334,7 +330,7 @@ export default function GameDashboardPage() {
         >
           {boardReady
             ? <GroupGameStage />
-            : <p className="bfg-note">Save the Board meeting and add at least one Board participant before preparing the Group Game.</p>}
+            : <p className="bfg-note">Complete the setup and invite at least one Board participant before preparing the Group Game.</p>}
         </DashboardSection>
 
         <DashboardSection

@@ -267,7 +267,25 @@ def situation_is_complete(doc: dict) -> bool:
     if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 3:
         return False
     sections = doc.get("sections") or {}
-    return bool((sections.get("current_reality") or {}).get("reviewed"))
+    reality = sections.get("current_reality") or {}
+    if not reality.get("reviewed"):
+        return False
+    if reality.get("setup_version") != "post_payment_v2":
+        return True  # Previously completed games retain their existing progress.
+    if int(doc.get("current_step") or 0) < 4:
+        return False
+    for group, prefix in (("individuals", "individual_donor"), ("businesses", "business"), ("grantors", "grantor")):
+        status = reality.get(f"{group}_status")
+        if status == "none":
+            continue
+        if status != "current" or any(not str(reality.get(f"current_{prefix}_{field}") or "").strip()
+                                       for field in ("profile", "where", "attraction", "support", "process", "seeking")
+                                       + (("motivation",) if group == "individuals" else ())):
+            return False
+    return all(str((sections.get(section) or {}).get(field) or "").strip()
+               for section, fields in (("team", ("who_handles", "board_involvement")),
+                                       ("technology", ("tools", "tech_working")),
+                                       ("materials", ("materials",))) for field in fields)
 
 
 def create_game_router(db) -> APIRouter:
@@ -478,15 +496,13 @@ def create_game_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
         situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
-        primary = await db.game_board_members.find_one(
-            {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1})
-        audience_complete = bool(primary and await db.game_audience_responses.find_one(
-            {"board_member_id": primary["member_id"], "completed": True}, {"_id": 0, "response_id": 1}))
         candidate = {**situation, "completed": True}
-        if not audience_complete or not situation_is_complete(candidate):
+        night = await db.game_nights.find_one({"user_id": member["user_id"]},
+                                              {"_id": 0, "meeting_date": 1, "start_time": 1, "funding_deadline": 1}) or {}
+        if not all(night.get(field) for field in ("meeting_date", "start_time", "funding_deadline")) or not situation_is_complete(candidate):
             raise HTTPException(
                 status_code=409,
-                detail="Complete your audience game and the present donor, business and grantor review before finishing.",
+                detail="Confirm your Board meeting and fundraising deadline, then complete the relevant present-funder and team/resources pages.",
             )
         now = datetime.now(timezone.utc).isoformat()
         await db.game_situations.update_one(
@@ -521,8 +537,10 @@ def create_game_router(db) -> APIRouter:
             "user_id": member["user_id"], "removed": {"$ne": True}, "is_primary": {"$ne": True},
         })
         if primary:
-            individual_game_completed = bool(await db.game_audience_responses.find_one(
-                {"board_member_id": primary["member_id"], "completed": True}, {"_id": 0, "response_id": 1}))
+            lead_response = await db.game_audience_responses.find_one(
+                {"board_member_id": primary["member_id"], "completed": True},
+                {"_id": 0, "completed": 1, "involvement": 1}) or {}
+            individual_game_completed = bool(lead_response.get("completed") and str(lead_response.get("involvement") or "").strip())
         return {
             "first_name": member.get("first_name", ""),
             "organization": profile.get("organization", {}),
@@ -532,7 +550,7 @@ def create_game_router(db) -> APIRouter:
             "game_night_ready": game_night_ready,
             "game_night": night,
             "board_participant_count": board_participant_count,
-            "status": "set_up_board" if situation_completed and individual_game_completed else "complete_setup",
+            "status": "set_up_board" if situation_completed and individual_game_completed and game_night_ready else "complete_setup",
             "areas": [{**area, "locked": True} for area in GAME_AREAS],
         }
 

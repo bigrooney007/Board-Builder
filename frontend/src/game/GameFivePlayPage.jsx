@@ -82,8 +82,14 @@ export default function GameFivePlayPage() {
           <button className="bfg-btn bfg-btn-primary" disabled={busy || !(answers[String(question)] || "").trim()} onClick={continueQuestion} data-testid="bfg-five-continue">{busy ? "SAVING…" : "NEXT"}</button>
         </div>
       </> : <>
-        <h1>How Would You Be Comfortable Supporting Fundraising?</h1>
-        <p style={{ margin: "18px auto 0" }}>You have shared your five ideas. Tell us how you would personally like to participate, including any relationships, introductions or actions you are comfortable taking.</p>
+        <h1>{context.member?.is_primary ? "How Will You Personally Participate?" : "How Would You Be Comfortable Supporting Fundraising?"}</h1>
+        {context.member?.is_primary && <div className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
+          <strong>Your proposed fundraising process</strong>
+          <p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{answers["5"]}</p>
+        </div>}
+        <p style={{ margin: "18px auto 0" }}>{context.member?.is_primary
+          ? "Looking at the fundraising process you've laid out, how do you see yourself participating in it? What part of this process can you personally take responsibility for?"
+          : "You have shared your five ideas. Tell us how you would personally like to participate, including any relationships, introductions or actions you are comfortable taking."}</p>
         <textarea rows={7} maxLength={6000} value={involvement} onChange={(event) => setInvolvement(event.target.value)}
           placeholder="I would be comfortable helping by…" data-testid="bfg-five-involvement"
           style={{ width: "100%", marginTop: 24, padding: 18, border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 17, lineHeight: 1.6 }} />

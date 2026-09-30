@@ -15,6 +15,7 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import EDITABLE_FIELDS, merged_sections
 from game_content_v3 import GAME_V3
 from game_response_quality import is_meaningful_game_response, response_input_hash, response_texts
+from game_routes import situation_is_complete
 from reactivation_routes import email_html
 
 logger = logging.getLogger(__name__)
@@ -145,6 +146,22 @@ def create_game_night_router(db) -> APIRouter:
     async def get_profile(user_id: str) -> dict:
         return await db.game_profiles.find_one({"user_id": user_id}, {"_id": 0}) or {}
 
+    async def require_board_setup(user_id: str) -> dict:
+        night = await get_night(user_id)
+        if not all(night.get(key) for key in ("meeting_date", "start_time", "funding_deadline")):
+            raise HTTPException(status_code=409, detail="Confirm your next Board meeting and fundraising deadline before inviting your board.")
+        situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        if not situation_is_complete(situation):
+            raise HTTPException(status_code=409, detail="Complete the present-fundraising and team/resources pages before inviting your board.")
+        primary = await db.game_board_members.find_one(
+            {"user_id": user_id, "is_primary": True, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1})
+        response = (await db.game_audience_responses.find_one(
+            {"board_member_id": primary["member_id"]}, {"_id": 0, "completed": 1, "involvement": 1})
+                    if primary else None)
+        if not response or not response.get("completed") or not str(response.get("involvement") or "").strip():
+            raise HTTPException(status_code=409, detail="Answer how you will personally participate before inviting your board.")
+        return night
+
     async def get_sections_content() -> list:
         doc = await db.marketing_settings.find_one({"key": "game_individual_content"}, {"_id": 0}) or {}
         return merged_sections(doc.get("sections") or {})
@@ -248,6 +265,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members", status_code=201)
     async def add_board_member(payload: BoardMemberCreate, request: Request):
         member = await game_member(request)
+        await require_board_setup(member["user_id"])
         now = now_iso()
         record = {
             "member_id": new_uuid(), "user_id": member["user_id"],
@@ -424,11 +442,11 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/{member_id}/invite")
     async def invite_board_member(member_id: str, payload: SendPayload, request: Request):
         member = await game_member(request)
+        night = await require_board_setup(member["user_id"])
         record = await db.game_board_members.find_one(
             {"member_id": member_id, "user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Board member not found")
-        night = await require_night(member["user_id"])
         profile = await get_profile(member["user_id"])
         await send_invitation(member, record, profile, night, payload.origin_url)
         await db.game_board_members.update_one(
@@ -440,7 +458,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/invite-all")
     async def invite_all(payload: SendPayload, request: Request):
         member = await game_member(request)
-        night = await require_night(member["user_id"])
+        night = await require_board_setup(member["user_id"])
         profile = await get_profile(member["user_id"])
         records = await db.game_board_members.find(
             {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": {"$ne": "invited"}},
@@ -652,6 +670,11 @@ def create_game_night_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Complete all five questions first")
         if response.get("completed"):
             return {"status": "completed"}
+        if record.get("is_primary"):
+            night = await get_night(record["user_id"])
+            situation = await db.game_situations.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
+            if not all(night.get(key) for key in ("meeting_date", "start_time", "funding_deadline")) or not situation_is_complete(situation):
+                raise HTTPException(status_code=409, detail="Confirm the meeting and fundraising deadline, then complete your present reality and resources before answering how you will participate.")
         now = now_iso()
         await db.game_audience_responses.update_one(
             {"board_member_id": record["member_id"], "completed": {"$ne": True}},

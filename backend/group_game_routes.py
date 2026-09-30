@@ -261,7 +261,7 @@ def create_group_game_router(db) -> APIRouter:
         audience_labels = {"individuals": "INDIVIDUALS", "businesses": "BUSINESSES", "grantors": "GRANTORS"}
         reality_fields = {
             "funding_audiences": {
-                "individuals": ["current_individual_donor_profile"],
+                "individuals": ["current_individual_donor_profile", "current_individual_donor_motivation"],
                 "businesses": ["current_business_profile"],
                 "grantors": ["current_grantor_profile"],
             },
@@ -276,9 +276,9 @@ def create_group_game_router(db) -> APIRouter:
                 "grantors": ["current_grantor_attraction"],
             },
             "funding_ask": {
-                "individuals": ["current_individual_donor_support"],
-                "businesses": ["current_business_support"],
-                "grantors": ["current_grantor_support"],
+                "individuals": ["current_individual_donor_support", "current_individual_donor_seeking"],
+                "businesses": ["current_business_support", "current_business_seeking"],
+                "grantors": ["current_grantor_support", "current_grantor_seeking"],
             },
             "fundraising_process": {
                 "individuals": ["current_individual_donor_process"],
