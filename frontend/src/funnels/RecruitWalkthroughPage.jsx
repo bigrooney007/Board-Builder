@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
+import DemoOfferCards from "@/components/DemoOfferCards";
 import { trackPlatformEvent, usePlatformVideo } from "@/clean/platform";
 import "@/game/game.css";
 import "@/game/guided-flow.css";
@@ -13,7 +14,7 @@ const QUESTION_KEYS = ["mission", "current_board", "desired_board_members", "boa
 export default function RecruitWalkthroughPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [assessment, setAssessment] = useState(null);
   const video = usePlatformVideo("recruitment_upgrade");
@@ -33,7 +34,7 @@ export default function RecruitWalkthroughPage() {
   }, [navigate, searchParams]);
 
   const buy = async () => {
-    setBusy(true); setError("");
+    setBusy("self-guided"); setError("");
     const token = localStorage.getItem("recruitFreeToken");
     try {
       await axios.post(`${API}/recruit/free/${token}/event`, { event: "checkout_started" }).catch(() => {});
@@ -44,12 +45,23 @@ export default function RecruitWalkthroughPage() {
       window.location.href = response.data.checkout_url;
     } catch (err) {
       setError(err.response?.data?.detail || "We could not open checkout. Please try again.");
-      setBusy(false);
+      setBusy("");
     }
   };
 
+  const supported = async () => {
+    setBusy("supported"); setError("");
+    try {
+      trackPlatformEvent("recruitment", "checkout_started");
+      const response = await axios.post(`${API}/payments/supported-checkout`, {
+        origin_url: window.location.origin, product: "recruitment", result_token: assessment.token,
+      });
+      window.location.href = response.data.checkout_url;
+    } catch (err) { setError(err.response?.data?.detail || "We could not open checkout. Please try again."); setBusy(""); }
+  };
+
   const payButton = (id) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" disabled={busy || !assessment}
-    onClick={buy} data-testid={id}>{busy ? "OPENING SECURE CHECKOUT…" : "BUILD MY BOARD RECRUITMENT CAMPAIGN — $497"}</button>;
+    onClick={buy} data-testid={id}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BUILD MY BOARD RECRUITMENT CAMPAIGN — $497"}</button>;
 
   return <BfgShell><main className="guided-flow" data-testid="recruit-walkthrough-page">
     {!assessment ? <p className="guided-loading">Opening your recruitment campaign…</p> : <section className="guided-recruit-upgrade">
@@ -68,6 +80,14 @@ export default function RecruitWalkthroughPage() {
         <p><strong>Then,</strong> use your application, outreach and social posts to launch your campaign.</p>
         <p><strong>As people apply,</strong> manage interviews, checks, offers and onboarding in your existing dashboard.</p>
       </div>
+      <DemoOfferCards product="recruitment" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : buy()} error={error}
+        intro="Launch the campaign with the complete platform, or work directly with Rooney to identify, attract and onboard the board members you need."
+        selfGuided={{ title: "Launch Your Board Recruitment Campaign", description: "Use the complete platform to recruit and onboard the board members your organization needs.",
+          features: ["Identify and approve the board member profiles", "Create your application and recruitment messages", "Launch the campaign and manage applicants", "Interview, make offers and onboard new members"],
+          button: "START MY CAMPAIGN — $497" }}
+        supported={{ title: "Recruit Your Board With Rooney", description: "Work directly with Rooney to shape the campaign and move the right people through recruitment.",
+          features: ["Identify the board capability you need", "Prepare your recruitment campaign together", "Guide selection and onboarding decisions", "Get direct support through the process"],
+          price: "$2,997", button: "WORK WITH ROONEY — $2,997" }} />
       {error && <p className="bfg-error" role="alert">{error}</p>}
       {payButton("recruit-checkout-button-bottom")}
       <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(assessment.token)}`)}>Review my six answers</button></p>

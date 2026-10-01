@@ -162,7 +162,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
         {material && !hideDisplay && (
           <label className="version-select">Version
             <select value={material.current_version} disabled={readOnly} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>
-              {material.versions.map((v) => <option key={v.version} value={v.version}>Version {v.version}{v.version === material.current_version ? " (Current)" : ""}{v.source === "edited" ? " — edited" : ""}</option>)}
+              {material.versions.map((v) => <option key={v.version} value={v.version} label={`Version ${v.version}${v.version === material.current_version ? " (Current)" : ""}${v.source === "edited" ? " — edited" : ""}`} />)}
             </select>
           </label>
         )}

@@ -23,6 +23,9 @@ class GuidedIntake(BaseModel):
     product: str
     answers: dict
 
+class GuidedPrepaymentAnswers(BaseModel):
+    answers: dict
+
 class FounderAuditSubmission(BaseModel):
     answers: dict
     desired_outcomes: str = ""
@@ -38,6 +41,75 @@ class GuidedAccessEmail(BaseModel):
 
 def create_guided_product_router(db):
     router = APIRouter(prefix="/api/guided")
+    prepayment_fields = {
+        "board-recommitment": ("mission", "why_recommit", "board_help_accomplish", "need_by"),
+        "strategic-planning": ("mission", "goals", "objectives", "program_details", "team_building", "technology", "marketing", "partnerships", "fundraising", "budget", "action_planning"),
+    }
+
+    def clean_preanswers(product: str, answers: dict) -> dict:
+        cleaned = {}
+        for key in prepayment_fields[product]:
+            value = answers.get(key)
+            if key == "program_details":
+                if not isinstance(value, list):
+                    raise HTTPException(422, "Add your programs separately")
+                cleaned[key] = [{field: str(item.get(field) or "").strip()[:3000]
+                                 for field in ("name", "description", "present_work")}
+                                for item in value[:20] if isinstance(item, dict)]
+            elif isinstance(value, str):
+                cleaned[key] = value.strip()[:12000]
+        if product == "board-recommitment" and cleaned.get("need_by"):
+            try:
+                datetime.strptime(cleaned["need_by"], "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(422, "Choose a valid date for when you need the Board to recommit")
+        return cleaned
+
+    def complete_preanswers(product: str, answers: dict) -> bool:
+        if product == "strategic-planning":
+            programs = answers.get("program_details") or []
+            if not programs or any(not item.get("name") for item in programs):
+                return False
+        return all(bool(answers.get(key)) for key in prepayment_fields[product])
+
+    async def hydrate_paid_journey(tx: dict, product: str, member: dict):
+        """Copy the saved public answers into the existing paid workspaces once."""
+        lead = await db.guided_product_leads.find_one({"token": tx.get("guided_lead_token", "")}, {"_id": 0}) or {}
+        answers = lead.get("prepayment_answers") or {}
+        if not complete_preanswers(product, answers):
+            return
+        sid = tx["session_id"]
+        now = datetime.now(timezone.utc).isoformat()
+        existing = await db.guided_product_intakes.find_one({"session_id": sid}, {"_id": 0})
+        if not existing or not existing.get("answers"):
+            await db.guided_product_intakes.update_one(
+                {"session_id": sid}, {"$set": {"session_id": sid, "product": product, "answers": answers,
+                                             "updated_at": now}, "$setOnInsert": {"created_at": now}}, upsert=True)
+        if product == "board-recommitment":
+            intake = await db.board_reactivation_intakes.find_one({"guided_session_id": sid}, {"_id": 0})
+            if not intake or not intake.get("mission"):
+                await db.board_reactivation_intakes.update_one(
+                    {"guided_session_id": sid},
+                    {"$set": {"user_id": member["user_id"], "session_id": sid, "guided_session_id": sid,
+                              "organization_name": lead.get("organization", ""), "mission": answers["mission"],
+                              "why_recommit": answers["why_recommit"], "board_help_accomplish": answers["board_help_accomplish"],
+                              "organization_goals": answers["board_help_accomplish"], "need_by": answers["need_by"],
+                              "guided_answers": answers, "submitted_at": now}}, upsert=True)
+        else:
+            project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})
+            if not project:
+                await db.sp_projects.insert_one({"project_id": secrets.token_hex(16), "guided_session_id": sid,
+                    "owner_user_id": member["user_id"], "organization_name": lead.get("organization") or "Organization",
+                    "founder_name": lead.get("name") or "Organization Leader", "founder_email": lead.get("email") or "",
+                    "founder_title": "", "mission": answers["mission"], "organization_details_saved_at": now,
+                    "status": "Active", "generic_form_token": secrets.token_urlsafe(32), "created_at": now})
+                project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})
+            await db.sp_participants.update_one(
+                {"project_id": project["project_id"], "email": str(lead.get("email") or "").lower()},
+                {"$setOnInsert": {"participant_id": secrets.token_hex(16), "project_id": project["project_id"],
+                    "name": lead.get("name") or "Organization Leader", "email": str(lead.get("email") or "").lower(),
+                    "role": "Lead User", "status": "INVITED", "form_token": secrets.token_urlsafe(32),
+                    "review_status": "NOT SENT", "review_token": secrets.token_urlsafe(32), "created_at": now}}, upsert=True)
     audit_dimensions = {
         "co_leader": "Co-Leader", "co_facilitator": "Co-Facilitator", "co_architect": "Co-Architect",
         "co_mobilizer": "Co-Mobilizer", "co_evaluator": "Co-Evaluator", "co_reporter": "Co-Reporter",
@@ -86,7 +158,7 @@ def create_guided_product_router(db):
     async def initialize_board_recommitment(payload: GuidedInitialize, request: Request):
         """Create the paid Recommitment workspace without a second intake form."""
         tx = await db.payment_transactions.find_one(
-            {"session_id": payload.session_id, "payment_status": "paid", "purchase_source": "board_recommitment_497"},
+            {"session_id": payload.session_id, "payment_status": "paid", "purchase_source": {"$in": ["board_recommitment_497", "board_recommitment_supported_2497"]}},
             {"_id": 0},
         )
         if not tx:
@@ -121,6 +193,7 @@ def create_guided_product_router(db):
              }},
             upsert=True,
         )
+        await hydrate_paid_journey(tx, "board-recommitment", member)
         return {"saved": True, "dashboard_url": f"/board-recommitment/dashboard?session_id={payload.session_id}"}
     @router.post("/lead")
     async def create_lead(payload: GuidedLead):
@@ -128,12 +201,13 @@ def create_guided_product_router(db):
             raise HTTPException(400,"Unknown guided product")
         token=secrets.token_urlsafe(24); now=datetime.now(timezone.utc).isoformat()
         doc={"token":token,**payload.model_dump(mode="json"),"email":str(payload.email).lower(),"created_at":now,"updated_at":now,
-             "followup_status":"active","followup_step":0,"next_followup_at":now,"converted_at":""}
+             "followup_status":"active","followup_step":0,
+             "next_followup_at":(datetime.now(timezone.utc)+timedelta(hours=6)).isoformat(),"converted_at":""}
         await db.guided_product_leads.insert_one(doc.copy())
         try:
             root=public_origin(payload.origin_url or "")
             pathway=payload.product
-            next_url=f"{root}/{payload.product}/video?token={token}"
+            next_url=f"{root}/{payload.product}/start?token={token}"
             await notify_homepage_lead(
                 db,
                 pathway=pathway,
@@ -153,6 +227,25 @@ def create_guided_product_router(db):
         doc=await db.guided_product_leads.find_one({"token":token},{"_id":0})
         if not doc: raise HTTPException(404,"Journey not found")
         return doc
+
+    @router.put("/context/{token}/answers")
+    async def save_prepayment_answers(token: str, payload: GuidedPrepaymentAnswers):
+        lead = await db.guided_product_leads.find_one({"token": token}, {"_id": 0})
+        if not lead or lead.get("product") not in prepayment_fields:
+            raise HTTPException(404, "Journey not found")
+        product = lead["product"]
+        answers = {**(lead.get("prepayment_answers") or {}), **clean_preanswers(product, payload.answers)}
+        complete = complete_preanswers(product, answers)
+        now = datetime.now(timezone.utc)
+        changes = {
+            "prepayment_answers": answers, "prepayment_complete": complete, "updated_at": now.isoformat(),
+        }
+        if not complete or not lead.get("prepayment_complete"):
+            changes["next_followup_at"] = (now + timedelta(hours=6)).isoformat()
+        if complete and not lead.get("prepayment_complete"):
+            changes["followup_step"] = 0
+        await db.guided_product_leads.update_one({"token": token}, {"$set": changes})
+        return {"saved": True, "complete": complete, "answers": answers}
 
     @router.post("/intake")
     async def save_intake(payload: GuidedIntake, request: Request):
@@ -187,13 +280,14 @@ def create_guided_product_router(db):
     @router.get("/dashboard")
     async def dashboard(session_id: str, product: str, request: Request):
         tx=await db.payment_transactions.find_one({"session_id":session_id},{"_id":0})
-        expected={"strategic-planning":"strategic_planning_497","board-recommitment":"board_recommitment_497"}.get(product)
-        if not tx or tx.get("payment_status")!="paid" or tx.get("purchase_source")!=expected:
+        expected={"strategic-planning":{"strategic_planning_497", "strategic_planning_supported_2997"},"board-recommitment":{"board_recommitment_497", "board_recommitment_supported_2497"}}.get(product, set())
+        if not tx or tx.get("payment_status")!="paid" or tx.get("purchase_source") not in expected:
             raise HTTPException(402,"Paid access could not be confirmed")
         lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
         member=await authenticate_member(request,db)
         if member.get("email","").lower()!=str(lead.get("email","")).lower() and not member.get("internal_admin_entitlement"):
             raise HTTPException(401,"This dashboard belongs to a different account")
+        await hydrate_paid_journey(tx, product, member)
         intake=await db.guided_product_intakes.find_one({"session_id":session_id},{"_id":0})
         return {"product":product,"intake":intake or {}}
 

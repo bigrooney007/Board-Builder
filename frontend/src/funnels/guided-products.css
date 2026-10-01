@@ -20,3 +20,29 @@
 .guided-page .guided-hero>p{color:#334155;font-size:clamp(18px,2vw,22px)}
 .guided-page .guided-principle,.guided-page .guided-principle h2{color:#fff}
 .bfg .guided-page a.bfg-btn-primary,.bfg .guided-page button.bfg-btn-primary{color:#fff}
+.guided-form-card label{display:block;margin:19px 0 0;text-align:left;color:#111827;font-weight:750;font-size:16px}
+.guided-form-card label input{margin-top:8px;text-align:left;font-weight:400;background:#fff;color:#111827}
+.guided-form-card .guided-form-assurance{margin:20px auto 0;font-size:15px;color:#475569;line-height:1.5}
+.guided-page .demo-offer-card,.guided-page .demo-offer-card h3,.guided-page .demo-offer-card p,.guided-page .demo-offer-card li{text-align:left}
+.guided-page .demo-offer-card .demo-offer-price{text-align:center}
+
+/* One focused question at a time in the public, saved prepayment journey. */
+.bfg .guided-preflow{width:min(100%,900px);min-height:75vh;margin:auto;padding:clamp(36px,7vw,86px) 18px 90px;color:#111827}
+.bfg .guided-preflow-card{padding:clamp(27px,5vw,55px);border:1px solid #d8deeb;border-radius:26px;background:#fff;box-shadow:0 22px 65px rgba(15,23,42,.09)}
+.bfg .guided-preflow-kicker{margin:0;color:#3730a3;font-size:14px;font-weight:850;letter-spacing:.08em}
+.bfg .guided-preflow-progress{height:7px;margin:18px 0 38px;border-radius:10px;background:#e8ecf6;overflow:hidden}
+.bfg .guided-preflow-progress span{display:block;height:100%;border-radius:10px;background:#4f46e5}
+.bfg .guided-preflow-title{margin:0 0 12px;color:#4338ca;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.bfg .guided-preflow h1{max-width:730px;margin:0;font-size:clamp(29px,4.5vw,45px);line-height:1.18;letter-spacing:-.025em;color:#111827}
+.bfg .guided-preflow-help{max-width:690px;margin:18px 0 26px;color:#334155;font-size:18px;line-height:1.6}
+.bfg .guided-preflow-fields{display:grid;gap:18px}
+.bfg .guided-preflow-fields label{display:block;color:#111827;font-size:16px;font-weight:750}
+.bfg .guided-preflow-fields input,.bfg .guided-preflow-fields textarea{display:block;width:100%;min-height:55px;margin-top:9px;padding:15px 17px;border:1.5px solid #aeb9cb;border-radius:13px;background:#fff;color:#111827;font-family:inherit;font-size:17px;line-height:1.55;text-align:left}
+.bfg .guided-preflow-fields textarea{resize:vertical;min-height:140px;font-family:inherit;font-size:17px}
+.bfg .guided-preflow-fields input:focus,.bfg .guided-preflow-fields textarea:focus{outline:3px solid #ddd6fe;border-color:#4f46e5}
+.bfg .guided-preflow-program-actions,.bfg .guided-preflow-navigation{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.bfg .guided-preflow-program-actions .bfg-btn{font-size:14px}
+.bfg .guided-preflow-saved{margin:30px 0 15px;color:#475569;font-size:15px}
+.bfg .guided-preflow-navigation{justify-content:space-between;margin-top:20px}
+.bfg .guided-preflow-navigation .bfg-btn-primary{color:#fff}
+@media(max-width:600px){.bfg .guided-preflow-navigation .bfg-btn{flex:1;white-space:normal;min-height:52px}.bfg .guided-preflow-card{border-radius:18px}}

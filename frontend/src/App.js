@@ -30,6 +30,7 @@ import {
   GuidedDashboardPage,
 } from "@/funnels/GuidedProductPages";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
+import GuidedPrepaymentQuestionsPage from "@/funnels/GuidedPrepaymentQuestionsPage";
 import CommunityNeedResearchPage from "@/funnels/CommunityNeedResearchPage";
 import StrategicPlanningResponsePage from "@/funnels/StrategicPlanningResponsePage";
 import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
@@ -187,6 +188,7 @@ function CleanRoutes() {
 
       {/* Strategic Planning */}
       <Route path="/strategic-planning" element={<GuidedLandingPage product="strategic-planning" />} />
+      <Route path="/strategic-planning/start" element={<GuidedPrepaymentQuestionsPage product="strategic-planning" />} />
       <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
       <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage product="strategic-planning" />} />
       <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage product="strategic-planning" />} />
@@ -209,6 +211,7 @@ function CleanRoutes() {
 
       {/* Board Recommitment */}
       <Route path="/board-recommitment" element={<GuidedLandingPage product="board-recommitment" />} />
+      <Route path="/board-recommitment/start" element={<GuidedPrepaymentQuestionsPage product="board-recommitment" />} />
       <Route path="/board-recommitment/video" element={<GuidedVideoPage product="board-recommitment" />} />
       <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaymentConfirmedPage product="board-recommitment" />} />
       <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage product="board-recommitment" />} />

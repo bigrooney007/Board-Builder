@@ -1,4 +1,5 @@
 import asyncio
+import html
 import os
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional
@@ -70,11 +71,13 @@ GUIDED_FOLLOWUP_DAYS = [0, 2, 5, 10]
 
 def guided_followup_html(lead: Dict[str, Any], subject: str, message: str) -> str:
     origin=(lead.get("origin_url") or "https://nonprofitboardbuilder.com").rstrip("/")
-    link=f"{origin}/{lead['product']}/video?token={lead['token']}"
-    first=(lead.get("name") or "").split(" ")[0]
+    destination="video" if lead.get("prepayment_complete") else "start"
+    link=html.escape(f"{origin}/{lead['product']}/{destination}?token={lead['token']}", quote=True)
+    first=html.escape((lead.get("name") or "").split(" ")[0])
+    label="WATCH ROONEY AND CHOOSE YOUR SUPPORT" if lead.get("prepayment_complete") else "CONTINUE MY SAVED ANSWERS"
     return f"""<div style="max-width:600px;margin:auto;font-family:Arial,sans-serif;color:#111827;font-size:17px;line-height:1.6;padding:28px;">
-    <p>Hi {first},</p><p>{message}</p>
-    <p style="margin:28px 0;"><a href="{link}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;font-weight:800;padding:14px 20px;border-radius:8px;">WATCH THE WALKTHROUGH AND CONTINUE</a></p>
+    <p>Hi {first},</p><p>{html.escape(message)}</p>
+    <p style="margin:28px 0;"><a href="{link}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;font-weight:800;padding:14px 20px;border-radius:8px;">{label}</a></p>
     <p>Nonprofit Board Builder</p></div>"""
 
 async def send_guided_followups(db, *, reference: Optional[datetime]=None) -> Dict[str,int]:
@@ -94,7 +97,16 @@ async def send_guided_followups(db, *, reference: Optional[datetime]=None) -> Di
             continue
         monthly = step >= len(templates)
         template_index = len(templates)-1 if monthly else step
-        subject,message=templates[template_index]
+        if lead.get("prepayment_complete"):
+            subject = "Your answers are saved. Let's put them to work"
+            message = ("You have given us the starting information for your organization. Watch Rooney walk you through "
+                       "the next steps and choose the level of support that works for you. Your answers will be waiting after payment.")
+        elif step == 0:
+            subject = "Come back to your saved answers"
+            message = ("Your progress is saved. Pick up exactly where you stopped, finish the questions in your own words "
+                       "and see how we will put what you share to work.")
+        else:
+            subject,message=templates[template_index]
         try:
             await resend.Emails.send_async({"from":os.environ["NONPROFIT_SENDER"],"to":[lead["email"]],"subject":subject,"html":guided_followup_html(lead,subject,message)})
             sent+=1

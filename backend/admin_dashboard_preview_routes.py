@@ -1213,7 +1213,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        answers = {"mission": MISSION, "goals": GOALS}
+        answers = {"mission": MISSION,
+                   "why_recommit": "BrightPath is entering a growth phase and needs every continuing Board Member to take a clear responsibility.",
+                   "board_help_accomplish": "Diversify revenue, build partnerships and strengthen accountability.",
+                   "need_by": "2026-11-01"} if product == "board-recommitment" else {"mission": MISSION, "goals": GOALS}
         if product == "strategic-planning":
             answers.update({
                 "objectives": (
@@ -2677,13 +2680,37 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"
         lead_token = f"admin-fresh-{product}-{tag}"
         offer_source = "strategic_planning" if product == "strategic-planning" else "board_recommitment"
+        prepayment_answers = ({
+            "mission": MISSION,
+            "goals": "Help more young people move into education and meaningful employment while strengthening our board's leadership.",
+            "objectives": "Increase program reach, broaden funding sources and agree named owners for the next phase.",
+            "program_details": [
+                {"name": "Youth Employment", "description": "Connect young people to mentors, training and employers.",
+                 "present_work": "We currently run workshops and work with employers through warm relationships."},
+                {"name": "Board Leadership", "description": "Build the board's capacity to guide and sustain the organization.",
+                 "present_work": "Our founder currently carries much of the strategy and partner development."},
+            ],
+            "team_building": "A founder, small staff team, five board members and several volunteers carry the present work. We need clearer leadership ownership.",
+            "technology": "We use a shared spreadsheet and email. We need a better relationship and program outcomes system.",
+            "marketing": "Most people find us through community introductions. We want to share participant outcomes more consistently.",
+            "partnerships": "Schools and local employers help us now. We want stronger long-term employer and community partnerships.",
+            "fundraising": "We rely mostly on grants and events and want a more reliable individual donor and business pipeline.",
+            "budget": "Our current annual operating budget is about $650,000. We need to fund growth and fundraising capacity.",
+            "action_planning": "In the next few months we want to agree board roles and a funding plan. In the next few years we want a larger, sustainable program.",
+        } if product == "strategic-planning" else {
+            "mission": MISSION,
+            "why_recommit": "Only two of five board members participate consistently. We need every person to say honestly what they can carry now.",
+            "board_help_accomplish": "Strengthen fundraising, connect with employers and share responsibility for the next phase of growth.",
+            "need_by": "2026-10-15",
+        })
         await db.guided_product_leads.update_one(
             {"token": lead_token},
             {"$set": {
                 "token": lead_token, "product": product,
                 "name": "Rooney Akpesiri", "email": member["email"],
                 "organization": ORG_NAME, "board_count": 5,
-                "internal_preview": True, "followup_status": "converted",
+                "internal_preview": True, "followup_status": "converted", "prepayment_answers": prepayment_answers,
+                "prepayment_complete": True,
                 "created_at": now, "updated_at": now,
             }},
             upsert=True,
@@ -2700,7 +2727,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        return f"/{product}/welcome?session_id={session_id}"
+        return f"/{product}/dashboard?session_id={session_id}" + ("#sp-meeting" if product == "strategic-planning" else "#recommitment-forms")
 
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):

@@ -2,6 +2,7 @@
 All endpoints require member auth + recruitment_self_guided entitlement. Tenant isolation enforced by user_id scoping.
 """
 import asyncio
+import base64
 import io
 import json
 import os
@@ -12,7 +13,7 @@ from typing import List, Optional
 import resend
 from bson import ObjectId
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 from pydantic import BaseModel, EmailStr, Field
 
@@ -714,7 +715,53 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Approve this Portfolio before preparing the email.")
         return material
 
+    async def board_appointment_letter(member: dict, application: dict) -> dict:
+        """Use an approved formal letter where available; otherwise preserve the actual offer conditions."""
+        from appointment_letter import render_appointment_letter
+        profile = await get_profile(db, member["user_id"])
+        organization = (profile.get("data") or {}).get("organization_name") or (
+            await db.opportunities.find_one({"user_id": member["user_id"]}, {"_id": 0, "organization_name": 1}) or {}
+        ).get("organization_name") or "Our Organization"
+        name = (application.get("profile_snapshot") or {}).get("full_name") or application.get("applicant_email") or "Board Member"
+        final = application.get("final_outcome") == "Joined Board"
+        offer_type = application.get("appointment_offer_type") or ""
+        if not final and offer_type not in {"Conditional", "Unconditional"}:
+            raise HTTPException(409, "Send this candidate their conditional or unconditional appointment offer before sharing their Portfolio.")
+        conditional = not final and offer_type == "Conditional"
+        approved = await db.generated_materials.find_one(
+            {"user_id": member["user_id"], "type": "formal_appointment_letter",
+             "application_id": application["application_id"], "status": "Approved"}, {"_id": 0}) if final else None
+        text = ""
+        if approved:
+            current = next((version for version in approved.get("versions", [])
+                            if version.get("version") == approved.get("current_version")), None)
+            text = (current or {}).get("display_text") or ""
+        if not text:
+            founder = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+            founder_title = (profile.get("data") or {}).get("founder_title") or "Founder"
+            session = profile.get("onboarding_session") or {}
+            meeting = ", ".join(str(session.get(key) or "").strip() for key in ("date", "time", "timezone") if session.get(key))
+            place = session.get("link") or session.get("location") or ""
+            meeting_line = (f"Our onboarding meeting is scheduled for {meeting}." + (f" Meeting details: {place}." if place else "")) if meeting else "We will confirm your onboarding arrangements with you directly."
+            condition = ("Your appointment is pending completion of the outstanding reference and background checks. "
+                         "We will confirm your full appointment when those checks are complete." if conditional else
+                         "We are pleased to welcome you as a board member and look forward to moving into onboarding together.")
+            status = "Conditional Board Appointment" if conditional else "Board Appointment"
+            letter_date = datetime.now(timezone.utc).strftime("%B %d, %Y").replace(" 0", " ")
+            text = (f"{letter_date}\n\n{name}\n\nRE: {status}\n\nDear {name},\n\n"
+                    f"On behalf of {organization}, I am pleased to confirm your {status.lower()} with our organization. "
+                    "Thank you for the experience, perspective and commitment you are bringing to the work ahead.\n\n"
+                    f"{condition}\n\n{meeting_line}\n\n"
+                    "Please review your Board Member Portfolio and the onboarding materials we have shared with you. "
+                    "They will help us begin our work together with clear expectations and a shared understanding of your contribution.\n\n"
+                    f"I look forward to working with you.\n\nSincerely,\n{founder}\n{founder_title}\n{organization}")
+        pdf = render_appointment_letter(organization=organization, recipient=name, body=text,
+                                        branding=profile.get("branding") or {})
+        return {"pdf": pdf, "status": "conditional" if conditional else "unconditional",
+                "filename": "Board-Appointment-Letter.pdf"}
+
     async def recruitment_portfolio_email_content(member: dict, application: dict, material: dict, origin: str) -> dict:
+        letter = await board_appointment_letter(member, application)
         profile = await get_profile(db, member["user_id"])
         organization = (profile.get("data") or {}).get("organization_name", "") or "our organization"
         snapshot = application.get("profile_snapshot") or {}
@@ -725,16 +772,31 @@ def create_workspace_router(db) -> APIRouter:
         founder_name = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
         body = (
             f"Dear {first},\n\n"
-            f"Welcome to the board of {organization}, and thank you for the time you have invested in the recruitment process.\n\n"
+            f"{'Congratulations on your conditional Board appointment with' if letter['status'] == 'conditional' else 'Welcome to the board of'} {organization}. Thank you for the time you have invested in the recruitment process.\n\n"
             "To help you begin with clarity, I have put together your Board Member Portfolio.\n\n"
             f"It brings together the experience, strengths, interests and capacity you shared through your application and Board Member Profile, along with the role you were recruited to help strengthen at {organization}.\n\n"
-            "Please review your Portfolio using the link below:\n\n"
+            "Please review your Portfolio using the link below. Your official, organization-letterheaded Board Appointment Letter is attached to this email.\n\n"
             "[VIEW MY BOARD MEMBER PORTFOLIO]\n\n"
-            "I am glad to have you with us, and I look forward to working together as we move forward.\n\n"
-            f"{founder_name}\n{organization}")
-        return {"to_name": name, "to_email": recipient, "subject": f"Your Board Member Portfolio | {organization}",
+            + ("Your appointment remains pending the outstanding reference and background checks. We will confirm your full appointment once those are complete.\n\n" if letter["status"] == "conditional" else "I am glad to have you with us, and I look forward to working together as we move forward.\n\n")
+            + f"{founder_name}\n{organization}")
+        subject = "Your Conditional Board Appointment Letter and Portfolio" if letter["status"] == "conditional" else "Your Board Appointment Letter and Portfolio"
+        return {"to_name": name, "to_email": recipient, "subject": f"{subject} | {organization}",
                 "body": body, "button_label": "VIEW MY BOARD MEMBER PORTFOLIO",
-                "portfolio_link": link, "share_token": material["share_token"]}
+                "portfolio_link": link, "share_token": material["share_token"],
+                "letter_status": letter["status"], "letter_filename": letter["filename"],
+                "letter_preview_url": f"/workspace/applications/{application['application_id']}/appointment-letter/pdf"}
+
+    @router.get("/applications/{application_id}/appointment-letter/pdf")
+    async def preview_board_appointment_letter(application_id: str, request: Request):
+        member = await selection_member(request)
+        application = await db.opportunity_applications.find_one(
+            {"application_id": application_id, "owner_user_id": member["user_id"]}, {"_id": 0})
+        if not application:
+            raise HTTPException(404, "Board member not found")
+        await approved_portfolio_for(member["user_id"], application_id)
+        letter = await board_appointment_letter(member, application)
+        return Response(letter["pdf"], media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{letter["filename"]}"'})
 
     @router.get("/applications/{application_id}/portfolio-email")
     async def preview_recruitment_portfolio_email(application_id: str, request: Request):
@@ -759,13 +821,15 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Board member not found")
         material = await approved_portfolio_for(member["user_id"], application_id)
         defaults = await recruitment_portfolio_email_content(member, application, material, origin_of(request))
+        letter = await board_appointment_letter(member, application)
         if not defaults["to_email"]:
             raise HTTPException(status_code=409, detail="We do not have an email address for this board member yet.")
         body = payload.body if "[" in payload.body else payload.body + f"\n\n[{defaults['button_label']}]"
         resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
         message = {"from": os.environ["NONPROFIT_SENDER"], "to": [defaults["to_email"]],
                    "subject": payload.subject,
-                   "html": portfolio_email_html(body, defaults["button_label"], defaults["portfolio_link"])}
+                   "html": portfolio_email_html(body, defaults["button_label"], defaults["portfolio_link"]),
+                   "attachments": [{"filename": letter["filename"], "content": base64.b64encode(letter["pdf"]).decode("ascii")}]}
         if member.get("email"):
             message["reply_to"] = [member["email"]]
         try:
@@ -776,7 +840,7 @@ def create_workspace_router(db) -> APIRouter:
         await db.generated_materials.update_one(
             {"material_id": material["material_id"]},
             {"$set": {"sent_at": now, "sent_to": defaults["to_email"], "sent_version": material["current_version"], "updated_at": now}})
-        return {"status": "sent", "sent_at": now}
+        return {"status": "sent", "sent_at": now, "appointment_letter": letter["status"]}
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)

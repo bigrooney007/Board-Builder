@@ -6,6 +6,7 @@ import { BfgShell, money } from "./gameShared";
 import { trackPlatformEvent } from "@/clean/platform";
 import { usePlatformVideo } from "@/clean/platform";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
+import DemoOfferCards from "@/components/DemoOfferCards";
 import "./guided-flow.css";
 
 export default function GameUpgradePage() {
@@ -13,7 +14,7 @@ export default function GameUpgradePage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [game, setGame] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const video = usePlatformVideo("game_upgrade");
 
@@ -29,7 +30,7 @@ export default function GameUpgradePage() {
   }, [loading, member, navigate]);
 
   const upgrade = async () => {
-    setBusy(true); setError("");
+    setBusy("self-guided"); setError("");
     try {
       trackPlatformEvent("board-fundraising-game", "checkout_started");
       const response = await memberApi.post("/payments/game-checkout", {
@@ -38,12 +39,23 @@ export default function GameUpgradePage() {
       window.location.href = response.data.checkout_url;
     } catch (err) {
       setError(err.response?.data?.detail || "We could not open checkout. Please try again.");
-      setBusy(false);
+      setBusy("");
     }
   };
 
+  const supported = async () => {
+    setBusy("supported"); setError("");
+    try {
+      trackPlatformEvent("board-fundraising-game", "checkout_started");
+      const response = await memberApi.post("/payments/supported-checkout", {
+        origin_url: window.location.origin, product: "board-fundraising-game",
+      });
+      window.location.href = response.data.checkout_url;
+    } catch (err) { setError(err.response?.data?.detail || "We could not open checkout. Please try again."); setBusy(""); }
+  };
+
   const payButton = (testId) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" onClick={upgrade} disabled={busy}
-    data-testid={testId}>{busy ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME — $497"}</button>;
+    data-testid={testId}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME — $497"}</button>;
 
   return <BfgShell><main className="guided-flow" data-testid="bfg-upgrade-page">
     {!game ? <p className="guided-loading">Opening your Board Fundraising Game…</p> : <section className="guided-upgrade">
@@ -58,6 +70,14 @@ export default function GameUpgradePage() {
       {payButton("bfg-invite-board-cta")}
       <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
       <p className="guided-upgrade-next">After payment, we will set your next board meeting and fundraising deadline, understand the donors and resources you already have, then ask how you will participate. You invite your board after that setup.</p>
+      <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : upgrade()} error={error}
+        intro="Run the game with your board using the guided platform, or have Rooney help prepare and carry the process with you."
+        selfGuided={{ title: "Build The Fundraising Strategy With Your Board", description: "Run the guided process yourselves with the complete platform.",
+          features: ["Bring your board's ideas into one fundraising strategy", "Understand existing donors, businesses and grantors", "Agree each board member's role at the group meeting", "Create the strategy and execution portfolios"],
+          button: "START THE SELF-GUIDED GAME — $497" }}
+        supported={{ title: "Build Your Fundraising System With Rooney", description: "Work directly with Rooney to prepare, guide and turn your board's thinking into a strategy they can execute.",
+          features: ["Prepare your board for the fundraising game", "Guide the group discussion and decisions", "Translate decisions into a fundraising strategy", "Support the handoff into board roles and execution"],
+          price: "$2,997", button: "WORK WITH ROONEY — $2,997" }} />
       {params.get("checkout") === "cancelled" && <p className="bfg-error" role="alert">Your checkout was cancelled. You have not been charged.</p>}
       {error && <p className="bfg-error" role="alert">{error}</p>}
       {payButton("bfg-invite-board-cta-bottom")}

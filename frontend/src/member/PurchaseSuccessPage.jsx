@@ -9,10 +9,10 @@ import { purchaseSuccessText, purchaseSuccessPageText } from "../content/appCont
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const supportedEntry = (source, sessionId) => ({
-  recruitment_supported_2997: "/app/board-recruitment/questions?supported=1",
-  board_recommitment_supported_2497: "/board-recommitment/questions?supported=1",
+  recruitment_supported_2997: `/recruit/welcome?session_id=${encodeURIComponent(sessionId)}&supported=1`,
+  board_recommitment_supported_2497: `/board-recommitment/dashboard?session_id=${encodeURIComponent(sessionId)}&supported=1#recommitment-forms`,
   board_fundraising_game_supported_2997: "/game/setup?supported=1",
-  strategic_planning_supported_2997: `/strategic-planning/organization?session_id=${encodeURIComponent(sessionId)}&supported=1`,
+  strategic_planning_supported_2997: `/strategic-planning/dashboard?session_id=${encodeURIComponent(sessionId)}&supported=1#sp-meeting`,
 }[source] || "");
 
 export const PurchaseSuccessPage = () => {

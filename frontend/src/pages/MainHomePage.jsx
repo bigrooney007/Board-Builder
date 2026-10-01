@@ -19,7 +19,7 @@ const PRODUCT_PROMISES = [
   { title: "Launch Your Board Recruitment Campaign In The Next 30 Minutes", text: "Answer six questions about the board you have and the support you need. Approve the right profiles, review your materials and launch your opportunity to applicants.", cta: "LAUNCH MY RECRUITMENT CAMPAIGN" },
   { title: "Get Your Board Members Fundraising By Your Next Board Meeting", text: "Bring your board into a practical fundraising process and leave the meeting with a shared strategy and clear ways each person will participate.", cta: "START THE BOARD FUNDRAISING GAME" },
   { title: "Get Your Board Building Your Organization By Your Next Board Meeting", text: "Create the strategy with your board, adopt it together and give members clear responsibilities they can begin executing after the meeting.", cta: "START STRATEGIC PLANNING" },
-  { title: "Get Disengaged Board Members Recommitted And Ready To Step Up", text: "Give passive or inactive members a clear path to recommit, build the organization with you and support fundraising again.", cta: "RECOMMIT MY BOARD" },
+  { title: "Get Your Board Members Recommitted In The Next Seven Days", text: "Give each member a clear opportunity to recommit, agree how they can contribute and move the right people into action.", cta: "RECOMMIT MY BOARD" },
 ];
 
 export const MAIN_HOME_DEFAULTS = {

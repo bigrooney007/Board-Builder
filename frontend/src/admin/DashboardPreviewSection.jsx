@@ -8,8 +8,8 @@ const client = axios.create({ baseURL: API, withCredentials: true });
 const DASHBOARDS = [
   { key: "recruitment", name: "Board Recruitment", description: "Test the six Recruitment Questions, recommended Board profiles, campaign, applicants, onboarding and final Board Member Portfolio." },
   { key: "board-fundraising-game", name: "Board Fundraising Game", description: "Test the founder Game, Board invitations, Group Game, fundraising strategy, delegations and execution." },
-  { key: "strategic-planning", name: "Strategic Planning", description: "Test organization setup, Board forms, live planning session, Strategic Plan, confirmed roles and Leadership Portfolios." },
-  { key: "board-recommitment", name: "Board Recommitment", description: "Test the four setup questions, two Recommitment Forms, responses, conversations, final outcomes and Board Member Portfolios." },
+  { key: "strategic-planning", name: "Strategic Planning", description: "Start after payment with the organization answers already filled, then test the meeting, Board forms, planning session, Strategic Plan and leadership handoff." },
+  { key: "board-recommitment", name: "Board Recommitment", description: "Start after payment with the four answers already filled, then test the Recommitment Forms, responses, conversations, outcomes and Portfolios." },
 ];
 
 export const DashboardPreviewSection = () => {

@@ -29,7 +29,8 @@ test("fundraising payment page presents the goal, video space, clear price and p
   try {
     expect(node.textContent).toContain("$250,000");
     expect(node.textContent).toContain("A short message from Rooney will appear here.");
-    expect(node.querySelectorAll("button").length).toBe(2);
+    expect(node.querySelector('[data-testid="board-fundraising-game-supported-buy"]')).toBeTruthy();
+    expect(node.textContent).toContain("$2,997");
     expect(node.querySelector('[data-testid="bfg-invite-board-cta"]').textContent).toContain("$497");
     expect(node.textContent).toContain("You invite your board after that setup.");
     expect(node.textContent).not.toContain("Watch Product Demonstration");
@@ -44,6 +45,8 @@ test("recruitment payment page presents its own video space and two clear checko
     expect(node.textContent).toContain("A short message from Rooney will appear here.");
     expect(node.querySelectorAll('[data-testid^="recruit-checkout-button"]')).toHaveLength(2);
     expect(node.textContent).toContain("$497");
+    expect(node.querySelector('[data-testid="recruitment-supported-buy"]')).toBeTruthy();
+    expect(node.textContent).toContain("$2,997");
     expect(node.textContent).toContain("existing dashboard");
   } finally { await cleanup(); }
 });

@@ -746,6 +746,8 @@ def create_payment_router(db) -> APIRouter:
         lead = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
         if not lead or lead.get("product") != product:
             raise HTTPException(status_code=409, detail="This journey token belongs to a different product flow")
+        if not lead.get("prepayment_complete"):
+            raise HTTPException(status_code=409, detail="Finish and save your answers before moving to payment")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
@@ -973,7 +975,7 @@ def create_payment_router(db) -> APIRouter:
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.post("/supported-checkout")
-    async def create_supported_checkout(payload: SupportedCheckoutRequest):
+    async def create_supported_checkout(payload: SupportedCheckoutRequest, request: Request):
         meta = SUPPORTED_SERVICE_OFFERS.get(payload.product)
         if not meta:
             raise HTTPException(status_code=400, detail="Unknown supported-service product")
@@ -985,20 +987,39 @@ def create_payment_router(db) -> APIRouter:
         if payload.result_token:
             guided = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
             if guided and guided.get("product") == payload.product:
+                if not guided.get("prepayment_complete"):
+                    raise HTTPException(status_code=409, detail="Finish and save your answers before moving to payment")
                 customer_email = guided.get("email", "")
                 lead_context = {"lead_name": guided.get("name", ""), "lead_email": customer_email,
                                 "lead_organization": guided.get("organization", ""), "guided_lead_token": payload.result_token}
             else:
-                recruit = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0})
-                if recruit:
-                    customer_email = recruit.get("email", "")
-                    lead_context = {"lead_id": recruit.get("lead_id", ""), "lead_name": recruit.get("name", ""),
-                                    "lead_email": customer_email, "lead_organization": recruit.get("organization", "")}
+                if payload.product == "recruitment":
+                    assessment = await db.recruitment_free_assessments.find_one({"token": payload.result_token}, {"_id": 0})
+                    if assessment and all(str((assessment.get("answers") or {}).get(k) or "").strip() for k in
+                                      ("mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join")):
+                        customer_email = assessment.get("email", "")
+                        lead_context = {"lead_id": assessment.get("lead_id", ""), "lead_name": assessment.get("name", ""),
+                                        "lead_email": customer_email, "lead_organization": assessment.get("organization", "")}
+                else:
+                    recruit = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0})
+                    if recruit:
+                        customer_email = recruit.get("email", "")
+                        lead_context = {"lead_id": recruit.get("lead_id", ""), "lead_name": recruit.get("name", ""),
+                                        "lead_email": customer_email, "lead_organization": recruit.get("organization", "")}
+        if payload.product == "board-fundraising-game":
+            member = await authenticate_member(request, db)
+            saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0, "answers": 1}) or {}
+            if any(not str((saved.get("answers") or {}).get(str(n), "")).strip() for n in range(1, 6)):
+                raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
+            customer_email = member["email"]
+            lead_context = {"user_id": member["user_id"], "lead_email": customer_email}
+        if payload.product == "recruitment" and not customer_email:
+            raise HTTPException(status_code=409, detail="Finish your six recruitment answers before checkout")
         kwargs = {
             "line_items": [{"price": resolve_offer_price_id(meta["env_key"], meta["lookup_key"], meta["name"], meta["amount"]), "quantity": 1}],
             "mode": "payment", "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/{ 'recruit/walkthrough' if payload.product == 'recruitment' else 'game/demonstration' if payload.product == 'board-fundraising-game' else payload.product + '/video'}?checkout=cancelled" + (f"&token={payload.result_token}" if payload.result_token else ""),
+            "cancel_url": f"{payload.origin_url}/{ 'recruit/walkthrough' if payload.product == 'recruitment' else 'game/upgrade' if payload.product == 'board-fundraising-game' else payload.product + '/video'}?checkout=cancelled" + (f"&token={payload.result_token}" if payload.result_token else ""),
             "metadata": {"offer_source": meta["source"], "purchase_source": meta["source"],
                          "selected_tier": "supported", "offer": meta["name"], "product": payload.product,
                          "lead_id": lead_context.get("lead_id", ""), "guided_lead_token": lead_context.get("guided_lead_token", "")},
