@@ -35,6 +35,7 @@ TEXTS = {
 # context that used to live in that question, continues into the lesson, and ends with
 # the single answer prompt shown on screen.
 TEXTS.update({
+    "rct_welcome": "Welcome. In six questions, tell me about your mission, the board you have now and the support you need. Say what is true for your organization, in your own words. We will use your answers to recommend the board members you should recruit. Ready? Let's begin.",
     "a1_deeper": "Let's start with the most important question.\nWho should actually fund your mission?\nThis is important because not everybody is meant to fund your organization.\nOne of the mistakes organizations make is simply saying, we need donors, we need businesses or we need foundations.\nThat's too broad.\nThere are specific people who have a strong reason to care about the problem you solve.\nThere are specific businesses that have a reason to care about the people you serve, the community you work in or the outcome you're trying to create.\nAnd there are grantors whose funding priorities already align with your mission.\nSo your job is to find your people.\nNow let's go a little deeper.\nWhen I say identify your ideal funders, I don't mean simply saying parents, businesses or foundations.\nWe need to get specific enough that your organization can actually go out and find these people.\nFor individuals, think about who has experienced the problem you're solving.\nWho knows somebody affected by it?\nWho strongly believes in the change you're trying to create?\nWho benefits when the people or community you serve become stronger?\nWho is already spending their time, attention or money around issues connected to your mission?\nThen look at businesses.\nWhich businesses serve the same people you serve?\nWho employs them?\nWho sells to them?\nWho benefits when this community becomes stronger?\nWhich companies already support issues connected to your work?\nThen look at grantors.\nWho already funds your issue?\nWho funds the population you serve?\nWho funds your geography, your type of program or the outcome you're trying to create?\nThe clearer you are about who you're looking for, the easier the rest of fundraising becomes.\nSo based on that, who specifically should your organization be looking for?",
     "a2_deeper": "Now that we know who we're looking for, the next question is where do we find them?\nKnowing your ideal funders is only useful if your organization can consistently put those people in front of you.\nThis is where fundraising begins to become a system.\nYou shouldn't wake up every morning wondering who you are going to contact today.\nYou should already know where your ideal funders congregate and have a process that consistently helps your organization find them.\nThink about it this way.\nIf you're looking for Christians, you go to the church.\nIf you're looking for Muslims, you go to the mosque.\nWhy?\nBecause that's where they congregate.\nThe same thing applies to fundraising.\nThe exact people you're trying to reach are already somewhere.\nThey belong to communities.\nThey work somewhere.\nThey attend events.\nThey join professional associations.\nThey use particular platforms.\nThey belong to churches, clubs, alumni networks, Facebook groups, LinkedIn communities and professional networks.\nBusinesses also congregate.\nYou find them through chambers, trade associations, business networks, industry events, directories and LinkedIn.\nAnd grantors congregate too.\nYou find them through funding databases, community foundations, funder networks, existing grantee lists, conferences, information sessions and the people responsible for their funding programs.\nYou don't need to search everywhere.\nYou need to know where your people already are.\nBased on that, where should your organization consistently go to find the funders you identified?",
     "a3_deeper": "Now let's talk about attraction.\nKnowing where your funders are does not mean you need to spend every day chasing them.\nThere are things your organization can put out there that will attract the right people and businesses to you.\nThere are also ways of positioning your organization that can attract the attention of grantors.\nThink about your ideal funders.\nWhat can you put in front of them that is already valuable to them?\nIt could be a guide.\nIt could be a report.\nA checklist.\nA survey.\nAn assessment.\nA webinar.\nAn event.\nA community activity.\nA campaign.\nA useful resource.\nAn opportunity to share their opinion.\nOr simply an invitation to become part of something they already care about.\nFor businesses, sometimes the attraction is simply starting the right conversation around something both your organization and that business care about.\nFor grantors, attraction can mean understanding their priorities, attending their information sessions, asking good questions and making sure they know your organization before an application ever lands in front of them.\nThis is very important.\nYour first interaction does not always have to be an ask.\nThe first goal is to get the right people to notice you, connect with you and give you the opportunity to build a relationship.\nBased on that, what can your organization offer your potential funders that gives them a reason to move toward you before you ask them for money?",
@@ -75,6 +76,14 @@ for retired_id in ("a1_intro", "a2_intro", "a3_intro", "a4_intro"):
 # Free Board Recruitment assessment. These clips lead the experience while the
 # longer on-screen guidance remains optional behind “Read the guidance”.
 TEXTS.update({
+    "fundraising-free-welcome": "Welcome to your Board Fundraising Game. This is the fundraising goal you want to reach. Share your own thinking across five short questions. Say your answers as they come to mind. You don't have to edit them or sound perfect. When you complete the game, you can invite your board members to bring their ideas into the strategy too. Let's start.",
+    "fundraising-free-board-welcome": "Welcome to your individual Board Fundraising Game. Your organization has a real fundraising goal. Your ideas matter. Share what comes to mind across five short questions, then tell us what part you would be comfortable playing. There are no perfect answers. Your board will bring everyone's thinking together at the meeting. Let's start.",
+    "fundraising-free-question-1": "From your point of view, if there is one audience you believe can really help your organization reach this fundraising goal, who are they?",
+    "fundraising-free-question-2": "Where do you think we can actually find the kind of funders you just identified? Where do they spend their time, work, gather, network, belong or pay attention?",
+    "fundraising-free-question-3": "How do you think we can get the attention of these people and make them interested in our organization and what we do?",
+    "fundraising-free-question-4": "If we eventually get in front of these people, what should we actually ask them for? And how much should we ask for?",
+    "fundraising-free-question-5": "We probably cannot meet these people for the first time and immediately ask them for money. So from the first time they hear about us, what do you think the step-by-step process should be for building that relationship and eventually getting them to give?",
+    "fundraising-free-participation": "Looking at the fundraising process you have laid out, how do you see yourself participating in it? What part of this process can you personally take responsibility for?",
     "recruitment-free-entry": "Welcome. In the next few minutes, I am going to help you identify the exact types of board members your organization should recruit. Tell us about your mission, the board you have today, the areas your organization needs to do well and where you need stronger board support. You do not need formal language or perfect answers. Use your own words. We will compare what your organization needs with what your present board already brings, then show you the people you should look for. Complete the short form on this page to begin.",
     "recruitment-free-question-1-mission": "Let's begin with your mission. What does your organization exist to achieve, who do you serve and what change are you trying to create? Tell us in your own words. You do not need to make it sound formal. This gives us the context we need to recommend board members who fit your real mission.",
     "recruitment-free-question-2-current-board": "Now tell us about the board you have today. How many board members do you currently have, and how does each person presently help your organization? You can describe their roles, skills, experience or the areas they normally support. For example, you might have an accountant who helps with finance, an educator who advises on programs or someone with strong community relationships. If you do not currently have board members, simply tell us that.",
@@ -85,9 +94,9 @@ TEXTS.update({
     "rct_question_1": "Start with your mission statement. Your mission tells us who you serve, what change you are trying to create and the kind of experience, credibility and relationships your board may need. Use your real mission statement or explain it plainly in your own words.",
     "rct_question_2": "Now describe the board you already have and how each person helps the organization. We need to understand the capability already around the table so we do not recommend people simply because a skill sounds useful. Tell us what each current board member actually brings.",
     "rct_question_3": "Tell us the board members you believe you need. Founders usually already have instincts about the people they want around the table. Put those ideas here. We will preserve your thinking and evaluate it together with the rest of the information you provide.",
-    "rct_question_4": "Tell us where the organization needs stronger board support and why. Think about the areas where progress is difficult, where leadership is thin, where relationships are missing or where professional expertise would strengthen the organization.",
-    "rct_question_5": "What kind of board are you trying to build? Choose the model that best describes the board you want. This helps us recommend people who fit how you actually want the board to function, rather than building a board around generic titles.",
-    "rct_question_6": "Why should somebody join your board? Think about the value of serving with your organization. What could a strong board member help build, learn, influence or become part of? Your answer will later help shape the way the opportunity is presented to potential board members.",
+    "rct_question_4": "Tell me where your organization is right now and what you need your board to help accomplish next. What is happening in the organization, what are your priorities and where do you need leadership at the board level? Say it plainly in your own words.",
+    "rct_question_5": "How many new board members do you want to bring in, and where do you need their support most? Think about leadership, relationships, fundraising, governance and the work ahead. If the number has changed since you started, you can change it here.",
+    "rct_question_6": "Looking at your board and the people around your organization, what skills, experience, relationships or capabilities do you already have, and what is still missing? This helps us build on your strengths and avoid recommending more of what you already have.",
     "rct_how_this_works": "This dashboard takes you through your board recruitment one step at a time. Start by confirming the board members your organization needs. Then create and launch your recruitment campaign, review applicants, conduct interviews and references, select the right people and onboard them. Choose any tutorial topic to hear guidance for that part of the process.",
     "rct_identify": "Begin by identifying the exact board members your organization needs. Review the recommended profiles and compare them with what your present board already brings. Edit anything that needs to change, then approve the result. The approved profiles become the foundation for the recruitment materials you create next.",
     "rct_strategy": "Use your approved board-member profiles to build the recruitment strategy and application process. The system uses what you have already provided, so review the material carefully, add any missing organization details and approve it when it accurately reflects who you want to recruit.",
@@ -157,6 +166,15 @@ RETIRED_RECRUITMENT_SCRIPT_HASHES = {
 }
 
 LABELS = {
+    "rct_welcome": "RQ0 Recruitment Free-Flow Welcome",
+    "fundraising-free-welcome": "Free Game Welcome",
+    "fundraising-free-board-welcome": "Board Member Individual Game Welcome",
+    "fundraising-free-question-1": "Free Game Question 1 — Audience",
+    "fundraising-free-question-2": "Free Game Question 2 — Where",
+    "fundraising-free-question-3": "Free Game Question 3 — Attraction",
+    "fundraising-free-question-4": "Free Game Question 4 — Ask",
+    "fundraising-free-question-5": "Free Game Question 5 — Process",
+    "fundraising-free-participation": "Individual Game Participation",
     "lead_opening": "01 Lead User Opening",
     "board_opening": "02 Board Member Opening",
     "a1_deeper": "03 Area 1 Introduction + Teaching",
@@ -190,9 +208,9 @@ LABELS = {
     "rct_question_1": "RQ1 Mission",
     "rct_question_2": "RQ2 Present Board",
     "rct_question_3": "RQ3 Board Members Founder Thinks They Need",
-    "rct_question_4": "RQ4 Areas Needing Support",
-    "rct_question_5": "RQ5 Board Model",
-    "rct_question_6": "RQ6 Why Someone Should Join",
+    "rct_question_4": "RQ4 Present Situation And Priorities",
+    "rct_question_5": "RQ5 New Board Member Count And Support",
+    "rct_question_6": "RQ6 Present Strengths And Gaps",
     "rct_how_this_works": "R00 How This Works",
     "rct_identify": "R01 Identify The Board Members You Need",
     "rct_strategy": "R02 Build Your Recruitment Strategy",
@@ -234,6 +252,8 @@ LABELS.update({key: key.replace("audience_", "Audience Game: ").replace("_", " "
                for key in TEXTS if key.startswith("audience_")})
 
 def narration_category(narration_id: str) -> str:
+    if narration_id.startswith("fundraising-free-"):
+        return "FREE_FUNDRAISING"
     if narration_id.startswith("recruitment-free-"):
         return "FREE_RECRUITMENT"
     if narration_id.startswith("rct_"):

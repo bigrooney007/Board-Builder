@@ -156,6 +156,7 @@ def create_voice_router(db) -> APIRouter:
     @router.get("/game/voice/tutorial/{tutorial_name}")
     async def tutorial_manifest(tutorial_name: str):
         prefixes = {
+            "fundraising-free": "fundraising-free-",
             "recruitment-free": "recruitment-free-",
             "recruitment": "rct_",
             "dashboard-recruitment": "dash_rct_",

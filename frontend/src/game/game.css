@@ -114,6 +114,24 @@
 .bfg-field small { display: block; margin-top: 6px; font-size: 12.5px; color: #64748b; }
 .bfg-field input, .bfg-field select, .bfg-field textarea { width: 100%; background: #ffffff; border: 1px solid var(--bfg-border); border-radius: 12px; color: var(--bfg-text); font-family: "Inter"; font-size: 15px; padding: 12px 14px; outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .bfg-field input:focus, .bfg-field select:focus, .bfg-field textarea:focus { border-color: var(--bfg-indigo); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22); }
+.bfg-setup-flow { max-width: 820px; margin: 0 auto; padding: clamp(32px, 5vw, 64px) 20px 90px; text-align: center; }
+.bfg-setup-flow > h1 { max-width: 710px; margin: 0 auto; font-size: clamp(32px, 4.6vw, 46px); line-height: 1.13; }
+.bfg-setup-flow > p:not(.bfg-eyebrow) { max-width: 690px; margin-left: auto !important; margin-right: auto !important; font-size: 17px; color: #334155; }
+.bfg-setup-flow .bfg-eyebrow { font-size: 13px; color: #3730a3; }
+.bfg-setup-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.bfg-setup-header .bfg-eyebrow { margin: 0; text-align: left; }
+.bfg-setup-flow .bfg-panel .bfg-field > span { color: #111827; font-size: 17px; }
+.bfg-setup-flow .bfg-panel-sub { color: #334155; font-size: 17px; }
+.bfg-setup-fields { display: grid; gap: 16px; margin: 28px 0 0; text-align: left; }
+.bfg-setup-field { padding: 22px 24px; box-shadow: 0 8px 24px rgba(15,23,42,.045); }
+.bfg-setup-field-number { color: #3730a3; font-weight: 800; font-size: 14px; letter-spacing: .08em; }
+.bfg-setup-field .bfg-field { margin-top: 7px; }
+.bfg-setup-field .bfg-field > span { font-size: 17px; line-height: 1.45; color: #111827; }
+.bfg-setup-field textarea, .bfg-setup-flow input, .bfg-setup-flow select { font-size: 16px; border-color: #b9c3d3; }
+.bfg-setup-field textarea { min-height: 112px; line-height: 1.5; }
+.bfg-setup-field .bfg-btn-ghost, .bfg-setup-flow .bfg-btn-ghost { color: #312e81; border-color: #b8b9d9; }
+.bfg-setup-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
+.bfg-setup-choices .is-selected { background: #eef2ff; border-color: #4f46e5; }
 .bfg-field textarea { resize: vertical; min-height: 96px; }
 .bfg-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 8px; }
 .bfg-check { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--bfg-border); border-radius: 10px; background: #ffffff; cursor: pointer; font-size: 14px; color: #4B5563; transition: border-color 0.15s ease; }
@@ -121,7 +139,7 @@
 .bfg-check input { accent-color: var(--bfg-indigo); width: 16px; height: 16px; }
 .bfg-check.checked { border-color: var(--bfg-indigo); background: rgba(99, 102, 241, 0.1); color: var(--bfg-text); }
 .bfg-form-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
-.bfg-error { margin-top: 16px; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.45); background: rgba(244, 63, 94, 0.1); color: #fda4af; font-size: 14px; }
+.bfg-error { margin-top: 16px; padding: 12px 16px; border-radius: 10px; border: 1px solid #fda4af; background: #fff1f2; color: #9f1239 !important; font-size: 15px; }
 .bfg-success { color: var(--bfg-emerald); font-size: 14px; }
 
 /* ---------- Step progress ---------- */

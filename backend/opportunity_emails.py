@@ -1,4 +1,4 @@
-"""Phase 3 opportunity emails: network broadcast (safe test mode), receipts, signature emails."""
+"""Board Applicant Network announcements, receipts and signature emails."""
 import html
 import logging
 import os
@@ -55,13 +55,12 @@ async def create_apply_token(db, applicant_id: str, opportunity_id: str) -> str:
 
 
 async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origin: str, force_test: bool = False) -> dict:
-    """Idempotent network announcement. Live=false or force_test (Owner Review Mode) -> owner test email only. Never emails the live Segment in test mode."""
-    live = os.environ.get("BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE", "false").lower() == "true" and not force_test
+    """Real campaigns send to the applicant topic; only explicit owner review sends a preview."""
     slug = opportunity["slug"]
     view_url = f"{origin}/board-opportunities/{slug}/apply"
     subject = f"Board Leadership Opportunity | {org_name}"
 
-    if not live:
+    if force_test:
         test_email = os.environ.get("OWNER_TEST_EMAIL") or os.environ["OWNER_NOTIFICATION_EMAIL"]
         sample_applicant = await db.board_applicants.find_one({"email": test_email.lower()}, {"_id": 0}) or {}
         token = await create_apply_token(db, sample_applicant.get("applicant_id", "owner-preview"), opportunity["opportunity_id"])
@@ -70,21 +69,22 @@ async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origi
                                opportunity_email_html(opportunity, org_name, apply_url, view_url, sample_applicant.get("first_name") or "there"))
         return {"mode": "test", "broadcast_id": email_id or f"test-{secrets.token_hex(4)}", "recipients": 1}
 
-    # LIVE mode: personalized tokens + one Resend Broadcast to the existing Board Applicants Segment/Topic
+    # A published real campaign must never silently fall back to an owner preview.
+    for key in ("RESEND_API_KEY", "RESEND_BOARD_APPLICANTS_SEGMENT_ID", "RESEND_BOARD_OPPORTUNITIES_TOPIC_ID", "BOARD_APPLICANT_SENDER"):
+        if not os.environ.get(key):
+            raise RuntimeError(f"Applicant Network broadcast is not configured: {key}")
+    # Personalized tokens + one Resend Broadcast to the existing applicant Segment/Topic.
     resend.api_key = os.environ["RESEND_API_KEY"]
     eligible = await db.board_applicants.find(
-        {"board_opportunity_consent": {"$ne": False}, "status": {"$nin": ["Withdrawn", "Paused"]}, "resend_contact_id": {"$ne": ""}},
+        {"board_opportunity_consent": {"$ne": False}, "status": {"$nin": ["Withdrawn", "Paused"]}, "resend_contact_id": {"$type": "string", "$ne": ""}},
         {"_id": 0, "applicant_id": 1, "email": 1, "resend_contact_id": 1},
     ).to_list(5000)
     for applicant in eligible:
         token = await create_apply_token(db, applicant["applicant_id"], opportunity["opportunity_id"])
-        try:
-            await resend.Contacts.update_async({
-                "id": applicant["resend_contact_id"],
-                "properties": {"current_opportunity_apply_url": f"{origin}/apply/{token}"},
-            })
-        except Exception as exc:
-            logger.error("Contact property update failed for %s: %s", applicant["email"], exc)
+        await resend.Contacts.update_async({
+            "id": applicant["resend_contact_id"],
+            "properties": {"current_opportunity_apply_url": f"{origin}/apply/{token}"},
+        })
     broadcast = await resend.Broadcasts.create_async({
         "segment_id": os.environ["RESEND_BOARD_APPLICANTS_SEGMENT_ID"],
         "topic_id": os.environ["RESEND_BOARD_OPPORTUNITIES_TOPIC_ID"],

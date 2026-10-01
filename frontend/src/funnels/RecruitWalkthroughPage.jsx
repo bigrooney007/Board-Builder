@@ -5,6 +5,7 @@ import { BfgShell } from "@/game/gameShared";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import { trackPlatformEvent, usePlatformVideo } from "@/clean/platform";
 import "@/game/game.css";
+import "@/game/guided-flow.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const QUESTION_KEYS = ["mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join"];
@@ -15,8 +16,7 @@ export default function RecruitWalkthroughPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [assessment, setAssessment] = useState(null);
-  const [showVideo, setShowVideo] = useState(false);
-  const video = usePlatformVideo("recruitment_demonstration");
+  const video = usePlatformVideo("recruitment_upgrade");
 
   useEffect(() => {
     document.title = "Unlock Your Board Recruitment Campaign | Nonprofit Board Builder";
@@ -48,26 +48,29 @@ export default function RecruitWalkthroughPage() {
     }
   };
 
-  return (
-    <BfgShell>
-      <main className="bfg-flow" style={{ maxWidth: 850, margin: "0 auto", padding: "40px 20px 90px" }} data-testid="recruit-walkthrough-page">
-        <p className="eyebrow">YOUR SIX ANSWERS ARE SAVED</p>
-        <h1 data-testid="recruit-walkthrough-heading">Your Board Recruitment Assessment Is Complete</h1>
-        <p>We now have the context to identify the board members {assessment?.organization || "your organization"} needs. Unlock your campaign to see the exact recommended profiles, review materials built for your organization and launch your recruitment campaign in the next 30 minutes.</p>
-        <h2>What happens after you unlock</h2>
-        <ol>
-          <li>See why each recommended board profile matters to your organization and approve or edit your list.</li>
-          <li>Review your board application, opportunity, outreach emails, social posts, overview, manual and onboarding resources.</li>
-          <li>Launch to the Board Applicant Marketplace and Applicant Network. Use the same materials on LinkedIn and your own channels.</li>
-          <li>Manage applicants, candidate-specific interviews, checks, offers and onboarding from your dashboard.</li>
-        </ol>
-        {error && <p className="bfg-error" role="alert">{error}</p>}
-        <button type="button" className="bfg-btn bfg-btn-primary" disabled={busy || !assessment} onClick={buy} data-testid="recruit-checkout-button">{busy ? "OPENING CHECKOUT…" : "UNLOCK MY RECRUITMENT CAMPAIGN — $497"}</button>
-        <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(assessment?.token || "")}`)}>Review my saved answers</button></p>
-        <section style={{ marginTop: 35 }}><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => setShowVideo(!showVideo)}>{showVideo ? "Hide" : "Watch"} the optional recruitment demonstration</button>
-          {showVideo && <TrackedYouTubeVideo video={video} flow="recruitment" testId="recruit-walkthrough-video" title="Board Recruitment Demonstration" placeholder="Demonstration video has not been added yet." />}
-        </section>
-      </main>
-    </BfgShell>
-  );
+  const payButton = (id) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" disabled={busy || !assessment}
+    onClick={buy} data-testid={id}>{busy ? "OPENING SECURE CHECKOUT…" : "BUILD MY BOARD RECRUITMENT CAMPAIGN — $497"}</button>;
+
+  return <BfgShell><main className="guided-flow" data-testid="recruit-walkthrough-page">
+    {!assessment ? <p className="guided-loading">Opening your recruitment campaign…</p> : <section className="guided-recruit-upgrade">
+      <p className="guided-kicker">YOUR SIX ANSWERS ARE SAVED</p>
+      <h1 data-testid="recruit-walkthrough-heading">Now let's recruit the board members your organization needs.</h1>
+      <p className="guided-upgrade-copy">You told us about {assessment.organization || "your organization"}, the board you have and where you need stronger support. Those answers will guide the board member profiles and campaign materials we build with you.</p>
+      <div className="guided-video" data-testid="recruit-upgrade-video">
+        <TrackedYouTubeVideo video={video} flow="recruitment" testId="recruit-walkthrough-video"
+          title="A message from Rooney before you launch your recruitment campaign"
+          placeholder="A short message from Rooney will appear here." />
+      </div>
+      {payButton("recruit-checkout-button")}
+      <p className="guided-price-note">One-time payment. Payment is next.</p>
+      <div className="guided-outcomes">
+        <p><strong>First,</strong> review and approve the board profiles your organization needs.</p>
+        <p><strong>Then,</strong> use your application, outreach and social posts to launch your campaign.</p>
+        <p><strong>As people apply,</strong> manage interviews, checks, offers and onboarding in your existing dashboard.</p>
+      </div>
+      {error && <p className="bfg-error" role="alert">{error}</p>}
+      {payButton("recruit-checkout-button-bottom")}
+      <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(assessment.token)}`)}>Review my six answers</button></p>
+    </section>}
+  </main></BfgShell>;
 }

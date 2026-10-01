@@ -14,6 +14,8 @@ jest.mock("./gameShared", () => ({
   BfgShell: ({ children }) => <div>{children}</div>,
   money: (value) => `$${Number(value).toLocaleString("en-US")}`,
 }));
+jest.mock("./useGuidedNarration", () => ({ useGuidedNarration: () => ({ muted: false, toggle: jest.fn(), stop: jest.fn() }) }));
+jest.mock("./SpeakButton", () => ({ SpeakButton: () => null }));
 
 test("saves five original answers in sequence and opens upgrade with no review or AI step", async () => {
   window.scrollTo = jest.fn();
@@ -24,6 +26,9 @@ test("saves five original answers in sequence and opens upgrade with no review o
   try {
     await act(async () => root.render(<GameFreeQuestionsPage />));
     expect(node.textContent).toContain("$250,000");
+    expect(node.querySelector('[data-testid="bfg-free-welcome"]')).toBeTruthy();
+    expect(node.querySelector('[data-testid="bfg-free-question"]')).toBeNull();
+    await act(async () => node.querySelector('[data-testid="bfg-free-start"]').click());
     for (let index = 0; index < 5; index += 1) {
       expect(node.querySelector('[data-testid="bfg-free-question"]').textContent)
         .toBe(fiveQuestionText(index, answers[0]));

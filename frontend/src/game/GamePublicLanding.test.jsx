@@ -50,7 +50,7 @@ test("fundraising hero contains only the headline, subtitle and scroll CTA; the 
     expect(hero.querySelector("[data-testid='bfg-goal-box']")).toBeNull();
     expect(hero.querySelector("[data-testid='bfg-hero-cta']").getAttribute("href")).toBe("#bfg-goal-form");
     expect(node.querySelector("#bfg-goal-form [data-testid='bfg-goal-box']")).toBeTruthy();
-    expect(node.querySelector("#bfg-goal-form a[href='/game/demonstration']")).toBeTruthy();
+    expect(node.querySelector("#bfg-goal-form a[href='/game/demonstration']")).toBeNull();
   } finally { await cleanup(); }
 });
 

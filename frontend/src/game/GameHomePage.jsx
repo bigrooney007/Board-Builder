@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
@@ -38,6 +38,10 @@ export default function GameHomePage() {
     if (!lead.name.trim() || !lead.email.trim() || !lead.org.trim() || !digits) {
       setStartError("Enter your name, email, organization name and fundraising goal to continue.");
       document.getElementById("bfg-goal")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email.trim()) || Number(digits) < 1) {
+      setStartError("Enter a valid email address and a fundraising goal greater than zero.");
       return;
     }
     setStarting(true); setStartError("");
@@ -101,7 +105,7 @@ export default function GameHomePage() {
               <label htmlFor="bfg-goal">{content.goal_label}</label>
               <div className="bfg-goal-input">
                 <span>$</span>
-                <input id="bfg-goal" inputMode="numeric" placeholder={content.goal_placeholder}
+                <input id="bfg-goal" inputMode="numeric" placeholder={content.goal_placeholder} aria-required="true"
                   value={goal} onChange={(event) => setAmount(event.target.value)}
                   onKeyDown={(event) => { if (event.key === "Enter") startGame(); }} data-testid="bfg-goal-input" />
               </div>
@@ -113,16 +117,18 @@ export default function GameHomePage() {
                 ))}
               </div>
               <div className="bfg-goal-lead">
-                <input placeholder="Your name" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="bfg-lead-name" />
-                <input type="email" placeholder="Email" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} data-testid="bfg-lead-email" />
-                <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
+                <label className="sr-only" htmlFor="bfg-lead-name">Your name</label>
+                <input id="bfg-lead-name" autoComplete="name" placeholder="Your name" value={lead.name} onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="bfg-lead-name" />
+                <label className="sr-only" htmlFor="bfg-lead-email">Email address</label>
+                <input id="bfg-lead-email" autoComplete="email" type="email" placeholder="Email address" value={lead.email} onChange={(event) => setLead({ ...lead, email: event.target.value })} data-testid="bfg-lead-email" />
+                <label className="sr-only" htmlFor="bfg-lead-org">Organization name</label>
+                <input id="bfg-lead-org" autoComplete="organization" placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
               </div>
               {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
               <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startGame} data-testid="bfg-form-submit">
                 {starting ? "Opening…" : content.cta_label}
               </button>
               <p className="bfg-start-supporting">{content.start_supporting}</p>
-              <Link className="bfg-demo-link" to="/game/demonstration">Watch Product Demonstration</Link>
             </div>
         </section>
         <section className="bfg-section bfg-agent-intro" aria-labelledby="bfg-agent-intro-heading">

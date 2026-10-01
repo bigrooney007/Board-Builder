@@ -13,7 +13,7 @@ const fmtTime = (raw) => {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 };
 
-export const GameNightSection = ({ onSaved = () => {} }) => {
+export const GameNightSection = ({ onSaved = () => {}, autoOpen = false }) => {
   const [night, setNight] = useState(null);
   const [defaultName, setDefaultName] = useState("");
   const [editing, setEditing] = useState(false);
@@ -26,9 +26,13 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
     memberApi.get("/game/night").then((response) => {
       setNight(response.data.night || {});
       setDefaultName(response.data.default_name || "");
+      if (autoOpen && !response.data.night?.meeting_date) {
+        setForm({ name: response.data.default_name || "Board Fundraising Day/Night", meeting_date: "", funding_deadline: "", start_time: "", timezone_name: Intl.DateTimeFormat().resolvedOptions().timeZone || "" });
+        setEditing(true);
+      }
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, []);
+  }, [autoOpen]);
 
   const startEdit = () => {
     setForm({

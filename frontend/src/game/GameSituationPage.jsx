@@ -164,7 +164,7 @@ export default function GameSituationPage() {
     finally { setBusy(false); }
   };
 
-  const shell = (children, testId) => <BfgShell><main className="bfg-flow" style={{ maxWidth: 760, margin: "0 auto", padding: "30px 20px 80px", textAlign: "center" }} data-testid={testId}>{children}{error && <p className="bfg-error">{error}</p>}</main></BfgShell>;
+  const shell = (children, testId) => <BfgShell><main className="bfg-flow bfg-setup-flow" data-testid={testId}>{children}{error && <p className="bfg-error" role="alert">{error}</p>}</main></BfgShell>;
   if (loading || phase === "loading") return shell(<p style={{ marginTop: 40 }}>Loading your game…</p>, "bfg-situation-loading");
   if (phase === "error") return shell(null, "bfg-situation-error");
 
@@ -172,7 +172,7 @@ export default function GameSituationPage() {
     <p className="bfg-eyebrow">BOARD FUNDRAISING GAME SETUP • STEP 1</p>
     <h1>When Is Your Next Board Meeting?</h1>
     <p style={{ margin: "14px auto 22px" }}>Your board members will play individually before this meeting. Tell us when the board meets and when you need to raise your fundraising goal, so your final strategy works toward a real deadline.</p>
-    <div style={{ textAlign: "left" }}><GameNightSection onSaved={() => setMeetingReady(true)} /></div>
+    <div className="bfg-setup-fields"><GameNightSection autoOpen onSaved={() => setMeetingReady(true)} /></div>
     {meetingReady && <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={() => { setPhase(reviewMode ? "reality" : situationComplete ? "play_first" : setupStep >= 3 ? "capacity" : "reality"); window.scrollTo({ top: 0 }); }}>CONTINUE TO MY PRESENT FUNDRAISING</button>}
   </>, "bfg-setup-meeting");
 
@@ -188,12 +188,13 @@ export default function GameSituationPage() {
       <p className="bfg-eyebrow">YOUR PRESENT FUNDRAISING • TEAM & RESOURCES</p>
       <h1>What Can You Already Build On?</h1>
       <p style={{ marginTop: 12 }}>Tell us what exists today. If you don't have a team, tool or material yet, say so. Your board can then make a practical plan with the resources you actually have.</p>
-      {fields.map(([section, key, question]) => <div key={`${section}-${key}`} className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
-        <label className="bfg-field"><span style={{ fontSize: 16 }}>{question}</span>
+      <div className="bfg-setup-fields">{fields.map(([section, key, question], fieldIndex) => <div key={`${section}-${key}`} className="bfg-card bfg-setup-field">
+        <span className="bfg-setup-field-number">{String(fieldIndex + 1).padStart(2, "0")}</span>
+        <label className="bfg-field"><span>{question}</span>
           <textarea rows={4} value={capacity[section]?.[key] || ""} onChange={(event) => setCapacity((current) => ({ ...current, [section]: { ...current[section], [key]: event.target.value } }))} placeholder="Describe what exists today, or say none yet…" />
         </label>
         <SpeakButton value={capacity[section]?.[key] || ""} onChange={(value) => setCapacity((current) => ({ ...current, [section]: { ...current[section], [key]: value } }))} />
-      </div>)}
+      </div>)}</div>
       <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 22 }}>
         <button className="bfg-btn bfg-btn-ghost" onClick={() => { setIndex(2); setPhase("reality"); }}>BACK</button>
         <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={saveCapacity}>{busy ? "SAVING…" : "CONTINUE TO MY PARTICIPATION"}</button>
@@ -231,20 +232,20 @@ export default function GameSituationPage() {
   const group = GROUPS[index];
   const groupStatus = reality[`${group.key}_status`] || (group.fields.some(([key]) => String(reality[key] || "").trim()) ? "current" : "");
   return shell(<>
-    <div style={{ position: "absolute", top: 14, right: 14 }}><NarrationControl audioRef={audioRef} onReplay={() => play(true)} /></div>
-    <p className="bfg-eyebrow">YOUR PRESENT FUNDRAISING • {index + 1} OF 3</p>
+    <div className="bfg-setup-header"><p className="bfg-eyebrow">YOUR PRESENT FUNDRAISING • {index + 1} OF 3</p><NarrationControl audioRef={audioRef} onReplay={() => play(true)} /></div>
     <h1>{group.title}</h1>
     <p style={{ marginTop: 12 }}>Do you currently receive support from this group? If you do, tell us about those relationships so your Board can build on what exists. If you do not, you can move straight to the next section.</p>
-    <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-      <button className="bfg-btn bfg-btn-ghost" onClick={() => setReality((current) => ({ ...current, [`${group.key}_status`]: "current" }))}>YES, WE HAVE THESE SUPPORTERS</button>
+    <div className="bfg-setup-choices">
+      <button className={`bfg-btn bfg-btn-ghost ${groupStatus === "current" ? "is-selected" : ""}`} aria-pressed={groupStatus === "current"} onClick={() => setReality((current) => ({ ...current, [`${group.key}_status`]: "current" }))}>YES, WE HAVE THESE SUPPORTERS</button>
       <button className="bfg-btn bfg-btn-ghost" disabled={busy} onClick={noCurrent}>WE DO NOT HAVE THESE SUPPORTERS YET</button>
     </div>
-    {groupStatus === "current" && group.fields.map(([key, question]) => <div key={key} className="bfg-card" style={{ marginTop: 18, textAlign: "left", padding: 18 }}>
-      <label className="bfg-field"><span style={{ fontSize: 16 }}>{question}</span>
+    {groupStatus === "current" && <div className="bfg-setup-fields">{group.fields.map(([key, question], fieldIndex) => <div key={key} className="bfg-card bfg-setup-field">
+      <span className="bfg-setup-field-number">{String(fieldIndex + 1).padStart(2, "0")}</span>
+      <label className="bfg-field"><span>{question}</span>
         <textarea rows={4} value={reality[key] || ""} onChange={(event) => setReality((current) => ({ ...current, [key]: event.target.value, [`${group.key}_status`]: "current" }))} placeholder="Type your answer here..." />
       </label>
       <SpeakButton value={reality[key] || ""} onChange={(value) => setReality((current) => ({ ...current, [key]: value, [`${group.key}_status`]: "current" }))} testId={`bfg-reality-${key}-speak`} />
-    </div>)}
+    </div>)}</div>}
     <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 22 }}>
       {index > 0 && <button className="bfg-btn bfg-btn-ghost" onClick={() => setIndex(index - 1)}>Back</button>}
       {groupStatus === "current" && <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={() => saveGroup()}>{busy ? "SAVING…" : index === 2 ? "CONTINUE TO TEAM & RESOURCES" : "CONTINUE"}</button>}

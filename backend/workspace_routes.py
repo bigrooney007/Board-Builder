@@ -1447,7 +1447,7 @@ def create_workspace_router(db) -> APIRouter:
         broadcast_status = "Failed"
         try:
             outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
-                                                       force_test=bool(member.get("review_mode")))
+                                                       force_test=bool(member.get("review_mode") or member.get("internal_dashboard_preview") or opportunity.get("internal_preview")))
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {
                 "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
                 "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated", "updated_at": now_iso()}})
@@ -1482,7 +1482,7 @@ def create_workspace_router(db) -> APIRouter:
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         try:
             outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
-                                                       force_test=bool(member.get("review_mode")))
+                                                       force_test=bool(member.get("review_mode") or member.get("internal_dashboard_preview") or opportunity.get("internal_preview")))
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {
                 "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
                 "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated",

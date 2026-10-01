@@ -15,8 +15,10 @@ export const FLOW_ROUTES = {
 
 export const VIDEO_KEYS = [
   ["recruitment_demonstration", "Board Recruitment Demonstration", "recruitment"],
+  ["recruitment_upgrade", "Recruitment Checkout Message", "recruitment"],
   ["recruitment_welcome", "Board Recruitment Onboarding", "recruitment"],
   ["game_homepage", "Board Fundraising Game Demonstration", "board-fundraising-game"],
+  ["game_upgrade", "Board Fundraising Checkout Message", "board-fundraising-game"],
   ["game_welcome", "Board Fundraising Game Onboarding", "board-fundraising-game"],
   ["strategic_planning_demonstration", "Strategic Planning Demonstration", "strategic-planning"],
   ["strategic_planning_welcome", "Strategic Planning Onboarding", "strategic-planning"],

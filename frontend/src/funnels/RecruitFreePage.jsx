@@ -18,7 +18,11 @@ export default function RecruitFreePage() {
 
   const start = async () => {
     if (!lead.name.trim() || !lead.email.trim() || !lead.organization.trim() || (!lead.count.trim() && !lead.notSure)) {
-      setError("Please complete every field, or choose I'M NOT SURE YET.");
+      setError("Add your name, email, organization and the number of board members you want, or choose I'm not sure yet.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email.trim()) || (!lead.notSure && Number(lead.count) < 1)) {
+      setError("Enter a valid email and a board member number greater than zero.");
       return;
     }
     setBusy(true);
@@ -54,23 +58,26 @@ export default function RecruitFreePage() {
   };
 
   const leadForm = (
-    <div data-testid="recruit-free-landing" style={{ textAlign: "center" }}>
+    <form data-testid="recruit-free-landing" style={{ textAlign: "center" }} onSubmit={(event) => { event.preventDefault(); start(); }}>
       <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">
         Start With Your Six Recruitment Questions
       </h3>
       <p style={{ marginTop: 14 }}>
         Tell us about your organization. Your answers will be saved as you work through the questions.
       </p>
-      <input style={field} placeholder="Your Name" value={lead.name}
+      <label className="sr-only" htmlFor="recruit-lead-name">Your name</label>
+      <input id="recruit-lead-name" style={field} placeholder="Your name" autoComplete="name" required value={lead.name}
         onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="recruit-free-name" />
-      <input style={field} placeholder="Email Address" type="email" value={lead.email}
+      <label className="sr-only" htmlFor="recruit-lead-email">Email address</label>
+      <input id="recruit-lead-email" style={field} placeholder="Email address" type="email" autoComplete="email" required value={lead.email}
         onChange={(event) => setLead({ ...lead, email: event.target.value })} data-testid="recruit-free-email" />
-      <input style={field} placeholder="Organization Name" value={lead.organization}
+      <label className="sr-only" htmlFor="recruit-lead-org">Organization name</label>
+      <input id="recruit-lead-org" style={field} placeholder="Organization name" autoComplete="organization" required value={lead.organization}
         onChange={(event) => setLead({ ...lead, organization: event.target.value })} data-testid="recruit-free-org" />
 
       <p style={{ marginTop: 16, fontWeight: 700, color: "#111827" }}>How many new Board Members do you want to recruit?</p>
       <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
-        <input style={{ ...field, width: 140, marginTop: 8 }} inputMode="numeric" placeholder="Number"
+        <input style={{ ...field, width: 140, marginTop: 8 }} inputMode="numeric" aria-label="Number of new board members" placeholder="Number"
           disabled={lead.notSure} value={lead.count}
           onChange={(event) => setLead({ ...lead, count: event.target.value.replace(/[^0-9]/g, "") })}
           data-testid="recruit-free-count" />
@@ -83,13 +90,13 @@ export default function RecruitFreePage() {
         </button>
       </div>
 
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy}
-        onClick={start} data-testid="recruit-free-start-btn">
+      <button type="submit" className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy}
+        data-testid="recruit-free-start-btn">
         {busy ? "Saving…" : "START MY SIX RECRUITMENT QUESTIONS"}
       </button>
       {savedToken && <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(savedToken)}`)}>CONTINUE MY SAVED ASSESSMENT</button></p>}
       {error && <p className="bfg-error" data-testid="recruit-free-error">{error}</p>}
-    </div>
+    </form>
   );
 
   return <RecruitmentHomePage form={leadForm} />;

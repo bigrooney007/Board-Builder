@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { NarrationControl, isNarrationMuted } from "@/game/NarrationControl";
+import GuidedAudioButton from "@/game/GuidedAudioButton";
+import { useGuidedNarration } from "@/game/useGuidedNarration";
+import { SpeakButton } from "@/game/SpeakButton";
 import { memberApi } from "./api";
 import axios from "axios";
 
 const BASE = process.env.REACT_APP_BACKEND_URL;
+const INTRO = "Welcome. In six questions, tell me about your mission, the board you have now and the support you need. Say what is true for your organization, in your own words. We will use your answers to recommend the board members you should recruit. Ready? Let's begin.";
 
 const QUESTIONS = [
   {
@@ -61,11 +64,12 @@ export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
   const [assessment, setAssessment] = useState(null);
   const [answers, setAnswers] = useState({});
   const [step, setStep] = useState(0);
+  const [started, setStarted] = useState(!publicToken);
   const [desiredCount, setDesiredCount] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [clips, setClips] = useState({});
-  const audioRef = useRef(null);
+  const activeQuestion = QUESTIONS[step];
+  const narration = useGuidedNarration("recruitment", assessment ? started ? activeQuestion?.audio : "rct_welcome" : "", started ? activeQuestion?.question : INTRO);
 
   useEffect(() => {
     const load = publicToken
@@ -78,29 +82,9 @@ export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
       setAnswers(loaded);
       const first = QUESTIONS.findIndex(({ key }) => !String(loaded[key] || "").trim());
       setStep(first < 0 ? QUESTIONS.length : first);
+      if (first > 0 || first < 0) setStarted(true);
     }).catch((e) => setError(e.response?.data?.detail || "We could not open your six Recruitment Questions."));
   }, [publicToken]);
-
-  useEffect(() => {
-    memberApi.get("/game/voice/tutorial/recruitment")
-      .then(({ data }) => setClips(data.clips || {}))
-      .catch(() => {});
-    return () => { if (audioRef.current) audioRef.current.pause(); };
-  }, []);
-
-  const play = useCallback((id) => {
-    if (audioRef.current) audioRef.current.pause();
-    if (isNarrationMuted()) return;
-    const clip = clips[id];
-    if (!clip?.ready) return;
-    const audio = new Audio(`${BASE}${clip.url}`);
-    audioRef.current = audio;
-    audio.play().catch(() => {});
-  }, [clips]);
-
-  useEffect(() => {
-    if (step < 3) play(QUESTIONS[step].audio);
-  }, [step, clips, play]);
 
   const effectiveAnswer = (question) => {
     return String(answers[question.key] || "").trim();
@@ -132,6 +116,14 @@ export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
 
   if (!assessment) return <div className="sgr-question-loading">{error || "Opening your Recruitment Questions…"}</div>;
 
+  if (!started && publicToken) return <section className="sgr-public-question-welcome" data-testid="recruitment-questions-welcome">
+    <div className="sgr-question-topline"><span>YOUR BOARD RECRUITMENT</span><GuidedAudioButton narration={narration} /></div>
+    <h1>Let's identify the board members your organization needs.</h1>
+    <p>Six questions will help us understand your mission, your current board, the people you believe you need and where you need their support.</p>
+    <p>Speak or type as the answers come to mind. You don't need to sound formal. We will use your own thinking to recommend the board members to recruit.</p>
+    <button type="button" className="button" onClick={() => { narration.stop(); setStarted(true); }} data-testid="recruitment-start-six">START MY SIX QUESTIONS</button>
+  </section>;
+
   if (step === QUESTIONS.length) return (
     <div className="sgr-question-complete" data-testid="recruitment-questions-complete">
       <CheckCircle2 size={52} />
@@ -153,14 +145,13 @@ export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
     <div className="sgr-question-screen" data-testid={`recruitment-question-${step + 1}`}>
       <div className="sgr-question-topline">
         <span>QUESTION {step + 1} OF {QUESTIONS.length}</span>
-        {step < 3 && <NarrationControl audioRef={audioRef} onReplay={() => play(question.audio)} />}
+        <GuidedAudioButton narration={narration} />
       </div>
       <div className="sgr-question-progress" aria-hidden="true">
         {QUESTIONS.map((_, index) => <span key={index} className={index <= step ? "active" : ""} />)}
       </div>
       <div className="sgr-question-copy">
-        <h1>{question.heading}</h1>
-        <p className="sgr-question-prompt">{question.question}</p>
+        <h1>{question.question}</h1>
         <p className="sgr-question-helper">{question.helper}</p>
       </div>
 
@@ -172,6 +163,7 @@ export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
             placeholder="Type your answer in your own words…"
             data-testid={`recruitment-question-${step + 1}-input`}
           />
+        <SpeakButton value={currentValue} onChange={(value) => setAnswers((current) => ({ ...current, [question.key]: value }))} testId={`recruitment-question-${step + 1}-speak`} />
       </div>
       {step === 4 && <label className="field"><span>How many new Board Members do you want to recruit?</span>
         <select value={desiredCount} onChange={(event) => setDesiredCount(event.target.value)} data-testid="recruitment-desired-count">

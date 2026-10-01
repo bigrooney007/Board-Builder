@@ -31,8 +31,10 @@ EVENT_TYPES = {
 
 VIDEO_DEFINITIONS = [
     {"key": "recruitment_demonstration", "name": "Board Recruitment Demonstration", "flow": "recruitment", "stage": "demonstration"},
+    {"key": "recruitment_upgrade", "name": "Recruitment Checkout Message", "flow": "recruitment", "stage": "upgrade"},
     {"key": "recruitment_welcome", "name": "Board Recruitment Onboarding", "flow": "recruitment", "stage": "onboarding"},
     {"key": "game_homepage", "name": "Board Fundraising Game Demonstration", "flow": "board-fundraising-game", "stage": "demonstration"},
+    {"key": "game_upgrade", "name": "Board Fundraising Checkout Message", "flow": "board-fundraising-game", "stage": "upgrade"},
     {"key": "game_welcome", "name": "Board Fundraising Game Onboarding", "flow": "board-fundraising-game", "stage": "onboarding"},
     {"key": "strategic_planning_demonstration", "name": "Strategic Planning Demonstration", "flow": "strategic-planning", "stage": "demonstration"},
     {"key": "strategic_planning_welcome", "name": "Strategic Planning Onboarding", "flow": "strategic-planning", "stage": "onboarding"},

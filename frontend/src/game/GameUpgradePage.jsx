@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money } from "./gameShared";
 import { trackPlatformEvent } from "@/clean/platform";
-
-const SHARED_AREAS = [
-  "Who you believe can help fund your organization.",
-  "Where you believe you can find them.",
-  "How you believe you can attract them.",
-  "What you think you should ask them for and how much you should ask.",
-  "How you think you can move them from first discovering your organization to eventually funding it.",
-];
+import { usePlatformVideo } from "@/clean/platform";
+import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
+import "./guided-flow.css";
 
 export default function GameUpgradePage() {
   const { member, loading } = useMemberAuth();
@@ -20,6 +15,7 @@ export default function GameUpgradePage() {
   const [game, setGame] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const video = usePlatformVideo("game_upgrade");
 
   useEffect(() => { document.title = "Bring In Your Board | Board Fundraising Game"; }, []);
   useEffect(() => {
@@ -46,22 +42,25 @@ export default function GameUpgradePage() {
     }
   };
 
-  return <BfgShell><main className="bfg-flow" style={{ maxWidth: 820, margin: "0 auto", padding: "42px 20px 90px", textAlign: "center" }} data-testid="bfg-upgrade-page">
-    {!game ? <p>Opening your Board Fundraising Game…</p> : <>
-      <p className="bfg-eyebrow">YOUR IDEAS ARE SAVED • {money(game.goal_amount)} FUNDRAISING GOAL</p>
-      <h1>YOU'VE SHARED YOUR FUNDRAISING IDEAS. NOW LET'S BRING IN YOUR BOARD.</h1>
-      <p style={{ margin: "24px auto 10px", fontSize: 18 }}>You've now told us:</p>
-      <ul style={{ maxWidth: 670, margin: "0 auto", textAlign: "left", lineHeight: 1.8, fontSize: 17 }}>
-        {SHARED_AREAS.map((area) => <li key={area}>{area}</li>)}
-      </ul>
-      <p style={{ margin: "24px auto 8px", fontWeight: 700, fontSize: 19 }}>That's your perspective.</p>
-      <p style={{ maxWidth: 680, margin: "0 auto", fontSize: 17 }}>Now imagine bringing the thinking of your entire board into the same process. Invite each board member to answer these questions from their own point of view. During your Board Fundraising Game, bring everyone's ideas together, choose the strongest opportunities and build the fundraising strategy your organization will execute together.</p>
-      {params.get("checkout") === "cancelled" && <p className="bfg-error" style={{ marginTop: 22 }}>Your checkout was cancelled. You have not been charged.</p>}
-      {error && <p className="bfg-error" style={{ marginTop: 22 }}>{error}</p>}
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 28 }} onClick={upgrade} disabled={busy} data-testid="bfg-invite-board-cta">{busy ? "OPENING CHECKOUT…" : "INVITE MY BOARD AND CONTINUE"}</button>
-      <p style={{ maxWidth: 590, margin: "15px auto", fontSize: 15 }}>Upgrade to continue your Board Fundraising Game, invite your board members and build your organization's fundraising strategy together.</p>
-      <p style={{ fontSize: 14 }}>One-time payment: $497 for your organization and board.</p>
-      <Link to="/game/demonstration" style={{ display: "inline-block", marginTop: 10 }}>Watch Product Demonstration</Link>
-    </>}
+  const payButton = (testId) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" onClick={upgrade} disabled={busy}
+    data-testid={testId}>{busy ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME — $497"}</button>;
+
+  return <BfgShell><main className="guided-flow" data-testid="bfg-upgrade-page">
+    {!game ? <p className="guided-loading">Opening your Board Fundraising Game…</p> : <section className="guided-upgrade">
+      <p className="guided-kicker">YOUR FIVE IDEAS ARE SAVED</p>
+      <h1>Now let's bring your board into the strategy.</h1>
+      <div className="guided-goal"><span>THE FUNDRAISING GOAL YOU ARE BUILDING TOWARD</span><strong>{money(game.goal_amount)}</strong></div>
+      <p className="guided-upgrade-copy">You have shared who you believe can fund your mission, where to find them, how to attract them, what to ask for and how to build the relationship. That is your starting point. Your board brings more ideas and more people to help carry them out.</p>
+      <div className="guided-video" data-testid="bfg-upgrade-video">
+        <TrackedYouTubeVideo video={video} flow="board-fundraising-game" title="A message from Rooney before you invite your board"
+          placeholder="A short message from Rooney will appear here." />
+      </div>
+      {payButton("bfg-invite-board-cta")}
+      <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
+      <p className="guided-upgrade-next">After payment, we will set your next board meeting and fundraising deadline, understand the donors and resources you already have, then ask how you will participate. You invite your board after that setup.</p>
+      {params.get("checkout") === "cancelled" && <p className="bfg-error" role="alert">Your checkout was cancelled. You have not been charged.</p>}
+      {error && <p className="bfg-error" role="alert">{error}</p>}
+      {payButton("bfg-invite-board-cta-bottom")}
+    </section>}
   </main></BfgShell>;
 }

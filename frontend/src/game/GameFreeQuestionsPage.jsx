@@ -4,6 +4,12 @@ import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money } from "./gameShared";
 import { FIVE_QUESTIONS, fiveQuestionText } from "./gameFiveQuestions";
+import { SpeakButton } from "./SpeakButton";
+import GuidedAudioButton from "./GuidedAudioButton";
+import { useGuidedNarration } from "./useGuidedNarration";
+import "./guided-flow.css";
+
+const INTRO = "Welcome to your Board Fundraising Game. This is the fundraising goal you want to reach. Share your own thinking across five short questions. Say your answers as they come to mind. You don't have to edit them or sound perfect. When you complete the game, you can invite your board members to bring their ideas into the strategy too. Let's start.";
 
 export default function GameFreeQuestionsPage() {
   const navigate = useNavigate();
@@ -11,8 +17,12 @@ export default function GameFreeQuestionsPage() {
   const [context, setContext] = useState(null);
   const [answers, setAnswers] = useState({});
   const [question, setQuestion] = useState(1);
+  const [started, setStarted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const narrationId = started ? `fundraising-free-question-${question}` : "fundraising-free-welcome";
+  const questionText = fiveQuestionText(question - 1, answers["1"]);
+  const narration = useGuidedNarration("fundraising-free", context ? narrationId : "", started ? questionText : INTRO);
 
   useEffect(() => { document.title = "Play Your Board Fundraising Game"; }, []);
   useEffect(() => {
@@ -44,7 +54,10 @@ export default function GameFreeQuestionsPage() {
         setContext(response.data);
         setAnswers(response.data.answers || {});
         if (response.data.complete) navigate(response.data.unlocked ? "/game/setup" : "/game/upgrade", { replace: true });
-        else setQuestion(response.data.next_question || 1);
+        else {
+          setQuestion(response.data.next_question || 1);
+          if ((response.data.next_question || 1) > 1) setStarted(true);
+        }
       } catch { if (active) setError("We could not open your game. Return to the homepage to enter your goal and details."); }
     };
     open();
@@ -63,22 +76,33 @@ export default function GameFreeQuestionsPage() {
     finally { setBusy(false); }
   };
 
-  return <BfgShell><main className="bfg-flow" style={{ maxWidth: 780, margin: "0 auto", padding: "36px 20px 90px", textAlign: "center" }} data-testid="bfg-free-questions">
-    {!context ? <p>{error || "Opening your Board Fundraising Game…"}</p> : <>
-      <p className="bfg-eyebrow">YOUR BOARD FUNDRAISING GAME • QUESTION {question} OF 5</p>
-      <p style={{ margin: "10px auto 24px" }}><strong>{context.organization_name}</strong> • Fundraising goal: <strong>{money(context.goal_amount)}</strong></p>
-      <h1 data-testid="bfg-free-question">{fiveQuestionText(question - 1, answers["1"])}</h1>
-      {question === 1 && <p style={{ margin: "18px auto 0", maxWidth: 660 }}>{FIVE_QUESTIONS[0].hint}</p>}
-      <textarea rows={7} maxLength={6000} value={answers[String(question)] || ""}
-        onChange={(event) => setAnswers({ ...answers, [String(question)]: event.target.value })}
-        placeholder="Tell us what you think, in your own words…" aria-label={`Answer to question ${question}`}
-        data-testid="bfg-free-answer" style={{ width: "100%", marginTop: 24, padding: 18, border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 17, lineHeight: 1.6 }} />
-      <p style={{ marginTop: 10, fontSize: 14 }}>Your answer is saved exactly as you give it.</p>
-      {error && <p className="bfg-error">{error}</p>}
-      <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 22 }}>
-        {question > 1 && <button className="bfg-btn bfg-btn-ghost" onClick={() => setQuestion(question - 1)} disabled={busy}>Back</button>}
-        <button className="bfg-btn bfg-btn-primary" onClick={continueGame} disabled={busy || !(answers[String(question)] || "").trim()} data-testid="bfg-free-continue">{busy ? "SAVING…" : question === 5 ? "CONTINUE" : "NEXT QUESTION"}</button>
-      </div>
-    </>}
+  return <BfgShell><main className="guided-flow" data-testid="bfg-free-questions">
+    {!context ? <p className="guided-loading">{error || "Opening your Board Fundraising Game…"}</p> : !started ? (
+      <section className="guided-welcome" data-testid="bfg-free-welcome">
+        <div className="guided-audio-position"><GuidedAudioButton narration={narration} /></div>
+        <p className="guided-kicker">WELCOME TO YOUR BOARD FUNDRAISING GAME</p>
+        <h1>Let's build a strategy to reach your fundraising goal.</h1>
+        <div className="guided-goal"><span>YOUR FUNDRAISING GOAL</span><strong>{money(context.goal_amount)}</strong></div>
+        <p className="guided-lead">By playing this game, you will start building the fundraising strategy your organization needs to reach this goal.</p>
+        <p className="guided-instruction">Say what comes to mind. You don't need to edit your thinking or sound perfect. Finish the five questions, then invite your board to bring their ideas into the strategy.</p>
+        <button type="button" className="bfg-btn bfg-btn-primary guided-action" onClick={() => { narration.stop(); setStarted(true); }} data-testid="bfg-free-start">START THE GAME</button>
+      </section>
+    ) : (
+      <section className="guided-question" data-testid="bfg-free-question-page">
+        <div className="guided-question-top"><span>QUESTION {question} OF {FIVE_QUESTIONS.length}</span><GuidedAudioButton narration={narration} /></div>
+        <h1 data-testid="bfg-free-question">{questionText}</h1>
+        <label className="guided-answer-label" htmlFor="bfg-free-answer">Your answer</label>
+        <textarea id="bfg-free-answer" rows={6} maxLength={6000} value={answers[String(question)] || ""}
+          onChange={(event) => setAnswers({ ...answers, [String(question)]: event.target.value })}
+          placeholder="Say it as it comes to mind…" aria-label={`Answer to question ${question}`}
+          data-testid="bfg-free-answer" />
+        <SpeakButton value={answers[String(question)] || ""} onChange={(value) => setAnswers((current) => ({ ...current, [String(question)]: value }))} />
+        {error && <p className="bfg-error" role="alert">{error}</p>}
+        <div className="guided-actions">
+          {question > 1 && <button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => setQuestion(question - 1)} disabled={busy}>Back</button>}
+          <button type="button" className="bfg-btn bfg-btn-primary" onClick={continueGame} disabled={busy || !(answers[String(question)] || "").trim()} data-testid="bfg-free-continue">{busy ? "SAVING…" : question === 5 ? "FINISH MY FIVE QUESTIONS" : "NEXT QUESTION"}</button>
+        </div>
+      </section>
+    )}
   </main></BfgShell>;
 }
