@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { clearMemberToken, memberApi, storeMemberToken } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money, useGameContent } from "./gameShared";
 import { trackPlatformEvent, useHomepageContent } from "@/clean/platform";
 import { useLandingPageMeta } from "@/seo";
+import "./game-landing.css";
 
 const PRESETS = [100000, 250000, 500000, 1000000];
 
@@ -20,6 +20,12 @@ export default function GameHomePage() {
   const [lead, setLead] = useState({ name: "", email: "", org: "" });
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
+
+  useEffect(() => {
+    if (sourceContent && window.location.hash === "#bfg-goal-form") {
+      document.getElementById("bfg-goal-form")?.scrollIntoView({ block: "start" });
+    }
+  }, [sourceContent]);
 
   if (!sourceContent) return <div className="bfg" style={{ minHeight: "100vh" }} />;
 
@@ -69,24 +75,27 @@ export default function GameHomePage() {
     }
   };
 
-  const launchFromStages = () => {
-    const digits = String(goal).replace(/[^0-9]/g, "");
-    if (digits) { startGame(); return; }
-    document.getElementById("bfg-goal")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => document.getElementById("bfg-goal")?.focus({ preventScroll: true }), 500);
-  };
+  const scrollToForm = () => document.getElementById("bfg-goal-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const setAmount = (value) => setGoal(Number(String(value).replace(/[^0-9]/g, "") || 0) ? Number(String(value).replace(/[^0-9]/g, "")).toLocaleString("en-US") : "");
 
   return (
     <BfgShell shellClass="bfg-home-shell">
-      <main data-testid="bfg-homepage" className="bfg-home">
-        <section className="bfg-hero">
+      <main data-testid="bfg-homepage" className="bfg-home bfg-game-landing">
+        <section className="bfg-hero" aria-labelledby="bfg-hero-heading">
           <div className="bfg-hero-inner">
-            <span className="bfg-badge" data-testid="bfg-hero-badge"><Sparkles size={13} /> {content.hero_badge}</span>
-            <h1 data-testid="bfg-hero-headline">{content.headline}</h1>
+            <h1 id="bfg-hero-heading" data-testid="bfg-hero-headline">{content.headline}</h1>
             <p className="bfg-hero-sub" data-testid="bfg-hero-subheadline">{content.subheadline}</p>
-            <p className="bfg-hero-explanation">{content.hero_explanation}</p>
+            <a className="bfg-btn bfg-btn-primary" href="#bfg-goal-form" data-testid="bfg-hero-cta">{content.cta_label}</a>
+          </div>
+        </section>
+
+        <section className="bfg-landing-principle" aria-label="The Board Fundraising Game">
+          <p>{content.hero_explanation}</p>
+        </section>
+
+        <div className="bfg-light">
+        <section id="bfg-goal-form" className="bfg-goal-section" aria-labelledby="bfg-goal-heading">
             <div className="bfg-goal-box" data-testid="bfg-goal-box">
               <h2 id="bfg-goal-heading" data-testid="bfg-goal-heading">START WITH YOUR FUNDRAISING GOAL</h2>
               <label htmlFor="bfg-goal">{content.goal_label}</label>
@@ -109,21 +118,19 @@ export default function GameHomePage() {
                 <input placeholder="Organization name" value={lead.org} onChange={(event) => setLead({ ...lead, org: event.target.value })} data-testid="bfg-lead-org" />
               </div>
               {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
-              <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startGame} data-testid="bfg-hero-cta">
+              <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startGame} data-testid="bfg-form-submit">
                 {starting ? "Opening…" : content.cta_label}
               </button>
               <p className="bfg-start-supporting">{content.start_supporting}</p>
               <Link className="bfg-demo-link" to="/game/demonstration">Watch Product Demonstration</Link>
             </div>
-            <div className="bfg-agent-intro">
-              <p>{content.agent_intro}</p>
-              <ol>{(content.agent_questions || []).map((question) => <li key={question}>{question}</li>)}</ol>
-              <p>{content.agent_followup}</p>
-            </div>
-          </div>
         </section>
-
-        <div className="bfg-light">
+        <section className="bfg-section bfg-agent-intro" aria-labelledby="bfg-agent-intro-heading">
+          <h2 id="bfg-agent-intro-heading">How The Game Begins</h2>
+          <p>{content.agent_intro}</p>
+          <ol>{(content.agent_questions || []).map((question) => <li key={question}>{question}</li>)}</ol>
+          <p>{content.agent_followup}</p>
+        </section>
         <section className="bfg-section bfg-intro" data-testid="bfg-intro-section">
           <h2 data-testid="bfg-intro-heading">{content.intro_heading}</h2>
           {(content.intro_paragraphs || []).slice(0, 3).map((paragraph, index) => (
@@ -148,7 +155,7 @@ export default function GameHomePage() {
             ))}
           </div>
           <div className="bfg-stages-cta">
-            <button className="bfg-btn bfg-btn-primary" onClick={launchFromStages} data-testid="bfg-stages-cta">{content.stages_cta_label}</button>
+            <button className="bfg-btn bfg-btn-primary" onClick={scrollToForm} data-testid="bfg-stages-cta">{content.stages_cta_label}</button>
           </div>
         </section>
 
@@ -194,9 +201,7 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
-          <button className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} onClick={startGame} data-testid="bfg-closing-cta">
-            {starting ? "Opening…" : content.closing_cta_label}
-          </button>
+          <a className="bfg-btn bfg-btn-primary" href="#bfg-goal-form" data-testid="bfg-closing-cta">{content.closing_cta_label}</a>
         </section>
 
         </div>

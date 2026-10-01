@@ -16,7 +16,7 @@
 .nBB-home-problem{background:#0f172a;color:#fff;padding:76px 28px}
 .nBB-home-problem>*{max-width:820px;margin:12px auto}
 .nBB-home-problem h2{font-size:clamp(28px,4vw,44px);line-height:1.15}
-.nBB-home-problem p{color:#cbd5e1;font-size:18px}
+.nBB-home-problem p{color:#fff;font-size:18px}
 .nBB-home-paths{max-width:1180px;margin:auto;padding:90px 28px}
 .nBB-home-section-head{max-width:760px;margin:auto}
 .nBB-home-section-head h2{font-size:clamp(30px,4vw,46px);margin:12px 0 36px}

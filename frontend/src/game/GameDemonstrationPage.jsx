@@ -1,54 +1,38 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
-import { trackPlatformEvent } from "@/clean/platform";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import DemoOfferCards from "@/components/DemoOfferCards";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import "./game-landing.css";
 
 export default function GameDemonstrationPage() {
-  const { member, loading } = useMemberAuth();
-  const navigate = useNavigate();
+  const { member } = useMemberAuth();
   const [searchParams] = useSearchParams();
-  const video = useFlowVideo("game_homepage");
-  const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
+  const configuredVideo = useFlowVideo("game_homepage");
+  // The live demonstration remains available if a preview has no copied video setting.
+  const video = configuredVideo?.youtube_id ? configuredVideo : {
+    key: "game_homepage", youtube_id: "rsf_QZfEId8", url: "https://youtu.be/rsf_QZfEId8",
+  };
+  const [continuePath, setContinuePath] = useState("/board-fundraising-game#bfg-goal-form");
 
   useEffect(() => { document.title = "See How The Board Fundraising Game Works"; }, []);
-
-  const buy = async (pathway = "self-guided") => {
-    if (!member) { navigate("/board-fundraising-game"); return; }
-    setBusy(pathway); setError("");
-    try {
-      const organization = sessionStorage.getItem("bfgOrg") || "";
-      const amount = Number(sessionStorage.getItem("bfgGoal") || 0);
-      const fullName = sessionStorage.getItem("bfgName") || [member.first_name, member.last_name].filter(Boolean).join(" ");
-      if (organization && amount && fullName) {
-        await memberApi.put("/game/profile", {
-          organization: { name: organization },
-          goal: { amount, purpose: "Reach our fundraising goal" },
-          primary_user: { full_name: fullName, email: member.email || "" },
-        });
-      }
-      trackPlatformEvent("board-fundraising-game", "checkout_started");
-      const response = pathway === "supported"
-        ? await memberApi.post("/payments/supported-checkout", { product:"board-fundraising-game", origin_url:window.location.origin })
-        : await memberApi.post("/payments/game-checkout", { origin_url: window.location.origin, cancel_path: "/game/demonstration" });
-      window.location.href = response.data.checkout_url;
-    } catch {
-      setError("We could not open checkout. Please try again.");
-      setBusy("");
-    }
-  };
+  useEffect(() => {
+    if (!member) { setContinuePath("/board-fundraising-game#bfg-goal-form"); return; }
+    let active = true;
+    memberApi.get("/game/free").then(({ data }) => {
+      if (active) setContinuePath(data.unlocked ? "/game/setup" : data.complete ? "/game/upgrade" : "/game/questions");
+    }).catch(() => { if (active) setContinuePath("/board-fundraising-game#bfg-goal-form"); });
+    return () => { active = false; };
+  }, [member]);
 
   return (
     <BfgShell>
-      <main className="bfg-flow" style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="bfg-demonstration-page">
+      <main className="bfg-flow bfg-demo-page" style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px 90px", textAlign: "center" }} data-testid="bfg-demonstration-page">
         <p className="bfg-eyebrow">SEE THE BOARD FUNDRAISING GAME IN ACTION</p>
         <h1 style={{ fontSize: "clamp(30px, 6vw, 48px)", lineHeight: 1.08 }}>See Exactly How You And Your Board Will Use The Platform</h1>
-        <p style={{ margin: "16px auto 0", maxWidth: 650, fontSize: 17 }}>
+        <p style={{ margin: "16px auto 0", maxWidth: 650, fontSize: 18 }}>
           Watch Rooney take you through the Board Fundraising Game and show you how your board moves from a fundraising goal to a clear fundraising strategy, individual board roles and the tools needed to execute.
         </p>
         {searchParams.get("checkout") === "cancelled" && (
@@ -57,10 +41,12 @@ export default function GameDemonstrationPage() {
           </p>
         )}
         <div style={{ marginTop: 26 }}><GameVideo video={video} testId="bfg-demonstration-video" /></div>
-        {!member && !loading && <p style={{ marginTop: 22 }}><Link className="bfg-btn bfg-btn-primary" to="/board-fundraising-game">START MY BOARD FUNDRAISING GAME</Link></p>}
-        <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={buy} error={error}
-          selfGuided={{title:"Run The Board Fundraising Game With Your Board",description:"Use the platform to guide your board from individual ideas to one adopted fundraising strategy.",features:["Get every Board Member's original fundraising ideas","Facilitate the live group game with the built-in guide","Create, edit and adopt a practical fundraising strategy","Delegate roles and give every member their Portfolio and Executive Assistant"],guarantee:"Complete the Board Fundraising Game and follow the guided process. If the platform does not help your board produce a usable fundraising strategy you can begin executing, tell us and we will refund 100% of your purchase.",button:"START MY SELF-GUIDED GAME — $497"}}
-          supported={{title:"Run Your Board Fundraising Game With Rooney",description:"Rooney works with you and your board to facilitate the process and turn the decisions into action.",features:["Prepare your organization and Board Members for the game","Facilitate the live Board Fundraising Game","Create the final fundraising strategy from the Board's decisions","Help delegate the agreed roles so the Board can start raising money"],price:"$2,997",button:"WORK WITH ROONEY — $2,997"}}/>
+        <p style={{ margin: "26px auto 20px", maxWidth: 700 }}>
+          Start with your fundraising goal and share your own thinking in five questions. Then bring your board into the process.
+        </p>
+        <Link className="bfg-btn bfg-btn-primary" to={continuePath} data-testid="bfg-demo-continue">
+          {continuePath === "/game/upgrade" ? "CONTINUE MY BOARD FUNDRAISING GAME" : continuePath === "/game/setup" ? "OPEN MY BOARD FUNDRAISING GAME" : "START MY BOARD FUNDRAISING GAME"}
+        </Link>
         <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix="fundraising-game-demo"/>
       </main>
     </BfgShell>

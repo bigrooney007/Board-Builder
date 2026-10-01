@@ -777,6 +777,10 @@ def create_payment_router(db) -> APIRouter:
     @router.post("/game-checkout")
     async def create_game_checkout(payload: DIYCheckoutRequest, request: Request):
         member = await authenticate_member(request, db)
+        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0, "answers": 1}) or {}
+        answers = saved.get("answers") or {}
+        if any(not str(answers.get(str(number), "")).strip() for number in range(1, 6)):
+            raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")

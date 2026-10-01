@@ -154,6 +154,7 @@ export function PlatformVideosSection() {
     setMessage("");
     try {
       await client.put(`/admin/platform/videos/${key}`, { url: drafts[key] || "" });
+      window.dispatchEvent(new Event("platform-videos-changed"));
       setMessage("Video saved.");
       await load();
     } catch (error) {

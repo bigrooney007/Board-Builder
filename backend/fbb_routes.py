@@ -19,7 +19,7 @@ FLOW_VIDEO_DEFS = [
     {"key": "recruitment_welcome", "name": "Recruitment — Post-Payment Onboarding Video", "default_url": ""},
     {"key": "board_recruitment_offer", "name": "Board Recruitment Sales Page Video", "default_url": "https://www.youtube.com/watch?v=4aLqppruUvs"},
     {"key": "fundraising_activation_offer", "name": "Board Fundraising Activation Sales Page Video", "default_url": "https://www.youtube.com/watch?v=Aw751ZtIIks"},
-    {"key": "game_homepage", "name": "Fundraising Game — Homepage Explainer Video", "default_url": ""},
+    {"key": "game_homepage", "name": "Board Fundraising Game — Demonstration Video", "default_url": "https://youtu.be/rsf_QZfEId8"},
     {"key": "game_welcome", "name": "Fundraising Game — Post-Payment Tutorial Video", "default_url": ""},
 ]
 FLOW_VIDEO_KEYS = {item["key"] for item in FLOW_VIDEO_DEFS}

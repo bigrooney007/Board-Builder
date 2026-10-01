@@ -135,25 +135,27 @@ export const useHomepageContent = (pageKey, defaults = {}) => {
 };
 
 let videosCache = null;
-let videosPromise = null;
 
 const loadVideos = () => {
-  if (videosCache) return Promise.resolve(videosCache);
-  if (!videosPromise) {
-    videosPromise = axios.get(`${API}/platform/videos`).then((response) => {
+  return axios.get(`${API}/platform/videos`).then((response) => {
       videosCache = response.data.videos || [];
       return videosCache;
-    }).catch(() => []);
-  }
-  return videosPromise;
+    }).catch(() => videosCache || []);
 };
 
 export const usePlatformVideo = (key) => {
   const [video, setVideo] = useState(() => videosCache?.find((item) => item.key === key) || null);
   useEffect(() => {
     let live = true;
-    loadVideos().then((rows) => { if (live) setVideo(rows.find((item) => item.key === key) || null); });
-    return () => { live = false; };
+    const refresh = () => loadVideos().then((rows) => { if (live) setVideo(rows.find((item) => item.key === key) || null); });
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("platform-videos-changed", refresh);
+    return () => {
+      live = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("platform-videos-changed", refresh);
+    };
   }, [key]);
   return video;
 };

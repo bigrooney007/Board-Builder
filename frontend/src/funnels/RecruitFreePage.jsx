@@ -50,16 +50,16 @@ export default function RecruitFreePage() {
     padding: 14,
     border: "1px solid #d1d5db",
     borderRadius: 12,
-    fontSize: 15,
+    fontSize: 16,
   };
 
   const leadForm = (
     <div data-testid="recruit-free-landing" style={{ textAlign: "center" }}>
       <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">
-        Launch Your Board Recruitment Campaign In The Next 30 Minutes
+        Start With Your Six Recruitment Questions
       </h3>
       <p style={{ marginTop: 14 }}>
-        Tell us about your organization, then answer six short questions. Each answer is saved so you can come back to finish. Your board recommendations and campaign are unlocked after the assessment.
+        Tell us about your organization. Your answers will be saved as you work through the questions.
       </p>
       <input style={field} placeholder="Your Name" value={lead.name}
         onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="recruit-free-name" />

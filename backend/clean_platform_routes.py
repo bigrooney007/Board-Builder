@@ -174,7 +174,7 @@ def create_clean_platform_router(db) -> APIRouter:
         stored = doc.get("videos") or {}
         videos = []
         for item in VIDEO_DEFINITIONS:
-            raw = stored.get(item["key"], "")
+            raw = stored.get(item["key"], "https://youtu.be/rsf_QZfEId8" if item["key"] == "game_homepage" else "")
             try:
                 video_id = youtube_id(raw)
             except ValueError:

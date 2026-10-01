@@ -32,18 +32,17 @@ export default function RecruitmentHomePage({ form }) {
       <main className="recruit-home" data-testid="recruitment-landing-page">
         <section className="recruit-hero" aria-labelledby="recruit-headline">
           <div className="recruit-hero-copy">
-            <p className="bfg-badge">{copy.eyebrow}</p>
             <h1 id="recruit-headline" data-testid="recruitment-headline">{copy.headline}</h1>
             <p className="recruit-hero-sub">{copy.subheadline}</p>
             <a href="#recruit-intake" className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
               {copy.primaryCta}<ArrowDown size={18} aria-hidden="true" />
             </a>
           </div>
-          <div className="recruit-hero-card">
-            <span className="recruit-card-mark" aria-hidden="true">01</span>
-            <h2>{copy.introHeading}</h2>
-            {copy.introParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          </div>
+        </section>
+
+        <section className="recruit-principle" aria-labelledby="recruit-principle-heading">
+          <h2 id="recruit-principle-heading">{copy.introHeading}</h2>
+          {copy.introParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </section>
 
         <section id="recruit-intake" className="recruit-intake-section" aria-labelledby="recruit-form-heading">
