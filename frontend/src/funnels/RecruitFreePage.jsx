@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
@@ -14,9 +14,7 @@ export default function RecruitFreePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    localStorage.removeItem("recruitFreeToken");
-  }, []);
+  const savedToken = localStorage.getItem("recruitFreeToken");
 
   const start = async () => {
     if (!lead.name.trim() || !lead.email.trim() || !lead.organization.trim() || (!lead.count.trim() && !lead.notSure)) {
@@ -32,9 +30,14 @@ export default function RecruitFreePage() {
         organization: lead.organization.trim(),
         desired_count: lead.notSure ? "not_sure" : lead.count.trim(),
       });
+      if (response.data.existing) {
+        setError(response.data.message || "Please check your email for your saved assessment link.");
+        setBusy(false);
+        return;
+      }
       localStorage.setItem("recruitFreeToken", response.data.token);
       trackPlatformEvent("recruitment", "contact_entered");
-      navigate("/recruit/walkthrough");
+      navigate(`/recruit/questions?token=${encodeURIComponent(response.data.token)}`);
     } catch (err) {
       setError(err.response?.data?.detail || "We could not save your details. Please check them and try again.");
     }
@@ -53,10 +56,10 @@ export default function RecruitFreePage() {
   const leadForm = (
     <div data-testid="recruit-free-landing" style={{ textAlign: "center" }}>
       <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">
-        See The Exact Step-By-Step Process To Recruit The Board Members Your Organization Needs
+        Launch Your Board Recruitment Campaign In The Next 30 Minutes
       </h3>
       <p style={{ marginTop: 14 }}>
-        Tell us who you are and how many new Board Members you want to recruit. The six strategic Recruitment Questions come after you join the platform.
+        Tell us about your organization, then answer six short questions. Each answer is saved so you can come back to finish. Your board recommendations and campaign are unlocked after the assessment.
       </p>
       <input style={field} placeholder="Your Name" value={lead.name}
         onChange={(event) => setLead({ ...lead, name: event.target.value })} data-testid="recruit-free-name" />
@@ -82,8 +85,9 @@ export default function RecruitFreePage() {
 
       <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy}
         onClick={start} data-testid="recruit-free-start-btn">
-        {busy ? "Opening…" : "SHOW ME THE STEP-BY-STEP PROCESS"}
+        {busy ? "Saving…" : "START MY SIX RECRUITMENT QUESTIONS"}
       </button>
+      {savedToken && <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(savedToken)}`)}>CONTINUE MY SAVED ASSESSMENT</button></p>}
       {error && <p className="bfg-error" data-testid="recruit-free-error">{error}</p>}
     </div>
   );

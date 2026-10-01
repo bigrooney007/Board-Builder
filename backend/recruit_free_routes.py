@@ -2,7 +2,9 @@
 import asyncio
 import json
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from html import escape
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -21,8 +23,8 @@ QUESTION_KEYS = {
     1: "mission",
     2: "current_board",
     3: "desired_board_members",
-    4: "support_needs",
-    5: "board_type",
+    4: "board_type",
+    5: "support_needs",
     6: "why_join",
 }
 EVENTS = {
@@ -49,6 +51,7 @@ class RecruitFreeStart(BaseModel):
 class RecruitFreeAnswer(BaseModel):
     question: int = Field(ge=1, le=6)
     text: str = Field(min_length=1, max_length=12000)
+    desired_count: Optional[str] = None
 
 
 class RecruitFreeEvent(BaseModel):
@@ -64,9 +67,10 @@ def normalize_count(value: str):
     return int(clean)
 
 
-def public_assessment(doc: dict) -> dict:
+def public_assessment(doc: dict, *, include_result: bool = False) -> dict:
     return {key: value for key, value in (doc or {}).items()
-            if key not in {"_id", "created_at", "updated_at", "generation_error"}}
+            if key not in ({"_id", "created_at", "updated_at", "generation_error"}
+                           if include_result else {"_id", "created_at", "updated_at", "generation_error", "result"})}
 
 
 def assessment_collections(db):
@@ -169,10 +173,10 @@ async def attach_free_assessment_to_member(db, lead_id: str, member: dict) -> No
         "new_members_count": str(assessment.get("desired_count") or "Not sure"),
         "current_board_strengths": answers.get("current_board", ""),
         "desired_board_skills": role_names,
-        "priorities": answers.get("support_needs", ""),
+        "priorities": answers.get("board_type", "") or answers.get("support_needs", ""),
         "desired_board_members_founder_view": answers.get("desired_board_members", ""),
-        "board_kind": answers.get("board_type", ""),
-        "why_join_board": answers.get("why_join", ""),
+        "current_situation": answers.get("board_type", ""),
+        "existing_and_missing_capabilities": answers.get("why_join", ""),
     }
     existing = await db.recruitment_profiles.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
     data = existing.get("data") or {}
@@ -225,7 +229,7 @@ def create_recruit_free_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {"fundraising_board_builder", "fbb_recruitment", "recruitment_self_guided"})
         _, doc = await member_assessment(member)
-        return public_assessment(doc)
+        return public_assessment(doc, include_result=True)
 
     @router.post("/start", status_code=201)
     async def start(payload: RecruitFreeStart):
@@ -233,31 +237,21 @@ def create_recruit_free_router(db) -> APIRouter:
         desired_count = normalize_count(payload.desired_count)
         collection, existing = await find_assessment(db, {"email": email, "state.paid": {"$ne": True}})
         if existing:
-            updates = {
-                "name": payload.name.strip(),
-                "organization": payload.organization.strip(),
-                "updated_at": now_iso(),
-            }
-            # Do not invalidate an already generated result merely because the entry form was reopened.
-            if not existing.get("result"):
-                updates["desired_count"] = desired_count
-            await collection.update_one({"token": existing["token"]}, {"$set": updates})
-            existing.update(updates)
-            await sync_funnel_lead(db, existing)
-            try:
-                await notify_homepage_lead(
-                    db,
-                    pathway="recruitment",
-                    source_id=existing["lead_id"],
-                    name=existing["name"],
-                    email=existing["email"],
-                    organization=existing["organization"],
-                    continue_url=f"{public_origin()}/recruit/walkthrough?token={existing['token']}",
-                    details={"new_board_members_needed": str(existing.get("desired_count") or "Not sure")},
-                )
-            except Exception:
-                pass
-            return public_assessment(existing)
+            # An email address is not proof of ownership. Never return or mutate the
+            # saved assessment token when someone enters an address already in use.
+            last_sent = (existing.get("continuation_email_at") or "")
+            if not last_sent or last_sent < (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat():
+                try:
+                    from opportunity_emails import _send, _wrap
+                    link = f"{public_origin()}/recruit/questions?token={existing['token']}"
+                    body = (f"<p>Hello {escape((existing.get('name') or 'there').split(' ')[0])},</p>"
+                            "<p>Your Board Recruitment answers are saved. Continue where you stopped using your private link.</p>"
+                            f"<p><a href='{escape(link, quote=True)}'>Continue my recruitment assessment</a></p>")
+                    await _send("NONPROFIT_SENDER", email, "Continue Your Board Recruitment Assessment", _wrap("Your Saved Assessment", body))
+                    await collection.update_one({"token": existing["token"]}, {"$set": {"continuation_email_at": now_iso()}})
+                except Exception:
+                    pass
+            return {"existing": True, "message": "Your continuation link has been sent to this email address if an assessment is saved."}
 
         timestamp = now_iso()
         doc = {
@@ -299,7 +293,7 @@ def create_recruit_free_router(db) -> APIRouter:
                 name=doc["name"],
                 email=doc["email"],
                 organization=doc["organization"],
-                continue_url=f"{public_origin()}/recruit/walkthrough?token={doc['token']}",
+                continue_url=f"{public_origin()}/recruit/questions?token={doc['token']}",
                 details={"new_board_members_needed": str(doc.get("desired_count") or "Not sure")},
             )
         except Exception:
@@ -328,17 +322,17 @@ def create_recruit_free_router(db) -> APIRouter:
             "mission": answers["mission"],
             "confirmed_present_board": answers["current_board"],
             "founder_view_of_board_members_needed": answers["desired_board_members"],
+            "current_situation_and_priorities": answers["board_type"],
             "areas_needing_board_support": answers["support_needs"],
-            "desired_board_model": answers["board_type"],
-            "why_someone_should_join_this_board": answers["why_join"],
+            "capabilities_already_available_and_still_missing": answers["why_join"],
             "new_members_count": exact_count if exact_count else "Not sure",
         }
         instructions = (
             "Apply Rooney's board-building method to this founder's own information. Read all six answers together. "
             "Find the mix of people who can build the kind of Board this founder wants at this stage and provide the support they actually asked for. "
             "Preserve the founder's priorities and reasoning. Explain each recommendation in words they will recognize from their own situation. "
-            "Begin with the mission and desired board model, then assess what the present board already contributes, what the founder believes is missing, "
-            "the areas where the organization needs support, and the value proposition for joining. Recommend a balanced team, not a list of generic job titles. "
+            "Begin with the mission and current priorities, then compare what each present board member contributes, what other capability already exists, "
+            "the founder's own proposed roles, and the support and capabilities still missing. Recommend a balanced team, not a list of generic job titles. "
             "Professional or fiduciary capability can matter, including fundraising, partnerships, marketing, finance/accounting, legal, technology, operations, "
             "community credibility, lived experience or other expertise when the organization's actual context supports it. Do not duplicate capability already "
             "covered by the present board unless the supplied information shows additional capacity is genuinely required. "
@@ -348,14 +342,26 @@ def create_recruit_free_router(db) -> APIRouter:
               "why_this_person_is_important and how_this_person_can_support. The recommendations must be specific to this organization."
         )
 
-        await collection.update_one(
-            {"token": doc["token"]},
+        stale_before = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        claim = await collection.update_one(
+            {"token": doc["token"], "result": None,
+             "$or": [{"state.generation_status": {"$ne": "generating"}}, {"updated_at": {"$lt": stale_before}}]},
             {"$set": {"state.generation_status": "generating", "updated_at": now_iso()},
              "$unset": {"generation_error": ""}},
         )
+        if not claim.modified_count:
+            for _ in range(40):
+                await asyncio.sleep(1)
+                latest = await collection.find_one({"token": doc["token"]}, {"_id": 0}) or {}
+                if latest.get("result"):
+                    await attach_free_assessment_to_member(db, latest["lead_id"], member)
+                    return latest["result"]
+                if (latest.get("state") or {}).get("generation_status") == "failed":
+                    break
+            raise HTTPException(status_code=503, detail="Your board profiles are still being prepared. Please try again shortly.")
         try:
             generated = await generate_structured(
-                "powerhouse_board_blueprint",
+                "recruitment_assessment_profiles",
                 json.dumps(context, indent=2),
                 instructions,
             )
@@ -368,7 +374,7 @@ def create_recruit_free_router(db) -> APIRouter:
                     f"Return exactly {exact_count} distinct priority_roles. Preserve the strongest organization-specific reasoning and create a balanced team."
                 )
                 generated = await generate_structured(
-                    "powerhouse_board_blueprint",
+                    "recruitment_assessment_profiles",
                     json.dumps(context, indent=2),
                     instructions + "\n\nCORRECTION REQUIRED: " + correction,
                 )
@@ -418,53 +424,70 @@ def create_recruit_free_router(db) -> APIRouter:
         collection, doc = await find_assessment(db, {"token": token})
         if not doc:
             raise HTTPException(status_code=404, detail="Assessment not found")
-        member = await authenticate_member(request, db)
-        if doc.get("member_user_id") != member.get("user_id") or not doc.get("state", {}).get("paid"):
-            raise HTTPException(status_code=403, detail="Complete your Board Recruitment purchase before answering these questions")
+        member = None
+        if doc.get("state", {}).get("paid"):
+            member = await authenticate_member(request, db)
+            if doc.get("member_user_id") != member.get("user_id"):
+                raise HTTPException(status_code=403, detail="This assessment belongs to another account")
         key = QUESTION_KEYS[payload.question]
         text_value = payload.text.strip()
-        if str((doc.get("answers") or {}).get(key) or "").strip() == text_value:
+        requested_count = normalize_count(payload.desired_count) if payload.question == 5 and payload.desired_count is not None else doc.get("desired_count")
+        if str((doc.get("answers") or {}).get(key) or "").strip() == text_value and requested_count == doc.get("desired_count"):
             return {"status": "saved", "question": payload.question, "generation_queued": False}
 
         opportunity = await db.opportunities.find_one(
-            {"user_id": member["user_id"]}, {"_id": 0, "status": 1})
+            {"user_id": member["user_id"]}, {"_id": 0, "status": 1}) if member else None
         if opportunity and opportunity.get("status") in {"Published", "Closed"}:
             raise HTTPException(
                 status_code=409,
                 detail="Your Recruitment campaign has already been launched. The six foundational Recruitment Questions are locked so the live campaign, applicant records and approved Board profiles stay consistent.",
             )
+        if member:
+            approved = await db.generated_materials.find_one(
+                {"user_id": member["user_id"], "type": "powerhouse_board_blueprint", "application_id": "", "status": "Approved"},
+                {"_id": 0, "material_id": 1},
+            )
+            if approved:
+                raise HTTPException(status_code=409, detail="Your approved Board profiles now guide your campaign materials. Review the profiles in campaign setup before changing your assessment.")
 
         timestamp = now_iso()
-        await db.generated_materials.update_many(
-            {"user_id": member["user_id"], "type": {"$in": [
-                "powerhouse_board_blueprint", "board_recruitment_job_post",
+        if member:
+            await db.generated_materials.update_many(
+                {"user_id": member["user_id"], "type": {"$in": [
+                "powerhouse_board_blueprint", "board_opportunity", "board_recruitment_job_post",
                 "recruitment_emails", "social_posts", "referral_request_email",
-            ]}},
-            {"$set": {"status": "Needs Review", "updated_at": timestamp}},
-        )
-        await db.recruitment_preparation.update_one(
-            {"user_id": member["user_id"]},
-            {"$set": {"status": "stale", "stage": "six_questions_changed", "updated_at": timestamp}},
-            upsert=True,
-        )
+                "general_interview_invitation", "recruitment_communications",
+                "organization_overview", "board_manual", "board_member_agreement",
+                "confidentiality_agreement", "conflict_of_interest_agreement", "onboarding_agenda",
+                ]}},
+                {"$set": {"status": "Needs Review", "updated_at": timestamp}},
+            )
+            await db.recruitment_preparation.update_one(
+                {"user_id": member["user_id"]},
+                {"$set": {"status": "stale", "stage": "six_questions_changed", "updated_at": timestamp}},
+                upsert=True,
+            )
         await collection.update_one(
             {"token": token},
-            {"$set": {f"answers.{key}": text_value, f"state.question_{payload.question}_completed": True,
+            {"$set": {f"answers.{key}": text_value, "desired_count": requested_count,
+                      f"state.question_{payload.question}_completed": True,
                       "state.generation_status": "not_started", "result": None,
                       "state.result_generated": False, "updated_at": timestamp}},
         )
         doc.setdefault("answers", {})[key] = text_value
+        doc["desired_count"] = requested_count
         doc["result"] = None
         await sync_funnel_lead(db, doc)
 
         complete = all(str(doc["answers"].get(answer_key) or "").strip() for answer_key in QUESTION_KEYS.values())
-        if complete:
+        if complete and member:
             await collection.update_one(
                 {"token": token},
                 {"$set": {"state.generation_status": "queued", "updated_at": now_iso()}},
             )
             asyncio.create_task(background_generate_result(token, member["user_id"]))
-        return {"status": "saved", "question": payload.question, "generation_queued": complete}
+        return {"status": "saved", "question": payload.question, "assessment_complete": complete,
+                "generation_queued": bool(complete and member)}
 
     @router.post("/{token}/result")
     async def result(token: str, request: Request):

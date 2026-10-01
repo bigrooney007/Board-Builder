@@ -44,10 +44,23 @@ def profile_context_text(profile_data: dict, lead: dict = None) -> str:
     if profile_data.get("organization_name") and not lead:
         parts.append(f"ORGANIZATION NAME: {profile_data['organization_name']}")
     if lead:
-        board_type = (lead.get("answers") or {}).get("board_type", "") or (profile_data or {}).get("board_kind", "")
+        board_type = (profile_data or {}).get("board_kind", "")
+        if lead.get("lead_source") != "recruitment_free_assessment":
+            board_type = (lead.get("answers") or {}).get("board_type", "") or board_type
         if board_type:
             parts.append(f"SELECTED BOARD TYPE (use matching terminology in everything you write): {board_type}")
-        parts.append("PUBLIC RECRUITMENT FORM:\n" + json.dumps({k: lead.get(k) for k in ["organization", "website", "city", "state_region", "country"]} | (lead.get("answers") or {}), indent=1, default=str))
+        public_answers = lead.get("answers") or {}
+        if lead.get("lead_source") == "recruitment_free_assessment":
+            public_answers = {
+                "mission": public_answers.get("mission", ""),
+                "present_board": public_answers.get("present_board", ""),
+                "founder_view_of_board_members_needed": public_answers.get("desired_board_members", ""),
+                "current_situation_and_priorities": public_answers.get("board_type", ""),
+                "areas_needing_board_support": public_answers.get("strengthen_areas", ""),
+                "existing_and_missing_capabilities": public_answers.get("why_join", ""),
+                "new_members_needed": public_answers.get("new_members_needed", ""),
+            }
+        parts.append("PUBLIC RECRUITMENT FORM:\n" + json.dumps({k: lead.get(k) for k in ["organization", "website", "city", "state_region", "country"]} | public_answers, indent=1, default=str))
     if profile_data:
         parts.append("CONFIRMED MODULE 1 RECRUITMENT PROFILE:\n" + json.dumps(profile_data, indent=1, default=str))
     return "\n\n".join(parts) if parts else "No profile information available."
@@ -231,7 +244,7 @@ def campaign_material_with_link(generation_type: str, structured: dict, applicat
         return value
 
     result = replace(structured)
-    fields = {"board_recruitment_job_post": "post_body", "recruitment_emails": "body", "referral_request_email": "message"}
+    fields = {"board_opportunity": "how_to_apply", "board_recruitment_job_post": "post_body", "recruitment_emails": "body", "referral_request_email": "message"}
     if generation_type == "social_posts":
         posts = result.get("posts")
         if not isinstance(posts, list) or len(posts) != 3:
@@ -291,6 +304,8 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     parts.insert(1, "FOUNDER CONTACT (sign every generated email with these actual details; omit empty items; never placeholders):\n" + json.dumps(founder_contact, indent=1))
     if profile.get("strategy_intake"):
         parts.append("BOARD RECRUITMENT LOGISTICS AND NETWORK (the founder's saved answers about board logistics, their network and recruitment channels — collected once through the Board Recruitment Intake):\n" + json.dumps(profile["strategy_intake"], indent=1, default=str))
+    if profile.get("interview_scheduling"):
+        parts.append("INTERVIEW SCHEDULING PREFERENCE (use the exact scheduling link or availability in interview invitations):\n" + json.dumps(profile["interview_scheduling"], indent=1, default=str))
     if profile.get("onboarding_session"):
         parts.append("SAVED ONBOARDING SESSION (use only the actual date, time, timezone, format and meeting details provided):\n" + json.dumps(profile["onboarding_session"], indent=1, default=str))
     blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")

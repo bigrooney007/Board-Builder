@@ -128,7 +128,7 @@ const ExternalApplicantForm = ({ refresh }) => {
   const [message, setMessage] = useState("");
   const submit = async () => {
     setMessage("");
-    if (!name.trim()) { setMessage("Applicant name is required."); return; }
+    if (!name.trim() || !email.trim()) { setMessage("Applicant name and email are required."); return; }
     setBusy(true);
     try {
       const payload = new FormData();
@@ -148,7 +148,7 @@ const ExternalApplicantForm = ({ refresh }) => {
       <p className="material-description">{recruitmentWorkspaceText.d_applicantsMayAlsoComeTo}</p>
       <div className="two-col-fields">
         <label className="field"><span>Applicant Name <b>*</b></span><input value={name} onChange={(event) => setName(event.target.value)} data-testid="external-applicant-name" /></label>
-        <label className="field"><span>Applicant Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
+        <label className="field"><span>Applicant Email <b>*</b></span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="external-applicant-email" /></label>
         <label className="field"><span>CV / Résumé (optional)</span><input type="file" accept=".pdf,.doc,.docx" onChange={(event) => setCvFile(event.target.files?.[0] || null)} data-testid="external-applicant-cv" /></label>
       </div>
       <button className="button" disabled={busy} onClick={submit} data-testid="add-external-applicant-button">{busy ? "Adding…" : "Add Applicant"}</button>
@@ -207,9 +207,7 @@ export const InterviewsWorkspace = () => {
   const [branding] = useBranding();
   const [selectedId, setSelectedId] = useState("");
   const candidates = applications.filter((application) =>
-    application.journey?.interview_invitation_generated
-    || application.emails_sent?.interview_invitation
-    || ["Interview Invited", "Interview"].includes(application.status)
+    application.application_id
   );
   const selected = candidates.find((application) => application.application_id === selectedId);
 
@@ -217,8 +215,8 @@ export const InterviewsWorkspace = () => {
     <div data-testid="recruitment-interviews-workspace">
       <section className="workspace-panel">
         <h2>Interviews</h2>
-        <p className="material-description">A candidate appears here as soon as you generate their interview invitation. Open the person, generate their tailored interview guide and download it for the conversation.</p>
-        {candidates.length === 0 && <p className="workspace-note">Generate an interview invitation in the Applicants section to move someone here.</p>}
+        <p className="material-description">Choose any applicant and prepare a tailored interview guide from their application and CV when you are ready.</p>
+        {candidates.length === 0 && <p className="workspace-note">Applicants appear here as soon as they apply or you add them.</p>}
         {candidates.map((application) => (
           <button className={selectedId === application.application_id ? "button" : "button button-back"} style={{ marginRight: 8, marginBottom: 8 }} key={application.application_id} onClick={() => setSelectedId(application.application_id)}>
             {application.profile_snapshot?.full_name || application.applicant_email}
@@ -233,10 +231,6 @@ export const InterviewsWorkspace = () => {
 const InterviewStageCandidate = ({ application, branding, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const refreshAll = async () => { await refresh(); await onChanged(); window.dispatchEvent(new Event("recruitment-applications-changed")); };
-  const markComplete = async () => {
-    await memberApi.patch("/workspace/applications/" + application.application_id, { interview_completed: true });
-    await onChanged();
-  };
   return (
     <div className="detail-section">
       <h3>{application.profile_snapshot?.full_name || application.applicant_email}</h3>
@@ -253,10 +247,6 @@ const InterviewStageCandidate = ({ application, branding, onChanged }) => {
           <button className="button button-back" onClick={() => printBranded("Board Candidate Interview Guide", currentVersion(byType.interview_guide).display_text, branding || {})}><Download size={14} /> Download Branded Interview Guide</button>
         ) : null}
       />
-      {byType.interview_guide && !application.interview_completed && (
-        <button className="button button-back" onClick={markComplete}>MARK INTERVIEW COMPLETE</button>
-      )}
-      {application.interview_completed && <p className="member-success">Interview completed.</p>}
     </div>
   );
 };
@@ -700,14 +690,13 @@ const CandidateStatusList = ({ application }) => {
 
 const CandidateDecisionCard = ({ application, selected, onSelect, onDecision, busyId }) => {
   const snapshot = application.profile_snapshot || {};
-  const interviewed = Boolean(application.interview_completed);
   return (
     <div className={`candidate-card ${selected ? "selected" : ""}`} data-testid={`candidate-card-${application.application_id}`}>
       <div className="candidate-card-info">
         <strong>{snapshot.full_name || application.applicant_email}</strong>
         <span>{[snapshot.profession, snapshot.employer].filter(Boolean).join(" · ") || "—"}</span>
         {application.board_role && <span>Role: {application.board_role}</span>}
-        <span>Status: <b>{application.status}</b> · Interview: <b data-testid={`interview-status-${application.application_id}`}>{interviewed ? "Completed" : "Not Completed"}</b></span>
+        <span>Status: <b>{application.status}</b></span>
       </div>
       <div className="candidate-card-actions">
         <button className="button button-back button-small" onClick={() => onSelect(application.application_id)} data-testid={`review-candidate-${application.application_id}`}>{selected ? "Reviewing" : "Review"}</button>
@@ -754,7 +743,7 @@ export const Module5References = () => {
     } catch { window.alert("The decision could not be saved."); }
     setBusyId("");
   };
-  const sorted = [...applications].sort((a, b) => Number(Boolean(b.interview_completed)) - Number(Boolean(a.interview_completed)));
+  const sorted = [...applications];
   const movingForward = detail && detail.status === "Moving Forward";
   const notMovingForward = detail && ["Not Moving Forward", "Not Selected"].includes(detail.status);
   const [profileReady, setProfileReady] = useState(false);
@@ -819,14 +808,14 @@ export const Module5References = () => {
 
 export const AutomatedReferenceChecks = () => {
   const { applications } = useApplications();
-  const eligible = applications.filter((application) => application.journey?.interview_guide_generated);
+  const eligible = applications;
   const [active, setActive] = useState({ id: "", type: "" });
   const open = (id, type) => setActive((current) => current.id === id && current.type === type ? { id: "", type: "" } : { id, type });
   return <div data-testid="reference-email-workspace">
     <section className="workspace-panel">
       <h2>Reference Checks</h2>
       <p className="material-description">Ask the applicant for references if you need them. When you have their referee details, prepare the confirmation email and send it from your own inbox. Referees reply directly to you.</p>
-      {eligible.length === 0 && <p className="workspace-note">Generate a candidate's interview guide to open their reference emails.</p>}
+      {eligible.length === 0 && <p className="workspace-note">Applicants appear here as soon as they apply or you add them.</p>}
       {eligible.map((application) => <div className="candidate-card" key={application.application_id} data-testid={`reference-candidate-${application.application_id}`}>
         <div className="candidate-card-info"><strong>{application.profile_snapshot?.full_name || application.applicant_email}</strong></div>
         <div className="material-actions">
@@ -849,7 +838,7 @@ export const BackgroundChecksWorkspace = () => {
       setLocation([data.city, data.state_region, data.country].filter(Boolean).join(", "));
     }).catch(() => {});
   }, []);
-  const eligible = applications.filter((application) => application.journey?.interview_guide_generated);
+  const eligible = applications;
   const search = (query) => window.open("https://www.google.com/search?q=" + encodeURIComponent(query), "_blank", "noopener");
   return (
     <div data-testid="background-check-workspace">
@@ -857,7 +846,7 @@ export const BackgroundChecksWorkspace = () => {
         <h2>Background Check</h2>
         <p className="material-description">Use an appropriate local provider when your organization decides a background check is needed. Nonprofit Board Builder does not perform or interpret background checks.</p>
         {eligible.length === 0 ? (
-          <p className="workspace-note">Candidates appear here after their interview guide has been generated.</p>
+          <p className="workspace-note">Applicants appear here as soon as they apply or you add them.</p>
         ) : (
           <>
             <p><strong>{eligible.length}</strong> interview candidate{eligible.length === 1 ? "" : "s"} currently in this stage.</p>
@@ -994,7 +983,7 @@ export const OnboardingPreparation = () => {
     return () => { if (timer) window.clearTimeout(timer); };
   }, [refreshOrg]);
 
-  const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
+  const candidates = applications;
   const selected = candidates.find((application) => application.application_id === selectedId);
   const scheduleReady = Boolean(session.date && session.time && session.timezone && session.format && (!["Virtual", "Hybrid"].includes(session.format) || session.link?.trim()) && (!["In Person", "Hybrid"].includes(session.format) || session.location?.trim()));
   const materialsReady = PREPARE_TOOLS.every(([type]) => orgMaterials[type]?.status === "Approved");
@@ -1055,7 +1044,7 @@ export const OnboardingPreparation = () => {
           <span className={scheduleReady && sessionSaved ? "ready" : ""}>Onboarding Schedule: {scheduleReady && sessionSaved ? "Ready" : "Needed"}</span>
           <span className={materialsReady ? "ready" : ""}>Onboarding Materials: {materialsReady ? "Approved" : "Need Approval"}</span>
         </div>
-        {candidates.length === 0 && <p className="workspace-note">Candidates appear here after their interview guide has been generated.</p>}
+        {candidates.length === 0 && <p className="workspace-note">Applicants appear here as soon as they apply or you add them.</p>}
         {candidates.map((application) => (
           <button
             className={selectedId === application.application_id ? "button" : "button button-back"}
@@ -1376,15 +1365,17 @@ export const Module6Onboarding = () => {
 const RecruitmentPortfolioCandidate = ({ application, onChanged }) => {
   const { byType, refresh } = useMaterials(application.application_id);
   const recommendation = application.board_role_recommendation || {};
-  const [role, setRole] = useState(application.board_role || recommendation.recommended_role || "");
+  const suggestedRole = application.portfolio_role_approved ? application.board_role : (recommendation.recommended_role || application.board_role);
+  const [role, setRole] = useState(suggestedRole || "");
   const [why, setWhy] = useState(application.portfolio_role_rationale || recommendation.why_this_role_fits || "");
   const [busy, setBusy] = useState("");
   const refreshAll = async () => { await refresh(); await onChanged(); };
 
   useEffect(() => {
-    setRole(application.board_role || application.board_role_recommendation?.recommended_role || "");
+    setRole(application.portfolio_role_approved ? (application.board_role || "") :
+      (application.board_role_recommendation?.recommended_role || application.board_role || ""));
     setWhy(application.portfolio_role_rationale || application.board_role_recommendation?.why_this_role_fits || "");
-  }, [application.board_role, application.board_role_recommendation, application.portfolio_role_rationale]);
+  }, [application.board_role, application.board_role_recommendation, application.portfolio_role_rationale, application.portfolio_role_approved]);
 
   const recommend = async () => {
     setBusy("recommend");
@@ -1472,13 +1463,13 @@ const RecruitmentPortfolioCandidate = ({ application, onChanged }) => {
 
 export const RecruitmentPortfoliosWorkspace = () => {
   const { applications, refresh } = useApplications();
-  const candidates = applications.filter((application) => application.journey?.interview_guide_generated);
+  const candidates = applications.filter((application) => application.board_profile_completed);
   return (
     <div data-testid="recruitment-portfolios-workspace">
       <section className="workspace-panel">
         <h2>Board Member Portfolios</h2>
-        <p className="material-description">Everyone who reached the interview-guide stage remains visible here. For the people who actually join your board, review the recommended role, edit it if needed and approve it before generating their Portfolio.</p>
-        {candidates.length === 0 && <p className="workspace-note">Interview candidates will appear here automatically.</p>}
+        <p className="material-description">A new board member appears here after completing the Board Member Profile Form. Review their recommended role, edit it if needed and approve it before generating their Portfolio.</p>
+        {candidates.length === 0 && <p className="workspace-note">People appear here when they complete the Board Member Profile Form.</p>}
         {candidates.map((application) => (
           <RecruitmentPortfolioCandidate application={application} onChanged={refresh} key={application.application_id} />
         ))}

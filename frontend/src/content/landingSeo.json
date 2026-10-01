@@ -21,9 +21,9 @@
   {
     "path": "/recruit",
     "name": "Board Recruitment",
-    "title": "Nonprofit Board Recruitment | Nonprofit Board Builder",
-    "description": "Recruit the board members your nonprofit needs. Identify the right mix, launch your campaign and bring committed leaders through interviews into onboarding.",
-    "headline": "Recruit the Board Members Your Organization Needs",
+    "title": "Launch Your Board Recruitment Campaign in 30 Minutes | Nonprofit Board Builder",
+    "description": "Answer six questions, approve the board profiles and materials built for your nonprofit, then launch your recruitment campaign to board applicants in the next 30 minutes.",
+    "headline": "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     "eyebrow": "BOARD RECRUITMENT",
     "image": "board-recruitment-v1.png",
     "imageLines": [
@@ -32,8 +32,8 @@
     ],
     "imageSub": "Build your board around the support your mission needs.",
     "paragraphs": [
-      "Answer six focused questions about your organization and the board you want to build. Identify the mix of experience and perspectives that fits the support you are looking for.",
-      "Review and approve the board member profiles, then create your application and tailored recruitment materials. The platform helps you launch the campaign and carry candidates through interviews, reference checks where required, appointment and onboarding."
+      "Start with six focused questions about your organization and the board you want to build. Your answers save as you go. Unlock the campaign to see the exact recommended board profiles.",
+      "Approve the profiles and tailored recruitment materials, then launch the opportunity to the Board Applicant Marketplace and Applicant Network. Manage applicants, checks, offers and onboarding in one dashboard."
     ],
     "steps": [
       "Identify and approve the board member profiles you need.",

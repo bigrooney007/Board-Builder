@@ -6,6 +6,7 @@ import { AutomatedReferenceChecks, InterviewsWorkspace, Module4Applicants, Onboa
 import { Module3Launch } from "./WorkspaceModules";
 import { ApplicationForm } from "../../public/OpportunityPages";
 import { PlatformVideosSection } from "../../admin/PlatformVideosSection";
+import { RecruitmentGameIntake } from "../RecruitmentGameIntake";
 
 jest.mock("../api", () => ({ memberApi: { get: jest.fn(), post: jest.fn(), put: jest.fn(), patch: jest.fn() } }));
 jest.mock("axios", () => {
@@ -13,8 +14,8 @@ jest.mock("axios", () => {
   return { __esModule: true, default: { ...client, create: () => client } };
 });
 jest.mock("react-router-dom", () => ({ Link: ({ children }) => <span>{children}</span>, useNavigate: () => jest.fn(), useParams: () => ({}) }), { virtual: true });
-jest.mock("@/funnels/FunnelLayout", () => ({ FunnelLayout: ({ children }) => children }));
-jest.mock("@/admin/DashboardSectionAudioAdmin", () => () => null);
+jest.mock("@/funnels/FunnelLayout", () => ({ FunnelLayout: ({ children }) => children }), { virtual: true });
+jest.mock("@/admin/DashboardSectionAudioAdmin", () => () => null, { virtual: true });
 
 let root, container, applications, materials, session, videoId;
 const resource = (type, applicationId = "", status = "Approved") => ({ type, application_id: applicationId, material_id: type + applicationId, status, current_version: 1, versions: [{ version: 1, display_text: "Prepared " + type, created_at: "2026-09-27T12:00:00Z" }] });
@@ -138,4 +139,45 @@ test("admin can replace the campaign video and the dashboard link refreshes", as
   await click(byId("save-recruitment-launch-video"));
   expect(axios.put).toHaveBeenCalledWith("/admin/platform/recruitment-section-videos/launch", { url: "https://youtu.be/AbCdEf12345" });
   expect(byId("launch-recruitment-video").href).toContain("AbCdEf12345");
+});
+
+test("the public six-question assessment resumes and saves each answer before checkout", async () => {
+  const saved = { mission: "We serve young people" };
+  axios.get.mockImplementation(async (path) => path.includes("/recruit/free/")
+    ? { data: { token: "saved-token", desired_count: 2, answers: saved } }
+    : { data: { clips: {} } });
+  axios.put.mockImplementation(async (_path, payload) => {
+    saved[["mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join"][payload.question - 1]] = payload.text;
+    return { data: { status: "saved" } };
+  });
+  const done = jest.fn();
+  await render(<RecruitmentGameIntake publicToken="saved-token" onComplete={done} />);
+  expect(byId("recruitment-question-2")).not.toBeNull();
+  for (let question = 2; question <= 6; question += 1) {
+    const input = byId(`recruitment-question-${question}-input`);
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(input, `Answer ${question}`);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await click(Array.from(byId(`recruitment-question-${question}`).querySelectorAll("button"))
+      .find((button) => /NEXT QUESTION|SAVE MY ANSWERS/.test(button.textContent)));
+  }
+  expect(byId("recruitment-questions-complete")).not.toBeNull();
+  expect(done).toHaveBeenCalledTimes(1);
+  expect(axios.put.mock.calls.map(([, payload]) => payload.question)).toEqual([2, 3, 4, 5, 6]);
+  expect(axios.put.mock.calls[3][1].desired_count).toBe("2");
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+test("campaign launch waits for the communication drafts to be approved", async () => {
+  const originalGet = memberApi.get.getMockImplementation();
+  memberApi.get.mockImplementation((path, options) => path === "/workspace/opportunity"
+    ? Promise.resolve({ data: { opportunity: { slug: "community", status: "Draft", application_saved: true }, core_questions: [],
+      readiness: { profiles_approved: true, scheduling_saved: true, application_saved: true,
+        materials_approved: true, onboarding_approved: true, support_approved: false } } })
+    : originalGet(path, options));
+  await render(<Module3Launch mode="launch" />);
+  expect(byId("publish-button").disabled).toBe(true);
+  expect(byId("publish-panel").textContent).toContain("Interview, check and offer communications approved");
+  expect(memberApi.post).not.toHaveBeenCalledWith("/workspace/opportunity/publish");
 });

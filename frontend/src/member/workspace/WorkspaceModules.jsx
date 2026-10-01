@@ -32,6 +32,7 @@ export const useMaterials = (applicationId = "") => {
 };
 
 const CAMPAIGN_TOOLS = [
+  ["board_opportunity", "Board Opportunity", "Generate My Board Opportunity", "The professional opportunity shown in the Board Applicant Marketplace. Review its mission, roles and expectations before publishing."],
   ["board_recruitment_job_post", "Recruitment Job Post", "Generate My Recruitment Job Post", "Your primary professional board opportunity, ready for professional platforms such as LinkedIn Jobs, BoardSource, Idealist and VolunteerMatch. Your application link is inserted automatically."],
   ["recruitment_emails", "Recruitment Email", "Generate My Recruitment Email", "A professional email to send to your network, supporters, colleagues and community contacts inviting qualified people to consider the board opportunity."],
   ["social_posts", "Social Media Recruitment Posts", "Generate My Social Media Recruitment Posts", "Three tailored posts for your social channels. Each introduces the Board opportunity from a different angle and includes your application link."],
@@ -81,13 +82,12 @@ const ApplicationPanel = ({ opportunity, coreQuestions, applicationSaved, onGene
   );
 };
 
-export const Module3Launch = ({ mode = "all" }) => {
+export const Module3Launch = ({ mode = "all", onLaunched }) => {
   const launchVideo = useRecruitmentSectionVideo("launch");
   const { byType, refresh } = useMaterials();
   const [opportunity, setOpportunity] = useState(null);
   const [coreQuestions, setCoreQuestions] = useState([]);
   const [readiness, setReadiness] = useState({});
-  const [preparation, setPreparation] = useState({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -98,23 +98,22 @@ export const Module3Launch = ({ mode = "all" }) => {
       setOpportunity(response.data.opportunity);
       setCoreQuestions(response.data.core_questions);
       setReadiness(response.data.readiness);
-      setPreparation(response.data.preparation || {});
     } catch { /* ignore */ }
   }, []);
   useEffect(() => { loadOpportunity(); }, [loadOpportunity]);
 
   const refreshAll = async () => { await refresh(); await loadOpportunity(); };
   useEffect(() => {
-    if (!["queued", "generating"].includes(preparation.status)) return undefined;
-    const timer = window.setInterval(() => { refreshAll(); }, 4000);
+    if (["Published", "Closed"].includes(opportunity?.status)) return undefined;
+    const timer = window.setInterval(() => { refreshAll(); }, 6000);
     return () => window.clearInterval(timer);
-  }, [preparation.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [opportunity?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateApplication = async () => {
     setBusy(true); setError(""); setMessage("");
     try {
       await memberApi.post("/workspace/opportunity/application/generate");
-      setMessage("Your Board Application is ready. Review the public form, then generate the four recruitment campaign materials below.");
+      setMessage("Your Board Application is ready. Review the public form and your campaign materials below.");
       await loadOpportunity();
     } catch (err) {
       setError(err.response?.data?.detail || "Could not generate the Board Application.");
@@ -123,12 +122,12 @@ export const Module3Launch = ({ mode = "all" }) => {
   };
 
   const publish = async () => {
-    if (!window.confirm("Launching will make your Board Application public and notify eligible professionals in the Nonprofit Board Builder Applicant Network about this opportunity.\n\nLaunch My Recruitment Campaign?")) return;
     setBusy(true); setError(""); setMessage("");
     try {
       await memberApi.post("/workspace/opportunity/publish");
       setMessage("Your recruitment campaign is live.");
       await loadOpportunity();
+      onLaunched?.();
     } catch (err) { setError(err.response?.data?.detail || "Could not launch the campaign."); }
     setBusy(false);
   };
@@ -136,6 +135,16 @@ export const Module3Launch = ({ mode = "all" }) => {
   const closeCampaign = async () => {
     if (!window.confirm("Close this recruitment campaign? The application page will show Applications Closed. Existing applications and materials remain.")) return;
     try { await memberApi.post("/workspace/opportunity/close"); await loadOpportunity(); } catch (err) { setError(err.response?.data?.detail || "Could not close the campaign."); }
+  };
+
+  const retryNetwork = async () => {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await memberApi.post("/workspace/opportunity/broadcast/retry");
+      setMessage(response.data.mode === "test" ? "The Applicant Network announcement preview was resent to the program owner." : "The Applicant Network announcement was initiated.");
+      await loadOpportunity();
+    } catch (err) { setError(err.response?.data?.detail || "Could not retry the Applicant Network announcement."); }
+    setBusy(false);
   };
 
   const publicUrl = opportunity ? `/board-opportunities/${opportunity.slug}/apply` : "";
@@ -153,12 +162,18 @@ export const Module3Launch = ({ mode = "all" }) => {
                 <p className="material-description">{recruitmentModulesText.d_eachResourceIsCreatedFrom}</p>
               </section>
               {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
-                <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable />
+                <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable readOnly={["Published", "Closed"].includes(opportunity?.status)} />
+              ))}
+              <section className="workspace-panel"><h2>Interview, Check And Offer Communications</h2>
+                <p className="material-description">Your approved organization-level drafts are available here. Candidate-specific emails and secure onboarding links are prepared when you choose a person.</p></section>
+              {[["general_interview_invitation", "Reusable Interview Invitation"], ["recruitment_communications", "Decision, Check And Offer Communications"]].map(([type, title]) => (
+                <MaterialCard key={type} type={type} title={title} buttonLabel={`Generate ${title}`} material={byType[type]}
+                  refresh={refreshAll} approvable readOnly={["Published", "Closed"].includes(opportunity?.status)} />
               ))}
             </>
           ) : (
             <section className="workspace-panel">
-              <p className="workspace-note">Generate your Board Application first. Your job post, recruitment email, social media post and referral email will then use the same application link.</p>
+              <p className="workspace-note">Generate your Board Application first. Your opportunity, job post, recruitment email, social posts and referral email then use the same application link.</p>
             </section>
           )}
         </>
@@ -177,12 +192,14 @@ export const Module3Launch = ({ mode = "all" }) => {
           <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
           <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials prepared ({readiness.materials_count || 0} of {readiness.materials_total || 4})</li>
           <li className={readiness.materials_approved ? "done" : ""} data-testid="readiness-materials-approved">Campaign materials approved ({readiness.materials_approved_count || 0} of {readiness.materials_total || 4})</li>
+          <li className={readiness.onboarding_approved ? "done" : ""}>Organization onboarding documents approved ({readiness.onboarding_approved_count || 0} of {readiness.onboarding_total || 6})</li>
+          <li className={readiness.support_approved ? "done" : ""}>Interview, check and offer communications approved ({readiness.support_approved_count || 0} of {readiness.support_total || 2})</li>
         </ul>
         {launched && (
           <div className="member-success" data-testid="published-info">
             <h3>{recruitmentModulesText.h_yourRecruitmentCampaignIsLive}</h3>
             <p>{workspaceModulesText.yourBoardApplicationIsReady}</p>
-            <p>Launched {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Network announcement {opportunity.broadcast_status || "Initiated"} ({opportunity.broadcast_mode === "test" ? "delivered as an internal preview to the program owner" : "delivered to eligible Applicant Network members"}).
+            <p>Launched {opportunity.published_at && new Date(opportunity.published_at).toLocaleString()}. Applicant Network announcement: {opportunity.broadcast_status || "Pending"}{opportunity.broadcast_mode === "test" && opportunity.broadcast_status === "Initiated" ? " (internal preview sent to the program owner)" : ""}.
               <br /><a href={publicUrl} target="_blank" rel="noreferrer"><Globe size={13} /> {publicUrl} <ExternalLink size={12} /></a></p>
             <Link className="button" to="/app/board-recruitment#br-section-applicants" data-testid="continue-to-applicants">CONTINUE TO APPLICANTS</Link>
           </div>
@@ -191,9 +208,10 @@ export const Module3Launch = ({ mode = "all" }) => {
         {error && <p className="submit-error" data-testid="publish-error">{error}</p>}
         <div className="material-actions">
           {!launched && opportunity?.status !== "Closed" && (
-            <button className="button" disabled={busy || !(readiness.application_saved && readiness.materials_approved)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
+            <button className="button" disabled={busy || !(readiness.profiles_approved && readiness.scheduling_saved && readiness.application_saved && readiness.materials_approved && readiness.onboarding_approved && readiness.support_approved)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
           )}
           {launched && <button className="button button-back" onClick={closeCampaign} data-testid="close-campaign-button">Close Recruitment Campaign</button>}
+          {launched && opportunity?.broadcast_status === "Failed" && <button className="button button-back" disabled={busy} onClick={retryNetwork} data-testid="retry-network-button">RETRY APPLICANT NETWORK ANNOUNCEMENT</button>}
           {opportunity?.status === "Closed" && <p className="workspace-note">{recruitmentModulesText.n_thisCampaignIsClosedApplications}</p>}
         </div>
         <p className="material-meta">{workspaceModulesText.launchingMakesTheApplicationPublic}<Link to={publicUrl}>{publicUrl || "…"}</Link>{workspaceModulesText.launchAnnouncementNote}</p>

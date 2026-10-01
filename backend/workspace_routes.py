@@ -3,9 +3,10 @@ All endpoints require member auth + recruitment_self_guided entitlement. Tenant 
 """
 import asyncio
 import io
+import json
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import resend
@@ -13,11 +14,11 @@ from bson import ObjectId
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from ai_service import GENERATION_TYPES, extract_cv_text, generate_structured
 from member_auth import authenticate_member, require_entitlement
-from opportunity_emails import send_opportunity_broadcast, send_signature_request
+from opportunity_emails import send_campaign_launch_email, send_opportunity_broadcast, send_signature_request
 from reactivation_routes import email_html as portfolio_email_html
 from workspace_service import (
     APPLICATION_STATUSES, BACKGROUND_STATUSES, CORE_QUESTIONS, REFERENCE_OUTCOMES,
@@ -59,11 +60,16 @@ class ApplicationFormUpdate(BaseModel):
     custom_questions: List[CustomQuestion]
 
 
+class InterviewSchedulingUpdate(BaseModel):
+    method: str
+    scheduling_link: str = ""
+    availability: str = ""
+
+
 class ApplicationUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     background_check: Optional[dict] = None
-    interview_completed: Optional[bool] = None
     candidate_email: Optional[str] = None
     board_role: Optional[str] = None
     portfolio_role_approved: Optional[bool] = None
@@ -99,9 +105,16 @@ def create_workspace_router(db) -> APIRouter:
         return member
 
     async def selection_member(request: Request) -> dict:
-        member = await current_member(request)
-        require_entitlement(member, {"recruitment_selection_onboarding"})
-        return member
+        return await current_member(request)
+
+    async def require_campaign_draft(user_id: str, material_type: str, application_id: str = "") -> None:
+        if application_id or material_type not in {"powerhouse_board_blueprint", "board_opportunity", "board_recruitment_job_post",
+                                                    "recruitment_emails", "social_posts", "referral_request_email",
+                                                    "general_interview_invitation", "recruitment_communications"}:
+            return
+        live = await db.opportunities.find_one({"user_id": user_id, "status": {"$in": ["Published", "Closed"]}}, {"_id": 0, "status": 1})
+        if live:
+            raise HTTPException(status_code=409, detail="These approved campaign materials are final for this launched campaign")
 
     async def owned_application(user_id: str, application_id: str) -> dict:
         application = await db.opportunity_applications.find_one(
@@ -111,20 +124,28 @@ def create_workspace_router(db) -> APIRouter:
         return application
 
     async def prepare_board_role_recommendation(user_id: str, application_id: str) -> dict:
+        application = await owned_application(user_id, application_id)
+        profile_response = await db.board_profile_responses.find_one(
+            {"user_id": user_id, "$or": [{"application_id": application_id},
+                                      {"data.email": application.get("applicant_email", "")}]},
+            {"_id": 0, "data": 1, "submitted_at": 1},
+        )
+        if not profile_response:
+            raise HTTPException(status_code=409, detail="This person must complete their Board Member Profile Form before a role can be recommended.")
         existing = await db.opportunity_applications.find_one(
             {"application_id": application_id, "owner_user_id": user_id},
-            {"_id": 0, "board_role_recommendation": 1},
+            {"_id": 0, "board_role_recommendation": 1, "portfolio_role_recommended_at": 1},
         ) or {}
-        if existing.get("board_role_recommendation"):
+        if existing.get("board_role_recommendation") and (existing.get("portfolio_role_recommended_at") or "") >= (profile_response.get("submitted_at") or ""):
             return existing["board_role_recommendation"]
 
         member = await db.members.find_one(
             {"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
         if not member:
             raise RuntimeError("Member account not found")
-        application = await owned_application(user_id, application_id)
         context = await build_org_context(db, user_id, member)
         context += "\n\n" + application_context_text(application)
+        context += "\n\nCOMPLETED BOARD MEMBER PROFILE FORM (primary source for this person's strengths, interests, capacity and contribution):\n" + json.dumps(profile_response.get("data") or {}, indent=1, default=str)
         if application.get("board_role"):
             context += f"\n\nROLE OR EXPERTISE AREA ORIGINALLY ASSOCIATED WITH THIS CANDIDATE: {application['board_role']}"
         cv_doc = await db.opportunity_applications.find_one(
@@ -147,12 +168,6 @@ def create_workspace_router(db) -> APIRouter:
         )
         return recommendation
 
-    async def background_prepare_board_role(user_id: str, application_id: str) -> None:
-        try:
-            await prepare_board_role_recommendation(user_id, application_id)
-        except Exception:
-            return
-
     # ---------- Module 1: Recruitment Profile ----------
     @router.get("/profile")
     async def read_profile(request: Request):
@@ -167,7 +182,8 @@ def create_workspace_router(db) -> APIRouter:
                 "city": lead.get("city", ""), "state_region": lead.get("state_region", ""),
                 "country": lead.get("country", ""), "present_board": answers.get("present_board", ""),
                 "active_board": answers.get("active_board", ""), "new_members_count": answers.get("new_members_needed", ""),
-                "board_kind": answers.get("board_type", ""), "strengthen_areas": answers.get("strengthen_areas", []),
+                "board_kind": answers.get("board_type", "") if lead.get("lead_source") != "recruitment_free_assessment" else "",
+                "strengthen_areas": answers.get("strengthen_areas", []),
                 "priorities": answers.get("accomplish", ""),
             }
         return {"profile": profile.get("data", {}), "confirmed": profile.get("confirmed", False),
@@ -272,8 +288,7 @@ def create_workspace_router(db) -> APIRouter:
         if payload.type not in GENERATION_TYPES:
             raise HTTPException(status_code=422, detail="Unknown generation type")
         meta = GENERATION_TYPES[payload.type]
-        if meta.get("module", 0) >= 4:
-            require_entitlement(member, {"recruitment_selection_onboarding"})
+        await require_campaign_draft(user_id, payload.type, payload.application_id or "")
         profile = await get_profile(db, user_id)
         if not profile.get("confirmed"):
             raise HTTPException(status_code=409, detail="Complete your Recruitment Profile before generating materials")
@@ -291,6 +306,13 @@ def create_workspace_router(db) -> APIRouter:
             manual = await get_current_material(db, user_id, "board_manual", "")
             if manual and manual.get("current") and manual["material"].get("status") == "Approved":
                 context += "\n\nAPPROVED BOARD MANUAL / ONBOARDING FRAMEWORK (use this to align interview questions with how this Board actually works, without turning the interview into an onboarding session):\n" + manual["current"]["display_text"][:12000]
+        if payload.type in {"interview_invitation", "general_interview_invitation"}:
+            schedule = profile.get("interview_scheduling") or {}
+            if schedule.get("method") == "link":
+                context += "\n\nINTERVIEW SCHEDULING URL (use exactly): " + schedule.get("scheduling_link", "")
+            elif schedule.get("method") == "availability":
+                context += ("\n\nINTERVIEW AVAILABILITY (include these exact times and ask the applicant to reply with their preferred time and meeting platform):\n"
+                            + schedule.get("availability", ""))
         reference = await reference_context(db, payload.type)
         if reference:
             context = f"{context}\n\n{reference}"
@@ -354,15 +376,17 @@ def create_workspace_router(db) -> APIRouter:
             org_doc = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0, "organization_name": 1}) or {}
             org_name = org_doc.get("organization_name", "") or org_name_check
             founder_name = f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
+            founder_title = (profile.get("data") or {}).get("founder_title") or "Founder"
+            board_role = application.get("board_role") or "Board Member"
             portfolio_url = f"{origin}/portfolio/{portfolio['share_token']}"
             structured = {
                 "subject": f"Your Board Member Portfolio | {org_name}",
                 "body": (f"Dear {first_name},\n\n"
-                         f"Welcome to the Board of {org_name}.\n\n"
-                         "Your Board Member Portfolio brings together the experience, strengths, interests and capacity you shared through the recruitment process and your Board Member Profile, together with the role the organization recruited you to help strengthen. Where we have already confirmed specific responsibilities together, those agreements are reflected as well.\n\n"
+                         f"Welcome to the Board of {org_name} in your role as {board_role}.\n\n"
+                         "Your Board Member Portfolio outlines how you can contribute, your initial responsibilities, and how to begin working with us. It reflects the strengths and interests you shared in your Board Member Profile and the responsibilities we have agreed together.\n\n"
                          f"You can review your Portfolio using your secure link:\n\n{portfolio_url}\n\n"
                          "Use it as a practical starting point for how you can contribute. As your role develops through Strategic Planning and future Board decisions, your responsibilities can become even more specific.\n\n"
-                         f"Warm regards,\n{founder_name}\n{org_name}"),
+                         f"Warm regards,\n{founder_name}\n{founder_title}\n{org_name}"),
             }
             material = await save_generation(db, user_id, payload.type, structured, "Deterministic portfolio delivery email — no AI call used.", application_id)
             return material
@@ -630,7 +654,6 @@ def create_workspace_router(db) -> APIRouter:
                 {"$set": {"interview_guide.status": "Ready", "interview_guide.material_id": material["material_id"],
                           "interview_guide.generated_at": now_iso(), "updated_at": now_iso()}},
             )
-            asyncio.create_task(background_prepare_board_role(user_id, application_id))
         return material
 
     ONBOARDING_CONCLUSION_FIELDS = ["board_role", "agreed_primary_contribution_area", "agreed_responsibility", "agreed_leadership",
@@ -663,9 +686,10 @@ def create_workspace_router(db) -> APIRouter:
     async def approve_material(material_id: str, request: Request):
         member = await current_member(request)
         material = await db.generated_materials.find_one(
-            {"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0, "type": 1, "share_token": 1})
+            {"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0, "type": 1, "application_id": 1, "share_token": 1})
         if not material:
             raise HTTPException(status_code=404, detail="Material not found")
+        await require_campaign_draft(member["user_id"], material["type"], material.get("application_id") or "")
         updates = {"status": "Approved", "approved_at": now_iso(), "updated_at": now_iso()}
         if material["type"] == "board_member_portfolio" and not material.get("share_token"):
             updates["share_token"] = secrets.token_urlsafe(24)
@@ -756,8 +780,10 @@ def create_workspace_router(db) -> APIRouter:
 
     # ---------- External applicants, share links, board member profile form ----------
     @router.post("/applications/external", status_code=201)
-    async def add_external_applicant(request: Request, name: str = Form(...), cv: Optional[UploadFile] = File(None), email: str = Form(""), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
+    async def add_external_applicant(request: Request, name: str = Form(...), cv: Optional[UploadFile] = File(None), email: EmailStr = Form(...), phone: str = Form(""), linkedin: str = Form(""), notes: str = Form("")):
         member = await selection_member(request)
+        if not name.strip():
+            raise HTTPException(status_code=422, detail="Applicant name is required")
         ts = now_iso()
         cv_file_id, cv_filename, cv_text = "", "", ""
         if cv is not None and cv.filename:
@@ -980,6 +1006,7 @@ def create_workspace_router(db) -> APIRouter:
     @router.put("/board-profiles")
     async def update_board_profiles(payload: BoardProfilesUpdate, request: Request):
         member = await current_member(request)
+        await require_campaign_draft(member["user_id"], "powerhouse_board_blueprint")
         lead = await get_lead(db, member) or {}
         desired_raw = ((lead.get("answers") or {}).get("new_members_needed") or "").strip()
         desired_count = int(desired_raw) if desired_raw.isdigit() else None
@@ -1031,6 +1058,7 @@ def create_workspace_router(db) -> APIRouter:
         material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0})
         if not material:
             raise HTTPException(status_code=404, detail="Material not found")
+        await require_campaign_draft(member["user_id"], material["type"], material.get("application_id") or "")
         ts = now_iso()
         version_number = max(v["version"] for v in material["versions"]) + 1
         version = {"version": version_number, "structured": None, "display_text": payload.display_text,
@@ -1046,6 +1074,7 @@ def create_workspace_router(db) -> APIRouter:
         material = await db.generated_materials.find_one({"material_id": material_id, "user_id": member["user_id"]}, {"_id": 0})
         if not material:
             raise HTTPException(status_code=404, detail="Material not found")
+        await require_campaign_draft(member["user_id"], material["type"], material.get("application_id") or "")
         if payload.version not in {v["version"] for v in material["versions"]}:
             raise HTTPException(status_code=422, detail="Unknown version")
         if payload.version != material["current_version"]:
@@ -1070,10 +1099,94 @@ def create_workspace_router(db) -> APIRouter:
         await db.opportunities.insert_one(opportunity.copy())
         return opportunity
 
-    # These are the four materials the customer can actually generate in the
-    # Recruitment dashboard.  Do not gate launch on hidden/legacy material
-    # types that have no corresponding customer control.
-    CAMPAIGN_TYPES = ["board_recruitment_job_post", "recruitment_emails", "social_posts", "referral_request_email"]
+    # Customer-visible materials prepared during campaign setup.
+    CAMPAIGN_TYPES = ["board_opportunity", "board_recruitment_job_post", "recruitment_emails", "social_posts", "referral_request_email"]
+    ONBOARDING_PREP_TYPES = ["organization_overview", "board_manual", "board_member_agreement",
+                             "confidentiality_agreement", "conflict_of_interest_agreement", "onboarding_agenda"]
+    SUPPORT_PREP_TYPES = ["general_interview_invitation", "recruitment_communications"]
+
+    @router.get("/interview-scheduling")
+    async def read_interview_scheduling(request: Request):
+        member = await current_member(request)
+        profile = await get_profile(db, member["user_id"])
+        return {"scheduling": profile.get("interview_scheduling") or {}}
+
+    @router.put("/interview-scheduling")
+    async def save_interview_scheduling(payload: InterviewSchedulingUpdate, request: Request):
+        member = await current_member(request)
+        method = payload.method.strip().lower()
+        if method not in {"link", "availability"}:
+            raise HTTPException(status_code=422, detail="Choose a scheduling link or available interview times")
+        link = payload.scheduling_link.strip()
+        availability = payload.availability.strip()
+        if method == "link" and (not link.startswith(("https://", "http://")) or len(link) > 2000):
+            raise HTTPException(status_code=422, detail="Enter a valid http(s) interview scheduling link")
+        if method == "availability" and (not availability or len(availability) > 3000):
+            raise HTTPException(status_code=422, detail="Tell candidates the available interview dates and times")
+        value = {"method": method, "scheduling_link": link if method == "link" else "",
+                 "availability": availability if method == "availability" else ""}
+        old = (await get_profile(db, member["user_id"])).get("interview_scheduling") or {}
+        await db.recruitment_profiles.update_one({"user_id": member["user_id"]},
+            {"$set": {"interview_scheduling": value, "updated_at": now_iso()}}, upsert=True)
+        live = await db.opportunities.find_one({"user_id": member["user_id"], "status": {"$in": ["Published", "Closed"]}}, {"_id": 0, "status": 1})
+        if not live:
+            if old != value:
+                await db.generated_materials.update_many(
+                    {"user_id": member["user_id"], "type": {"$in": SUPPORT_PREP_TYPES}, "application_id": ""},
+                    {"$set": {"status": "Needs Review", "updated_at": now_iso()}},
+                )
+            asyncio.create_task(prepare_support_assets(member["user_id"]))
+        return {"scheduling": value}
+
+    async def prepare_support_assets(user_id: str) -> None:
+        try:
+            member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
+            profile = await get_profile(db, user_id)
+            schedule = profile.get("interview_scheduling") or {}
+            if not member or not schedule.get("method"):
+                return
+            await db.recruitment_preparation.update_one({"user_id": user_id},
+                {"$setOnInsert": {"created_at": now_iso()}}, upsert=True)
+            claim = await db.recruitment_preparation.update_one(
+                {"user_id": user_id, "$or": [
+                    {"support_status": {"$ne": "generating"}},
+                    {"support_started_at": {"$lt": (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()}},
+                ]}, {"$set": {"support_status": "generating", "support_started_at": now_iso()}})
+            if not claim.modified_count:
+                return
+            context = await build_org_context(db, user_id, member)
+            context += "\n\nINTERVIEW SCHEDULING (use exact details):\n" + (
+                schedule.get("scheduling_link", "") if schedule["method"] == "link" else
+                "Available times: " + schedule.get("availability", "") +
+                "\nAsk the candidate to reply with the best time and their preferred meeting platform.")
+            failures = []
+            for generation_type in SUPPORT_PREP_TYPES:
+                existing = await get_current_material(db, user_id, generation_type)
+                if existing and existing["material"].get("status") in {"Generated", "Edited", "Approved"}:
+                    continue
+                try:
+                    structured = await generate_structured(generation_type, context,
+                        "Prepare an organization-level draft from the approved profiles. Preserve actual interview scheduling details exactly. "
+                        "Candidate-specific communications and secure onboarding links will be prepared only when the leader selects a real applicant.")
+                    await save_generation(db, user_id, generation_type, structured, context[:1500])
+                except Exception as exc:
+                    failures.append({"type": generation_type, "error": str(exc)[:300]})
+            latest_schedule = (await get_profile(db, user_id)).get("interview_scheduling") or {}
+            if latest_schedule != schedule:
+                await db.generated_materials.update_many(
+                    {"user_id": user_id, "type": {"$in": SUPPORT_PREP_TYPES}, "application_id": ""},
+                    {"$set": {"status": "Needs Review", "updated_at": now_iso()}})
+                await db.recruitment_preparation.update_one({"user_id": user_id},
+                    {"$set": {"support_status": "stale", "updated_at": now_iso()}})
+                asyncio.create_task(prepare_support_assets(user_id))
+                return
+            await db.recruitment_preparation.update_one({"user_id": user_id},
+                {"$set": {"support_status": "partial" if failures else "ready", "support_failures": failures,
+                          "updated_at": now_iso()}}, upsert=True)
+        except Exception as exc:
+            await db.recruitment_preparation.update_one({"user_id": user_id},
+                {"$set": {"support_status": "failed", "support_error": str(exc)[:300],
+                          "updated_at": now_iso()}}, upsert=True)
 
     async def opportunity_readiness(user_id, opportunity):
         materials = await db.generated_materials.find(
@@ -1093,13 +1206,36 @@ def create_workspace_router(db) -> APIRouter:
             item.get("type") for item in materials
             if item.get("type") in CAMPAIGN_TYPES and item.get("status") == "Approved"
         }
+        onboarding = await db.generated_materials.find(
+            {"user_id": user_id, "type": {"$in": ONBOARDING_PREP_TYPES}, "application_id": ""},
+            {"_id": 0, "type": 1, "status": 1},
+        ).to_list(30)
+        onboarding_generated = {row.get("type") for row in onboarding}
+        onboarding_approved = {row.get("type") for row in onboarding if row.get("status") == "Approved"}
+        support = await db.generated_materials.find(
+            {"user_id": user_id, "type": {"$in": SUPPORT_PREP_TYPES}, "application_id": ""},
+            {"_id": 0, "type": 1, "status": 1},
+        ).to_list(10)
+        support_generated = {row.get("type") for row in support}
+        support_approved = {row.get("type") for row in support if row.get("status") == "Approved"}
+        blueprint = await get_current_material(db, user_id, "powerhouse_board_blueprint")
+        profile = await get_profile(db, user_id)
         return {
+            "profiles_approved": bool(blueprint and blueprint["material"].get("status") == "Approved"),
+            "scheduling_saved": bool((profile.get("interview_scheduling") or {}).get("method")),
             "application_saved": bool(opportunity.get("application_saved")),
             "materials_generated": all(item in generated_types for item in CAMPAIGN_TYPES),
             "materials_count": len(generated_types),
             "materials_approved": all(item in approved_types for item in CAMPAIGN_TYPES),
             "materials_approved_count": len(approved_types),
             "materials_total": len(CAMPAIGN_TYPES),
+            "onboarding_generated": all(item in onboarding_generated for item in ONBOARDING_PREP_TYPES),
+            "onboarding_approved": all(item in onboarding_approved for item in ONBOARDING_PREP_TYPES),
+            "onboarding_count": len(onboarding_generated), "onboarding_approved_count": len(onboarding_approved),
+            "onboarding_total": len(ONBOARDING_PREP_TYPES),
+            "support_generated": all(item in support_generated for item in SUPPORT_PREP_TYPES),
+            "support_approved": all(item in support_approved for item in SUPPORT_PREP_TYPES),
+            "support_approved_count": len(support_approved), "support_total": len(SUPPORT_PREP_TYPES),
         }
 
     async def prepare_campaign_assets(user_id: str) -> None:
@@ -1162,6 +1298,8 @@ def create_workspace_router(db) -> APIRouter:
                           "completed_at": now_iso(), "updated_at": now_iso()}},
                 upsert=True,
             )
+            await prepare_onboarding_assets(user_id)
+            await prepare_support_assets(user_id)
         except Exception as exc:
             await db.recruitment_preparation.update_one(
                 {"user_id": user_id},
@@ -1171,16 +1309,14 @@ def create_workspace_router(db) -> APIRouter:
             )
 
     async def prepare_onboarding_assets(user_id: str) -> None:
-        """Prepare reusable organization-level onboarding drafts while recruitment is running."""
+        """Prepare reusable organization-level onboarding drafts before campaign launch."""
         try:
             member = await db.members.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0}) or {}
             if not member:
                 return
             context = await build_org_context(db, user_id, member)
             context += await bylaws_context(user_id)
-            types = ["organization_overview", "board_manual", "board_member_agreement",
-                     "confidentiality_agreement", "conflict_of_interest_agreement",
-                     "onboarding_agenda"]
+            types = ONBOARDING_PREP_TYPES + ["linkedin_launch_instructions"]
             await db.recruitment_preparation.update_one(
                 {"user_id": user_id},
                 {"$set": {"onboarding_status": "generating", "onboarding_stage": types[0], "updated_at": now_iso()}},
@@ -1191,9 +1327,9 @@ def create_workspace_router(db) -> APIRouter:
                 existing = await db.generated_materials.find_one(
                     {"user_id": user_id, "type": generation_type,
                      "$or": [{"application_id": ""}, {"application_id": None}, {"application_id": {"$exists": False}}]},
-                    {"_id": 0, "material_id": 1},
+                    {"_id": 0, "material_id": 1, "status": 1},
                 )
-                if existing:
+                if existing and existing.get("status") in {"Generated", "Edited", "Approved"}:
                     continue
                 await db.recruitment_preparation.update_one(
                     {"user_id": user_id},
@@ -1267,12 +1403,18 @@ def create_workspace_router(db) -> APIRouter:
         if opportunity["status"] == "Published":
             raise HTTPException(status_code=409, detail="This recruitment campaign is already published")
         readiness = await opportunity_readiness(user_id, opportunity)
+        if not readiness["profiles_approved"] or not readiness["scheduling_saved"]:
+            raise HTTPException(status_code=409, detail="Approve your board profiles and save interview scheduling before launching")
         if not readiness["application_saved"]:
             raise HTTPException(status_code=409, detail="Create your Board Application before launching your campaign")
         if not readiness["materials_generated"]:
-            raise HTTPException(status_code=409, detail="Prepare all four recruitment campaign materials before launching your campaign")
+            raise HTTPException(status_code=409, detail="Prepare all recruitment campaign materials before launching your campaign")
         if not readiness["materials_approved"]:
-            raise HTTPException(status_code=409, detail="Review and approve all four recruitment campaign materials before launching your campaign")
+            raise HTTPException(status_code=409, detail="Review and approve your recruitment campaign materials before launching your campaign")
+        if not readiness["onboarding_generated"] or not readiness["onboarding_approved"]:
+            raise HTTPException(status_code=409, detail="Review and approve the organization-level onboarding documents before launching")
+        if not readiness["support_generated"] or not readiness["support_approved"]:
+            raise HTTPException(status_code=409, detail="Review and approve the interview, check and offer communication drafts before launching")
         board_opportunity = await get_current_material(db, user_id, "board_opportunity")
         structured = (board_opportunity["current"].get("structured") or {}) if (board_opportunity and board_opportunity["current"]) else {}
         profile = await get_profile(db, user_id)
@@ -1313,13 +1455,7 @@ def create_workspace_router(db) -> APIRouter:
         except Exception as exc:
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {"broadcast_status": "Failed", "broadcast_error": str(exc)[:400]}})
         opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
-        await db.recruitment_preparation.update_one(
-            {"user_id": user_id},
-            {"$set": {"onboarding_status": "queued", "onboarding_stage": "onboarding_assets", "updated_at": now_iso()},
-             "$setOnInsert": {"created_at": now_iso()}},
-            upsert=True,
-        )
-        asyncio.create_task(prepare_onboarding_assets(user_id))
+        asyncio.create_task(send_campaign_launch_email(db, opportunity, member, origin))
         return {"status": "Published", "broadcast_status": broadcast_status, "opportunity": opportunity}
 
     @router.post("/opportunity/close")
@@ -1331,6 +1467,31 @@ def create_workspace_router(db) -> APIRouter:
         if not result.modified_count:
             raise HTTPException(status_code=409, detail="No published campaign to close")
         return {"status": "Closed"}
+
+    @router.post("/opportunity/broadcast/retry")
+    async def retry_opportunity_broadcast(request: Request):
+        member = await current_member(request)
+        user_id = member["user_id"]
+        claim = await db.opportunities.update_one(
+            {"user_id": user_id, "status": "Published", "broadcast_status": "Failed"},
+            {"$set": {"broadcast_status": "Retrying", "updated_at": now_iso()}},
+        )
+        if not claim.modified_count:
+            raise HTTPException(status_code=409, detail="Only a failed announcement for a live campaign can be retried")
+        opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
+        origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
+        try:
+            outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
+                                                       force_test=bool(member.get("review_mode")))
+            await db.opportunities.update_one({"user_id": user_id}, {"$set": {
+                "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
+                "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated",
+                "broadcast_error": "", "updated_at": now_iso()}})
+            return {"broadcast_status": "Initiated", "mode": outcome["mode"]}
+        except Exception as exc:
+            await db.opportunities.update_one({"user_id": user_id},
+                {"$set": {"broadcast_status": "Failed", "broadcast_error": str(exc)[:400], "updated_at": now_iso()}})
+            raise HTTPException(status_code=502, detail="The Applicant Network announcement could not be sent. Please try again.") from exc
 
     # ---------- Module 4: Applicant workspace ----------
     @router.get("/applications")
@@ -1397,16 +1558,18 @@ def create_workspace_router(db) -> APIRouter:
             updates["status"] = payload.status
         if payload.notes is not None:
             updates["notes"] = payload.notes
-        if payload.interview_completed is not None:
-            updates["interview_completed"] = payload.interview_completed
-            if payload.interview_completed:
-                updates["interview_completed_at"] = now_iso()
         if payload.candidate_email is not None:
             updates["applicant_email"] = payload.candidate_email.strip().lower()
             updates["profile_snapshot.email"] = payload.candidate_email.strip().lower()
         if payload.board_role is not None:
             updates["board_role"] = payload.board_role
         if payload.portfolio_role_approved is not None:
+            if payload.portfolio_role_approved:
+                profile_done = await db.board_profile_responses.find_one(
+                    {"user_id": member["user_id"], "$or": [{"application_id": application_id},
+                        {"data.email": application.get("applicant_email", "")}]}, {"_id": 0, "response_id": 1})
+                if not profile_done:
+                    raise HTTPException(status_code=409, detail="Wait for this person's completed Board Member Profile before approving a portfolio role.")
             updates["portfolio_role_approved"] = payload.portfolio_role_approved
             if payload.portfolio_role_approved:
                 updates["portfolio_role_approved_at"] = now_iso()
@@ -1464,6 +1627,8 @@ def create_workspace_router(db) -> APIRouter:
         await owned_application(member["user_id"], application_id)
         try:
             recommendation = await prepare_board_role_recommendation(member["user_id"], application_id)
+        except HTTPException:
+            raise
         except Exception as exc:
             raise HTTPException(status_code=502, detail="The Board role recommendation could not be prepared yet.") from exc
         return {"recommendation": recommendation}

@@ -126,6 +126,19 @@ def create_review_router(db) -> APIRouter:
         })
         if link:
             await db.board_profile_links.update_one({"token": token}, {"$set": {"status": "Completed", "completed_at": datetime.now(timezone.utc).isoformat()}})
+            try:
+                from opportunity_emails import _send, _wrap
+                from html import escape
+                owner = await db.members.find_one({"user_id": user_id}, {"_id": 0, "email": 1}) or {}
+                if owner.get("email"):
+                    dashboard = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/") + "/app/board-recruitment#br-section-portfolios"
+                    body = (f"<p>{escape(data['full_name'])} completed the Board Member Profile Form.</p>"
+                            f"<p>Review their response and recommended contribution in the <a href='{escape(dashboard, quote=True)}'>Board Portfolio section</a>.</p>")
+                    await _send("NONPROFIT_SENDER", owner["email"],
+                                f"Board Member Profile Completed | {data['full_name']}", _wrap("Profile Completed", body))
+            except Exception:
+                # The saved response and portfolio eligibility do not depend on notification delivery.
+                pass
         return {"status": "submitted"}
 
     @router.post("/terms-agreements", status_code=201)

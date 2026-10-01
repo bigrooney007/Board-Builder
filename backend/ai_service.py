@@ -46,6 +46,22 @@ Never mention AI. The final resource must be ready to use.
 
 # generation type registry: module, title, schema description (JSON the model must return)
 GENERATION_TYPES = {
+    "recruitment_assessment_profiles": {"module": 2, "title": "Board Recruitment Assessment Profiles", "per_application": False, "schema": {
+        "priority_roles": [{
+            "role_name": "string — specific board-level leadership or expertise profile",
+            "why_this_person_is_important": "string — one sentence grounded in this organization's present board and priorities",
+            "how_this_person_can_support": "string — one sentence describing this person's board-level contribution",
+        }],
+        "recommended_count_statement": "string — a brief reason for the suggested number when the founder was unsure, otherwise empty string",
+    }, "note": "Use the founder's six answers as the authority. Compare the present board and other existing skills or networks with the founder's priorities, own ideas, missing support and desired number. Recommend a complementary, specific mix and explain each role in natural language. Return the exact requested number if specified. Avoid generic professions without an organization-specific reason, invented facts, daily staff duties and duplicates of capabilities already covered. Do not publish private gaps in recruitment copy. Never mention AI."},
+    "recruitment_communications": {"module": 4, "title": "Recruitment Decision And Check Emails", "per_application": False, "schema": {
+        "rejection": {"subject": "string", "body": "string — respectful application rejection"},
+        "ask_for_references": {"subject": "string", "body": "string — ask the candidate to reply with professional referees"},
+        "confirm_reference": {"subject": "string", "body": "string — ask a referee to reply with their experience of the candidate"},
+        "background_check": {"subject": "string", "body": "string — explain a requested background check without claiming it is complete"},
+        "conditional_offer": {"subject": "string", "body": "string — congratulate a new board member subject to pending checks and welcome them to onboarding"},
+        "unconditional_offer": {"subject": "string", "body": "string — congratulate and welcome a new board member without reference or background-check conditions"},
+    }, "note": "Prepare concise, reusable organization-level communication drafts for the recruitment process. Use the real organization, mission and founder signature. [CANDIDATE NAME] and [REFEREE NAME] may be used only where a recipient is unknown. Never invent a candidate, a completed interview or check, a meeting date, or a document link. The actual candidate-specific versions and secure onboarding packet will be prepared later from the selected person's record and saved meeting details. The reference confirmation must include practical questions inside the email and invite a direct reply, not a form. The conditional offer must clearly say references and background checks remain pending; the unconditional offer must omit both. Never mention AI."},
     "powerhouse_board_blueprint": {"module": 2, "title": "The Board Members Your Organization Needs", "per_application": False, "schema": {
         "powerhouse_board_overview": "string — 3-5 concise, organization-specific sentences describing what a Powerhouse Board for THIS organization needs to be capable of helping the organization accomplish. Do not list generic Board theory.",
         "powerhouse_board_matrix": [{
@@ -197,18 +213,18 @@ CHANNEL BRIEF — REFERRAL REQUEST MESSAGE (short referral DM):
 Write a concise direct-message version of the referral request. Briefly explain that the organization is intentionally strengthening/building its Board around a meaningful next stage. Name only the most important professional expertise being sought. Ask whether the recipient knows one or two strong people who may align with the mission and opportunity. Include the application link so it can be forwarded immediately. Do not ask the recipient themselves to join unless that is explicitly the purpose of the supplied context. Do not sound like mass recruitment spam."""},
     "general_interview_invitation": {"module": 4, "title": "General Interview Invitation", "per_application": False, "schema": {
         "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
-        "body": "A complete reusable interview invitation beginning Dear [APPLICANT NAME], using the organization's real information and founder signature. Use the exact supplied scheduling URL where available; otherwise say the organization will coordinate a convenient time directly. Do not invent candidate-specific facts.",
+        "body": "A complete reusable interview invitation beginning Dear [APPLICANT NAME], using the organization's real information and founder signature. Use the exact supplied scheduling URL or the actual available times and ask for a reply. Do not invent candidate-specific facts.",
     }, "note": """You are creating the organization's reusable professional Board interview invitation email.
 This is not generated from one candidate's individual application record. Therefore NEVER invent: the applicant's experience; their profession; what impressed the founder; why they were personally selected; specific qualifications; or anything else about them.
 Use [APPLICANT NAME] as the only permitted recipient placeholder.
-Use the organization's actual: name; mission/direction where useful; Board type; founder/contact information; interview scheduling URL where supplied.
+Use the organization's actual: name; mission/direction where useful; Board type; founder/contact information; interview scheduling link or availability where supplied.
 The email should:
 1. Begin: Dear [APPLICANT NAME],
 2. Thank them for their interest in the Board opportunity.
 3. State clearly that the organization would like to invite them to a Board interview/conversation.
 4. Explain briefly that the conversation will allow the organization to learn more about their experience and interest, share more about the organization and Board opportunity, answer their questions and explore mutual alignment.
-5. Use the exact real scheduling URL where supplied.
-6. If no scheduling URL is supplied, say naturally that a convenient interview time will be coordinated directly.
+5. Use the exact real scheduling URL where supplied. If the founder instead supplied available dates/times, include them exactly and ask the candidate to reply with their preferred time and meeting platform.
+6. Only if neither method is supplied, say naturally that a convenient interview time will be coordinated directly.
 7. Close with the founder's actual supplied signature/contact details.
 Never use: [Scheduling Link], [Calendly Link], [Organization Name], [Your Name], TBD, or any other placeholder besides [APPLICANT NAME].
 Never imply that being invited to interview means the applicant has been selected for the Board.
@@ -377,7 +393,7 @@ Never invent facts, roles, schedules, fundraising requirements, committees or ca
 Never mention AI."""},
     "interview_invitation": {"module": 4, "title": "Interview Invitation", "per_application": True, "schema": {
         "subject": "Exactly: Interview Invitation | Board Member Application — [actual organization name]",
-        "body": "The complete candidate-specific interview invitation email following the resource-specific instructions. Use the candidate's actual first name and the founder's actual signature. Use an actual supplied scheduling URL where available; otherwise say the organization will coordinate a convenient time directly.",
+        "body": "The complete candidate-specific interview invitation email following the resource-specific instructions. Use the candidate's actual first name and the founder's actual signature. Include the actual scheduling URL or available times and ask for a reply.",
     }, "note": """You are an experienced nonprofit Board recruitment consultant writing a professional interview invitation to ONE applicant whom the founder has already decided to invite to the interview stage.
 The selection decision has already been made by the founder. Do not evaluate, rank or decide whether this candidate deserves an interview. Your only job is to create the finished invitation.
 Use: the actual candidate's name; their application; their CV/resume where supplied; the Board role or expertise area they applied for where supplied; verified information about the organization; the actual Board type; and the actual interview scheduling information where supplied.
@@ -388,7 +404,7 @@ The email must:
 4. Briefly explain the purpose of the conversation: learn more about their experience; understand their interest in the mission; explore how their background could contribute to the Board; share more about the organization, its direction and the Board being built; answer their questions; determine whether the opportunity is mutually aligned.
 5. Where an actual Board role/expertise area is associated with this application, refer to it naturally if useful. Do not turn that role into an offer or responsibility.
 6. If a real interview scheduling URL is supplied, invite them to choose a convenient time using that exact link.
-7. If no scheduling URL is supplied, state naturally that the organization will coordinate a convenient interview time with them directly — never output [Scheduling Link], [Calendly Link] or TBD.
+7. If actual interview availability is supplied instead of a URL, include those exact dates/times and ask the candidate to reply with the time that works best and their preferred meeting platform. Never output [Scheduling Link], [Calendly Link] or TBD.
 8. Close warmly and professionally.
 9. Sign with the founder's actual supplied contact details.
 You may acknowledge something specific from the candidate's application ONLY when it is clearly supported and naturally useful. Do not manufacture praise simply to personalize the email — never 'you are an exceptional candidate', 'you are exactly what we need', 'your outstanding qualifications impressed us' or 'you are an excellent fit' unless the founder explicitly supplied that judgment.
@@ -1819,7 +1835,16 @@ def structured_to_display(generation_type: str, structured: dict) -> str:
         return _flush_left(str(structured.get("post_text", "")).strip())
     if generation_type == "referral_request_email":
         return _flush_left(str(structured.get("message", "")).strip())
-    if generation_type in {"candidate_referee_request", "reference_request_email", "referee_confirmation_email", "conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "interview_invitation", "before_interview_rejection", "after_interview_thank_you", "after_interview_email", "after_interview_rejection"}:
+    if generation_type == "recruitment_communications":
+        sections = []
+        for key, label in [("rejection", "Application Rejection"), ("ask_for_references", "Ask For References"),
+                           ("confirm_reference", "Confirm A Reference"), ("background_check", "Background Check"),
+                           ("conditional_offer", "Conditional Board Offer"), ("unconditional_offer", "Unconditional Board Offer")]:
+            item = structured.get(key) or {}
+            sections.append("\n\n".join(part for part in [label.upper(),
+                f"Subject: {item.get('subject', '')}", item.get("body", "")] if part))
+        return _flush_left("\n\n".join(sections))
+    if generation_type in {"candidate_referee_request", "reference_request_email", "referee_confirmation_email", "conditional_offer", "unconditional_offer", "onboarding_email", "formal_appointment_email", "interview_invitation", "general_interview_invitation", "portfolio_email", "before_interview_rejection", "after_interview_thank_you", "after_interview_email", "after_interview_rejection"}:
         subject = str(structured.get("subject", "")).strip()
         body = str(structured.get("body", "")).strip()
         return _flush_left("\n\n".join(part for part in [f"Subject: {subject}" if subject else "", body] if part))

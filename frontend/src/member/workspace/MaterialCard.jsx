@@ -85,7 +85,7 @@ export const SendMaterialButton = ({ type, applicationId, label = "Send", sentAt
   );
 };
 
-export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false, beforeGenerate, approvable = false, hideDisplay = false, summary = null, extraActions = null }) => {
+export const MaterialCard = ({ type, title, buttonLabel, description, applicationId = "", material, refresh, instructions = "", children, testId, shareable = false, beforeGenerate, approvable = false, hideDisplay = false, summary = null, extraActions = null, readOnly = false }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
@@ -161,7 +161,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
         <h3>{title}{approvable && <span className={`blog-status-badge ${approved ? "published" : "pending"}`} style={{ marginLeft: 10 }} data-testid={`status-${type}`}>{material ? (approved ? MC.statusApproved : MC.statusGenerated) : MC.statusNotGenerated}</span>}</h3>
         {material && !hideDisplay && (
           <label className="version-select">Version
-            <select value={material.current_version} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>
+            <select value={material.current_version} disabled={readOnly} onChange={(event) => setCurrent(event.target.value)} data-testid={`material-${type}-version-select`}>
               {material.versions.map((v) => <option key={v.version} value={v.version}>Version {v.version}{v.version === material.current_version ? " (Current)" : ""}{v.source === "edited" ? " — edited" : ""}</option>)}
             </select>
           </label>
@@ -169,7 +169,7 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
       </div>
       {description && <p className="material-description">{description}</p>}
       {children}
-      {!material && (
+      {!material && !readOnly && (
         <>
           <button className="button" disabled={busy} onClick={() => generate(false)} data-testid={`generate-${type}`}>
             <Sparkles size={16} /> {busy ? "Generating…" : buttonLabel}
@@ -181,14 +181,14 @@ export const MaterialCard = ({ type, title, buttonLabel, description, applicatio
         <>
           {hideDisplay ? summary : <pre className="material-display" data-testid={`material-${type}-display`}>{version.display_text}</pre>}
           <div className="material-actions">
-            {!hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> {MC.edit}</button>}
-            <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? MC.generating : MC.regenerate}</button>
+            {!readOnly && !hideDisplay && <button className="button button-back" onClick={() => { setDraft(version.display_text); setEditing(true); }} data-testid={`edit-${type}`}><Pencil size={14} /> {MC.edit}</button>}
+            {!readOnly && <button className="button button-back" disabled={busy} onClick={() => generate(true)} data-testid={`regenerate-${type}`}><RefreshCw size={14} /> {busy ? MC.generating : MC.regenerate}</button>}
             {busy && <p className="workspace-note" data-testid={`regeneration-wait-${type}`}>This may take a few minutes. If it isn't ready immediately, check back in about 5 minutes.</p>}
             {!hideDisplay && <button className="button button-back" onClick={() => navigator.clipboard?.writeText(version.display_text)} data-testid={`copy-${type}`}><Copy size={14} /> {MC.copy}</button>}
             {!hideDisplay && <button className="button button-back" onClick={() => downloadMaterialPdf(material)} data-testid={`download-${type}`}><Download size={14} /> {MC.downloadPdf}</button>}
             {shareable && <button className="button button-back" onClick={publish} data-testid={`share-${type}`}><Copy size={14} /> {MC.publish}</button>}
-            {shareable && <button className="button button-back" onClick={() => setDesignOpen(!designOpen)} data-testid={`edit-design-${type}`}><Pencil size={14} /> {MC.editDesign}</button>}
-            {approvable && !approved && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> {MC.approve}</button>}
+            {shareable && !readOnly && <button className="button button-back" onClick={() => setDesignOpen(!designOpen)} data-testid={`edit-design-${type}`}><Pencil size={14} /> {MC.editDesign}</button>}
+            {approvable && !approved && !readOnly && <button className="button" disabled={busy} onClick={approve} data-testid={`approve-${type}`}><CheckCircle2 size={15} /> {MC.approve}</button>}
             {extraActions}
           </div>
           {shareUrl && (

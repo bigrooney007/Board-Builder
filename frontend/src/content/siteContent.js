@@ -988,8 +988,8 @@ export const recruitmentHomeContent = {
   "subtitle": "Board Recruitment",
   "logoMark": "NB",
   "eyebrow": "BOARD RECRUITMENT",
-  "headline": "Recruit Board Members With Fundraising Experience",
-  "subheadline": "Bring in the people with the skills and experience your organization needs to raise money and move your mission forward.",
+  "headline": "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+  "subheadline": "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
   "primaryCta": "START MY BOARD RECRUITMENT",
   "introHeading": "Build The Board Your Organization Needs",
   "introParagraphs": [
@@ -997,7 +997,7 @@ export const recruitmentHomeContent = {
     "Start by telling us about your organization and the board you want to recruit. We will help you identify the exact type of people you need and show you how to recruit them."
   ],
   "formEyebrow": "LET'S START WITH YOUR ORGANIZATION",
-  "formHeading": "How Many Board Members Do You Want To Recruit?",
+  "formHeading": "Start Your Board Recruitment Campaign",
   "formText": "",
   "videoEyebrow": "A MESSAGE FROM ROONEY",
   "videoHeading": "How You Recruit Your Board Members Matters",

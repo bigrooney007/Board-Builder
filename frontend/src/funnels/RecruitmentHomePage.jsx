@@ -9,7 +9,10 @@ import "./recruitment-home.css";
 
 export default function RecruitmentHomePage({ form }) {
   const navigate = useNavigate();
-  const copy = useHomepageContent("recruitment", defaultCopy);
+  const savedCopy = useHomepageContent("recruitment", defaultCopy);
+  const copy = { ...savedCopy, headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+    subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
+    formHeading: "Start Your Board Recruitment Campaign" };
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 

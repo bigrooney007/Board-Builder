@@ -9,6 +9,10 @@ import LegalPage from "@/pages/LegalPage";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
 import RecruitFreePage from "@/funnels/RecruitFreePage";
+import RecruitQuestionsPage from "@/funnels/RecruitQuestionsPage";
+import RecruitCampaignSetupPage from "@/member/RecruitCampaignSetupPage";
+import RecruitAmplifyPage from "@/funnels/RecruitAmplifyPage";
+import BoardApplicantMarketplace from "@/public/BoardApplicantMarketplace";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
 import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import SupportedServiceThankYouPage from "@/funnels/SupportedServiceThankYouPage";
@@ -117,11 +121,14 @@ function CleanRoutes() {
 
       {/* Board Recruitment */}
       <Route path="/recruit" element={<RecruitFreePage />} />
+      <Route path="/recruit/questions" element={<RecruitQuestionsPage />} />
       <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
+      <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />
       <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
       <Route path="/supported-service/thank-you" element={<SupportedServiceThankYouPage />} />
       <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
+      <Route path="/app/board-recruitment/setup" element={<RecruitCampaignSetupPage />} />
       <Route path="/app/board-recruitment/questions" element={<RecruitmentGamePage />} />
       <Route path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions" replace />} />
       <Route path="/app/board-recruitment/onboarding-session" element={<RecruitmentOnboardingSessionPage />} />
@@ -130,6 +137,7 @@ function CleanRoutes() {
       <Route path="/app/recruitment/self-guided/materials" element={<MaterialsLibraryPage />} />
       <Route path="/app/recruitment/selection-offer" element={<SelectionOfferPage />} />
       <Route path="/board-opportunities/:slug/apply" element={<OpportunityApplyPage />} />
+      <Route path="/board-opportunities" element={<BoardApplicantMarketplace />} />
       <Route path="/apply/:token" element={<SavedProfileApplyPage />} />
       <Route path="/sign/:token" element={<SignAgreementPage />} />
       <Route path="/shared/:token" element={<SharedResourcePage />} />

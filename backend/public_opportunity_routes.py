@@ -45,6 +45,10 @@ def public_opportunity_view(opportunity: dict, board_opportunity_display: str, s
         "slug": opportunity["slug"], "status": opportunity["status"],
         "organization_name": org,
         "mission": mission,
+        "board_opportunity": board_opportunity_display,
+        "roles_sought": opportunity.get("email_content", {}).get("candidate_needs", "") or structured.get("who_we_are_looking_for", ""),
+        "expectations": structured.get("board_expectations", "") or opportunity.get("email_content", {}).get("commitment", ""),
+        "location": opportunity.get("email_content", {}).get("location", "") or structured.get("meeting_time_and_location", ""),
         "board_label": board_label,
         "intro_sentences": intro_sentences,
         "logo_data": opportunity.get("logo_data", ""),
@@ -69,10 +73,32 @@ def create_public_opportunity_router(db) -> APIRouter:
     async def opportunity_content(opportunity: dict):
         material = await db.generated_materials.find_one(
             {"user_id": opportunity["user_id"], "type": "board_opportunity", "application_id": ""}, {"_id": 0})
-        if not material:
+        if not material or material.get("status") != "Approved":
             return "", {}
         current = next((v for v in material["versions"] if v["version"] == material["current_version"]), {})
         return current.get("display_text", ""), (current.get("structured") or {})
+
+    @router.get("/board-opportunities")
+    async def list_board_opportunities():
+        """The public marketplace exposes only live listings and approved campaign information."""
+        rows = await db.opportunities.find(
+            {"status": "Published"}, {"_id": 0, "user_id": 1, "slug": 1, "organization_name": 1,
+                                      "email_content": 1, "published_at": 1},
+        ).sort("published_at", -1).to_list(200)
+        listings = []
+        for row in rows:
+            display, structured = await opportunity_content(row)
+            content = row.get("email_content") or {}
+            listings.append({
+                "slug": row["slug"], "organization_name": row["organization_name"],
+                "mission": content.get("mission", ""),
+                "roles_sought": content.get("candidate_needs", "") or structured.get("who_we_are_looking_for", ""),
+                "expectations": structured.get("board_expectations", "") or content.get("commitment", ""),
+                "location": content.get("location", "") or structured.get("meeting_time_and_location", ""),
+                "summary": structured.get("introduction", "") or display[:350],
+                "published_at": row.get("published_at", ""),
+            })
+        return {"opportunities": listings}
 
     async def store_cv(cv: UploadFile, application_id: str) -> dict:
         extension = os.path.splitext(cv.filename or "")[1].lower()
@@ -146,10 +172,10 @@ def create_public_opportunity_router(db) -> APIRouter:
         display, structured = await opportunity_content(opportunity)
         profile = await db.recruitment_profiles.find_one({"user_id": opportunity["user_id"]}, {"_id": 0, "data": 1, "branding": 1})
         data = (profile or {}).get("data", {})
-        lead = await db.funnel_leads.find_one({"member_user_id": opportunity["user_id"]}, {"_id": 0, "answers": 1})
+        lead = await db.funnel_leads.find_one({"member_user_id": opportunity["user_id"]}, {"_id": 0, "answers": 1, "lead_source": 1})
         form = (lead or {}).get("answers", {})
         mission = data.get("mission") or form.get("mission") or ""
-        board_type = data.get("board_kind") or form.get("board_type") or form.get("board_kind") or ""
+        board_type = data.get("board_kind") or (form.get("board_type") if (lead or {}).get("lead_source") != "recruitment_free_assessment" else "") or form.get("board_kind") or ""
         view = public_opportunity_view(opportunity, display, structured, mission, board_type)
         view["logo_data"] = ((profile or {}).get("branding") or {}).get("logo_data", "")
         return view

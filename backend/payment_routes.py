@@ -27,6 +27,10 @@ class RooneyCheckoutRequest(BaseModel):
     internal_test: bool = False
 
 
+class AmplifyCheckoutRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+
+
 class DirectProjectCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
     result_token: str = ""
@@ -77,6 +81,36 @@ def resolve_offer_price_id(env_key: str, lookup_key: str, product_name: str, uni
     )
     _price_cache[lookup_key] = price.id
     return _price_cache[lookup_key]
+
+
+async def notify_amplify_purchase(db, session_id: str) -> None:
+    """Notify the operator once after Stripe confirms the separate manual service payment."""
+    txn = await db.payment_transactions.find_one(
+        {"session_id": session_id, "offer_source": "recruitment_amplify", "payment_status": "paid"}, {"_id": 0})
+    if not txn:
+        return
+    claimed = await db.payment_transactions.update_one(
+        {"session_id": session_id, "admin_notification_status": {"$exists": False}},
+        {"$set": {"admin_notification_status": "Sending"}},
+    )
+    if not claimed.modified_count:
+        return
+    try:
+        from html import escape
+        from opportunity_emails import _send, _wrap
+        org = txn.get("organization") or "Unknown organization"
+        buyer = txn.get("lead_email") or txn.get("payment_email") or "Unknown email"
+        body = (f"<p>{escape(org)} purchased Amplify My Campaign for $497.</p>"
+                f"<p>Customer: {escape(buyer)}</p><p>Campaign: {escape(txn.get('opportunity_id') or '')}</p>"
+                f"<p>Stripe checkout session: {escape(session_id)}</p>"
+                "<p>Handle the additional outreach manually. The original recruitment campaign remains live.</p>")
+        await _send("NONPROFIT_SENDER", os.environ["OWNER_NOTIFICATION_EMAIL"],
+                    f"Amplify My Campaign Purchased | {org}", _wrap("New Amplification Purchase", body))
+        await db.payment_transactions.update_one({"session_id": session_id},
+            {"$set": {"admin_notification_status": "Sent", "admin_notification_at": datetime.now(timezone.utc).isoformat()}})
+    except Exception as exc:
+        await db.payment_transactions.update_one({"session_id": session_id},
+            {"$set": {"admin_notification_status": "Failed", "admin_notification_error": str(exc)[:300]}})
 
 
 def resolve_diy_price_id() -> str:
@@ -201,6 +235,44 @@ def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
+    @router.post("/amplify-checkout")
+    async def amplify_checkout(payload: AmplifyCheckoutRequest):
+        opportunity = await db.opportunities.find_one(
+            {"amplify_token": payload.token, "status": "Published"}, {"_id": 0})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="This campaign amplification offer is no longer available")
+        prior_purchase = await db.payment_transactions.find_one(
+            {"opportunity_id": opportunity["opportunity_id"], "offer_source": "recruitment_amplify", "payment_status": "paid"},
+            {"_id": 0, "session_id": 1})
+        if prior_purchase:
+            raise HTTPException(status_code=409, detail="Amplification has already been purchased for this campaign")
+        owner = await db.members.find_one({"user_id": opportunity["user_id"]}, {"_id": 0, "email": 1}) or {}
+        if not owner.get("email"):
+            raise HTTPException(status_code=409, detail="Campaign owner email is unavailable")
+        price_id = resolve_offer_price_id("STRIPE_RECRUITMENT_AMPLIFY_497_PRICE_ID", "recruitment_amplify_497",
+                                          "Amplify My Board Recruitment Campaign", 49700)
+        site = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+        kwargs = {"line_items": [{"price": price_id, "quantity": 1}], "mode": "payment",
+                  "customer_email": owner["email"],
+                  "success_url": f"{site}/recruit/amplify?paid=1&session_id={{CHECKOUT_SESSION_ID}}",
+                  "cancel_url": f"{site}/recruit/amplify?token={payload.token}&cancelled=1",
+                  "metadata": {"offer_source": "recruitment_amplify", "selected_tier": "497",
+                               "opportunity_id": opportunity["opportunity_id"], "organization": opportunity["organization_name"]}}
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            if "managed payments" not in str(exc).lower() and "ineligible" not in str(exc).lower():
+                raise
+            session = stripe.checkout.Session.create(**kwargs, automatic_tax={"enabled": True}, billing_address_collection="required")
+        ts = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "opportunity_id": opportunity["opportunity_id"],
+            "organization": opportunity["organization_name"], "lead_email": owner["email"],
+            "offer_source": "recruitment_amplify", "selected_tier": "497", "amount": 49700,
+            "currency": "usd", "status": "initiated", "payment_status": "pending", "created_at": ts, "updated_at": ts,
+        })
+        return {"checkout_url": session.url}
+
     @router.get("/flow-status/{session_id}")
     async def flow_status(session_id: str, flow: str):
         contracts = {
@@ -244,6 +316,11 @@ def create_payment_router(db) -> APIRouter:
         lead = await db.funnel_leads.find_one({"lead_id": payload.lead_id}, {"_id": 0})
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found")
+        if lead.get("lead_source") == "recruitment_free_assessment" and payload.tier == "497":
+            answers = lead.get("answers") or {}
+            required = ("mission", "present_board", "desired_board_members", "strengthen_areas", "board_type", "why_join")
+            if any(not str(answers.get(key) or "").strip() for key in required):
+                raise HTTPException(status_code=409, detail="Complete and save all six Recruitment Questions before unlocking your campaign")
         if lead["offer_source"] == "recruitment":
             # The clean Recruitment funnel is the live $497 sales flow.
             paid_live = payload.tier == "497" or os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true"
@@ -1025,7 +1102,7 @@ def create_payment_router(db) -> APIRouter:
         if transaction["payment_status"] != "paid":
             try:
                 session = stripe.checkout.Session.retrieve(session_id)
-                if session.payment_status == "paid" or session.status == "complete":
+                if session.payment_status == "paid":
                     now = datetime.now(timezone.utc).isoformat()
                     details = session.customer_details if session.customer_details else None
                     await db.payment_transactions.update_one(
@@ -1033,6 +1110,8 @@ def create_payment_router(db) -> APIRouter:
                         {"$set": {"status": "completed", "payment_status": "paid", "payment_email": (details.email if details else "") or "", "payment_phone": (details.phone if details else "") or "", "updated_at": now}},
                     )
                     transaction.update({"status": "completed", "payment_status": "paid"})
+                    if transaction.get("offer_source") == "recruitment_amplify":
+                        await notify_amplify_purchase(db, session_id)
                     try:
                         from marketing_service import stop_recruitment_nurture_for_purchase
                         buyer_email = (session.customer_details.email if session.customer_details else "") or ""
@@ -1080,11 +1159,13 @@ def create_stripe_webhook_router(db) -> APIRouter:
             )
             if item.get("payment_status", "paid") == "paid":
                 await _stop_nurture_after_paid(item)
+                await notify_amplify_purchase(db, item["id"])
         elif event_type == "checkout.session.async_payment_succeeded":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"]}, {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}}
             )
             await _stop_nurture_after_paid(item)
+            await notify_amplify_purchase(db, item["id"])
         elif event_type == "checkout.session.async_payment_failed":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"], "payment_status": {"$ne": "paid"}},

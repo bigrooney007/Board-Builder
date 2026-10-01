@@ -216,4 +216,11 @@ async def automation_loop(db) -> None:
         if schedule_matches(now):
             await send_weekly_nonprofit_sales_email(db, reference=now)
         await send_guided_followups(db, reference=now)
+        try:
+            from recruitment_followups import send_amplify_followups, send_recruitment_recovery
+            await send_recruitment_recovery(db, now)
+            await send_amplify_followups(db, now)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Recruitment follow-up cycle failed")
         await asyncio.sleep(60)

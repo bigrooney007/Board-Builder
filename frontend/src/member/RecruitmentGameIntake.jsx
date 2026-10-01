@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { NarrationControl, isNarrationMuted } from "@/game/NarrationControl";
 import { memberApi } from "./api";
+import axios from "axios";
 
 const BASE = process.env.REACT_APP_BACKEND_URL;
 
@@ -31,62 +32,54 @@ const QUESTIONS = [
     type: "textarea",
   },
   {
-    key: "support_needs",
     audio: "rct_question_4",
-    heading: "Where Does Your Organization Need More Board Support?",
-    question: "What areas need stronger support, experience, relationships or leadership, and why?",
-    helper: "Think about where the organization is struggling, where leadership capacity is thin, what relationships are missing and what expertise would help the organization move forward.",
+    heading: "Where Is Your Organization Right Now?",
+    question: "What is happening in your organization right now, and what are the most important things you want your board to help you accomplish next?",
+    helper: "Tell us about your current situation and priorities in your own words. We will use this alongside the organization details you already gave us.",
+    key: "board_type",
     type: "textarea",
   },
   {
-    key: "board_type",
+    key: "support_needs",
     audio: "rct_question_5",
-    heading: "What Kind Of Board Do You Want To Build?",
-    question: "Choose the option that best describes how you want your board to function.",
-    helper: "This helps us recommend people who fit the way you actually want the board to work.",
-    type: "select",
-    options: [
-      "Working Board",
-      "Governance Board",
-      "Advisory Board",
-      "Hybrid Working + Governance Board",
-      "I am not sure yet",
-      "Other",
-    ],
+    heading: "Where Do You Need Their Support?",
+    question: "How many new board members do you want to bring in, and in which areas does your organization need their support most?",
+    helper: "You can change the number you gave us if your thinking has shifted. Think about leadership, relationships, fundraising, governance, and the work ahead.",
+    type: "textarea",
   },
   {
     key: "why_join",
     audio: "rct_question_6",
-    heading: "Why Should Anybody Join Your Board?",
-    question: "What would make serving on your board meaningful or valuable to the right person?",
-    helper: "Think about the mission they can help advance, what they can help build, the influence they can have, the people they can serve, the relationships they can develop or the leadership experience they can gain.",
+    heading: "What Do You Already Have, And What Is Missing?",
+    question: "Looking at your board and the people around your organization, what skills, experience, relationships or capabilities do you already have, and what is still missing?",
+    helper: "Include strengths beyond the current board if they are available to your organization. This helps us avoid recommending more of what you already have.",
     type: "textarea",
   },
 ];
 
-export const RecruitmentGameIntake = ({ onComplete }) => {
+export const RecruitmentGameIntake = ({ onComplete, publicToken = "" }) => {
   const [assessment, setAssessment] = useState(null);
   const [answers, setAnswers] = useState({});
   const [step, setStep] = useState(0);
-  const [otherBoardType, setOtherBoardType] = useState("");
+  const [desiredCount, setDesiredCount] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [clips, setClips] = useState({});
   const audioRef = useRef(null);
 
   useEffect(() => {
-    memberApi.get("/recruit/free/member-assessment/current").then(({ data }) => {
+    const load = publicToken
+      ? axios.get(`${BASE}/api/recruit/free/${encodeURIComponent(publicToken)}`)
+      : memberApi.get("/recruit/free/member-assessment/current");
+    load.then(({ data }) => {
       setAssessment(data);
+      setDesiredCount(data.desired_count ? String(data.desired_count) : "not_sure");
       const loaded = data.answers || {};
       setAnswers(loaded);
       const first = QUESTIONS.findIndex(({ key }) => !String(loaded[key] || "").trim());
       setStep(first < 0 ? QUESTIONS.length : first);
-      if (loaded.board_type && !QUESTIONS[4].options.includes(loaded.board_type)) {
-        setAnswers((current) => ({ ...current, board_type: "Other" }));
-        setOtherBoardType(loaded.board_type);
-      }
     }).catch((e) => setError(e.response?.data?.detail || "We could not open your six Recruitment Questions."));
-  }, []);
+  }, [publicToken]);
 
   useEffect(() => {
     memberApi.get("/game/voice/tutorial/recruitment")
@@ -106,11 +99,10 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
   }, [clips]);
 
   useEffect(() => {
-    if (step < QUESTIONS.length) play(QUESTIONS[step].audio);
+    if (step < 3) play(QUESTIONS[step].audio);
   }, [step, clips, play]);
 
   const effectiveAnswer = (question) => {
-    if (question.key === "board_type" && answers.board_type === "Other") return otherBoardType.trim();
     return String(answers[question.key] || "").trim();
   };
 
@@ -120,10 +112,12 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
     if (!text) return;
     setBusy(true); setError("");
     try {
-      await memberApi.put(`/recruit/free/${assessment.token}/answer`, { question: step + 1, text });
+      const payload = { question: step + 1, text, ...(step === 4 ? { desired_count: desiredCount || "not_sure" } : {}) };
+      if (publicToken) await axios.put(`${BASE}/api/recruit/free/${encodeURIComponent(publicToken)}/answer`, payload);
+      else await memberApi.put(`/recruit/free/${assessment.token}/answer`, payload);
       setAnswers((current) => ({
         ...current,
-        [question.key]: question.key === "board_type" && current.board_type === "Other" ? "Other" : text,
+        [question.key]: text,
       }));
       if (step < QUESTIONS.length - 1) setStep(step + 1);
       else {
@@ -142,24 +136,24 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
     <div className="sgr-question-complete" data-testid="recruitment-questions-complete">
       <CheckCircle2 size={52} />
       <p className="eyebrow">SIX QUESTIONS COMPLETE</p>
-      <h2>Your Recruitment Context Is Saved</h2>
-      <p>We are already using your answers to identify the exact board members your organization needs. You can return to the dashboard while that work continues underneath.</p>
+      <h2>Your Recruitment Assessment Is Complete</h2>
+      <p>Your answers are saved. Unlock your campaign to see the exact board profiles recommended for your organization, review your materials, and launch recruitment.</p>
       <div className="sgr-row-actions">
         <button className="button button-outline" onClick={() => setStep(0)}>REVIEW MY ANSWERS</button>
-        <button className="button" onClick={onComplete}>RETURN TO DASHBOARD</button>
+        <button className="button" onClick={onComplete}>{publicToken ? "UNLOCK MY CAMPAIGN" : "CONTINUE TO CAMPAIGN"}</button>
       </div>
     </div>
   );
 
   const question = QUESTIONS[step];
-  const currentValue = question.key === "board_type" ? answers.board_type || "" : answers[question.key] || "";
+  const currentValue = answers[question.key] || "";
   const canContinue = Boolean(effectiveAnswer(question));
 
   return (
     <div className="sgr-question-screen" data-testid={`recruitment-question-${step + 1}`}>
       <div className="sgr-question-topline">
         <span>QUESTION {step + 1} OF {QUESTIONS.length}</span>
-        <NarrationControl audioRef={audioRef} onReplay={() => play(question.audio)} />
+        {step < 3 && <NarrationControl audioRef={audioRef} onReplay={() => play(question.audio)} />}
       </div>
       <div className="sgr-question-progress" aria-hidden="true">
         {QUESTIONS.map((_, index) => <span key={index} className={index <= step ? "active" : ""} />)}
@@ -171,40 +165,20 @@ export const RecruitmentGameIntake = ({ onComplete }) => {
       </div>
 
       <div className="sgr-question-answer">
-        {question.type === "select" ? (
-          <>
-            <div className="sgr-board-type-grid">
-              {question.options.map((option) => (
-                <button
-                  type="button"
-                  key={option}
-                  className={`sgr-choice-card ${currentValue === option ? "selected" : ""}`}
-                  onClick={() => setAnswers({ ...answers, board_type: option })}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            {currentValue === "Other" && (
-              <input
-                autoFocus
-                value={otherBoardType}
-                onChange={(event) => setOtherBoardType(event.target.value)}
-                placeholder="Describe the kind of board you want to build"
-                data-testid="recruitment-question-5-other"
-              />
-            )}
-          </>
-        ) : (
-          <textarea
+        <textarea
             rows={7}
             value={currentValue}
             onChange={(event) => setAnswers({ ...answers, [question.key]: event.target.value })}
             placeholder="Type your answer in your own words…"
             data-testid={`recruitment-question-${step + 1}-input`}
           />
-        )}
       </div>
+      {step === 4 && <label className="field"><span>How many new Board Members do you want to recruit?</span>
+        <select value={desiredCount} onChange={(event) => setDesiredCount(event.target.value)} data-testid="recruitment-desired-count">
+          <option value="not_sure">I'm not sure yet</option>
+          {Array.from({ length: 50 }, (_, index) => <option value={String(index + 1)} key={index + 1}>{index + 1}</option>)}
+        </select>
+      </label>}
 
       {error && <p className="submit-error">{error}</p>}
       <div className="sgr-question-actions">
