@@ -53,7 +53,11 @@ function fallbackContent(page) {
   // A useful public page remains available before React loads and when JavaScript is unavailable.
   const paragraphs = page.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
   const steps = page.steps.length ? `<h2>How it works</h2><ol>${page.steps.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : "";
-  const links = pages.filter((item) => item.path !== page.path).map((item) => `<li><a href="${item.path}">${escapeHtml(item.name)}</a></li>`).join("");
+  const links = pages.filter((item) => item.path !== page.path).map((item) => {
+    const name = page.path === "/board-fundraising-game" && item.path === "/organize-board-fundraising-game"
+      ? "Facilitated Board Fundraising Meeting" : item.name;
+    return `<li><a href="${item.path}">${escapeHtml(name)}</a></li>`;
+  }).join("");
   return `<main id="landing-page-summary" style="max-width:900px;margin:56px auto;padding:24px;font-family:Inter,Arial,sans-serif;line-height:1.7;color:#0f172a"><p style="color:#4f46e5;font-weight:700">${SITE_NAME}</p><h1>${escapeHtml(page.headline)}</h1>${paragraphs}${steps}<nav aria-label="Explore Nonprofit Board Builder"><h2>Explore our pathways</h2><ul>${links}</ul></nav><noscript><p>Enable JavaScript to use the interactive forms and dashboard.</p></noscript></main>`;
 }
 

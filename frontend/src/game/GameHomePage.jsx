@@ -94,11 +94,39 @@ export default function GameHomePage() {
           </div>
         </section>
 
-        <section className="bfg-landing-principle" aria-label="The Board Fundraising Game">
+        <section className="bfg-landing-principle" aria-label="Get your board fundraising">
           <p>{content.hero_explanation}</p>
         </section>
 
         <div className="bfg-light">
+        <section className="bfg-section bfg-intro" data-testid="bfg-intro-section">
+          <h2 data-testid="bfg-intro-heading">{content.intro_heading}</h2>
+          {(content.intro_paragraphs || []).slice(0, 3).map((paragraph, index) => (
+            <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
+          ))}
+        </section>
+
+        <section className="bfg-section" data-testid="bfg-stages-section">
+          <div className="bfg-section-head">
+            <p className="bfg-eyebrow">{content.stages_label}</p>
+            <h2>{content.stages_heading}</h2>
+          </div>
+          <div className="bfg-stages">
+            {content.stages.map((stage, index) => (
+              <article className="bfg-stage" key={stage.key} data-testid={`bfg-stage-${stage.key}`}>
+                <span className="bfg-stage-number">{stage.number || index + 1}</span>
+                <h3>{stage.title}</h3>
+                <div className="bfg-stage-paras">
+                  {stage.items.map((item) => <p key={item}>{item}</p>)}
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="bfg-stages-cta">
+            <button className="bfg-btn bfg-btn-primary" onClick={scrollToForm} data-testid="bfg-stages-cta">{content.stages_cta_label}</button>
+          </div>
+        </section>
+
         <section id="bfg-goal-form" className="bfg-goal-section" aria-labelledby="bfg-goal-heading">
             <div className="bfg-goal-box" data-testid="bfg-goal-box">
               <h2 id="bfg-goal-heading" data-testid="bfg-goal-heading">START WITH YOUR FUNDRAISING GOAL</h2>
@@ -130,39 +158,6 @@ export default function GameHomePage() {
               </button>
               <p className="bfg-start-supporting">{content.start_supporting}</p>
             </div>
-        </section>
-        <section className="bfg-section bfg-agent-intro" aria-labelledby="bfg-agent-intro-heading">
-          <h2 id="bfg-agent-intro-heading">How The Game Begins</h2>
-          <p>{content.agent_intro}</p>
-          <ol>{(content.agent_questions || []).map((question) => <li key={question}>{question}</li>)}</ol>
-          <p>{content.agent_followup}</p>
-        </section>
-        <section className="bfg-section bfg-intro" data-testid="bfg-intro-section">
-          <h2 data-testid="bfg-intro-heading">{content.intro_heading}</h2>
-          {(content.intro_paragraphs || []).slice(0, 3).map((paragraph, index) => (
-            <p key={index} data-testid={`bfg-intro-paragraph-${index + 1}`}>{paragraph}</p>
-          ))}
-        </section>
-
-        <section className="bfg-section" data-testid="bfg-stages-section">
-          <div className="bfg-section-head">
-            <p className="bfg-eyebrow">{content.stages_label}</p>
-            <h2>{content.stages_heading}</h2>
-          </div>
-          <div className="bfg-stages">
-            {content.stages.map((stage, index) => (
-              <article className="bfg-stage" key={stage.key} data-testid={`bfg-stage-${stage.key}`}>
-                <span className="bfg-stage-number">{stage.number || index + 1}</span>
-                <h3>{stage.title}</h3>
-                <div className="bfg-stage-paras">
-                  {stage.items.map((item) => <p key={item}>{item}</p>)}
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="bfg-stages-cta">
-            <button className="bfg-btn bfg-btn-primary" onClick={scrollToForm} data-testid="bfg-stages-cta">{content.stages_cta_label}</button>
-          </div>
         </section>
 
         <section className="bfg-section" data-testid="bfg-outcomes-section">

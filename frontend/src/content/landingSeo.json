@@ -44,26 +44,27 @@
   },
   {
     "path": "/board-fundraising-game",
-    "name": "Board Fundraising Game",
-    "title": "Board Fundraising Game | Get Your Board Working With You to Raise Money",
-    "description": "Fundraising should not depend entirely on you. Start the Board Fundraising Game with your goal and five questions, then bring in your board to build a strategy together.",
-    "headline": "Get Your Board Working With You to Raise Money",
-    "eyebrow": "BOARD FUNDRAISING GAME",
-    "image": "board-fundraising-game-v2.png",
+    "name": "Board Fundraising Activation",
+    "title": "Get Your Board Fundraising | Nonprofit Board Builder",
+    "description": "Activate and equip your board to raise money from your next meeting. Build the fundraising strategy together, with a portfolio and personal assistant for each member.",
+    "headline": "Get Your Board Members Raising Money From Your Next Board Meeting",
+    "eyebrow": "BOARD FUNDRAISING",
+    "image": "board-fundraising-activation-v3.png",
     "imageLines": [
       "Get Your Board",
-      "Working With You."
+      "Fundraising From Your",
+      "Next Board Meeting."
     ],
-    "imageSub": "Fundraising should not depend entirely on you.",
+    "imageSub": "Build the fundraising strategy together and equip each member to begin.",
     "paragraphs": [
-      "Start with your organization's fundraising goal and five practical questions. Your answers stay in your own words as you begin the Board Fundraising Game.",
-      "Invite your board to share their own perspectives, agree on the strongest fundraising opportunities in the group game and build a strategy with clear roles for everyone."
+      "You and your board will decide who your organization's primary funding audience will be, how to find and attract them on a daily basis, and the exact process to raise money from them.",
+      "Getting your board members to raise money starts with working with them to create your organization's fundraising strategy.",
+      "By the end of the meeting, your board members will know the ideal funders you identified together and recognize them within their networks. They can recommend prospects and make introductions, then raise money using the process you all agreed on as a board."
     ],
     "steps": [
-      "Start the game yourself with a goal and five questions.",
-      "Invite each board member to answer the same questions and choose how they can participate.",
-      "Play the group Board Fundraising Game and agree on the best opportunities.",
-      "Build and execute your strategy with roles, portfolios and support."
+      "Before Your Next Board Meeting: Share your ideas on who the ideal funding audience of your organization is, where to find and attract them daily, the exact process to raise money from them, and what you will ask them to fund and how much. Each board member also shares their own ideas through the Board Fundraising Planning Form and says how they want to be involved.",
+      "During Your Next Board Meeting: Based on everyone's ideas, you and your board agree on your organization's primary funding audience and how you will raise money from them. You also agree on the role each board member will play in raising money and building your organization's fundraising system.",
+      "After Your Next Board Meeting: Each board member receives a copy of the strategy and a Board Fundraising Portfolio showing how they will support your organization to raise money. Their personal AI fundraising assistant understands the strategy and their role. It creates the content or materials they need, so they can begin working with you to raise money without always running back to you."
     ]
   },
   {

@@ -109,6 +109,12 @@
   font-size: 16px;
   font-weight: 800;
 }
+.bfg-home-shell .bfg-game-landing .bfg-btn-primary {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.4;
+  text-align: center;
+}
 .bfg-home-shell .bfg-game-landing a.bfg-btn-primary:hover,
 .bfg-home-shell .bfg-game-landing button.bfg-btn-primary:hover,
 .bfg .bfg-demo-page a.bfg-btn-primary:hover { background: #312e81; border-color: #312e81; color: #fff; }
