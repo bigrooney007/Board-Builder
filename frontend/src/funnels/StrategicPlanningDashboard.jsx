@@ -166,9 +166,15 @@ export default function StrategicPlanningDashboard(){
     setBusy("");
   };
 
-  const saveMeeting=()=>act("meeting",()=>axios.put(`${API}/guided/strategic-planning/planning-meeting`,{session_id:sid,...meeting}));
+  const saveMeeting=()=>act("meeting",async()=>{
+    await axios.put(`${API}/guided/strategic-planning/planning-meeting`,{session_id:sid,...meeting});
+    setOpen("4");
+    window.location.hash="sp-board";
+  });
   const sendInvite=()=>act("invite",async()=>{
     await axios.post(`${API}/guided/strategic-planning/invite`,{session_id:sid,...invite});
+    const saved=await axios.post(`${API}/members/dashboard-return-link`,{product:"strategic-planning",session_id:sid}).catch(()=>null);
+    if(saved?.data?.sent)setMessage("Invitation sent. Your private dashboard link was emailed to you. Bookmark it for easy access.");
     setInvite({name:"",email:""});
   });
   const generateGuide=()=>act("guide",()=>axios.post(`${API}/guided/strategic-planning/facilitation-guide`,{session_id:sid}));
@@ -234,17 +240,19 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the same Strategic Planning Form to each Board Member and see every completed response in one place." status={!leadDone?"Locked":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!leadDone} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
+      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the Strategic Planning Form to each Board Member and see every completed response in one place." status={!formReady?"Preparing":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!meetingReady} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
         <div className="sp-clean-stage">
           <h2>Invite Board Members To Think Before The Meeting</h2>
           <p>Add each Board Member's name and email. They receive their own secure form link and the meeting date. Their original ideas remain traceable to them during the live session.</p>
+          {!formReady&&<p className="workspace-note">Preparing the Board form from your saved organization information. Invitations open as soon as it is ready.</p>}
           <div className="sp-invite-grid">
             <input placeholder="Board Member Name" value={invite.name} onChange={e=>setInvite({...invite,name:e.target.value})}/>
             <input type="email" placeholder="Board Member Email" value={invite.email} onChange={e=>setInvite({...invite,email:e.target.value})}/>
-            <Button disabled={!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={14}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
+            <Button disabled={!formReady||!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={14}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
           </div>
           {formLink&&<div className="sp-linkbox"><span>{formLink}</span><button onClick={()=>copy(formLink)}><Copy size={14}/> COPY GENERAL FORM LINK</button></div>}
         </div>
+        {boardPeople.length>0&&<div className="sp-actions"><Button secondary onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}`)}>CONTINUE TO DASHBOARD</Button><p>You can also leave now and return using the private link emailed to you.</p></div>}
         <div className="sp-response-list">
           {!boardPeople.length?<p className="sp-empty">No Board Members added yet.</p>:boardPeople.map(person=><article key={person.participant_id}>
             <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small>

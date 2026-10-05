@@ -36,7 +36,6 @@ export const GUIDED_PRODUCT_CONFIG={
     supportedTitle:"Build Your Strategic Plan With Rooney",
     supportedDescription:"Rooney works with you and your Board to facilitate the planning process and carry it through adoption and delegation.",
     supportedFeatures:["Prepare the planning process with you","Facilitate the Strategic Planning session","Create the final Strategic Plan from the Board's decisions","Support adoption, delegation and Board leadership handoff"],
-    guarantee:"Complete the guided process. If the platform does not help your Board produce an adopted, usable Strategic Plan with clear next responsibilities, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Give The Board The Real Starting Information","Tell the platform about your mission, goals, objectives, programs, people, systems, fundraising, technology, budget and present reality."],
       ["2","Everyone Contributes Their Own Thinking","You and your Board Members complete the same Strategic Planning Form before the meeting so every person's original ideas are preserved."],
@@ -80,7 +79,6 @@ export const GUIDED_PRODUCT_CONFIG={
     supportedTitle:"Recommit Your Board With Rooney",
     supportedDescription:"Rooney works directly with you to initiate the process, guide the conversations and help rebuild an active Board.",
     supportedFeatures:["Initiate the Board recommitment process with you","Work through each Board Member's response","Guide the one-on-one recommitment conversations","Help get active members working with you again"],
-    guarantee:"Complete the guided process. If the platform does not help you reach a clear, usable recommitment decision and next step for each participating Board Member, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Send The Recommitment Form","Use the email and form we provide to invite each disengaged, inactive or passive board member to respond."],
       ["2","Let Them Tell You The Truth","They explain why they disengaged, whether they are ready to recommit, how they can contribute satisfactorily or whether they want to step down."],
@@ -125,7 +123,7 @@ export function GuidedVideoPage({ product: explicitProduct }){
  useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");if(!r.data.prepayment_complete){nav(`/${product}/start?token=${encodeURIComponent(token)}`,{replace:true});return}setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product,nav]);
  const buy=async(pathway)=>{setBusy(pathway);setError("");try{trackPlatformEvent(product,"checkout_started");let r=pathway==="supported"?await axios.post(`${API}/payments/supported-checkout`,{origin_url:window.location.origin,result_token:token,product}):await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy("")}};
  return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{maxWidth:1120}}><p className="bfg-eyebrow">YOUR ANSWERS ARE SAVED</p><h1>{c.videoTitle}</h1><h2>Watch Rooney explain how we will move forward with what you shared.</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
- selfGuided={{title:c.selfGuidedTitle,description:"Use the complete platform with your Board and work through the process yourselves.",features:c.selfGuidedFeatures,guarantee:c.guarantee,button:product==="strategic-planning"?"START MY SELF-GUIDED PLANNING — $497":"START MY SELF-GUIDED RECOMMITMENT — $497"}}
+ selfGuided={{title:c.selfGuidedTitle,description:"Use the complete platform with your Board and work through the process yourselves.",features:c.selfGuidedFeatures,button:product==="strategic-planning"?"START MY SELF-GUIDED PLANNING — $497":"START MY SELF-GUIDED RECOMMITMENT — $497"}}
  supported={{title:c.supportedTitle,description:c.supportedDescription,features:c.supportedFeatures,price:c.supportedPrice,button:`WORK WITH ROONEY — ${c.supportedPrice}`}}/>
  <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`}/></section></main></BfgShell>
 }

@@ -756,7 +756,7 @@ def create_payment_router(db) -> APIRouter:
             "mode": "payment",
             "customer_email": lead.get("email", ""),
             "phone_number_collection": {"enabled": True},
-            "success_url": f"{payload.origin_url}{base_path}/payment-confirmed?session_id={{CHECKOUT_SESSION_ID}}",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}{base_path}/video?token={payload.result_token}&checkout=cancelled",
             "metadata": {"offer_source": product.replace("-", "_"), "selected_tier": "497", "purchase_source": purchase_source, "offer": product_name, "guided_lead_token": payload.result_token},
         }
@@ -791,7 +791,7 @@ def create_payment_router(db) -> APIRouter:
             "mode": "payment",
             "phone_number_collection": {"enabled": True},
             "customer_email": member["email"],
-            "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
                 "offer_source": "board_fundraising_game", "selected_tier": "497",

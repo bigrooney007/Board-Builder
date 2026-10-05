@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
@@ -9,7 +9,7 @@ import { purchaseSuccessText, purchaseSuccessPageText } from "../content/appCont
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const supportedEntry = (source, sessionId) => ({
-  recruitment_supported_2997: `/recruit/welcome?session_id=${encodeURIComponent(sessionId)}&supported=1`,
+  recruitment_supported_2997: "/app/board-recruitment/setup?supported=1",
   board_recommitment_supported_2497: `/board-recommitment/dashboard?session_id=${encodeURIComponent(sessionId)}&supported=1#recommitment-forms`,
   board_fundraising_game_supported_2997: "/game/setup?supported=1",
   strategic_planning_supported_2997: `/strategic-planning/dashboard?session_id=${encodeURIComponent(sessionId)}&supported=1#sp-meeting`,
@@ -26,7 +26,14 @@ export const PurchaseSuccessPage = () => {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [claimed, setClaimed] = useState("");
+  const [claimedSource, setClaimedSource] = useState("");
   const [guestPassword, setGuestPassword] = useState({ password: "", confirm_password: "" });
+  const nextStep = useCallback((source) => ({
+    recruitment_497: "/app/board-recruitment/setup",
+    board_fundraising_game_497: "/game/setup",
+    strategic_planning_497: `/strategic-planning/dashboard?session_id=${encodeURIComponent(sessionId)}#sp-meeting`,
+    board_recommitment_497: `/board-recommitment/dashboard?session_id=${encodeURIComponent(sessionId)}#recommitment-forms`,
+  }[source] || supportedEntry(source, sessionId)), [sessionId]);
 
   useEffect(() => {
     if (!sessionId) { setPaymentState("missing"); return undefined; }
@@ -52,14 +59,13 @@ export const PurchaseSuccessPage = () => {
       try {
         const response = await memberApi.post("/members/claim-purchase", { session_id: sessionId });
         setClaimed(response.data.claimed);
+        setClaimedSource(response.data.claimed_source || "");
         await refresh();
-        const supportedRoute = supportedEntry(response.data.claimed_source, sessionId);
-        if (supportedRoute) {
-          navigate(supportedRoute);
+        const destination = nextStep(response.data.claimed_source);
+        if (destination && !["free_game_guest", "guided_guest"].includes(member.account_status)) {
+          navigate(destination, { replace: true });
         } else if (response.data.claimed_source === "recruit_with_rooney_997") {
           navigate("/app/recruitment/self-guided/module/1");
-        } else if (response.data.claimed_source === "recruitment_497") {
-          navigate(`/recruit/welcome?session_id=${encodeURIComponent(sessionId)}`);
         } else if (response.data.claimed_source === "direct_diy_board_recruitment_497" || response.data.claimed_source === "recruitment_campaign_diy_297") {
           navigate("/app/board-recruitment");
         } else if (response.data.claimed_source === "recruitment_selection_onboarding_297") {
@@ -74,7 +80,7 @@ export const PurchaseSuccessPage = () => {
       } catch (err) { setError(err.response?.data?.detail || "We could not link this purchase to your account."); }
     };
     claim();
-  }, [paymentState, loading, member, claimed, sessionId, refresh, navigate]);
+  }, [paymentState, loading, member, claimed, sessionId, refresh, navigate, nextStep]);
 
   const updateField = (name) => (event) => setForm((current) => ({ ...current, [name]: event.target.value }));
 
@@ -83,7 +89,7 @@ export const PurchaseSuccessPage = () => {
     try {
       await memberApi.post("/members/complete-guest-account", guestPassword);
       await refresh();
-      navigate("/game/welcome");
+      navigate(nextStep(claimedSource) || "/game/setup", { replace: true });
     } catch (err) {
       setError(err.response?.data?.detail || "We could not save your password. Please try again.");
       setBusy(false);
@@ -107,14 +113,12 @@ export const PurchaseSuccessPage = () => {
         claimedSource = response.claimed_source || "";
         setClaimed(claimedNow);
       }
-      const supportedRoute = supportedEntry(claimedSource, sessionId);
-      if (supportedRoute) {
-        navigate(supportedRoute);
+      const destination = nextStep(claimedSource);
+      if (destination) {
+        navigate(destination, { replace: true });
       } else
       if (claimedSource === "direct_diy_board_recruitment_497" || claimedSource === "recruitment_campaign_diy_297") {
         navigate("/app/board-recruitment");
-      } else if (claimedSource === "recruitment_497") {
-        navigate(`/recruit/welcome?session_id=${encodeURIComponent(sessionId)}`);
       } else if (claimedSource === "recruitment_selection_onboarding_297") {
         navigate("/app/recruitment/self-guided/module/4");
       } else if (claimedSource === "board_fix_system_497") {
@@ -141,10 +145,10 @@ export const PurchaseSuccessPage = () => {
         {paymentState === "paid" && (
           <div className="member-auth-card wide" data-testid="purchase-paid">
             <p className="purchase-confirmed"><CheckCircle2 size={20} /> Payment confirmed</p>
-            {member?.account_status === "free_game_guest" ? (
+            {["free_game_guest", "guided_guest"].includes(member?.account_status) ? (
               <>
-                <h1>Secure Your Board Builder Account</h1>
-                <p>Your purchase is linked. Create a password so you can return to your Board Fundraising Game at any time.</p>
+                <h1>Create Your Board Builder Account</h1>
+                <p>Your payment is confirmed. Set a password, then we will open the next step of your process.</p>
                 <form onSubmit={secureGuestAccount} className="member-auth-form">
                   <label className="field"><span>Password <b>*</b></span><input type="password" minLength={8}
                     value={guestPassword.password} onChange={(event) => setGuestPassword({ ...guestPassword, password: event.target.value })}
@@ -154,7 +158,7 @@ export const PurchaseSuccessPage = () => {
                     required data-testid="guest-confirm-password" /></label>
                   {error && <p className="submit-error" data-testid="guest-account-error">{error}</p>}
                   <button className="button" type="submit" disabled={busy || !claimed} data-testid="guest-account-submit">
-                    {busy ? "Saving…" : claimed ? "SAVE PASSWORD AND CONTINUE" : "LINKING YOUR PURCHASE…"}
+                    {busy ? "Saving…" : claimed ? "CREATE ACCOUNT AND CONTINUE" : "LINKING YOUR PURCHASE…"}
                   </button>
                 </form>
               </>
@@ -167,8 +171,8 @@ export const PurchaseSuccessPage = () => {
               </>
             ) : (
               <>
-                <h1 data-testid="create-account-heading">{mode === "register" ? "Create Your Board Builder Account" : "Log In to Your Board Builder Account"}</h1>
-                <p>{mode === "register" ? "Create your account to access your program." : "Log in and we will link this purchase to your existing account."}</p>
+                <h1 data-testid="create-account-heading">{mode === "register" ? "Create Your Account To Continue" : "Log In To Continue"}</h1>
+                <p>{mode === "register" ? "Your payment is confirmed. Create your account and we will open the next step you are ready to complete." : "Log in and we will link this purchase to your existing account."}</p>
                 <form onSubmit={submit} className="member-auth-form">
                   {mode === "register" && (
                     <div className="two-col-fields">

@@ -711,6 +711,33 @@ const CandidateDecisionCard = ({ application, selected, onSelect, onDecision, bu
   );
 };
 
+export const CandidateSelectionWorkspace = () => {
+  const { applications, refresh } = useApplications();
+  const [selectedId, setSelectedId] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [message, setMessage] = useState("");
+  const decide = async (applicationId, decision) => {
+    setBusyId(applicationId); setMessage("");
+    try {
+      await memberApi.post(`/workspace/applications/${applicationId}/decision`, { decision });
+      setSelectedId(applicationId);
+      await refresh();
+      setMessage(decision === "move_forward" ? "Candidate moved forward to onboarding preparation." : "Final selection decision saved.");
+    } catch (error) { setMessage(error.response?.data?.detail || "The final selection decision could not be saved."); }
+    setBusyId("");
+  };
+  return <div data-testid="candidate-selection-workspace">
+    <section className="workspace-panel">
+      <h2>Confirm Who Moves Into Appointment And Onboarding</h2>
+      <p className="material-description">Review what you learned through the application, interview, references and any background check your organization required. Record the final decision for each person. Candidates you move forward are then ready for the onboarding schedule, materials and appointment email in Section 9.</p>
+      {!applications.length && <p className="workspace-note">Applicants appear here as soon as they apply or you add them.</p>}
+      {applications.map(application => <CandidateDecisionCard key={application.application_id} application={application}
+        selected={selectedId === application.application_id} onSelect={setSelectedId} onDecision={decide} busyId={busyId}/>) }
+      {message && <p className={/could not/i.test(message) ? "submit-error" : "member-success"}>{message}</p>}
+    </section>
+  </div>;
+};
+
 export const Module5References = () => {
   const { applications, refresh: refreshApps } = useApplications();
   const { byType: orgMaterials, refresh: refreshOrg } = useMaterials();

@@ -4,25 +4,15 @@ import { MemberShell } from "./MemberShell";
 import { useMemberAuth } from "./MemberAuthContext";
 import { memberApi } from "./api";
 import { Module1Profile } from "./workspace/Module1Profile";
-import { MaterialCard } from "./workspace/MaterialCard";
 import { Module3Launch, useMaterials } from "./workspace/WorkspaceModules";
 import "./sgr.css";
 
 const ANSWER_KEYS = ["mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join"];
-const ONBOARDING = [
-  ["organization_overview", "Organization Overview"], ["board_manual", "Board Manual"],
-  ["board_member_agreement", "Board Member Agreement"], ["confidentiality_agreement", "Confidentiality Agreement"],
-  ["conflict_of_interest_agreement", "Conflict of Interest Agreement"], ["onboarding_agenda", "Onboarding Agenda"],
-];
-const COMMUNICATIONS = [
-  ["general_interview_invitation", "Reusable Interview Invitation"],
-  ["recruitment_communications", "Decision, Check And Offer Communications"],
-];
 
 export default function RecruitCampaignSetupPage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
-  const { byType, refresh } = useMaterials();
+  const { refresh } = useMaterials();
   const [assessment, setAssessment] = useState(null);
   const [opportunity, setOpportunity] = useState(null);
   const [readiness, setReadiness] = useState({});
@@ -107,18 +97,8 @@ export default function RecruitCampaignSetupPage() {
       {readiness.profiles_approved && readiness.scheduling_saved && <>
         <section className="member-card"><p className="eyebrow">STEP 3 · REVIEW CAMPAIGN MATERIALS</p><h2>Your Application And Recruitment Copy</h2>
           <p>These drafts use your approved board profiles and application link. Edit and approve each before launch. Preparation: {preparation.status || "queued"}{preparation.stage ? ` (${preparation.stage})` : ""}.</p><Module3Launch mode="materials" /></section>
-        <section className="member-card"><h2>Organization Overview, Manual And Agreements</h2><p>These are reusable for everyone joining your board. Review and approve the organization-level drafts now.</p>
-          {ONBOARDING.map(([type, title]) => <MaterialCard key={type} type={type} title={title} buttonLabel={`Generate ${title}`} description={`Review the ${title.toLowerCase()} for your organization.`} material={byType[type]} refresh={refresh} approvable />)}
-          <p>The Board Member Profile Form is already hosted. You will send each new board member their individual link during onboarding.</p>
-        </section>
-        <section className="member-card"><h2>Interview, Check And Offer Communications</h2>
-          <p>Review these reusable drafts now. When you choose an actual candidate, the platform prepares their individual email with their details and the correct onboarding links.</p>
-          {COMMUNICATIONS.map(([type, title]) => <MaterialCard key={type} type={type} title={title} buttonLabel={`Generate ${title}`}
-            description={type === "general_interview_invitation" ? "Uses the interview scheduling method you saved." : "Includes rejection, references, background check and both board offer paths."}
-            material={byType[type]} refresh={refresh} approvable />)}
-        </section>
         <section className="member-card"><p className="eyebrow">STEP 4 · LAUNCH</p><h2>Publish Your Board Opportunity</h2>
-          <p>{readiness.materials_approved_count || 0}/{readiness.materials_total || 5} campaign materials, {readiness.onboarding_approved_count || 0}/{readiness.onboarding_total || 6} onboarding documents and {readiness.support_approved_count || 0}/{readiness.support_total || 2} communication resources approved.</p>
+          <p>{readiness.materials_approved_count || 0}/{readiness.materials_total || 5} campaign materials approved. Your onboarding resources will be prepared when you have candidates to onboard.</p>
           <Module3Launch mode="launch" onLaunched={() => navigate("/app/board-recruitment#br-section-applicants")} />
         </section>
       </>}

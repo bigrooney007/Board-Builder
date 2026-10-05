@@ -11,6 +11,8 @@ import { RecruitmentCampaignLaunch, RecruitmentMaterials, useMaterials } from ".
 import {
   AutomatedReferenceChecks,
   BackgroundChecksWorkspace,
+  CandidateSelectionWorkspace,
+  FormalAppointmentWorkspace,
   InterviewsWorkspace,
   Module4Applicants,
   OnboardingPreparation,
@@ -26,9 +28,9 @@ const FLOW_STEPS = [
   ["br-section-materials", "Application & Materials"],
   ["br-section-campaign", "Launch Campaign"],
   ["br-section-applicants", "Applicants"],
-  ["br-section-interviews", "Interviews"],
   ["br-section-references", "References"],
   ["br-section-background", "Background Check"],
+  ["br-section-selection", "Final Selection"],
   ["br-section-onboarding-prep", "Onboarding Preparation"],
   ["br-section-onboarding-session", "Onboarding Session"],
   ["br-section-portfolios", "Board Member Portfolios"],
@@ -40,9 +42,9 @@ const RECRUITMENT_AUDIO = {
   materials: "dash_rct_materials",
   launch: "dash_rct_launch",
   applicants: "dash_rct_applicants",
-  interviews: "dash_rct_interviews",
   references: "dash_rct_references",
   background: "dash_rct_background",
+  selection: "dash_rct_selection",
   "onboarding-prep": "dash_rct_onboarding_prep",
   "onboarding-session": "dash_rct_onboarding_session",
   portfolios: "dash_rct_portfolios",
@@ -192,8 +194,8 @@ export default function BoardRecruitmentPage() {
               </>}
             </Section>
 
-            <Section number={2} title="IDENTIFY THE BOARD MEMBERS YOUR ORGANIZATION NEEDS"
-              summary="Review the exact number of Board Member profiles built from your six answers and recruitment target."
+            <Section number={2} title="YOUR APPROVED BOARD MEMBER PROFILES"
+              summary="Review the Board Member profiles you approved during campaign setup."
               testId="br-section-identify" audioKey="identify" status={identifyStatus}>
               {!questionsComplete && !launched ?(
                 <p className="workspace-note">Complete all six Recruitment Questions first.</p>
@@ -208,8 +210,8 @@ export default function BoardRecruitmentPage() {
               )}
             </Section>
 
-            <Section number={3} title="BUILD YOUR BOARD APPLICATION AND RECRUITMENT MATERIALS"
-              summary="Your approved Board Member profiles become the foundation for the application and campaign assets."
+            <Section number={3} title="YOUR BOARD APPLICATION AND CAMPAIGN MATERIALS"
+              summary="Review the public application and the recruitment materials you approved before launch."
               testId="br-section-materials" audioKey="materials" status={progress<3&&!launched?"Locked":"Ready"}>
               {progress<3&&!launched?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
             </Section>
@@ -221,27 +223,28 @@ export default function BoardRecruitmentPage() {
             </Section>
 
             <Section number={5} title="APPLICANTS"
-              summary="Review everyone who applies, add outside candidates and decide who should receive an interview invitation."
+              summary="Review applications and CVs, prepare invitation or rejection emails, and open a tailored interview guide for each person."
               testId="br-section-applicants" audioKey="applicants">
               <Module4Applicants/>
-            </Section>
-
-            <Section number={6} title="INTERVIEWS"
-              summary="Select any applicant and prepare a tailored interview guide when you are ready."
-              testId="br-section-interviews" audioKey="interviews">
               <InterviewsWorkspace/>
             </Section>
 
-            <Section number={7} title="REFERENCE CHECKS"
+            <Section number={6} title="REFERENCE CHECKS"
               summary="Select any applicant when you need to ask for or confirm references."
               testId="br-section-references" audioKey="references">
               <AutomatedReferenceChecks/>
             </Section>
 
-            <Section number={8} title="BACKGROUND CHECK"
+            <Section number={7} title="BACKGROUND CHECKS"
               summary="Use a local background-check provider or local sheriff/police option when your organization needs one."
               testId="br-section-background" audioKey="background">
               <BackgroundChecksWorkspace/>
+            </Section>
+
+            <Section number={8} title="FINAL CANDIDATE SELECTION"
+              summary="Confirm who moves forward after the interview, references and any background check your organization required."
+              testId="br-section-selection" audioKey="selection">
+              <CandidateSelectionWorkspace/>
             </Section>
 
             <Section number={9} title="PREPARE ONBOARDING AND THE APPOINTMENT"
@@ -257,8 +260,9 @@ export default function BoardRecruitmentPage() {
             </Section>
 
             <Section number={11} title="BOARD MEMBER PORTFOLIOS"
-              summary="Review and approve each person's Board role before generating a tailored Portfolio for the people who join."
+              summary="After the Board Member Profile is complete, confirm the appointment, generate the official letter and tailored Portfolio, then copy the final email."
               testId="br-section-portfolios" audioKey="portfolios">
+              <FormalAppointmentWorkspace/>
               <RecruitmentPortfoliosWorkspace/>
             </Section>
 

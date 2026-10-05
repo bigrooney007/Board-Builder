@@ -277,31 +277,31 @@ export default function GameDashboardPage() {
 
         <DashboardSection
           number={1}
-          title="SET YOUR BOARD MEETING AND FUNDRAISING DEADLINE"
-          summary="Set your next Board meeting and tell us when you need to reach the fundraising goal. The deadline stays connected to your final strategy."
-          status={meetingReady ? "Complete" : "Start Here"}
-          defaultOpen
-          testId="bfg-dashboard-section-meeting"
-          audioKey="meeting"
-        >
-          <GameNightSection onSaved={refreshDashboard} />
-        </DashboardSection>
-
-        <DashboardSection
-          number={2}
-          title="COMPLETE YOUR PRESENT REALITY AND PARTICIPATION"
-          summary="Review your individual donors, businesses and grantors separately, describe your current team and resources, then say how you will personally participate."
-          status={!meetingReady ? "Locked" : founderGameComplete ? "Complete" : "Continue Setup"}
+          title="REVIEW YOUR IDEAS, PRESENT REALITY AND PARTICIPATION"
+          summary="See your five original ideas, current supporters, team and resources, and the role you chose for yourself."
+          status={founderGameComplete ? "Complete" : "Continue Setup"}
           testId="bfg-dashboard-section-founder-game"
           audioKey="founder-game"
+          defaultOpen
         >
-          {meetingReady ? <div className="bfg-clean-stage">
+          <div className="bfg-clean-stage">
             <h3>Build From What Is Already Happening</h3>
             <p className="bfg-panel-sub">Your five ideas are saved. Tell us how your organization currently works with each type of funder, what you are trying to raise now and what resources you already have. Then choose your own part in the process.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "CONTINUE MY GAME SETUP"}
             </button>
-          </div> : <p className="bfg-note">Confirm your Board meeting and fundraising deadline in Section 1 first.</p>}
+          </div>
+        </DashboardSection>
+
+        <DashboardSection
+          number={2}
+          title="YOUR BOARD MEETING AND FUNDRAISING DEADLINE"
+          summary="Review or change the meeting time and the deadline carried into your fundraising strategy."
+          status={meetingReady ? "Complete" : "Set Meeting"}
+          testId="bfg-dashboard-section-meeting"
+          audioKey="meeting"
+        >
+          <GameNightSection onSaved={refreshDashboard} />
         </DashboardSection>
 
         <DashboardSection

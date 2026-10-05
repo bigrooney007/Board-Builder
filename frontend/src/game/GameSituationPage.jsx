@@ -100,15 +100,20 @@ export default function GameSituationPage() {
         setFiveIdeasSaved(response.game_version === 5 && ["1", "2", "3", "4", "5"].every((key) => (response.original_answers?.[key] || "").trim()));
         setSituationComplete(Boolean(situation.data.completed));
         setLeadParticipationComplete(Boolean(response.completed));
-        if (situation.data.completed && response.completed && !reviewMode) { navigate("/game/dashboard#bfg-board-members-section", { replace: true }); return; }
         const ready = Boolean(meeting.data.night?.meeting_date && meeting.data.night?.start_time && meeting.data.night?.funding_deadline);
         setMeetingReady(ready);
+        if (situation.data.completed && response.completed && ready && !reviewMode) { navigate("/game/dashboard#bfg-board-members-section", { replace: true }); return; }
         setSetupStep(Number(situation.data.current_step || 0));
         setIndex(reviewMode ? 0 : Math.min(2, Math.max(0, Number(situation.data.current_step || 0))));
-        if (!ready) setPhase("meeting");
-        else if (situation.data.completed && !reviewMode) setPhase("play_first");
-        else if (reviewMode) setPhase("reality");
-        else if (Number(situation.data.current_step || 0) >= 3) setPhase("capacity");
+        if (reviewMode) setPhase("reality");
+        else if (Number(situation.data.current_step || 0) >= 4 || situation.data.completed) {
+          if (!response.completed) setPhase("play_first");
+          else if (!ready) setPhase("meeting");
+          else {
+            if (!situation.data.completed) await memberApi.post("/game/situation/complete");
+            navigate("/game/dashboard#bfg-board-members-section", { replace: true });
+          }
+        } else if (Number(situation.data.current_step || 0) >= 3) setPhase("capacity");
         else setPhase("reality");
       } catch { setError("We could not load your game. Please refresh the page."); setPhase("error"); }
     })();
@@ -157,23 +162,27 @@ export default function GameSituationPage() {
     setBusy(true); setError("");
     try {
       await memberApi.put("/game/situation", { sections: { ...capacity, current_reality: { ...reality, reviewed: "yes", setup_version: "post_payment_v2" } }, current_step: 4 });
-      await memberApi.post("/game/situation/complete");
-      if (leadParticipationComplete) navigate("/game/dashboard#bfg-board-members-section");
-      else { setPhase("play_first"); window.scrollTo({ top: 0 }); }
+      setPhase("play_first"); window.scrollTo({ top: 0 });
     } catch (err) { setError(err.response?.data?.detail || "We could not save your current resources. Please try again."); }
     finally { setBusy(false); }
   };
 
   const shell = (children, testId) => <BfgShell><main className="bfg-flow bfg-setup-flow" data-testid={testId}>{children}{error && <p className="bfg-error" role="alert">{error}</p>}</main></BfgShell>;
+  const finishMeetingSetup = async () => {
+    if (setupStep >= 4 && leadParticipationComplete) {
+      try { await memberApi.post("/game/situation/complete"); navigate("/game/dashboard#bfg-board-members-section"); }
+      catch (err) { setError(err.response?.data?.detail || "We could not finish the setup. Please try again."); }
+    } else { setPhase(reviewMode ? "reality" : setupStep >= 3 ? "capacity" : "reality"); window.scrollTo({ top: 0 }); }
+  };
   if (loading || phase === "loading") return shell(<p style={{ marginTop: 40 }}>Loading your game…</p>, "bfg-situation-loading");
   if (phase === "error") return shell(null, "bfg-situation-error");
 
   if (phase === "meeting") return shell(<>
-    <p className="bfg-eyebrow">BOARD FUNDRAISING GAME SETUP • STEP 1</p>
+    <p className="bfg-eyebrow">BOARD FUNDRAISING GAME SETUP • FINAL STEP</p>
     <h1>When Is Your Next Board Meeting?</h1>
     <p style={{ margin: "14px auto 22px" }}>Your board members will play individually before this meeting. Tell us when the board meets and when you need to raise your fundraising goal, so your final strategy works toward a real deadline.</p>
     <div className="bfg-setup-fields"><GameNightSection autoOpen onSaved={() => setMeetingReady(true)} /></div>
-    {meetingReady && <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={() => { setPhase(reviewMode ? "reality" : situationComplete ? "play_first" : setupStep >= 3 ? "capacity" : "reality"); window.scrollTo({ top: 0 }); }}>CONTINUE TO MY PRESENT FUNDRAISING</button>}
+    {meetingReady && <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} onClick={finishMeetingSetup}>{setupStep >= 4 && leadParticipationComplete ? "INVITE MY BOARD MEMBERS" : "CONTINUE SETUP"}</button>}
   </>, "bfg-setup-meeting");
 
   if (phase === "capacity") {

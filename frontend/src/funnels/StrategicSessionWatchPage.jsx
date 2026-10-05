@@ -23,8 +23,8 @@ export default function StrategicSessionWatchPage(){
       <p className="bfg-eyebrow">LIVE STRATEGIC PLANNING SESSION</p>
       {error?<p className="bfg-error">{error}</p>:!data?<p>Joining the session…</p>:<>
         <h1>{data.organization_name}</h1>
-        <div className="sp-session-topline"><span>Section {data.current_section_index+1} of {data.total_sections}</span><span>FOLLOWING THE FACILITATOR</span></div>
-        {data.section?<>
+        <div className="sp-session-topline"><span>{data.status==="COMPLETED"?"BOARD REVIEW":`Section ${data.current_section_index+1} of ${data.total_sections}`}</span><span>FOLLOWING THE FACILITATOR</span></div>
+        {data.status==="COMPLETED"?<><h2>Review The Strategic Plan Together</h2><p>{data.plan_status==="Approved"?"The Board's Strategic Plan has been adopted.":"Discuss the plan with the facilitator. Agreed edits and approval will appear here."}</p>{data.plan_text?<pre className="sp-plan-preview">{data.plan_text}</pre>:<p>Preparing the plan from the decisions you made together…</p>}</>:data.section?<>
           <h2 style={{fontSize:"clamp(28px,4vw,46px)",margin:"22px auto"}}>{data.section.title}</h2>
           {data.section.current_context&&<div className="sp-current-context"><span>WHERE THE ORGANIZATION IS STARTING</span><p>{data.section.current_context}</p></div>}
           <div className="sp-idea-grid">

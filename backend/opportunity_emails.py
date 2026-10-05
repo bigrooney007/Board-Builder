@@ -111,6 +111,11 @@ async def send_application_receipt(email: str, name: str, org_name: str) -> str:
 
 async def send_campaign_launch_email(db, opportunity: dict, member: dict, origin: str) -> None:
     """Send the owner a practical launch pack after the marketplace listing is live."""
+    from dashboard_return import send_dashboard_return
+    try:
+        await send_dashboard_return(db, member, "recruitment", origin)
+    except Exception:
+        logger.exception("Private dashboard return email failed for %s", opportunity["opportunity_id"])
     user_id = opportunity["user_id"]
     materials = await db.generated_materials.find(
         {"user_id": user_id, "type": {"$in": ["recruitment_emails", "social_posts", "board_recruitment_job_post"]},

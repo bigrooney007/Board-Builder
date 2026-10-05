@@ -21,7 +21,7 @@ const GROUPS=[
     key:"recruitment", title:"Board Recruitment Dashboard Audio",
     ids:[
       "dash_rct_questions","dash_rct_identify","dash_rct_materials","dash_rct_launch","dash_rct_applicants",
-      "dash_rct_interviews","dash_rct_references","dash_rct_background","dash_rct_onboarding_prep",
+      "dash_rct_references","dash_rct_background","dash_rct_selection","dash_rct_onboarding_prep",
       "dash_rct_onboarding_session","dash_rct_portfolios",
     ],
   },

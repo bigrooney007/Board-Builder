@@ -1362,8 +1362,7 @@ def create_workspace_router(db) -> APIRouter:
                           "completed_at": now_iso(), "updated_at": now_iso()}},
                 upsert=True,
             )
-            await prepare_onboarding_assets(user_id)
-            await prepare_support_assets(user_id)
+            # Later-stage resources are generated from their own dashboard stages.
         except Exception as exc:
             await db.recruitment_preparation.update_one(
                 {"user_id": user_id},
@@ -1475,10 +1474,8 @@ def create_workspace_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Prepare all recruitment campaign materials before launching your campaign")
         if not readiness["materials_approved"]:
             raise HTTPException(status_code=409, detail="Review and approve your recruitment campaign materials before launching your campaign")
-        if not readiness["onboarding_generated"] or not readiness["onboarding_approved"]:
-            raise HTTPException(status_code=409, detail="Review and approve the organization-level onboarding documents before launching")
-        if not readiness["support_generated"] or not readiness["support_approved"]:
-            raise HTTPException(status_code=409, detail="Review and approve the interview, check and offer communication drafts before launching")
+        # Onboarding documents and candidate communications belong to later stages.
+        # Publishing only needs the approved public application and campaign copy.
         board_opportunity = await get_current_material(db, user_id, "board_opportunity")
         structured = (board_opportunity["current"].get("structured") or {}) if (board_opportunity and board_opportunity["current"]) else {}
         profile = await get_profile(db, user_id)

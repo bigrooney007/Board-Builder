@@ -2097,6 +2097,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         saved=await db.sp_sessions.find_one({"share_token":token},{"_id":0})
         if not saved:raise HTTPException(404,"This Strategic Planning session link is not valid")
         p=await db.sp_projects.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
+        final=await db.sp_plans.find_one({"project_id":saved["project_id"]},{"_id":0,"final_status":1,"final_display_text":1}) or {}
         intake=await db.guided_product_intakes.find_one({"session_id":p.get("guided_session_id"),"product":"strategic-planning"},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
         people=await db.sp_participants.find({"project_id":saved["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
@@ -2108,7 +2109,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             section={**section,"ideas":[{**idea,"selected":idea["idea_id"] in selected} for idea in section["ideas"]]}
             section.pop("facilitator_prompt",None)
         return {"organization_name":p.get("organization_name",""),"status":saved.get("status","NOT STARTED"),
-                "current_section_index":index,"section":section,"total_sections":len(sections)}
+                "current_section_index":index,"section":section,"total_sections":len(sections),
+                "plan_status":final.get("final_status","NONE") if saved.get("status")=="COMPLETED" else "NONE",
+                "plan_text":final.get("final_display_text","") if saved.get("status")=="COMPLETED" else ""}
 
     @router.post("/session/complete")
     async def complete_strategic_session(request: Request):

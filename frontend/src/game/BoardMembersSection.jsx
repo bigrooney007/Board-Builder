@@ -158,7 +158,15 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
   const origin = { origin_url: window.location.origin };
   const run = async (key, fn, successMessage) => {
     setBusy(key); setNotice("");
-    try { await fn(); if (successMessage) setNotice(successMessage); await load(); }
+    try {
+      await fn();
+      if (key === "invite-all" || key.startsWith("invite-")) {
+        const saved = await memberApi.post("/members/dashboard-return-link", { product: "game" }).catch(() => null);
+        if (saved?.data?.sent) successMessage += " Your private dashboard link has been emailed to you. Bookmark it for easy access.";
+      }
+      if (successMessage) setNotice(successMessage);
+      await load();
+    }
     catch (err) {
       const detail = err.response?.data?.detail;
       if (detail === "meeting_details_required") {

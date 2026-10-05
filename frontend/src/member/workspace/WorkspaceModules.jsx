@@ -164,12 +164,6 @@ export const Module3Launch = ({ mode = "all", onLaunched }) => {
               {CAMPAIGN_TOOLS.map(([type, title, buttonLabel, description]) => (
                 <MaterialCard key={type} type={type} title={title} buttonLabel={buttonLabel} description={description} material={byType[type]} refresh={refreshAll} approvable readOnly={["Published", "Closed"].includes(opportunity?.status)} />
               ))}
-              <section className="workspace-panel"><h2>Interview, Check And Offer Communications</h2>
-                <p className="material-description">Your approved organization-level drafts are available here. Candidate-specific emails and secure onboarding links are prepared when you choose a person.</p></section>
-              {[["general_interview_invitation", "Reusable Interview Invitation"], ["recruitment_communications", "Decision, Check And Offer Communications"]].map(([type, title]) => (
-                <MaterialCard key={type} type={type} title={title} buttonLabel={`Generate ${title}`} material={byType[type]}
-                  refresh={refreshAll} approvable readOnly={["Published", "Closed"].includes(opportunity?.status)} />
-              ))}
             </>
           ) : (
             <section className="workspace-panel">
@@ -192,8 +186,6 @@ export const Module3Launch = ({ mode = "all", onLaunched }) => {
           <li className={readiness.application_saved ? "done" : ""} data-testid="readiness-application">Board Application created</li>
           <li className={readiness.materials_generated ? "done" : ""} data-testid="readiness-materials">Campaign materials prepared ({readiness.materials_count || 0} of {readiness.materials_total || 4})</li>
           <li className={readiness.materials_approved ? "done" : ""} data-testid="readiness-materials-approved">Campaign materials approved ({readiness.materials_approved_count || 0} of {readiness.materials_total || 4})</li>
-          <li className={readiness.onboarding_approved ? "done" : ""}>Organization onboarding documents approved ({readiness.onboarding_approved_count || 0} of {readiness.onboarding_total || 6})</li>
-          <li className={readiness.support_approved ? "done" : ""}>Interview, check and offer communications approved ({readiness.support_approved_count || 0} of {readiness.support_total || 2})</li>
         </ul>
         {launched && (
           <div className="member-success" data-testid="published-info">
@@ -208,7 +200,7 @@ export const Module3Launch = ({ mode = "all", onLaunched }) => {
         {error && <p className="submit-error" data-testid="publish-error">{error}</p>}
         <div className="material-actions">
           {!launched && opportunity?.status !== "Closed" && (
-            <button className="button" disabled={busy || !(readiness.profiles_approved && readiness.scheduling_saved && readiness.application_saved && readiness.materials_approved && readiness.onboarding_approved && readiness.support_approved)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
+            <button className="button" disabled={busy || !(readiness.profiles_approved && readiness.scheduling_saved && readiness.application_saved && readiness.materials_approved)} onClick={publish} data-testid="publish-button">{workspaceModulesText.launchMyRecruitmentCampaign}</button>
           )}
           {launched && <button className="button button-back" onClick={closeCampaign} data-testid="close-campaign-button">Close Recruitment Campaign</button>}
           {launched && opportunity?.broadcast_status === "Failed" && <button className="button button-back" disabled={busy} onClick={retryNetwork} data-testid="retry-network-button">RETRY APPLICANT NETWORK ANNOUNCEMENT</button>}

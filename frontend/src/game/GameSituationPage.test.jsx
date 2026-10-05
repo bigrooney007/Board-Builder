@@ -21,7 +21,7 @@ jest.mock("./GameNightSection", () => ({ GameNightSection: ({ onSaved }) => <but
 jest.mock("./NarrationControl", () => ({ NarrationControl: () => null, isNarrationMuted: () => true }));
 jest.mock("./SpeakButton", () => ({ SpeakButton: () => null }));
 
-test("meeting, separate relevant funder pages and resources precede the lead's participation and invitations", async () => {
+test("present fundraising and resources precede the lead's participation", async () => {
   window.scrollTo = jest.fn();
   const response = { game_version: 5, original_answers: { "1": "People", "2": "Network", "3": "Story", "4": "Ask", "5": "Meet and follow up" }, completed: false };
   const capacity = { team: { who_handles: "Staff", board_involvement: "Introductions" },
@@ -36,10 +36,8 @@ test("meeting, separate relevant funder pages and resources precede the lead's p
   const root = createRoot(node);
   try {
     await act(async () => root.render(<GameSituationPage />));
-    expect(node.querySelector('[data-testid="bfg-setup-meeting"]')).toBeTruthy();
-    expect(node.querySelector('[data-testid="bfg-current-fundraising"]')).toBeNull();
-    await act(async () => node.querySelector('[data-testid="save-existing-night"]').click());
-    await act(async () => [...node.querySelectorAll("button")].find((item) => item.textContent.includes("CONTINUE TO MY PRESENT FUNDRAISING")).click());
+    expect(node.querySelector('[data-testid="bfg-current-fundraising"]')).toBeTruthy();
+    expect(node.querySelector('[data-testid="bfg-setup-meeting"]')).toBeNull();
     for (const title of ["Your Present Individual Donors", "Your Present Business Sponsors Or Partners", "Your Present Grantors"]) {
       expect(node.textContent).toContain(title);
       await act(async () => [...node.querySelectorAll("button")].find((item) => item.textContent.includes("WE DO NOT HAVE THESE SUPPORTERS YET")).click());
@@ -50,11 +48,31 @@ test("meeting, separate relevant funder pages and resources precede the lead's p
     expect(node.querySelector('[data-testid="bfg-current-capacity"]')).toBeTruthy();
     expect(memberApi.post).not.toHaveBeenCalledWith("/game/situation/complete");
     await act(async () => [...node.querySelectorAll("button")].find((item) => item.textContent.includes("CONTINUE TO MY PARTICIPATION")).click());
-    expect(memberApi.post).toHaveBeenCalledWith("/game/situation/complete");
+    expect(memberApi.post).not.toHaveBeenCalledWith("/game/situation/complete");
     expect(node.querySelector('[data-testid="bfg-setup-play-first"]')).toBeTruthy();
     expect(memberApi.put).toHaveBeenCalledWith("/game/situation", expect.objectContaining({ current_step: 4 }));
     await act(async () => [...node.querySelectorAll("button")].find((item) => item.textContent.includes("CONTINUE TO MY PARTICIPATION")).click());
     expect(mockNavigate).toHaveBeenCalledWith("/play/lead-token");
+  } finally { await act(async () => root.unmount()); node.remove(); }
+});
+
+test("meeting and fundraising deadline are the final setup step before Board invitations", async () => {
+  mockNavigate.mockClear(); memberApi.get.mockReset(); memberApi.post.mockReset(); memberApi.put.mockReset(); axios.get.mockReset();
+  memberApi.get.mockImplementation((path) => Promise.resolve({ data: path === "/game/situation"
+    ? { sections: {}, current_step: 4, completed: false }
+    : path === "/game/night" ? { night: {} } : { branding: {} } }));
+  memberApi.post.mockImplementation((path) => Promise.resolve({ data: path === "/game/self-play" ? { token: "lead-token" } : { status: "complete" } }));
+  axios.get.mockImplementation((url) => Promise.resolve({ data: url.includes("audience-response")
+    ? { response: { game_version: 5, completed: true } } : { clips: {} } }));
+  const node = document.createElement("div"); document.body.appendChild(node);
+  const root = createRoot(node);
+  try {
+    await act(async () => root.render(<GameSituationPage />));
+    expect(node.querySelector('[data-testid="bfg-setup-meeting"]')).toBeTruthy();
+    await act(async () => node.querySelector('[data-testid="save-existing-night"]').click());
+    await act(async () => [...node.querySelectorAll("button")].find((item) => item.textContent.includes("INVITE MY BOARD MEMBERS")).click());
+    expect(memberApi.post).toHaveBeenCalledWith("/game/situation/complete");
+    expect(mockNavigate).toHaveBeenCalledWith("/game/dashboard#bfg-board-members-section");
   } finally { await act(async () => root.unmount()); node.remove(); }
 });
 

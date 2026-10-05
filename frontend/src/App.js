@@ -14,7 +14,6 @@ import RecruitCampaignSetupPage from "@/member/RecruitCampaignSetupPage";
 import RecruitAmplifyPage from "@/funnels/RecruitAmplifyPage";
 import BoardApplicantMarketplace from "@/public/BoardApplicantMarketplace";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
-import RecruitWelcomePage from "@/funnels/RecruitWelcomePage";
 import SupportedServiceThankYouPage from "@/funnels/SupportedServiceThankYouPage";
 import BoardRecommitmentFormPage from "@/funnels/BoardRecommitmentFormPage";
 import RecommitmentQuestionsPage from "@/member/RecommitmentQuestionsPage";
@@ -24,8 +23,6 @@ import RecommitmentAssistantPage from "@/pages/RecommitmentAssistantPage";
 import {
   GuidedLandingPage,
   GuidedVideoPage,
-  GuidedPaymentConfirmedPage,
-  GuidedWelcomePage,
   GuidedIntakePage,
   GuidedDashboardPage,
 } from "@/funnels/GuidedProductPages";
@@ -47,6 +44,7 @@ import StrategicPresentationWatchPage from "@/funnels/StrategicPresentationWatch
 import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
+import DashboardReturnPage from "@/member/DashboardReturnPage";
 import BoardRecruitmentPage from "@/member/BoardRecruitmentPage";
 import RecruitmentGamePage from "@/member/RecruitmentGamePage";
 import RecruitmentOnboardingSessionPage from "@/member/RecruitmentOnboardingSessionPage";
@@ -66,7 +64,6 @@ import GameUpgradePage from "@/game/GameUpgradePage";
 import GameResumePage from "@/game/GameResumePage";
 import GameAuthCallback from "@/game/GameAuthCallback";
 import GameSituationPage from "@/game/GameSituationPage";
-import GameWelcomePage from "@/game/GameWelcomePage";
 import GameDashboardPage from "@/game/GameDashboardPage";
 import GamePlayRoute from "@/game/GamePlayRoute";
 import GroupGamePage from "@/game/GroupGamePage";
@@ -116,6 +113,11 @@ function GoogleAuthGate({ children }) {
   return children;
 }
 
+function GuidedPaidContinue({ product }) {
+  const { search } = useLocation();
+  return <Navigate to={`/${product}/dashboard${search}${product === "strategic-planning" ? "#sp-meeting" : "#recommitment-forms"}`} replace />;
+}
+
 function CleanRoutes() {
   return (
     <Routes>
@@ -126,8 +128,9 @@ function CleanRoutes() {
       <Route path="/recruit/questions" element={<RecruitQuestionsPage />} />
       <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />
-      <Route path="/recruit/welcome" element={<RecruitWelcomePage />} />
+      <Route path="/recruit/welcome" element={<Navigate to="/app/board-recruitment/setup" replace />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
+      <Route path="/return/:token" element={<DashboardReturnPage />} />
       <Route path="/supported-service/thank-you" element={<SupportedServiceThankYouPage />} />
       <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
       <Route path="/app/board-recruitment/setup" element={<RecruitCampaignSetupPage />} />
@@ -152,7 +155,7 @@ function CleanRoutes() {
       <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
       <Route path="/game/questions" element={<GameFreeQuestionsPage />} />
       <Route path="/game/resume/:token" element={<GameResumePage />} />
-      <Route path="/game/welcome" element={<GameWelcomePage />} />
+      <Route path="/game/welcome" element={<Navigate to="/game/setup" replace />} />
       <Route path="/game/setup" element={<GameSituationPage />} />
       <Route path="/game/dashboard" element={<GameDashboardPage />} />
       <Route path="/play/:token" element={<GamePlayRoute />} />
@@ -193,8 +196,8 @@ function CleanRoutes() {
       <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
       <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
       <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
-      <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage product="strategic-planning" />} />
-      <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage product="strategic-planning" />} />
+      <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaidContinue product="strategic-planning" />} />
+      <Route path="/strategic-planning/welcome" element={<GuidedPaidContinue product="strategic-planning" />} />
       <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
       <Route path="/strategic-planning/organization" element={<StrategicOrganizationSetupPage />} />
       <Route path="/strategic-planning/dashboard" element={<GuidedDashboardPage product="strategic-planning" />} />
@@ -216,8 +219,8 @@ function CleanRoutes() {
       <Route path="/board-recommitment" element={<GuidedLandingPage product="board-recommitment" />} />
       <Route path="/board-recommitment/start" element={<GuidedPrepaymentQuestionsPage product="board-recommitment" />} />
       <Route path="/board-recommitment/video" element={<GuidedVideoPage product="board-recommitment" />} />
-      <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaymentConfirmedPage product="board-recommitment" />} />
-      <Route path="/board-recommitment/welcome" element={<GuidedWelcomePage product="board-recommitment" />} />
+      <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaidContinue product="board-recommitment" />} />
+      <Route path="/board-recommitment/welcome" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/intake" element={<GuidedIntakePage product="board-recommitment" />} />
       <Route path="/board-recommitment/dashboard" element={<GuidedDashboardPage product="board-recommitment" />} />
       <Route path="/board-recommitment/questions" element={<RecommitmentQuestionsPage />} />

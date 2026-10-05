@@ -2676,7 +2676,15 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "involvement": "", "current_question": 5, "completed": False,
                     "internal_preview": True, "created_at": now, "updated_at": now,
                 }}, upsert=True)
-            return "/game/welcome"
+            session_id = f"admin-fresh-game-session-{tag}"
+            await db.payment_transactions.update_one(
+                {"session_id": session_id}, {"$set": {
+                    "session_id": session_id, "user_id": member["user_id"],
+                    "offer_source": "board_fundraising_game", "purchase_source": "board_fundraising_game_497",
+                    "status": "completed", "payment_status": "paid", "claimed_by_user_id": member["user_id"],
+                    "internal_preview": True, "created_at": now, "updated_at": now,
+                }}, upsert=True)
+            return f"/purchase/success?session_id={session_id}"
 
         session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"
         lead_token = f"admin-fresh-{product}-{tag}"
@@ -2728,7 +2736,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        return f"/{product}/payment-confirmed?session_id={session_id}"
+        return f"/purchase/success?session_id={session_id}"
 
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):
@@ -2746,6 +2754,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "internal_client_test": True,
                 "client_test_product": product,
                 "client_test_started_at": now_iso(),
+                "account_status": "guided_guest",
             }},
         )
         member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})

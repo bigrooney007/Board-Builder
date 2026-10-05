@@ -77,16 +77,26 @@ class CompleteGuestAccountRequest(BaseModel):
     confirm_password: str
 
 
+class DashboardReturnRequest(BaseModel):
+    product: str
+    session_id: str = ""
+
+
 async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     """Server-side Stripe verification. Grants entitlement only when Stripe confirms payment."""
-    # The Admin Client Testing Center creates an isolated, already claimed test transaction.
-    # Keep its post-payment route identical without querying Stripe for a synthetic session.
+    # The Admin Client Testing Center creates isolated paid transactions without Stripe.
     if member.get("internal_client_test"):
         test_tx = await db.payment_transactions.find_one({"session_id": session_id,
             "internal_preview": True, "claimed_by_user_id": member["user_id"],
-            "payment_status": "paid", "purchase_source": "recruitment_497"}, {"_id": 0})
+            "payment_status": "paid", "purchase_source": {"$in": [
+                "recruitment_497", "board_fundraising_game_497", "strategic_planning_497", "board_recommitment_497"]}}, {"_id": 0})
         if test_tx:
-            return {"entitlement": "recruitment_self_guided", "purchase_source": "recruitment_497"}
+            return {"entitlement": {
+                "recruitment_497": "recruitment_self_guided",
+                "board_fundraising_game_497": "board_fundraising_game",
+                "strategic_planning_497": "strategic_planning_497",
+                "board_recommitment_497": "reactivation_self_guided",
+            }[test_tx["purchase_source"]], "purchase_source": test_tx["purchase_source"]}
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
     existing = await db.purchases.find_one({"session_id": session_id}, {"_id": 0})
     if existing and existing["user_id"] != member["user_id"]:
@@ -99,6 +109,10 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         raise HTTPException(status_code=402, detail="This payment has not been completed yet")
     metadata = session.metadata or {}
     offer_source = metadata.get("offer_source", "")
+    if offer_source in {"strategic_planning", "board_recommitment"}:
+        lead = await db.guided_product_leads.find_one({"token": metadata.get("guided_lead_token", "")}, {"_id": 0, "email": 1})
+        if not lead or str(lead.get("email", "")).lower() != member["email"].lower():
+            raise HTTPException(status_code=409, detail="Use the email you entered before payment to create this account")
     if offer_source == "board_fundraising_game" and metadata.get("member_user_id") and metadata["member_user_id"] != member["user_id"]:
         raise HTTPException(status_code=409, detail="This Board Fundraising Game purchase belongs to another account")
     tier = metadata.get("selected_tier", "")
@@ -153,6 +167,12 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     elif offer_source == "board_fundraising_game":
         entitlement = "board_fundraising_game"
         product_name = "Board Fundraising Game"
+    elif offer_source == "strategic_planning" and tier == "497":
+        entitlement = "strategic_planning_497"
+        product_name = "Strategic Planning With Your Board"
+    elif offer_source == "board_recommitment" and tier == "497":
+        entitlement = "reactivation_self_guided"
+        product_name = "Board Recommitment"
     elif offer_source == "facilitated_board_fundraising_game":
         entitlement = "board_fundraising_game"
         product_name = "Facilitated Board Fundraising Game"
@@ -264,6 +284,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             "purchase_source": "board_fundraising_game_497",
             "offer": "Board Fundraising Game", "price_paid": 497,
         })
+    elif offer_source in {"strategic_planning", "board_recommitment"}:
+        purchase.update({
+            "purchase_source": f"{offer_source}_497",
+            "offer": product_name, "price_paid": 497,
+        })
     elif offer_source == "facilitated_board_fundraising_game":
         purchase.update({
             "purchase_source": "facilitated_board_fundraising_game_3497",
@@ -356,6 +381,40 @@ def public_member(member: dict) -> dict:
 
 def create_member_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/members")
+
+    @router.post("/dashboard-return-link")
+    async def dashboard_return_link(payload: DashboardReturnRequest, request: Request):
+        from dashboard_return import PRODUCTS, send_dashboard_return
+        member = await authenticate_member(request, db)
+        if payload.product not in PRODUCTS:
+            raise HTTPException(422, "Unknown dashboard product")
+        sent = await send_dashboard_return(db, member, payload.product, public_origin(), payload.session_id)
+        if not sent and not member.get("internal_client_test"):
+            raise HTTPException(403, "This dashboard does not belong to this account")
+        return {"sent": sent}
+
+    @router.post("/dashboard-return/{token}")
+    async def dashboard_return(token: str, response: Response):
+        from dashboard_return import PRODUCTS, token_digest
+        if len(token) < 40 or len(token) > 128:
+            raise HTTPException(404, "This dashboard link is not valid")
+        record = await db.dashboard_return_tokens.find_one({"digest": token_digest(token), "revoked": False}, {"_id": 0})
+        if not record or record.get("product") not in PRODUCTS:
+            raise HTTPException(404, "This dashboard link is not valid")
+        member = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0})
+        entitlement, path, _ = PRODUCTS[record["product"]]
+        if not member or entitlement not in member.get("entitlements", []):
+            raise HTTPException(403, "This dashboard is no longer available")
+        if record["product"] in {"strategic-planning", "board-recommitment"}:
+            tx = await db.payment_transactions.find_one({"session_id": record.get("session_id"),
+                "claimed_by_user_id": member["user_id"], "payment_status": "paid"}, {"_id": 0})
+            if not tx:
+                raise HTTPException(403, "This dashboard is no longer available")
+            path += f"?session_id={record['session_id']}"
+        session_token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, session_token)
+        await db.dashboard_return_tokens.update_one({"digest": record["digest"]}, {"$set": {"last_used_at": datetime.now(timezone.utc).isoformat()}})
+        return {"token": session_token, "dashboard_url": path}
 
     @router.post("/guided-free-start", status_code=201)
     async def guided_free_start(payload: GuidedFreeStartRequest, response: Response):
@@ -516,7 +575,7 @@ def create_member_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         if payload.password != payload.confirm_password:
             raise HTTPException(status_code=422, detail="Passwords do not match")
-        if member.get("account_status") != "free_game_guest":
+        if member.get("account_status") not in {"free_game_guest", "guided_guest"}:
             return {"member": public_member(member)}
         now = datetime.now(timezone.utc).isoformat()
         await db.members.update_one(
