@@ -2536,7 +2536,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             await db.funnel_leads.update_one(
                 {"lead_id": lead_id},
                 {"$set": {
-                    "lead_id": lead_id, "offer_source": "recruitment",
+                    "lead_id": lead_id, "result_token": assessment_token, "offer_source": "recruitment",
                     "name": "Rooney Akpesiri", "email": member["email"],
                     "organization": ORG_NAME, "desired_count": "3",
                     "answers": {"new_members_needed": "3", **recruitment_answers},
@@ -2682,6 +2682,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "session_id": session_id, "user_id": member["user_id"],
                     "offer_source": "board_fundraising_game", "purchase_source": "board_fundraising_game_497",
                     "status": "completed", "payment_status": "paid", "claimed_by_user_id": member["user_id"],
+                    "amount": 0, "currency": "usd",
                     "internal_preview": True, "created_at": now, "updated_at": now,
                 }}, upsert=True)
             return f"/purchase/success?session_id={session_id}"
@@ -2759,13 +2760,15 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         )
         member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})
         start_url = await seed_fresh_client_test(member, product, config)
-        set_member_cookie(response, create_member_token(member["user_id"], member["email"]))
+        member_token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, member_token)
         return {
             "dashboard_url": start_url,
             "start_url": start_url,
             "product": product,
             "mode": "fresh",
             "test_member_email": member["email"],
+            "token": member_token,
         }
 
     @router.post("/{product}")
@@ -2802,7 +2805,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             session_id = await seed_guided_product(member, product, config)
             dashboard_url = f"{dashboard_url}?session_id={session_id}"
 
-        set_member_cookie(response, create_member_token(member["user_id"], member["email"]))
-        return {"dashboard_url": dashboard_url, "product": product}
+        member_token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, member_token)
+        return {"dashboard_url": dashboard_url, "product": product, "token": member_token}
 
     return router

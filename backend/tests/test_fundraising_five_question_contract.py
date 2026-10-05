@@ -16,7 +16,7 @@ class FundraisingFiveQuestionContractTests(unittest.TestCase):
         app = source("frontend/src/App.js")
         demo = source("frontend/src/game/GameDemonstrationPage.jsx")
         self.assertIn('navigate("/game/questions")', home)
-        self.assertIn('to="/game/demonstration"', home)
+        self.assertIn('path="/game/demonstration" element={<GameDemonstrationPage />}', app)
         self.assertIn('path="/game/questions" element={<GameFreeQuestionsPage />}', app)
         self.assertIn('path="/game/upgrade" element={<GameUpgradePage />}', app)
         self.assertNotIn('if (!member) return <Navigate', demo)

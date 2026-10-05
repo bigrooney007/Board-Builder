@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell } from "./gameShared";
-import { STRATEGY_SECTIONS, SectionBody, sectionToText } from "./strategyRender";
+import { getStrategySections, SectionBody, sectionToText } from "./strategyRender";
 import { MeetingTranscript } from "./MeetingTranscript";
 
 export default function MeetingReviewPage() {
@@ -56,7 +56,8 @@ export default function MeetingReviewPage() {
 
   const review = state?.review;
   const index = review?.current_section_index || 0;
-  const section = STRATEGY_SECTIONS[index];
+  const sections = getStrategySections(strategy);
+  const section = sections[index];
   const feedback = state?.section_feedback;
 
   const move = async (nextIndex) => {
@@ -149,7 +150,7 @@ export default function MeetingReviewPage() {
                     <button className="bfg-btn bfg-btn-ghost" style={{ visibility: index === 0 ? "hidden" : "visible" }}
                       disabled={busy} onClick={() => move(index - 1)} data-testid="bfg-mr-prev-btn">Previous Section</button>
                     <button className="bfg-btn bfg-btn-ghost" onClick={startEdit} data-testid="bfg-mr-edit-btn">Edit Section</button>
-                    {index < STRATEGY_SECTIONS.length - 1 ? (
+                    {index < sections.length - 1 ? (
                       <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={() => move(index + 1)} data-testid="bfg-mr-next-btn">Next Section</button>
                     ) : (
                       <button className="bfg-btn bfg-btn-primary" disabled={busy} onClick={finishReview} data-testid="bfg-mr-finish-btn">Finish Strategy Review</button>

@@ -55,7 +55,8 @@ class FourCustomerJourneysContractTests(unittest.TestCase):
     def test_game_setup_collects_reality_participation_then_meeting_before_invites(self):
         setup = source("frontend/src/game/GameSituationPage.jsx")
         dashboard = source("frontend/src/game/GameDashboardPage.jsx")
-        self.assertLess(setup.index('setPhase("reality")'), setup.index('setPhase("play_first")'))
+        self.assertIn('navigate("/play/" + self.data.token)', setup)
+        self.assertNotIn('setPhase("capacity")', setup)
         self.assertIn('setPhase("meeting")', setup)
         self.assertIn('/game/dashboard#bfg-board-members-section', setup)
         self.assertLess(dashboard.index('number={1}'), dashboard.index('number={2}'))

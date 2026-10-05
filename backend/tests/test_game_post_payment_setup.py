@@ -9,10 +9,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def complete_situation():
     source = (ROOT / "backend/game_routes.py").read_text()
-    function = next(node for node in ast.parse(source).body
-                    if isinstance(node, ast.FunctionDef) and node.name == "situation_is_complete")
+    functions = [node for node in ast.parse(source).body
+                 if isinstance(node, ast.FunctionDef) and node.name in {"present_reality_is_complete", "situation_is_complete"}]
     namespace = {}
-    exec(compile(ast.Module(body=[function], type_ignores=[]), "game_routes.py", "exec"), namespace)
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "game_routes.py", "exec"), namespace)
     return namespace["situation_is_complete"]
 
 
@@ -32,11 +32,11 @@ def paid_situation():
 
 
 class PostPaymentSetupTests(unittest.TestCase):
-    def test_current_supporters_need_the_separate_deep_answers_and_new_targets(self):
+    def test_current_supporters_need_only_the_four_present_fundraising_answers(self):
         is_complete = complete_situation()
         situation = paid_situation()
         self.assertTrue(is_complete(situation))
-        situation["sections"]["current_reality"]["current_business_seeking"] = ""
+        situation["sections"]["current_reality"]["current_business_support"] = ""
         self.assertFalse(is_complete(situation))
 
     def test_absent_funders_are_explicitly_skippable_without_invented_answers(self):
@@ -48,15 +48,13 @@ class PostPaymentSetupTests(unittest.TestCase):
                 situation["sections"]["current_reality"][key] = ""
         self.assertTrue(is_complete(situation))
 
-    def test_team_resources_and_final_review_cannot_be_skipped(self):
+    def test_resources_are_optional_but_present_reality_review_is_required(self):
         is_complete = complete_situation()
         situation = paid_situation()
         situation["sections"]["materials"]["materials"] = ""
-        self.assertFalse(is_complete(situation))
-        situation["sections"]["materials"]["materials"] = "None yet"
+        self.assertTrue(is_complete(situation))
         situation["current_step"] = 3
-        self.assertFalse(is_complete(situation))
-        situation["current_step"] = 4
+        self.assertTrue(is_complete(situation))
         situation["sections"]["current_reality"].pop("reviewed")
         self.assertFalse(is_complete(situation))
 
@@ -73,13 +71,14 @@ class PostPaymentSetupTests(unittest.TestCase):
         self.assertIn('if record.get("is_primary"):', source[source.index("async def complete_five_ideas("):])
         self.assertIn("not situation_is_complete(situation)", source)
 
-    def test_the_final_strategy_receives_raw_funder_targets_capacity_goal_and_deadline(self):
+    def test_the_strategy_receives_funders_goal_deadline_and_excludes_capacity_requirements(self):
         for path in ("backend/game_meeting_routes.py", "backend/strategy_routes.py"):
             source = (ROOT / path).read_text()
             for value in ("current_individual_donor_seeking", "current_business_seeking",
                           "current_grantor_seeking", "current_individual_donor_motivation",
-                          "current_team_and_resources", '"deadline": goal.get("deadline", "")'):
+                          '"deadline": goal.get("deadline", "")'):
                 self.assertIn(value, source)
+            self.assertNotIn("current_team_and_resources", source)
 
 
 if __name__ == "__main__":

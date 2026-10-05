@@ -1,13 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
 import { clearAdminPreview } from "@/adminPreview";
+import { storeMemberToken } from "@/member/api";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
 
 const DASHBOARDS = [
   { key: "recruitment", name: "Board Recruitment", description: "Test the six Recruitment Questions, recommended Board profiles, campaign, applicants, onboarding and final Board Member Portfolio." },
-  { key: "board-fundraising-game", name: "Board Fundraising Game", description: "Test the founder Game, Board invitations, Group Game, fundraising strategy, delegations and execution." },
+  { key: "board-fundraising-game", name: "Board Fundraising Game", description: "Test present fundraising, personal participation, meeting setup, Board invitations, the Group Game and the agreed fundraising strategy." },
   { key: "strategic-planning", name: "Strategic Planning", description: "Begin at payment confirmation with the organization answers already saved. Continue through onboarding, the dashboard, Board forms and the planning session." },
   { key: "board-recommitment", name: "Board Recommitment", description: "Begin at payment confirmation with the four answers already saved. Continue through onboarding, the dashboard, responses and Portfolios." },
 ];
@@ -26,6 +27,8 @@ export const DashboardPreviewSection = () => {
         : `/admin/dashboard-preview/${product}`;
       const response = await client.post(endpoint);
       clearAdminPreview();
+      sessionStorage.removeItem("operateAsUserId");
+      storeMemberToken(response.data.token);
       sessionStorage.setItem("adminClientTest", "1");
       window.location.assign(response.data.start_url || response.data.dashboard_url);
     } catch (err) {

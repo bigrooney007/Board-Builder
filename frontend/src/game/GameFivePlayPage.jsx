@@ -111,7 +111,7 @@ export default function GameFivePlayPage() {
           />
         <SpeakButton value={involvement} onChange={setInvolvement} />
         {error && <p className="bfg-error">{error}</p>}
-        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy || !involvement.trim()} onClick={complete} data-testid="bfg-five-complete">{busy ? "SAVING…" : "COMPLETE MY INDIVIDUAL GAME"}</button>
+        <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 22 }} disabled={busy || !involvement.trim()} onClick={complete} data-testid="bfg-five-complete">{busy ? "SAVING…" : context.member?.is_primary ? "SAVE MY PARTICIPATION AND CONTINUE" : "COMPLETE MY INDIVIDUAL GAME"}</button>
       </>}
     </section>}
   </main></BfgShell>;

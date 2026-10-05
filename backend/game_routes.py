@@ -263,29 +263,28 @@ class FreeGameAnswer(BaseModel):
 FREE_QUESTION_COUNT = 5
 
 
-def situation_is_complete(doc: dict) -> bool:
-    if not doc or not doc.get("completed") or int(doc.get("current_step") or 0) < 3:
+def present_reality_is_complete(doc: dict) -> bool:
+    """Funder context can be saved before participation and meeting setup."""
+    if not doc or int(doc.get("current_step") or 0) < 3:
         return False
     sections = doc.get("sections") or {}
     reality = sections.get("current_reality") or {}
     if not reality.get("reviewed"):
         return False
-    if reality.get("setup_version") != "post_payment_v2":
+    if reality.get("setup_version") not in {"post_payment_v2", "present_funders_v3"}:
         return True  # Previously completed games retain their existing progress.
-    if int(doc.get("current_step") or 0) < 4:
-        return False
     for group, prefix in (("individuals", "individual_donor"), ("businesses", "business"), ("grantors", "grantor")):
         status = reality.get(f"{group}_status")
         if status == "none":
             continue
         if status != "current" or any(not str(reality.get(f"current_{prefix}_{field}") or "").strip()
-                                       for field in ("profile", "where", "attraction", "support", "process", "seeking")
-                                       + (("motivation",) if group == "individuals" else ())):
+                                       for field in ("profile", "where", "support", "process")):
             return False
-    return all(str((sections.get(section) or {}).get(field) or "").strip()
-               for section, fields in (("team", ("who_handles", "board_involvement")),
-                                       ("technology", ("tools", "tech_working")),
-                                       ("materials", ("materials",))) for field in fields)
+    return True
+
+
+def situation_is_complete(doc: dict) -> bool:
+    return bool(doc and doc.get("completed") and present_reality_is_complete(doc))
 
 
 def create_game_router(db) -> APIRouter:
@@ -502,8 +501,15 @@ def create_game_router(db) -> APIRouter:
         if not all(night.get(field) for field in ("meeting_date", "start_time", "funding_deadline")) or not situation_is_complete(candidate):
             raise HTTPException(
                 status_code=409,
-                detail="Confirm your Board meeting and fundraising deadline, then complete the relevant present-funder and team/resources pages.",
+                detail="Complete your present fundraising answers and confirm your Board meeting and fundraising deadline.",
             )
+        primary = await db.game_board_members.find_one(
+            {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}}, {"_id": 0})
+        if primary and int(primary.get("game_version") or 0) == 5:
+            participation = await db.game_audience_responses.find_one(
+                {"board_member_id": primary["member_id"]}, {"_id": 0}) or {}
+            if not participation.get("completed") or not str(participation.get("involvement") or "").strip():
+                raise HTTPException(409, "Save how you will participate before finishing your meeting setup.")
         now = datetime.now(timezone.utc).isoformat()
         await db.game_situations.update_one(
             {"user_id": member["user_id"]},

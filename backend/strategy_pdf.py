@@ -38,6 +38,7 @@ V4_SECTIONS = [
     ("funding_ask", "What We Will Ask Them To Fund And How Much"),
     ("fundraising_process", "How We Will Raise Money From Them"),
     ("board_roles", "The Role Each Board Member Will Play"),
+    ("execution_agreements", "Execution Agreed By The Board"),
 ]
 V1_STAGES = {
     "fundraising_process": [("know", "KNOW"), ("like", "LIKE"), ("trust", "TRUST"), ("ask", "ASK"),
@@ -71,6 +72,8 @@ def section_blocks(key: str, data, schema_version: int) -> list:
     blocks = []
     if data in (None, "", [], {}):
         return blocks
+    if key == "execution_agreements":
+        return [("bullet", _item_text(item)) for item in (data if isinstance(data, list) else [])]
     if key in {"executive_summary", "next_step"}:
         for line in str(data).split("\n"):
             if line.strip():
@@ -235,6 +238,8 @@ def build_strategy_pdf(strategy: dict, org_name: str) -> bytes:
     sections = V4_SECTIONS if schema_version >= 4 else V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
     data = strategy.get("data") or {}
     edits = strategy.get("section_edits") or {}
+    sections = [(key, title) for key, title in sections
+                if key != "execution_agreements" or data.get(key) or str(edits.get(key) or "").strip()]
     prepared_by = strategy.get("prepared_by") or (
         f"The Board of {org_name}" if strategy.get("mode") == "final" else org_name)
 

@@ -15,6 +15,7 @@ export const V4_STRATEGY_SECTIONS = [
   { key: "funding_ask", title: "What We Will Ask Them To Fund And How Much", v2: "audience_cards" },
   { key: "fundraising_process", title: "How We Will Raise Money From Them", v2: "process" },
   { key: "board_roles", title: "The Role Each Board Member Will Play", v2: "board_roles" },
+  { key: "execution_agreements", title: "Execution Agreed By The Board", v2: "agreements", optional: true },
 ];
 
 export const V2_STRATEGY_SECTIONS = STRATEGY_SECTIONS;
@@ -27,7 +28,7 @@ const LEGACY_CORE_STRATEGY_SECTIONS = [
 ];
 
 export const getStrategySections = (strategy) => Number(strategy?.schema_version || 1) >= 4
-  ? V4_STRATEGY_SECTIONS
+  ? V4_STRATEGY_SECTIONS.filter((section) => !section.optional || (Array.isArray(strategy?.data?.[section.key]) && strategy.data[section.key].length > 0) || String(strategy?.section_edits?.[section.key] || "").trim())
   : Number(strategy?.schema_version || 1) >= 2 ? STRATEGY_SECTIONS
   : LEGACY_CORE_STRATEGY_SECTIONS;
 
@@ -91,6 +92,7 @@ const isEmptySection = (section, data) => {
   if (section.v2 === "audiences") return AUDIENCE_LABELS.every(([field]) => !(data[field] || []).length);
   if (section.v2 === "audience_cards") return AUDIENCE_LABELS.every(([field]) => !(data[field] || []).length);
   if (section.v2 === "board_roles") return !(Array.isArray(data) && data.length);
+  if (section.v2 === "agreements") return !(Array.isArray(data) && data.length);
   if (section.v2 === "process") return AUDIENCE_LABELS.every(([field]) => !hasStageContent(data[field]));
   if (section.v2 === "team") return !(Array.isArray(data) && data.length);
   if (section.v2 === "resources") return RESOURCE_LABELS.every(([field]) => !(data[field] || []).length);
@@ -118,6 +120,7 @@ const Stages = ({ stages, data }) => (
 
 export const SectionBody = ({ section, data, mode }) => {
   if (isEmptySection(section, data)) return <p className="bfg-doc-empty">{EMPTY_MESSAGE}</p>;
+  if (section.v2 === "agreements") return <Bullets items={data} />;
   if (section.key === "executive_summary" || section.key === "next_step") return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line" }}>{data}</p>;
   if (section.key === "fundraising_goal") {
     return (
@@ -274,6 +277,7 @@ export const SectionBody = ({ section, data, mode }) => {
 
 export const sectionToText = (section, data) => {
   if (!data) return "";
+  if (section.v2 === "agreements") return (Array.isArray(data) ? data : []).map(itemText).join("\n");
   if (section.key === "executive_summary" || section.key === "next_step") return String(data || "");
   if (section.key === "fundraising_goal") {
     return [data.amount && `Goal: ${data.amount}`, data.deadline && `Deadline: ${data.deadline}`,

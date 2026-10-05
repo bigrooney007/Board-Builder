@@ -15,7 +15,7 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import EDITABLE_FIELDS, merged_sections
 from game_content_v3 import GAME_V3
 from game_response_quality import is_meaningful_game_response, response_input_hash, response_texts
-from game_routes import situation_is_complete
+from game_routes import present_reality_is_complete, situation_is_complete
 from reactivation_routes import email_html
 
 logger = logging.getLogger(__name__)
@@ -152,7 +152,7 @@ def create_game_night_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Confirm your next Board meeting and fundraising deadline before inviting your board.")
         situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
         if not situation_is_complete(situation):
-            raise HTTPException(status_code=409, detail="Complete the present-fundraising and team/resources pages before inviting your board.")
+            raise HTTPException(status_code=409, detail="Complete your present fundraising answers before inviting your board.")
         primary = await db.game_board_members.find_one(
             {"user_id": user_id, "is_primary": True, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1})
         response = (await db.game_audience_responses.find_one(
@@ -671,10 +671,9 @@ def create_game_night_router(db) -> APIRouter:
         if response.get("completed"):
             return {"status": "completed"}
         if record.get("is_primary"):
-            night = await get_night(record["user_id"])
             situation = await db.game_situations.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
-            if not all(night.get(key) for key in ("meeting_date", "start_time", "funding_deadline")) or not situation_is_complete(situation):
-                raise HTTPException(status_code=409, detail="Confirm the meeting and fundraising deadline, then complete your present reality and resources before answering how you will participate.")
+            if not present_reality_is_complete(situation):
+                raise HTTPException(status_code=409, detail="Complete your present fundraising answers before saving how you will participate.")
         now = now_iso()
         await db.game_audience_responses.update_one(
             {"board_member_id": record["member_id"], "completed": {"$ne": True}},

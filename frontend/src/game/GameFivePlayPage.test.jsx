@@ -30,6 +30,7 @@ test("the paid lead goes from saved five answers to personal participation, then
     expect(node.querySelector('[data-testid="bfg-board-welcome"]')).toBeNull();
     expect(node.querySelector('[data-testid="bfg-five-question"]')).toBeNull();
     expect(node.textContent).toContain("Meet, share impact, ask, and follow up");
+    expect(node.querySelector('[data-testid="bfg-five-complete"]').textContent).toBe("SAVE MY PARTICIPATION AND CONTINUE");
     await act(async () => {
       const input = node.querySelector('[data-testid="bfg-five-involvement"]');
       const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;

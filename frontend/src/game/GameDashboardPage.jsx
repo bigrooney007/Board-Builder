@@ -278,7 +278,7 @@ export default function GameDashboardPage() {
         <DashboardSection
           number={1}
           title="REVIEW YOUR IDEAS, PRESENT REALITY AND PARTICIPATION"
-          summary="See your five original ideas, current supporters, team and resources, and the role you chose for yourself."
+          summary="See your five original ideas, your present fundraising and how you chose to participate."
           status={founderGameComplete ? "Complete" : "Continue Setup"}
           testId="bfg-dashboard-section-founder-game"
           audioKey="founder-game"
@@ -286,7 +286,7 @@ export default function GameDashboardPage() {
         >
           <div className="bfg-clean-stage">
             <h3>Build From What Is Already Happening</h3>
-            <p className="bfg-panel-sub">Your five ideas are saved. Tell us how your organization currently works with each type of funder, what you are trying to raise now and what resources you already have. Then choose your own part in the process.</p>
+            <p className="bfg-panel-sub">Your five ideas are saved. Describe who presently funds you and why, where you find them, how you raise money from them and what you ask them to fund. Then choose your own part in the process.</p>
             <button className="bfg-btn bfg-btn-primary" disabled={openingGame} onClick={openIndividualGame} data-testid="bfg-open-individual-game-btn">
               {openingGame ? "OPENING…" : founderGameComplete ? "REVIEW MY BOARD FUNDRAISING GAME" : "CONTINUE MY GAME SETUP"}
             </button>
@@ -314,7 +314,7 @@ export default function GameDashboardPage() {
           defaultOpen={founderGameComplete && meetingReady && window.location.hash === "#bfg-board-members-section"}
         >
           {!meetingReady || !founderGameComplete ? (
-            <p className="bfg-note">Complete the meeting, fundraising deadline, relevant present-reality pages, team and resources, and your own participation before inviting participants.</p>
+            <p className="bfg-note">Complete your present fundraising answers and personal participation, then set the meeting and fundraising deadline before inviting your Board.</p>
           ) : (
             <BoardMembersSection onChanged={refreshDashboard} />
           )}

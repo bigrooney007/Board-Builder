@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
-from voice_content import DEFAULT_VOICE_SETTINGS, PERSONALIZED_POINTS, RETIRED_RECRUITMENT_SCRIPT_HASHES, STATIC_NARRATIONS, TEXTS
+from voice_content import DEFAULT_VOICE_SETTINGS, PERSONALIZED_POINTS, RETIRED_FUNDRAISING_SCRIPT_HASHES, RETIRED_RECRUITMENT_SCRIPT_HASHES, STATIC_NARRATIONS, TEXTS
 from voice_script_state import SOURCE_REVISION, recording_status, resolve_script, script_hash
 
 STATIC_BY_ID = {item["narration_id"]: item for item in STATIC_NARRATIONS}
@@ -107,7 +107,7 @@ def create_voice_router(db) -> APIRouter:
             default_text,
             doc,
             force_revision=narration_id in {"a1_deeper", "a2_deeper", "a3_deeper", "a4_deeper", "approval_review"},
-            superseded_hashes=(RETIRED_RECRUITMENT_SCRIPT_HASHES.get(narration_id),),
+            superseded_hashes=(RETIRED_RECRUITMENT_SCRIPT_HASHES.get(narration_id), RETIRED_FUNDRAISING_SCRIPT_HASHES.get(narration_id)),
         )
         # The recruitment dashboard clips already exist in production from the deployed
         # workspace. Keep same-version approved recordings live when their historical
