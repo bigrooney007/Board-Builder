@@ -42,15 +42,15 @@ async function renderPage(Page) {
   return { node, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 
-test("fundraising hero contains only the headline, subtitle and scroll CTA; the form sits below it", async () => {
+test("fundraising sales page keeps its minimal hero and links to the separate opening form", async () => {
   const { node, cleanup } = await renderPage(GameHomePage);
   try {
     const hero = node.querySelector(".bfg-hero");
     expect([...hero.querySelector(".bfg-hero-inner").children].map((element) => element.tagName)).toEqual(["H1", "P", "A"]);
     expect(hero.querySelector("[data-testid='bfg-goal-box']")).toBeNull();
-    expect(hero.querySelector("[data-testid='bfg-hero-cta']").getAttribute("href")).toBe("#bfg-goal-form");
-    expect(node.querySelector("#bfg-goal-form [data-testid='bfg-goal-box']")).toBeTruthy();
-    expect(node.querySelector("#bfg-goal-form a[href='/game/demonstration']")).toBeNull();
+    expect(hero.querySelector("[data-testid='bfg-hero-cta']").getAttribute("href")).toBe("/board-fundraising/start");
+    expect(node.querySelector("input, textarea, select, form")).toBeNull();
+    expect([...node.querySelectorAll(".bfg-btn-primary")].every(link => link.getAttribute("href") === "/board-fundraising/start")).toBe(true);
   } finally { await cleanup(); }
 });
 
@@ -59,7 +59,7 @@ test("demo shows the saved production video fallback and returns a new visitor t
   try {
     expect(node.querySelector("[data-testid='rendered-video']").textContent).toBe("rsf_QZfEId8");
     expect(node.querySelector("[data-testid='bfg-demo-continue']").getAttribute("href"))
-      .toBe("/board-fundraising-game#bfg-goal-form");
+      .toBe("/board-fundraising/start");
     expect(node.textContent).not.toContain("CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD");
     expect(memberApi.post).not.toHaveBeenCalled();
   } finally { await cleanup(); }

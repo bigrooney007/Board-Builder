@@ -11,11 +11,11 @@ def source(path):
 
 
 class FundraisingFiveQuestionContractTests(unittest.TestCase):
-    def test_homepage_starts_free_game_and_direct_demo_is_separate(self):
-        home = source("frontend/src/game/GameHomePage.jsx")
+    def test_opening_form_starts_free_game_and_direct_demo_is_separate(self):
+        start = source("frontend/src/game/GameStartPage.jsx")
         app = source("frontend/src/App.js")
         demo = source("frontend/src/game/GameDemonstrationPage.jsx")
-        self.assertIn('navigate("/game/questions")', home)
+        self.assertIn('navigate("/game/questions")', start)
         self.assertIn('path="/game/demonstration" element={<GameDemonstrationPage />}', app)
         self.assertIn('path="/game/questions" element={<GameFreeQuestionsPage />}', app)
         self.assertIn('path="/game/upgrade" element={<GameUpgradePage />}', app)

@@ -28,11 +28,12 @@ test("fundraising payment page presents the goal, video space, clear price and p
   const { node, cleanup } = await render(GameUpgradePage);
   try {
     expect(node.textContent).toContain("$250,000");
-    expect(node.textContent).toContain("A short message from Rooney will appear here.");
+    expect(node.querySelector('[data-testid="bfg-upgrade-video"]')).toBeTruthy();
     expect(node.querySelector('[data-testid="board-fundraising-game-supported-buy"]')).toBeTruthy();
     expect(node.textContent).toContain("$2,997");
     expect(node.querySelector('[data-testid="bfg-invite-board-cta"]').textContent).toContain("$497");
-    expect(node.textContent).toContain("You invite your board after that setup.");
+    expect(node.textContent).toContain("confirm the meeting and fundraising deadline before inviting your board");
+    expect(node.textContent).not.toContain("donors and resources you already have");
     expect(node.textContent).not.toContain("Watch Product Demonstration");
   } finally { await cleanup(); }
 });

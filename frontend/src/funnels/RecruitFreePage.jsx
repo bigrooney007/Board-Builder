@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
+import PublicStartLayout from "@/funnels/PublicStartLayout";
 import { trackPlatformEvent } from "@/clean/platform";
-import { useLandingPageMeta } from "@/seo";
+import { usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function RecruitFreePage() {
-  useLandingPageMeta("/recruit");
+  usePageMeta("Start Your Board Recruitment | Nonprofit Board Builder", "Enter your details and answer the six recruitment questions.", true);
   const navigate = useNavigate();
   const [lead, setLead] = useState({ name: "", email: "", organization: "", count: "", notSure: false });
   const [busy, setBusy] = useState(false);
@@ -41,6 +41,7 @@ export default function RecruitFreePage() {
       }
       localStorage.setItem("recruitFreeToken", response.data.token);
       trackPlatformEvent("recruitment", "contact_entered");
+      window.scrollTo({ top: 0 });
       navigate(`/recruit/questions?token=${encodeURIComponent(response.data.token)}`);
     } catch (err) {
       setError(err.response?.data?.detail || "We could not save your details. Please check them and try again.");
@@ -58,10 +59,10 @@ export default function RecruitFreePage() {
   };
 
   const leadForm = (
-    <form data-testid="recruit-free-landing" style={{ textAlign: "center" }} onSubmit={(event) => { event.preventDefault(); start(); }}>
-      <h3 style={{ marginTop: 0, fontSize: 22, lineHeight: 1.3 }} data-testid="recruit-free-heading">
+    <form className="public-start-card" data-testid="recruit-free-landing" style={{ textAlign: "center" }} onSubmit={(event) => { event.preventDefault(); start(); }}>
+      <h1 data-testid="recruit-free-heading">
         Start With Your Six Recruitment Questions
-      </h3>
+      </h1>
       <p style={{ marginTop: 14 }}>
         Tell us about your organization. Your answers will be saved as you work through the questions.
       </p>
@@ -99,5 +100,5 @@ export default function RecruitFreePage() {
     </form>
   );
 
-  return <RecruitmentHomePage form={leadForm} />;
+  return <PublicStartLayout backTo="/recruit" backLabel="Read about Board Recruitment" testId="recruit-start-page">{leadForm}</PublicStartLayout>;
 }

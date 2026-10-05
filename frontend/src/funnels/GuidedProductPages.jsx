@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowRight, CheckCircle2, Map, RefreshCw } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
@@ -13,7 +13,10 @@ import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
 import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
-import { useLandingPageMeta } from "@/seo";
+import { useLandingPageMeta, usePageMeta } from "@/seo";
+import PublicStartLayout from "./PublicStartLayout";
+import { PUBLIC_START_ROUTES } from "./publicStartRoutes";
+import GuidedPrepaymentQuestionsPage from "./GuidedPrepaymentQuestionsPage";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 export const GUIDED_PRODUCT_CONFIG={
@@ -97,26 +100,61 @@ const CONFIG=GUIDED_PRODUCT_CONFIG;
 const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); const content=useHomepageContent(p,CONFIG[p]); return [p,content]};
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
-export function GuidedLandingPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
+export function GuidedLandingPage({ product: explicitProduct }) {
+ const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();
+ const startPath=PUBLIC_START_ROUTES[product];
  useLandingPageMeta(`/${product}`);
- const start=async(event)=>{event?.preventDefault();if(!form.name||!form.email||!form.organization||!form.board_count){setError("Complete your name, email, organization and number of board members.");return}setBusy(true);setError("");try{const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token);let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count),origin_url:window.location.origin});localStorage.setItem(`guidedLead:${product}`,r.data.token);trackPlatformEvent(product,"contact_entered");nav(`/${product}/start?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
- const scrollToForm=()=>document.getElementById(`${product}-lead-form`)?.scrollIntoView({behavior:"smooth",block:"start"});
- return <BfgShell><main className="guided-page">
-  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><button className="bfg-btn bfg-btn-primary guided-hero-cta" onClick={scrollToForm}>START MY PROCESS <ArrowRight size={17}/></button></section>
+ useEffect(()=>{if(window.location.hash===`#${product}-lead-form`)nav(startPath,{replace:true})},[product,startPath,nav]);
+ return <BfgShell><main className="guided-page" data-testid={`${product}-landing-page`}>
+  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>START MY PROCESS <ArrowRight size={17}/></Link></section>
   <section className="guided-principle"><h2>{c.promise}</h2></section>
-  <section id={`${product}-lead-form`} className="guided-lead-section"><form className="guided-form-card" onSubmit={start}><h2>{c.formTitle}</h2><p>{c.formText}</p>
-    <label>Your name<input required autoComplete="name" placeholder="Your name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
-    <label>Email address<input type="email" required autoComplete="email" placeholder="Your email address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
-    <label>Organization name<input required autoComplete="organization" placeholder="Your organization" value={form.organization} onChange={e=>setForm({...form,organization:e.target.value})}/></label>
-    <label>{product==="strategic-planning"?"How many board members do you have?":"How many board members do you need to recommit?"}<input type="number" min="1" max="200" required inputMode="numeric" placeholder="Number of board members" value={form.board_count} onChange={e=>setForm({...form,board_count:e.target.value.replace(/\D/g,"")})}/></label>
-    <p className="guided-form-assurance">Your answers are saved as you go. The founder video and your options come after the questions.</p>
-    {error&&<p className="bfg-error" role="alert">{error}</p>}<button type="submit" className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy}>{busy?"OPENING…":"START MY QUESTIONS"}</button></form></section>
   <section className="guided-section"><p className="bfg-eyebrow">THE PROCESS</p><h2>{product==="strategic-planning"?"Turn Your Next Board Meetings Into The Beginning Of Real Delegation.":"Give Every Board Member A Clear Choice About How They Move Forward."}</h2><div className="guided-steps">{c.steps.map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p></article>)}</div></section>
   <section className="guided-section guided-soft"><p className="bfg-eyebrow">WHAT YOU GET</p><h2>A Guided Process You Can Actually Use With Your Board.</h2><div className="guided-outcomes">{c.outcomes.map(x=><div key={x}>✓ {x}</div>)}</div></section>
   <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={product}/>
-  <section className="guided-final-cta"><h2>{product==="strategic-planning"?"Ready To Build Your Strategic Plan With Your Board?":"Ready To Start Your Board Recommitment Process?"}</h2><button className="bfg-btn bfg-btn-primary guided-final-button" onClick={scrollToForm}>START MY PROCESS <ArrowRight size={17}/></button></section>
+  <section className="guided-final-cta"><h2>{product==="strategic-planning"?"Ready To Build Your Strategic Plan With Your Board?":"Ready To Start Your Board Recommitment Process?"}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>START MY PROCESS <ArrowRight size={17}/></Link></section>
  </main></BfgShell>
+}
+
+export function GuidedStartPage({ product }) {
+ const { search }=useLocation();
+ // Existing email and facilitator links still open their saved questions.
+ if(new URLSearchParams(search).get("token"))return <GuidedPrepaymentQuestionsPage product={product}/>;
+ return <GuidedLeadStartPage product={product}/>;
+}
+
+function GuidedLeadStartPage({ product: explicitProduct }) {
+ const [product,c]=useProduct(explicitProduct);const nav=useNavigate();
+ const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});
+ const [busy,setBusy]=useState(false),[error,setError]=useState("");
+ usePageMeta(`Start Your ${product==="strategic-planning"?"Strategic Planning":"Board Recommitment"} | Nonprofit Board Builder`,c.formText,true);
+ const start=async(event)=>{
+  event.preventDefault();
+  const details={name:form.name.trim(),email:form.email.trim(),organization:form.organization.trim(),board_count:Number(form.board_count)};
+  if(!details.name||!details.email||!details.organization||!Number.isInteger(details.board_count)||details.board_count<1||details.board_count>200){setError("Complete your name, email, organization and number of board members.");return}
+  setBusy(true);setError("");
+  try{
+   const auth=await memberApi.post("/members/guided-free-start",{name:details.name,email:details.email});
+   if(auth.data.token)storeMemberToken(auth.data.token);
+   const response=await axios.post(`${API}/guided/lead`,{product,...details,origin_url:window.location.origin});
+   localStorage.setItem(`guidedLead:${product}`,response.data.token);
+   trackPlatformEvent(product,"contact_entered");
+   window.scrollTo({top:0});
+   nav(`/${product}/start?token=${encodeURIComponent(response.data.token)}`);
+  }catch{setError("We could not start this process. Please check your details and try again.")}
+  setBusy(false);
+ };
+ return <PublicStartLayout className="guided-page" backTo={`/${product}`} backLabel={`Read about ${product==="strategic-planning"?"Strategic Planning":"Board Recommitment"}`} testId={`${product}-start-page`}>
+  <form className="guided-form-card public-start-card" onSubmit={start}>
+   <h1>{c.formTitle}</h1><p>{c.formText}</p>
+   <label>Your name<input required autoComplete="name" placeholder="Your name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
+   <label>Email address<input type="email" required autoComplete="email" placeholder="Your email address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
+   <label>Organization name<input required autoComplete="organization" placeholder="Your organization" value={form.organization} onChange={e=>setForm({...form,organization:e.target.value})}/></label>
+   <label>{product==="strategic-planning"?"How many board members do you have?":"How many board members do you need to recommit?"}<input type="number" min="1" max="200" required inputMode="numeric" placeholder="Number of board members" value={form.board_count} onChange={e=>setForm({...form,board_count:e.target.value.replace(/\D/g,"")})}/></label>
+   <p className="guided-form-assurance">Your answers are saved as you go. The founder video and your options come after the questions.</p>
+   {error&&<p className="bfg-error" role="alert">{error}</p>}
+   <button type="submit" className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy}>{busy?"OPENING…":"START MY QUESTIONS"}</button>
+  </form>
+ </PublicStartLayout>
 }
 export function GuidedVideoPage({ product: explicitProduct }){
  const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const q=new URLSearchParams(useLocation().search);const token=q.get("token")||localStorage.getItem(`guidedLead:${product}`)||"";const [busy,setBusy]=useState(""),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");

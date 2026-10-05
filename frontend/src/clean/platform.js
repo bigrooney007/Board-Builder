@@ -97,7 +97,7 @@ export const flowForPath = (pathname) => {
   if (pathname === "/join-a-board") return "board-applicant-network";
   if (pathname.startsWith("/organize-board-fundraising-game")) return "facilitated-game";
   if (pathname.startsWith("/recruit") || pathname.startsWith("/app/board-recruitment") || pathname.startsWith("/onboarding-session")) return "recruitment";
-  if (pathname.startsWith("/board-fundraising-game") || pathname.startsWith("/game") || pathname.startsWith("/play/") || pathname.startsWith("/group-game/") || pathname.startsWith("/board-portfolio/") || pathname.startsWith("/board-assistant/") || pathname.startsWith("/relationship-mapping/") || pathname.startsWith("/strategy/")) return "board-fundraising-game";
+  if (pathname.startsWith("/board-fundraising-game") || pathname.startsWith("/board-fundraising/") || pathname.startsWith("/game") || pathname.startsWith("/play/") || pathname.startsWith("/group-game/") || pathname.startsWith("/board-portfolio/") || pathname.startsWith("/board-assistant/") || pathname.startsWith("/relationship-mapping/") || pathname.startsWith("/strategy/")) return "board-fundraising-game";
   if (pathname.startsWith("/strategic-") || pathname.startsWith("/community-need-research") || pathname.startsWith("/area-pack")) return "strategic-planning";
   if (pathname.startsWith("/board-recommitment") || pathname.startsWith("/portfolio/")) return "board-recommitment";
   return "";

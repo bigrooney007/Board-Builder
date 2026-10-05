@@ -72,7 +72,7 @@ export default function GameUpgradePage() {
       </div>
       {payButton("bfg-invite-board-cta")}
       <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
-      <p className="guided-upgrade-next">After payment, we will set your next board meeting and fundraising deadline, understand the donors and resources you already have, then ask how you will participate. You invite your board after that setup.</p>
+      <p className="guided-upgrade-next">After payment, create your password, tell us about your present individual donors, businesses and grantors, then say how you want to participate. You will confirm the meeting and fundraising deadline before inviting your board.</p>
       <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : upgrade()} error={error}
         intro="Run the game with your board using the guided platform, or have Rooney help prepare and carry the process with you."
         selfGuided={{ title: "Build The Fundraising Strategy With Your Board", description: "Run the guided process yourselves with the complete platform.",

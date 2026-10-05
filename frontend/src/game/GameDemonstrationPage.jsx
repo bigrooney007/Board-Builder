@@ -5,6 +5,7 @@ import { useFlowVideo } from "@/hooks/useFlowVideos";
 import { BfgShell, GameVideo } from "./gameShared";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import "./game-landing.css";
 
 export default function GameDemonstrationPage() {
@@ -15,15 +16,15 @@ export default function GameDemonstrationPage() {
   const video = configuredVideo?.youtube_id ? configuredVideo : {
     key: "game_homepage", youtube_id: "rsf_QZfEId8", url: "https://youtu.be/rsf_QZfEId8",
   };
-  const [continuePath, setContinuePath] = useState("/board-fundraising-game#bfg-goal-form");
+  const [continuePath, setContinuePath] = useState(PUBLIC_START_ROUTES["board-fundraising-game"]);
 
   useEffect(() => { document.title = "See How The Board Fundraising Game Works"; }, []);
   useEffect(() => {
-    if (!member) { setContinuePath("/board-fundraising-game#bfg-goal-form"); return; }
+    if (!member) { setContinuePath(PUBLIC_START_ROUTES["board-fundraising-game"]); return; }
     let active = true;
     memberApi.get("/game/free").then(({ data }) => {
       if (active) setContinuePath(data.unlocked ? "/game/setup" : data.complete ? "/game/upgrade" : "/game/questions");
-    }).catch(() => { if (active) setContinuePath("/board-fundraising-game#bfg-goal-form"); });
+    }).catch(() => { if (active) setContinuePath(PUBLIC_START_ROUTES["board-fundraising-game"]); });
     return () => { active = false; };
   }, [member]);
 

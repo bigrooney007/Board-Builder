@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money } from "./gameShared";
@@ -58,7 +59,7 @@ export default function GameFreeQuestionsPage() {
           setQuestion(response.data.next_question || 1);
           if ((response.data.next_question || 1) > 1) setStarted(true);
         }
-      } catch { if (active) setError("We could not open your game. Return to the homepage to enter your goal and details."); }
+      } catch { if (active) setError("We could not open your questions. Return to the opening form to enter your goal and details."); }
     };
     open();
     return () => { active = false; };
@@ -77,7 +78,7 @@ export default function GameFreeQuestionsPage() {
   };
 
   return <BfgShell><main className="guided-flow" data-testid="bfg-free-questions">
-    {!context ? <p className="guided-loading">{error || "Opening your Board Fundraising Game…"}</p> : !started ? (
+    {!context ? <><p className="guided-loading">{error || "Opening your Board Fundraising Game…"}</p>{error && <Link className="bfg-btn bfg-btn-primary" to={PUBLIC_START_ROUTES["board-fundraising-game"]}>RETURN TO THE OPENING FORM</Link>}</> : !started ? (
       <section className="guided-welcome" data-testid="bfg-free-welcome">
         <div className="guided-audio-position"><GuidedAudioButton narration={narration} /></div>
         <p className="guided-kicker">WELCOME TO YOUR BOARD FUNDRAISING GAME</p>

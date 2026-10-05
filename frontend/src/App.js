@@ -9,6 +9,8 @@ import LegalPage from "@/pages/LegalPage";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
 import RecruitFreePage from "@/funnels/RecruitFreePage";
+import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
+import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import RecruitQuestionsPage from "@/funnels/RecruitQuestionsPage";
 import RecruitCampaignSetupPage from "@/member/RecruitCampaignSetupPage";
 import RecruitAmplifyPage from "@/funnels/RecruitAmplifyPage";
@@ -22,12 +24,12 @@ import RecommitmentAssistantPage from "@/pages/RecommitmentAssistantPage";
 
 import {
   GuidedLandingPage,
+  GuidedStartPage,
   GuidedVideoPage,
   GuidedIntakePage,
   GuidedDashboardPage,
 } from "@/funnels/GuidedProductPages";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
-import GuidedPrepaymentQuestionsPage from "@/funnels/GuidedPrepaymentQuestionsPage";
 import { FacilitatedPlanningComplete, FacilitatedPlanningDashboard } from "@/funnels/FacilitatedPlanningPages";
 import CommunityNeedResearchPage from "@/funnels/CommunityNeedResearchPage";
 import StrategicPlanningResponsePage from "@/funnels/StrategicPlanningResponsePage";
@@ -58,6 +60,7 @@ import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
 import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferencePages";
 
 import GameHomePage from "@/game/GameHomePage";
+import GameStartPage from "@/game/GameStartPage";
 import GameDemonstrationPage from "@/game/GameDemonstrationPage";
 import GameFreeQuestionsPage from "@/game/GameFreeQuestionsPage";
 import GameUpgradePage from "@/game/GameUpgradePage";
@@ -88,6 +91,7 @@ import FinalStrategyPage from "@/game/FinalStrategyPage";
 import PlatformAnalytics from "@/clean/PlatformAnalytics";
 
 const CENTERED_PATHS = new Set([
+  ...Object.values(PUBLIC_START_ROUTES),
   "/recruit",
   "/recruit/walkthrough",
   "/recruit/welcome",
@@ -124,7 +128,8 @@ function CleanRoutes() {
       <Route path="/" element={<MainHomePage />} />
 
       {/* Board Recruitment */}
-      <Route path="/recruit" element={<RecruitFreePage />} />
+      <Route path="/recruit" element={<RecruitmentHomePage />} />
+      <Route path={PUBLIC_START_ROUTES.recruitment} element={<RecruitFreePage />} />
       <Route path="/recruit/questions" element={<RecruitQuestionsPage />} />
       <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />
@@ -152,6 +157,7 @@ function CleanRoutes() {
 
       {/* Board Fundraising Game */}
       <Route path="/board-fundraising-game" element={<GameHomePage />} />
+      <Route path={PUBLIC_START_ROUTES["board-fundraising-game"]} element={<GameStartPage />} />
       <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
       <Route path="/game/questions" element={<GameFreeQuestionsPage />} />
       <Route path="/game/resume/:token" element={<GameResumePage />} />
@@ -175,8 +181,8 @@ function CleanRoutes() {
       <Route path="/game/final/:token" element={<FinalStrategyMemberPage />} />
       <Route path="/relationship-mapping/:token" element={<RelationshipMappingPage />} />
       <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
-      <Route path="/game/signup" element={<Navigate to="/board-fundraising-game" replace />} />
-      <Route path="/game/start" element={<Navigate to="/board-fundraising-game" replace />} />
+      <Route path="/game/signup" element={<Navigate to={PUBLIC_START_ROUTES["board-fundraising-game"]} replace />} />
+      <Route path="/game/start" element={<Navigate to={PUBLIC_START_ROUTES["board-fundraising-game"]} replace />} />
       <Route path="/game/upgrade" element={<GameUpgradePage />} />
       <Route path="/game/unlock" element={<Navigate to="/game/demonstration" replace />} />
       <Route path="/game/board-review" element={<Navigate to="/game/dashboard" replace />} />
@@ -192,7 +198,7 @@ function CleanRoutes() {
 
       {/* Strategic Planning */}
       <Route path="/strategic-planning" element={<GuidedLandingPage product="strategic-planning" />} />
-      <Route path="/strategic-planning/start" element={<GuidedPrepaymentQuestionsPage product="strategic-planning" />} />
+      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<GuidedStartPage product="strategic-planning" />} />
       <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
       <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
       <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
@@ -217,7 +223,7 @@ function CleanRoutes() {
 
       {/* Board Recommitment */}
       <Route path="/board-recommitment" element={<GuidedLandingPage product="board-recommitment" />} />
-      <Route path="/board-recommitment/start" element={<GuidedPrepaymentQuestionsPage product="board-recommitment" />} />
+      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<GuidedStartPage product="board-recommitment" />} />
       <Route path="/board-recommitment/video" element={<GuidedVideoPage product="board-recommitment" />} />
       <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/welcome" element={<GuidedPaidContinue product="board-recommitment" />} />
