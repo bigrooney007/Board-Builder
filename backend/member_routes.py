@@ -79,6 +79,14 @@ class CompleteGuestAccountRequest(BaseModel):
 
 async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
     """Server-side Stripe verification. Grants entitlement only when Stripe confirms payment."""
+    # The Admin Client Testing Center creates an isolated, already claimed test transaction.
+    # Keep its post-payment route identical without querying Stripe for a synthetic session.
+    if member.get("internal_client_test"):
+        test_tx = await db.payment_transactions.find_one({"session_id": session_id,
+            "internal_preview": True, "claimed_by_user_id": member["user_id"],
+            "payment_status": "paid", "purchase_source": "recruitment_497"}, {"_id": 0})
+        if test_tx:
+            return {"entitlement": "recruitment_self_guided", "purchase_source": "recruitment_497"}
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
     existing = await db.purchases.find_one({"session_id": session_id}, {"_id": 0})
     if existing and existing["user_id"] != member["user_id"]:

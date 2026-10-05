@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from member_auth import authenticate_member, hash_member_password, new_uuid, require_entitlement
+from auth_service import authenticate_admin
 from platform_communications import notify_homepage_lead, public_origin
 
 class GuidedLead(BaseModel):
@@ -38,6 +39,12 @@ class GuidedAccessEmail(BaseModel):
     session_id: str = Field(min_length=1)
     product: str
     origin_url: str = Field(min_length=1)
+
+class FacilitatedPlanningLead(BaseModel):
+    name: str = Field(min_length=1)
+    email: EmailStr
+    organization: str = Field(min_length=1)
+    board_count: int = Field(ge=1, le=200)
 
 def create_guided_product_router(db):
     router = APIRouter(prefix="/api/guided")
@@ -71,6 +78,74 @@ def create_guided_product_router(db):
             if not programs or any(not item.get("name") for item in programs):
                 return False
         return all(bool(answers.get(key)) for key in prepayment_fields[product])
+
+    @router.post("/admin/strategic-planning/facilitated")
+    async def create_facilitated_planning(payload: FacilitatedPlanningLead, request: Request):
+        admin = await authenticate_admin(request, db)
+        email = str(payload.email).strip().lower()
+        existing = await db.guided_product_leads.find_one(
+            {"product": "strategic-planning", "email": email, "facilitated_by_admin": admin["user_id"]}, {"_id": 0})
+        if existing:
+            return {"token": existing["token"], "session_id": existing["facilitated_session_id"],
+                    "complete": bool(existing.get("prepayment_complete"))}
+        now = datetime.now(timezone.utc).isoformat()
+        token, sid = secrets.token_urlsafe(32), f"sp-facilitated-{secrets.token_urlsafe(24)}"
+        lead = {"token": token, "product": "strategic-planning", "name": payload.name.strip(),
+                "email": email, "organization": payload.organization.strip(), "board_count": payload.board_count,
+                "facilitated_by_admin": admin["user_id"], "facilitated_session_id": sid,
+                "followup_status": "facilitated", "followup_step": 0,
+                "converted_at": "", "created_at": now, "updated_at": now}
+        await db.guided_product_leads.insert_one(lead)
+        return {"token": token, "session_id": sid, "complete": False}
+
+    @router.get("/admin/strategic-planning/facilitated")
+    async def list_facilitated_planning(request: Request):
+        admin = await authenticate_admin(request, db)
+        leads = await db.guided_product_leads.find(
+            {"product": "strategic-planning", "facilitated_by_admin": admin["user_id"]},
+            {"_id": 0, "token": 1, "facilitated_session_id": 1, "name": 1, "email": 1,
+             "organization": 1, "prepayment_complete": 1}).to_list(200)
+        return {"leads": leads}
+
+    @router.post("/admin/strategic-planning/facilitated/{token}/open")
+    async def open_facilitated_planning(token: str, request: Request):
+        admin = await authenticate_admin(request, db)
+        lead = await db.guided_product_leads.find_one(
+            {"token": token, "product": "strategic-planning", "facilitated_by_admin": admin["user_id"]}, {"_id": 0})
+        if not lead:
+            raise HTTPException(404, "Facilitated planning lead not found")
+        if not complete_preanswers("strategic-planning", lead.get("prepayment_answers") or {}):
+            raise HTTPException(409, "The leader must finish the organization questions first")
+        sid = lead["facilitated_session_id"]
+        now = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.update_one({"session_id": sid},
+            {"$setOnInsert": {"session_id": sid, "payment_status": "facilitated", "purchase_source": "strategic_planning_supported_2997",
+                "guided_lead_token": token, "internal_facilitated": True, "facilitated_by_admin": admin["user_id"], "created_at": now}}, upsert=True)
+        await db.guided_product_intakes.update_one({"session_id": sid},
+            {"$set": {"product": "strategic-planning", "answers": lead["prepayment_answers"], "updated_at": now},
+             "$setOnInsert": {"session_id": sid, "created_at": now}}, upsert=True)
+        project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})
+        if not project:
+            await db.sp_projects.insert_one({"project_id": secrets.token_hex(16), "guided_session_id": sid,
+                "organization_name": lead["organization"], "founder_name": lead["name"], "founder_email": lead["email"],
+                "founder_title": "", "mission": lead["prepayment_answers"]["mission"], "organization_details_saved_at": now,
+                "facilitated": True, "facilitator_email": admin["email"], "status": "Active", "generic_form_token": secrets.token_urlsafe(32), "created_at": now})
+        else:
+            await db.sp_projects.update_one({"guided_session_id": sid}, {"$set": {
+                "organization_name": lead["organization"], "mission": lead["prepayment_answers"]["mission"],
+                "organization_details_saved_at": now, "facilitated": True,
+                "facilitator_email": admin["email"], "updated_at": now}})
+        await db.guided_product_leads.update_one({"token": token}, {"$set": {"followup_status": "facilitated", "converted_at": now}})
+        return {"dashboard_url": f"/admin/strategic-planning/facilitated?session_id={sid}"}
+
+    @router.get("/admin/strategic-planning/facilitated-access")
+    async def facilitated_access(session_id: str, request: Request):
+        admin = await authenticate_admin(request, db)
+        tx = await db.payment_transactions.find_one({"session_id": session_id, "payment_status": "facilitated",
+            "internal_facilitated": True, "facilitated_by_admin": admin["user_id"]}, {"_id": 0})
+        if not tx:
+            raise HTTPException(404, "Facilitated planning workspace not found")
+        return {"allowed": True}
 
     async def hydrate_paid_journey(tx: dict, product: str, member: dict):
         """Copy the saved public answers into the existing paid workspaces once."""
@@ -226,6 +301,9 @@ def create_guided_product_router(db):
     async def context(token: str):
         doc=await db.guided_product_leads.find_one({"token":token},{"_id":0})
         if not doc: raise HTTPException(404,"Journey not found")
+        if doc.get("facilitated_by_admin"):
+            doc.pop("facilitated_session_id", None)
+            doc["facilitated_by_admin"] = True
         return doc
 
     @router.put("/context/{token}/answers")
@@ -302,6 +380,8 @@ def create_guided_product_router(db):
         )
         if not tx:
             raise HTTPException(402, "Paid access could not be confirmed")
+        if tx.get("internal_preview"):
+            return {"sent": False, "internal_preview": True}
         if tx.get("access_email_sent_at"):
             return {"sent": True}
         lead = await db.guided_product_leads.find_one({"token": tx.get("guided_lead_token", "")}, {"_id": 0}) or {}

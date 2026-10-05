@@ -31,6 +31,7 @@ import {
 } from "@/funnels/GuidedProductPages";
 import StrategicPlanningFormPage from "@/funnels/StrategicPlanningFormPage";
 import GuidedPrepaymentQuestionsPage from "@/funnels/GuidedPrepaymentQuestionsPage";
+import { FacilitatedPlanningComplete, FacilitatedPlanningDashboard } from "@/funnels/FacilitatedPlanningPages";
 import CommunityNeedResearchPage from "@/funnels/CommunityNeedResearchPage";
 import StrategicPlanningResponsePage from "@/funnels/StrategicPlanningResponsePage";
 import StrategicPlanReviewPage from "@/funnels/StrategicPlanReviewPage";
@@ -189,6 +190,8 @@ function CleanRoutes() {
       {/* Strategic Planning */}
       <Route path="/strategic-planning" element={<GuidedLandingPage product="strategic-planning" />} />
       <Route path="/strategic-planning/start" element={<GuidedPrepaymentQuestionsPage product="strategic-planning" />} />
+      <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
+      <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
       <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
       <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaymentConfirmedPage product="strategic-planning" />} />
       <Route path="/strategic-planning/welcome" element={<GuidedWelcomePage product="strategic-planning" />} />

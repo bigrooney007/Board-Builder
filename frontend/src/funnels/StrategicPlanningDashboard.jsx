@@ -118,7 +118,7 @@ export default function StrategicPlanningDashboard(){
   const organizationReady=Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
   const meetingReady=Boolean(p.planning_meeting?.meeting_date&&p.planning_meeting?.start_time&&p.planning_meeting?.timezone_name);
   const formReady=p.form?.status==="Approved";
-  const leadDone=lead?.status==="COMPLETED";
+  const leadDone=lead?.status==="COMPLETED" || (p.facilitated && organizationReady);
   const guideReady=Boolean(p.meeting_guide_text);
   const sessionDone=session?.status==="COMPLETED";
   const finalStatus=p.final_plan?.status||"NONE";
@@ -227,10 +227,10 @@ export default function StrategicPlanningDashboard(){
 
       <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
         <div className="sp-clean-stage">
-          <h2>Your Thinking Belongs In The Same Pool As Everyone Else's</h2>
-          <p>You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer.</p>
-          {!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>}
-          {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> Your response is saved and will enter the live session with everyone else's ideas.</p>}
+          <h2>{p.facilitated ? "The Founder’s Starting Point" : "Your Thinking Belongs In The Same Pool As Everyone Else's"}</h2>
+          <p>{p.facilitated ? "The founder’s organization answers are saved as the starting context for every Board question. Board members will review that context and contribute their own ideas before the meeting." : "You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer."}</p>
+          {!p.facilitated && (!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>)}
+          {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> {p.facilitated ? "Founder context is ready for the Board’s review." : "Your response is saved and will enter the live session with everyone else's ideas."}</p>}
         </div>
       </Step>
 
@@ -247,7 +247,9 @@ export default function StrategicPlanningDashboard(){
         </div>
         <div className="sp-response-list">
           {!boardPeople.length?<p className="sp-empty">No Board Members added yet.</p>:boardPeople.map(person=><article key={person.participant_id}>
-            <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small></div>
+            <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small>
+              {person.status==="COMPLETED"&&<small>Submitted {person.submitted_at ? new Date(person.submitted_at).toLocaleString() : ""} · Founder email: {person.owner_notification_status||"Pending"}{p.facilitated ? ` · Facilitator email: ${person.facilitator_notification_status||"Pending"}` : ""}</small>}
+            </div>
             <div className="sp-actions">
               {person.status==="COMPLETED"&&<Button secondary href={`/strategic-planning-response/${person.participant_id}`}>VIEW RESPONSE</Button>}
               {person.status==="COMPLETED"&&<Button secondary onClick={()=>downloadResponse(person.participant_id)}><Download size={14}/> DOWNLOAD</Button>}

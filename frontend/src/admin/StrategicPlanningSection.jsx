@@ -70,6 +70,8 @@ const FormDistributionPanel = ({ pid, project, onError }) => {
 };
 
 export const StrategicPlanningSection = () => {
+  const [facilitated, setFacilitated] = useState([]);
+  const [facilitatedDraft, setFacilitatedDraft] = useState({ name: "", email: "", organization: "", board_count: 1 });
   const [projects, setProjects] = useState([]);
   const [detail, setDetail] = useState(null);
   const [create, setCreate] = useState({ organization_name: "", founder_name: "", founder_email: "", founder_title: "", mission: "", form_content: "" });
@@ -91,6 +93,23 @@ export const StrategicPlanningSection = () => {
     try { const r = await client.get(`/admin/sp/projects/${projectId}`); setDetail(r.data); } catch (e) { setMessage(err(e)); }
   }, []);
   useEffect(() => { loadProjects(); }, [loadProjects]);
+  const loadFacilitated = useCallback(() => client.get("/guided/admin/strategic-planning/facilitated")
+    .then(r => setFacilitated(r.data.leads || [])).catch(e => setMessage(err(e))), []);
+  useEffect(() => { loadFacilitated(); }, [loadFacilitated]);
+  const createFacilitated = async () => {
+    try {
+      await client.post("/guided/admin/strategic-planning/facilitated", facilitatedDraft);
+      setFacilitatedDraft({ name: "", email: "", organization: "", board_count: 1 });
+      await loadFacilitated();
+      setMessage("Personal leader link is ready. Copy it below and send it to the founder.");
+    } catch (e) { setMessage(err(e)); }
+  };
+  const openFacilitated = async (token) => {
+    try {
+      const r = await client.post(`/guided/admin/strategic-planning/facilitated/${token}/open`);
+      window.location.href = r.data.dashboard_url;
+    } catch (e) { setMessage(err(e)); }
+  };
 
   useEffect(() => {
     if (!pid) return undefined;
@@ -134,6 +153,26 @@ export const StrategicPlanningSection = () => {
     return (
       <section data-testid="admin-sp-section">
         <h2 className="reference-heading">Strategic Planning</h2>
+        <div className="admin-import-panel" data-testid="sp-facilitated-projects">
+          <h3>Strategic Planning With Rooney</h3>
+          <p>Create a private link for the founder to complete the current organization questions. When those answers are complete, open the existing planning dashboard to set the meeting and invite the board. No checkout link is sent.</p>
+          <div className="admin-filters">
+            <input aria-label="Founder name" placeholder="Founder name" value={facilitatedDraft.name} onChange={e=>setFacilitatedDraft({...facilitatedDraft,name:e.target.value})}/>
+            <input aria-label="Founder email" type="email" placeholder="Founder email" value={facilitatedDraft.email} onChange={e=>setFacilitatedDraft({...facilitatedDraft,email:e.target.value})}/>
+            <input aria-label="Organization name" placeholder="Organization name" value={facilitatedDraft.organization} onChange={e=>setFacilitatedDraft({...facilitatedDraft,organization:e.target.value})}/>
+            <input aria-label="Board member count" type="number" min="1" max="200" value={facilitatedDraft.board_count} onChange={e=>setFacilitatedDraft({...facilitatedDraft,board_count:Number(e.target.value)})}/>
+            <button className="button" disabled={!facilitatedDraft.name.trim()||!facilitatedDraft.email.trim()||!facilitatedDraft.organization.trim()||!facilitatedDraft.board_count} onClick={createFacilitated}>CREATE FOUNDER LINK</button>
+          </div>
+          {facilitated.map(row => {
+            const link = `${window.location.origin}/strategic-planning/start?token=${encodeURIComponent(row.token)}`;
+            return <div key={row.token} className="admin-filters" style={{marginTop:12}}>
+              <strong>{row.organization} · {row.name}</strong>
+              <span>{row.prepayment_complete ? "Founder answers complete" : "Waiting for founder answers"}</span>
+              <button className="button button-small" onClick={()=>navigator.clipboard?.writeText(link)}>COPY FOUNDER LINK</button>
+              <button className="button button-small" disabled={!row.prepayment_complete} onClick={()=>openFacilitated(row.token)}>OPEN PLANNING DASHBOARD</button>
+            </div>;
+          })}
+        </div>
         <p className="admin-message">{strategicPlanningSectionText.pasteTheStrategicPlanningForm}</p>
         {message && <p className="admin-message" data-testid="sp-message">{message}</p>}
         <div className="admin-import-panel" data-testid="sp-create-project">

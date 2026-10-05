@@ -19,7 +19,10 @@ class DemoSupportedServiceContractTests(unittest.TestCase):
         self.assertIn('price:"$2,997"', game)
         self.assertIn('supportedPrice:"$2,497"', guided)
         self.assertIn('supportedPrice:"$2,997"', guided)
-        self.assertIn("100% Outcome Guarantee", source("frontend/src/components/DemoOfferCards.jsx"))
+        cards = source("frontend/src/components/DemoOfferCards.jsx")
+        self.assertIn("100% Guarantee", cards)
+        self.assertNotIn("100% Outcome Guarantee", cards)
+        self.assertNotIn("<span>{card.guarantee}</span>", cards)
 
     def test_supported_checkout_has_exact_products_prices_and_real_handoff(self):
         payments = source("backend/payment_routes.py")

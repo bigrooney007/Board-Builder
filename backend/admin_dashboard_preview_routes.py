@@ -2573,7 +2573,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
-            return f"/recruit/welcome?session_id={session_id}"
+            return f"/purchase/success?session_id={session_id}"
 
         if product == "board-fundraising-game":
             await db.game_profiles.update_one(
@@ -2591,6 +2591,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                         "job_title": "Founder and Executive Director",
                     },
                     "profile_completed": True, "situation_completed": False,
+                    "welcome_email_sent": True,
                     "internal_preview": True, "updated_at": now,
                 }, "$setOnInsert": {"created_at": now}},
                 upsert=True,
@@ -2727,7 +2728,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        return f"/{product}/dashboard?session_id={session_id}" + ("#sp-meeting" if product == "strategic-planning" else "#recommitment-forms")
+        return f"/{product}/payment-confirmed?session_id={session_id}"
 
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):

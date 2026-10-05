@@ -564,6 +564,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
         if result.modified_count and record.get("role") != "Lead User":
             origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
+            response_link = f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}"
             try:
                 if project.get("founder_email"):
                     await send_email(
@@ -574,7 +575,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                         "Open their response to review every answer before your Strategic Planning Session.\n\n"
                         "Nonprofit Board Builder",
                         f"VIEW {payload.full_name.split(' ')[0].upper()}'S RESPONSE",
-                        f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}")
+                        response_link)
                     await db.sp_participants.update_one(
                         {"participant_id": record["participant_id"]},
                         {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now_iso()}})
@@ -583,6 +584,20 @@ def create_strategic_planning_router(db) -> APIRouter:
                 await db.sp_participants.update_one(
                     {"participant_id": record["participant_id"]},
                     {"$set": {"owner_notification_status": "Failed", "owner_notification_error": str(exc)[:300]}})
+            facilitator_email = str(project.get("facilitator_email") or "").strip().lower()
+            if project.get("facilitated") and facilitator_email and facilitator_email != str(project.get("founder_email") or "").lower():
+                try:
+                    await send_email(facilitator_email,
+                        f"Strategic Planning Response Received | {payload.full_name} | {project['organization_name']}",
+                        f"{payload.full_name} has submitted their Strategic Planning Form for {project['organization_name']}. "
+                        "Their response is saved in the planning dashboard for your review.",
+                        "VIEW BOARD RESPONSE", response_link)
+                    await db.sp_participants.update_one({"participant_id": record["participant_id"]},
+                        {"$set": {"facilitator_notification_status": "Sent", "facilitator_notification_sent_at": now_iso()}})
+                except Exception as exc:
+                    logger.exception("Strategic Planning facilitator notification failed for %s", record["participant_id"])
+                    await db.sp_participants.update_one({"participant_id": record["participant_id"]},
+                        {"$set": {"facilitator_notification_status": "Failed", "facilitator_notification_error": str(exc)[:300]}})
         return {"status": "submitted", "organization_name": project["organization_name"]}
 
     @router.get("/strategic-planning-response/{participant_id}")
@@ -1670,7 +1685,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "button_label": "OPEN MY AREA DEVELOPMENT PACK", "form_link": link}
 
     async def paid(session_id: str):
-        tx=await db.payment_transactions.find_one({"session_id":session_id,"payment_status":"paid","purchase_source":{"$in":["strategic_planning_497","strategic_planning_supported_2997"]}},{"_id":0})
+        tx=await db.payment_transactions.find_one({"session_id":session_id,"$or":[
+            {"payment_status":"paid","purchase_source":{"$in":["strategic_planning_497","strategic_planning_supported_2997"]}},
+            {"payment_status":"facilitated","internal_facilitated":True,"purchase_source":"strategic_planning_supported_2997"}]},{"_id":0})
         if not tx: raise HTTPException(status_code=402,detail="Paid Strategic Planning access could not be confirmed")
         lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
         intake=await db.guided_product_intakes.find_one({"session_id":session_id,"product":"strategic-planning"},{"_id":0}) or {}

@@ -20,7 +20,7 @@ export default function DemoOfferCards({ product, selfGuided, supported, intro, 
             <h3>{card.title}</h3>
             <p className="demo-offer-description">{card.description}</p>
             <ul>{card.features.map((item) => <li key={item}><CheckCircle2 size={18}/><span>{item}</span></li>)}</ul>
-            {card.guarantee && <div className="demo-guarantee"><strong>100% Outcome Guarantee</strong><span>{card.guarantee}</span></div>}
+            <div className="demo-guarantee"><strong>100% Guarantee</strong></div>
             <div className="demo-offer-price">{card.price}<small> ONE TIME</small></div>
             <button className="bfg-btn bfg-btn-primary" disabled={Boolean(busy) || disabled} onClick={() => onBuy(card.key)} data-testid={`${product}-${card.key}-buy`}>
               {busy === card.key ? "OPENING SECURE CHECKOUT…" : card.button}

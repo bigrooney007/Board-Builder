@@ -101,7 +101,9 @@ export default function GuidedPrepaymentQuestionsPage({ product }) {
       const result = await persist(answers);
       if (last) {
         if (!result.data.complete) throw new Error("Please complete every section before continuing.");
-        navigate(`/${product}/video?token=${encodeURIComponent(token)}`);
+        navigate(lead?.facilitated_by_admin && isStrategic
+          ? `/strategic-planning/facilitated-complete?token=${encodeURIComponent(token)}`
+          : `/${product}/video?token=${encodeURIComponent(token)}`);
       } else {
         setIndex(index + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
