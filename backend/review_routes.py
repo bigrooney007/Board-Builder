@@ -8,8 +8,9 @@ from pydantic import BaseModel, Field
 from auth_service import authenticate_admin
 
 GUARANTEE_FALLBACK = (
-    "If you ask for a refund, you will receive a 100% refund, regardless of where you are in the process. "
-    "Contact rooney@nonprofitboardbuilder.com to request it."
+    "Complete the required Recruitment System and follow the published Recruitment Guarantee requirements. "
+    "If you do not achieve the qualifying recruitment result, you may request a refund under the Recruitment Guarantee terms. "
+    "The full Recruitment Guarantee terms will be published here."
 )
 
 TERMS_VERSION = "2026-06-recruitment-v1"
@@ -39,7 +40,8 @@ def create_review_router(db) -> APIRouter:
 
     @router.get("/recruitment-guarantee")
     async def recruitment_guarantee():
-        return {"terms": GUARANTEE_FALLBACK, "configured": True}
+        terms = os.environ.get("RECRUITMENT_GUARANTEE_TERMS", "").strip()
+        return {"terms": terms or GUARANTEE_FALLBACK, "configured": bool(terms)}
 
     @router.get("/direct-recruitment/config")
     async def direct_recruitment_config():

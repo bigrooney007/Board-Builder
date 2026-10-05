@@ -6,98 +6,37 @@ import DashboardSectionAudioAdmin from "@/admin/DashboardSectionAudioAdmin";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
-const RECRUITMENT_QUESTION_AUDIO_IDS = ["rct_question_1", "rct_question_2", "rct_question_3", "rct_question_4", "rct_question_5", "rct_question_6"];
+const PAYMENT_VIDEO_KEYS = ["recruitment_upgrade", "game_homepage", "strategic_planning_demonstration", "board_recommitment_demonstration"];
 
-function RecruitmentQuestionAudioAdmin() {
-  const [assets, setAssets] = useState([]);
-  const [busy, setBusy] = useState("");
+function AudioVoiceSelectionAdmin() {
+  const [settings, setSettings] = useState(null);
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-
-  const load = useCallback(async () => {
-    setMessage("");
-    try {
-      const response = await client.get("/admin/game/voice/assets");
-      setAssets((response.data.assets || []).filter((asset) => RECRUITMENT_QUESTION_AUDIO_IDS.includes(asset.narration_id)));
-    } catch (error) {
-      setMessage(error.response?.data?.detail || "Could not load Recruitment Question audio.");
-    }
+  useEffect(() => {
+    client.get("/admin/game/voice/settings").then(({data}) => setSettings(data.settings))
+      .catch(() => setMessage("Could not load voice settings."));
   }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const updateText = (id, text) => setAssets((current) =>
-    current.map((asset) => asset.narration_id === id ? { ...asset, text } : asset)
-  );
-
-  const save = async (asset) => {
-    setBusy("save:" + asset.narration_id);
-    setMessage("");
+  const save = async () => {
+    setBusy(true); setMessage("");
     try {
-      await client.put("/admin/game/voice/assets/" + asset.narration_id, { text: asset.text });
-      setMessage("Question script saved.");
-      await load();
-    } catch (error) {
-      setMessage(error.response?.data?.detail || "Could not save this question script.");
-    }
-    setBusy("");
+      const response = await client.put("/admin/game/voice/settings", {settings: {
+        test_voice_id: settings.test_voice_id || "", live_voice_id: settings.live_voice_id || "",
+      }});
+      setSettings(response.data.settings);
+      setMessage("Voice selection saved. Regenerate the clips you want to use with the new voice.");
+    } catch (error) { setMessage(error.response?.data?.detail || "Could not save voice selection."); }
+    setBusy(false);
   };
-
-  const generate = async (asset, environment) => {
-    setBusy(environment + ":" + asset.narration_id);
-    setMessage("");
-    try {
-      await client.post("/admin/game/voice/assets/" + asset.narration_id + "/generate", {
-        environment,
-        force: environment === "live" && asset.live?.status === "ready",
-      });
-      setMessage((environment === "live" ? "Live" : "Test") + " audio generated.");
-      await load();
-    } catch (error) {
-      setMessage(error.response?.data?.detail || "Audio generation failed.");
-    }
-    setBusy("");
-  };
-
-  return (
-    <div className="admin-platform-subsection" data-testid="admin-recruitment-question-audio">
-      <div className="admin-funnel-numbers-head" style={{ marginTop: 36 }}>
-        <div>
-          <h2>Recruitment Question Audio</h2>
-          <p>Edit the teaching script for each of the six Recruitment Questions, then generate or regenerate its ElevenLabs audio. If no live audio exists, the customer simply sees the question without audio.</p>
-        </div>
-        <button className="button button-back button-small" onClick={load}><RefreshCw size={15} /> Refresh</button>
-      </div>
-      {message && <p className="admin-message">{message}</p>}
-      <div className="admin-preview-dashboard-grid">
-        {assets.map((asset, index) => (
-          <article className="member-card" key={asset.narration_id}>
-            <p className="eyebrow">QUESTION {index + 1} AUDIO</p>
-            <h3>{asset.label}</h3>
-            <p className="material-meta">Test: {asset.test?.status || "missing"} · Live: {asset.live?.status || "missing"} · Script v{asset.script_version || 1}</p>
-            <label className="admin-notes">
-              Teaching Script
-              <textarea rows={7} value={asset.text || ""} onChange={(event) => updateText(asset.narration_id, event.target.value)} />
-            </label>
-            <div className="material-actions">
-              <button className="button button-small" disabled={!!busy} onClick={() => save(asset)}>
-                <Save size={14} /> {busy === "save:" + asset.narration_id ? "SAVING…" : "SAVE SCRIPT"}
-              </button>
-              <button className="button button-back button-small" disabled={!!busy} onClick={() => generate(asset, "test")}>
-                {busy === "test:" + asset.narration_id ? "GENERATING…" : "GENERATE TEST AUDIO"}
-              </button>
-              <button className="button button-small" disabled={!!busy} onClick={() => generate(asset, "live")}>
-                {busy === "live:" + asset.narration_id ? "GENERATING…" : asset.live?.status === "ready" ? "REGENERATE LIVE AUDIO" : "GENERATE LIVE AUDIO"}
-              </button>
-              {asset.live?.status === "ready" && (
-                <audio controls preload="none" style={{ width: "100%", marginTop: 8 }}
-                  src={`${API}/game/voice/audio/${asset.narration_id}?v=live${asset.live?.version || 0}`} />
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
+  return <section className="admin-platform-subsection" data-testid="admin-audio-voice-selection">
+    <h2>Choose The Voice For Your Audio</h2>
+    <p>Paste an ElevenLabs Voice ID for Test and Live. Leave a field empty to use the existing server voice. Changing a voice does not replace a recording until you regenerate that clip below.</p>
+    {settings && <div className="admin-filters">
+      <label>Test voice ID<input value={settings.test_voice_id || ""} onChange={e=>setSettings({...settings,test_voice_id:e.target.value})} placeholder={`Current server voice ${settings.test_voice_ref || ""}`}/></label>
+      <label>Live voice ID<input value={settings.live_voice_id || ""} onChange={e=>setSettings({...settings,live_voice_id:e.target.value})} placeholder={`Current server voice ${settings.live_voice_ref || ""}`}/></label>
+      <button className="button button-small" onClick={save} disabled={busy}>{busy ? "SAVING…" : "SAVE VOICE SELECTION"}</button>
+    </div>}
+    {message && <p className="admin-message" role="status">{message}</p>}
+  </section>;
 }
 
 function RecruitmentLaunchVideoAdmin() {
@@ -137,7 +76,6 @@ export function PlatformVideosSection() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
-    setMessage("");
     try {
       const response = await client.get("/admin/platform/videos");
       setVideos(response.data.videos || []);
@@ -163,39 +101,37 @@ export function PlatformVideosSection() {
     setSaving("");
   };
 
-  const ordered = VIDEO_KEYS.map(([key, name, flow]) =>
+  const ordered = VIDEO_KEYS.filter(([key])=>key!=="game_upgrade").map(([key, name, flow]) =>
     videos.find((row) => row.key === key) || { key, name, flow, url: "", youtube_id: "" }
   );
+  const videoCard = (video) => <article className="member-card" key={video.key} data-testid={`admin-video-${video.key}`}>
+    <h3>{video.name}</h3><p>{video.flow}</p>
+    <label className="admin-notes">YouTube URL or Video ID
+      <input value={drafts[video.key] ?? ""} onChange={(event) => setDrafts({ ...drafts, [video.key]: event.target.value })} placeholder="https://youtu.be/..." />
+    </label>
+    <button className="button button-small" disabled={saving === video.key} onClick={() => save(video.key)}>
+      <Save size={14} /> {saving === video.key ? "SAVING…" : "SAVE VIDEO"}
+    </button>
+    {video.youtube_id && <a href={`https://www.youtube.com/watch?v=${video.youtube_id}`} target="_blank" rel="noreferrer">Watch saved video</a>}
+  </article>;
 
   return (
     <section data-testid="clean-platform-videos">
       <div className="admin-funnel-numbers-head">
         <div>
-          <h2>The 8 Core Videos Within The Platform</h2>
-          <p>Manage the four demonstration videos and four onboarding videos here. The Recruitment campaign-launch video and contextual audio are below.</p>
+          <h2>Videos For The Four Offers</h2>
+          <p>Update the video each lead sees before choosing how to pay. The Board Fundraising Game payment page uses the same demonstration video saved here under Board Fundraising Game Demonstration.</p>
         </div>
-        <button className="button button-back button-small" onClick={load}><RefreshCw size={15} /> Refresh</button>
+        <button className="button button-back button-small" onClick={()=>{setMessage("");load()}}><RefreshCw size={15} /> Refresh</button>
       </div>
       {message && <p className="admin-message">{message}</p>}
-      <div className="admin-preview-dashboard-grid">
-        {ordered.map((video, index) => (
-          <article className="member-card" key={video.key}>
-            <p className="eyebrow">VIDEO {index + 1}</p>
-            <h3>{video.name}</h3>
-            <p>{video.flow}</p>
-            <label className="admin-notes">
-              YouTube URL or Video ID
-              <input value={drafts[video.key] ?? ""} onChange={(event) => setDrafts({ ...drafts, [video.key]: event.target.value })} placeholder="https://youtu.be/..." />
-            </label>
-            <button className="button button-small" disabled={saving === video.key} onClick={() => save(video.key)}>
-              <Save size={14} /> {saving === video.key ? "SAVING…" : "SAVE VIDEO"}
-            </button>
-          </article>
-        ))}
-      </div>
+      <div className="admin-preview-dashboard-grid">{ordered.filter(video=>PAYMENT_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
+      <details className="admin-import-panel" style={{marginTop:22}}><summary style={{cursor:"pointer",fontWeight:800}}>Onboarding And Other Videos</summary>
+        <div className="admin-preview-dashboard-grid" style={{marginTop:16}}>{ordered.filter(video=>!PAYMENT_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
+      </details>
       <RecruitmentLaunchVideoAdmin />
+      <AudioVoiceSelectionAdmin />
       <DashboardSectionAudioAdmin />
-      <RecruitmentQuestionAudioAdmin />
     </section>
   );
 }

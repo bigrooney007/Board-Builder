@@ -22,7 +22,7 @@ DEFAULT_CONTENT = {
     "hero_explanation": "The Board Fundraising Game helps you and your board build the fundraising strategy your organization will use to consistently find potential funders, attract them, build relationships and raise money.",
     "agent_intro": "Your Board Fundraising Agent will guide you and your board through five practical questions:",
     "agent_questions": [
-        "Who do you think can help fund your organization?",
+        "Who do you think can help fund your organization, and why do you think they would give?",
         "Where can you find them?",
         "How can you attract them and get them interested in your organization?",
         "What should you ask them for, and how much should you ask?",

@@ -7,6 +7,17 @@ const client=axios.create({baseURL:API,withCredentials:true});
 
 const GROUPS=[
   {
+    key:"fundraising-form", title:"Board Fundraising Game · Lead And Board Forms",
+    ids:["fundraising-free-welcome","fundraising-free-board-welcome",
+      "fundraising-free-question-1","fundraising-free-question-2","fundraising-free-question-3",
+      "fundraising-free-question-4","fundraising-free-question-5","fundraising-free-participation"],
+  },
+  {
+    key:"recruitment-form", title:"Board Recruitment · Six Question Form",
+    ids:["rct_welcome","rct_question_1","rct_question_2","rct_question_3",
+      "rct_question_4","rct_question_5","rct_question_6"],
+  },
+  {
     key:"recruitment", title:"Board Recruitment Dashboard Audio",
     ids:[
       "dash_rct_questions","dash_rct_identify","dash_rct_materials","dash_rct_launch","dash_rct_applicants",
@@ -40,7 +51,6 @@ export default function DashboardSectionAudioAdmin(){
   const[message,setMessage]=useState("");
 
   const load=useCallback(async()=>{
-    setMessage("");
     try{
       const response=await client.get("/admin/game/voice/assets");
       const wanted=new Set(GROUPS.flatMap(group=>group.ids));
@@ -60,7 +70,8 @@ export default function DashboardSectionAudioAdmin(){
     setBusy("save:"+asset.narration_id);setMessage("");
     try{
       await client.put("/admin/game/voice/assets/"+asset.narration_id,{text:asset.text||""});
-      setMessage("Dashboard audio script saved. Generate the live audio when you are happy with the script.");
+      window.dispatchEvent(new Event("voice-audio-changed"));
+      setMessage("Script saved. Generate the live clip when you are happy with it.");
       await load();
     }catch(error){setMessage(error.response?.data?.detail||"Could not save this script.");}
     setBusy("");
@@ -73,7 +84,8 @@ export default function DashboardSectionAudioAdmin(){
         environment,
         force:environment==="live"&&asset.live?.status==="ready",
       });
-      setMessage((environment==="live"?"Live":"Test")+" dashboard audio generated. The app will use the updated asset without another deployment.");
+      window.dispatchEvent(new Event("voice-audio-changed"));
+      setMessage((environment==="live"?"Live":"Test")+" audio generated. The app will use the updated asset without another deployment.");
       await load();
     }catch(error){setMessage(error.response?.data?.detail||"Audio generation failed.");}
     setBusy("");
@@ -82,20 +94,20 @@ export default function DashboardSectionAudioAdmin(){
   return <section data-testid="admin-dashboard-section-audio" style={{marginTop:38}}>
     <div className="admin-funnel-numbers-head">
       <div>
-        <h2>Contextual Audio For The 4 Dashboards</h2>
-        <p>Edit each section script here, generate a Test clip if you want to hear it first, then generate Live audio with ElevenLabs. Audio is never generated automatically. Once Live audio is generated, the matching dashboard section uses it immediately from the database without a new deployment.</p>
+        <h2>Audio Scripts · Forms And 4 Dashboards</h2>
+        <p>Choose your Test and Live voices above. Edit each guidance script, save it, listen to a Test clip, then generate Live audio. The live recording serves the matching form or dashboard section. You can edit and regenerate any clip later without a deployment.</p>
       </div>
-      <button className="button button-back button-small" onClick={load}><RefreshCw size={15}/> Refresh</button>
+      <button className="button button-back button-small" onClick={()=>{setMessage("");load()}}><RefreshCw size={15}/> Refresh</button>
     </div>
     {message&&<p className="admin-message">{message}</p>}
-    {GROUPS.map(group=><details key={group.key} open className="admin-import-panel" style={{marginTop:18}}>
+    {GROUPS.map(group=><details key={group.key} open={group.key==="fundraising-form"} className="admin-import-panel" style={{marginTop:18}}>
       <summary style={{cursor:"pointer",fontWeight:800,fontSize:17}}>{group.title} · {group.ids.length} sections</summary>
       <div className="admin-preview-dashboard-grid" style={{marginTop:14}}>
         {group.ids.map((id,index)=>{
           const asset=byId[id];
           if(!asset)return <article className="member-card" key={id}><p className="eyebrow">SECTION {index+1}</p><h3>{id}</h3><p>Script asset is not available yet.</p></article>;
           return <article className="member-card" key={id} data-testid={"dashboard-audio-admin-"+id}>
-            <p className="eyebrow">SECTION {index+1} AUDIO</p>
+            <p className="eyebrow">{group.key.endsWith("form")?"FORM CLIP":"DASHBOARD SECTION"} {index+1}</p>
             <h3>{asset.label}</h3>
             <p className="material-meta">Script v{asset.script_version||1} · Test: <Status value={asset.test?.status}/> · Live: <Status value={asset.live?.status}/></p>
             <label className="admin-notes">Audio Script
@@ -112,6 +124,8 @@ export default function DashboardSectionAudioAdmin(){
             </div>
             {asset.live?.status==="ready"&&<audio controls preload="none" style={{width:"100%",marginTop:10}}
               src={`${API}/game/voice/audio/${id}?environment=live&v=live${asset.live?.version||0}`}/>}
+            {asset.test?.status==="ready"&&<audio controls preload="none" style={{width:"100%",marginTop:8}}
+              src={`${API}/game/voice/audio/${id}?environment=test&v=test${asset.test?.version||0}`}/>}
           </article>;
         })}
       </div>

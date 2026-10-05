@@ -20,7 +20,6 @@ const termsSections = [
   ["Volunteer Board Service", "Most nonprofit board positions are unpaid volunteer leadership roles. Specific responsibilities, fiduciary duties, insurance and expectations are determined by each nonprofit."],
   ["Nonprofit Responsibilities", "Nonprofits remain responsible for candidate review, references, background checks, legal compliance, appointment decisions and board governance."],
   ["Communications", "Users may receive emails only according to the consent choices they make and may unsubscribe from optional communications at any time."],
-  ["100% Guarantee", "If you ask for a refund, you will receive a 100% refund, regardless of where you are in the process. Email rooney@nonprofitboardbuilder.com to request it."],
   ["Contact", "Questions about these terms may be sent to rooney@nonprofitboardbuilder.com. Postal address: 651 N Broad Street, Middletown, Delaware 19709."],
 ];
 

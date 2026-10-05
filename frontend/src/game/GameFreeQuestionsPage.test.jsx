@@ -43,6 +43,7 @@ test("saves five original answers in sequence and opens upgrade with no review o
 });
 
 test("foundation and company answers receive a natural second question", () => {
+  expect(FIVE_QUESTIONS[0].title).toContain("why do you think they would give");
   expect(fiveQuestionText(1, "local foundations")).toContain("Where do they spend their time");
   expect(fiveQuestionText(1, "local foundations")).toContain("funders you just identified");
   expect(fiveQuestionText(1, "small businesses")).toContain("organizations you just identified");

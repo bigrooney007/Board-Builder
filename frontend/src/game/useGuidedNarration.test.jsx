@@ -14,7 +14,9 @@ function Harness({ id, words }) {
 
 test("free game reads each screen and the speaker turns audio off and back on", async () => {
   sessionStorage.removeItem("bfg_narration_muted");
-  axios.get.mockResolvedValue({ data: { clips: {} } });
+  axios.get.mockResolvedValue({ data: { clips: {
+    "fundraising-free-question-1": { ready: false, text: "Think about who has a reason to care and why they would give." },
+  } } });
   const speak = jest.fn();
   const cancel = jest.fn();
   Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speak, cancel } });
@@ -31,7 +33,7 @@ test("free game reads each screen and the speaker turns audio off and back on", 
     expect(speak).toHaveBeenCalledTimes(1);
     await act(async () => node.querySelector("button").click());
     expect(sessionStorage.getItem("bfg_narration_muted")).toBe("0");
-    expect(speak.mock.calls.at(-1)[0].text).toBe("Question one");
+    expect(speak.mock.calls.at(-1)[0].text).toBe("Think about who has a reason to care and why they would give.");
   } finally {
     await act(async () => root.unmount()); node.remove();
     sessionStorage.removeItem("bfg_narration_muted");

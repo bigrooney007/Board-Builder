@@ -258,7 +258,7 @@ GAME_V3 = {
                     "If you don't know who you are looking for, fundraising becomes random.",
                     "You end up asking everybody instead of intentionally building relationships with the people, businesses and grantors most likely to care about what your organization exists to do.",
                 ],
-                "q1": "Who do you think are the exact types of people, businesses and grantors meant to fund your mission or with the greatest reason to fund your organization?",
+                "q1": "Who do you think are the exact types of people, businesses and grantors with the greatest reason to fund your organization, and why do you think they would give?",
                 "q1_hint": "Don't overthink it. Just share the ideas that come to mind.",
                 "deeper_heading": "LET'S THINK A LITTLE DEEPER",
                 "deeper": [

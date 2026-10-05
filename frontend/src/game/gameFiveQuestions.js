@@ -1,8 +1,8 @@
 export const FIVE_QUESTIONS = [
   {
     key: "audience",
-    title: "From your point of view, if there is one audience you believe can really help your organization reach this fundraising goal, who are they?",
-    hint: "Think about one particular type of person, business, company, foundation, grantmaker or other funding audience you believe has a strong reason to support what your organization does. Choose one key audience.",
+    title: "From your point of view, who is one audience that could help your organization reach this fundraising goal, and why do you think they would give to your organization?",
+    hint: "Choose one particular type of person, business or grantmaker. Tell us what connects them to your mission or the people you serve.",
   },
   {
     key: "where",

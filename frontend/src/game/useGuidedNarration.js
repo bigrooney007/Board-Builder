@@ -4,8 +4,8 @@ import axios from "axios";
 const BASE = process.env.REACT_APP_BACKEND_URL || "";
 const MUTE_KEY = "bfg_narration_muted";
 
-// Prefer the owner's generated recording. Until a new script has been recorded,
-// read the same words using the browser's voice where it is available.
+// Prefer the owner's generated recording. Browser narration uses the saved teaching
+// script while a replacement recording is pending, rather than reading the question.
 export function useGuidedNarration(tutorial, narrationId, words) {
   const [clips, setClips] = useState(null);
   const [muted, setMuted] = useState(() => sessionStorage.getItem(MUTE_KEY) === "1");
@@ -31,8 +31,9 @@ export function useGuidedNarration(tutorial, narrationId, words) {
     if (mutedRef.current || !narrationId) return;
     const clip = clips?.[narrationId];
     const speak = () => {
-      if (!words || typeof window.speechSynthesis === "undefined" || typeof window.SpeechSynthesisUtterance === "undefined") return;
-      const utterance = new window.SpeechSynthesisUtterance(words);
+      const guidance = clip?.text || words;
+      if (!guidance || typeof window.speechSynthesis === "undefined" || typeof window.SpeechSynthesisUtterance === "undefined") return;
+      const utterance = new window.SpeechSynthesisUtterance(guidance);
       utterance.lang = "en-US";
       utterance.rate = 0.95;
       window.speechSynthesis.speak(utterance);

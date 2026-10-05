@@ -16,7 +16,10 @@ export default function GameUpgradePage() {
   const [game, setGame] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const video = usePlatformVideo("game_upgrade");
+  // Use the same demo the visitor can watch before the game. One Admin setting
+  // controls the demonstration on both pages.
+  const configuredVideo = usePlatformVideo("game_homepage");
+  const video = configuredVideo?.youtube_id ? configuredVideo : { key: "game_homepage", youtube_id: "rsf_QZfEId8", url: "https://youtu.be/rsf_QZfEId8" };
 
   useEffect(() => { document.title = "Bring In Your Board | Board Fundraising Game"; }, []);
   useEffect(() => {
@@ -64,8 +67,8 @@ export default function GameUpgradePage() {
       <div className="guided-goal"><span>THE FUNDRAISING GOAL YOU ARE BUILDING TOWARD</span><strong>{money(game.goal_amount)}</strong></div>
       <p className="guided-upgrade-copy">You have shared who you believe can fund your mission, where to find them, how to attract them, what to ask for and how to build the relationship. That is your starting point. Your board brings more ideas and more people to help carry them out.</p>
       <div className="guided-video" data-testid="bfg-upgrade-video">
-        <TrackedYouTubeVideo video={video} flow="board-fundraising-game" title="A message from Rooney before you invite your board"
-          placeholder="A short message from Rooney will appear here." />
+        <TrackedYouTubeVideo video={video} flow="board-fundraising-game" title="Board Fundraising Game demonstration"
+          placeholder="The Board Fundraising Game demonstration will appear here." />
       </div>
       {payButton("bfg-invite-board-cta")}
       <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
