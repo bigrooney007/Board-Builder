@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { articleForPath } from "@/content/fundraisingArticles";
 
 export const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -93,6 +94,7 @@ export const trackPlatformEvent = (flow, event, extra = {}) => {
 };
 
 export const flowForPath = (pathname) => {
+  if (articleForPath(pathname)) return "board-fundraising-game";
   if (pathname === "/") return "main";
   if (pathname === "/join-a-board") return "board-applicant-network";
   if (pathname.startsWith("/organize-board-fundraising-game")) return "facilitated-game";

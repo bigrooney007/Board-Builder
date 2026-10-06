@@ -21,11 +21,11 @@ function blogMetadata(post, status = 200) {
   ];
   if (post?.published_at) tags.push(["property", "article:published_time", post.published_at]);
   if (post?.edited_at) tags.push(["property", "article:modified_time", post.edited_at]);
-  if (post) tags.push(["property", "article:author", SITE_ORIGIN + "/about-rooney"], ["property", "article:section", post.category]);
+  if (post) tags.push(["property", "article:author", post.author_url || SITE_ORIGIN + "/about-rooney"], ["property", "article:section", post.category]);
   const schema = status !== 200 ? null : post ? {
     "@context": "https://schema.org", "@type": "BlogPosting", "@id": canonical + "#article", mainEntityOfPage: canonical,
     headline: post.title, description: summary, image: { "@type": "ImageObject", url: image, width: 1200, height: 630 },
-    author: { "@type": "Person", name: "Rooney Akpesiri", url: SITE_ORIGIN + "/about-rooney" },
+    author: { "@type": "Person", name: "Rooney Akpesiri", url: post.author_url || SITE_ORIGIN + "/about-rooney" },
     publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_ORIGIN },
     datePublished: post.published_at, dateModified: post.edited_at || post.published_at, articleSection: post.category, inLanguage: "en-US",
   } : { "@context": "https://schema.org", "@type": "Blog", name: "Nonprofit Board Builder Insights", url: canonical, description };

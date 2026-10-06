@@ -1,6 +1,7 @@
 /* eslint-env node */
 // Shared by the initial HTML renderer and React navigation. No browser or server-only dependencies.
 const pages = require("../content/landingSeo.json");
+const { articles, articlePath } = require("../content/fundraisingArticles");
 const SITE_ORIGIN = "https://nonprofitboardbuilder.com";
 const SITE_NAME = "Nonprofit Board Builder";
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -82,7 +83,8 @@ function robotsTxt() {
 }
 
 function sitemapXml() {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((page) => `  <url><loc>${canonicalUrl(page)}</loc></url>`).join("\n")}\n</urlset>\n`;
+  const paths = [...pages.map(page => page.path), ...articles.map(articlePath)];
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map(path => `  <url><loc>${SITE_ORIGIN}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
 }
 
 module.exports = { pages, SITE_ORIGIN, pageForPath, canonicalUrl, imageUrl, metaTags, structuredData, renderLandingHtml, robotsTxt, sitemapXml };
