@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import FundraisingGuideAdmin from "./FundraisingGuideAdmin";
 
 const API_ORIGIN = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
 const imageSrc = (post) => post.image_path ? API_ORIGIN + post.image_path : post.image_url;
@@ -92,6 +93,7 @@ export default function BlogAdminSection({ client }) {
 
   return <section className="blog-workstation" data-testid="admin-blog-section">
     <div className="blog-workstation-heading"><div><h2>Blog Post Generator</h2><p>Choose the reader's problem. Generate an article with its cover graphic, review it, and publish.</p></div><a className="button button-back button-small" href="/blog" target="_blank" rel="noreferrer">Open Blog</a></div>
+    <FundraisingGuideAdmin client={client} />
     {error && <p className="submit-error" role="alert">{error}</p>}
     {message && <p className="admin-message" role="status">{message}</p>}
     {!schedule.length && !error && <p>Loading your blog topics...</p>}

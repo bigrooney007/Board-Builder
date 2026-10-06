@@ -12,6 +12,8 @@ from blog_media import ORIGIN, cover_png, image_version, present_post
 from blog_service import (CATEGORIES, blog_settings, claim_regeneration, generate_linkedin_snippet,
     generate_reserved_blog_post, next_topic_for, now_tz, reserve_blog_post, slugify_title, topic_usage)
 from marketing_service import run_weekly_nurture
+from blog_feed import FEED_PATH, render_feed
+from fundraising_guides import GuideEdit, default_guide, get_guide, guide_post, list_guides
 
 
 class BlogGenerate(BaseModel):
@@ -74,6 +76,46 @@ def create_marketing_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="Blog post not found")
         return post
 
+    @router.api_route(FEED_PATH.removeprefix("/api"), methods=["GET", "HEAD"])
+    async def blog_feed(request: Request):
+        posts = await db.blog_posts.find({"publication_status": "Published", "slug": {"$ne": ""}}, {"_id": 0}).sort("published_at", -1).to_list(50)
+        public_posts = [present_post(post, public=True) for post in posts if post.get("slug")]
+        guides = await list_guides(db)
+        guide_slugs = {guide["slug"] for guide in guides}
+        xml, etag = render_feed([guide_post(guide, ORIGIN) for guide in guides] + [post for post in public_posts if post["slug"] not in guide_slugs])
+        headers = {"Cache-Control": "public, max-age=60", "ETag": etag, "X-Content-Type-Options": "nosniff"}
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        headers["Content-Length"] = str(len(xml))
+        return Response(b"" if request.method == "HEAD" else xml, media_type="application/rss+xml", headers=headers)
+
+    @router.get("/blog/guides")
+    async def public_guides():
+        return {"guides": await list_guides(db)}
+
+    @router.get("/blog/guides/{slug}")
+    async def public_guide(slug: str):
+        if not default_guide(slug):
+            raise HTTPException(status_code=404, detail="Guide not found")
+        guide = next((guide for guide in await list_guides(db) if guide["slug"] == slug), None)
+        if not guide:
+            raise HTTPException(status_code=404, detail="Guide not found")
+        return guide
+
+    @router.get("/admin/blog/guides")
+    async def admin_guides(request: Request):
+        await authenticate_admin(request, db)
+        return {"guides": await list_guides(db), "feed_url": ORIGIN + FEED_PATH}
+
+    @router.put("/admin/blog/guides/{slug}")
+    async def save_guide(slug: str, payload: GuideEdit, request: Request):
+        await authenticate_admin(request, db)
+        if not default_guide(slug):
+            raise HTTPException(status_code=404, detail="Guide not found")
+        await db.marketing_settings.update_one({"key": "fundraising_guide:" + slug},
+            {"$set": {"content": payload.model_dump(), "edited_at": now_tz().isoformat()}}, upsert=True)
+        return {"guide": await get_guide(db, slug)}
+
     @router.get("/blog/posts")
     async def list_posts(category: str = "", limit: int = Query(default=50, ge=1, le=100)):
         query = {"publication_status": "Published"}
@@ -107,6 +149,9 @@ def create_marketing_router(db) -> APIRouter:
     async def blog_sitemap():
         posts = await db.blog_posts.find({"publication_status": "Published", "slug": {"$ne": ""}}, {"_id": 0, "slug": 1, "edited_at": 1, "published_at": 1}).sort("published_at", -1).to_list(49000)
         urls = [f"<url><loc>{ORIGIN}/blog</loc></url>"]
+        for guide in await list_guides(db):
+            updated = guide.get("edited_at") or guide["published_at"]
+            urls.append(f"<url><loc>{ORIGIN}/blog/{guide['slug']}</loc><lastmod>{escape(updated)}</lastmod></url>")
         for post in posts:
             updated = post.get("edited_at") or post.get("published_at")
             lastmod = f"<lastmod>{escape(updated)}</lastmod>" if updated else ""

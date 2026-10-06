@@ -40,7 +40,17 @@ async function main() {
       if (method === "GET") assert.ok(response.body.includes(article.intro[0]));
       else assert.equal(response.body, undefined);
     }
-    assert.equal(apiCalls, 0, "Public guide must work without the blog backend");
+    assert.equal(apiCalls, 2, "GET and HEAD should attempt saved content and retain the complete fallback when offline");
+    const edited = { ...article, title: "The professor's revised article", intro: ["Saved text with <script>characters</script> is displayed safely."], excerpt: "An edited description for the published page.", edited_at: "2026-10-06T12:00:00Z" };
+    const editedHandler = blogHandler(async () => template, { fetch: async () => ({ ok: true, json: async () => edited }) });
+    const updated = { setHeader() {}, end(value) { this.body = value; } };
+    await editedHandler({ method: "GET", url: pathname }, updated, error => { throw error || new Error("Guide was not handled"); });
+    const editedDoc = new JSDOM(updated.body).window.document;
+    assert.ok(editedDoc.querySelector("main").textContent.includes(edited.intro[0]));
+    assert.equal(editedDoc.querySelector('meta[property="og:description"]').content, edited.excerpt);
+    assert.equal(JSON.parse(editedDoc.getElementById("fundraising-guide-data").textContent).title, edited.title);
+    assert.ok(editedDoc.querySelector('link[type="application/rss+xml"]'));
+    assert.equal(editedDoc.querySelectorAll("main script").length, 0);
     assert.ok(articleWordCount(article) <= 650, "Keep the article concise");
     console.log(`PASS ${pathname}: public HTML, direct form CTA, share image, sitemap and offline GET/HEAD`);
   }

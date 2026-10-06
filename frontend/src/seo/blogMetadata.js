@@ -1,6 +1,7 @@
 /* eslint-env node */
 const { SITE_ORIGIN } = require("./landingMetadata");
 const SITE_NAME = "Nonprofit Board Builder";
+const BLOG_FEED_URL = SITE_ORIGIN + "/api/blog/feed.xml";
 const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const blogUrl = (post) => `${SITE_ORIGIN}/blog${post ? "/" + encodeURIComponent(post.slug) : ""}`;
 const description = "Practical insights on board recruitment, fundraising, strategic planning, recommitment and finding your opportunity to serve on a nonprofit board.";
@@ -35,6 +36,7 @@ function blogMetadata(post, status = 200) {
 function renderBlogHtml(template, post = null, posts = [], status = 200) {
   const metadata = blogMetadata(post, status);
   const tags = [`<title>${escapeHtml(metadata.title)}</title>`, ...metadata.tags.map(([attr, name, value]) => `<meta ${attr}="${name}" content="${escapeHtml(value)}" />`),
+    `<link rel="alternate" type="application/rss+xml" title="Nonprofit Board Builder Insights" href="${BLOG_FEED_URL}" />`,
     ...(status === 200 ? [`<link rel="canonical" href="${metadata.canonical}" />`] : []),
     ...(metadata.schema ? [`<script id="blog-page-schema" type="application/ld+json">${JSON.stringify(metadata.schema).replace(/</g, "\\u003c")}</script>`] : [])].join("\n");
   let content;
@@ -49,10 +51,11 @@ function renderBlogHtml(template, post = null, posts = [], status = 200) {
   return template.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
     .replace(/<meta\b[^>]*(?:name|property)=["'](?:description|robots|og:[^"']+|twitter:[^"']+|article:[^"']+)["'][^>]*>/gi, "")
     .replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi, "")
+    .replace(/<link\b[^>]*type=["']application\/rss\+xml["'][^>]*>/gi, "")
     .replace(/<script\b[^>]*id=["'](?:landing|blog)-page-schema["'][^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<\/head>/i, () => `${tags}\n</head>`)
     .replace(/<noscript>You need to enable JavaScript to run this app\.<\/noscript>/i, "")
     .replace(/<div id=["']root["']>[\s\S]*?<\/div>/i, () => `<div id="root">${root}</div>`);
 }
 
-module.exports = { blogMetadata, renderBlogHtml, blogUrl };
+module.exports = { blogMetadata, renderBlogHtml, blogUrl, BLOG_FEED_URL };
