@@ -277,14 +277,6 @@ def create_autofundraiser_router(db):
         lead_id = secrets.token_hex(12)
         resume_token = token()
         now = utcnow()
-        if no_strategy:
-            analysis = {
-                "summary": "The organization told Auto Fundraiser that it does not currently have a fundraising strategy.",
-                "criteria": {key: {"status": "MISSING", "evidence": "The organization said it does not have a fundraising strategy.", "confidence": 1.0} for key, _ in CRITERIA},
-            }
-        else:
-            analysis = await analyze_source(source)
-
         lead = {
             "lead_id": lead_id,
             "resume_token": resume_token,
@@ -295,7 +287,7 @@ def create_autofundraiser_router(db):
             "source_filename": file.filename if file and file.filename else "",
             "source_text": source,
             "no_strategy": no_strategy,
-            "analysis": analysis,
+            "analysis": {},
             "clarifications": {},
             "diagnosis": None,
             "paid": False,
@@ -311,21 +303,71 @@ def create_autofundraiser_router(db):
             "last_activity_at": now,
             "reminders": {},
         }
-        if no_strategy:
-            lead = await _ensure_diagnosis(db, lead)
-            # _ensure_diagnosis updates before insert, so insert final state below.
-        elif _next_clarification(lead):
-            lead["stage"] = "CLARIFYING"
-        else:
-            lead["diagnosis"] = await build_diagnosis(lead)
-            lead["stage"] = "DIAGNOSIS_READY"
 
+        # Capture the person before any AI work. If AI is temporarily unavailable,
+        # the admin still sees the lead and the person keeps a resume path.
         await db.autofundraiser_leads.insert_one(dict(lead))
+
+        try:
+            if no_strategy:
+                analysis = {
+                    "summary": "The organization told Auto Fundraiser that it does not currently have a fundraising strategy.",
+                    "criteria": {key: {"status": "MISSING", "evidence": "The organization said it does not have a fundraising strategy.", "confidence": 1.0} for key, _ in CRITERIA},
+                }
+            else:
+                analysis = await analyze_source(source)
+            lead["analysis"] = analysis
+            await db.autofundraiser_leads.update_one(
+                {"lead_id": lead_id},
+                {"$set": {"analysis": analysis, "updated_at": utcnow(), "last_activity_at": utcnow()}},
+            )
+
+            if no_strategy:
+                lead = await _ensure_diagnosis(db, lead)
+            elif _next_clarification(lead):
+                lead["stage"] = "CLARIFYING"
+                await db.autofundraiser_leads.update_one(
+                    {"lead_id": lead_id},
+                    {"$set": {"stage": "CLARIFYING", "updated_at": utcnow(), "last_activity_at": utcnow()}},
+                )
+            else:
+                diagnosis = await build_diagnosis(lead)
+                lead["diagnosis"] = diagnosis
+                lead["stage"] = "DIAGNOSIS_READY"
+                await db.autofundraiser_leads.update_one(
+                    {"lead_id": lead_id},
+                    {"$set": {"diagnosis": diagnosis, "stage": "DIAGNOSIS_READY", "updated_at": utcnow(), "last_activity_at": utcnow()}},
+                )
+        except Exception as exc:
+            logger.exception("Auto Fundraiser initial analysis failed")
+            await db.autofundraiser_leads.update_one(
+                {"lead_id": lead_id},
+                {"$set": {"analysis_error": str(exc)[:500], "updated_at": utcnow()}},
+            )
+            raise HTTPException(502, "Your information was saved, but the review could not finish right now. Use the link from this session to resume.") from exc
+
         return _lead_payload(lead)
 
     @router.get("/leads/{resume_token}")
     async def read_lead(resume_token: str):
         lead = await get_lead(resume_token)
+        if not lead.get("analysis"):
+            try:
+                if lead.get("no_strategy"):
+                    analysis = {
+                        "summary": "The organization told Auto Fundraiser that it does not currently have a fundraising strategy.",
+                        "criteria": {key: {"status": "MISSING", "evidence": "The organization said it does not have a fundraising strategy.", "confidence": 1.0} for key, _ in CRITERIA},
+                    }
+                else:
+                    analysis = await analyze_source(lead.get("source_text", ""))
+                await db.autofundraiser_leads.update_one(
+                    {"lead_id": lead["lead_id"]},
+                    {"$set": {"analysis": analysis, "analysis_error": "", "updated_at": utcnow(), "last_activity_at": utcnow()}},
+                )
+                lead["analysis"] = analysis
+            except Exception:
+                logger.exception("Auto Fundraiser resume analysis failed")
+                raise HTTPException(502, "Your review is saved, but Auto Fundraiser could not complete the analysis right now.")
         if not lead.get("diagnosis") and not _next_clarification(lead):
             lead = await _ensure_diagnosis(db, lead)
         return _lead_payload(lead)
@@ -372,7 +414,7 @@ def create_autofundraiser_router(db):
         if not key:
             raise HTTPException(503, "Stripe is not configured yet.")
         stripe.api_key = key
-        origin = _frontend_url() or str(request.base_url).rstrip("/")
+        origin = _frontend_url() or (request.headers.get("origin") or "").rstrip("/") or str(request.base_url).rstrip("/")
         content = await homepage()
         try:
             session = stripe.checkout.Session.create(
