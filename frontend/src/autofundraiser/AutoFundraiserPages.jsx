@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./autofundraiser.css";
+import { AUTO_FUNDRAISER_LOGO } from "./logoData";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api/autofundraiser`;
 
@@ -71,7 +72,7 @@ export const REALITY_GROUPS = [
 
 function Logo({ compact = false }) {
   return <a href="/auto-fundraiser" className={compact ? "af-logo af-logo-compact" : "af-logo"} aria-label="Auto Fundraiser home">
-    <img src="/autofundraiser-logo.png" alt="Auto Fundraiser" />
+    <img src={AUTO_FUNDRAISER_LOGO} alt="Auto Fundraiser" />
   </a>;
 }
 
