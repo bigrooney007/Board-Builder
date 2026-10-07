@@ -31,6 +31,7 @@ from reference_routes import create_reference_router
 from marketing_service import marketing_loop
 from recruit_free_routes import create_recruit_free_router
 from clean_platform_routes import create_clean_platform_router
+from autofundraiser_routes import create_autofundraiser_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -263,6 +264,7 @@ from guided_product_routes import create_guided_product_router
 app.include_router(create_guided_product_router(db))
 from admin_dashboard_preview_routes import create_admin_dashboard_preview_router
 app.include_router(create_admin_dashboard_preview_router(db))
+app.include_router(create_autofundraiser_router(db))
 from facilitated_game_application_routes import create_facilitated_game_application_router
 app.include_router(create_facilitated_game_application_router(db))
 from reactivation_plan_routes import create_reactivation_plan_router
