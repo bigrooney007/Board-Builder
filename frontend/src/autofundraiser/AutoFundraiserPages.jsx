@@ -600,7 +600,9 @@ export function AutoFundraiserMeetingPage() {
   const { token } = useParams();
   const [state, setState] = useState(null);
   const [adopted, setAdopted] = useState({});
+  const [newIdeas, setNewIdeas] = useState({});
   const [notes, setNotes] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
   const [finalStrategy, setFinalStrategy] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -608,11 +610,11 @@ export function AutoFundraiserMeetingPage() {
   useEffect(() => {
     document.title = "Group Fundraising Planning | Auto Fundraiser";
     axios.get(`${API}/meeting/${token}`).then(({ data }) => {
-      setState(data); setAdopted(data.adopted || {}); setFinalStrategy(data.final_strategy || null);
+      setState(data); setAdopted(data.adopted || {}); setNotes(data.meeting_notes || ""); setFinalStrategy(data.final_strategy || null);
     }).catch((err) => setError(err.response?.data?.detail || "We could not open the group planning meeting."));
   }, [token]);
 
-  const ideasFor = (key) => {
+  const sourceIdeasFor = (key) => {
     const ideas = [];
     const organizer = state?.strategy_answers?.[key];
     if (organizer) ideas.push({ source: "Organizer", text: organizer });
@@ -623,9 +625,40 @@ export function AutoFundraiserMeetingPage() {
     return ideas;
   };
 
+  const ideasFor = (key) => {
+    const ideas = sourceIdeasFor(key);
+    const sourceTexts = new Set(ideas.map((idea) => idea.text));
+    (adopted[key] || []).forEach((text) => {
+      if (!sourceTexts.has(text)) ideas.push({ source: "Created in this meeting", text, meetingIdea: true });
+    });
+    return ideas;
+  };
+
+  const saveDraft = async (nextAdopted, nextNotes = notes) => {
+    setSaveMessage("");
+    try {
+      await axios.put(`${API}/meeting/${token}/draft`, { adopted: nextAdopted, meeting_notes: nextNotes });
+      setSaveMessage("Saved");
+    } catch (err) {
+      setError(err.response?.data?.detail || "We could not save the meeting decisions.");
+    }
+  };
+
   const toggle = (key, text) => {
     const current = adopted[key] || [];
-    setAdopted({ ...adopted, [key]: current.includes(text) ? current.filter((x) => x !== text) : [...current, text] });
+    const next = { ...adopted, [key]: current.includes(text) ? current.filter((x) => x !== text) : [...current, text] };
+    setAdopted(next);
+    saveDraft(next);
+  };
+
+  const addMeetingIdea = (key) => {
+    const text = String(newIdeas[key] || "").trim();
+    if (!text) return;
+    const current = adopted[key] || [];
+    const next = { ...adopted, [key]: current.includes(text) ? current : [...current, text] };
+    setAdopted(next);
+    setNewIdeas({ ...newIdeas, [key]: "" });
+    saveDraft(next);
   };
 
   const canBuild = STRATEGY_QUESTIONS.every((q) => (adopted[q.key] || []).length > 0);
@@ -650,7 +683,7 @@ export function AutoFundraiserMeetingPage() {
       <p>Keep what already works in mind as you make decisions. The final strategy will also use the present reality you documented before inviting contributors.</p>
     </div>
     {STRATEGY_QUESTIONS.map((q, index) => <section key={q.key} className="af-review-section">
-      <div className="af-review-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{q.title}</h2><p>Select one or more ideas the group agrees should become part of the strategy.</p></div></div>
+      <div className="af-review-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{q.title}</h2><p>Select any ideas the group agrees with, or write the new answer that emerges from the discussion.</p></div></div>
       <div className="af-idea-grid">
         {ideasFor(q.key).map((idea, i) => {
           const selected = (adopted[q.key] || []).includes(idea.text);
@@ -658,6 +691,14 @@ export function AutoFundraiserMeetingPage() {
             <div className="af-idea-source">{idea.source}</div><p>{idea.text}</p><span>{selected ? "✓ ADOPTED" : "SELECT THIS IDEA"}</span>
           </button>;
         })}
+      </div>
+      <div className="af-new-idea-box">
+        <div>
+          <strong>Did the discussion produce a better or completely new answer?</strong>
+          <p>Write it here. Saving it will adopt it for this strategic area. You can still keep any of the other selected ideas too.</p>
+        </div>
+        <textarea rows={3} value={newIdeas[q.key] || ""} onChange={(e) => setNewIdeas({ ...newIdeas, [q.key]: e.target.value })} placeholder="Write the new idea or agreed answer from the discussion…" />
+        <button className="af-secondary" disabled={!String(newIdeas[q.key] || "").trim()} onClick={() => addMeetingIdea(q.key)}>SAVE & ADOPT THIS NEW IDEA</button>
       </div>
     </section>)}
     <section className="af-participation-review">
@@ -667,9 +708,10 @@ export function AutoFundraiserMeetingPage() {
     <section className="af-work-card">
       <h2>Anything else the group decided?</h2>
       <p>Capture decisions, constraints or context that should shape the final strategy.</p>
-      <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Meeting decisions or additional context…" />
+      <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => saveDraft(adopted, notes)} placeholder="Meeting decisions or additional context…" />
+      {saveMessage && <p className="af-save-message">{saveMessage}</p>}
     </section>
     {error && <p className="af-error">{error}</p>}
-    <div className="af-build-final"><button className="af-primary af-primary-wide" disabled={busy || !canBuild} onClick={build}>{busy ? "BUILDING YOUR STRATEGY…" : "BUILD OUR FINAL FUNDRAISING STRATEGY"} <span>→</span></button>{!canBuild && <p>Select at least one idea under each of the five questions.</p>}</div>
+    <div className="af-build-final"><button className="af-primary af-primary-wide" disabled={busy || !canBuild} onClick={build}>{busy ? "BUILDING YOUR STRATEGY…" : "BUILD OUR FINAL FUNDRAISING STRATEGY"} <span>→</span></button>{!canBuild && <p>Select an existing idea or save a new group answer under each of the five questions.</p>}</div>
   </Shell>;
 }
