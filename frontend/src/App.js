@@ -84,6 +84,17 @@ import FinalStrategyPage from "@/game/FinalStrategyPage";
 
 import PlatformAnalytics from "@/clean/PlatformAnalytics";
 
+import {
+  AutoFundraiserHomePage,
+  AutoFundraiserReviewPage,
+  AutoFundraiserResultPage,
+  AutoFundraiserPaymentSuccessPage,
+  AutoFundraiserStrategyPage,
+  AutoFundraiserContributorPage,
+  AutoFundraiserMeetingPage,
+} from "@/autofundraiser/AutoFundraiserPages";
+import AutoFundraiserAdminPage from "@/autofundraiser/AutoFundraiserAdmin";
+
 const CENTERED_PATHS = new Set([
   "/recruit",
   "/recruit/walkthrough",
@@ -114,6 +125,16 @@ function CleanRoutes() {
   return (
     <Routes>
       <Route path="/" element={<MainHomePage />} />
+
+      {/* Auto Fundraiser - isolated product routes */}
+      <Route path="/auto-fundraiser" element={<AutoFundraiserHomePage />} />
+      <Route path="/auto-fundraiser/review/:token" element={<AutoFundraiserReviewPage />} />
+      <Route path="/auto-fundraiser/result/:token" element={<AutoFundraiserResultPage />} />
+      <Route path="/auto-fundraiser/payment/success" element={<AutoFundraiserPaymentSuccessPage />} />
+      <Route path="/auto-fundraiser/strategy/:token" element={<AutoFundraiserStrategyPage />} />
+      <Route path="/auto-fundraiser/contribute/:token" element={<AutoFundraiserContributorPage />} />
+      <Route path="/auto-fundraiser/meeting/:token" element={<AutoFundraiserMeetingPage />} />
+      <Route path="/auto-fundraiser/admin" element={<AutoFundraiserAdminPage />} />
 
       {/* Board Recruitment */}
       <Route path="/recruit" element={<RecruitFreePage />} />
