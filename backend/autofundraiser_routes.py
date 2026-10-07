@@ -124,7 +124,8 @@ def _lead_payload(lead: Dict[str, Any]) -> Dict[str, Any]:
     result = _clean(lead)
     result.pop("source_text", None)
     result.pop("checkout_session_id", None)
-    result["next_clarification"] = _next_clarification(lead)
+    result["analysis_pending"] = not bool(lead.get("analysis"))
+    result["next_clarification"] = _next_clarification(lead) if lead.get("analysis") else None
     return result
 
 class ClarificationBody(BaseModel):
@@ -344,7 +345,8 @@ def create_autofundraiser_router(db):
                 {"lead_id": lead_id},
                 {"$set": {"analysis_error": str(exc)[:500], "updated_at": utcnow()}},
             )
-            raise HTTPException(502, "Your information was saved, but the review could not finish right now. Use the link from this session to resume.") from exc
+            lead["analysis_error"] = str(exc)[:500]
+            return _lead_payload(lead)
 
         return _lead_payload(lead)
 
