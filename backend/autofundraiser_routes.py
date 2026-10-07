@@ -624,8 +624,28 @@ def create_autofundraiser_router(db):
             "meeting": lead.get("meeting", {}),
             "contributors": contributors,
             "adopted": lead.get("adopted", {}),
+            "meeting_notes": lead.get("meeting_notes", ""),
             "final_strategy": lead.get("final_strategy"),
         }
+
+    @router.put("/meeting/{resume_token}/draft")
+    async def save_meeting_draft(resume_token: str, body: AdoptionBody):
+        lead = await get_lead(resume_token, paid_required=True)
+        cleaned_adopted = {
+            str(key): list(dict.fromkeys([str(item).strip() for item in items if str(item).strip()]))
+            for key, items in body.adopted.items()
+        }
+        await db.autofundraiser_leads.update_one(
+            {"lead_id": lead["lead_id"]},
+            {"$set": {
+                "adopted": cleaned_adopted,
+                "meeting_notes": body.meeting_notes.strip(),
+                "stage": "GROUP_REVIEW",
+                "updated_at": utcnow(),
+                "last_activity_at": utcnow(),
+            }},
+        )
+        return {"ok": True, "adopted": cleaned_adopted}
 
     @router.post("/meeting/{resume_token}/adopt")
     async def adopt(resume_token: str, body: AdoptionBody):
@@ -633,20 +653,24 @@ def create_autofundraiser_router(db):
         contributors = []
         async for contributor in db.autofundraiser_contributors.find({"lead_id": lead["lead_id"], "completed": True}):
             contributors.append(_clean(contributor))
+        cleaned_adopted = {
+            str(key): list(dict.fromkeys([str(item).strip() for item in items if str(item).strip()]))
+            for key, items in body.adopted.items()
+        }
         planning = {
             "organization_name": lead["organization_name"],
             "organizer_answers": lead.get("strategy_answers", {}),
             "present_reality": lead.get("present_reality", {}),
             "organizer_participation": lead.get("participation", ""),
             "contributors": contributors,
-            "adopted_ideas": body.adopted,
+            "adopted_ideas": cleaned_adopted,
             "meeting_notes": body.meeting_notes.strip(),
         }
         final_strategy = await build_final_strategy(planning)
         await db.autofundraiser_leads.update_one(
             {"lead_id": lead["lead_id"]},
             {"$set": {
-                "adopted": body.adopted,
+                "adopted": cleaned_adopted,
                 "meeting_notes": body.meeting_notes.strip(),
                 "final_strategy": final_strategy,
                 "stage": "COMPLETE",
