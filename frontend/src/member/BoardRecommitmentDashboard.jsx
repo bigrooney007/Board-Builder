@@ -9,6 +9,7 @@ import ReactivationUnderstand from "./ReactivationUnderstand";
 import RecommitmentFinalStage from "./RecommitmentFinalStage";
 import { trackPlatformEvent } from "@/clean/platform";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 import "./sgr.css";
 
 const RECOMMITMENT_AUDIO={
@@ -81,6 +82,8 @@ export default function BoardRecommitmentDashboard(){
         <span>1. Give the process context</span><span>2. Send the right form</span><span>3. Have the right conversation</span><span>4. Confirm the way forward</span>
       </div>
     </header>
+
+    <DashboardWalkthroughVideo flow="board-recommitment" />
 
     <Section number="1" title="ANSWER FOUR IMPORTANT QUESTIONS"
       summary="Tell us your mission, why recommitment matters, what you need the Board to help accomplish and when you need the new commitment in place."

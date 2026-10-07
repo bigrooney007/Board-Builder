@@ -105,7 +105,7 @@ export default function GameStartPage() {
         </div>
         {startError && <p className="bfg-error" data-testid="bfg-start-error">{startError}</p>}
         <button type="submit" className="bfg-btn bfg-btn-primary" disabled={starting || authLoading} data-testid="bfg-form-submit">
-          {starting ? "Opening…" : content.cta_label}
+          {starting ? "Opening…" : "CONTINUE FOR FREE"}
         </button>
         <p className="bfg-start-supporting">{content.start_supporting}</p>
       </form>

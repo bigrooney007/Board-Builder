@@ -40,6 +40,10 @@ VIDEO_DEFINITIONS = [
     {"key": "strategic_planning_welcome", "name": "Strategic Planning Onboarding", "flow": "strategic-planning", "stage": "onboarding"},
     {"key": "board_recommitment_demonstration", "name": "Board Recommitment Demonstration", "flow": "board-recommitment", "stage": "demonstration"},
     {"key": "board_recommitment_welcome", "name": "Board Recommitment Onboarding", "flow": "board-recommitment", "stage": "onboarding"},
+    {"key": "recruitment_dashboard", "name": "Board Recruitment Dashboard Walkthrough", "flow": "recruitment", "stage": "dashboard"},
+    {"key": "game_dashboard", "name": "Board Fundraising Dashboard Walkthrough", "flow": "board-fundraising-game", "stage": "dashboard"},
+    {"key": "strategic_planning_dashboard", "name": "Strategic Planning Dashboard Walkthrough", "flow": "strategic-planning", "stage": "dashboard"},
+    {"key": "board_recommitment_dashboard", "name": "Board Recommitment Dashboard Walkthrough", "flow": "board-recommitment", "stage": "dashboard"},
 ]
 
 STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS = [

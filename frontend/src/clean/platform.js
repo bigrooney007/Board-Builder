@@ -25,7 +25,13 @@ export const VIDEO_KEYS = [
   ["strategic_planning_welcome", "Strategic Planning Onboarding", "strategic-planning"],
   ["board_recommitment_demonstration", "Board Recommitment Demonstration", "board-recommitment"],
   ["board_recommitment_welcome", "Board Recommitment Onboarding", "board-recommitment"],
+  ["recruitment_dashboard", "Board Recruitment Dashboard Walkthrough", "recruitment"],
+  ["game_dashboard", "Board Fundraising Dashboard Walkthrough", "board-fundraising-game"],
+  ["strategic_planning_dashboard", "Strategic Planning Dashboard Walkthrough", "strategic-planning"],
+  ["board_recommitment_dashboard", "Board Recommitment Dashboard Walkthrough", "board-recommitment"],
 ];
+
+export const DASHBOARD_VIDEO_KEYS = ["recruitment_dashboard", "game_dashboard", "strategic_planning_dashboard", "board_recommitment_dashboard"];
 
 export const HOMEPAGE_KEYS = [
   ["main", "Main Home Page"],
@@ -147,11 +153,16 @@ const loadVideos = () => {
     }).catch(() => videosCache || []);
 };
 
-export const usePlatformVideo = (key) => {
-  const [video, setVideo] = useState(() => videosCache?.find((item) => item.key === key) || null);
+const selectPlatformVideo = (rows, key, fallbackKey) => {
+  const configured = rows?.find((item) => item.key === key);
+  return configured?.youtube_id ? configured : rows?.find((item) => item.key === fallbackKey && item.youtube_id) || configured || null;
+};
+
+export const usePlatformVideo = (key, fallbackKey = "") => {
+  const [video, setVideo] = useState(() => selectPlatformVideo(videosCache, key, fallbackKey));
   useEffect(() => {
     let live = true;
-    const refresh = () => loadVideos().then((rows) => { if (live) setVideo(rows.find((item) => item.key === key) || null); });
+    const refresh = () => loadVideos().then((rows) => { if (live) setVideo(selectPlatformVideo(rows, key, fallbackKey)); });
     refresh();
     window.addEventListener("focus", refresh);
     window.addEventListener("platform-videos-changed", refresh);
@@ -160,7 +171,7 @@ export const usePlatformVideo = (key) => {
       window.removeEventListener("focus", refresh);
       window.removeEventListener("platform-videos-changed", refresh);
     };
-  }, [key]);
+  }, [key, fallbackKey]);
   return video;
 };
 

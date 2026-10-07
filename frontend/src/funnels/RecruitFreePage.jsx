@@ -93,7 +93,7 @@ export default function RecruitFreePage() {
 
       <button type="submit" className="bfg-btn bfg-btn-primary" style={{ marginTop: 24 }} disabled={busy}
         data-testid="recruit-free-start-btn">
-        {busy ? "Saving…" : "START MY SIX RECRUITMENT QUESTIONS"}
+        {busy ? "Saving…" : "CONTINUE FOR FREE"}
       </button>
       {savedToken && <p><button type="button" className="bfg-btn bfg-btn-ghost" onClick={() => navigate(`/recruit/questions?token=${encodeURIComponent(savedToken)}`)}>CONTINUE MY SAVED ASSESSMENT</button></p>}
       {error && <p className="bfg-error" data-testid="recruit-free-error">{error}</p>}

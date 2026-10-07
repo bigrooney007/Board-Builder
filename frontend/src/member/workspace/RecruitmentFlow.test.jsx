@@ -169,15 +169,15 @@ test("the public six-question assessment resumes and saves each answer before ch
   expect(axios.post).not.toHaveBeenCalled();
 });
 
-test("campaign launch waits for the communication drafts to be approved", async () => {
+test.each([false, true])("campaign launch follows campaign approval (%s) before later onboarding communications", async materialsApproved => {
   const originalGet = memberApi.get.getMockImplementation();
   memberApi.get.mockImplementation((path, options) => path === "/workspace/opportunity"
     ? Promise.resolve({ data: { opportunity: { slug: "community", status: "Draft", application_saved: true }, core_questions: [],
       readiness: { profiles_approved: true, scheduling_saved: true, application_saved: true,
-        materials_approved: true, onboarding_approved: true, support_approved: false } } })
+        materials_approved: materialsApproved, onboarding_approved: false, support_approved: false } } })
     : originalGet(path, options));
   await render(<Module3Launch mode="launch" />);
-  expect(byId("publish-button").disabled).toBe(true);
-  expect(byId("publish-panel").textContent).toContain("Interview, check and offer communications approved");
+  expect(byId("publish-button").disabled).toBe(!materialsApproved);
+  expect(byId("readiness-materials-approved").classList.contains("done")).toBe(materialsApproved);
   expect(memberApi.post).not.toHaveBeenCalledWith("/workspace/opportunity/publish");
 });

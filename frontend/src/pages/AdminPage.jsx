@@ -138,7 +138,10 @@ function ApplicantsSection({ applicants, filters, setFilters, selected, setSelec
 export default function AdminPage() {
   const [user,setUser]=useState(null);
   const [checking,setChecking]=useState(true);
-  const [tab,setTab]=useState(() => new URLSearchParams(window.location.search).get("tab") === "blog" ? "blog" : "pathways");
+  const [tab,setTab]=useState(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    return ["blog", "videos"].includes(requested) ? requested : "pathways";
+  });
   const [applicants,setApplicants]=useState([]);
   const [filters,setFilters]=useState(blankFilters);
   const [selected,setSelected]=useState([]);
@@ -166,7 +169,7 @@ export default function AdminPage() {
 
   const tabs=[
     ["pathways","4 Board Builder Pathways"],
-    ["videos","8 Platform Videos"],
+    ["videos","Platform Videos"],
     ["homepages","6 Home Page Text"],
     ["analytics","Platform Analytics"],
     ["applicants","Board Applicant Network"],

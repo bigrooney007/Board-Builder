@@ -990,7 +990,7 @@ export const recruitmentHomeContent = {
   "eyebrow": "BOARD RECRUITMENT",
   "headline": "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
   "subheadline": "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
-  "primaryCta": "START MY BOARD RECRUITMENT",
+  "primaryCta": "GET STARTED FOR FREE",
   "introHeading": "Build The Board Your Organization Needs",
   "introParagraphs": [
     "Bringing in board members with fundraising experience can strengthen your organization's ability to raise money. Your board also needs people whose skills complement the board you already have.",

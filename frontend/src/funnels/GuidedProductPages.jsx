@@ -15,7 +15,7 @@ import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
 import { useLandingPageMeta, usePageMeta } from "@/seo";
 import PublicStartLayout from "./PublicStartLayout";
-import { PUBLIC_START_ROUTES } from "./publicStartRoutes";
+import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "./publicStartRoutes";
 import GuidedPrepaymentQuestionsPage from "./GuidedPrepaymentQuestionsPage";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -106,12 +106,12 @@ export function GuidedLandingPage({ product: explicitProduct }) {
  useLandingPageMeta(`/${product}`);
  useEffect(()=>{if(window.location.hash===`#${product}-lead-form`)nav(startPath,{replace:true})},[product,startPath,nav]);
  return <BfgShell><main className="guided-page" data-testid={`${product}-landing-page`}>
-  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>START MY PROCESS <ArrowRight size={17}/></Link></section>
+  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
   <section className="guided-principle"><h2>{c.promise}</h2></section>
   <section className="guided-section"><p className="bfg-eyebrow">THE PROCESS</p><h2>{product==="strategic-planning"?"Turn Your Next Board Meetings Into The Beginning Of Real Delegation.":"Give Every Board Member A Clear Choice About How They Move Forward."}</h2><div className="guided-steps">{c.steps.map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p></article>)}</div></section>
   <section className="guided-section guided-soft"><p className="bfg-eyebrow">WHAT YOU GET</p><h2>A Guided Process You Can Actually Use With Your Board.</h2><div className="guided-outcomes">{c.outcomes.map(x=><div key={x}>✓ {x}</div>)}</div></section>
   <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={product}/>
-  <section className="guided-final-cta"><h2>{product==="strategic-planning"?"Ready To Build Your Strategic Plan With Your Board?":"Ready To Start Your Board Recommitment Process?"}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>START MY PROCESS <ArrowRight size={17}/></Link></section>
+  <section className="guided-final-cta"><h2>{product==="strategic-planning"?"Ready To Build Your Strategic Plan With Your Board?":"Ready To Start Your Board Recommitment Process?"}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
  </main></BfgShell>
 }
 
@@ -152,7 +152,7 @@ function GuidedLeadStartPage({ product: explicitProduct }) {
    <label>{product==="strategic-planning"?"How many board members do you have?":"How many board members do you need to recommit?"}<input type="number" min="1" max="200" required inputMode="numeric" placeholder="Number of board members" value={form.board_count} onChange={e=>setForm({...form,board_count:e.target.value.replace(/\D/g,"")})}/></label>
    <p className="guided-form-assurance">Your answers are saved as you go. The founder video and your options come after the questions.</p>
    {error&&<p className="bfg-error" role="alert">{error}</p>}
-   <button type="submit" className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy}>{busy?"OPENING…":"START MY QUESTIONS"}</button>
+   <button type="submit" className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy}>{busy?"OPENING…":"CONTINUE FOR FREE"}</button>
   </form>
  </PublicStartLayout>
 }

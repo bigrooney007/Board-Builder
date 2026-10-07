@@ -4,7 +4,7 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BfgShell, useGameContent } from "./gameShared";
 import { useHomepageContent } from "@/clean/platform";
 import { useLandingPageMeta } from "@/seo";
-import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
+import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import "./game-landing.css";
 
 export default function GameHomePage() {
@@ -25,7 +25,7 @@ export default function GameHomePage() {
           <div className="bfg-hero-inner">
             <h1 id="bfg-hero-heading" data-testid="bfg-hero-headline">{content.headline}</h1>
             <p className="bfg-hero-sub" data-testid="bfg-hero-subheadline">{content.subheadline}</p>
-            <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-hero-cta">{content.cta_label}</Link>
+            <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-hero-cta">{FREE_START_LABEL}</Link>
           </div>
         </section>
 
@@ -58,7 +58,7 @@ export default function GameHomePage() {
             ))}
           </div>
           <div className="bfg-stages-cta">
-            <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-stages-cta">{content.stages_cta_label}</Link>
+          <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-stages-cta">{FREE_START_LABEL}</Link>
           </div>
         </section>
 
@@ -104,7 +104,7 @@ export default function GameHomePage() {
         <section className="bfg-section bfg-closing" data-testid="bfg-closing-section">
           <h2 data-testid="bfg-closing-heading">{content.closing_heading}</h2>
           <p data-testid="bfg-closing-text">{content.closing_text}</p>
-          <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-closing-cta">{content.closing_cta_label}</Link>
+          <Link className="bfg-btn bfg-btn-primary" to={startPath} data-testid="bfg-closing-cta">{FREE_START_LABEL}</Link>
         </section>
 
         </div>

@@ -37,7 +37,7 @@ DEFAULT_CONTENT = {
     ],
     "goal_label": "How Much Does Your Organization Want To Raise?",
     "goal_placeholder": "500,000",
-    "cta_label": "ANSWER THE 5 FUNDRAISING QUESTIONS AND GET MY BOARD FUNDRAISING",
+    "cta_label": "GET STARTED FOR FREE",
     "video_enabled": True,
     "video_label": "Watch",
     "video_heading": "See How Your Board Will Start Raising Money",
@@ -58,7 +58,7 @@ DEFAULT_CONTENT = {
             "Their personal AI fundraising assistant understands the strategy and their role. It creates the content or materials they need, so they can begin working with you to raise money without always running back to you.",
         ]},
     ],
-    "stages_cta_label": "ANSWER THE 5 FUNDRAISING QUESTIONS AND GET MY BOARD FUNDRAISING",
+    "stages_cta_label": "GET STARTED FOR FREE",
     "outcomes_label": "What You Receive",
     "outcomes_heading": "Your Board Has The Strategy And Support To Begin",
     "outcomes": [
@@ -102,7 +102,7 @@ DEFAULT_CONTENT = {
     "testimonials_heading": "What Nonprofit Leaders Say",
     "closing_heading": "Get Your Board Members Fundraising From Your Next Meeting",
     "closing_text": "Start by answering the five fundraising questions. Bring your board into creating the strategy, then equip each member to work with you to raise money.",
-    "closing_cta_label": "ANSWER THE 5 FUNDRAISING QUESTIONS AND GET MY BOARD FUNDRAISING",
+    "closing_cta_label": "GET STARTED FOR FREE",
     "footer_recruit_label": "Recruit Board Members With Fundraising Experience",
     "footer_recruit_url": "/recruit",
     "profile_flow": {

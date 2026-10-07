@@ -11,6 +11,7 @@ import { BoardMembersSection } from "./BoardMembersSection";
 import { FinalOutputsSection } from "./MeetingOutputs";
 import { BfgShell, formatDate, money } from "./gameShared";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 
 const FUNDRAISING_AUDIO = {
   "founder-game": "dash_bfg_founder_game",
@@ -274,6 +275,8 @@ export default function GameDashboardPage() {
             {data.goal?.deadline && <small>Needed by {formatDate(data.goal.deadline)}</small>}
           </div>
         </header>
+
+        <DashboardWalkthroughVideo flow="board-fundraising-game" />
 
         <DashboardSection
           number={1}

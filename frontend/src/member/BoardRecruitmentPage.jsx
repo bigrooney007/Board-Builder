@@ -20,6 +20,7 @@ import {
   RecruitmentPortfoliosWorkspace,
 } from "./workspace/ApplicantModules";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 import "./sgr.css";
 
 const FLOW_STEPS = [
@@ -149,6 +150,8 @@ export default function BoardRecruitmentPage() {
             <span>3. Recruit and onboard your board</span>
           </div>
         </header>
+
+        <DashboardWalkthroughVideo flow="recruitment" />
 
         {member&&!allowed&&(
           <section className="member-card">

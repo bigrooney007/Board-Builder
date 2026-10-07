@@ -5,6 +5,7 @@ import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import { trackPlatformEvent } from "@/clean/platform";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 import "@/game/game.css";
 import "./guided-products.css";
 import "./strategic-planning-dashboard.css";
@@ -206,6 +207,8 @@ export default function StrategicPlanningDashboard(){
       <h1>STRATEGIC PLANNING WITH YOUR BOARD</h1>
       <p>Start with what is true about the organization today. Let every person think independently. Bring those ideas into one Board conversation, make the decisions together, then turn the decisions into a Strategic Plan and confirmed execution roles.</p>
     </section>
+
+    <DashboardWalkthroughVideo flow="strategic-planning" />
 
     <div className="sp-dash-stack">
       <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">

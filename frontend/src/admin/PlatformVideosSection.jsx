@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { RefreshCw, Save } from "lucide-react";
-import { VIDEO_KEYS } from "@/clean/platform";
+import { DASHBOARD_VIDEO_KEYS, VIDEO_KEYS } from "@/clean/platform";
 import DashboardSectionAudioAdmin from "@/admin/DashboardSectionAudioAdmin";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -126,8 +126,13 @@ export function PlatformVideosSection() {
       </div>
       {message && <p className="admin-message">{message}</p>}
       <div className="admin-preview-dashboard-grid">{ordered.filter(video=>PAYMENT_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
+      <section className="admin-platform-subsection" data-testid="admin-dashboard-walkthrough-videos">
+        <h2>Dashboard Walkthrough Videos</h2>
+        <p>Each dashboard has a video link at the top. Save the full walkthrough for each offer here. Until a walkthrough is added, the link uses that offer's saved onboarding video.</p>
+        <div className="admin-preview-dashboard-grid">{ordered.filter(video=>DASHBOARD_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
+      </section>
       <details className="admin-import-panel" style={{marginTop:22}}><summary style={{cursor:"pointer",fontWeight:800}}>Onboarding And Other Videos</summary>
-        <div className="admin-preview-dashboard-grid" style={{marginTop:16}}>{ordered.filter(video=>!PAYMENT_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
+        <div className="admin-preview-dashboard-grid" style={{marginTop:16}}>{ordered.filter(video=>!PAYMENT_VIDEO_KEYS.includes(video.key)&&!DASHBOARD_VIDEO_KEYS.includes(video.key)).map(videoCard)}</div>
       </details>
       <RecruitmentLaunchVideoAdmin />
       <AudioVoiceSelectionAdmin />

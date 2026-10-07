@@ -6,13 +6,14 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
 import { useHomepageContent } from "@/clean/platform";
 import { useLandingPageMeta } from "@/seo";
+import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import "./MainHomePage.css";
 
 const PRODUCT_META = [
-  { icon: Users, to: "/recruit", image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
-  { icon: Gamepad2, to: "/board-fundraising-game", image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
-  { icon: Map, to: "/strategic-planning", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
-  { icon: RefreshCw, to: "/board-recommitment", image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
+  { icon: Users, to: "/recruit", start: PUBLIC_START_ROUTES.recruitment, image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
+  { icon: Gamepad2, to: "/board-fundraising-game", start: PUBLIC_START_ROUTES["board-fundraising-game"], image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
+  { icon: Map, to: "/strategic-planning", start: PUBLIC_START_ROUTES["strategic-planning"], image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
+  { icon: RefreshCw, to: "/board-recommitment", start: PUBLIC_START_ROUTES["board-recommitment"], image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
   { icon: Handshake, to: "/organize-board-fundraising-game", image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80", imageAlt: "A nonprofit board meeting with a facilitator" },
 ];
 const PRODUCT_PROMISES = [
@@ -26,7 +27,7 @@ export const MAIN_HOME_DEFAULTS = {
   heroEyebrow: "NONPROFIT LEADERSHIP SYSTEMS",
   heroHeadline: "Build The Board And Systems Your Nonprofit Needs To Grow And Raise Money Exponentially.",
   heroLead: "Your nonprofit cannot grow beyond the people making the decisions and the systems helping them execute. We help you build stronger boards, activate them around fundraising and turn organizational priorities into strategy.",
-  heroCta: "CHOOSE WHAT YOU NEED",
+  heroCta: FREE_START_LABEL,
   problemIntro: "You do not need another expensive consultant.",
   problemHeading: "What you need is the right board members providing you the right kind of support.",
   problemText: "At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs so you can work with them to raise money exponentially and scale your organization.",
@@ -46,7 +47,7 @@ export const MAIN_HOME_DEFAULTS = {
   applicantCta: "JOIN THE BOARD APPLICANT NETWORK",
   closingHeading: "Stop Building Around Whoever Happens To Be Available.",
   closingText: "Build intentionally around what your mission actually needs. If you are looking to serve, join the Board Applicant Network and make yourself available to nonprofits looking for the right Board Members.",
-  closingCta: "CHOOSE MY PATH",
+  closingCta: FREE_START_LABEL,
   closingApplicantCta: "JOIN THE BOARD APPLICANT NETWORK",
 };
 
@@ -71,7 +72,7 @@ export default function MainHomePage() {
           <p className="nBB-home-eyebrow">{copy.heroEyebrow}</p>
           <h1>{copy.heroHeadline}</h1>
           <p className="nBB-home-lead">{copy.heroLead}</p>
-          <a href="#choose-path" className="nBB-home-primary">{copy.heroCta} <ArrowRight size={18}/></a>
+          <a href="#choose-path" className="nBB-home-primary">{FREE_START_LABEL} <ArrowRight size={18}/></a>
         </section>
 
         <section className="nBB-home-problem">
@@ -97,7 +98,7 @@ export default function MainHomePage() {
                   <p className="nBB-home-eyebrow">{displayed.eyebrow}</p>
                   <h3>{displayed.title}</h3>
                   <p>{displayed.text}</p>
-                  <Link className="nBB-home-card-button" to={meta.to}>{displayed.cta} <ArrowRight size={17}/></Link>
+                  <Link className="nBB-home-card-button" to={meta.start || meta.to}>{meta.start ? FREE_START_LABEL : displayed.cta} <ArrowRight size={17}/></Link>
                 </div>
               </article>;
             })}
@@ -128,7 +129,7 @@ export default function MainHomePage() {
           <h2>{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
           <div className="nBB-home-closing-actions">
-            <a href="#choose-path" className="nBB-home-primary">{copy.closingCta} <ArrowRight size={18}/></a>
+            <a href="#choose-path" className="nBB-home-primary">{FREE_START_LABEL} <ArrowRight size={18}/></a>
             <Link to="/join-a-board" className="nBB-home-primary nBB-home-secondary-cta" data-testid="home-closing-join-board-network">
               {copy.closingApplicantCta || MAIN_HOME_DEFAULTS.closingApplicantCta} <ArrowRight size={18}/>
             </Link>
