@@ -540,3 +540,26 @@
   .af-review-heading > span { display: block; margin-bottom: 8px; }
   .af-admin-metrics { grid-template-columns: 1fr; }
 }
+
+.af-new-idea-box {
+  margin: 18px 0 0 72px;
+  padding: 20px;
+  border: 1px dashed #9fcbbf;
+  border-radius: 17px;
+  background: #f4fbf9;
+}
+.af-new-idea-box strong { display: block; color: var(--af-ink); font-size: 16px; }
+.af-new-idea-box p { margin: 6px 0 14px; color: var(--af-muted); line-height: 1.55; font-size: 14px; }
+.af-new-idea-box textarea {
+  width: 100%;
+  border: 1px solid #c7d7d2;
+  border-radius: 11px;
+  padding: 13px 14px;
+  resize: vertical;
+  color: var(--af-ink);
+  background: #fff;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+.af-save-message { color: var(--af-teal-dark) !important; font-size: 12px; font-weight: 800; }
+@media (max-width: 850px) { .af-new-idea-box { margin-left: 0; } }
