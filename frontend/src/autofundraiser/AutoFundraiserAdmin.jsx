@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import "./autofundraiser.css";
+import { AUTO_FUNDRAISER_LOGO } from "./logoData";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api/autofundraiser`;
 const KEY_NAME = "autoFundraiserAdminKey";
@@ -72,7 +73,7 @@ export default function AutoFundraiserAdminPage() {
   };
 
   if (!key || !homepage) return <div className="af-admin-login">
-    <img src="/autofundraiser-logo.png" alt="Auto Fundraiser" />
+    <img src={AUTO_FUNDRAISER_LOGO} alt="Auto Fundraiser" />
     <div className="af-admin-login-card">
       <span>AUTO FUNDRAISER ADMIN</span>
       <h1>Open the operating dashboard.</h1>
@@ -84,7 +85,7 @@ export default function AutoFundraiserAdminPage() {
 
   return <div className="af-admin">
     <aside className="af-admin-side">
-      <img src="/autofundraiser-logo.png" alt="Auto Fundraiser" />
+      <img src={AUTO_FUNDRAISER_LOGO} alt="Auto Fundraiser" />
       <button className={tab === "leads" ? "active" : ""} onClick={() => setTab("leads")}>People & Progress</button>
       <button className={tab === "homepage" ? "active" : ""} onClick={() => setTab("homepage")}>Homepage</button>
       <button onClick={() => { sessionStorage.removeItem(KEY_NAME); setKey(""); setHomepage(null); }}>Log out</button>
