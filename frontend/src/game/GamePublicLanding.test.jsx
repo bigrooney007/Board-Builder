@@ -57,7 +57,7 @@ test("fundraising sales page keeps its minimal hero and links to the separate op
 test("demo shows the saved production video fallback and returns a new visitor to the free game", async () => {
   const { node, cleanup } = await renderPage(GameDemonstrationPage);
   try {
-    expect(node.querySelector("[data-testid='rendered-video']").textContent).toBe("rsf_QZfEId8");
+    expect(node.querySelector("[data-testid='rendered-video']").textContent).toBe("iHr6ddUsp9Y");
     expect(node.querySelector("[data-testid='bfg-demo-continue']").getAttribute("href"))
       .toBe("/board-fundraising/start");
     expect(node.textContent).not.toContain("CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD");

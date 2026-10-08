@@ -20,3 +20,27 @@ In **Admin → Videos → Dashboard Walkthrough Videos**, save a YouTube URL or 
 Until a dedicated walkthrough is saved, the link uses that offer's saved onboarding video. If neither video is available, the dashboard displays **Dashboard video coming soon**.
 
 The four payment videos remain in **Admin → Videos → Videos For The Four Offers**.
+
+## Updated offer videos
+
+The October 8 update uses these videos after the free questions:
+
+| Offer | Video |
+| --- | --- |
+| Board Recruitment | https://youtu.be/rOkPAcYRhxE |
+| Board Fundraising | https://youtu.be/iHr6ddUsp9Y |
+| Strategic Planning | https://youtu.be/00zyPIRIAjA |
+| Board Recommitment | https://youtu.be/jCaxd7eQWqk |
+
+The backend installs these four replacements once when it starts, replacing older saved offer videos. Later changes through Admin survive restarts. The onboarding videos stay in their existing settings.
+
+Until separate dashboard walkthroughs are saved, each dashboard uses its matching onboarding video:
+
+| Dashboard | Existing onboarding video |
+| --- | --- |
+| Board Recruitment | https://youtu.be/PPn-5LpOoZQ |
+| Board Fundraising | https://youtu.be/LZBbDChNQDs |
+| Strategic Planning | https://youtu.be/iRMokrM8mR8 |
+| Board Recommitment | https://youtu.be/5cR1l4qdldg |
+
+These onboarding recordings are also defaults for a fresh preview. An onboarding video saved in Admin takes precedence.

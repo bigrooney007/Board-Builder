@@ -19,7 +19,7 @@ export default function GameUpgradePage() {
   // Use the same demo the visitor can watch before the game. One Admin setting
   // controls the demonstration on both pages.
   const configuredVideo = usePlatformVideo("game_homepage");
-  const video = configuredVideo?.youtube_id ? configuredVideo : { key: "game_homepage", youtube_id: "rsf_QZfEId8", url: "https://youtu.be/rsf_QZfEId8" };
+  const video = configuredVideo?.youtube_id ? configuredVideo : { key: "game_homepage", youtube_id: "iHr6ddUsp9Y", url: "https://youtu.be/iHr6ddUsp9Y" };
 
   useEffect(() => { document.title = "Bring In Your Board | Board Fundraising Game"; }, []);
   useEffect(() => {

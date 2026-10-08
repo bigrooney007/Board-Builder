@@ -14,7 +14,7 @@ export default function GameDemonstrationPage() {
   const configuredVideo = useFlowVideo("game_homepage");
   // The live demonstration remains available if a preview has no copied video setting.
   const video = configuredVideo?.youtube_id ? configuredVideo : {
-    key: "game_homepage", youtube_id: "rsf_QZfEId8", url: "https://youtu.be/rsf_QZfEId8",
+    key: "game_homepage", youtube_id: "iHr6ddUsp9Y", url: "https://youtu.be/iHr6ddUsp9Y",
   };
   const [continuePath, setContinuePath] = useState(PUBLIC_START_ROUTES["board-fundraising-game"]);
 
