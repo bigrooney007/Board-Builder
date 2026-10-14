@@ -39,11 +39,10 @@ async function mount() {
   return { node, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 const button = (node, label) => [...node.querySelectorAll("button")].find((item) => item.textContent === label);
-const field = (node, label) => [...node.querySelectorAll("label")].find((item) => {
-  const copy = item.cloneNode(true);
-  copy.querySelectorAll("input,textarea").forEach((control) => control.remove());
-  return copy.textContent.replace(/\s+/g, " ").trim() === label;
-})?.querySelector("input,textarea");
+const field = (node, label) => {
+  const item = [...node.querySelectorAll("label")].find((element) => element.textContent.replace(/\s+/g, " ").trim() === label);
+  return item ? node.querySelector(`#${item.htmlFor}`) : undefined;
+};
 async function type(node, label, value) {
   await act(async () => {
     const input = field(node, label);
