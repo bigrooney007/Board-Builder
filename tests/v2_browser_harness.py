@@ -120,6 +120,10 @@ async def check(base, artifact_dir):
                 intro = "Your organization deserves a clear, practical explanation in our own voice.\n\n" + "We will work through the board process together, with enough room to understand every decision. " * 4
                 await page.get_by_label("Main heading", exact=True).fill(heading)
                 await page.get_by_label("Opening explanation", exact=True).fill(intro)
+                steps = await page.locator(".v2-editor-step").count()
+                await page.get_by_role("button", name="Add a teaching step", exact=True).click()
+                await page.get_by_label(f"Step {steps + 1} heading", exact=True).fill("A step in our own voice")
+                await page.get_by_label(f"Step {steps + 1} explanation", exact=True).fill("We can add our own practical guidance and arrange it within the existing design.")
                 await page.get_by_role("button", name="Save draft", exact=True).click()
                 await page.get_by_text("Your draft is saved. Visitors continue to see the published version until you select Publish changes.", exact=True).wait_for()
                 unpublished = await context.request.get(base + f"/api/v2/landing-content/{product}")

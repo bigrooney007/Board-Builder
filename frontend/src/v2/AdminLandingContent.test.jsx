@@ -39,10 +39,15 @@ async function mount() {
   return { node, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 const button = (node, label) => [...node.querySelectorAll("button")].find((item) => item.textContent === label);
-const field = (node, label) => [...node.querySelectorAll("label")].find((item) => [...item.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE).map((child) => child.textContent).join("") === label)?.querySelector("input,textarea");
+const field = (node, label) => [...node.querySelectorAll("label")].find((item) => {
+  const copy = item.cloneNode(true);
+  copy.querySelectorAll("input,textarea").forEach((control) => control.remove());
+  return copy.textContent.replace(/\s+/g, " ").trim() === label;
+})?.querySelector("input,textarea");
 async function type(node, label, value) {
   await act(async () => {
     const input = field(node, label);
+    if (!input) throw new Error(`Missing editor field ${label}. Rendered labels: ${[...node.querySelectorAll("label")].map((item) => item.textContent).join(" | ")}`);
     const prototype = input.tagName === "INPUT" ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
     Object.getOwnPropertyDescriptor(prototype, "value").set.call(input, value);
     input.dispatchEvent(new Event("input", { bubbles: true }));
