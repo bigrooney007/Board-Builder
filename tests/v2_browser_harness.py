@@ -50,7 +50,9 @@ async def check(base, artifact_dir):
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             for product in ("recruit", "board-fundraising-game", "strategic-planning", "board-recommitment"):
-                await page.goto(base + "/v2/" + product, wait_until="networkidle")
+                await page.goto(base + "/", wait_until="networkidle")
+                await page.locator(f'.nBB-home-card-button[href="/v2/{product}"]').click()
+                await page.wait_for_url(base + "/v2/" + product)
                 await page.get_by_role("link", name="Start for Free", exact=True).first.wait_for()
                 assert "noindex" in await page.locator('meta[name="robots"]').get_attribute("content")
                 overflow = await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
@@ -58,7 +60,11 @@ async def check(base, artifact_dir):
                 assert not errors, errors
                 await check_layout(page, f"{device} {product} education")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}.png"), full_page=True)
-                findings.append(f"PASS {device} {product}: education landing, CTA, noindex, no overflow")
+                await page.get_by_role("link", name="Start for Free", exact=True).first.click()
+                await page.wait_for_url(base + f"/v2/{product}/start")
+                await page.get_by_role("heading", name="Tell us about your organization.", exact=True).wait_for()
+                await check_layout(page, f"{device} {product} free entry")
+                findings.append(f"PASS {device} {product}: main homepage to education to free intake, noindex, no overflow")
             # Use the genuine API intake and browser checkout/receipt rather than
             # writing a paid entitlement into the fixture database.
             for product in ("recruit", "board-fundraising-game", "strategic-planning", "board-recommitment"):

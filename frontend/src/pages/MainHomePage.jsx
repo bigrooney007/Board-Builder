@@ -6,14 +6,14 @@ import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
 import { useHomepageContent } from "@/clean/platform";
 import { useLandingPageMeta } from "@/seo";
-import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
+import { FREE_START_LABEL } from "@/funnels/publicStartRoutes";
 import "./MainHomePage.css";
 
 const PRODUCT_META = [
-  { icon: Users, to: "/recruit", start: PUBLIC_START_ROUTES.recruitment, image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
-  { icon: Gamepad2, to: "/board-fundraising-game", start: PUBLIC_START_ROUTES["board-fundraising-game"], image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
-  { icon: Map, to: "/strategic-planning", start: PUBLIC_START_ROUTES["strategic-planning"], image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
-  { icon: RefreshCw, to: "/board-recommitment", start: PUBLIC_START_ROUTES["board-recommitment"], image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
+  { icon: Users, to: "/recruit", start: "/v2/recruit", image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
+  { icon: Gamepad2, to: "/board-fundraising-game", start: "/v2/board-fundraising-game", image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
+  { icon: Map, to: "/strategic-planning", start: "/v2/strategic-planning", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
+  { icon: RefreshCw, to: "/board-recommitment", start: "/v2/board-recommitment", image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
   { icon: Handshake, to: "/organize-board-fundraising-game", image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80", imageAlt: "A nonprofit board meeting with a facilitator" },
 ];
 const PRODUCT_PROMISES = [

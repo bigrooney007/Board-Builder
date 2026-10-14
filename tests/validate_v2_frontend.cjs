@@ -26,6 +26,7 @@ const directory = path.join(root, "frontend/src/v2");
 if (!fs.existsSync(directory)) throw new Error("V2 frontend has not been implemented.");
 const files = fs.readdirSync(directory).filter((file) => /\.(jsx|js)$/.test(file));
 files.push("../App.js");
+files.push("../pages/MainHomePage.jsx");
 files.push("../pages/AdminPage.jsx", "../funnels/BoardRecommitmentFormPage.jsx", "../funnels/GuidedPrepaymentQuestionsPage.jsx", "../member/RecruitmentGameIntake.jsx", "../public/OpportunityPages.jsx");
 let failed = 0;
 for (const file of files) {

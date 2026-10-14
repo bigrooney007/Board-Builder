@@ -1,5 +1,11 @@
 # V2 verification record
 
+## Current homepage-to-service wiring
+
+The main homepage's four service buttons now lead to the corresponding education page. Each product page retains Start for Free and the established introductory questions. The customer path is main homepage → selected service education → Start for Free → existing intake questions → written roadmap → $197 purchase → resources and email-led actions. Homepage styling and copy are unchanged. Historical direct service/intake/customer links remain intact.
+
+This wiring change passed **9/9 source-preservation/navigation checks**, **19 frontend source syntax checks**, Python browser-harness compilation and diff checks. The homepage preservation test permits exactly the four changed destinations and removal of the unused import, and requires the rest of its source and all homepage CSS to match the original base. The actual React browser harness now starts at `/`, clicks each service card, and follows Start for Free into its intake at desktop/mobile sizes. That updated browser traversal has not been run here because frontend dependencies/build and browser sandbox access remain unavailable. The previously passing 44 backend/API/security tests apply to the unchanged backend.
+
 ## Current deployment correction
 
 V2 is enabled by default and does not require a preview password when none is configured. After the owner deploys the synchronized code, `/v2` and the four `/v2` product pages are directly accessible. Existing Stripe, email, AI, site-origin and session configuration is reused. Explicit disable, private-key and test-provider overrides remain supported. Paid resource and organization permissions remain enforced.

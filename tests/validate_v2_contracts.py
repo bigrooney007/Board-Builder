@@ -60,10 +60,37 @@ class V2SourceContracts(unittest.TestCase):
                                      (after.returncode, after.stdout, after.stderr),
                                      f"Existing contract behavior changed: {path}")
 
-    def test_main_homepage_and_design_are_byte_identical(self):
-        for path in ("frontend/src/pages/MainHomePage.jsx", "frontend/src/pages/MainHomePage.css"):
-            with self.subTest(path=path):
-                self.assertEqual((ROOT / path).read_bytes(), base_bytes(path))
+    def test_main_homepage_preserved_except_authorized_education_destinations(self):
+        path = "frontend/src/pages/MainHomePage.jsx"
+        expected = base_bytes(path).decode().replace(
+            "{ FREE_START_LABEL, PUBLIC_START_ROUTES }", "{ FREE_START_LABEL }")
+        replacements = {
+            "PUBLIC_START_ROUTES.recruitment": '"/v2/recruit"',
+            'PUBLIC_START_ROUTES["board-fundraising-game"]': '"/v2/board-fundraising-game"',
+            'PUBLIC_START_ROUTES["strategic-planning"]': '"/v2/strategic-planning"',
+            'PUBLIC_START_ROUTES["board-recommitment"]': '"/v2/board-recommitment"',
+        }
+        for original, target in replacements.items():
+            self.assertEqual(expected.count(original), 1)
+            expected = expected.replace(original, target)
+        self.assertEqual(current(path), expected)
+        self.assertEqual((ROOT / "frontend/src/pages/MainHomePage.css").read_bytes(),
+                         base_bytes("frontend/src/pages/MainHomePage.css"))
+
+    def test_homepage_services_lead_to_education_then_existing_free_questions(self):
+        home = current("frontend/src/pages/MainHomePage.jsx")
+        routes = current("frontend/src/v2/V2Routes.jsx")
+        pages = current("frontend/src/v2/PublicPages.jsx")
+        for slug in ("recruit", "board-fundraising-game", "strategic-planning", "board-recommitment"):
+            self.assertIn(f'start: "/v2/{slug}"', home)
+        self.assertIn("to={meta.start || meta.to}", home)
+        self.assertIn('<Route path="/v2/*" element={<V2Routes />} />', current("frontend/src/App.js"))
+        self.assertIn('path=":product" element={protectedPage(<ProductLandingPage />)}', routes)
+        self.assertIn('path=":product/start" element={protectedPage(<FreeIntakePage />)}', routes)
+        self.assertIn('const start = `/v2/${product}/start`', pages)
+        self.assertIn('to={start}>Start for Free', pages)
+        for questions in ("RECRUITMENT_QUESTIONS", "STRATEGIC", "RECOMMITMENT", "FIVE_QUESTIONS"):
+            self.assertIn(questions, pages)
 
     def test_original_customer_route_definitions_preserved(self):
         original = base_bytes("frontend/src/App.js").decode()
