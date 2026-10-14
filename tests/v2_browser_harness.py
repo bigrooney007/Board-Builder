@@ -115,7 +115,7 @@ async def check(base, artifact_dir):
                 before = await context.request.get(base + f"/api/v2/landing-content/{product}")
                 original_heading = (await before.json())["content"]["headline"]
                 await page.goto(base + "/admin?tab=offer-text", wait_until="networkidle")
-                await page.get_by_role("button", name=name, exact=True).click()
+                await page.get_by_role("group", name="Choose an offer page", exact=True).get_by_role("button", name=name, exact=True).click()
                 heading = f"Our {name.lower()} process, written by our leader ({device})"
                 intro = "Your organization deserves a clear, practical explanation in our own voice.\n\n" + "We will work through the board process together, with enough room to understand every decision. " * 4
                 await page.get_by_label("Main heading", exact=True).fill(heading)
