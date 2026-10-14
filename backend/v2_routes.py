@@ -203,12 +203,14 @@ def create_v2_router(db):
 
     @router.put("/journeys/{jid}/branding")
     async def branding(jid: str, request: Request):
-        journey = await require_owner(request, db, jid, paid=False)
+        journey = await require_owner(request, db, jid)
         value = await body_json(request)
         brand = clean_branding(value.get("branding", value), journey["organization"])
         async with journey_lock(db, jid):
             journey = await find_journey(db, jid)
             if brand != journey.get("branding"):
+                if await db.v2_resources.find_one({"journey_id": jid, "status": "approved"}):
+                    raise HTTPException(409, "Approved resources retain the organization details you confirmed. Their saved branding cannot be changed.")
                 old_name = (journey.get("branding") or {}).get("organization_name") or journey["organization"]
                 await db.v2_journeys.update_one({"journey_id": jid}, {"$set": {"branding": brand, "organization": brand["organization_name"],
                                                                                  "branding_confirmed": True, "updated_at": now_iso()}})
@@ -226,11 +228,32 @@ def create_v2_router(db):
                 await db.v2_journeys.update_one({"journey_id": jid}, {"$set": {"branding_confirmed": True}})
         return {"branding": brand, "saved": True}
 
+    @router.post("/journeys/{jid}/setup")
+    async def complete_paid_setup(jid: str, request: Request):
+        journey = await require_owner(request, db, jid)
+        value = await body_json(request)
+        from v2_journey_flow import GROUP_PRODUCTS, validate_meeting
+        meeting = validate_meeting(value.get("meeting")) if journey["product"] in GROUP_PRODUCTS else None
+        await branding(jid, request)
+        updates = {"setup_complete": True, "setup_initialization_status": "pending", "updated_at": now_iso()}
+        if meeting is not None:
+            updates["meeting"] = meeting
+        await db.v2_journeys.update_one({"journey_id": jid}, {"$set": updates})
+        journey = await find_journey(db, jid)
+        from v2_forms import initialize_forms
+        from v2_resources import initialize_resources
+        try:
+            await initialize_forms(db, journey)
+            await initialize_resources(db, journey)
+        except Exception as exc:
+            await db.v2_journeys.update_one({"journey_id": jid}, {"$set": {"setup_complete": False, "setup_initialization_status": "failed", "generation_status": "waiting_setup", "technical_issue": "Your payment and organization details are saved. Resource preparation needs a retry."}})
+            raise HTTPException(503, "Your payment and details are saved. Please retry preparing your resources.") from exc
+        await db.v2_journeys.update_one({"journey_id": jid}, {"$set": {"setup_initialization_status": "complete", "technical_issue": ""}})
+        return {"saved": True, "journey": public_journey(await find_journey(db, jid)), "next": f"/v2/resources/{jid}"}
+
     @router.post("/journeys/{jid}/checkout")
     async def purchase(jid: str, request: Request):
         journey = await require_owner(request, db, jid, paid=False)
-        if not journey.get("branding_confirmed"):
-            raise HTTPException(409, "Confirm your organization name and optional branding before purchasing.")
         from v2_payments import checkout
         return await checkout(db, journey)
 

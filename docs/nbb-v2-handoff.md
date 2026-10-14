@@ -1,3 +1,15 @@
+# Current corrected customer flow
+
+This section supersedes earlier descriptions of prepayment branding, immediate full-pack generation and individual emails for every initial pack resource.
+
+- The written offer has two choices only: $197 self-guided or the existing Book a Call link. There are no logo, brand-color or meeting fields before payment.
+- After payment, one setup page confirms organization branding. Fundraising and strategic planning also require the next meeting date/time before links and invitations are created.
+- Recruitment prepares the profiles first. The customer edits and approves the exact profiles, then the pack is generated from those approved roles. The initial 33-resource inventory excludes the six generic interview communications. Applicant-specific interview guides, invitations and rejections are prepared later from responses.
+- Every product has a secure approved-resource collection with viewing/copying/downloads, usage instructions, form and response links, and group meeting links where applicable. Approved saved versions cannot be edited or regenerated. Downloaded editable copies can be completed independently.
+- Once the initial collection is fully approved, a single deduplicated email delivers its access link. Final strategies/plans and response-specific resources also receive their approved delivery email.
+- The fundraising questionnaire continues one audience at a time, repeats only when the participant has another suggestion, supports skips/uncertainty, and ends with personal participation. The meeting lists audiences on one page; each expands to its full approach. Completing the discussion displays the adopted-content document on that page for correction and final approval.
+- Approved final group documents remain available; reopening does not generate them again or alter approved decisions.
+
 # Nonprofit Board Builder simplified V2 handoff
 
 Branch: `feature/nbb-simplified-final` in `bigrooney007/Board-Builder`.
@@ -16,29 +28,31 @@ Checkout reuses `STRIPE_SECRET_KEY`, transactional emails reuse the existing Res
 
 ## Customer experience
 
-All four V2 products cost **$197 each**, with separate V2 purchase records. Customers learn the process on the product page, use the current introductory questions, read a personalized written roadmap, confirm organization branding, and choose self-service or the existing Calendly conversation. Professional assistance is quoted separately. The verified existing booking URL is `https://calendly.com/boardbuilder/recruitboard`.
+All four V2 products cost **$197 each**, with separate V2 purchase records. Customers learn the process on the product page, use the current introductory questions, read a personalized written roadmap, choose self-guided or the existing Calendly conversation. Organization branding is confirmed after payment. Professional assistance is quoted separately. The verified existing booking URL is `https://calendly.com/boardbuilder/recruitboard`.
 
-After payment verification, the complete resource inventory, forms and direct-action links are created automatically. Customized recruitment documents are generated in durable background jobs; their rows show preparation or a retriable failure rather than pretending an unfinished document is ready. Customers do not need to request their pack. They can review and edit each document, approve the exact current revision, and receive that saved revision as PDF, DOCX and TXT email attachments. A revision edited after approval needs fresh approval. Duplicate approval does not duplicate delivery.
+After payment verification, the customer confirms organization details on one paid setup page. Fundraising and strategic planning require the next meeting date, time and timezone there before participation links are created. Recruitment initially prepares only the board member profiles; the full pack is created only after those profiles are explicitly approved. Customized recruitment documents are generated in durable background jobs; their rows show preparation or a retriable failure rather than pretending an unfinished document is ready. Customers do not need to request their pack. They can review and edit each document, approve the exact current revision, and retrieve PDF, DOCX and TXT downloads from a permanent resource collection. Approved versions are locked against editing or regeneration. One collection-access email is queued after the initial resources are all approved; applicant-specific guides, communications and final group documents retain their own approval-delivery emails. Duplicate approval does not duplicate delivery.
 
-Recruitment provides 39 resources covering governance, profiles, campaign copy, applications, interviews, references, appointments and optional onboarding templates. No background-check service or output is included. Once the current announcement, application form, job post and LinkedIn post are approved, the leader reviews a campaign preview and explicitly confirms launch. That activates the application, publishes the frozen approved listing in the isolated V2 marketplace, and queues announcements only to registered, opted-in permitted test contacts. The interface distinguishes queued, confirmed, partial, failed and skipped activity. Launch retry, pause and close preserve records and prevent duplicate announcements. New applications notify the leader through a scoped link to the response, supporting document, personalized interview guide, invitation and rejection actions. An optional existing launch instruction video remains available.
+Recruitment provides 33 resources covering governance, profiles, campaign copy, applications, interviews, references, appointments and optional onboarding templates. No background-check service or output is included. Once the recruitment resource collection is approved, the leader reviews a campaign preview and explicitly confirms launch. That activates the application, publishes the frozen approved listing in the isolated V2 marketplace, and reports applicant-network distribution separately according to its explicitly configured live/test settings and verified consent. The interface distinguishes queued, confirmed, partial, failed and skipped activity. Launch retry, pause and close preserve records and prevent duplicate announcements. New applications notify the leader through a scoped link to the response, supporting document, personalized interview guide, invitation and rejection actions. An optional existing launch instruction video remains available.
 
 Fundraising provides leader/participant links, invitations, meeting settings, submitted ideas, facilitation guidance and a Group Game. Participants complete one funding audience at a time under Individuals, Businesses and Grantmakers. Each audience preserves its identity, reasons, location, attraction, relationship process, ask and amount; a category can be skipped, uncertainty is accepted, progress is saved, and participation is a separate final answer. The group compares overlapping suggestions without discarding differences, edits or combines them, and explicitly adopts or rejects them. Responsibilities require confirmed consent and connect to approved audiences. A final editable preview contains only adopted ideas and confirmed participation. Approval emails the exact agreed strategy. There are no execution agents or mandatory portfolios.
 
 Strategic Planning preserves the existing questions, program-specific sections and methodology. Branded forms, invitations, source responses, meeting settings and a facilitation guide support one group planning session. The leader controls decisions while an explicitly shared meeting view is read-only. Retaining the existing mission is an explicit decision. The final editable preview uses only adopted decisions, including supplied budget/fundraising information without inventing figures. Approval emails the saved plan. There is no mandatory delegation or project management.
 
-Recommitment reuses the original conditional form and invitation, adds two respectful follow-up templates, and permits copied external email or platform invitations. Externally copied messages are never labelled delivered. Responses notify the leader. A conversation guide is generated from the submitted position, edited, approved and emailed. A submission is not automatically a final recommitment.
+Recommitment reuses the original conditional form and invitation, adds two respectful follow-up templates, and permits copied external email or platform invitations. Externally copied messages are never labelled delivered. Responses notify the leader. A conversation guide is generated from the submitted position, edited, approved and emailed. The response page also provides a response review and a respectful appreciation email. Prepared response resources are reused rather than regenerated. A submission is not automatically a final recommitment.
 
 ## Routes
 
 | Purpose | V2 route |
 | --- | --- |
 | Board service chooser | `/v2` |
+| Paid branding and meeting setup | `/v2/setup/:journeyId` |
+| Permanent approved-resource collection | `/v2/library/:journeyId` |
 | Four education pages | `/v2/recruit`, `/v2/board-fundraising-game`, `/v2/strategic-planning`, `/v2/board-recommitment` |
 | Existing introductory questions | `/v2/:product/start` |
 | Written roadmap and $197/Calendly choice | `/v2/:product/offer?journey=...` |
 | Verified payment return | `/v2/:product/payment?journey_id=...&session_id=...` |
-| Compact purchased resources | `/v2/resources/:journeyId` and `/v2/:product/resources/:journeyId` |
-| View/edit/approve/download resource | `/v2/resources/:journeyId/:resourceId` |
+| Review resources awaiting approval | `/v2/resources/:journeyId` and `/v2/:product/resources/:journeyId` |
+| View/edit before approval, approve, or download saved resource | `/v2/resources/:journeyId/:resourceId` |
 | Responses and direct response action | `/v2/responses/:journeyId`, `/v2/responses/:journeyId/:submissionId` |
 | Invitations and copyable templates | `/v2/invite/:journeyId` |
 | Group session | `/v2/group/:journeyId` |

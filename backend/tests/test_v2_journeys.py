@@ -254,21 +254,26 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, expected, f"{method} {path}: {response.text[:1500]}")
         return response.json()
 
-    async def make_journey(self, product, paid=True, email="leader@example.test", organization="Synthetic Education Trust"):
+    async def make_journey(self, product, paid=True, email="leader@example.test", organization="Synthetic Education Trust", setup=True, approve_profiles=True):
         draft = await self.ok("POST", "/journeys", {"product": product, "name": "Synthetic Leader", "email": email,
                                                      "organization": organization, "desired_count": 2, "board_count": 5, "goal_amount": 25000})
         jid = draft["journey_id"]
         self.client.headers["X-V2-Draft"] = draft["draft_token"]
         saved = await self.ok("PUT", f"/journeys/{jid}/answers", {"answers": intake_answers(product)})
         self.assertTrue(saved["complete"])
-        await self.ok("PUT", f"/journeys/{jid}/branding", {"branding": {"organization_name": organization, "primary_color": "#123456", "secondary_color": "#654321", "logo_data": ""}})
         if paid:
             checkout = await self.ok("POST", f"/journeys/{jid}/checkout", {})
             self.stripe.pay(checkout["session_id"])
             confirmed = await self.ok("GET", f"/journeys/{jid}/payment?session_id={checkout['session_id']}")
             self.assertEqual(confirmed["state"], "paid")
-            journey = await self.core.find_journey(self.db, jid)
-            await self.resources.generate_pending_resources(self.db, journey)
+            if setup:
+                await self.ok("POST", f"/journeys/{jid}/setup", {"branding": {"organization_name": organization, "primary_color": "#123456", "secondary_color": "#654321", "logo_data": ""}, "meeting": {"date": "2026-11-30", "time": "18:00", "timezone": "Europe/London"}})
+                journey = await self.core.find_journey(self.db, jid)
+                await self.resources.generate_pending_resources(self.db, journey)
+                if product == "recruit" and approve_profiles:
+                    profile = await self.resource_by_key(journey, "recruitment_assessment_profiles")
+                    await self.approve(journey, profile)
+                    await self.resources.generate_pending_resources(self.db, await self.core.find_journey(self.db, jid))
         return await self.core.find_journey(self.db, jid)
 
     async def resource_by_key(self, journey, key):
@@ -288,7 +293,7 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
             await self.emails.process_email(self.db, event["event_id"], transport=self.transport)
 
     async def launch(self, journey):
-        for key in ("board_opportunity", "application_questions", "board_recruitment_job_post", "linkedin_post"):
+        for key, _, _, _ in self.resources.RECRUITMENT_INVENTORY:
             await self.approve(journey, await self.resource_by_key(journey, key))
         preview = await self.ok("GET", f"/journeys/{journey['journey_id']}/campaign")
         return await self.ok("POST", f"/journeys/{journey['journey_id']}/campaign/launch", {"confirmed": True, "expected_revision": preview["revision"]})
@@ -352,7 +357,7 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
     async def test_automatic_generation_worker_finishes_paid_pack_without_manual_request(self):
         journey = await self.make_journey("recruit")
         rows = await self.db.v2_resources.find({"journey_id": journey["journey_id"]}).to_list(None)
-        self.assertEqual(len(rows), 39)
+        self.assertEqual(len(rows), 33)
         # Replay the durable generation job as the startup worker does. The
         # test helper has already produced these resources, so explicitly mark
         # one generated row pending to exercise asynchronous recovery as well.
@@ -404,7 +409,7 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
             await self.ok("GET", f"/journeys/{journey['journey_id']}/payment?session_id={first['session_id']}")
         self.assertEqual(await self.db.v2_purchases.count_documents({}), 1)
         self.assertEqual(await self.db.v2_email_outbox.count_documents({"event_key": "welcome:" + journey["journey_id"]}), 1)
-        self.assertEqual(await self.db.v2_invitations.count_documents({"journey_id": journey["journey_id"], "role": "Leader"}), 1)
+        self.assertEqual(await self.db.v2_invitations.count_documents({"journey_id": journey["journey_id"], "role": "Leader"}), 0)
 
     async def test_unpaid_checkout_has_no_private_resources_or_purchase(self):
         journey = await self.make_journey("board-recommitment", paid=False)
@@ -441,41 +446,43 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rejected.status_code, 403)
         self.assertEqual(await self.db.v2_purchases.count_documents({}), 0)
 
-    async def test_resource_approval_emails_exact_immutable_branded_editable_versions_once(self):
+    async def test_resource_approvals_freeze_exact_branded_versions_and_email_collection_once(self):
         journey = await self.make_journey("recruit")
         resource = await self.resource_by_key(journey, "board_expectations")
-        original_text = "Synthetic Education Trust\n\nThese are the exact expectations our board approved."
-        resource = await self.ok("PUT", f"/journeys/{journey['journey_id']}/resources/{resource['resource_id']}",
-                                 {"expected_revision": resource["revision"], "text": original_text})
+        approved_text = "Synthetic Education Trust\n\nThese are the exact expectations our board approved."
+        resource = await self.ok("PUT", f"/journeys/{journey['journey_id']}/resources/{resource['resource_id']}", {"expected_revision": resource["revision"], "text": approved_text})
         await self.approve(journey, resource)
         await self.approve(journey, resource)
         stored = await self.db.v2_resources.find_one({"resource_id": resource["resource_id"]})
         snapshot = deepcopy(stored["approved_versions"][0])
         self.assertEqual(len(stored["approved_versions"]), 1)
-        self.assertEqual(snapshot["text"], original_text)
+        self.assertEqual(snapshot["text"], approved_text)
         self.assertEqual(snapshot["branding"]["primary_color"], "#123456")
-        event = await self.db.v2_email_outbox.find_one({"event_key": f"resource-approved:{resource['resource_id']}:{resource['revision']}"})
-        self.assertEqual(event["to"], journey["email"])
-        self.assertEqual(len(event["payload"]["attachments"]), 3)
-        for fmt, signature in (("pdf", b"%PDF"), ("docx", b"PK"), ("txt", original_text.encode())):
-            download = await self.client.get(f"/api/v2/journeys/{journey['journey_id']}/resources/{resource['resource_id']}/download?format={fmt}")
-            self.assertEqual(download.status_code, 200)
-            self.assertTrue(download.content.startswith(signature))
-            self.assertEqual(download.content, base64.b64decode(snapshot["artifacts"][fmt]["content"]))
-        revised = await self.ok("PUT", f"/journeys/{journey['journey_id']}/resources/{resource['resource_id']}",
-                                {"expected_revision": resource["revision"], "text": original_text + "\n\nA revised expectation."})
-        self.assertIsNone(revised["approved_revision"])
-        await self.approve(journey, revised)
-        after = await self.db.v2_resources.find_one({"resource_id": resource["resource_id"]})
-        self.assertEqual(after["approved_versions"][0], snapshot)
-        self.assertEqual(len(after["approved_versions"]), 2)
-        self.assertEqual(await self.db.v2_email_outbox.count_documents({"resource_id": resource["resource_id"]}), 2)
+        self.assertEqual(await self.db.v2_email_outbox.count_documents({"event_key": f"resource-approved:{resource['resource_id']}:{resource['revision']}"}), 0)
+        for fmt, signature in (("pdf", b"%PDF"), ("docx", b"PK"), ("txt", approved_text.encode())):
+            downloaded = await self.client.get(f"/api/v2/journeys/{journey['journey_id']}/resources/{resource['resource_id']}/download?format={fmt}")
+            self.assertEqual(downloaded.status_code, 200)
+            self.assertTrue(downloaded.content.startswith(signature))
+            self.assertEqual(downloaded.content, base64.b64decode(snapshot["artifacts"][fmt]["content"]))
+        blocked = await self.client.put(f"/api/v2/journeys/{journey['journey_id']}/resources/{resource['resource_id']}", json={"expected_revision": resource["revision"], "text": "Replace the approved version."})
+        self.assertEqual(blocked.status_code, 409)
+        await self.launch(journey)
+        await self.approve(journey, resource)
+        self.assertEqual(await self.db.v2_email_outbox.count_documents({"event_key": "collection-approved:" + journey["journey_id"]}), 1)
+        library = await self.ok("GET", f"/journeys/{journey['journey_id']}/library")
+        self.assertTrue(library["read_only"])
+        self.assertTrue(library["collection"]["complete"])
+        self.assertEqual(len(library["resources"]), 33)
+        self.assertTrue(all(row["usage"] for row in library["resources"]))
+        self.assertEqual((await self.db.v2_resources.find_one({"resource_id": resource["resource_id"]}))["approved_versions"][0], snapshot)
 
     async def test_failed_email_retries_same_exact_payload_and_provider_key_without_duplicates(self):
         journey = await self.make_journey("board-recommitment")
         resource = await self.resource_by_key(journey, "participant_form")
-        await self.approve(journey, resource)
-        event = await self.db.v2_email_outbox.find_one({"resource_id": resource["resource_id"]})
+        rows = (await self.ok("GET", f"/journeys/{journey['journey_id']}/resources"))["resources"]
+        for row in rows:
+            await self.approve(journey, row)
+        event = await self.db.v2_email_outbox.find_one({"event_key": "collection-approved:" + journey["journey_id"]})
         saved_payload = deepcopy(event["payload"])
         self.transport.fail_next = 1
         failed = await self.emails.process_email(self.db, event["event_id"], self.transport)
@@ -501,7 +508,7 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
         rows = (await self.ok("GET", f"/journeys/{journey['journey_id']}/resources"))["resources"]
         from v2_resource_content import RECRUITMENT_INVENTORY
         self.assertEqual({row["key"] for row in rows}, {item[0] for item in RECRUITMENT_INVENTORY})
-        self.assertTrue(all(row["status"] == "ready" for row in rows), [r for r in rows if r["status"] != "ready"])
+        self.assertTrue(all(row["status"] in {"ready", "approved"} for row in rows), [r for r in rows if r["status"] not in {"ready", "approved"}])
         self.assertFalse(any("background" in row["key"] or "background check" in row["text"].lower() for row in rows))
         before_launch = await self.client.post(f"/api/v2/forms/{journey['form_token']}/submit", json={"name": "Candidate Avery", "email": "candidate@example.test", "answers": {"location": "Synthetic City", "profession": "Education adviser", "why_interested": "Literacy and board governance"}, "idempotency_key": "application-1"})
         self.assertEqual(before_launch.status_code, 410)
@@ -692,6 +699,124 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
             for path in (f"/journeys/{first['journey_id']}/resources", f"/journeys/{first['journey_id']}/responses"):
                 response = await outsider.get("/api/v2" + path)
                 self.assertEqual(response.status_code, 401)
+
+    async def test_payment_has_no_branding_requirement_and_precedes_setup_and_generation(self):
+        journey = await self.make_journey("recruit", paid=False)
+        jid = journey["journey_id"]
+        branding = await self.client.put(f"/api/v2/journeys/{jid}/branding", json={"organization_name": "Premature branding"})
+        self.assertIn(branding.status_code, (401, 403))
+        checkout = await self.ok("POST", f"/journeys/{jid}/checkout", {})
+        self.stripe.pay(checkout["session_id"])
+        await self.ok("GET", f"/journeys/{jid}/payment?session_id={checkout['session_id']}")
+        self.assertEqual(await self.db.v2_resources.count_documents({"journey_id": jid}), 0)
+        self.assertEqual(self.ai.calls, [])
+        entry = await self.ok("GET", f"/journeys/{jid}/resources")
+        self.assertEqual(entry["next"], f"/v2/setup/{jid}")
+        welcome = await self.db.v2_email_outbox.find_one({"event_key": "welcome:" + jid})
+        self.assertIn("/v2/setup/", welcome["payload"]["html"])
+
+    async def test_pack_generation_waits_for_exact_edited_profile_approval(self):
+        journey = await self.make_journey("recruit", approve_profiles=False)
+        jid = journey["journey_id"]
+        self.assertEqual([call[0] for call in self.ai.calls], ["recruitment_assessment_profiles"])
+        rows = (await self.ok("GET", f"/journeys/{jid}/resources"))["resources"]
+        self.assertEqual(len(rows), 1)
+        denied = await self.client.get(f"/api/v2/journeys/{jid}/pack")
+        self.assertEqual(denied.status_code, 409)
+        profile = rows[0]
+        approved_text = "Recruit a Treasurer experienced in charity finance and a Community Education Specialist. These are the two profiles our organization approved."
+        profile = await self.ok("PUT", f"/journeys/{jid}/resources/{profile['resource_id']}", {"text": approved_text, "expected_revision": profile["revision"]})
+        await self.approve(journey, profile)
+        await self.resources.generate_pending_resources(self.db, await self.core.find_journey(self.db, jid))
+        campaign_call = next(call for call in self.ai.calls if call[0] == "board_opportunity")
+        context, _ = json.JSONDecoder().raw_decode(campaign_call[1].split("VERIFIED V2 CONTEXT:\n", 1)[1])
+        self.assertEqual(context["approved_board_member_profiles"]["text"], approved_text)
+        self.assertEqual(context["approved_board_member_profiles"]["revision"], profile["revision"])
+        rows = (await self.ok("GET", f"/journeys/{jid}/resources"))["resources"]
+        self.assertEqual(len(rows), 33)
+        self.assertFalse({"general_interview_invitation", "general_interview_invitation_message", "rejection_email", "candidate_followup", "after_interview_thank_you", "after_interview_rejection"} & {row["key"] for row in rows})
+
+    async def test_meeting_date_and_time_precede_participant_links_and_invitations(self):
+        for product in ("board-fundraising-game", "strategic-planning"):
+            journey = await self.make_journey(product, setup=False)
+            jid = journey["journey_id"]
+            invite = await self.client.post(f"/api/v2/journeys/{jid}/invitations", json={"name": "Synthetic Participant", "email": "board@example.test"})
+            self.assertEqual(invite.status_code, 409)
+            bad = await self.client.post(f"/api/v2/journeys/{jid}/setup", json={"branding": {"organization_name": journey["organization"]}})
+            self.assertEqual(bad.status_code, 422)
+            self.assertEqual(await self.db.v2_invitations.count_documents({"journey_id": jid}), 0)
+            setup = await self.ok("POST", f"/journeys/{jid}/setup", {"branding": {"organization_name": journey["organization"]}, "meeting": {"date": "2026-11-30", "time": "18:00", "timezone": "Europe/London"}})
+            self.assertEqual(setup["journey"]["meeting"]["time"], "18:00")
+            await self.ok("POST", f"/journeys/{jid}/invitations", {"name": "Synthetic Participant", "email": "board@example.test"})
+
+    async def test_each_product_sends_one_collection_link_and_keeps_saved_resources(self):
+        for product in self.core.PRODUCTS:
+            journey = await self.make_journey(product)
+            jid = journey["journey_id"]
+            rows = (await self.ok("GET", f"/journeys/{jid}/resources"))["resources"]
+            for resource in rows:
+                await self.approve(journey, resource)
+            await self.approve(journey, rows[-1])
+            events = await self.db.v2_email_outbox.find({"event_key": "collection-approved:" + jid}).to_list(None)
+            self.assertEqual(len(events), 1)
+            self.assertIn("/v2/library/", events[0]["payload"]["html"])
+            library = await self.ok("GET", f"/journeys/{jid}/library")
+            self.assertTrue(library["read_only"])
+            self.assertEqual(len(library["resources"]), len(rows))
+            self.assertEqual(await self.db.v2_email_outbox.count_documents({"journey_id": jid, "event_key": {"$in": [f"resource-approved:{row['resource_id']}:{row['revision']}" for row in rows]}}), 0)
+
+    async def test_final_group_approval_freezes_decisions_and_reopens_saved_document(self):
+        journey = await self.make_journey("strategic-planning")
+        jid = journey["journey_id"]
+        group = await self.ok("GET", f"/journeys/{jid}/group")
+        decision = await self.ok("POST", f"/journeys/{jid}/decisions", {"category": group["sections"][0]["key"], "title": "Agreed mission", "content": "Protect local education access.", "status": "adopted"})
+        final = await self.ok("POST", f"/journeys/{jid}/final-preview", {})
+        await self.approve(journey, final)
+        blocked = await self.client.post(f"/api/v2/journeys/{jid}/decisions", json={**decision, "content": "Replace the approved plan"})
+        self.assertEqual(blocked.status_code, 409)
+        reopened = await self.ok("POST", f"/journeys/{jid}/final-preview", {})
+        self.assertEqual(reopened["resource_id"], final["resource_id"])
+        self.assertEqual(reopened["text"], final["text"])
+        saved = await self.ok("GET", f"/journeys/{jid}/group")
+        self.assertTrue(saved["read_only"])
+        self.assertEqual(saved["final_resource_id"], final["resource_id"])
+
+    async def test_recommitment_review_appreciation_and_guide_use_saved_response_resources(self):
+        from v2_form_content import RECOMMIT_ADVISORY
+        journey = await self.make_journey("board-recommitment")
+        jid = journey["journey_id"]
+        response = await self.submit(journey, {"recommitment": RECOMMIT_ADVISORY, "decision_reason": "I cannot attend regular meetings.", "strengths_resources": "Education contacts.", "monthly_availability": "2–4 hours"})
+        sid = response["submission_id"]
+        for kind in ("review", "appreciation", "guide"):
+            resource = await self.ok("POST", f"/journeys/{jid}/responses/{sid}/generate", {"kind": kind})
+            await self.resources.generate_pending_resources(self.db, await self.core.find_journey(self.db, jid))
+            resource = await self.ok("GET", f"/journeys/{jid}/resources/{resource['resource_id']}")
+            await self.approve(journey, resource)
+            calls = len(self.ai.calls)
+            again = await self.ok("POST", f"/journeys/{jid}/responses/{sid}/generate", {"kind": kind})
+            self.assertEqual(again["resource_id"], resource["resource_id"])
+            self.assertEqual(again["status"], "approved")
+            self.assertEqual(len(self.ai.calls), calls)
+        library = await self.ok("GET", f"/journeys/{jid}/library")
+        self.assertEqual(len(library["resources"]), 3)
+        prepared = await self.ok("GET", f"/journeys/{jid}/responses/{sid}")
+        self.assertEqual(len(prepared["prepared_resources"]), 3)
+
+    async def test_paid_setup_retry_keeps_payment_and_creates_links_once(self):
+        journey = await self.make_journey("strategic-planning", setup=False)
+        jid = journey["journey_id"]
+        payload = {"branding": {"organization_name": journey["organization"]}, "meeting": {"date": "2026-11-30", "time": "18:00", "timezone": "Europe/London"}}
+        with patch("v2_resources.initialize_resources", side_effect=RuntimeError("Synthetic preparation failure")):
+            failed = await self.client.post(f"/api/v2/journeys/{jid}/setup", json=payload)
+        self.assertEqual(failed.status_code, 503)
+        saved = await self.core.find_journey(self.db, jid)
+        self.assertEqual(saved["state"], "paid")
+        self.assertFalse(saved["setup_complete"])
+        await self.ok("POST", f"/journeys/{jid}/setup", payload)
+        await self.ok("POST", f"/journeys/{jid}/setup", payload)
+        self.assertEqual(await self.db.v2_invitations.count_documents({"journey_id": jid, "role": "Leader"}), 1)
+        self.assertEqual(await self.db.v2_resources.count_documents({"journey_id": jid}), 3)
+        self.assertEqual(await self.db.v2_purchases.count_documents({"journey_id": jid}), 1)
 
 
 if __name__ == "__main__":

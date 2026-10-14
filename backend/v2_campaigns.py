@@ -19,14 +19,9 @@ from pydantic import BaseModel, Field
 
 from v2_core import digest, enabled, find_journey, journey_lock, now_iso, origin, preview_access, require_owner, validate_email
 from v2_email import queue_email, retry_email
-from v2_resource_content import organization_name
+from v2_resource_content import RECRUITMENT_INVENTORY, organization_name
 
-REQUIRED = (
-    ("board_opportunity", "Board Recruitment Announcement"),
-    ("application_questions", "Board Application Form"),
-    ("board_recruitment_job_post", "Board Recruitment Job Post"),
-    ("linkedin_post", "LinkedIn Recruitment Post"),
-)
+REQUIRED = tuple((key, title) for key, title, _, _ in RECRUITMENT_INVENTORY)
 SUSPENDED = {"withdrawn", "paused", "unsubscribed", "opted out", "opted-out"}
 
 
@@ -60,7 +55,7 @@ def approved_snapshot(resource):
 
 
 async def current_preview(db, journey):
-    resources = await db.v2_resources.find({"journey_id": journey["journey_id"], "key": {"$in": [key for key, _ in REQUIRED]}, "submission_id": ""}, {"_id": 0}).to_list(20)
+    resources = await db.v2_resources.find({"journey_id": journey["journey_id"], "key": {"$in": [key for key, _ in REQUIRED]}, "submission_id": ""}, {"_id": 0}).to_list(len(REQUIRED))
     by_key = {item["key"]: item for item in resources}
     snapshots, readiness, hash_rows = {}, [], []
     for key, title in REQUIRED:

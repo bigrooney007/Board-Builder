@@ -19,6 +19,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from v2_core import ensure_paid, find_journey, journey_lock, new_id, now_iso, origin, public_journey, require_owner
+from v2_journey_flow import PROFILE_KEY, approved_profiles, require_pack_profiles, require_setup, resource_usage
 from v2_resource_content import (
     RECRUITMENT_INVENTORY, assert_allowed_content, facilitation_guide,
     normalize_copy, organization_name, recommitment_templates, recruitment_template,
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 MIMES = {"pdf": "application/pdf", "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "txt": "text/plain; charset=utf-8"}
 INVENTORY = {entry[0]: entry for entry in RECRUITMENT_INVENTORY}
 FINAL_KEYS = {"final_strategy", "final_plan"}
-COMMUNICATION_KEYS = {"interview_invitation", "before_interview_rejection"}
+COMMUNICATION_KEYS = {"interview_invitation", "before_interview_rejection", "recommitment_appreciation"}
 GENERATION_INSTRUCTIONS = (
     "This is the simplified Nonprofit Board Builder V2 self-service product. "
     "Use complete sentences, connected thoughts and practical consultant language. Never use em dashes. "
@@ -58,6 +59,7 @@ def public_resource(resource):
     }}
     result["approved_versions"] = [{"revision": item["revision"], "approved_at": item["approved_at"]}
                                    for item in resource.get("approved_versions", [])]
+    result["usage"] = resource_usage(resource)
     if resource.get("delivery_error"):
         result["delivery_error"] = "Your approved version is saved. Its email could not be queued. Approve again to retry delivery."
     return result
@@ -109,9 +111,14 @@ def printable_questions(context):
 
 async def initialize_resources(db, journey):
     ensure_paid(journey)
+    require_setup(journey)
     form_link = f"{origin()}/v2/forms/{journey['form_token']}"
     if journey["product"] == "recruit":
+        await db.v2_journeys.update_one({"journey_id": journey["journey_id"]}, {"$set": {"collection_keys": [entry[0] for entry in RECRUITMENT_INVENTORY]}})
+        profile = await approved_profiles(db, journey)
         for key, title, group, gen_type in RECRUITMENT_INVENTORY:
+            if key != PROFILE_KEY and not profile:
+                continue
             text = recruitment_template(key, journey, form_link) if not gen_type else ""
             structured = {"form_link": form_link} if key in {"application_questions", "application_link"} else {}
             if key == "launch_instructions":
@@ -138,6 +145,8 @@ async def initialize_resources(db, journey):
             await seed_resource(db, journey, "participant_invitation", "Participant Invitation Email",
                                 f"Subject: {message['subject']}\n\n{message['body']}", "Forms and invitations")
             await seed_resource(db, journey, "facilitation_guide", "Your Facilitation Guide", facilitation_guide(journey), "Your meeting")
+        collection = await db.v2_resources.find({"journey_id": journey["journey_id"], "submission_id": ""}, {"_id": 0}).to_list(250)
+        await db.v2_journeys.update_one({"journey_id": journey["journey_id"]}, {"$set": {"collection_keys": [row["key"] for row in collection if row["key"] not in FINAL_KEYS]}})
     return await db.v2_resources.find({"journey_id": journey["journey_id"]}, {"_id": 0}).to_list(250)
 
 
@@ -146,6 +155,10 @@ async def generation_context(db, journey, generation_type, submission=None):
     from workspace_service import profile_context_text, reference_context
     context = {key: journey.get(key) for key in ("product", "name", "email", "organization", "desired_count", "board_count", "goal_amount", "answers", "branding", "meeting")}
     context["organization_name"] = organization_name(journey)
+    if journey["product"] == "recruit" and generation_type != PROFILE_KEY:
+        await require_pack_profiles(db, journey)
+        profile = await approved_profiles(db, journey)
+        context["approved_board_member_profiles"] = {"text": profile["text"], "revision": profile["revision"]}
     # Branding images belong in the document renderer, never in a text prompt.
     # Omitting binary image data keeps personalization grounded and avoids an
     # unnecessary large AI request for every item in the recruitment pack.
@@ -200,7 +213,9 @@ async def _generate_resource(db, journey, resource):
                 raise ValueError("The source response is not available.")
         context = await generation_context(db, journey, gen_type, submission)
         extra = ""
-        if gen_type == "reactivation_conversation_script":
+        if journey["product"] == "recruit" and gen_type != PROFILE_KEY:
+            extra += "\nThe approved_board_member_profiles in the verified context are authoritative. Build the recruitment content for those exact approved roles and contributions. Do not add, replace or reassess roles using earlier unapproved intake suggestions."
+        if gen_type in {"reactivation_conversation_script", "reactivation_response_analysis"}:
             extra = "\nUse the board member's exact submitted position. A submitted form is not a final commitment. Never presume motives or willingness beyond what they supplied. Do not add conversation-conclusion workflow stages."
         generated = await generate_structured(gen_type, context, GENERATION_INSTRUCTIONS + extra)
         if not isinstance(generated, dict) or not generated:
@@ -241,12 +256,15 @@ async def _generate_resource(db, journey, resource):
 async def generate_pending_resources(db, journey):
     """Durable preparing jobs survive webhook retries and process restarts."""
     ensure_paid(journey)
+    require_setup(journey)
     # The profiles are prepared first so all campaign materials receive the same
     # organization-specific source. Nothing is auto-approved.
     pending = await db.v2_resources.find({"journey_id": journey["journey_id"], "status": "preparing"}, {"_id": 0}).to_list(250)
     profiles = [r for r in pending if r["key"] == "recruitment_assessment_profiles"]
     for resource in profiles:
         await _generate_resource(db, journey, resource)
+    if journey["product"] == "recruit" and not await approved_profiles(db, journey):
+        return []
     gate = asyncio.Semaphore(3)
     async def prepare(resource):
         async with gate:
@@ -329,18 +347,41 @@ async def _queue_approval(db, journey, resource, snapshot):
     path = f"/v2/resources/{journey['journey_id']}/{resource['resource_id']}"
     result = await queue_email(db, f"resource-approved:{resource['resource_id']}:{snapshot['revision']}", journey["email"],
                              f"Your approved {title} is ready",
-                             f"You have approved {title} for {organization_name(journey)}. The exact approved version is attached in PDF, editable Word and plain text formats. Use the secure link to review it or prepare a revised version.",
+                             f"You have approved {title} for {organization_name(journey)}. The exact approved version is attached in PDF, editable Word and plain text formats. {resource_usage(resource)} Your saved resource collection also retains this version.",
                              journey_id=journey["journey_id"], action_path=path, resource_id=resource["resource_id"],
                              revision=snapshot["revision"], attachments=attachments)
     await db.v2_resources.update_one({"resource_id": resource["resource_id"]}, {"$unset": {"delivery_error": ""}})
     return result
 
 
+async def collection_state(db, journey):
+    expected = set(journey.get("collection_keys") or [])
+    resources = await db.v2_resources.find({"journey_id": journey["journey_id"], "submission_id": ""}, {"_id": 0}).to_list(250)
+    current = {r["key"]: r for r in resources if r["key"] in expected}
+    ready = bool(expected and expected == set(current) and all(r.get("status") == "approved" and r.get("approved_revision") == r.get("revision") for r in current.values()))
+    return {"complete": ready, "approved": sum(r.get("status") == "approved" for r in current.values()), "total": len(expected)}
+
+
+async def queue_collection_access(db, journey):
+    journey = await find_journey(db, journey["journey_id"])
+    state = await collection_state(db, journey)
+    if not state["complete"]:
+        return {"status": "waiting_for_collection_approval"}
+    from v2_email import queue_email
+    result = await queue_email(db, "collection-approved:" + journey["journey_id"], journey["email"], "Your Approved Board Builder Resources Are Ready",
+        "You have approved your resource collection. Use this secure link whenever you need to view, copy or download the exact resources you approved. Each resource explains how to use it. Forms, responses and any group meeting links remain available here. Approved resources are saved and will not be regenerated.",
+        journey_id=journey["journey_id"], action_path="/v2/library/" + journey["journey_id"])
+    return result
+
+
 async def approve_resource(db, journey, resource_id, expected_revision):
+    require_setup(journey)
     query = {"journey_id": journey["journey_id"], "resource_id": resource_id}
     resource = await db.v2_resources.find_one(query, {"_id": 0})
     if not resource:
         raise HTTPException(404, "This resource is not available.")
+    if resource["key"] != PROFILE_KEY:
+        await require_pack_profiles(db, journey)
     if resource["revision"] != expected_revision:
         raise HTTPException(409, "This resource changed. Review the latest version before approving it.")
     if resource["status"] not in {"ready", "approved"} or not resource.get("text", "").strip():
@@ -375,12 +416,18 @@ async def approve_resource(db, journey, resource_id, expected_revision):
                                                      "$push": {"approved_versions": snapshot}})
             if not saved.modified_count:
                 raise HTTPException(409, "This resource changed. Review it before approving.")
-        try:
+    try:
+        if resource["key"] == PROFILE_KEY:
+            await initialize_resources(db, await find_journey(db, journey["journey_id"]))
+        if resource.get("submission_id") or resource["key"] in FINAL_KEYS:
             delivery = await _queue_approval(db, current_journey, current, snapshot)
-        except Exception:
-            logger.exception("V2 approved document email queue failed for %s", resource_id)
-            await db.v2_resources.update_one(query, {"$set": {"delivery_error": "queue_failed"}})
-            delivery = {"status": "queue_failed"}
+        else:
+            delivery = await queue_collection_access(db, current_journey)
+        await db.v2_resources.update_one(query, {"$unset": {"delivery_error": ""}})
+    except Exception:
+        logger.exception("V2 approved document delivery/collection preparation failed for %s", resource_id)
+        await db.v2_resources.update_one(query, {"$set": {"delivery_error": "queue_failed"}})
+        delivery = {"status": "queue_failed"}
     final = await db.v2_resources.find_one(query, {"_id": 0})
     email_summary = {key: delivery.get(key) for key in ("event_id", "status", "sent_at", "error") if isinstance(delivery, dict) and delivery.get(key) is not None}
     return {**public_resource(final), "branding": brand, "email": email_summary, "approved": True}
@@ -427,16 +474,31 @@ def create_v2_resource_router(db):
 
     async def owned_resource(request, jid, rid):
         journey = await require_owner(request, db, jid)
+        require_setup(journey)
         resource = await db.v2_resources.find_one({"journey_id": jid, "resource_id": rid}, {"_id": 0})
         if not resource:
             raise HTTPException(404, "This resource is not available.")
+        if resource["key"] != PROFILE_KEY:
+            await require_pack_profiles(db, journey)
         return journey, resource
 
     @router.get("/journeys/{jid}/resources")
     async def resources(jid: str, request: Request):
         journey = await require_owner(request, db, jid)
+        if not journey.get("setup_complete") or journey.get("setup_initialization_status") != "complete":
+            return {"resources": [], "journey": public_journey(journey), "next": f"/v2/setup/{jid}"}
         found = await db.v2_resources.find({"journey_id": jid}, {"_id": 0}).to_list(250)
-        return {"resources": [public_resource(item) for item in found], "journey": public_journey(journey)}
+        profile_required = journey["product"] == "recruit" and not await approved_profiles(db, journey)
+        if profile_required:
+            found = [r for r in found if r["key"] == PROFILE_KEY]
+        return {"resources": [public_resource(item) for item in found], "journey": public_journey(journey), "profile_approval_required": profile_required, "collection": await collection_state(db, journey)}
+
+    @router.get("/journeys/{jid}/library")
+    async def library(jid: str, request: Request):
+        journey = await require_owner(request, db, jid)
+        require_setup(journey)
+        found = await db.v2_resources.find({"journey_id": jid, "status": "approved"}, {"_id": 0}).to_list(1000)
+        return {"resources": [{**public_resource(row), "branding": (_current_snapshot(row) or {}).get("branding", {})} for row in found], "journey": public_journey(journey), "read_only": True, "collection": await collection_state(db, journey)}
 
     @router.get("/journeys/{jid}/resources/{rid}")
     async def resource(jid: str, rid: str, request: Request):
@@ -457,6 +519,8 @@ def create_v2_resource_router(db):
             found = await db.v2_resources.find_one({"journey_id": jid, "resource_id": rid}, {"_id": 0})
             if found["revision"] != payload.expected_revision:
                 raise HTTPException(409, "This resource changed. Reload it before saving your edits.")
+            if found["status"] == "approved":
+                raise HTTPException(409, "This resource is approved and saved. Download its editable copy to make changes for your own use.")
             if found["status"] not in {"ready", "approved"}:
                 raise HTTPException(409, "Wait for preparation to finish before editing this resource.")
             if text != found["text"]:
@@ -509,6 +573,8 @@ def create_v2_resource_router(db):
     @router.get("/journeys/{jid}/pack")
     async def pack(jid: str, request: Request, format: str = "pdf"):
         journey = await require_owner(request, db, jid)
+        require_setup(journey)
+        await require_pack_profiles(db, journey)
         resources = await db.v2_resources.find({"journey_id": jid, "submission_id": ""}, {"_id": 0}).to_list(250)
         ready = [item for item in resources if item.get("text") and item["status"] in {"ready", "approved"}]
         if not ready:
@@ -522,20 +588,24 @@ def create_v2_resource_router(db):
     @router.post("/journeys/{jid}/responses/{sid}/generate")
     async def response_generate(jid: str, sid: str, payload: GenerateResponseResource, request: Request):
         journey = await require_owner(request, db, jid)
+        require_setup(journey)
         source = await db.v2_submissions.find_one({"journey_id": jid, "submission_id": sid}, {"_id": 0})
         if not source:
             raise HTTPException(404, "This response is not available.")
         if journey["product"] == "recruit":
             mapping = {"guide": ("interview_guide", "Interview Guide"), "interview-invitation": ("interview_invitation", "Interview Invitation"), "rejection": ("before_interview_rejection", "Application Rejection Email")}
         elif journey["product"] == "board-recommitment":
-            mapping = {"guide": ("reactivation_conversation_script", "Conversation Guide")}
+            mapping = {"guide": ("reactivation_conversation_script", "Conversation Guide"), "review": ("reactivation_response_analysis", "Response Review"), "appreciation": ("recommitment_appreciation", "Appreciation Email")}
         else:
             raise HTTPException(422, "This product uses its group session to prepare a final document.")
         if payload.kind not in mapping:
             raise HTTPException(422, "Choose an available response action.")
         gen_type, title = mapping[payload.kind]
         async with journey_lock(db, jid):
-            found = await seed_resource(db, journey, gen_type, f"{title}: {source.get('name') or 'Board response'}", "", "Response resources", submission_id=sid)
+            initial = ""
+            if gen_type == "recommitment_appreciation":
+                initial = f"Subject: Thank you for your board recommitment response\n\nDear {source['name']},\n\nThank you for completing the recommitment form for {organization_name(journey)} and sharing your perspective. I will review what you have said so we can have a useful conversation about your involvement and any questions or concerns you raised.\n\nThank you,\n{journey['name']}\n{organization_name(journey)}"
+            found = await seed_resource(db, journey, gen_type, f"{title}: {source.get('name') or 'Board response'}", initial, "Response resources", submission_id=sid)
             if not found.get("generation_type"):
                 await db.v2_resources.update_one({"resource_id": found["resource_id"]}, {"$set": {"generation_type": gen_type}})
                 found["generation_type"] = gen_type
@@ -551,7 +621,7 @@ def create_v2_resource_router(db):
     async def send(jid: str, rid: str, payload: SendResource, request: Request):
         from v2_email import queue_email
         journey, found = await owned_resource(request, jid, rid)
-        if journey["product"] != "recruit" or payload.recipient != "applicant" or found["key"] not in COMMUNICATION_KEYS or not found.get("submission_id"):
+        if journey["product"] not in {"recruit", "board-recommitment"} or payload.recipient != "applicant" or found["key"] not in COMMUNICATION_KEYS or not found.get("submission_id"):
             raise HTTPException(422, "Only an approved applicant-specific invitation or rejection can be sent to an applicant.")
         async with journey_lock(db, jid):
             found = await db.v2_resources.find_one({"journey_id": jid, "resource_id": rid}, {"_id": 0})

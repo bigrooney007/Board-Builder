@@ -47,7 +47,7 @@ async def checkout(db, journey):
                 "purchase_source": purchase_source(journey["product"])}
     params = {"mode": "payment", "customer_email": journey["email"], "client_reference_id": journey["journey_id"],
               "line_items": [{"price_data": {"currency": CURRENCY, "unit_amount": PRICE_CENTS,
-                 "product_data": {"name": PRODUCTS[journey["product"]] + " | Self-Service V2"}}, "quantity": 1}],
+                 "product_data": {"name": PRODUCTS[journey["product"]] + " | Self-Guided V2"}}, "quantity": 1}],
               "metadata": metadata, "payment_intent_data": {"metadata": metadata},
               "success_url": f"{origin()}/v2/{journey['product']}/payment?journey_id={journey['journey_id']}&session_id={{CHECKOUT_SESSION_ID}}",
               "cancel_url": f"{origin()}/v2/{journey['product']}/offer?journey_id={journey['journey_id']}&checkout=cancelled"}
@@ -91,17 +91,13 @@ async def activate_journey(db, journey_id):
         return journey
     # Seed operations are individually idempotent and can recover after an
     # interrupted webhook or a missing generator configuration.
-    from v2_forms import initialize_forms
-    from v2_resources import initialize_resources
     from v2_email import queue_email
     try:
-        await initialize_resources(db, journey)
-        await initialize_forms(db, journey)
         await queue_email(db, "welcome:" + journey_id, journey["email"], "Your " + PRODUCTS[journey["product"]] + " Resources",
-            "Your payment is confirmed. Your forms, links and instructions are ready, and your customized documents are being prepared automatically. Open your resources to review and approve them. We will email each exact approved document to you, so you can continue the work within your organization.",
-            journey_id=journey_id, action_path="/v2/resources/" + journey_id)
+            "Your payment is confirmed. Confirm your organization details next. For meeting-based services, set your next board meeting date and time before inviting participants. For recruitment, review and approve your board member profiles before we prepare the recruitment pack. Your saved resources will remain available in one secure collection.",
+            journey_id=journey_id, action_path="/v2/setup/" + journey_id)
         await db.v2_journeys.update_one({"journey_id": journey_id},
-            {"$set": {"activation_status": "complete", "generation_status": "pending", "technical_issue": "", "updated_at": now_iso()}})
+            {"$set": {"activation_status": "complete", "generation_status": "waiting_setup", "technical_issue": "", "updated_at": now_iso()}})
     except Exception:
         await db.v2_journeys.update_one({"journey_id": journey_id},
             {"$set": {"activation_status": "failed", "technical_issue": "Payment was saved, but resource preparation needs a retry.", "updated_at": now_iso()}})

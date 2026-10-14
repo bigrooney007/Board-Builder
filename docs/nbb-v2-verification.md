@@ -1,3 +1,11 @@
+# Latest paid-setup, profile-first and saved-collection verification
+
+Current changes supersede earlier prepayment branding and per-resource initial-pack email behavior. The backend synthetic suite covers payment without branding, paid setup, meeting-before-invitations, profile-first pack generation from exact customer edits, all four approved collections, immutable resources, deduplicated collection delivery, complete recruitment/application/CV actions, funding audience adoption and confirmed participation, strategic mission/approved-only plan delivery, recommitment review/appreciation/conversation guides, and setup/email retries. Provider boundaries use synthetic doubles; no real charges, emails, applicant broadcasts or production records are involved.
+
+Local results: 51 backend/API/security/methodology tests, 9 preservation/navigation checks, 20 frontend source syntax checks, Python compilation and diff checks. Actual React/build/browser checks run through the isolated GitHub validation workflow when repository permissions permit; results are recorded separately from local source/API checks. The workflow does not deploy, load production environment files, or call real providers.
+
+Earlier records below retain their original scopes and are not claims about the current UI.
+
 # V2 verification record
 
 ## Current homepage-to-service wiring

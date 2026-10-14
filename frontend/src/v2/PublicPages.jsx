@@ -68,7 +68,7 @@ export function FreeIntakePage() {
     v2Api.get(`/journeys/${journeyId}`).then(({ data }) => {
       if (data.product !== product) throw new Error("Please use the link for the product you started.");
       if (!active) return;
-      if (data.state === "paid") { navigate(`/v2/resources/${journeyId}`, { replace: true }); return; }
+      if (data.state === "paid") { navigate(data.setup_complete ? `/v2/resources/${journeyId}` : `/v2/setup/${journeyId}`, { replace: true }); return; }
       const restored = product === "strategic-planning"
         ? { ...data.answers, program_details: data.answers?.program_details?.length ? data.answers.program_details : [blankProgram()] }
         : data.answers || {};
@@ -148,53 +148,38 @@ export function FreeIntakePage() {
 export function OfferPage() {
   const { product } = useParams(); const content = PRODUCTS[product];
   const [params] = useSearchParams(); const journeyId = params.get("journey") || params.get("journey_id") || "";
-  const [journey, setJourney] = useState(null); const [branding, setBranding] = useState({ organization_name: "", logo_data: "", primary_color: "", secondary_color: "" });
-  const [confirmed, setConfirmed] = useState(false); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const [journey, setJourney] = useState(null); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const navigate = useNavigate();
   useEffect(() => {
-    setLoading(true); setJourney(null); setConfirmed(false); setError("");
-    if (!journeyId) { setError("Please open this page from your saved introductory questions."); setLoading(false); return; }
-    let active = true;
+    let active = true; setLoading(true); setError("");
+    if (!journeyId) { setError("Please open this page from your saved introductory questions."); setLoading(false); return undefined; }
     v2Api.get(`/journeys/${journeyId}`).then(({ data }) => {
       if (data.product !== product) throw new Error("This link belongs to a different product.");
       if (!active) return;
-      if (data.state === "paid") { navigate(`/v2/resources/${journeyId}`, { replace: true }); return; }
-      setJourney(data); setBranding({ organization_name: data.organization, logo_data: "", primary_color: "", secondary_color: "", ...data.branding });
-    }).catch((err) => { if (active) setError(errorMessage(err, err.message)); }).finally(() => { if (active) setLoading(false); });
+      if (data.state === "paid") { navigate(data.setup_complete ? `/v2/resources/${journeyId}` : `/v2/setup/${journeyId}`, { replace: true }); return; }
+      setJourney(data);
+    }).catch((problem) => { if (active) setError(errorMessage(problem, problem.message)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [journeyId, product, navigate]);
-  const uploadLogo = (event) => {
-    const file = event.target.files?.[0]; if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 1024 * 1024) { setError("Choose a PNG, JPEG or WebP logo smaller than 1 MB."); event.target.value = ""; return; }
-    const reader = new FileReader(); reader.onload = () => { setBranding((previous) => ({ ...previous, logo_data: reader.result })); setConfirmed(false); setError(""); };
-    reader.onerror = () => setError("We could not read that logo. Please choose the file again."); reader.readAsDataURL(file);
-  };
-  const buy = async (event) => {
-    event.preventDefault(); if (!confirmed || busy) return;
-    if (!branding.organization_name?.trim()) { setError("Confirm the organization name you want on your resources."); return; }
-    if ([branding.primary_color, branding.secondary_color].some((color) => color && !/^#[0-9a-f]{6}$/i.test(color))) { setError("Enter each optional brand color as a six-digit hex color, such as #243B64, or leave it blank."); return; }
-    setBusy(true); setError("");
+  const buy = async () => {
+    if (busy) return; setBusy(true); setError("");
     try {
-      await v2Api.put(`/journeys/${journeyId}/branding`, { branding: { ...branding, organization_name: branding.organization_name.trim() } });
       const { data } = await v2Api.post(`/journeys/${journeyId}/checkout`);
       if (!data.checkout_url) throw new Error("Checkout is not available yet. Please try again.");
-      const target = new URL(data.checkout_url, window.location.origin);
-      if (target.protocol !== "https:" && target.origin !== window.location.origin) throw new Error("The checkout link could not be verified.");
-      window.location.assign(target.href);
-    } catch (err) { setError(errorMessage(err, err.message || "We could not open secure checkout. Please try again.")); setBusy(false); }
+      window.location.assign(data.checkout_url);
+    } catch (problem) { setError(errorMessage(problem, problem.message)); }
+    finally { setBusy(false); }
   };
   if (!content) return <NotFoundPage />;
   const source = journey?.answers || {};
   const contextKey = product === "recruit" ? "support_needs" : product === "strategic-planning" ? "goals" : product === "board-recommitment" ? "why_recommit" : "1";
   return <V2Shell title={`Your ${content.name} next steps`}>
     {loading ? <Loading>Opening your next steps…</Loading> : !journey ? <section className="v2-card"><ErrorNotice error={error} /><Link className="v2-button" to={`/v2/${product}/start`}>Open the free questions</Link></section> : <>
-      <section className="v2-intro"><p className="v2-eyebrow">YOUR INTRODUCTORY ANSWERS ARE SAVED</p><h1>{content.offerHeading}</h1><p>{journey.name}, you've shared the starting information for {journey.organization}. The next step is to prepare the materials and tools you will use to carry out this process with your organization.</p></section>
-      <div className="v2-offer-context"><h2>Building from what you told us</h2>{source.mission && <><h3>Your mission</h3><blockquote>{source.mission}</blockquote></>}{source[contextKey] && <><h3>{product === "board-fundraising-game" ? "Your first fundraising idea" : "What you want to work on"}</h3><blockquote>{source[contextKey]}</blockquote></>}{journey.goal_amount > 0 && <p>Your fundraising goal is ${Number(journey.goal_amount).toLocaleString("en-US")}.</p>}<Link to={`/v2/${product}/start?journey=${encodeURIComponent(journeyId)}`}>Review or change your introductory answers</Link></div>
+      <section className="v2-intro"><p className="v2-eyebrow">YOUR INTRODUCTORY ANSWERS ARE SAVED</p><h1>{content.offerHeading}</h1><p>{journey.name}, you've shared the starting information for {journey.organization}. Read the steps below and choose the support you want.</p></section>
+      <div className="v2-offer-context"><h2>Building from what you told us</h2>{source.mission && <><h3>Your mission</h3><blockquote>{source.mission}</blockquote></>}{source[contextKey] && <><h3>What you want to work on</h3><blockquote>{source[contextKey]}</blockquote></>}<Link to={`/v2/${product}/start?journey=${encodeURIComponent(journeyId)}`}>Review or change your introductory answers</Link></div>
       <section className="v2-education v2-next-steps"><h2>What happens next</h2>{content.next.map(([heading, paragraph]) => <article key={heading}><h3>{heading}</h3><p>{paragraph}</p></article>)}</section>
-      <form className="v2-branding-card v2-card" onSubmit={buy}><h2>Confirm the details for your resources</h2><p>Use your organization's name and, if you have them, its logo and brand colors. Leave the optional branding blank for a neutral professional design.</p><div className="v2-branding-fields"><label>Organization name<input required maxLength={200} value={branding.organization_name || ""} onChange={(e) => { setBranding({ ...branding, organization_name: e.target.value }); setConfirmed(false); }} /></label><label>Organization logo, optional<input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} /><small>PNG, JPEG or WebP, up to 1 MB.</small></label></div>{branding.logo_data && <div className="v2-logo-preview"><img src={branding.logo_data} alt="Your organization logo preview" /><button type="button" className="v2-text-button" onClick={() => { setBranding({ ...branding, logo_data: "" }); setConfirmed(false); }}>Remove logo</button></div>}<div className="v2-branding-fields"><label>Primary brand color, optional<input type="text" placeholder="#243B64" maxLength={7} value={branding.primary_color || ""} onChange={(e) => { setBranding({ ...branding, primary_color: e.target.value }); setConfirmed(false); }} /></label><label>Secondary brand color, optional<input type="text" placeholder="#6366F1" maxLength={7} value={branding.secondary_color || ""} onChange={(e) => { setBranding({ ...branding, secondary_color: e.target.value }); setConfirmed(false); }} /></label></div><label className="v2-checkbox"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />I confirm these organization details and understand that I will carry out the self-service process.</label>
-        <section className="v2-purchase-options" aria-label="Your two options"><article className="v2-purchase-card v2-purchase-primary"><p className="v2-eyebrow">SELF-SERVICE</p><h2>Get Everything I Need and Do It Myself</h2><p className="v2-price">${SELF_SERVICE_PRICE}<span>One purchase for {content.name}</span></p><p>{content.outcome}</p><p>Your payment activates this product's resources and tools. Approved documents are saved and emailed to you. Personal facilitation is available through a separate engagement.</p><button className="v2-button" disabled={busy || !confirmed}>{busy ? "Opening secure checkout…" : `Get my ${content.name} tools for $${SELF_SERVICE_PRICE}`}<ArrowRight size={17} /></button></article><article className="v2-purchase-card"><p className="v2-eyebrow">PROFESSIONAL ASSISTANCE</p><h2>Let Us Work With You or Do It for You</h2><p>We can help you prepare, facilitate or carry out the process, depending on what your organization needs. Book a conversation, explain where you would like help and we will discuss the scope and a separate quotation.</p><AssistanceLink /><p className="v2-small">Booking a call does not charge a professional-assistance fee. You can also request help after buying the self-service product.</p></article></section><ErrorNotice error={error} />
-      </form>
-      <p className="v2-email-reminder">We will email you when a response arrives or an approved resource is ready. Add our sending address to your contacts and mark important emails as favorites so you can find the action links when you need them.</p>
+      <section className="v2-purchase-options" aria-label="Your two options"><article className="v2-purchase-card v2-purchase-primary"><p className="v2-eyebrow">SELF-GUIDED</p><h2>Get Everything I Need and Guide the Process Myself</h2><p className="v2-price">${SELF_SERVICE_PRICE}<span>One purchase for {content.name}</span></p><p>{content.outcome}</p><p>After payment, confirm your organization details and begin the guided process. Your approved resources will remain available in a secure collection.</p><button type="button" className="v2-button" disabled={busy} onClick={buy}>{busy ? "Opening secure checkout…" : `Get my ${content.name} tools for $${SELF_SERVICE_PRICE}`}</button></article><article className="v2-purchase-card"><p className="v2-eyebrow">PROFESSIONAL ASSISTANCE</p><h2>Let Us Work With You or Do It for You</h2><p>Book a conversation to explain where you want help. We will discuss the support your organization needs and a separate quotation.</p><AssistanceLink /></article></section><ErrorNotice error={error} />
+      <p className="v2-email-reminder">We will email you when someone responds and when your approved collection is ready. Add our sending address to your contacts and mark important emails as favorites.</p>
     </>}
   </V2Shell>;
 }
@@ -211,7 +196,7 @@ export function PaymentPage() {
       try {
         const { data } = await v2Api.get(`/journeys/${journeyId}/payment`, { params: { session_id: sessionId } });
         if (!active) return;
-        if (data.payment_status === "paid" && data.state === "paid") { navigate(`/v2/resources/${data.journey_id || journeyId}`, { replace: true }); return; }
+        if (data.payment_status === "paid" && data.state === "paid") { navigate(`/v2/setup/${data.journey_id || journeyId}`, { replace: true }); return; }
         if (["failed", "expired", "cancelled"].includes(data.payment_status)) { setState("failed"); return; }
       } catch (err) { if (!active) return; if ([401, 403, 404].includes(err.response?.status)) { setError(errorMessage(err)); setState("failed"); return; } }
       if (tries < 10) timer = setTimeout(check, 2000); else if (active) setState("waiting");

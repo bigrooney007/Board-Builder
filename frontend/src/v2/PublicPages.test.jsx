@@ -49,35 +49,30 @@ test.each(["recruit", "board-fundraising-game", "strategic-planning", "board-rec
   } finally { await cleanup(); }
 });
 
-test("the written recruitment offer uses saved answers and requires explicit branding confirmation", async () => {
-  v2Api.get.mockResolvedValue({ data: { journey_id: "test-journey", product: "recruit", state: "free", name: "Test Leader", organization: "Test Community Charity", answers: { mission: "Make community learning accessible", support_needs: "Find experienced education leaders" } } });
+test.each(["recruit", "board-fundraising-game", "strategic-planning", "board-recommitment"])("%s offer goes directly to checkout without collecting branding", async (product) => {
+  mockProduct = product;
+  v2Api.get.mockResolvedValue({ data: { journey_id: "test-journey", product, state: "free", name: "Test Leader", organization: "Test Community Charity", answers: { mission: "Make community learning accessible", support_needs: "Find experienced education leaders" } } });
   const { node, cleanup } = await mount(OfferPage);
   try {
     expect(node.textContent).toContain("Test Community Charity");
-    expect(node.textContent).toContain("Find experienced education leaders");
-    expect(node.querySelector("iframe, video")).toBeNull();
+    expect(node.querySelector("iframe, video, input, textarea, select")).toBeNull();
     expect(node.querySelector(`a[href="${CALENDLY_URL}"]`)).not.toBeNull();
     const buy = [...node.querySelectorAll("button")].find((button) => button.textContent.includes("$197"));
-    expect(buy.disabled).toBe(true);
-    await act(async () => node.querySelector('input[type="checkbox"]').click());
     expect(buy.disabled).toBe(false);
-    expect(v2Api.post).not.toHaveBeenCalled();
-    v2Api.put.mockResolvedValue({ data: { saved: true } });
     v2Api.post.mockRejectedValue({ response: { data: { detail: "Test checkout unavailable" } } });
-    await act(async () => node.querySelector("form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
-    expect(v2Api.put).toHaveBeenCalledWith("/journeys/test-journey/branding", expect.objectContaining({ branding: expect.objectContaining({ organization_name: "Test Community Charity" }) }));
+    await act(async () => buy.click());
     expect(v2Api.post).toHaveBeenCalledWith("/journeys/test-journey/checkout");
-    expect(v2Api.put.mock.invocationCallOrder[0]).toBeLessThan(v2Api.post.mock.invocationCallOrder[0]);
+    expect(v2Api.put).not.toHaveBeenCalled();
     expect(node.textContent).toContain("Test checkout unavailable");
   } finally { await cleanup(); }
 });
 
-test("the provider's journey_id return link opens only the verified purchased resource page", async () => {
+test("the provider's journey_id return link opens paid setup only after payment verification", async () => {
   mockSearch = "journey_id=test-journey&session_id=test-checkout";
   v2Api.get.mockResolvedValue({ data: { payment_status: "paid", journey_id: "test-journey", state: "paid" } });
   const { cleanup } = await mount(PaymentPage);
   try {
     expect(v2Api.get).toHaveBeenCalledWith("/journeys/test-journey/payment", { params: { session_id: "test-checkout" } });
-    expect(mockNavigate).toHaveBeenCalledWith("/v2/resources/test-journey", { replace: true });
+    expect(mockNavigate).toHaveBeenCalledWith("/v2/setup/test-journey", { replace: true });
   } finally { await cleanup(); }
 });

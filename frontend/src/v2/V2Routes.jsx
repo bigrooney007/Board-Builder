@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import V2Shell, { ErrorNotice, Loading, PreviewGate } from "./V2Shell";
+import PaidSetupPage from "./PaidSetupPage";
 import { errorMessage, v2Api } from "./api";
 import { FreeIntakePage, MarketplacePage, NotFoundPage, OfferPage, PaymentPage, ProductIndexPage, ProductLandingPage, RecoveryPage } from "./PublicPages";
-import { CampaignPage, InvitationsPage, ResourceEditorPage, ResourcesPage, ResponsePage, ResponsesPage } from "./ResourcePages";
+import { CampaignPage, InvitationsPage, ResourceEditorPage, ResourceLibraryPage, ResourcesPage, ResponsePage, ResponsesPage } from "./ResourcePages";
 import { GroupPage, SharedMeetingPage } from "./GroupPages";
 import { ParticipantPage } from "./ParticipantPages";
 
@@ -65,6 +66,8 @@ export default function V2Routes() {
     <Route path="forms/:token" element={<ParticipantPage />} />
     <Route path="meeting/:token" element={<SharedMeetingPage />} />
     <Route path="marketplace" element={protectedPage(<MarketplacePage />)} />
+    <Route path="setup/:journeyId" element={protectedPage(<PaidSetupPage />)} />
+    <Route path="library/:journeyId" element={protectedPage(<ResourceLibraryPage />)} />
     <Route path="resources/:journeyId" element={protectedPage(<ResourcesPage />)} />
     <Route path="resources/:journeyId/:resourceId" element={protectedPage(<ResourceEditorPage />)} />
     <Route path="responses/:journeyId" element={protectedPage(<ResponsesPage />)} />

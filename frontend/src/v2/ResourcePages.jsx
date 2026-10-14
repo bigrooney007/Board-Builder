@@ -78,10 +78,14 @@ export function DocumentPreview({ resource, branding }) {
 
 export function ResourcesPage() {
   const { journeyId } = useParams();
+  const navigate = useNavigate();
   const { data, error, setError, loading, refresh } = useV2Load(`/journeys/${journeyId}/resources`);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
   const journey = data?.journey || {};
+  useEffect(() => { if (data?.next) navigate(data.next, { replace: true }); }, [data, navigate]);
+  useEffect(() => { if (data?.collection?.complete) navigate(`/v2/library/${journeyId}`, { replace: true }); }, [data, journeyId, navigate]);
+  const profileGate = data?.profile_approval_required;
   const resources = data?.resources || [];
   const preparing = resources.some((resource) => resource.status === "preparing");
   useEffect(() => { if (!preparing) return undefined; const interval = window.setInterval(refresh, 3000); return () => window.clearInterval(interval); }, [preparing, refresh]);
@@ -93,12 +97,13 @@ export function ResourcesPage() {
     finally { setBusy(""); }
   };
   return <V2Shell title={TITLES[journey.product] || "Your resources"}><div className="v2-action-page" data-testid="v2-resources">
-    <header><p className="v2-eyebrow">{journey.organization}</p><h1>{TITLES[journey.product] || "Your Resources"}</h1>
-      <p>Everything you need is here. Open a resource to review it, make changes and approve it. We will save the exact version you approve and email it to you.</p></header>
+    <header><p className="v2-eyebrow">{journey.organization}</p><h1>{profileGate ? "Approve Your Board Member Recruitment Profiles" : TITLES[journey.product] || "Your Resources"}</h1>
+      <p>{profileGate ? "Review the roles your organization needs. Edit and approve these profiles first. We will then create your recruitment pack using those exact approved profiles." : "Review your resources, make changes and approve the versions you want to use. Once the collection is approved, we will email one secure link to all your saved resources."}</p></header>
     <ActionNotice error={error} message={message} />
     {loading && <p role="status">Loading your resources...</p>}
     {data && <>
-      <section className="v2-card"><h2>Your next actions</h2><div className="v2-actions">
+      {!profileGate && <section className="v2-card"><h2>Your next actions</h2><div className="v2-actions">
+        <Link className="v2-btn v2-btn-secondary" to={`/v2/library/${journeyId}`}>Open my approved resource collection</Link>
         {journey.product === "recruit" ? <>
           <Link className="v2-btn" to={`/v2/campaign/${journeyId}`}>Review and launch your campaign</Link>
           <Link className="v2-btn v2-btn-secondary" to={`/v2/responses/${journeyId}`}>View applicants</Link>
@@ -114,18 +119,41 @@ export function ResourcesPage() {
       {journey.form_token && <div className="v2-link-box"><label>{journey.product === "recruit" ? "Application link, activated when you launch your campaign" : "Your organization's form link"}<input readOnly value={`${window.location.origin}/v2/forms/${journey.form_token}`} /></label><CopyButton text={`${window.location.origin}/v2/forms/${journey.form_token}`}>Copy form link</CopyButton></div>}
       {journey.product === "recruit" && <p>Review and approve the public-facing campaign resources before launching. Then share your application link through LinkedIn, Facebook, your website, your networks and direct email outreach.</p>}
       {journey.product !== "recruit" && <p>You can copy the form link into an email you send yourself. Personal invitation links let people securely return to their own answers.</p>}
-      </section>
+      </section>}
       {groups.map((group) => <section className="v2-card" key={group}><h2>{group}</h2><ul className="v2-resource-list">
         {resources.filter((r) => (r.group || "Resources") === group).map((resource) => <li key={resource.resource_id}>
           <div><Link to={`/v2/resources/${journeyId}/${resource.resource_id}`}>{resource.title}</Link><small>{statusText(resource)}</small>{resource.error && <small className="v2-error-inline">{resource.error}</small>}</div>
           {resource.status === "failed" ? <button disabled={busy === resource.resource_id} className="v2-btn v2-btn-secondary" onClick={() => retry(resource)}>Retry preparation</button> : <Link className="v2-btn v2-btn-secondary" to={`/v2/resources/${journeyId}/${resource.resource_id}`}>View and edit</Link>}
         </li>)}
       </ul></section>)}
-      {journey.product === "recruit" && <section className="v2-card"><h2>Promote your board opportunity</h2>
+      {journey.product === "recruit" && !profileGate && <section className="v2-card"><h2>Promote your board opportunity</h2>
         <p>Publish the approved announcement and application link on your website. Use your LinkedIn and Facebook posts to explain the opportunity, and send the outreach email to people in your personal and professional networks. Ask trusted contacts to share it with suitable candidates.</p>
         <a className="v2-btn v2-btn-secondary" href="https://youtu.be/tESJV4jJVWs" target="_blank" rel="noreferrer">Watch the optional 30-minute campaign launch instructions</a>
       </section>}
       <section className="v2-card"><h2>Would you like help carrying out this process?</h2><p>We can work with you to prepare, facilitate or implement the process. Book a conversation so we can discuss the support you need and provide a separate quotation.</p><AssistanceLink /></section>
+    </>}
+  </div></V2Shell>;
+}
+
+export function ResourceLibraryPage() {
+  const { journeyId } = useParams();
+  const { data, error, loading, refresh } = useV2Load(`/journeys/${journeyId}/library`);
+  const journey = data?.journey || {};
+  return <V2Shell title="Your approved resource collection"><div className="v2-action-page" data-testid="v2-library">
+    <header><p className="v2-eyebrow">{journey.organization}</p><h1>Your Approved Resources</h1><p>Your approved versions are saved here. Open any resource to read its instructions, copy it or download it. These saved resources will not be regenerated.</p></header>
+    <ActionNotice error={error} />{loading && <p role="status">Opening your saved resources…</p>}
+    {data && <>
+      <section className="v2-card"><h2>Your forms and action links</h2><div className="v2-actions">
+        <Link className="v2-btn" to={`/v2/responses/${journeyId}`}>{journey.product === "recruit" ? "View applicants" : "View responses"}</Link>
+        {journey.product === "recruit" ? <Link className="v2-btn" to={`/v2/campaign/${journeyId}`}>Launch or manage my campaign</Link> : <Link className="v2-btn" to={`/v2/invite/${journeyId}`}>Invite participants</Link>}
+        {["board-fundraising-game", "strategic-planning"].includes(journey.product) && <Link className="v2-btn" to={`/v2/group/${journeyId}`}>Open my group meeting</Link>}
+        {journey.leader_form_token && <Link className="v2-btn v2-btn-secondary" to={`/v2/forms/${journey.leader_form_token}`}>Open my questionnaire</Link>}
+        {!data.collection?.complete && <Link className="v2-btn v2-btn-secondary" to={`/v2/resources/${journeyId}`}>Review resources awaiting approval</Link>}
+        <button className="v2-btn v2-btn-secondary" onClick={refresh}>Refresh saved resources</button>
+      </div>{journey.form_token && <div className="v2-link-box"><label>Shareable form link<input readOnly value={`${window.location.origin}/v2/forms/${journey.form_token}`} /></label><CopyButton text={`${window.location.origin}/v2/forms/${journey.form_token}`}>Copy form link</CopyButton></div>}</section>
+      {(data.resources || []).map((resource) => <details className="v2-card" key={resource.resource_id}><summary>{resource.title}</summary><p>{resource.usage}</p><DocumentPreview resource={resource} branding={resource.branding} /><div className="v2-actions"><CopyButton text={resource.text}>Copy approved text</CopyButton>{["pdf", "docx", "txt"].map((format) => <DownloadLink key={format} path={`/journeys/${journeyId}/resources/${resource.resource_id}/download?format=${format}`}>Download {format.toUpperCase()}</DownloadLink>)}</div>{resource.structured?.form_link && <CopyButton text={resource.structured.form_link}>Copy functional form link</CopyButton>}</details>)}
+      {!data.resources?.length && <p>Your approved resources will appear here as you complete your review.</p>}
+      <section className="v2-card"><h2>Would you like us to help you carry out the process?</h2><AssistanceLink /></section>
     </>}
   </div></V2Shell>;
 }
@@ -151,7 +179,7 @@ export function ResourceEditorPage() {
       } else if (kind === "approve") {
         const response = await v2Api.post(`/journeys/${journeyId}/resources/${resourceId}/approve`, { expected_revision: resource.revision });
         if (response.data.delivery_error || response.data.email?.status === "queue_failed") setError("This exact version is approved and saved, but its email could not be queued. Use Retry approved email delivery below.");
-        else setMessage("This exact version has been approved and saved. Its email is queued for delivery to you. Repeated approval will not create another email.");
+        else setMessage(resource.key === "recruitment_assessment_profiles" ? "Your profiles are approved and saved. Your recruitment pack is now being prepared from these exact profiles." : resource.submission_id || ["final_strategy", "final_plan"].includes(resource.key) ? "This exact version is approved and saved. Its email is queued for delivery." : "This version is approved and saved. We will email your collection link once all its resources are approved.");
       } else if (kind === "send") {
         await v2Api.post(`/journeys/${journeyId}/resources/${resourceId}/send`, { recipient: "applicant" });
         setMessage("Your approved communication is queued for delivery to this applicant.");
@@ -160,23 +188,25 @@ export function ResourceEditorPage() {
     } catch (problem) { setError(errorMessage(problem)); }
     finally { setBusy(false); }
   };
-  const candidateMessage = resource?.submission_id && ["interview_invitation", "interview-invitation", "rejection", "rejection_email"].some((key) => resource.key?.includes(key));
+  const candidateMessage = resource?.submission_id && ["interview_invitation", "interview-invitation", "rejection", "rejection_email", "recommitment_appreciation"].some((key) => resource.key?.includes(key));
   return <V2Shell title={resource?.title || "Review your resource"}><div className="v2-action-page" data-testid="v2-resource-editor">
     <Link className="v2-back-link" to={`/v2/resources/${journeyId}`}>Your resources</Link>
     <ActionNotice error={error} message={message} />
     {loading && <p role="status">Loading this resource...</p>}
-    {resource && <>
-      <header><h1>{resource.title}</h1><p>{statusText(resource)}</p><p>Review the wording before approval. Your approved version is saved and emailed to you. Editing it creates a new version that needs fresh approval.</p></header>
+      {resource && <>
+      <header><h1>{resource.title}</h1><p>{statusText(resource)}</p><p>{approved ? "This exact version is approved and saved. You can copy or download it whenever you need it." : "Review the wording, save any corrections and approve it. The approved version will be saved in your resource collection."}</p></header>
       {resource.status === "preparing" && <section className="v2-card"><p>This resource is being prepared using your organization's information.</p><button className="v2-btn v2-btn-secondary" onClick={refresh}>Check preparation</button></section>}
       {resource.status === "failed" && <section className="v2-card"><p>{resource.error || "This resource could not be prepared."}</p><button className="v2-btn" disabled={busy} onClick={() => action("retry")}>Retry preparation</button></section>}
       {["ready", "approved"].includes(resource.status) && <>
         {editing ? <label className="v2-field"><span>Edit your resource</span><textarea data-testid="v2-resource-text" className="v2-editor" rows={22} value={text} onChange={(event) => setText(event.target.value)} /></label> : <DocumentPreview resource={resource} branding={resource.branding} />}
         <div className="v2-actions">
-          {editing ? <><button data-testid="v2-resource-save" className="v2-btn" disabled={busy || !dirty} onClick={() => action("save")}>Save changes for review</button><button className="v2-btn v2-btn-secondary" onClick={() => { setText(resource.text || ""); setEditing(false); }}>Cancel editing</button></> : <button data-testid="v2-resource-edit" className="v2-btn v2-btn-secondary" onClick={() => setEditing(true)}>Edit</button>}
-          <button data-testid="v2-resource-approve" className="v2-btn" disabled={busy || dirty || editing || (approved && !resource.delivery_error)} onClick={() => action("approve")}>{resource.delivery_error ? "Retry approved email delivery" : approved ? "Approved and saved" : "Approve, save and email to me"}</button>
+          {!approved && (editing ? <><button data-testid="v2-resource-save" className="v2-btn" disabled={busy || !dirty} onClick={() => action("save")}>Save changes for review</button><button className="v2-btn v2-btn-secondary" onClick={() => { setText(resource.text || ""); setEditing(false); }}>Cancel editing</button></> : <button data-testid="v2-resource-edit" className="v2-btn v2-btn-secondary" onClick={() => setEditing(true)}>Edit</button>)}
+          <button data-testid="v2-resource-approve" className="v2-btn" disabled={busy || dirty || editing || (approved && !resource.delivery_error)} onClick={() => action("approve")}>{resource.delivery_error ? "Retry saved resource delivery" : approved ? "Approved and saved" : "Approve and save"}</button>
           <CopyButton text={text}>Copy text</CopyButton>
           {["pdf", "docx", "txt"].map((format) => <DownloadLink key={format} path={`/journeys/${journeyId}/resources/${resourceId}/download?format=${format}`}>Download {format.toUpperCase()}</DownloadLink>)}
         </div>
+        {resource.usage && <p>{resource.usage}</p>}
+        {resource.key === "recruitment_assessment_profiles" && approved && <Link className="v2-btn" to={`/v2/resources/${journeyId}`}>Open my recruitment pack</Link>}
         {candidateMessage && <section className="v2-card"><h2>Send to this applicant</h2><p>You can copy this email into your own account, or explicitly send the approved version through our email service.</p><button className="v2-btn" disabled={busy || !approved} onClick={() => { if (window.confirm("Send this approved message to the applicant's submitted email address?")) action("send"); }}>Send approved email to applicant</button></section>}
         {resource.structured?.form_link && <div className="v2-link-box"><label>Functional form link<input readOnly value={resource.structured.form_link} /></label><CopyButton text={resource.structured.form_link}>Copy link</CopyButton></div>}
         {resource.structured?.video_url && <a href={resource.structured.video_url} target="_blank" rel="noreferrer" className="v2-btn v2-btn-secondary">Open the optional instructional video</a>}
@@ -207,6 +237,9 @@ export function ResponsePage() {
   const isRecruitment = product === "recruit" || Boolean(submission?.cv);
   const generate = async (kind) => {
     setBusy(kind); setError("");
+    const keys = { guide: isRecruitment ? "interview_guide" : "reactivation_conversation_script", "interview-invitation": "interview_invitation", rejection: "before_interview_rejection", review: "reactivation_response_analysis", appreciation: "recommitment_appreciation" };
+    const saved = data?.prepared_resources?.find((item) => item.key === keys[kind]);
+    if (saved) { navigate(`/v2/resources/${journeyId}/${saved.resource_id}`); return; }
     try { const response = await v2Api.post(`/journeys/${journeyId}/responses/${submissionId}/generate`, { kind }); const resource = response.data.resource || response.data; navigate(`/v2/resources/${journeyId}/${resource.resource_id}`); }
     catch (problem) { setError(errorMessage(problem)); }
     finally { setBusy(""); }
@@ -220,6 +253,7 @@ export function ResponsePage() {
   return <V2Shell><div className="v2-action-page" data-testid="v2-response"><Link className="v2-back-link" to={`/v2/responses/${journeyId}`}>Submitted responses</Link><ActionNotice error={error} />
     {loading && <p role="status">Loading the submitted response...</p>}
     {submission && <><header><h1>{submission.name}'s response</h1><p>Submitted {new Date(submission.submitted_at).toLocaleString()}. The information below is the person's original submission.</p></header>
+      {data?.prepared_resources?.length > 0 && <section className="v2-card"><h2>Resources prepared from this response</h2><ul className="v2-resource-list">{data.prepared_resources.map((item) => <li key={item.resource_id}><Link to={`/v2/resources/${journeyId}/${item.resource_id}`}>{item.title}</Link><small>{item.status}</small></li>)}</ul><p>Opening a prepared resource uses the saved version. It does not generate it again.</p></section>}
       {(data?.journey?.organization || data?.organization) && <p><strong>Organization:</strong> {data?.journey?.organization || data.organization}</p>}
       {data?.board_opportunity && <details className="v2-card"><summary>The board opportunity</summary><div className="v2-document-text">{data.board_opportunity}</div></details>}
       <section className="v2-card"><dl className="v2-answer-list">{Object.entries(submission.answers || {}).map(([key, value]) => <div key={key}><dt>{questionName(key)}</dt><dd>{Array.isArray(value) ? value.map((item, index) => typeof item === "object" ? <AudienceDetails key={item.audience_id || index} audience={item} /> : <p key={index}>{item}</p>) : typeof value === "object" && value ? <pre>{JSON.stringify(value, null, 2)}</pre> : String(value || "No answer supplied")}</dd></div>)}</dl>
@@ -228,6 +262,7 @@ export function ResponsePage() {
       {(isRecruitment || product === "board-recommitment") && <section className="v2-card"><h2>{isRecruitment ? "Prepare your next conversation" : "Prepare a respectful follow-up conversation"}</h2><p>{isRecruitment ? "Generate questions based on this application and your organization's board needs. You decide who to interview and how to proceed." : "The guide explores what this board member actually said, including their concerns and possible contribution. Submitting this form does not automatically confirm recommitment."}</p><div className="v2-actions">
         <button data-testid="v2-generate-guide" className="v2-btn" disabled={Boolean(busy)} onClick={() => generate("guide")}>{busy === "guide" ? "Preparing guide..." : isRecruitment ? "Generate interview guide" : "Generate conversation guide"}</button>
         {isRecruitment && <><button className="v2-btn v2-btn-secondary" disabled={Boolean(busy)} onClick={() => generate("interview-invitation")}>Prepare interview invitation email</button><button className="v2-btn v2-btn-secondary" disabled={Boolean(busy)} onClick={() => generate("rejection")}>Prepare rejection email</button></>}
+        {product === "board-recommitment" && <><button className="v2-btn v2-btn-secondary" disabled={Boolean(busy)} onClick={() => generate("review")}>Review what this response means</button><button className="v2-btn v2-btn-secondary" disabled={Boolean(busy)} onClick={() => generate("appreciation")}>Prepare appreciation email</button></>}
       </div></section>}
       {!isRecruitment && product !== "board-recommitment" && <Link className="v2-btn" to={`/v2/group/${journeyId}`}>Open the group review session</Link>}
     </>}

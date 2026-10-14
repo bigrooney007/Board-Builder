@@ -63,7 +63,9 @@ function GroupContent({ data, readOnly, onDecision, draft, setDraft, selected, s
           const related = decisions.filter((decision) => (decision.source_ids || []).includes(sourceId));
           const alreadyAdopted = related.some((decision) => decision.status === "adopted");
           const overlap = fundraising && (overlaps.some((entry) => entry.source_ids.includes(sourceId)) || (funderNames[index] && funderNames.filter((name) => name === funderNames[index]).length > 1));
-          return <article className="v2-idea" key={sourceId || index}>
+          const IdeaContainer = fundraising ? "details" : "article";
+          return <IdeaContainer className="v2-idea" key={sourceId || index}>
+            {fundraising && <summary><strong>{titleOf(idea)}</strong><span className="v2-source-label"> · {idea.name || "Participant"}{alreadyAdopted ? " · Adopted" : ""}</span></summary>}
             <div className="v2-idea-heading"><h3>{titleOf(idea)}</h3>{!readOnly && <label className="v2-check"><input type="checkbox" checked={selected.includes(sourceId)} onChange={(event) => setSelected(event.target.checked ? [...selected, sourceId] : selected.filter((id) => id !== sourceId))} />Compare or combine</label>}</div>
             <p className="v2-source-label">Proposed by {idea.name || "a participant"}. This is their submitted contribution.</p>
             {idea.question && <p><strong>{idea.question}</strong></p>}
@@ -71,7 +73,7 @@ function GroupContent({ data, readOnly, onDecision, draft, setDraft, selected, s
             {fundraising && typeof content === "object" ? <AudienceDetails audience={content} /> : <div className="v2-document-text">{String(content)}</div>}
             {related.map((decision) => <p key={decision.decision_id} className="v2-decision-status">Group decision: {decision.status} as "{decision.title}".</p>)}
             {!readOnly && <><div className="v2-actions"><button data-testid={`v2-adopt-${sourceId}`} className="v2-btn" disabled={busy || alreadyAdopted} onClick={() => onDecision({ category, title: titleOf(idea), content: fundraising ? content : String(content), source_ids: [sourceId], status: "adopted" })}>{alreadyAdopted ? "Already adopted" : "Adopt this idea"}</button><button className="v2-btn v2-btn-secondary" disabled={busy || alreadyAdopted} onClick={() => start(section, [idea])}>Edit before adopting</button><button className="v2-btn v2-btn-secondary" disabled={busy || alreadyAdopted} onClick={() => onDecision({ category, title: titleOf(idea), content: fundraising ? content : String(content), source_ids: [sourceId], status: "rejected" })}>Reject this idea</button></div>{alreadyAdopted && <p>Edit or remove this adopted idea in the group's decisions below.</p>}</>}
-          </article>;
+          </IdeaContainer>;
         })}
         {!readOnly && <div className="v2-actions"><button className="v2-btn v2-btn-secondary" disabled={busy || chosen.length < 2} onClick={() => start(section, chosen)}>Combine selected suggestions</button><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => setDraft({ category, title: "", content: fundraising ? emptyAudience(category) : "", source_ids: [], status: "adopted" })}>Add an idea agreed during discussion</button></div>}
       </section>;
@@ -127,6 +129,12 @@ function FinalPreview({ journeyId, data, onError, onMessage, refresh }) {
   const [busy, setBusy] = useState(false);
   const fundraising = data.journey.product === "board-fundraising-game";
   useEffect(() => { if (resource && resource.decision_version !== data.decision_version) { setResource(null); setConfirmed(false); } }, [data.decision_version, resource]);
+  useEffect(() => {
+    if (!data.final_resource_id) return undefined;
+    let active = true;
+    v2Api.get(`/journeys/${journeyId}/resources/${data.final_resource_id}`).then(({ data: saved }) => { if (active) { setResource(saved); setText(saved.text); } }).catch((problem) => { if (active) onError(errorMessage(problem)); });
+    return () => { active = false; };
+  }, [data.final_resource_id, journeyId, onError]);
   const preview = async () => {
     setBusy(true); onError("");
     try { const response = await v2Api.post(`/journeys/${journeyId}/final-preview`); const next = response.data.resource || response.data; setResource(next); setText(next.text || ""); setConfirmed(false); setEditing(false); }
@@ -145,10 +153,10 @@ function FinalPreview({ journeyId, data, onError, onMessage, refresh }) {
     catch (problem) { onError(errorMessage(problem)); }
     finally { setBusy(false); }
   };
-  return <section className="v2-card" data-testid="v2-final-preview"><h2>{fundraising ? "Review and approve your fundraising strategy" : "Review and approve your strategic plan"}</h2><p>The preview includes adopted decisions{fundraising ? " and confirmed participation commitments" : ""}. Check it together, make corrections where necessary and explicitly approve the final version.</p><button className="v2-btn" disabled={busy || !(data.decisions || []).some((decision) => decision.status === "adopted")} onClick={preview}>{busy ? "Preparing..." : "Generate preview from approved decisions"}</button>
+  return <section className="v2-card" data-testid="v2-final-preview"><h2>{fundraising ? "Review and approve your fundraising strategy" : "Review and approve your strategic plan"}</h2><p>The document includes adopted decisions{fundraising ? " and confirmed participation commitments" : ""}. Complete the discussion, review it together and approve the final version.</p>{!data.final_resource_id && <button className="v2-btn" disabled={busy || !(data.decisions || []).some((decision) => decision.status === "adopted")} onClick={preview}>{busy ? "Preparing..." : "Complete discussion and review the strategy"}</button>}
     {resource && <>
       {editing ? <label className="v2-field">Edit the final preview<textarea className="v2-editor" rows={22} value={text} onChange={(event) => setText(event.target.value)} /></label> : <DocumentPreview resource={resource} branding={data.journey.branding} />}
-      <div className="v2-actions">{editing ? <><button className="v2-btn" disabled={busy || text === resource.text} onClick={save}>Save corrections for review</button><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => { setText(resource.text); setEditing(false); }}>Cancel editing</button></> : <button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => { setEditing(true); setConfirmed(false); }}>Make corrections</button>}<CopyButton text={text}>Copy final preview</CopyButton></div>
+      <div className="v2-actions">{resource.status !== "approved" && (editing ? <><button className="v2-btn" disabled={busy || text === resource.text} onClick={save}>Save corrections for review</button><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => { setText(resource.text); setEditing(false); }}>Cancel editing</button></> : <button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => { setEditing(true); setConfirmed(false); }}>Make corrections</button>)}<CopyButton text={text}>Copy final document</CopyButton></div>
       {resource.status !== "approved" && <><label className="v2-check"><input data-testid="v2-final-confirm" type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />I confirm that this final document reflects the decisions and commitments our group actually approved.</label><button data-testid="v2-final-approve" className="v2-btn" disabled={busy || editing || !confirmed} onClick={approve}>Approve, save and email the final {fundraising ? "strategy" : "plan"}</button></>}
       {resource.status === "approved" && <p className="v2-notice">This exact final version has been approved and saved.</p>}
       {resource.delivery_error && <button className="v2-btn" disabled={busy} onClick={approve}>Retry approved email delivery</button>}
@@ -187,11 +195,11 @@ export function GroupPage() {
   return <V2Shell><div className="v2-action-page v2-group-page" data-testid="v2-group"><Link className="v2-back-link" to={`/v2/resources/${journeyId}`}>Your resources</Link><header><h1>{fundraising ? "Your Group Fundraising Game" : "Your Group Strategic Planning Session"}</h1><p>Review the contributions before your meeting or discuss them together now. You control the decisions. Ideas enter the final document only when you explicitly adopt them.</p></header><ActionNotice error={error} message={message} />
     {loading && <p role="status">Loading your group's contributions...</p>}
     {data && <>
-      <MeetingSettings journeyId={journeyId} initial={data.journey.meeting} onError={setError} onMessage={setMessage} />
+      {!data.read_only && <MeetingSettings journeyId={journeyId} initial={data.journey.meeting} onError={setError} onMessage={setMessage} />}
       <div className="v2-actions"><button className="v2-btn v2-btn-secondary" onClick={refresh}>Refresh submitted ideas</button><Link className="v2-btn v2-btn-secondary" to={`/v2/resources/${journeyId}`}>Open your facilitation guide and resources</Link></div>
-      {!fundraising && existingMission && <section className="v2-card"><h2>Your existing mission</h2><p>{existingMission}</p><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => saveDecision({ category: "mission", title: "Mission", content: existingMission, source_ids: [], status: "adopted" })}>Confirm that we are retaining this mission</button></section>}
-      <GroupContent data={data} onDecision={saveDecision} draft={draft} setDraft={setDraft} selected={selected} setSelected={setSelected} busy={busy} />
-      {fundraising && <Participation data={data} busy={busy} onSave={saveCommitment} onWithdraw={withdrawCommitment} />}
+      {!data.read_only && !fundraising && existingMission && <section className="v2-card"><h2>Your existing mission</h2><p>{existingMission}</p><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => saveDecision({ category: "mission", title: "Mission", content: existingMission, source_ids: [], status: "adopted" })}>Confirm that we are retaining this mission</button></section>}
+      <GroupContent data={data} readOnly={data.read_only} onDecision={saveDecision} draft={draft} setDraft={setDraft} selected={selected} setSelected={setSelected} busy={busy} />
+      {fundraising && <Participation data={data} readOnly={data.read_only} busy={busy} onSave={saveCommitment} onWithdraw={withdrawCommitment} />}
       <FinalPreview journeyId={journeyId} data={data} onError={setError} onMessage={setMessage} refresh={refresh} />
     </>}
   </div></V2Shell>;

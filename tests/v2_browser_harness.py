@@ -82,16 +82,31 @@ async def check(base, artifact_dir):
                 calendly = page.locator('a[href="https://calendly.com/boardbuilder/recruitboard"]')
                 assert await calendly.count() > 0
                 await check_layout(page, f"{device} {product} offer")
-                await page.get_by_role("checkbox").first.check()
+                assert await page.locator('input[type="file"]').count() == 0, "Branding belongs after payment"
                 await page.get_by_role("button", name=re.compile(r"Get my .*197")).click()
                 await page.get_by_role("button", name="Pay $197 in this synthetic test").click()
+                await page.wait_for_url(re.compile(r"/v2/setup/"), timeout=20000)
+                await page.get_by_label("Organization name", exact=True).wait_for()
+                assert await page.locator('input[type="file"]').count() == 1
+                if product in {"board-fundraising-game", "strategic-planning"}:
+                    await page.get_by_label("Meeting date", exact=True).fill("2026-11-30")
+                    await page.get_by_label("Meeting time", exact=True).fill("18:00")
+                    await page.get_by_label("Time zone", exact=True).fill("Europe/London")
+                await page.get_by_role("button", name=re.compile(r"Save and")).click()
                 await page.wait_for_url(re.compile(r"/v2/resources/"), timeout=20000)
                 await page.get_by_role("heading", level=1).wait_for()
+                if product == "recruit":
+                    await page.get_by_role("heading", name="Approve Your Board Member Recruitment Profiles", exact=True).wait_for()
+                    await page.get_by_role("link", name="View and edit", exact=True).first.click()
+                    await page.get_by_test_id("v2-resource-approve").wait_for(state="visible", timeout=20000)
+                    await page.get_by_test_id("v2-resource-approve").click()
+                    await page.get_by_role("link", name="Open my recruitment pack", exact=True).click()
+                    await page.get_by_role("heading", name="Your Board Recruitment Pack", exact=True).wait_for()
                 assert not errors, errors
                 assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
                 await check_layout(page, f"{device} {product} resources")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}-resources.png"), full_page=True)
-                findings.append(f"PASS {device} {product}: written offer, verified assistance link, synthetic $197 checkout, resources")
+                findings.append(f"PASS {device} {product}: offer without branding, synthetic $197 checkout, paid setup, profile-first recruitment or meeting-first invitations, resources")
             await context.close()
         await browser.close()
     (artifact_dir / "results.json").write_text(json.dumps({"origin": base, "provider_mode": "synthetic", "results": findings}, indent=2))

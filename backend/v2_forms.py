@@ -291,8 +291,9 @@ async def group_context(db, journey, shared=False):
     participants = list(people.values())
     # Never return leader emails, access tokens, drafts, application CVs or invitations in meeting views.
     safe_journey = {k: journey.get(k) for k in ('journey_id', 'product', 'organization', 'branding', 'meeting', 'goal_amount')}
+    final = await db.v2_resources.find_one({'journey_id': jid, 'key': {'$in': ['final_strategy', 'final_plan']}, 'status': 'approved'}, {'_id': 0, 'resource_id': 1})
     return {'journey': safe_journey, 'sections': sections, 'decisions': decisions, 'commitments': [c for c in commitments if c.get('consent_confirmed') is True],
-            'participants': participants, 'decision_version': journey.get('decision_version', 0), 'read_only': shared}
+            'participants': participants, 'decision_version': journey.get('decision_version', 0), 'read_only': bool(shared or final), 'final_resource_id': (final or {}).get('resource_id')}
 
 
 async def build_final_preview(db, journey):
@@ -352,6 +353,8 @@ def create_v2_form_router(db):
         if not journey:
             raise HTTPException(404, 'This form link is not available.')
         c.ensure_paid(journey)
+        from v2_journey_flow import require_setup
+        require_setup(journey)
         return journey, invitation
 
     async def draft_for(token, journey, draft_token='', invitation=None):
@@ -486,7 +489,12 @@ def create_v2_form_router(db):
 
     async def owner(request, jid):
         core().enabled()
-        return await core().require_owner(request, db, jid)
+        journey = await core().require_owner(request, db, jid)
+        from v2_journey_flow import require_setup, validate_meeting
+        require_setup(journey)
+        if journey['product'] in GROUP_PRODUCTS:
+            validate_meeting(journey.get('meeting'))
+        return journey
 
     async def invitation_template(journey, invitation=None):
         link = f"{core().origin()}/v2/forms/{(invitation or {}).get('form_token') or journey['form_token']}"
@@ -587,7 +595,8 @@ def create_v2_form_router(db):
         if row.get('cv'):
             row['cv'] = {k: row['cv'].get(k) for k in ('filename', 'mime', 'text')}
         opportunity = await db.v2_resources.find_one({'journey_id': jid, 'key': 'board_opportunity', 'status': 'approved'}, {'_id': 0, 'text': 1}) or {}
-        return {**row, 'organization': journey['organization'], 'product': journey['product'], 'branding': journey.get('branding') or {}, 'board_opportunity': opportunity.get('text', '')}
+        prepared = await db.v2_resources.find({'journey_id': jid, 'submission_id': sid}, {'_id': 0, 'resource_id': 1, 'key': 1, 'title': 1, 'status': 1}).to_list(20)
+        return {**row, 'organization': journey['organization'], 'product': journey['product'], 'branding': journey.get('branding') or {}, 'board_opportunity': opportunity.get('text', ''), 'prepared_resources': prepared}
 
     @router.get('/journeys/{jid}/responses/{sid}/cv')
     async def get_cv(jid: str, sid: str, request: Request):
@@ -656,6 +665,8 @@ def create_v2_form_router(db):
         body = await request.json()
         async with core().journey_lock(db, jid):
             journey = await core().find_journey(db, jid)
+            from v2_journey_flow import require_open_group
+            await require_open_group(db, journey)
             context = await group_context(db, journey)
             section = next((s for s in context['sections'] if s['key'] == body.get('category')), None)
             if not section:
@@ -713,6 +724,8 @@ def create_v2_form_router(db):
             raise HTTPException(422, 'Confirm that this person agreed to the contribution before saving it.')
         async with core().journey_lock(db, jid):
             journey = await core().find_journey(db, jid)
+            from v2_journey_flow import require_open_group
+            await require_open_group(db, journey)
             context = await group_context(db, journey)
             participant = next((p for p in context['participants'] if p['participant_id'] == body.get('participant_id')), None)
             if not participant:
@@ -743,6 +756,8 @@ def create_v2_form_router(db):
         if journey['product'] != 'board-fundraising-game':
             raise HTTPException(422, 'Participation commitments belong to the Fundraising Game.')
         async with core().journey_lock(db, jid):
+            from v2_journey_flow import require_open_group
+            await require_open_group(db, journey)
             row = await db.v2_commitments.find_one({'journey_id': jid, 'commitment_id': cid}, {'_id': 0})
             if not row:
                 raise HTTPException(404, 'This participation commitment is not available.')
@@ -758,6 +773,10 @@ def create_v2_form_router(db):
             raise HTTPException(422, 'This service does not have a final group document.')
         async with core().journey_lock(db, jid):
             journey = await core().find_journey(db, jid)
+            final = await db.v2_resources.find_one({'journey_id': jid, 'key': {'$in': ['final_strategy', 'final_plan']}, 'status': 'approved'}, {'_id': 0})
+            if final:
+                from v2_resources import public_resource
+                return public_resource(final)
             preview = await build_final_preview(db, journey)
             resource = await db.v2_resources.find_one({'journey_id': jid, 'key': preview['key']}, {'_id': 0})
             if resource and resource.get('decision_version') == preview['decision_version']:

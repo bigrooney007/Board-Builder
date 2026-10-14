@@ -167,10 +167,14 @@ async def generate_journey(db, journey):
         pending = await db.v2_resources.count_documents({"journey_id": journey["journey_id"], "status": "preparing"})
         await db.v2_journeys.update_one({"journey_id": journey["journey_id"]},
             {"$set": {"generation_status": "pending" if pending else "complete_with_errors" if failures else "complete", "updated_at": now_iso()}, "$unset": {"generation_lease_until": ""}})
-        if journey["product"] == "recruit" and not failures:
+        from v2_journey_flow import approved_profiles
+        if journey["product"] == "recruit" and not failures and await approved_profiles(db, journey):
             await queue_email(db, "pack-ready:" + journey["journey_id"], journey["email"], "Your Board Recruitment Pack Is Ready",
                 "Your customized recruitment resources are ready to review. Open each resource, make any changes you need, and approve it. We will email the exact approved version to you.",
                 journey_id=journey["journey_id"], action_path="/v2/resources/" + journey["journey_id"])
+        elif journey["product"] == "recruit" and not failures:
+            await queue_email(db, "profiles-ready:" + journey["journey_id"], journey["email"], "Review Your Board Member Recruitment Profiles",
+                "Your board member profiles are ready. Review the roles, make any changes, and approve them. We will then prepare your recruitment pack using those exact approved profiles.", journey_id=journey["journey_id"], action_path="/v2/resources/" + journey["journey_id"])
     except Exception:
         await db.v2_journeys.update_one({"journey_id": journey["journey_id"]},
             {"$set": {"generation_status": "failed", "technical_issue": "Resource generation needs a retry.", "updated_at": now_iso()}, "$unset": {"generation_lease_until": ""}})
