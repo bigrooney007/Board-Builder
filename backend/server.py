@@ -363,7 +363,8 @@ async def startup_tasks():
     app.state.activation_accountability_task = asyncio.create_task(activation_accountability_loop(db))
     from checkout_recovery import checkout_recovery_loop
     app.state.checkout_recovery_task = asyncio.create_task(checkout_recovery_loop(db))
-    if os.environ.get("NBB_V2_ENABLED", "false").lower() == "true":
+    from v2_core import is_enabled
+    if is_enabled():
         from v2_core import create_indexes
         from v2_email import run_v2_jobs
         await create_indexes(db)

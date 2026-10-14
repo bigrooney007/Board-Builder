@@ -41,7 +41,7 @@ export default function V2Shell({ children, title, narrow = false, participant =
       {!participant && <Link className="v2-recovery-link" to="/v2/recover">Recover my resources</Link>}
     </header>
     <main id="v2-main" className={narrow ? "v2-main v2-main-narrow" : "v2-main"}>{children}</main>
-    <footer className="v2-footer"><p>© {new Date().getFullYear()} Nonprofit Board Builder</p><span><ShieldCheck size={15} aria-hidden="true" /> Private testing version</span></footer>
+    <footer className="v2-footer"><p>© {new Date().getFullYear()} Nonprofit Board Builder</p><span><ShieldCheck size={15} aria-hidden="true" /> Self-service board resources</span></footer>
   </div>;
 }
 

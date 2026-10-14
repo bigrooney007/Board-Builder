@@ -15,8 +15,8 @@ def stripe_sdk():
 def stripe_key():
     key = os.environ.get("NBB_V2_STRIPE_SECRET_KEY") or os.environ.get("STRIPE_SECRET_KEY", "")
     if not key:
-        raise HTTPException(503, "Test payments need to be configured before checkout is available.")
-    if os.environ.get("NBB_V2_PAYMENTS_TEST_ONLY", "true").lower() == "true" and not key.startswith(("sk_test_", "rk_test_")):
+        raise HTTPException(503, "Payments need to be configured before checkout is available.")
+    if os.environ.get("NBB_V2_PAYMENTS_TEST_ONLY", "false").lower() == "true" and not key.startswith(("sk_test_", "rk_test_")):
         raise HTTPException(503, "This preview accepts test payments only.")
     return key
 
@@ -80,7 +80,7 @@ def validate_session(session, transaction):
             or session.get("amount_total") != PRICE_CENTS
             or session.get("amount_subtotal", PRICE_CENTS) != PRICE_CENTS):
         raise HTTPException(403, "This payment does not match this product purchase.")
-    if os.environ.get("NBB_V2_PAYMENTS_TEST_ONLY", "true").lower() == "true" and session.get("livemode", False):
+    if os.environ.get("NBB_V2_PAYMENTS_TEST_ONLY", "false").lower() == "true" and session.get("livemode", False):
         raise HTTPException(403, "A live payment cannot activate this test journey.")
 
 

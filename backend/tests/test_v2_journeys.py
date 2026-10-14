@@ -42,6 +42,7 @@ TEST_ENV = {
     "NBB_V2_SESSION_SECRET": "synthetic-session-secret-at-least-32-characters",
     "JWT_SECRET": "synthetic-original-jwt-secret-at-least-32-characters",
     "NBB_V2_NETWORK_LIVE_ENABLED": "false",
+    "NBB_V2_PAYMENTS_TEST_ONLY": "true",
     "NBB_V2_EMAIL_TEST_MODE": "true",
     "NBB_V2_TEST_EMAILS": "leader@example.test,candidate@example.test,board@example.test,opted-in@example.test",
     "RESEND_API_KEY": "",
@@ -164,6 +165,32 @@ class V2AccessSecurityTests(unittest.IsolatedAsyncioTestCase):
                 await self.core.require_owner(self.owner_request(), self.db, "synthetic-organization-0")
         self.assertEqual(unavailable.exception.status_code, 404)
 
+    async def test_deployment_defaults_allow_entry_but_not_private_records(self):
+        with patch.dict(os.environ):
+            os.environ.pop("NBB_V2_ENABLED", None)
+            os.environ.pop("NBB_V2_PREVIEW_KEY", None)
+            self.assertTrue(self.core.is_enabled())
+            self.assertTrue(await self.core.preview_access(request(), self.db))
+            with self.assertRaises(HTTPException) as denied:
+                await self.core.require_owner(request(), self.db, "synthetic-organization-0")
+            self.assertEqual(denied.exception.status_code, 401)
+
+    async def test_optional_preview_key_still_restricts_entry(self):
+        with self.assertRaises(HTTPException) as denied:
+            await self.core.preview_access(request(), self.db)
+        self.assertEqual(denied.exception.status_code, 403)
+
+    async def test_origin_reuses_existing_site_configuration(self):
+        with patch.dict(os.environ):
+            os.environ.pop("NBB_V2_ORIGIN", None)
+            os.environ["PUBLIC_ORIGIN"] = "https://board.example.test/"
+            self.assertEqual(self.core.origin(), "https://board.example.test")
+            self.core.csrf_guard(request(method="POST", headers={"origin": "https://board.example.test"}))
+            os.environ.pop("PUBLIC_ORIGIN")
+            self.assertEqual(self.core.origin(), "https://nonprofitboardbuilder.com")
+            os.environ["NBB_V2_ORIGIN"] = "https://explicit.example.test"
+            self.assertEqual(self.core.origin(), "https://explicit.example.test")
+
 
 def intake_answers(product):
     from v2_form_content import INTAKE_FIELDS
@@ -265,6 +292,44 @@ class V2CompleteAPIJourneys(unittest.IsolatedAsyncioTestCase):
             await self.approve(journey, await self.resource_by_key(journey, key))
         preview = await self.ok("GET", f"/journeys/{journey['journey_id']}/campaign")
         return await self.ok("POST", f"/journeys/{journey['journey_id']}/campaign/launch", {"confirmed": True, "expected_revision": preview["revision"]})
+
+    async def test_normal_deployment_allows_four_free_journeys_without_preview_login(self):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://testserver") as visitor:
+            with patch.dict(os.environ):
+                os.environ.pop("NBB_V2_ENABLED", None)
+                os.environ.pop("NBB_V2_PREVIEW_KEY", None)
+                access = await self.ok("GET", "/access", client=visitor)
+                self.assertTrue(access["allowed"])
+                catalog = await self.ok("GET", "/catalog", client=visitor)
+                self.assertEqual(len(catalog["products"]), 4)
+                self.assertTrue(all(product["amount"] == 19700 for product in catalog["products"]))
+                for product in self.core.PRODUCTS:
+                    draft = await self.ok("POST", "/journeys", {"product": product, "name": "Synthetic Visitor", "email": "leader@example.test", "organization": "Synthetic Education Trust", "desired_count": 2, "board_count": 5, "goal_amount": 25000}, client=visitor)
+                    saved = await self.ok("PUT", f"/journeys/{draft['journey_id']}/answers", {"answers": intake_answers(product)}, client=visitor, headers={"X-V2-Draft": draft["draft_token"]})
+                    self.assertTrue(saved["complete"])
+                    private = await visitor.get(f"/api/v2/journeys/{draft['journey_id']}/resources")
+                    self.assertEqual(private.status_code, 401)
+                self.assertEqual(await self.db.v2_purchases.count_documents({}), 0)
+
+    async def test_deployment_defaults_use_existing_payment_and_transactional_email_services(self):
+        with patch.dict(os.environ):
+            os.environ.pop("NBB_V2_PAYMENTS_TEST_ONLY", None)
+            os.environ.pop("NBB_V2_STRIPE_SECRET_KEY", None)
+            os.environ.pop("NBB_V2_EMAIL_TEST_MODE", None)
+            os.environ.pop("NBB_V2_TEST_EMAILS", None)
+            os.environ["STRIPE_SECRET_KEY"] = "sk_live_synthetic_never_use_network"
+            self.assertEqual(self.payments.stripe_key(), os.environ["STRIPE_SECRET_KEY"])
+            journey = await self.make_journey("board-recommitment", paid=False)
+            checkout = await self.ok("POST", f"/journeys/{journey['journey_id']}/checkout", {})
+            self.stripe.pay(checkout["session_id"])
+            self.stripe.sessions[checkout["session_id"]]["livemode"] = True
+            await self.ok("GET", f"/journeys/{journey['journey_id']}/payment?session_id={checkout['session_id']}")
+            welcome = await self.db.v2_email_outbox.find_one({"event_key": "welcome:" + journey["journey_id"]})
+            delivered = await self.emails.process_email(self.db, welcome["event_id"])
+            self.assertEqual(delivered["status"], "sent")
+            self.assertEqual(await self.db.v2_purchases.count_documents({}), 1)
+            self.assertEqual(await self.db.members.find({}).to_list(None), self.original_members)
+            self.assertEqual(await self.db.purchases.find({}).to_list(None), self.original_purchases)
 
     async def test_four_197_checkout_flows_create_separate_entitlements_preserving_history(self):
         journeys = []

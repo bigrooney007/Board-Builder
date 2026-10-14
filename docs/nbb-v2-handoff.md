@@ -6,6 +6,14 @@ Base: `d627263044f606a819366d3b04fe7e240b8e254d` on `codex/recruitment-simple-re
 
 No deployment, production merge or Emergent synchronization was performed. AutoFundraiser was not changed. Original homepage JSX/CSS, route definitions, price definitions, purchases and entitlement services are preserved. Small shared changes export existing intake definitions, extract unchanged strategic questions and recommitment validation, add optional form hooks, reuse the email shell, and dispatch explicitly identified V2 Stripe events. Original defaults remain intact.
 
+## Deployment and direct access
+
+The owner wants to sync the code, deploy it themselves, view the implemented pages and request corrections. V2 is now enabled by default and public education/intake pages do not require a preview password unless an administrator deliberately configures `NBB_V2_PREVIEW_KEY`. No new environment settings are required to view `/v2` after normal deployment. An explicit `NBB_V2_ENABLED=false` remains available to disable the new version.
+
+After deployment, open `https://nonprofitboardbuilder.com/v2` or the four `/v2` product URLs below. The original homepage and product URLs still serve the original journeys. V2 uses separate journey/resource records and purchase entitlements in the existing application database. Public entry does not authorize private applicant answers or purchased resources.
+
+Checkout reuses `STRIPE_SECRET_KEY`, transactional emails reuse the existing Resend service/sender, AI generation reuses the existing AI configuration, secure sessions reuse `JWT_SECRET`, and links reuse `PUBLIC_ORIGIN` with the existing production domain as fallback. `NBB_V2_ORIGIN` remains an optional override. The existing Stripe key determines whether a charge is live or test. Test-only payments and allowlisted email can be explicitly selected for testing; the synthetic fixture does that automatically. Ordinary deployment does not launch campaigns or send applicant-network announcements. Live network distribution remains explicitly controlled by its existing V2 network setting and provider consent checks.
+
 ## Customer experience
 
 All four V2 products cost **$197 each**, with separate V2 purchase records. Customers learn the process on the product page, use the current introductory questions, read a personalized written roadmap, confirm organization branding, and choose self-service or the existing Calendly conversation. Professional assistance is quoted separately. The verified existing booking URL is `https://calendly.com/boardbuilder/recruitboard`.
@@ -24,7 +32,7 @@ Recommitment reuses the original conditional form and invitation, adds two respe
 
 | Purpose | V2 route |
 | --- | --- |
-| Protected preview chooser | `/v2` |
+| Board service chooser | `/v2` |
 | Four education pages | `/v2/recruit`, `/v2/board-fundraising-game`, `/v2/strategic-planning`, `/v2/board-recommitment` |
 | Existing introductory questions | `/v2/:product/start` |
 | Written roadmap and $197/Calendly choice | `/v2/:product/offer?journey=...` |
@@ -106,6 +114,6 @@ python tests/v2_layout_harness.py
 
 This uses synthetic markup and real V2 product copy at four viewport widths. It does not substitute for the actual React browser tests.
 
-The fixture app uses synthetic data and fake providers, verifies its local marker, and never loads the production `.env`. It serves the actual frontend build and clearly refuses browser acceptance when that build is absent. Run the complete supplied acceptance paths in the actual isolated preview after these checks and provider configuration. Do not start `backend/server.py` against a production database to test this branch.
+The fixture app uses synthetic data and fake providers, verifies its local marker, and never loads the production `.env`. It serves the actual frontend build and clearly refuses browser acceptance when that build is absent. Synthetic automated tests must use this fixture, not the deployment database. The owner can deploy the application normally and review the direct V2 URLs.
 
-Configuration names and fail-closed defaults are in `docs/nbb-v2-config.env.example`. Dependencies remain the existing application dependencies; no replacement backend or unrelated product is introduced.
+Optional configuration names are in `docs/nbb-v2-config.env.example`. Dependencies remain the existing application dependencies; no replacement backend or unrelated product is introduced.

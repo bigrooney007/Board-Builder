@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 
-from v2_core import digest, find_journey, internal_path, issue_owner_link, new_id, now_iso, origin
+from v2_core import digest, find_journey, internal_path, is_enabled, issue_owner_link, new_id, now_iso, origin
 
 PUBLIC_ACTIONS = ("/v2/forms/", "/v2/meeting/", "/v2/shared/", "/v2/marketplace")
 CONTACT_REMINDER = "Please add our sending address to your contacts and mark important Board Builder emails as favorites so you can find them when you need them."
@@ -113,7 +113,7 @@ async def process_email(db, event_id, transport=None):
     if record.get("first_attempt_at") and record.get("attempts", 0) and datetime.fromisoformat(record["first_attempt_at"]) < datetime.now(timezone.utc) - timedelta(hours=23):
         await db.v2_email_outbox.update_one({"event_id": event_id}, {"$set": {"status": "needs_review", "error": "Reconcile the earlier delivery before retrying this email."}})
         return await db.v2_email_outbox.find_one({"event_id": event_id}, {"_id": 0})
-    if os.environ.get("NBB_V2_EMAIL_TEST_MODE", "true").lower() == "true" and record["to"] not in test_recipients():
+    if os.environ.get("NBB_V2_EMAIL_TEST_MODE", "false").lower() == "true" and record["to"] not in test_recipients():
         await db.v2_email_outbox.update_one({"event_id": event_id}, {"$set": {"status": "blocked", "error": "This preview only sends email to the configured test contacts.", "updated_at": now_iso()}})
         return await db.v2_email_outbox.find_one({"event_id": event_id}, {"_id": 0})
     claimed = await db.v2_email_outbox.update_one(
@@ -230,7 +230,7 @@ async def run_v2_jobs(db):
     tasks = {}
     last_reminder = 0
     try:
-        while os.environ.get("NBB_V2_ENABLED", "false").lower() == "true":
+        while is_enabled():
             try:
                 await jobs_once(db, tasks)
                 if asyncio.get_running_loop().time() - last_reminder > 60:

@@ -1,5 +1,13 @@
 # V2 verification record
 
+## Current deployment correction
+
+V2 is enabled by default and does not require a preview password when none is configured. After the owner deploys the synchronized code, `/v2` and the four `/v2` product pages are directly accessible. Existing Stripe, email, AI, site-origin and session configuration is reused. Explicit disable, private-key and test-provider overrides remain supported. Paid resource and organization permissions remain enforced.
+
+The current correction passed **44/44 synthetic backend/API/security tests**, **8/8 source-preservation checks**, **18 frontend syntax checks**, Python compilation and diff checks. Five new tests verify direct access without V2 environment setup, all four free intakes without preview login, private-resource denial, optional private-instance gating, existing site-origin fallback, and ordinary payment/transactional delivery defaults with mocked providers. No actual charge or email was sent. Previous browser/real-provider limitations remain as recorded below.
+
+The following sections retain the results and limits of the earlier implementation and styling commits; their disabled/test-only defaults have been superseded by this correction.
+
 The source is based on `d627263044f606a819366d3b04fe7e240b8e254d`. All examples and test records are synthetic. Payment, AI and email provider calls are replaced at their transport boundaries; no production database, real charge or real network broadcast is used.
 
 | Check | Result |

@@ -38,13 +38,18 @@ def new_id():
     return str(uuid.uuid4())
 
 
+def is_enabled():
+    return os.environ.get("NBB_V2_ENABLED", "true").strip().lower() == "true"
+
+
 def enabled():
-    if os.environ.get("NBB_V2_ENABLED", "false").lower() != "true":
-        raise HTTPException(404, "This preview is not available.")
+    if not is_enabled():
+        raise HTTPException(404, "This version is not available.")
 
 
 def origin():
-    value = os.environ.get("NBB_V2_ORIGIN", "http://localhost:3000").rstrip("/")
+    value = (os.environ.get("NBB_V2_ORIGIN") or os.environ.get("PUBLIC_ORIGIN")
+             or "https://nonprofitboardbuilder.com").rstrip("/")
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.username or parsed.query or parsed.fragment or parsed.path not in {"", "/"}:
         raise HTTPException(503, "The V2 site address needs to be configured.")
@@ -133,6 +138,10 @@ async def existing_admin(request, db):
 
 async def preview_access(request, db):
     enabled()
+    # Public education/intake access is independent of paid-resource permission.
+    # An optional configured key still supports intentionally private instances.
+    if not os.environ.get("NBB_V2_PREVIEW_KEY"):
+        return True
     if decode_session(request.cookies.get("nbb_v2_preview"), "preview"):
         return True
     if await existing_admin(request, db):
