@@ -39,7 +39,7 @@ async function mount() {
   return { node, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 const button = (node, label) => [...node.querySelectorAll("button")].find((item) => item.textContent === label);
-const field = (node, label) => [...node.querySelectorAll("label")].find((item) => item.firstChild.textContent === label)?.querySelector("input,textarea");
+const field = (node, label) => [...node.querySelectorAll("label")].find((item) => [...item.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE).map((child) => child.textContent).join("") === label)?.querySelector("input,textarea");
 async function type(node, label, value) {
   await act(async () => {
     const input = field(node, label);
