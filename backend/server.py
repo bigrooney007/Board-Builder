@@ -271,6 +271,10 @@ app.include_router(create_public_opportunity_router(db))
 app.include_router(create_marketing_router(db))
 app.include_router(create_review_router(db))
 app.include_router(create_reference_router(db))
+from v2_routes import create_v2_router
+from v2_core import install_v2_response_headers
+app.include_router(create_v2_router(db))
+install_v2_response_headers(app)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -359,10 +363,18 @@ async def startup_tasks():
     app.state.activation_accountability_task = asyncio.create_task(activation_accountability_loop(db))
     from checkout_recovery import checkout_recovery_loop
     app.state.checkout_recovery_task = asyncio.create_task(checkout_recovery_loop(db))
+    if os.environ.get("NBB_V2_ENABLED", "false").lower() == "true":
+        from v2_core import create_indexes
+        from v2_email import run_v2_jobs
+        await create_indexes(db)
+        app.state.v2_delivery_task = asyncio.create_task(run_v2_jobs(db))
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     if automation_task:
         automation_task.cancel()
+    if getattr(app.state, "v2_delivery_task", None):
+        app.state.v2_delivery_task.cancel()
+        await asyncio.gather(app.state.v2_delivery_task, return_exceptions=True)
     client.close()

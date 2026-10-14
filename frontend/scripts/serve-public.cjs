@@ -12,6 +12,11 @@ http.createServer((req, res) => {
       if (error) throw error;
       if (!["GET", "HEAD"].includes(req.method)) { res.writeHead(405); return res.end(); }
       const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+      const isV2 = pathname === "/v2" || pathname.startsWith("/v2/");
+      if (isV2) {
+        res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+        res.setHeader("Referrer-Policy", "no-referrer");
+      }
       if (pathname.startsWith("/api/") || pathname.includes("\0")) { res.writeHead(404); return res.end(); }
       let file = path.resolve(build, "." + pathname);
       if (file !== build && !file.startsWith(build + path.sep)) { res.writeHead(404); return res.end(); }
@@ -20,9 +25,16 @@ http.createServer((req, res) => {
         if (path.extname(file)) { res.writeHead(404); return res.end(); }
         file = path.join(build, "index.html");
       }
-      const data = await fs.readFile(file);
+      let data = await fs.readFile(file);
+      if (isV2 && path.extname(file) === ".html") {
+        data = Buffer.from(data.toString("utf8")
+          .replace(/<meta\s+name=["']robots["'][^>]*>/gi, "")
+          .replace(/<link\s+rel=["']canonical["'][^>]*>/gi, "")
+          .replace(/<script\s+[^>]*id=["']landing-page-schema["'][\s\S]*?<\/script>/gi, "")
+          .replace("</head>", '<meta name="robots" content="noindex,nofollow,noarchive"></head>'));
+      }
       res.setHeader("Content-Type", types[path.extname(file)] || "application/octet-stream");
-      res.setHeader("Cache-Control", pathname.startsWith("/static/") ? "public, max-age=31536000, immutable" : "no-cache");
+      res.setHeader("Cache-Control", isV2 ? "private, no-store" : pathname.startsWith("/static/") ? "public, max-age=31536000, immutable" : "no-cache");
       res.end(req.method === "HEAD" ? undefined : data);
     } catch { res.writeHead(500); res.end("Unable to load this page."); }
   });

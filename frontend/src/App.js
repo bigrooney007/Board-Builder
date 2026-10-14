@@ -89,6 +89,7 @@ import FinalStrategyMemberPage from "@/game/FinalStrategyMemberPage";
 import FinalStrategyPage from "@/game/FinalStrategyPage";
 
 import PlatformAnalytics from "@/clean/PlatformAnalytics";
+import V2Routes from "@/v2/V2Routes";
 
 const CENTERED_PATHS = new Set([
   ...Object.values(PUBLIC_START_ROUTES),
@@ -125,6 +126,7 @@ function GuidedPaidContinue({ product }) {
 function CleanRoutes() {
   return (
     <Routes>
+      <Route path="/v2/*" element={<V2Routes />} />
       <Route path="/" element={<MainHomePage />} />
 
       {/* Board Recruitment */}

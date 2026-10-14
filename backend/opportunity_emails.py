@@ -6,12 +6,13 @@ import secrets
 from datetime import datetime, timezone
 
 import resend
+from email_template import wrap_email
 
 logger = logging.getLogger(__name__)
 
 
 def _wrap(title: str, body_html: str) -> str:
-    return f"<div style='max-width:640px;margin:auto;font-family:Arial,sans-serif;color:#111;line-height:1.6;'><h2 style='color:#083d2a;'>{html.escape(title)}</h2>{body_html}<p style='color:#667;font-size:12px;margin-top:28px;'>Nonprofit Board Builder — {html.escape(os.environ.get('POSTAL_ADDRESS', ''))}</p></div>"
+    return wrap_email(title, body_html)
 
 
 async def _send(sender_env: str, to: str, subject: str, html_body: str) -> str:

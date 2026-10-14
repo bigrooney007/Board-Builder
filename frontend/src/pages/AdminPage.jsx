@@ -10,6 +10,7 @@ import {
 } from "@/admin/CleanPlatformSection";
 import { adminPageText } from "../content/appContent";
 import BlogAdminSection from "@/admin/BlogAdminSection";
+import AdminV2Section from "@/v2/AdminV2Section";
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "")}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -140,7 +141,7 @@ export default function AdminPage() {
   const [checking,setChecking]=useState(true);
   const [tab,setTab]=useState(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
-    return ["blog", "videos"].includes(requested) ? requested : "pathways";
+    return ["blog", "videos", "v2"].includes(requested) ? requested : "pathways";
   });
   const [applicants,setApplicants]=useState([]);
   const [filters,setFilters]=useState(blankFilters);
@@ -168,6 +169,7 @@ export default function AdminPage() {
   if(!user)return <Login onLogin={setUser}/>;
 
   const tabs=[
+    ["v2","Simplified V2"],
     ["pathways","4 Board Builder Pathways"],
     ["videos","Platform Videos"],
     ["homepages","6 Home Page Text"],
@@ -180,6 +182,7 @@ export default function AdminPage() {
   return <main className="admin-page" data-testid="admin-dashboard">
     <header className="admin-header"><div><p className="eyebrow">Private administrator area</p><h1>Nonprofit Board Builder</h1></div><div className="admin-header-actions"><a className="button button-small" href="/">Open Main Home Page</a><button onClick={logout}><LogOut size={17}/> Log out</button></div></header>
     <nav className="admin-tabs">{tabs.map(([key,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}>{label}</button>)}</nav>
+    {tab==="v2"&&<AdminV2Section/>}
     {tab==="pathways"&&<BoardBuilderPathwaysSection/>}
     {tab==="videos"&&<PlatformVideosSection/>}
     {tab==="homepages"&&<HomepageTextSection/>}

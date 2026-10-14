@@ -25,10 +25,7 @@ from content_templates import (
 
 logger = logging.getLogger(__name__)
 
-RECOMMIT_ACTIVE = "I am ready to recommit, remain an active Board Member and step up in my role."
-RECOMMIT_ADVISORY = "I would like to transition into an Advisory Board role."
-RECOMMIT_STEP_DOWN = "I would like to step down from the Board."
-RECOMMITMENT_OPTIONS = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY, RECOMMIT_STEP_DOWN]
+from v2_form_content import (RECOMMIT_ACTIVE, RECOMMIT_ADVISORY, RECOMMIT_STEP_DOWN, RECOMMITMENT_OPTIONS, validate_recommitment)
 
 LEGACY_RECOMMIT_YES = "Yes, I am ready to recommit and continue serving."
 LEGACY_RECOMMIT_NO = "No, I am not able to recommit to serving on the Board."
@@ -1258,23 +1255,7 @@ def create_reactivation_router(db) -> APIRouter:
         if record["status"] == "COMPLETED":
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         variant = record.get("form_variant") or ("active_advisory" if payload.form_variant == "active_advisory" else "full")
-        allowed_choices = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY] if variant == "active_advisory" else RECOMMITMENT_OPTIONS
-        if payload.recommitment not in allowed_choices:
-            raise HTTPException(status_code=422, detail="This choice is not available on this Recommitment Form")
-        if payload.recommitment == RECOMMIT_ACTIVE:
-            required = [payload.why_joined, payload.participation_barriers, payload.ownership_area,
-                        payload.strengths_resources, payload.monthly_availability, payload.experience_improvement]
-            if any(not value.strip() for value in required) or not payload.expertise or not (1 <= len(payload.contribution_interests) <= 3):
-                raise HTTPException(status_code=422, detail="Please answer every required question")
-            if payload.leadership_interest not in {"Yes", "I would like to discuss this"}:
-                raise HTTPException(status_code=422, detail="Please answer every required question")
-            if payload.leadership_interest == "Yes" and not payload.leadership_area.strip():
-                raise HTTPException(status_code=422, detail="Please tell us the area or responsibility you would be interested in leading")
-        elif payload.recommitment == RECOMMIT_ADVISORY:
-            if not payload.decision_reason.strip() or not payload.strengths_resources.strip() or not payload.monthly_availability.strip():
-                raise HTTPException(status_code=422, detail="Please tell us why Advisory Board service fits you, what you can contribute and your realistic availability")
-        elif payload.recommitment == RECOMMIT_STEP_DOWN and not payload.decision_reason.strip():
-            raise HTTPException(status_code=422, detail="Please briefly tell us what has led to your decision to step down")
+        validate_recommitment(payload, variant)
         now = datetime.now(timezone.utc).isoformat()
         response = payload.model_dump()
         response["email"] = str(payload.email).lower()
