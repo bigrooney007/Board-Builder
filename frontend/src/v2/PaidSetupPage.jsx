@@ -48,7 +48,7 @@ export default function PaidSetupPage() {
   };
   return <V2Shell title="Prepare your purchased resources" narrow>
     {loading ? <Loading>Opening your purchase…</Loading> : <form className="v2-card" onSubmit={save}>
-      <p className="v2-eyebrow">YOUR PAYMENT IS CONFIRMED</p><h1>Prepare your {PRODUCTS[journey?.product]?.name || "board"} resources.</h1>
+      <p className="v2-eyebrow">{journey ? "YOUR PAYMENT IS CONFIRMED" : "YOUR PURCHASED RESOURCES"}</p><h1>{journey ? `Prepare your ${PRODUCTS[journey.product]?.name || "board"} resources.` : "We could not open your purchased resources."}</h1>
       <p>Confirm your organization details now so we can use them on your forms and documents. Your logo and colors are optional. Leave them blank for a neutral professional design.</p>
       {journey && <>
         <label>Organization name<input required maxLength={200} value={branding.organization_name} onChange={(event) => setBranding({ ...branding, organization_name: event.target.value })} /></label>

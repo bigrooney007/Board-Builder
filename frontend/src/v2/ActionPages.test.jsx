@@ -6,7 +6,7 @@ import { SharedMeetingPage } from "./GroupPages";
 import { v2Api } from "./api";
 import PaidSetupPage from "./PaidSetupPage";
 
-jest.mock("./V2Shell", () => ({ __esModule: true, default: ({ children }) => <main>{children}</main>, AssistanceLink: () => <a href="https://calendly.com/boardbuilder/recruitboard">Book a Call</a> }));
+jest.mock("./V2Shell", () => ({ __esModule: true, default: ({ children }) => <main>{children}</main>, AssistanceLink: () => <a href="https://calendly.com/boardbuilder/recruitboard">Book a Call</a>, Loading: ({ children }) => <p role="status">{children}</p>, ErrorNotice: ({ error }) => error ? <p role="alert">{error}</p> : null }));
 jest.mock("./api", () => ({ v2Api: { get: jest.fn(), put: jest.fn(), post: jest.fn() }, resourceUrl: (path) => `/api/v2${path}`, errorMessage: (error) => error?.response?.data?.detail || "Request failed" }));
 
 let node;
