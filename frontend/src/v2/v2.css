@@ -46,6 +46,8 @@
 .v2-steps li { display:flex; gap:20px; margin-bottom:32px; }
 .v2-step-number { flex:0 0 36px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#eeecff; color:#5149bb; font-size:15px; font-weight:700; }
 .v2-steps p { margin-bottom:0; }
+.v2-app .v2-landing-paragraph,.v2-app .v2-hero-note { white-space:pre-line; }
+.v2-steps p + p { margin-top:18px; }
 .v2-service-explanation { padding:38px; background:#161d37; color:#fff; border-radius:20px; margin:20px 0 45px; }
 .v2-service-explanation h2,.v2-service-explanation p { color:#fff; max-width:840px; margin-left:auto; margin-right:auto; }
 .v2-service-explanation h2 { text-align:center; }

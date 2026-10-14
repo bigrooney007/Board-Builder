@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { TestimonialCarousel } from "@/components/TestimonialCarousel";
+import LandingContent, { defaultLandingContent } from "./LandingContent";
 import { QUESTIONS as RECRUITMENT_QUESTIONS } from "@/member/RecruitmentGameIntake";
 import { RECOMMITMENT, STRATEGIC } from "@/funnels/GuidedPrepaymentQuestionsPage";
 import { FIVE_QUESTIONS, fiveQuestionText } from "@/game/gameFiveQuestions";
@@ -26,16 +26,17 @@ export function ProductIndexPage() {
 
 export function ProductLandingPage() {
   const { product } = useParams();
-  const content = PRODUCTS[product];
-  if (!content) return <NotFoundPage />;
-  const start = `/v2/${product}/start`;
-  return <V2Shell title={content.name}>
-    <section className="v2-hero"><div className="v2-hero-copy"><p className="v2-eyebrow">{content.eyebrow}</p><h1>{content.headline}</h1><p>{content.intro}</p><Link className="v2-button" to={start}>Start for Free<ArrowRight size={18} aria-hidden="true" /></Link><span className="v2-hero-note">Learn the process and share your starting information before you decide to purchase.</span></div><img className="v2-product-image" src={content.image} alt={`${content.name} from Nonprofit Board Builder`} /></section>
-    <section className="v2-education" aria-labelledby="v2-process"><p className="v2-eyebrow">HOW TO CARRY OUT THE PROCESS</p><h2 id="v2-process">What you and your organization will do</h2><ol className="v2-steps">{content.teaching.map(([heading, paragraph], index) => <li key={heading}><span className="v2-step-number" aria-hidden="true">{index + 1}</span><div><h3>{heading}</h3><p>{paragraph}</p></div></li>)}</ol><Link className="v2-button" to={start}>Start for Free<ArrowRight size={18} aria-hidden="true" /></Link></section>
-    <section className="v2-service-explanation"><h2>Get the tools and carry out the work yourself.</h2><p>{content.outcome}</p><p>You can follow this process without necessarily spending thousands of dollars on consultants. The self-service service costs ${SELF_SERVICE_PRICE} for this product. If you want us to work with you or provide more direct help, book a conversation and we will discuss a separate quotation.</p></section>
-    <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`v2-${product}`} />
-    <section className="v2-closing"><h2>Start with what you know about your organization.</h2><p>The free questions help us understand your situation. You will then see exactly what happens next and what your purchase includes.</p><Link className="v2-button" to={start}>Start for Free<ArrowRight size={18} aria-hidden="true" /></Link></section>
-  </V2Shell>;
+  const [page, setPage] = useState({ product: "", content: null });
+  useEffect(() => {
+    let active = true;
+    if (!PRODUCTS[product]) return undefined;
+    Promise.resolve(v2Api.get(`/landing-content/${product}`)).then((result) => {
+      if (active) setPage({ product, content: result?.data?.content || defaultLandingContent(product) });
+    }).catch(() => { if (active) setPage({ product, content: defaultLandingContent(product) }); });
+    return () => { active = false; };
+  }, [product]);
+  if (!PRODUCTS[product]) return <NotFoundPage />;
+  return <V2Shell title={PRODUCTS[product].name}>{page.product !== product ? <Loading>Opening the process guide…</Loading> : <LandingContent product={product} content={page.content} />}</V2Shell>;
 }
 
 export function FreeIntakePage() {

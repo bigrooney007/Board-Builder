@@ -351,9 +351,11 @@ def create_v2_router(db):
     from v2_resources import create_v2_resource_router
     from v2_forms import create_v2_form_router
     from v2_campaigns import create_v2_campaign_router
+    from v2_landing_content import create_landing_content_router
     # Subrouters already own the /api/v2 prefix.
     combined = APIRouter()
     combined.include_router(router)
+    combined.include_router(create_landing_content_router(db))
     combined.include_router(create_v2_resource_router(db))
     combined.include_router(create_v2_form_router(db))
     combined.include_router(create_v2_campaign_router(db))

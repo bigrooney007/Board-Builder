@@ -1,0 +1,23 @@
+.v2-landing-admin { max-width:1120px; margin:0 auto; padding:24px 0; }
+.v2-landing-admin * { box-sizing:border-box; }
+.v2-landing-admin :where(h2,h3,h4,p,label,button,a) { overflow-wrap:anywhere; }
+.v2-landing-admin p { max-width:80ch; line-height:1.7; }
+.v2-editor-product-tabs,.v2-editor-actions { display:flex; flex-wrap:wrap; gap:12px; margin:20px 0; }
+.v2-editor-product-tabs button,.v2-editor-actions button,.v2-editor-fields > button { padding:12px 16px; min-height:44px; border:1px solid #cdd0e1; border-radius:8px; background:white; color:#27274d; cursor:pointer; font:inherit; }
+.v2-editor-product-tabs button[aria-pressed="true"] { background:#4d42be; color:white; border-color:#4d42be; }
+.v2-landing-admin button:disabled { opacity:.55; cursor:not-allowed; }
+.v2-editor-fields { border:1px solid #dce0eb; border-radius:12px; padding:24px; background:#fff; min-width:0; }
+.v2-editor-fields legend { font-weight:700; padding:0 10px; }
+.v2-editor-fields label { display:block; max-width:850px; margin:20px 0; font-weight:600; }
+.v2-editor-fields input,.v2-editor-fields textarea { display:block; width:100%; min-width:0; padding:12px; margin-top:8px; border:1px solid #cdd0e1; border-radius:8px; color:#11182f; background:white; font:inherit; font-weight:400; line-height:1.6; font-size:16px; }
+.v2-editor-fields textarea { resize:vertical; }
+.v2-editor-step { border-top:1px solid #dce0eb; margin:24px 0; padding-top:20px; }
+.v2-editor-status { margin:24px 0; }
+.v2-editor-error { padding:14px; border-radius:8px; background:#fff1f1; color:#8a2222; }
+.v2-editor-message { padding:14px; border-radius:8px; background:#eff9f2; color:#215e34; }
+.v2-editor-preview { margin-top:36px; }
+.v2-editor-preview > .v2-app { border:1px solid #dce0eb; border-radius:12px; overflow:hidden; }
+.v2-app .v2-landing-paragraph,.v2-app .v2-hero-note { white-space:pre-line; }
+.v2-editor-preview .v2-steps p + p { margin-top:18px; }
+.v2-landing-admin :where(button,input,textarea,a):focus-visible { outline:3px solid #9386ff; outline-offset:3px; }
+@media(max-width:600px) { .v2-editor-fields { padding:16px; } .v2-editor-product-tabs button { flex:1 1 160px; } .v2-editor-actions button { flex:1 1 140px; } }

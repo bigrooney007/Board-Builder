@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 import sys
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +83,28 @@ def create_fixture_app(port=8765, frontend_dir=None):
     @app.get("/test/health")
     async def health():
         return {"fixture": True, "providers": "synthetic", "frontend_build": (build / "index.html").exists()}
+
+    @app.post("/test/admin-session")
+    async def fixture_admin_session(response: Response):
+        # This endpoint exists only in the process-local fixture app, never in
+        # the application router or production server. It exercises real admin
+        # cookie/JWT verification without using any real account credentials.
+        from auth_service import create_access_token
+        await db.users.update_one({"user_id": "synthetic-admin"},
+            {"$set": {"email": "owner@example.test", "role": "admin"}}, upsert=True)
+        response.set_cookie("admin_access_token", create_access_token("synthetic-admin", "owner@example.test"), httponly=True, samesite="lax")
+        return {"fixture": True}
+
+    @app.get("/api/auth/me")
+    async def fixture_admin_me(request: Request):
+        from auth_service import authenticate_admin
+        return await authenticate_admin(request, db)
+
+    @app.get("/api/admin/applicants")
+    async def fixture_admin_applicants(request: Request):
+        from auth_service import authenticate_admin
+        await authenticate_admin(request, db)
+        return []
 
     @app.get("/test/checkout/{session_id}", response_class=HTMLResponse)
     async def checkout_page(session_id: str):

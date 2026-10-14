@@ -107,6 +107,38 @@ async def check(base, artifact_dir):
                 await check_layout(page, f"{device} {product} resources")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}-resources.png"), full_page=True)
                 findings.append(f"PASS {device} {product}: offer without branding, synthetic $197 checkout, paid setup, profile-first recruitment or meeting-first invitations, resources")
+            session = await context.request.post(base + "/test/admin-session")
+            assert session.status == 200, await session.text()
+            product_names = {"recruit": "Board Recruitment", "board-fundraising-game": "Board Fundraising Activation",
+                             "strategic-planning": "Strategic Planning", "board-recommitment": "Board Recommitment"}
+            for product, name in product_names.items():
+                before = await context.request.get(base + f"/api/v2/landing-content/{product}")
+                original_heading = (await before.json())["content"]["headline"]
+                await page.goto(base + "/admin?tab=offer-text", wait_until="networkidle")
+                await page.get_by_role("button", name=name, exact=True).click()
+                heading = f"Our {name.lower()} process, written by our leader ({device})"
+                intro = "Your organization deserves a clear, practical explanation in our own voice.\n\n" + "We will work through the board process together, with enough room to understand every decision. " * 4
+                await page.get_by_label("Main heading", exact=True).fill(heading)
+                await page.get_by_label("Opening explanation", exact=True).fill(intro)
+                await page.get_by_role("button", name="Save draft", exact=True).click()
+                await page.get_by_text("Your draft is saved. Visitors continue to see the published version until you select Publish changes.", exact=True).wait_for()
+                unpublished = await context.request.get(base + f"/api/v2/landing-content/{product}")
+                assert (await unpublished.json())["content"]["headline"] == original_heading
+                await page.get_by_role("button", name="Preview my changes", exact=True).click()
+                await page.locator(".v2-editor-preview").get_by_role("heading", name=heading, exact=True).wait_for()
+                assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                await page.screenshot(path=str(artifact_dir / f"{device}-{product}-admin-editor.png"), full_page=True)
+                await page.get_by_role("button", name="Publish changes", exact=True).click()
+                await page.get_by_text("Your words are published. Visitors will see them when they open or reload this offer page. No deployment is needed.", exact=True).wait_for()
+                await page.goto(base + f"/v2/{product}", wait_until="networkidle")
+                await page.get_by_role("heading", name=heading, exact=True).wait_for()
+                assert await page.get_by_text("Your organization deserves a clear, practical explanation in our own voice.", exact=True).count() == 1
+                assert await page.get_by_role("link", name="Start for Free", exact=True).count() == 3
+                await check_layout(page, f"{device} {product} administrator-written education")
+                assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                assert not errors, errors
+                await page.screenshot(path=str(artifact_dir / f"{device}-{product}-published-education.png"), full_page=True)
+                findings.append(f"PASS {device} {product}: real admin session, private saved draft, matching page preview, published writing and paragraphs, unchanged free entry, no overflow")
             await context.close()
         await browser.close()
     (artifact_dir / "results.json").write_text(json.dumps({"origin": base, "provider_mode": "synthetic", "results": findings}, indent=2))

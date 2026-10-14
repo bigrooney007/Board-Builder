@@ -131,3 +131,35 @@ This uses synthetic markup and real V2 product copy at four viewport widths. It 
 The fixture app uses synthetic data and fake providers, verifies its local marker, and never loads the production `.env`. It serves the actual frontend build and clearly refuses browser acceptance when that build is absent. Synthetic automated tests must use this fixture, not the deployment database. The owner can deploy the application normally and review the direct V2 URLs.
 
 Optional configuration names are in `docs/nbb-v2-config.env.example`. Dependencies remain the existing application dependencies; no replacement backend or unrelated product is introduced.
+
+## Owner-written educational offer pages
+
+The existing administrator dashboard now has an **Offer Page Text** tab, also
+available directly at `/admin?tab=offer-text` after the normal administrator
+login. Select Board Recruitment, Board Fundraising Activation, Strategic
+Planning or Board Recommitment. Edit the introductory label, main heading,
+opening explanation, educational section headings, teaching steps, materials
+explanation and closing call to action. Add, remove or reorder teaching steps.
+Separate complete paragraphs with a blank line.
+
+**Save draft** retains writing privately in the existing application database.
+**Preview my changes** renders that writing with the same customer page component
+and responsive typography. **Publish changes** saves the current wording and
+publishes that exact version. Visitors receive it when they next open or reload
+the corresponding `/v2/{product}` educational page. Later text changes need no
+GitHub sync or redeployment. Switching offers warns before discarding unsaved
+writing; failed saves retain the text so it can be retried. Revision checks reject
+stale writes from another administrator tab rather than overwriting newer work.
+
+Only the existing authenticated administrator can read drafts, save or publish.
+Public responses include published educational text only and disable caching.
+Text is rendered as text, not executable HTML; blank lines become paragraphs.
+The original main homepage, original landing pages, testimonials, product
+images, free intake links, conversion roadmaps and prices are not edited here.
+Content does not modify customer records, resource generators, email content or
+purchases. The existing educational wording remains the default until the owner
+publishes changes.
+
+Validation includes admin permission and CSRF checks, private drafts, all four
+independent publications, persistence, stale revisions, failed saves, safe text
+rendering and genuine desktop/mobile admin-to-public-page browser checks.

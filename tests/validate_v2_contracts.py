@@ -81,14 +81,17 @@ class V2SourceContracts(unittest.TestCase):
         home = current("frontend/src/pages/MainHomePage.jsx")
         routes = current("frontend/src/v2/V2Routes.jsx")
         pages = current("frontend/src/v2/PublicPages.jsx")
+        landing = current("frontend/src/v2/LandingContent.jsx")
         for slug in ("recruit", "board-fundraising-game", "strategic-planning", "board-recommitment"):
             self.assertIn(f'start: "/v2/{slug}"', home)
         self.assertIn("to={meta.start || meta.to}", home)
         self.assertIn('<Route path="/v2/*" element={<V2Routes />} />', current("frontend/src/App.js"))
         self.assertIn('path=":product" element={protectedPage(<ProductLandingPage />)}', routes)
         self.assertIn('path=":product/start" element={protectedPage(<FreeIntakePage />)}', routes)
-        self.assertIn('const start = `/v2/${product}/start`', pages)
-        self.assertIn('to={start}>Start for Free', pages)
+        self.assertIn('const start = `/v2/${product}/start`', landing)
+        self.assertIn('to={start}', landing)
+        self.assertIn('Start for Free', landing)
+        self.assertIn('<LandingContent product={product}', pages)
         for questions in ("RECRUITMENT_QUESTIONS", "STRATEGIC", "RECOMMITMENT", "FIVE_QUESTIONS"):
             self.assertIn(questions, pages)
 

@@ -259,6 +259,7 @@ async def issue_owner_link(db, journey_id, path):
 
 async def create_indexes(db):
     definitions = {
+        "v2_landing_content": [("product", True)],
         "v2_journeys": [("journey_id", True), ("form_token", True)],
         "v2_resources": [("resource_id", True), ([("journey_id", 1), ("key", 1), ("submission_id", 1)], True)],
         "v2_purchases": [("session_id", True)],

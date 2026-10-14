@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { OfferPage, PaymentPage, ProductLandingPage } from "./PublicPages";
 import { CALENDLY_URL } from "./content";
 import { v2Api } from "./api";
+import { defaultLandingContent } from "./LandingContent";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 let mockProduct = "recruit";
@@ -64,6 +65,29 @@ test.each(["recruit", "board-fundraising-game", "strategic-planning", "board-rec
     expect(v2Api.post).toHaveBeenCalledWith("/journeys/test-journey/checkout");
     expect(v2Api.put).not.toHaveBeenCalled();
     expect(node.textContent).toContain("Test checkout unavailable");
+  } finally { await cleanup(); }
+});
+
+test("the education page displays published administrator writing safely with genuine testimonials and free entry", async () => {
+  const content = { ...defaultLandingContent("recruit"), headline: "My own board recruitment explanation", intro: "First paragraph.\n\n<script>unsafe()</script>" };
+  v2Api.get.mockResolvedValue({ data: { product: "recruit", content } });
+  const { node, cleanup } = await mount(ProductLandingPage);
+  try {
+    expect(v2Api.get).toHaveBeenCalledWith("/landing-content/recruit");
+    expect(node.querySelector("h1").textContent).toBe(content.headline);
+    expect(node.querySelector("script")).toBeNull();
+    expect(node.textContent).toContain("<script>unsafe()</script>");
+    expect(node.querySelector('[data-testid="genuine-carousel"]')).not.toBeNull();
+    expect(node.querySelectorAll('a[href="/v2/recruit/start"]').length).toBe(3);
+  } finally { await cleanup(); }
+});
+
+test("a content-service failure retains the original educational page and Start for Free", async () => {
+  v2Api.get.mockRejectedValue(new Error("Synthetic content-service failure"));
+  const { node, cleanup } = await mount(ProductLandingPage);
+  try {
+    expect(node.querySelector("h1").textContent).toBe(defaultLandingContent("recruit").headline);
+    expect(node.querySelector('a[href="/v2/recruit/start"]')).not.toBeNull();
   } finally { await cleanup(); }
 });
 

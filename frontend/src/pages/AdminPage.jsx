@@ -11,6 +11,7 @@ import {
 import { adminPageText } from "../content/appContent";
 import BlogAdminSection from "@/admin/BlogAdminSection";
 import AdminV2Section from "@/v2/AdminV2Section";
+import AdminLandingContent from "@/v2/AdminLandingContent";
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "")}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -139,9 +140,10 @@ function ApplicantsSection({ applicants, filters, setFilters, selected, setSelec
 export default function AdminPage() {
   const [user,setUser]=useState(null);
   const [checking,setChecking]=useState(true);
+  const [offerEditorState,setOfferEditorState]=useState({dirty:false,busy:false});
   const [tab,setTab]=useState(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
-    return ["blog", "videos", "v2"].includes(requested) ? requested : "pathways";
+    return ["blog", "videos", "v2", "offer-text"].includes(requested) ? requested : "pathways";
   });
   const [applicants,setApplicants]=useState([]);
   const [filters,setFilters]=useState(blankFilters);
@@ -170,6 +172,7 @@ export default function AdminPage() {
 
   const tabs=[
     ["v2","Simplified V2"],
+    ["offer-text","Offer Page Text"],
     ["pathways","4 Board Builder Pathways"],
     ["videos","Platform Videos"],
     ["homepages","6 Home Page Text"],
@@ -181,8 +184,15 @@ export default function AdminPage() {
 
   return <main className="admin-page" data-testid="admin-dashboard">
     <header className="admin-header"><div><p className="eyebrow">Private administrator area</p><h1>Nonprofit Board Builder</h1></div><div className="admin-header-actions"><a className="button button-small" href="/">Open Main Home Page</a><button onClick={logout}><LogOut size={17}/> Log out</button></div></header>
-    <nav className="admin-tabs">{tabs.map(([key,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}>{label}</button>)}</nav>
+    <nav className="admin-tabs">{tabs.map(([key,label])=><button key={key} className={tab===key?"active":""} onClick={()=>{
+      if(tab==="offer-text"&&key!==tab){
+        if(offerEditorState.busy)return;
+        if(offerEditorState.dirty&&!window.confirm("Leave the editor and discard unsaved changes? Save your draft first if you want to keep your writing."))return;
+      }
+      setTab(key);
+    }}>{label}</button>)}</nav>
     {tab==="v2"&&<AdminV2Section/>}
+    {tab==="offer-text"&&<AdminLandingContent onEditorStateChange={setOfferEditorState}/>}
     {tab==="pathways"&&<BoardBuilderPathwaysSection/>}
     {tab==="videos"&&<PlatformVideosSection/>}
     {tab==="homepages"&&<HomepageTextSection/>}
