@@ -66,7 +66,9 @@ The handoff runs the synthetic HTTP/service suite and source preservation checks
 
 Eight original standalone contract validators already fail at the exact base commit; comparing current and base results found no new failures. Original live production journeys were not called as a regression test.
 
-**Not verified here:** a production frontend build, React/Jest execution, actual desktop/mobile browser rendering, live Mongo/Stripe/Resend integration or real AI writing quality. The workspace has no project dependencies installed and shell dependency downloads were interrupted. Browser and React tests are provided; these limits must not be represented as passed acceptance checks. The code is ready for isolated preview verification, not certified for release.
+**Verification update:** the owner supplied a report that the production frontend build, 17/17 React/Jest checks and 16/16 synthetic desktop/mobile checks passed for `f799d9c85c63e5ce40fd4fbe6f5b4388d00afdab`. These are reported results for that commit. The subsequent shared V2 typography/layout changes passed source-preservation and syntax checks here; their Chromium checks are blocked by sandbox socket restrictions. No new browser pass is claimed. Live Mongo/Stripe/Resend integration and real AI writing quality remain unverified. See `nbb-v2-verification.md` for the separate scopes and results. The code is ready for isolated preview verification, not certified for release.
+
+The V2 style follow-up increases body text to 16–18px, form labels/inputs to 16px and important supporting text to 14px. Page titles and introductory copy sit centrally; instructions and document bodies remain readable in centered columns. Shared action pages no longer repeat mobile side padding, and long titles and links wrap. The original homepage remains unchanged.
 
 The complete pack appears immediately as inventory; AI-generated documents finish asynchronously. Neutral styling applies when branding is absent. Agreements, board profile and candidate-dependent appointment/onboarding items are editable/printable resources, not a new appointment or signing workflow. The V2 marketplace is intentionally isolated from the normal public marketplace until release is authorized. No test announcement can be sent to the live network by default. Provider idempotency has a finite retry window; ambiguous older deliveries need administrator reconciliation.
 
@@ -95,6 +97,14 @@ Then, using two local terminals from the repository root:
 python tests/v2_local_app.py --port 8765
 python tests/v2_browser_harness.py --base http://127.0.0.1:8765
 ```
+
+For shared CSS layout checks without frontend dependencies or provider setup, in an environment that permits Chromium:
+
+```sh
+python tests/v2_layout_harness.py
+```
+
+This uses synthetic markup and real V2 product copy at four viewport widths. It does not substitute for the actual React browser tests.
 
 The fixture app uses synthetic data and fake providers, verifies its local marker, and never loads the production `.env`. It serves the actual frontend build and clearly refuses browser acceptance when that build is absent. Run the complete supplied acceptance paths in the actual isolated preview after these checks and provider configuration. Do not start `backend/server.py` against a production database to test this branch.
 

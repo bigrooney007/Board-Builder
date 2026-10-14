@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "backend"))
 from backend.tests.test_v2_journeys import intake_answers
+from tests.v2_layout_harness import check_layout
 
 
 async def check(base, artifact_dir):
@@ -55,6 +56,7 @@ async def check(base, artifact_dir):
                 overflow = await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
                 assert not overflow, f"{device} {product}: horizontal overflow"
                 assert not errors, errors
+                await check_layout(page, f"{device} {product} education")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}.png"), full_page=True)
                 findings.append(f"PASS {device} {product}: education landing, CTA, noindex, no overflow")
             # Use the genuine API intake and browser checkout/receipt rather than
@@ -73,6 +75,7 @@ async def check(base, artifact_dir):
                 assert await page.locator("iframe").count() == 0, "V2 conversion must not gate sales with a video"
                 calendly = page.locator('a[href="https://calendly.com/boardbuilder/recruitboard"]')
                 assert await calendly.count() > 0
+                await check_layout(page, f"{device} {product} offer")
                 await page.get_by_role("checkbox").first.check()
                 await page.get_by_role("button", name=re.compile(r"Get my .*197")).click()
                 await page.get_by_role("button", name="Pay $197 in this synthetic test").click()
@@ -80,6 +83,7 @@ async def check(base, artifact_dir):
                 await page.get_by_role("heading", level=1).wait_for()
                 assert not errors, errors
                 assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                await check_layout(page, f"{device} {product} resources")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}-resources.png"), full_page=True)
                 findings.append(f"PASS {device} {product}: written offer, verified assistance link, synthetic $197 checkout, resources")
             await context.close()
