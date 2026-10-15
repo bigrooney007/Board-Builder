@@ -258,6 +258,12 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(complete["member_email"],activation["member_email"])
         self.assertEqual(await self.db.members.find_one({"user_id":"real-admin-member"}),before)
 
+    async def test_admin_campaigns_are_excluded_from_public_marketplace(self):
+        for user, slug, internal in (("real-owner","real-listing",False),("admin-dashboard-preview-tester","legacy-admin-listing",False),("synthetic-owner","internal-listing",True)):
+            await self.db.opportunities.insert_one({"user_id":user,"slug":slug,"organization_name":"Synthetic example","status":"Published","internal_preview":internal,"email_content":{}})
+        data=await self.request("GET","/public/board-opportunities")
+        self.assertEqual([x["slug"] for x in data["opportunities"]],["real-listing"])
+
     async def test_existing_game_records_are_not_migrated(self):
         await self.launch("board-fundraising-game")
         await self.db.game_profiles.update_one({"user_id":self.user},{"$unset":{"workflow_version":""}})

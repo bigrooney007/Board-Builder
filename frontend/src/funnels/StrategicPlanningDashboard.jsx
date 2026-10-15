@@ -222,7 +222,7 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>}
 
-      {currentQuestions && <section className="sp-clean-stage"><h2>Your contribution is saved</h2><p>You have completed the same 15 questions your board members will answer. Set your meeting details, then invite them to share their own ideas.</p></section>}
+      {currentQuestions && <section className="sp-clean-stage"><h2>Your contribution is saved</h2><p>You have completed the same 15 questions your board members will answer. Set your meeting details, then invite them to share their own ideas.</p>{p.logo_data_url&&<img src={p.logo_data_url} className="sp-dashboard-logo" alt="Organization logo"/>}<label>Organization logo (optional)<input type="file" accept="image/png,image/jpeg,image/webp" disabled={!!busy} onChange={e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>1800000){setMessage("Choose an image smaller than 1.8 MB.");return;}const reader=new FileReader();reader.onload=()=>act("branding",()=>axios.post(`${API}/guided/strategic-planning/branding`,{session_id:sid,logo_data_url:reader.result}));reader.readAsDataURL(file);}}/></label></section>}
       <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} audioKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
         <div className="sp-clean-stage">
           <h2>When Is Your Next Board Strategic Planning Meeting?</h2>

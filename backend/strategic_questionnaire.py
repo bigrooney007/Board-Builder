@@ -71,3 +71,12 @@ def decision_revision(areas):
 def approved_context(areas, mission=""):
     return json.dumps({"existing_mission_background_only": mission, "planning_period_months": 24,
                        "explicitly_adopted_decisions": areas}, ensure_ascii=False)
+
+
+async def stored_mission(db, user_id, organization_name):
+    """Reuse a supplied mission only when it belongs to this customer's organization."""
+    if not user_id or not organization_name: return ""
+    profile = await db.recruitment_profiles.find_one({"user_id":user_id},{"_id":0}) or {}
+    data = profile.get("data") or {}
+    if str(data.get("organization_name") or "").strip().casefold() != str(organization_name).strip().casefold(): return ""
+    return str(data.get("mission") or "")

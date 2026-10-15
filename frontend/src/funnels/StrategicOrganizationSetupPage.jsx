@@ -38,6 +38,7 @@ export default function StrategicOrganizationSetupPage(){
   useEffect(()=>{
     if(!sid)return;
     axios.get(`${API}/guided/strategic-planning/workspace`,{params:{session_id:sid}}).then(r=>{
+      if(r.data.project?.questionnaire_version === "strategic-24-months-15"){nav(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}`,{replace:true});return;}
       setOrganization(r.data.organization_name||"");
       const existing=r.data.organization_answers||{};
       let programs=Array.isArray(existing.program_details)?existing.program_details:[];
@@ -47,7 +48,7 @@ export default function StrategicOrganizationSetupPage(){
       setAnswers({...existing,program_details:programs.length?programs:[emptyProgram()]});
       setLogo(r.data.project?.logo_data_url||"");
     }).catch(e=>setMessage(e.response?.data?.detail||"We could not open your organization setup."));
-  },[sid]);
+  },[sid,nav]);
 
   const completed=useMemo(()=>QUESTIONS.filter(q=>{
     if(q.type==="programs")return (answers.program_details||[]).some(p=>p.name?.trim());

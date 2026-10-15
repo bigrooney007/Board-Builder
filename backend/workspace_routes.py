@@ -1148,7 +1148,11 @@ def create_workspace_router(db) -> APIRouter:
     # ---------- Opportunity ----------
     async def ensure_opportunity(user_id: str, member: dict) -> dict:
         opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
+        internal = bool(member.get("internal_dashboard_preview") or str(user_id).startswith("admin-dashboard-preview-"))
         if opportunity:
+            if internal and not opportunity.get("internal_preview"):
+                await db.opportunities.update_one({"user_id":user_id},{"$set":{"internal_preview":True}})
+                opportunity["internal_preview"]=True
             return opportunity
         lead = await get_lead(db, member)
         profile = await get_profile(db, user_id)
@@ -1156,7 +1160,7 @@ def create_workspace_router(db) -> APIRouter:
         ts = now_iso()
         opportunity = {
             "opportunity_id": new_id(), "user_id": user_id, "slug": slugify(org_name),
-            "organization_name": org_name, "status": "Draft", "custom_questions": [],
+            "organization_name": org_name, "status": "Draft", "custom_questions": [], "internal_preview": internal,
             "email_content": {}, "broadcast_initiated": False, "broadcast_id": "",
             "created_at": ts, "updated_at": ts,
         }

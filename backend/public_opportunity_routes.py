@@ -82,7 +82,7 @@ def create_public_opportunity_router(db) -> APIRouter:
     async def list_board_opportunities():
         """The public marketplace exposes only live listings and approved campaign information."""
         rows = await db.opportunities.find(
-            {"status": "Published"}, {"_id": 0, "user_id": 1, "slug": 1, "organization_name": 1,
+            {"status": "Published", "internal_preview": {"$ne": True}, "user_id": {"$not": {"$regex": "^admin-dashboard-preview-"}}}, {"_id": 0, "user_id": 1, "slug": 1, "organization_name": 1,
                                       "email_content": 1, "published_at": 1},
         ).sort("published_at", -1).to_list(200)
         listings = []

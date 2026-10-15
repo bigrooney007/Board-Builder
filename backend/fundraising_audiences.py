@@ -41,6 +41,8 @@ QUESTIONS = {
 
 def configuration():
     return {"workflow_version": VERSION, "categories": list(CATEGORIES), "labels": LABELS,
+            "opening_questions": {"individuals":"Do you know a specific type of individual who would have strong reasons to fund our organization's mission?", "businesses":"Do you know a specific type of business that would have strong reasons to support our organization's mission?", "grantmakers":"Do you know a specific type of grantmaker that would have strong reasons to fund our mission?"},
+            "another_questions": {"individuals":"Do you know another type of individual who could have strong reasons to fund our mission?", "businesses":"Do you know another type of business that could have strong reasons to support our mission?", "grantmakers":"Do you know another type of grantmaker that could fund our mission?"},
             "instructions": INSTRUCTIONS, "participation_question": PARTICIPATION, "participation_help": PARTICIPATION_HELP,
             "questions": {cat: [{"key": field, "prompt": text, "help": helper} for field, (text, helper) in zip(FIELDS, QUESTIONS[cat])] for cat in CATEGORIES}}
 

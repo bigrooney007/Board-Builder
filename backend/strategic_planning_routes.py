@@ -1402,7 +1402,7 @@ def create_strategic_planning_router(db) -> APIRouter:
     def generic_form_email(project: dict, link: str) -> dict:
         organization = project["organization_name"]
         signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
-        return sp_generic_form_invitation_email(organization, link, signature)
+        return {**sp_generic_form_invitation_email(organization, link, signature), "button_label": "COMPLETE MY STRATEGIC PLANNING FORM"}
 
     @router.get("/admin/sp/projects/{project_id}/form-email")
     async def form_email(project_id: str, request: Request):

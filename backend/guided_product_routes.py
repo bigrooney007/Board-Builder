@@ -178,10 +178,13 @@ def create_guided_product_router(db):
         else:
             project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})
             if not project:
+                mission = answers.get("mission", "")
+                if any(str(k).startswith("sp24_") for k in answers):
+                    mission = await strategic24.stored_mission(db, member["user_id"], lead.get("organization", ""))
                 await db.sp_projects.insert_one({"project_id": secrets.token_hex(16), "guided_session_id": sid,
                     "owner_user_id": member["user_id"], "organization_name": lead.get("organization") or "Organization",
                     "founder_name": lead.get("name") or "Organization Leader", "founder_email": lead.get("email") or "",
-                    "founder_title": "", "mission": answers.get("mission", ""), "organization_details_saved_at": now,
+                    "founder_title": "", "mission": mission, "organization_details_saved_at": now,
                     "questionnaire_version": strategic24.VERSION if any(str(k).startswith("sp24_") for k in answers) else "legacy",
                     "status": "Active", "generic_form_token": secrets.token_urlsafe(32), "created_at": now})
                 project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})

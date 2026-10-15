@@ -18,8 +18,7 @@ export default function AudienceQuestionnaire({ configuration: config, initial, 
   const audience = list[progress.audience_index || 0];
   const question = config.questions[category]?.[progress.question || 0];
   const phase = progress.phase || "welcome";
-  const kind = category === "individuals" ? "individual" : category === "businesses" ? "business" : "grantmaker";
-  const gate = `Do you know ${list.length ? "another" : "a specific"} type of ${kind} who could have strong reasons to fund our mission?`;
+  const gate = list.length ? config.another_questions[category] : config.opening_questions[category];
   const prompt = phase === "answer" ? question.prompt : phase === "participation" ? config.participation_question : phase === "gate" ? gate : config.instructions;
   const narration = useGuidedNarration("fundraising-free", "audience-" + category + "-" + phase + "-" + progress.question, prompt);
   const persist = (next) => {
