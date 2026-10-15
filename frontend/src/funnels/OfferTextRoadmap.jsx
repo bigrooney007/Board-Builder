@@ -2,7 +2,7 @@
 export default function OfferTextRoadmap({ copy }) {
   if (!copy) return null;
   return (
-    <div className="guided-outcomes" style={{ margin: "24px auto", maxWidth: 760, textAlign: "center" }}
+    <div className="guided-outcomes" style={{ display: "block", margin: "24px auto", maxWidth: 760, textAlign: "center" }}
          data-testid="offer-text-roadmap">
       {copy.introduction && <p className="guided-upgrade-copy" style={{ textAlign: "center", margin: "0 auto 20px" }}>{copy.introduction}</p>}
       {copy.stepsHeading && <h2 style={{ marginBottom: 16 }}>{copy.stepsHeading}</h2>}

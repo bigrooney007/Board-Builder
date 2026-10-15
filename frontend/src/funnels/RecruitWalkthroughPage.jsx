@@ -73,7 +73,7 @@ export default function RecruitWalkthroughPage() {
       <p className="guided-price-note">One-time payment. Payment is next.</p>
 
       <DemoOfferCards product="recruitment" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : buy()} error={error}
-        intro={copy.cardIntro}
+        intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
         selfGuided={{ title: copy.selfGuidedTitle, description: copy.selfGuidedDescription,
           features: copy.selfGuidedFeatures,
           button: "START MY CAMPAIGN — $497" }}

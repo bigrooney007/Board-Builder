@@ -66,7 +66,7 @@ export default function GameUpgradePage() {
       {payButton("bfg-invite-board-cta")}
       <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
       <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : upgrade()} error={error}
-        intro={copy.cardIntro}
+        intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
         selfGuided={{ title: copy.selfGuidedTitle, description: copy.selfGuidedDescription,
           features: copy.selfGuidedFeatures,
           button: "START THE SELF-GUIDED GAME — $497" }}

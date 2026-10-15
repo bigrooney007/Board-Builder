@@ -206,7 +206,7 @@ export function GuidedVideoPage({ product: explicitProduct }) {
     <h1>{copy.heading}</h1>
     <OfferTextRoadmap copy={copy} />
     <DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
-      intro={copy.cardIntro}
+      intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
       selfGuided={{
         title: copy.selfGuidedTitle || c.selfGuidedTitle,
         description: copy.selfGuidedDescription || "Use the complete platform with your Board and work through the process yourselves.",

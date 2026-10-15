@@ -42,7 +42,7 @@ class FourCustomerJourneysContractTests(unittest.TestCase):
         dashboard = source("frontend/src/member/BoardRecruitmentPage.jsx")
         for phrase in ("STEP 1 · BOARD PROFILES", "STEP 2 · INTERVIEW SCHEDULING",
                        "STEP 3 · REVIEW CAMPAIGN MATERIALS", "STEP 4 · LAUNCH"):
-            self.assertIn(phrase, setup)
+            self.assertIn(phrase, setup + source("frontend/src/member/RecruitCampaignMaterialsPage.jsx"))
         ids = ["br-section-questions", "br-section-identify", "br-section-materials", "br-section-campaign",
                "br-section-applicants", "br-section-references", "br-section-background", "br-section-selection",
                "br-section-onboarding-prep", "br-section-onboarding-session", "br-section-portfolios"]

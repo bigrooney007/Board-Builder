@@ -12,6 +12,8 @@ export const OFFER_TEXT_DEFAULTS = {
       "As applications arrive, review each person and use the existing interview, reference and appointment resources."
     ],
     closing: "You will be able to continue the recruitment process in your existing dashboard.",
+    offerEyebrow: "CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD",
+    offerHeading: "Choose The Level Of Support That Is Right For You",
     cardIntro: "Use the existing recruitment platform yourself, or choose the professional assistance option.",
     selfGuidedTitle: "Launch Your Board Recruitment Campaign",
     selfGuidedDescription: "Use the complete platform to recruit and onboard the board members your organization needs.",
@@ -32,6 +34,8 @@ export const OFFER_TEXT_DEFAULTS = {
       "Review the completed fundraising strategy and use the existing tools to move the agreed plan forward."
     ],
     closing: "You remain in control of the decisions your board adopts.",
+    offerEyebrow: "CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD",
+    offerHeading: "Choose The Level Of Support That Is Right For You",
     cardIntro: "Run the game using the existing guided platform, or choose professional assistance.",
     selfGuidedTitle: "Build The Fundraising Strategy With Your Board",
     selfGuidedDescription: "Run the guided process yourselves with the complete platform.",
@@ -52,6 +56,8 @@ export const OFFER_TEXT_DEFAULTS = {
       "Review and approve the resulting strategic plan for your organization."
     ],
     closing: "Your final plan reflects the decisions your organization actually approves.",
+    offerEyebrow: "CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD",
+    offerHeading: "Choose The Level Of Support That Is Right For You",
     cardIntro: "Use the existing guided planning process, or request professional support.",
     selfGuidedTitle: "Build And Adopt Your Strategic Plan With Your Board",
     selfGuidedDescription: "Use the complete platform with your Board and work through the process yourselves.",
@@ -72,6 +78,8 @@ export const OFFER_TEXT_DEFAULTS = {
       "Have the necessary conversations and decide the appropriate next steps."
     ],
     closing: "You keep control over your board relationships and final decisions.",
+    offerEyebrow: "CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD",
+    offerHeading: "Choose The Level Of Support That Is Right For You",
     cardIntro: "Use the guided recommitment process yourself, or request professional support.",
     selfGuidedTitle: "Recommit Your Board Using The Guided Platform",
     selfGuidedDescription: "Use the complete platform with your Board and work through the process yourselves.",
