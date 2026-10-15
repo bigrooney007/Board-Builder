@@ -52,7 +52,13 @@ export const OFFER_TEXT_DEFAULTS = {
       "Review and approve the resulting strategic plan for your organization."
     ],
     closing: "Your final plan reflects the decisions your organization actually approves.",
-    cardIntro: "Use the existing guided planning process, or request professional support."
+    cardIntro: "Use the existing guided planning process, or request professional support.",
+    selfGuidedTitle: "Build And Adopt Your Strategic Plan With Your Board",
+    selfGuidedDescription: "Use the complete platform with your Board and work through the process yourselves.",
+    selfGuidedFeatures: ["Complete the Strategic Planning Form with your Board", "Facilitate the Board planning and adoption session", "Create, edit and download the final Strategic Plan", "Delegate responsibilities and give each leader a Portfolio and Executive Assistant"],
+    supportedTitle: "Build Your Strategic Plan With Rooney",
+    supportedDescription: "Rooney works with you and your Board to facilitate the planning process and carry it through adoption and delegation.",
+    supportedFeatures: ["Prepare the planning process with you", "Facilitate the Strategic Planning session", "Create the final Strategic Plan from the Board's decisions", "Support adoption, delegation and Board leadership handoff"]
   },
   "offer-board-recommitment": {
     eyebrow: "YOUR RECOMMITMENT ANSWERS ARE SAVED",
@@ -66,7 +72,13 @@ export const OFFER_TEXT_DEFAULTS = {
       "Have the necessary conversations and decide the appropriate next steps."
     ],
     closing: "You keep control over your board relationships and final decisions.",
-    cardIntro: "Use the guided recommitment process yourself, or request professional support."
+    cardIntro: "Use the guided recommitment process yourself, or request professional support.",
+    selfGuidedTitle: "Recommit Your Board Using The Guided Platform",
+    selfGuidedDescription: "Use the complete platform with your Board and work through the process yourselves.",
+    selfGuidedFeatures: ["Send the Recommitment Form and email", "Understand and interpret every response", "Use the personalized one-on-one conversation script", "Help each Board Member recommit clearly or step down gracefully"],
+    supportedTitle: "Recommit Your Board With Rooney",
+    supportedDescription: "Rooney works directly with you to initiate the process, guide the conversations and help rebuild an active Board.",
+    supportedFeatures: ["Initiate the Board recommitment process with you", "Work through each Board Member's response", "Guide the one-on-one recommitment conversations", "Help get active members working with you again"]
   }
 };
 
