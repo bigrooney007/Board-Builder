@@ -49,7 +49,7 @@ async def seed_current_workflow(db, member, product, *, preloaded=False, intro=F
         free = fundraising_answers()
         await db.game_free_responses.update_one({"user_id": user}, {"$setOnInsert": {"user_id": user, **({} if intro else free), "completed": not intro, "created_at": now}}, upsert=True)
         if preloaded:
-            for index, name in enumerate(("Sample Leader", "Sample Alex", "Sample Morgan", "Sample Taylor")):
+            for index, name in enumerate(("Sample Leader", "Alex Morgan", "Taylor Reed", "Jordan Ellis")):
                 mid = f"{user}-person-{index}"
                 await db.game_board_members.update_one({"member_id": mid}, {"$setOnInsert": {"member_id": mid, "user_id": user, "full_name": name,
                     "email": member["email"] if index == 0 else f"sample-{index}-{user}@nonprofitboardbuilder.internal", "board_title": "", "participant_role": "board_member",
@@ -76,7 +76,7 @@ async def seed_current_workflow(db, member, product, *, preloaded=False, intro=F
             "planning_meeting": {"meeting_date": "2026-11-15", "start_time": "18:00", "timezone_name": "UTC"}, "created_at": now}}, upsert=True)
         content = planning.form_content()
         await db.sp_forms.update_one({"project_id": pid}, {"$setOnInsert": {"project_id": pid, "content": content, "status": "Approved", "version": 1, "created_at": now}}, upsert=True)
-        for index, name in enumerate(("Sample Leader", "Sample Alex", "Sample Morgan", "Sample Taylor")):
+        for index, name in enumerate(("Sample Leader", "Alex Morgan", "Taylor Reed", "Jordan Ellis")):
             await db.sp_participants.update_one({"participant_id": f"{pid}-{index}"}, {"$setOnInsert": {"participant_id": f"{pid}-{index}", "project_id": pid, "name": name,
                 "email": member["email"] if index == 0 else f"sample-{index}-{user}@nonprofitboardbuilder.internal", "role": "Lead User" if index == 0 else "Board Member",
                 "form_token": secrets.token_urlsafe(32), "review_token": secrets.token_urlsafe(32), "status": "COMPLETED", "form_version": 1,

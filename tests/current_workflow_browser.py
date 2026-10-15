@@ -18,6 +18,7 @@ async def main():
         async with async_playwright() as pw:
             browser=await pw.chromium.launch()
             for width,height in ((1440,1000),(390,844)):
+                admin=(await api.get(f"/__test/session?variant={width}")).json()["token"]
                 context=await browser.new_context(viewport={"width":width,"height":height})
                 page=await context.new_page();errors=[]
                 page.on("pageerror",lambda error:errors.append(str(error)))
@@ -66,16 +67,59 @@ async def main():
                 await launch("board-fundraising-game","loaded");await page.goto(BASE+"/game/group")
                 review=page.get_by_test_id("bfg-audience-group-review");await expect(review).to_be_visible()
                 await review.get_by_role("button",name="START GROUP REVIEW",exact=True).click()
-                await expect(review.get_by_role("heading",name="Discuss This Funding Audience And Its Complete Approach")).to_be_visible()
-                await expect(review.get_by_role("textbox",name="How much to ask",exact=True)).to_be_visible()
-                await review.get_by_role("button",name="ADOPT THIS AUDIENCE AND APPROACH",exact=True).click()
-                await expect(review.get_by_text("Decision: adopted")).to_be_visible()
-                results.append({"viewport":width,"check":"preloaded current group displays/adopts complete audience with all six fields","passed":True})
+                for index in range(12):
+                    await expect(review.get_by_text(f"Audience {index+1} of 12",exact=False).first).to_be_visible()
+                    await expect(review.get_by_role("textbox",name="How much to ask",exact=True)).to_be_visible()
+                    await review.get_by_role("button",name="ADOPT THIS AUDIENCE AND APPROACH" if index==0 else "REJECT THIS AUDIENCE",exact=True).click()
+                    await expect(review.get_by_text("Decision: adopted" if index==0 else "Decision: rejected",exact=True)).to_be_visible()
+                    await review.get_by_role("button",name="NEXT FUNDING AUDIENCE" if index<11 else "DISCUSS PARTICIPATION",exact=True).click()
+                await expect(review.get_by_role("heading",name="How Each Person Would Like To Participate")).to_be_visible()
+                await review.get_by_role("combobox",name="Person agreeing to participate").select_option(label="Alex Morgan")
+                await review.get_by_role("textbox",name="Confirmed contribution").fill("Introduce employers within the first quarter.")
+                await review.get_by_role("checkbox",name="This person has explicitly agreed to this contribution.").check()
+                await review.get_by_role("button",name="SAVE CONFIRMED PARTICIPATION",exact=True).click()
+                await expect(review.get_by_text("Alex Morgan: Introduce employers within the first quarter.",exact=True)).to_be_visible()
+                await review.get_by_role("button",name="REVIEW THE AGREED STRATEGY",exact=True).click()
+                await expect(review.get_by_role("heading",name="What We Have Agreed To Do Together",exact=True)).to_be_visible()
+                await review.get_by_role("checkbox",name="I confirm that this is the direction agreed during our meeting.").check()
+                await review.get_by_role("button",name="ADOPT OUR AGREED DIRECTION",exact=True).click()
+                await review.get_by_role("button",name="PREPARE OUR STRATEGY FOR FINAL APPROVAL",exact=True).click()
+                await expect(review.get_by_role("heading",name="Review And Approve The Exact Final Wording",exact=True)).to_be_visible()
+                await review.get_by_role("checkbox",name="I approve this exact wording for delivery to the leader and participants.").check()
+                await review.get_by_role("button",name="APPROVE, SAVE AND EMAIL THE STRATEGY",exact=True).click()
+                await expect(review.get_by_role("heading",name="Your Approved Fundraising Strategy",exact=True)).to_be_visible()
+                async with page.expect_download() as download:
+                    await review.get_by_role("button",name="DOWNLOAD APPROVED STRATEGY",exact=True).click()
+                assert (await download.value).suggested_filename=="fundraising-strategy.pdf"
+                # Join as a participant through the same personal meeting controls.
+                state=(await api.get("/api/game/group/session",headers={"Authorization":"Bearer "+await page.evaluate("localStorage.getItem('memberToken')")})).json()
+                participant_context=await browser.new_context(viewport={"width":width,"height":height})
+                participant_page=await participant_context.new_page()
+                await participant_page.goto(BASE+"/group-game/"+state["session"]["token"])
+                await participant_page.get_by_role("button",name="Alex",exact=True).click()
+                await participant_page.get_by_role("button",name="Join The Game",exact=True).click()
+                await participant_page.get_by_role("checkbox",name="I acknowledge the agreed direction and the contribution I have personally accepted.").check()
+                await participant_page.get_by_role("button",name="I ACKNOWLEDGE OUR AGREED STRATEGY",exact=True).click()
+                await expect(participant_page.get_by_text("You have acknowledged this agreed direction.",exact=True)).to_be_visible()
+                await participant_context.close()
+                results.append({"viewport":width,"check":"current fundraising group reviews all 12 proposals, confirms participation, adopts, approves, downloads and captures delivery; participant independently acknowledges","passed":True})
                 await launch("strategic-planning","loaded")
                 sid=__import__('urllib.parse',fromlist=['parse_qs']).parse_qs(__import__('urllib.parse',fromlist=['urlparse']).urlparse(page.url).query)["session_id"][0]
                 await page.goto(BASE+"/strategic-planning/session?session_id="+sid)
                 await expect(page.get_by_text("Welcome to your Strategic Planning Session.",exact=False)).to_be_visible()
-                results.append({"viewport":width,"check":"preloaded planning opens current 15-question group session","passed":True})
+                await page.get_by_role("button",name="START STRATEGIC PLANNING SESSION",exact=True).click()
+                for index in range(15):
+                    await expect(page.locator(".sp-session-topline")).to_contain_text(f"Section {index+1} of 15")
+                    if index in {0,14}:
+                        card=page.locator("button.sp-idea-card").nth(0 if index==0 else 1)
+                        await card.click();await expect(card).to_have_class(__import__('re').compile("selected"))
+                    await page.get_by_role("button",name="SAVE BOARD DECISION & NEXT" if index<14 else "SAVE & END STRATEGIC PLANNING SESSION",exact=True).click()
+                await expect(page.get_by_role("heading",name="What We Have Agreed To Achieve Together",exact=True)).to_be_visible()
+                await page.get_by_role("button",name="APPROVE OUR AGREED DIRECTION",exact=True).click()
+                await expect(page.get_by_role("textbox",name="Strategic Plan for Board review")).to_be_visible(timeout=15000)
+                await page.get_by_role("button",name="APPROVE & ADOPT WITH THE BOARD",exact=True).click()
+                await expect(page.get_by_role("heading",name="Strategic Plan Adopted",exact=True)).to_be_visible()
+                results.append({"viewport":width,"check":"current planning discusses all 15 questions, explicitly selects ideas, reviews adopted direction, generates and approves final plan","passed":True})
                 assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 2"),"Mobile/desktop overflow"
                 assert not errors,errors
                 await page.screenshot(path=str(OUT/f"current-workflow-{width}.png"),full_page=True)

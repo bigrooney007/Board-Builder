@@ -59,7 +59,12 @@ async def seed():
     await db.users.insert_one({"user_id":"acceptance-admin","email":"admin@example.test","role":"admin"})
 
 @app.get("/__test/session")
-async def session(): return {"token":create_access_token("acceptance-admin","admin@example.test")}
+async def session(variant: str = ""):
+    identity = "acceptance-admin" + ("-" + variant if variant in {"1440","390"} else "")
+    email = identity + "@example.test"
+    if not variant: email = "admin@example.test"
+    await db.users.update_one({"user_id":identity},{"$setOnInsert":{"user_id":identity,"email":email,"role":"admin"}},upsert=True)
+    return {"token":create_access_token(identity,email)}
 
 @app.get("/__test/ai-contexts")
 async def ai_contexts(): return AI_CONTEXTS
