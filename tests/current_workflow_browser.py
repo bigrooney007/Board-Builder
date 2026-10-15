@@ -57,7 +57,7 @@ async def main():
                 await q.get_by_role("button",name="NO, CONTINUE",exact=True).click()
                 await q.get_by_role("textbox",name="Your personal participation").fill("I would like to introduce local employers.")
                 await q.get_by_role("button",name="REVIEW MY CONTRIBUTION",exact=True).click()
-                await expect(q.get_by_text("Audience 2, answer 1.",exact=False)).to_be_visible()
+                await expect(q.get_by_text("Audience 2, answer 1.",exact=False).first).to_be_visible()
                 await q.get_by_role("button",name="SUBMIT MY CONTRIBUTION",exact=True).click()
                 await expect(page).to_have_url(__import__('re').compile("/game/setup"))
                 await expect(page.get_by_test_id("bfg-audience-questionnaire")).to_have_count(0)
