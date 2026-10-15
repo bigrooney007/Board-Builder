@@ -6,6 +6,7 @@ import { MAIN_HOME_DEFAULTS } from "@/pages/MainHomePage";
 import { FACILITATED_GAME_HOME_DEFAULTS } from "@/game/FacilitatedGamePage";
 import { recruitmentHomeContent } from "@/content/siteContent";
 import { GUIDED_PRODUCT_CONFIG } from "@/funnels/GuidedProductPages";
+import { OFFER_PAGE_KEYS, OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -17,10 +18,14 @@ const stripIcon = (value) => {
 
 const LOCAL_DEFAULTS = {
   main: MAIN_HOME_DEFAULTS,
-  recruitment: recruitmentHomeContent,
+  recruitment: { ...recruitmentHomeContent,
+    headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+    subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
+    formHeading: "Start Your Board Recruitment Campaign", primaryCta: "Start for Free" },
   "strategic-planning": stripIcon(GUIDED_PRODUCT_CONFIG["strategic-planning"]),
   "board-recommitment": stripIcon(GUIDED_PRODUCT_CONFIG["board-recommitment"]),
   "facilitated-game": FACILITATED_GAME_HOME_DEFAULTS,
+  ...OFFER_TEXT_DEFAULTS,
 };
 
 const prettyLabel = (value) => String(value)
@@ -100,8 +105,10 @@ function HomepageField({ row, onChange }) {
   );
 }
 
+const EDITABLE_PAGES = [...HOMEPAGE_KEYS, ...OFFER_PAGE_KEYS];
+
 export function HomepageTextSection() {
-  const [pageKey, setPageKey] = useState(HOMEPAGE_KEYS[0][0]);
+  const [pageKey, setPageKey] = useState(EDITABLE_PAGES[0][0]);
   const [content, setContent] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -143,15 +150,15 @@ export function HomepageTextSection() {
     <section data-testid="clean-homepage-editor">
       <div className="admin-funnel-numbers-head">
         <div>
-          <h2>Home Page Text Edit</h2>
-          <p>Choose one of the six public home pages and edit its words directly. Routes, dashboard destinations and product connections stay locked outside this editor.</p>
+          <h2>Landing Page &amp; Payment Page Text</h2>
+          <p>Edit the words on the existing public landing pages or the four payment pages. This does not change their design, routes, or checkout connections.</p>
         </div>
       </div>
       <div className="admin-filters">
         <label>
           Home Page
           <select value={pageKey} onChange={(event) => setPageKey(event.target.value)}>
-            {HOMEPAGE_KEYS.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+            {EDITABLE_PAGES.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
           </select>
         </label>
         <button className="button button-back button-small" onClick={() => load(pageKey)}><RefreshCw size={15} /> Reload Saved Text</button>
