@@ -7,12 +7,11 @@ import { opportunityPagesText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, onSubmit, requireCv = false, onDraftChange }) => {
+export const ApplicationForm = ({ questions, initialAnswers = {}, submitLabel, onSubmit, requireCv = false }) => {
   const [answers, setAnswers] = useState(() => Object.fromEntries(questions.map((question) => [question.id, initialAnswers[question.id] || ""])));
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const cvRef = useRef(null);
-  useEffect(() => { if (onDraftChange) onDraftChange(answers); }, [answers, onDraftChange]);
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;

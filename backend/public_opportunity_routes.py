@@ -64,8 +64,6 @@ def create_public_opportunity_router(db) -> APIRouter:
 
     async def published_opportunity(slug: str, allow_closed: bool = True) -> dict:
         opportunity = await db.opportunities.find_one({"slug": slug}, {"_id": 0})
-        if opportunity and opportunity.get("journey_version") == "v2":
-            raise HTTPException(status_code=404, detail="Board opportunity not found")
         if not opportunity or opportunity["status"] in {"Draft", "Ready to Publish"}:
             raise HTTPException(status_code=404, detail="Board opportunity not found")
         if opportunity["status"] == "Closed" and not allow_closed:

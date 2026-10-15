@@ -24,7 +24,7 @@ const INITIAL = {
 
 const Field = ({ label, children }) => <label className="field"><span>{label}</span>{children}</label>;
 
-export default function BoardRecommitmentFormPage({ loadForm, submitForm, onDraftChange, Layout = FunnelLayout, layoutProps = { restrained: true, isolated: true }, ContentTag = "main" } = {}) {
+export default function BoardRecommitmentFormPage() {
   usePageMeta("Board Recommitment Form | Nonprofit Board Builder", "Confirm how you would like to serve moving forward.", true);
   const { token } = useParams();
   const requestedVariant = new URLSearchParams(window.location.search).get("variant") === "active_advisory" ? "active_advisory" : "full";
@@ -35,23 +35,19 @@ export default function BoardRecommitmentFormPage({ loadForm, submitForm, onDraf
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const loading = loadForm ? loadForm(token) : axios.get(`${API}/board-recommitment/${token}`).then((response) => response.data);
-    loading.then((data) => {
-      const serverVariant = data.form_variant === "active_advisory" ? "active_advisory" : requestedVariant;
-      setContext(data);
+    axios.get(`${API}/board-recommitment/${token}`).then((response) => {
+      const serverVariant = response.data.form_variant === "active_advisory" ? "active_advisory" : requestedVariant;
+      setContext(response.data);
       setForm((current) => ({
         ...current,
-        ...(loadForm ? data.answers || {} : {}),
         form_variant: serverVariant,
-        full_name: (loadForm && data.answers?.full_name) || data.prefill?.full_name || "",
-        email: (loadForm && data.answers?.email) || data.prefill?.email || "",
-        phone: (loadForm && data.answers?.phone) || data.prefill?.phone || "",
+        full_name: response.data.prefill?.full_name || "",
+        email: response.data.prefill?.email || "",
+        phone: response.data.prefill?.phone || "",
       }));
-      setGate(data.submitted ? "already" : "ready");
+      setGate(response.data.submitted ? "already" : "ready");
     }).catch(() => setGate("invalid"));
-  }, [token, requestedVariant, loadForm]);
-
-  useEffect(() => { if (gate === "ready" && onDraftChange) onDraftChange(form); }, [gate, form, onDraftChange]);
+  }, [token, requestedVariant]);
 
   const org = context?.organization_name || "the organization";
   const prefilled = Boolean(context?.prefill?.full_name && context?.prefill?.email);
@@ -84,8 +80,7 @@ export default function BoardRecommitmentFormPage({ loadForm, submitForm, onDraf
     }
     setBusy(true); setErrorText("");
     try {
-      if (submitForm) await submitForm(token, form);
-      else await axios.post(`${API}/board-recommitment/${token}`, form);
+      await axios.post(`${API}/board-recommitment/${token}`, form);
       setGate("done");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
@@ -95,8 +90,8 @@ export default function BoardRecommitmentFormPage({ loadForm, submitForm, onDraf
   };
 
   return (
-    <Layout {...layoutProps}>
-      <ContentTag data-testid="recommit-page">
+    <FunnelLayout restrained isolated>
+      <main data-testid="recommit-page">
         {gate === "loading" && <div className="intake-card"><p>Loading…</p></div>}
         {gate === "invalid" && <div className="intake-card"><h2>This Recommitment Form Is Not Available.</h2><p>Please contact the organization that sent you the link.</p></div>}
         {(gate === "done" || gate === "already") && (
@@ -185,7 +180,7 @@ export default function BoardRecommitmentFormPage({ loadForm, submitForm, onDraf
             </section>
           </>
         )}
-      </ContentTag>
-    </Layout>
+      </main>
+    </FunnelLayout>
   );
 }

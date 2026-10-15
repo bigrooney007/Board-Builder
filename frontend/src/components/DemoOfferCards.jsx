@@ -1,7 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import "./demo-offers.css";
 
-export default function DemoOfferCards({ product, selfGuided, supported, intro, busy, disabled = false, onBuy, error }) {
+export default function DemoOfferCards({ product, selfGuided, supported, intro, busy, disabled = false, onBuy, error, offerEyebrow, offerHeading }) {
   const cards = [
     { key: "self-guided", label: "SELF-GUIDED PATHWAY", price: "$497", ...selfGuided },
     { key: "supported", label: "WORK WITH ROONEY", ...supported },
@@ -9,8 +9,8 @@ export default function DemoOfferCards({ product, selfGuided, supported, intro, 
   return (
     <section className="demo-offers" aria-labelledby={`${product}-offer-heading`}>
       <div className="demo-offers-heading">
-        <p className="bfg-eyebrow">CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD</p>
-        <h2 id={`${product}-offer-heading`}>Choose The Level Of Support That Is Right For You</h2>
+        <p className="bfg-eyebrow">{offerEyebrow ?? "CHOOSE HOW YOU WOULD LIKE TO MOVE FORWARD"}</p>
+        <h2 id={`${product}-offer-heading`}>{offerHeading ?? "Choose The Level Of Support That Is Right For You"}</h2>
         <p>{intro || "Use the complete platform with your board, or work directly with Rooney to guide the process with you."}</p>
       </div>
       <div className="demo-offer-grid">

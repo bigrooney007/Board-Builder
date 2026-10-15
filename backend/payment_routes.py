@@ -1172,10 +1172,6 @@ def create_stripe_webhook_router(db) -> APIRouter:
         except (ValueError, stripe.SignatureVerificationError) as exc:
             raise HTTPException(status_code=400, detail="Invalid Stripe signature") from exc
         item = event["data"]["object"]
-        if (item.get("metadata") or {}).get("journey_version") == "v2":
-            from v2_payments import handle_v2_event
-            await handle_v2_event(db, event)
-            return {"status": "ok"}
         event_type = event["type"]
         now = datetime.now(timezone.utc).isoformat()
         if event_type == "checkout.session.completed":

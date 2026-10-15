@@ -7,13 +7,13 @@ import SpeakButton from "@/game/SpeakButton";
 import "./guided-products.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-export const RECOMMITMENT = [
+const RECOMMITMENT = [
   { key: "mission", title: "Start with your mission", prompt: "What is your organization's mission statement?", help: "Use the words you already use to describe why your organization exists." },
   { key: "why_recommit", title: "Why now", prompt: "Why do you need your board members to recommit and step up now?", help: "Tell us what has changed, where the board has become quiet, and why this matters now." },
   { key: "board_help_accomplish", title: "What the board can help build", prompt: "What do you need these board members to help the organization accomplish?", help: "Think about the work and outcomes you need people to take real responsibility for." },
   { key: "need_by", title: "Your deadline", prompt: "By when do you need the board to recommit and begin operating in these roles?", help: "Choose the date that will guide the conversations with your board.", type: "date" },
 ];
-export const STRATEGIC = [
+const STRATEGIC = [
   { key: "mission", title: "Mission", prompt: "What is your organization's mission statement?", help: "Give us the mission as it stands today. Your board can review it together later." },
   { key: "goals", title: "Goals", prompt: "What is your organization trying to achieve over the next one to two years?", help: "Tell us what you want to change, grow or make possible." },
   { key: "objectives", title: "Objectives", prompt: "What specific results are you working toward to reach those goals?", help: "Share the milestones you have in mind, even if the plan is not yet perfect." },
