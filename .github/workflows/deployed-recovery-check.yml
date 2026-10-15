@@ -1,0 +1,22 @@
+name: Deployed Recovery Public Check
+on:
+  push:
+    branches: [test/deployed-original-20261015]
+  workflow_dispatch:
+jobs:
+  public-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Check the actual deployed original platform
+        run: python tests/deployed_recovery_check.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployed-recovery-public-results
+          path: test_reports/deployed-recovery
