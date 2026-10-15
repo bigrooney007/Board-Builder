@@ -17,6 +17,8 @@ import { useLandingPageMeta, usePageMeta } from "@/seo";
 import PublicStartLayout from "./PublicStartLayout";
 import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "./publicStartRoutes";
 import GuidedPrepaymentQuestionsPage from "./GuidedPrepaymentQuestionsPage";
+import { OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
+import OfferTextRoadmap from "./OfferTextRoadmap";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 export const GUIDED_PRODUCT_CONFIG={
@@ -162,14 +164,65 @@ function GuidedLeadStartPage({ product: explicitProduct }) {
   </form>
  </PublicStartLayout>
 }
-export function GuidedVideoPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const nav=useNavigate();const q=new URLSearchParams(useLocation().search);const token=q.get("token")||localStorage.getItem(`guidedLead:${product}`)||"";const [busy,setBusy]=useState(""),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");
- useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");if(!r.data.prepayment_complete){nav(`/${product}/start?token=${encodeURIComponent(token)}`,{replace:true});return}setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product,nav]);
- const buy=async(pathway)=>{setBusy(pathway);setError("");try{trackPlatformEvent(product,"checkout_started");let r=pathway==="supported"?await axios.post(`${API}/payments/supported-checkout`,{origin_url:window.location.origin,result_token:token,product}):await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy("")}};
- return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{maxWidth:1120}}><p className="bfg-eyebrow">YOUR ANSWERS ARE SAVED</p><h1>{c.videoTitle}</h1><h2>Watch Rooney explain how we will move forward with what you shared.</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
- selfGuided={{title:c.selfGuidedTitle,description:"Use the complete platform with your Board and work through the process yourselves.",features:c.selfGuidedFeatures,button:product==="strategic-planning"?"START MY SELF-GUIDED PLANNING — $497":"START MY SELF-GUIDED RECOMMITMENT — $497"}}
- supported={{title:c.supportedTitle,description:c.supportedDescription,features:c.supportedFeatures,price:c.supportedPrice,button:`WORK WITH ROONEY — ${c.supportedPrice}`}}/>
- <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`}/></section></main></BfgShell>
+export function GuidedVideoPage({ product: explicitProduct }) {
+  const [product, c] = useProduct(explicitProduct);
+  const nav = useNavigate();
+  const q = new URLSearchParams(useLocation().search);
+  const token = q.get("token") || localStorage.getItem(`guidedLead:${product}`) || "";
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [validToken, setValidToken] = useState(false);
+  const copy = useHomepageContent(`offer-${product}`, OFFER_TEXT_DEFAULTS[`offer-${product}`]);
+
+  useEffect(() => {
+    if (!token) { setError("This link is missing its journey token."); return; }
+    axios.get(`${API}/guided/context/${token}`).then(({ data }) => {
+      if (data.product !== product) throw new Error("wrong flow");
+      if (!data.prepayment_complete) {
+        nav(`/${product}/start?token=${encodeURIComponent(token)}`, { replace: true });
+        return;
+      }
+      setValidToken(true);
+    }).catch(() => setError("This link belongs to a different product flow or is no longer valid."));
+  }, [token, product, nav]);
+
+  const buy = async (pathway) => {
+    setBusy(pathway);
+    setError("");
+    try {
+      trackPlatformEvent(product, "checkout_started");
+      const response = pathway === "supported"
+        ? await axios.post(`${API}/payments/supported-checkout`, { origin_url: window.location.origin, result_token: token, product })
+        : await axios.post(`${API}/payments/guided-checkout`, { origin_url: window.location.origin, result_token: token, product });
+      window.location.href = response.data.checkout_url;
+    } catch {
+      setError("We could not open secure checkout. Please try again.");
+      setBusy("");
+    }
+  };
+
+  return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{ maxWidth: 1120, textAlign: "center" }}>
+    <p className="bfg-eyebrow">{copy.eyebrow}</p>
+    <h1>{copy.heading}</h1>
+    <OfferTextRoadmap copy={copy} />
+    <DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
+      intro={copy.cardIntro}
+      selfGuided={{
+        title: copy.selfGuidedTitle || c.selfGuidedTitle,
+        description: copy.selfGuidedDescription || "Use the complete platform with your Board and work through the process yourselves.",
+        features: copy.selfGuidedFeatures || c.selfGuidedFeatures,
+        button: product === "strategic-planning" ? "START MY SELF-GUIDED PLANNING — $497" : "START MY SELF-GUIDED RECOMMITMENT — $497"
+      }}
+      supported={{
+        title: copy.supportedTitle || c.supportedTitle,
+        description: copy.supportedDescription || c.supportedDescription,
+        features: copy.supportedFeatures || c.supportedFeatures,
+        price: c.supportedPrice,
+        button: `WORK WITH ROONEY — ${c.supportedPrice}`
+      }}
+    />
+    <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`} />
+  </section></main></BfgShell>;
 }
 
 export function GuidedPaymentConfirmedPage({ product: explicitProduct }){
