@@ -29,6 +29,7 @@ from guided_product_routes import create_guided_product_router
 from strategic_planning_routes import create_strategic_planning_router, create_guided_strategic_planning_router
 from admin_dashboard_preview_routes import create_admin_dashboard_preview_router
 from payment_routes import create_payment_router
+from board_fix_routes import create_board_fix_router
 from admin_test_safety import install_email_capture
 from member_routes import create_member_router
 import strategic_planning_routes as sp
@@ -39,7 +40,7 @@ def build_app(database):
     install_email_capture(app, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
-                    create_payment_router, create_member_router):
+                    create_payment_router, create_member_router, create_board_fix_router):
         app.include_router(factory(database))
     return app
 

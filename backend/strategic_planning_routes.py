@@ -2107,6 +2107,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/session/progress")
     async def update_strategic_session_progress(request: Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));index=max(0,int(body.get("current_section_index",0)))
+        if p.get("questionnaire_version") == strategic24.VERSION:
+            saved = await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+            if saved.get("status") in {"REVIEW","COMPLETED"}: raise HTTPException(409,"Return to discussion before changing the review step")
+            if index >= len(strategic24.QUESTIONS): raise HTTPException(422,"Choose a valid planning question")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"current_section_index":index,"status":"IN PROGRESS","updated_at":now_iso()}},upsert=True)
         return {"current_section_index":index}
 
@@ -2181,6 +2185,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             except ValueError as exc:
                 raise HTTPException(422, str(exc))
             revision = strategic24.decision_revision(areas)
+            if saved.get("status") == "REVIEW":
+                if revision != saved.get("decision_revision"): raise HTTPException(409, "Return to discussion before changing the reviewed direction")
+                return {"status":"REVIEW","adopted_areas":saved["adopted_areas"],"decision_revision":saved["decision_revision"]}
+            if saved.get("status") != "IN PROGRESS": raise HTTPException(409, "Start the group discussion before completing it")
             await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$set": {
                 "project_id": p["project_id"], "decisions": decisions, "transcript": transcript,
                 "adopted_areas": areas, "decision_revision": revision, "status": "REVIEW", "updated_at": now_iso()}}, upsert=True)
@@ -2260,7 +2268,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         body = await request.json(); p = await ensure_project(body.get("session_id", ""))
         saved = await db.sp_sessions.find_one({"project_id": p["project_id"]}, {"_id": 0}) or {}
         if saved.get("status") == "COMPLETED": return {"status": "COMPLETED"}
-        if saved.get("status") != "REVIEW" or not body.get("confirmed") or body.get("revision") != saved.get("decision_revision"):
+        if saved.get("status") != "REVIEW" or body.get("confirmed") is not True or body.get("revision") != saved.get("decision_revision"):
             raise HTTPException(409, "Review and explicitly approve the current agreed direction")
         areas = saved.get("adopted_areas") or []
         if not any(x.get("agreed_ideas") for x in areas): raise HTTPException(422, "Select at least one agreed idea before adoption")
@@ -2274,10 +2282,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         body = await request.json()
         person = await db.sp_participants.find_one({"form_token": participant_token}, {"_id": 0})
         if not person: raise HTTPException(404, "Use your personal invitation link")
+        if person.get("status") != "COMPLETED": raise HTTPException(409, "Complete your own contribution before adopting the agreed direction")
         saved = await db.sp_sessions.find_one({"project_id": person["project_id"]}, {"_id": 0}) or {}
-        if saved.get("status") not in {"REVIEW", "COMPLETED"} or not body.get("confirmed") or body.get("revision") != saved.get("decision_revision"):
+        if saved.get("status") not in {"REVIEW", "COMPLETED"} or body.get("confirmed") is not True or body.get("revision") != saved.get("decision_revision"):
             raise HTTPException(409, "Review the current agreed direction before acknowledging it")
-        if not body.get("accept_responsibilities"): raise HTTPException(422, "Confirm your own agreed responsibilities before adopting")
+        if body.get("accept_responsibilities") is not True: raise HTTPException(422, "Confirm your own agreed responsibilities before adopting")
         await db.sp_participants.update_one({"participant_id": person["participant_id"]}, {"$set": {
             "direction_adoption": {"revision": saved["decision_revision"], "accepted_responsibilities": True, "acknowledged_at": now_iso()}}})
         return {"acknowledged": True, "revision": saved["decision_revision"]}
@@ -2765,7 +2774,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         body=await request.json();p=await ensure_project(body.get("session_id",""));text=str(body.get("display_text","")).strip()[:120000];plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if plan.get("final_status")=="Approved":raise HTTPException(409,"The Final Strategic Plan is already approved")
         if not text:raise HTTPException(422,"The Strategic Plan cannot be empty")
-        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Draft","final_display_text":text,"updated_at":now_iso()}});return {"status":"Draft"}
+        query = {"project_id":p["project_id"]}
+        if p.get("questionnaire_version") == strategic24.VERSION: query["final_status"]={"$ne":"Approved"}
+        result = await db.sp_plans.update_one(query,{"$set":{"final_status":"Draft","final_display_text":text,"updated_at":now_iso()}})
+        if not result.matched_count: raise HTTPException(409,"The final plan has already been approved")
+        return {"status":"Draft"}
 
     async def deliver_approved_planning(p, plan, origin, include_participants=False):
         from workflow_delivery import deliver_once

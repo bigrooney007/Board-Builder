@@ -20,7 +20,8 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link):
     key = hashlib.sha256(f"{user_id}:{event_key}:{recipient}".encode()).hexdigest()
     events = db.workflow_email_deliveries
     owner = await db.members.find_one({"user_id": user_id}, {"_id": 0}) or {}
-    captured = bool(owner.get("internal_dashboard_preview") or user_id.startswith("admin-dashboard-preview-") or recipient.endswith(".internal"))
+    from admin_test_safety import _scope
+    captured = bool(_scope.get() or owner.get("internal_dashboard_preview") or user_id.startswith("admin-dashboard-preview-") or recipient.endswith(".internal"))
     await events.update_one({"_id": key}, {"$setOnInsert": {"user_id": user_id, "event_key": event_key, "recipient": recipient, "subject": subject,
         "text": text, "link": link, "status": "pending", "created_at": now()}}, upsert=True)
     # Recover a worker interrupted after claiming delivery. The provider receives

@@ -330,8 +330,8 @@ def create_game_router(db) -> APIRouter:
         if existing.get("completed"): raise HTTPException(409, "Your submitted ideas are already saved")
         value = audiences6.clean_response(payload, submitting=payload.get("submit") is True)
         value.update({"updated_at": datetime.now(timezone.utc).isoformat(), "completed": payload.get("submit") is True})
-        await db.game_free_responses.update_one({"user_id": member["user_id"]},
-            {"$set": value, "$setOnInsert": {"user_id": member["user_id"], "created_at": value["updated_at"]}}, upsert=True)
+        result = await audiences6.persist_draft(db.game_free_responses, {"user_id": member["user_id"]}, value, {"created_at":value["updated_at"]})
+        if not result.matched_count: raise HTTPException(409,"Your submitted ideas are already saved")
         return {"saved": True, "complete": value["completed"]}
 
     @router.get("/game/free")

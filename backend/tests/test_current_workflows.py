@@ -164,9 +164,11 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
             return await self.request("POST","/game/group/audience/action",{"revision":state["audience_review"]["revision"],**payload})
         first=session["audience_review"]["proposals"][0]
         for index,p in enumerate(session["audience_review"]["proposals"]):await action(action="decision",proposal_id=p["id"],status="adopted" if index==0 else "rejected",strategy=p["strategy"])
+        person=await self.db.game_board_members.find_one({"user_id":self.user,"is_primary":False})
+        await action(action="commitment",member_id=person["member_id"],contribution="Introduce local employers",audience_ids=[first["id"]],confirmed=True)
         await action(action="summary")
         state=await self.request("GET","/game/group/session");review=state["audience_review"]
-        self.assertEqual(len(review["summary"]["audiences"]),1);self.assertFalse(review["summary"]["commitments"])
+        self.assertEqual(len(review["summary"]["audiences"]),1);self.assertEqual(len(review["summary"]["commitments"]),1)
         await action(action="adopt",confirmed=True,summary_revision=review["summary"]["revision"])
         person=await self.db.game_board_members.find_one({"user_id":self.user,"is_primary":False})
         identity={"slot_id":person["token"],"device_id":"test-device"}
@@ -213,6 +215,48 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["test_capture"])
         self.assertEqual(await self.db.admin_test_email_events.count_documents({"user_id":self.user}),1)
         _scope.set(None)
+
+    async def test_planning_personal_progress_submission_and_notification(self):
+        await self.launch("strategic-planning")
+        await self.request("POST","/guided/strategic-planning/invite",{"session_id":self.sid,"name":"Sample Guest","email":"sample.guest@example.org"})
+        p=await self.db.sp_projects.find_one({"guided_session_id":self.sid})
+        person=await self.db.sp_participants.find_one({"project_id":p["project_id"],"email":"sample.guest@example.org"})
+        token=person["form_token"]
+        form=await self.request("GET","/strategic-planning-form/"+token)
+        self.assertEqual(form["form"],sp.form_content());self.assertFalse(form["existing_answers"])
+        await self.request("PUT","/strategic-planning-form/"+token,{"answers":{sp.KEYS[0]:"Our original vision"}})
+        self.assertEqual((await self.request("GET","/strategic-planning-form/"+token))["existing_answers"][sp.KEYS[0]],"Our original vision")
+        from current_workflow_fixtures import planning_answers
+        result=await self.request("POST","/strategic-planning-form/"+token,{"full_name":"Sample Guest","email":"sample.guest@example.org","answers":planning_answers("Sample Guest")},201)
+        self.assertIn("?participant="+token,result["group_session_url"])
+        self.assertTrue((await self.request("GET","/strategic-planning-form/"+token))["submitted"])
+        await self.request("PUT","/strategic-planning-form/"+token,{"answers":{sp.KEYS[0]:"Changed later"}},409)
+        self.assertEqual(await self.db.admin_test_email_events.count_documents({}),2)
+
+    async def test_delayed_edits_cannot_reopen_approved_plan_or_completed_response(self):
+        await self.launch("strategic-planning")
+        p=await self.db.sp_projects.find_one({"guided_session_id":self.sid})
+        await self.db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Approved","final_display_text":"Exact approved wording"}})
+        await self.request("PUT","/guided/strategic-planning/final-plan/draft",{"session_id":self.sid,"display_text":"Delayed edit"},409)
+        self.assertEqual((await self.db.sp_plans.find_one({"project_id":p["project_id"]}))["final_display_text"],"Exact approved wording")
+        await self.db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"status":"COMPLETED"}})
+        await self.request("POST","/guided/strategic-planning/session/progress",{"session_id":self.sid,"current_section_index":0},409)
+        self.headers={"Authorization":"Bearer "+self.admin};await self.launch("board-fundraising-game")
+        person=await self.db.game_board_members.find_one({"user_id":self.user,"is_primary":False})
+        before=await self.db.game_audience_responses.find_one({"board_member_id":person["member_id"]})
+        from current_workflow_fixtures import fundraising_answers
+        await self.request("PUT","/game/play/"+person["token"]+"/audience-response",fundraising_answers("Changed"),409)
+        self.assertEqual(await self.db.game_audience_responses.find_one({"board_member_id":person["member_id"]}),before)
+
+    async def test_other_existing_admin_service_tests_do_not_change_admin_customer_account(self):
+        await self.db.members.insert_one({"user_id":"real-admin-member","email":"admin@example.test","first_name":"Owner","last_name":"","entitlements":["previous-purchase"]})
+        before=await self.db.members.find_one({"user_id":"real-admin-member"})
+        complete=await self.request("POST","/admin/board-fix/preview-access")
+        activation=await self.request("POST","/admin/board-fix/activation-preview-access")
+        self.assertEqual(complete["intake_url"],"/board-fix-intake")
+        self.assertEqual(activation["intake_url"],"/board-activation-intake?bf=1")
+        self.assertNotEqual(complete["member_email"],activation["member_email"])
+        self.assertEqual(await self.db.members.find_one({"user_id":"real-admin-member"}),before)
 
     async def test_existing_game_records_are_not_migrated(self):
         await self.launch("board-fundraising-game")

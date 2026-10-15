@@ -524,6 +524,7 @@ def create_group_game_router(db) -> APIRouter:
         member = await game_member(request)
         session = await active_session(member["user_id"])
         if session and session.get("game_version") == "audience-complete-v6":
+            if session["status"] in {"waiting", "prepared"}: session = await audience_review.prepare(member["user_id"])
             if session["status"] in {"waiting", "prepared"}:
                 await db.group_game_sessions.update_one({"session_id": session["session_id"], "status": {"$in": ["waiting", "prepared"]}}, {"$set": {"status": "in_progress", "started_at": now_iso()}})
             return {"status": "started"}

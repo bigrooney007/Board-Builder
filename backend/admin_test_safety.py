@@ -27,14 +27,14 @@ def install_email_capture(app, db):
     if not getattr(resend.Emails, "_nbb_test_capture", False):
         original_async = resend.Emails.send_async
         original_sync = resend.Emails.send
-    
+
         def capture(params):
             scope = _scope.get()
             recipients = params.get("to") or []
             if isinstance(recipients, str): recipients = [recipients]
             synthetic = any(str(x).endswith(".internal") for x in recipients)
             return scope or ((db, "synthetic-recipient") if synthetic else None)
-    
+
         async def send_async(params, *args, **kwargs):
             scope = capture(params)
             if not scope: return await original_async(params, *args, **kwargs)
@@ -43,12 +43,12 @@ def install_email_capture(app, db):
             event = {"user_id": user, "status": "captured", "provider_delivery": False, "message": params, "created_at": now}
             result = await database.admin_test_email_events.insert_one(event)
             return {"id": "admin-test-captured-" + str(result.inserted_id), "test_capture": True}
-    
+
         def send(params, *args, **kwargs):
             if not capture(params): return original_sync(params, *args, **kwargs)
             # Synchronous callers have no await point. Never dispatch test mail.
             return {"id": "admin-test-captured-" + hashlib.sha256(repr(params).encode()).hexdigest(), "test_capture": True}
-    
+
         resend.Emails.send_async = staticmethod(send_async)
         resend.Emails.send = staticmethod(send)
         resend.Emails._nbb_test_capture = True

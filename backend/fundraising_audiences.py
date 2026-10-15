@@ -48,6 +48,8 @@ def configuration():
 def clean_response(payload, *, submitting=False):
     if not isinstance(payload, dict) or len(json.dumps(payload)) > 1_000_000:
         raise HTTPException(422, "Please keep your contribution within the form's storage capacity")
+    if not isinstance(payload.get("audiences") or {},dict) or not isinstance(payload.get("category_status") or {},dict):
+        raise HTTPException(422,"Use the separate audience and category fields")
     audiences = {}; seen = set()
     for cat in CATEGORIES:
         bucket = (payload.get("audiences") or {}).get(cat, [])
@@ -66,6 +68,8 @@ def clean_response(payload, *, submitting=False):
     if submitting and not participation: raise HTTPException(422, "Tell us how you would like to participate")
     progress = payload.get("progress") or {}
     if not isinstance(progress, dict): raise HTTPException(422, "Invalid progress")
+    if progress.get("phase", "welcome") not in {"welcome","gate","answer","participation","review"}: raise HTTPException(422,"Invalid questionnaire step")
+    if any(not isinstance(progress.get(key,0),int) or not 0 <= progress.get(key,0) <= limit for key,limit in (("category",2),("question",5),("audience_index",100000))): raise HTTPException(422,"Invalid questionnaire progress")
     if submitting and not all((payload.get("category_status") or {}).get(cat) == "complete" for cat in CATEGORIES):
         raise HTTPException(422, "Finish or skip each funding category")
     return {"workflow_version": VERSION, "game_version": VERSION, "audiences": audiences, "involvement": participation,
@@ -122,3 +126,9 @@ def document_sections(agreed, profile):
     sections.append({"key": "board_roles", "title": "How We Have Agreed to Participate in Fundraising",
                      "text": "\n\n".join(x["name"] + "\n" + x["contribution"] + ("\nNext step: " + x["next_action"] if x.get("next_action") else "") for x in agreed["commitments"]) or "No individual responsibilities were confirmed."})
     return sections
+
+
+async def persist_draft(collection, query, value, initial):
+    """An autosave or repeated submit cannot overwrite a completed contribution."""
+    await collection.update_one(query, {"$setOnInsert": {**query, **initial, "completed": False}}, upsert=True)
+    return await collection.update_one({**query, "completed": {"$ne": True}}, {"$set": value})

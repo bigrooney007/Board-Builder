@@ -24,7 +24,17 @@ class AudienceReview:
     async def prepare(self, user_id):
         existing = await self.db.group_game_sessions.find_one({"user_id": user_id, "status": {"$ne": "archived"}}, {"_id": 0}, sort=[("created_at", -1)])
         # Never replace an existing meeting, regardless of its workflow version.
-        if existing: return existing
+        if existing:
+            if existing.get("game_version") == "audience-complete-v6" and existing["status"] in {"waiting", "prepared"}:
+                members = await self.db.game_board_members.find({"user_id":user_id,"removed":{"$ne":True}},{"_id":0}).sort("created_at",1).to_list(1000)
+                responses = await self.db.game_audience_responses.find({"user_id":user_id,"completed":True},{"_id":0}).to_list(1000)
+                proposals, statements = audience.proposed_audiences(responses,members)
+                review = copy.deepcopy(existing["audience_review"])
+                if review["proposals"] != proposals or review["statements"] != statements:
+                    review.update(proposals=proposals,statements=statements)
+                    await self.save(existing,review)
+                    return await self.current(user_id)
+            return existing
         members = await self.db.game_board_members.find({"user_id": user_id, "removed": {"$ne": True}}, {"_id": 0}).sort("created_at", 1).to_list(1000)
         responses = await self.db.game_audience_responses.find({"user_id": user_id, "completed": True}, {"_id": 0}).to_list(1000)
         proposals, statements = audience.proposed_audiences(responses, members)

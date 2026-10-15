@@ -35,6 +35,7 @@ async def main():
                 form=page.get_by_test_id("strategic-planning-prepayment-questions")
                 await expect(form).to_be_visible()
                 for i in range(15):
+                    await expect(form.locator(".guided-preflow-kicker")).to_contain_text(f"· {i+1} OF 15")
                     await form.locator("textarea").fill(f"Sample adopted idea {i+1}. Confirm details before implementation.")
                     await form.get_by_role("button",name="SEE HOW WE MOVE FORWARD" if i==14 else "SAVE AND CONTINUE").click()
                 await expect(page).to_have_url(__import__('re').compile("/strategic-planning/video"))
@@ -46,10 +47,13 @@ async def main():
                 for n in range(2):
                     await q.get_by_role("button",name="YES",exact=True).click()
                     for i in range(6):
+                        await expect(q.locator(".guided-question-top")).to_contain_text(f"Audience {n+1} · Question {i+1} of 6")
                         await q.get_by_role("textbox",name="Your audience answer").fill(f"Audience {n+1}, answer {i+1}. This is our own proposed approach.")
                         await q.get_by_role("button",name="NEXT QUESTION" if i<5 else "SAVE THIS AUDIENCE AND CONTINUE",exact=True).click()
                 await q.get_by_role("button",name="NO, CONTINUE",exact=True).click()
+                await expect(q.get_by_role("heading",level=1)).to_contain_text("business")
                 await q.get_by_role("button",name="NO, CONTINUE",exact=True).click()
+                await expect(q.get_by_role("heading",level=1)).to_contain_text("grantmaker")
                 await q.get_by_role("button",name="NO, CONTINUE",exact=True).click()
                 await q.get_by_role("textbox",name="Your personal participation").fill("I would like to introduce local employers.")
                 await q.get_by_role("button",name="REVIEW MY CONTRIBUTION",exact=True).click()

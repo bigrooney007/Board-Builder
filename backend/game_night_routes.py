@@ -801,8 +801,8 @@ def create_game_night_router(db) -> APIRouter:
             existing = await db.game_audience_responses.find_one({"board_member_id": record["member_id"]}, {"_id": 0}) or {}
             if existing.get("completed"): raise HTTPException(409, "Your submitted contribution is already saved")
             value = audiences6.clean_response(payload.model_dump() if hasattr(payload, "model_dump") else payload.dict())
-            await db.game_audience_responses.update_one({"board_member_id": record["member_id"]},
-                {"$set": {**value, "updated_at": now_iso()}, "$setOnInsert": {"response_id": new_uuid(), "board_member_id": record["member_id"], "user_id": record["user_id"], "created_at": now_iso(), "completed": False}}, upsert=True)
+            result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id": record["member_id"]}, {**value,"updated_at":now_iso()}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now_iso()})
+            if not result.matched_count: raise HTTPException(409,"Your submitted contribution is already saved")
             return {"status": "saved"}
         now = now_iso()
         await db.game_audience_responses.update_one(
@@ -829,8 +829,8 @@ def create_game_night_router(db) -> APIRouter:
             now = now_iso()
             existing = await db.game_audience_responses.find_one({"board_member_id": record["member_id"]}, {"_id": 0}) or {}
             if existing.get("completed"): return {"status": "completed"}
-            await db.game_audience_responses.update_one({"board_member_id": record["member_id"]},
-                {"$set": {**value, "completed": True, "completed_at": now, "updated_at": now}, "$setOnInsert": {"response_id": new_uuid(), "board_member_id": record["member_id"], "user_id": record["user_id"], "created_at": now}}, upsert=True)
+            result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id":record["member_id"]}, {**value,"completed":True,"completed_at":now,"updated_at":now}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now})
+            if not result.matched_count: return {"status":"completed"}
             await db.game_board_members.update_one({"member_id": record["member_id"]}, {"$set": {"completed_at": now}})
             if not record.get("is_primary"):
                 owner = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
