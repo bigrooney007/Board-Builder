@@ -102,6 +102,7 @@ async def main():
                 await participant_page.get_by_role("button",name="I ACKNOWLEDGE OUR AGREED STRATEGY",exact=True).click()
                 await expect(participant_page.get_by_text("You have acknowledged this agreed direction.",exact=True)).to_be_visible()
                 await participant_context.close()
+                assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 2"),"Fundraising mobile/desktop overflow"
                 results.append({"viewport":width,"check":"current fundraising group reviews all 12 proposals, confirms participation, adopts, approves, downloads and captures delivery; participant independently acknowledges","passed":True})
                 await launch("strategic-planning","loaded")
                 sid=__import__('urllib.parse',fromlist=['parse_qs']).parse_qs(__import__('urllib.parse',fromlist=['urlparse']).urlparse(page.url).query)["session_id"][0]

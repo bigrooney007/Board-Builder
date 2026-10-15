@@ -181,7 +181,7 @@ export default function StrategicPlanningSessionPage(){
     {section.facilitator_prompt?.decision&&<p><strong>Before you move on:</strong> {section.facilitator_prompt.decision}</p>}
   </div>
   <div className="sp-idea-grid">{section.ideas.map(idea=>{const chosen=selected.includes(idea.idea_id);return <button type="button" className={`sp-idea-card ${chosen?"selected":""}`} key={idea.idea_id} disabled={!!busy} onClick={()=>toggleIdea(section,idea.idea_id)}><span className="sp-idea-person">{idea.participant_name}</span><p>{idea.idea}</p><small>{chosen?"SELECTED BY THE BOARD":"CLICK IF THE BOARD AGREES"}</small></button>})}</div>
-  {currentQuestions&&<div className="sp-current-context"><h2>Refine An Idea Or Add An Agreed Contribution</h2>
+  {currentQuestions&&<div className="sp-current-context bfg-field"><h2>Refine An Idea Or Add An Agreed Contribution</h2>
    <select aria-label="Idea to refine" value={sourceIds[0]||""} onChange={e=>{const idea=section.ideas.find(i=>i.idea_id===e.target.value);setSourceIds(idea?[idea.idea_id]:[]);setDiscussionText(idea?.idea||"");setDiscussionPerson(idea?.participant_id||"")}}><option value="">New discussion idea</option>{section.ideas.map(i=><option key={i.idea_id} value={i.idea_id}>{i.participant_name}: {i.idea.slice(0,80)}</option>)}</select>
    {section.is_role_planning&&<select aria-label="Person agreeing to this contribution" value={discussionPerson} onChange={e=>setDiscussionPerson(e.target.value)}><option value="">Select the person</option>{(session.acknowledgements||[]).map(p=><option key={p.participant_id} value={p.participant_id}>{p.name}</option>)}</select>}
    <textarea rows={4} aria-label="Agreed idea wording" value={discussionText} onChange={e=>setDiscussionText(e.target.value)}/>
