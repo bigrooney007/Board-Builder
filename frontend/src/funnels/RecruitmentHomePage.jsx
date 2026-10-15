@@ -17,10 +17,10 @@ export default function RecruitmentHomePage() {
   useEffect(() => {
     if (window.location.hash === "#recruit-intake") navigate(startPath, { replace: true });
   }, [navigate, startPath]);
-  const savedCopy = useHomepageContent("recruitment", defaultCopy);
-  const copy = { ...savedCopy, headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+  const copy = useHomepageContent("recruitment", { ...defaultCopy,
+    headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
-    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL };
+    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL });
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
