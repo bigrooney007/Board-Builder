@@ -13,6 +13,7 @@ import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import RecruitQuestionsPage from "@/funnels/RecruitQuestionsPage";
 import RecruitCampaignSetupPage from "@/member/RecruitCampaignSetupPage";
+import RecruitCampaignMaterialsPage from "@/member/RecruitCampaignMaterialsPage";
 import RecruitAmplifyPage from "@/funnels/RecruitAmplifyPage";
 import BoardApplicantMarketplace from "@/public/BoardApplicantMarketplace";
 import RecruitWalkthroughPage from "@/funnels/RecruitWalkthroughPage";
@@ -139,6 +140,7 @@ function CleanRoutes() {
       <Route path="/supported-service/thank-you" element={<SupportedServiceThankYouPage />} />
       <Route path="/app/board-recruitment" element={<BoardRecruitmentPage />} />
       <Route path="/app/board-recruitment/setup" element={<RecruitCampaignSetupPage />} />
+          <Route path="/app/board-recruitment/setup/materials" element={<RecruitCampaignMaterialsPage />} />
       <Route path="/app/board-recruitment/questions" element={<RecruitmentGamePage />} />
       <Route path="/app/board-recruitment/game" element={<Navigate to="/app/board-recruitment/questions" replace />} />
       <Route path="/app/board-recruitment/onboarding-session" element={<RecruitmentOnboardingSessionPage />} />
