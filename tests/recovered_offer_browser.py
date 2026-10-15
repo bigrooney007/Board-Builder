@@ -121,7 +121,7 @@ async def main():
                     extras = []
                     for label in extra_fields:
                         value = marker + " " + label
-                        extra = editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea")
+                        extra = editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea").first
                         await expect(extra).to_be_visible()
                         await extra.fill(value)
                         extras.append((label, value))
@@ -134,7 +134,7 @@ async def main():
                     await editor.locator("select").select_option(key)
                     await expect(control).to_have_value(marker)
                     for label, value in extras:
-                        await expect(editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea")).to_have_value(value)
+                        await expect(editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea").first).to_have_value(value)
                     await page.goto(BASE + destination)
                     await expect(page.locator("h1")).to_have_text(marker)
                     for _, value in extras:
