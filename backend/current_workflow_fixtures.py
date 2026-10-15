@@ -29,7 +29,7 @@ def workflow_fingerprint(product):
     config = planning.form_content() if product == "strategic-planning" else fundraising.configuration() if product == "board-fundraising-game" else WORKFLOWS[product]
     digest = hashlib.sha256(json.dumps(config,sort_keys=True).encode())
     root = Path(__file__).resolve().parent
-    for name in ("ai_service.py", "content_templates.py", *WORKFLOW_FILES[product]):
+    for name in ("admin_dashboard_preview_routes.py", "current_workflow_fixtures.py", "ai_service.py", "content_templates.py", *WORKFLOW_FILES[product]):
         path = root / name
         if path.is_file():
             digest.update(name.encode()); digest.update(path.read_bytes())
