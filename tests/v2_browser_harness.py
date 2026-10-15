@@ -150,11 +150,11 @@ async def check(base, artifact_dir):
                 await page.get_by_role("button", name="Start a fresh paid test", exact=True).click()
                 await page.wait_for_url(re.compile(r"/v2/setup/admin-test-"))
                 await page.locator(".v2-admin-test-banner").wait_for()
-                await page.get_by_label("Organization name", exact=True).fill("Our Admin Test Charity")
+                assert await page.get_by_label("Organization name", exact=True).input_value() == "Sample Community Learning Charity"
                 if product in {"board-fundraising-game", "strategic-planning"}:
-                    await page.get_by_label("Meeting date", exact=True).fill("2030-11-30")
-                    await page.get_by_label("Meeting time", exact=True).fill("15:00")
-                    await page.get_by_label("Time zone", exact=True).fill("Europe/London")
+                    assert await page.get_by_label("Meeting date", exact=True).input_value()
+                    assert await page.get_by_label("Meeting time", exact=True).input_value() == "15:00"
+                    assert await page.get_by_label("Time zone", exact=True).input_value() == "Europe/London"
                 await page.get_by_role("button", name=re.compile(r"Save and")).click()
                 await page.wait_for_url(re.compile(r"/v2/resources/admin-test-"))
                 jid = page.url.rsplit("/", 1)[-1]
@@ -164,21 +164,53 @@ async def check(base, artifact_dir):
                     await page.get_by_test_id("v2-resource-approve").click()
                     await page.get_by_role("link", name="Open my recruitment pack", exact=True).click()
                     await page.get_by_role("heading", name="Your Board Recruitment Pack", exact=True).wait_for()
+                await page.get_by_role("button", name="Approve all sample resources for this test", exact=True).click()
+                await page.wait_for_url(re.compile(r"/v2/library/admin-test-"))
+                if product == "recruit":
+                    await page.get_by_role("link", name="Launch or manage my campaign", exact=True).click()
+                    await page.get_by_test_id("v2-campaign-confirm").check()
+                    await page.get_by_test_id("v2-campaign-launch").click()
+                    await page.get_by_role("button", name="Pause campaign", exact=True).wait_for()
+                if product in {"recruit", "board-recommitment"}:
+                    await page.goto(base + f"/v2/responses/{jid}", wait_until="networkidle")
+                    assert await page.get_by_role("link", name="View response", exact=True).count() == 3
+                    await page.get_by_role("link", name="View response", exact=True).first.click()
+                    if product == "recruit":
+                        async with page.expect_download() as downloaded:
+                            await page.get_by_role("link", name="Download sample-board-candidate-cv.pdf", exact=True).click()
+                        assert (await downloaded.value).suggested_filename.endswith(".pdf")
+                    await page.get_by_test_id("v2-generate-guide").click()
+                    await page.get_by_test_id("v2-resource-approve").click()
+                    await page.get_by_text("Approved version 1", exact=False).first.wait_for()
                 else:
-                    invitation = await context.request.post(base + f"/api/v2/admin/test-api/journeys/{jid}/invitations", data={"name": "Sample Board Member", "email": "board@example.test", "send": True})
-                    assert invitation.status == 200, await invitation.text()
-                    token = (await invitation.json())["form_token"]
-                    await page.goto(base + "/v2/forms/" + token, wait_until="networkidle")
-                    await page.locator(".v2-admin-test-banner").wait_for()
-                    assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                    await page.get_by_role("link", name="Open my group meeting", exact=True).click()
+                    topics = ["individuals", "businesses", "grantmakers"] if product == "board-fundraising-game" else ["s1"]
+                    for topic in topics:
+                        section = page.get_by_test_id(f"v2-group-{topic}")
+                        if product == "board-fundraising-game":
+                            await section.locator("details summary").first.click()
+                        await section.get_by_role("button", name="Edit before adopting", exact=True).first.click()
+                        await page.get_by_role("button", name="Save as an adopted decision", exact=True).click()
+                        await page.get_by_test_id("v2-decision-editor").wait_for(state="detached")
+                    if product == "board-fundraising-game":
+                        participation = page.get_by_test_id("v2-participation")
+                        assert await participation.locator("textarea").input_value()
+                        await participation.get_by_role("checkbox", name="This participant has explicitly agreed to the responsibility recorded above.", exact=True).check()
+                        await participation.get_by_role("button", name="Save confirmed participation", exact=True).click()
+                    await page.get_by_role("button", name="Complete discussion and review the strategy" if product == "board-fundraising-game" else "Complete discussion and review the plan", exact=True).click()
+                    await page.get_by_test_id("v2-final-confirm").check()
+                    await page.get_by_test_id("v2-final-approve").click()
+                    await page.get_by_text("This exact final version has been approved and saved.", exact=True).wait_for()
+                async with page.expect_download() as downloaded:
+                    await page.get_by_role("link", name="Download DOCX", exact=True).first.click()
+                assert (await downloaded.value).suggested_filename.endswith(".docx")
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}-paid-admin-test.png"), full_page=True)
                 await page.goto(base + f"/v2/admin-test/{product}", wait_until="networkidle")
                 await page.get_by_role("link", name="Continue my saved test", exact=True).wait_for()
-                if product != "recruit":
-                    assert await page.locator(".v2-test-inbox details").count() >= 1
+                assert await page.locator(".v2-test-inbox details").count() >= 1
                 assert not errors, errors
                 assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
-                findings.append(f"PASS {device} {product}: admin dashboard to real paid setup, sample resources, isolated form links, persistent test and captured invitations")
+                findings.append(f"PASS {device} {product}: prefilled admin test to final approved document and download, no text entry, preserved approval controls, captured emails")
             await context.close()
         await browser.close()
     (artifact_dir / "results.json").write_text(json.dumps({"origin": base, "provider_mode": "synthetic", "results": findings}, indent=2))

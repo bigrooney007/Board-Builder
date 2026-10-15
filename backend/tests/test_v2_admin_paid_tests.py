@@ -175,3 +175,57 @@ class V2AdminPaidTests(IsolatedAsyncioTestCase):
             inbox = await self.call("GET", "/admin/test-journeys/" + product + "/inbox")
             self.assertTrue(any(row["resource_id"] == final["resource_id"] for row in inbox["emails"]))
         self.provider.assert_not_awaited()
+
+    async def test_setup_and_participant_forms_need_no_typed_data_and_responses_are_idempotent(self):
+        for product in ("board-fundraising-game", "strategic-planning", "board-recommitment"):
+            journey = await self.start(product, setup=False)
+            jid = journey["journey_id"]
+            self.assertTrue(journey["branding"]["primary_color"])
+            setup = {"branding": journey["branding"]}
+            if product != "board-recommitment":
+                self.assertTrue(journey["meeting"]["date"])
+                setup["meeting"] = journey["meeting"]
+            await self.sandbox("POST", f"/journeys/{jid}/setup", setup)
+            responses = (await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"]
+            self.assertEqual(len(responses), 3)
+            await self.sandbox("GET", f"/journeys/{jid}/responses")
+            self.assertEqual(len((await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"]), 3)
+            form = await self.sandbox("GET", f"/forms/{journey['form_token']}")
+            self.assertTrue(form["answers"]["full_name"])
+            self.assertTrue(form["answers"]["email"])
+            await self.sandbox("POST", f"/forms/{journey['form_token']}/submit", {"name": form["answers"]["full_name"], "email": form["answers"]["email"], "answers": form["answers"], "idempotency_key": "click-only-submission"})
+            self.assertEqual(len((await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"]), 4)
+        self.provider.assert_not_awaited()
+
+    async def test_recruitment_click_only_shortcut_preserves_profile_gate_and_supplies_cvs_after_launch(self):
+        journey = await self.start("recruit")
+        jid = journey["journey_id"]
+        await self.call("POST", "/admin/test-journeys/recruit/approve-resources", {"journey_id": jid}, status=409)
+        self.assertEqual((await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"], [])
+        profile = (await self.sandbox("GET", f"/journeys/{jid}/resources"))["resources"][0]
+        self.assertIsNone(profile["approved_revision"])
+        await self.approve(jid, profile)
+        await self.call("POST", "/admin/test-journeys/recruit/approve-resources", {"journey_id": jid})
+        library = await self.sandbox("GET", f"/journeys/{jid}/library")
+        self.assertEqual(len(library["resources"]), 33)
+        campaign = await self.sandbox("GET", f"/journeys/{jid}/campaign")
+        await self.sandbox("POST", f"/journeys/{jid}/campaign/launch", {"confirmed": True, "expected_revision": campaign["revision"]})
+        rows = (await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"]
+        self.assertEqual(len(rows), 3)
+        cv = await self.client.get(f"/api/v2/admin/test-api/journeys/{jid}/responses/{rows[0]['submission_id']}/cv")
+        self.assertEqual(cv.status_code, 200)
+        self.assertTrue(cv.content.startswith(b"%PDF-"))
+        await self.sandbox("POST", f"/journeys/{jid}/campaign/retry", {})
+        self.assertEqual(len((await self.sandbox("GET", f"/journeys/{jid}/responses"))["responses"]), 3)
+        self.provider.assert_not_awaited()
+
+    async def test_prefilled_group_suggestions_are_not_automatically_adopted_or_assigned(self):
+        for product in ("board-fundraising-game", "strategic-planning"):
+            journey = await self.start(product)
+            jid = journey["journey_id"]
+            group = await self.sandbox("GET", f"/journeys/{jid}/group")
+            self.assertTrue(all(section["ideas"] for section in group["sections"]))
+            self.assertEqual(group["decisions"], [])
+            self.assertEqual(group["commitments"], [])
+            self.assertFalse(group.get("final_resource_id"))
+            await self.sandbox("POST", f"/journeys/{jid}/final-preview", {}, status=409)

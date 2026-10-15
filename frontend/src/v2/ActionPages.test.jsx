@@ -1,8 +1,8 @@
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { CampaignPage, ResourceEditorPage, ResourceLibraryPage } from "./ResourcePages";
-import { SharedMeetingPage } from "./GroupPages";
+import { CampaignPage, InvitationsPage, ResourceEditorPage, ResourceLibraryPage } from "./ResourcePages";
+import { GroupPage, SharedMeetingPage } from "./GroupPages";
 import { v2Api } from "./api";
 import PaidSetupPage from "./PaidSetupPage";
 
@@ -118,4 +118,21 @@ test("approved resources have download controls and cannot enter editing again",
   expect(node.querySelector('[data-testid="v2-resource-edit"]')).toBeNull();
   expect(node.querySelector('a[href="/api/v2/journeys/j1/resources/r1/download?format=pdf"]')).not.toBeNull();
   expect(v2Api.put).not.toHaveBeenCalled();
+});
+
+test.each(["admin-test-board-recommitment--sample", "customer-journey"])("%s invitation fields use sample details only for admin tests", async (jid) => {
+  v2Api.get.mockResolvedValue({ data: { invitations: [], invitation_template: { subject: "Invitation", body: "Please share your ideas." }, form_link: "https://example.test/form" } });
+  await render(`/v2/invite/${jid}`, "/v2/invite/:journeyId", InvitationsPage);
+  expect(node.querySelector('form input[type="email"]').value).toBe(jid.startsWith("admin-test-") ? "sample-additional-invitee@example.test" : "");
+  expect(v2Api.post).not.toHaveBeenCalled();
+});
+
+test.each(["admin-test-board-fundraising-game--sample", "customer-journey"])("%s participation fields keep consent and confirmation under the leader's control", async (jid) => {
+  v2Api.get.mockResolvedValue({ data: { journey: { journey_id: jid, product: "board-fundraising-game", organization: "Sample Charity", meeting: {} }, sections: [], decisions: [], commitments: [], participants: [{ participant_id: "sample-person", name: "Sample Board Member", submitted: true, participation: "I can introduce community contacts." }], decision_version: 0 } });
+  await render(`/v2/group/${jid}`, "/v2/group/:journeyId", GroupPage);
+  const section = node.querySelector('[data-testid="v2-participation"]');
+  expect(section.querySelector("textarea").value).toBe(jid.startsWith("admin-test-") ? "I can introduce community contacts." : "");
+  expect(section.querySelector('input[type="checkbox"]').checked).toBe(false);
+  expect([...section.querySelectorAll("button")].find((button) => button.textContent === "Save confirmed participation").disabled).toBe(true);
+  expect(v2Api.post).not.toHaveBeenCalled();
 });

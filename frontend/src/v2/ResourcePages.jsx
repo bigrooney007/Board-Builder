@@ -96,12 +96,22 @@ export function ResourcesPage() {
     catch (problem) { setError(errorMessage(problem)); }
     finally { setBusy(""); }
   };
+  const approveSamples = async () => {
+    if (busy) return;
+    setBusy("samples"); setError("");
+    try {
+      const { data: result } = await v2Api.post(`/admin/test-journeys/${journey.product}/approve-resources`, { journey_id: journeyId });
+      navigate(result.next);
+    } catch (problem) { setError(errorMessage(problem)); }
+    finally { setBusy(""); }
+  };
   return <V2Shell title={TITLES[journey.product] || "Your resources"}><div className="v2-action-page" data-testid="v2-resources">
     <header><p className="v2-eyebrow">{journey.organization}</p><h1>{profileGate ? "Approve Your Board Member Recruitment Profiles" : TITLES[journey.product] || "Your Resources"}</h1>
       <p>{profileGate ? "Review the roles your organization needs. Edit and approve these profiles first. We will then create your recruitment pack using those exact approved profiles." : "Review your resources, make changes and approve the versions you want to use. Once the collection is approved, we will email one secure link to all your saved resources."}</p></header>
     <ActionNotice error={error} message={message} />
     {loading && <p role="status">Loading your resources...</p>}
     {data && <>
+      {journey.admin_test && !profileGate && <section className="v2-card"><h2>Ready-filled sample resources</h2><p>You can review and approve each resource separately, or approve this sample collection together to continue testing. Profile approval, campaign launch and final group approval remain your decisions.</p><button className="v2-btn" disabled={Boolean(busy) || preparing} onClick={approveSamples}>Approve all sample resources for this test</button></section>}
       {!profileGate && <section className="v2-card"><h2>Your next actions</h2><div className="v2-actions">
         <Link className="v2-btn v2-btn-secondary" to={`/v2/library/${journeyId}`}>Open my approved resource collection</Link>
         {journey.product === "recruit" ? <>
@@ -277,13 +287,14 @@ export function AudienceDetails({ audience }) {
 export function InvitationsPage() {
   const { journeyId } = useParams();
   const { data, error, setError, loading, refresh } = useV2Load(`/journeys/${journeyId}/invitations`);
-  const [form, setForm] = useState({ name: "", email: "", role: "Board member", send: false });
+  const prefilledInvitation = () => ({ name: journeyId?.startsWith("admin-test-") ? "Sample Additional Invitee" : "", email: journeyId?.startsWith("admin-test-") ? "sample-additional-invitee@example.test" : "", role: "Board member", send: false });
+  const [form, setForm] = useState(prefilledInvitation);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const sendKeys = useRef({});
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError(""); setMessage("");
-    try { await v2Api.post(`/journeys/${journeyId}/invitations`, form); setMessage(form.send ? "The invitation is saved and queued for email delivery." : "The personal invitation link is ready. Copy it and send it from your own email account."); setForm({ name: "", email: "", role: "Board member", send: false }); await refresh(); }
+    try { await v2Api.post(`/journeys/${journeyId}/invitations`, form); setMessage(form.send ? "The invitation is saved and queued for email delivery." : "The personal invitation link is ready. Copy it and send it from your own email account."); setForm(prefilledInvitation()); await refresh(); }
     catch (problem) { setError(errorMessage(problem)); }
     finally { setBusy(false); }
   };

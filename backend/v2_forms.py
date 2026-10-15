@@ -390,6 +390,13 @@ def create_v2_form_router(db):
         draft = await draft_for(token, journey, draft_token, invitation)
         if draft:
             result.update({'answers': draft.get('answers', {}), 'draft_token': draft['draft_token'], 'submitted': bool(draft.get('submission_id'))})
+        else:
+            from v2_admin_test import is_admin_test
+            if is_admin_test(db) and not result.get('submitted'):
+                from v2_admin_test_samples import response_answers
+                name = (invitation or {}).get('name') or 'Sample Prospective Board Member'
+                email = (invitation or {}).get('email') or 'sample-form@example.test'
+                result['answers'] = response_answers(result, name, email)
         return result
 
     @router.put('/forms/{token}/draft')

@@ -9,6 +9,7 @@ import html
 import json
 import re
 import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 
@@ -124,12 +125,31 @@ def create_admin_test_router(source_db):
                "name": "Sample Executive Director", "email": "leader@example.test", "organization": "Sample Community Learning Charity",
                "answers": sample_answers(product), "desired_count": "2", "board_count": 5, "goal_amount": 50000,
                "state": "paid", "admin_test": True, "payment_status": "admin_test_no_payment",
-               "branding": {"organization_name": "Sample Community Learning Charity", "logo_data": "", "primary_color": "", "secondary_color": ""},
+               "branding": {"organization_name": "Sample Community Learning Charity", "logo_data": "", "primary_color": "#243b64", "secondary_color": "#6366f1"},
                "form_token": form_token(db, product), "group_token": form_token(db, product),
-               "meeting": {}, "decision_version": 0, "campaign_status": "draft",
+               "meeting": {"date": (datetime.now(timezone.utc) + timedelta(days=7)).date().isoformat(), "time": "15:00", "timezone": "Europe/London"} if product in {"board-fundraising-game", "strategic-planning"} else {},
+               "decision_version": 0, "campaign_status": "draft",
                "setup_complete": False, "generation_status": "waiting_setup", "created_at": stamp, "updated_at": stamp}
         await db.v2_journeys.insert_one(row.copy())
         return {"journey": row, "next": f"/v2/setup/{jid}", "test_mode": True}
+
+    @router.post("/test-journeys/{product}/approve-resources")
+    async def approve_sample_collection(product: str, request: Request):
+        db, _ = await environment(request)
+        from v2_routes import body_json
+        from v2_journey_flow import require_pack_profiles
+        from v2_resources import approve_resource, generate_pending_resources
+        value = await body_json(request, 2048)
+        journey = await db.v2_journeys.find_one({"journey_id": value.get("journey_id"), "product": product, "setup_complete": True}, {"_id": 0})
+        if not journey:
+            raise HTTPException(404, "Open and confirm the setup for your test first.")
+        if product == "recruit":
+            await require_pack_profiles(db, journey)
+        await generate_pending_resources(db, journey)
+        rows = await db.v2_resources.find({"journey_id": journey["journey_id"], "submission_id": "", "key": {"$nin": ["final_plan", "final_strategy"]}}, {"_id": 0}).to_list(100)
+        for resource in rows:
+            await approve_resource(db, journey, resource["resource_id"], resource["revision"])
+        return {"approved": True, "next": f"/v2/library/{journey['journey_id']}"}
 
     @router.get("/test-journeys/{product}/inbox")
     async def inbox(product: str, request: Request):
@@ -149,23 +169,16 @@ def create_admin_test_router(source_db):
         # cannot be reached through this adapter.
         if (not path.startswith(("journeys/", "forms/", "meeting/")) and path != "marketplace") or re.search(r"(?:^|/)(?:checkout|payment)(?:/|$)", path) or ".." in path or "\\" in path:
             raise HTTPException(403, "This action is not available in administrator testing.")
-        scope = dict(request.scope)
-        scope.update(path="/api/v2/" + path, raw_path=("/api/v2/" + path).encode(), root_path="")
-        messages = []
-
-        async def capture(message):
-            messages.append(message)
-
-        await app(scope, request.receive, capture)
+        from v2_admin_test_samples import dispatch, prepare_responses
+        status, headers, body = await dispatch(app, request.scope, path, receive=request.receive)
         # There is no background worker in this isolated test environment.
         # Complete only its sample preparation, using the same profile gates.
         from v2_resources import generate_pending_resources
         for row in await db.v2_journeys.find({"setup_complete": True}, {"_id": 0}).to_list(100):
             await generate_pending_resources(db, row)
-        start = next(message for message in messages if message["type"] == "http.response.start")
-        body = b"".join(message.get("body", b"") for message in messages if message["type"] == "http.response.body")
-        response = Response(body, status_code=start["status"])
-        response.raw_headers = start["headers"]
+            await prepare_responses(db, app, request.scope, row)
+        response = Response(body, status_code=status)
+        response.raw_headers = headers
         return response
 
     return router

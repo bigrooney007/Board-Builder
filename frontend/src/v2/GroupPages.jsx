@@ -90,6 +90,12 @@ function Participation({ data, readOnly, busy, onSave, onWithdraw }) {
   const [form, setForm] = useState({ participant_id: "", responsibility: "", audience_ids: [], consent_confirmed: false });
   const participants = data.participants || [];
   const adopted = (data.decisions || []).filter((decision) => decision.status === "adopted");
+  useEffect(() => {
+    if (!readOnly && data.journey?.journey_id?.startsWith("admin-test-") && !form.participant_id && !(data.commitments || []).length) {
+      const sample = participants.find((participant) => participant.submitted && participant.participation);
+      if (sample) setForm({ participant_id: sample.participant_id, responsibility: sample.participation, audience_ids: [], consent_confirmed: false });
+    }
+  }, [data, form.participant_id, participants, readOnly]);
   return <section className="v2-card" data-testid="v2-participation"><h2>Agree on personal participation</h2><p>Discuss the contribution each person is willing to make. Record a responsibility only after they have agreed to it.</p>
     {participants.map((participant) => <article className="v2-idea" key={participant.participant_id}><h3>{participant.name}</h3><div className="v2-document-text">{participant.participation || "No participation statement supplied."}</div></article>)}
     {(data.commitments || []).map((commitment) => <article className="v2-idea" key={commitment.commitment_id}><h3>{commitment.name}</h3><p>{commitment.responsibility}</p><p>Confirmed by the participant during the discussion.</p>{commitment.audience_ids?.length > 0 && <small>Related audiences: {commitment.audience_ids.map((id) => adopted.find((d) => d.decision_id === id)?.title || "An audience that needs review").join(", ")}</small>}{!readOnly && <div className="v2-actions"><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => setForm({ ...commitment, consent_confirmed: false })}>Edit confirmed commitment</button><button className="v2-btn v2-btn-secondary" disabled={busy} onClick={() => { if (window.confirm("Withdraw this participation commitment from the final strategy?")) onWithdraw(commitment); }}>Withdraw commitment</button></div>}</article>)}

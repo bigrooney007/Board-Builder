@@ -203,3 +203,28 @@ check. It performs public GET requests and opens homepage-to-education-to-intake
 pages on desktop/mobile. It does not submit forms, log into a real account,
 charge a card, generate customer resources or send email. Its report is separate
 from isolated application test results because deployment may be in progress.
+
+### Prefilled tests through the final deliverables
+
+All four admin tests now include the organization name and brand colors. Meeting
+products have a future date, time and timezone already supplied. Confirming setup
+requires no typing. Participant forms receive complete sample answers only when
+no saved draft exists; edited or submitted answers are retained. A prepared
+sample invitee and prefilled new-invitation fields allow invitation testing
+without entering contact details.
+
+After group/recommitment setup, three synthetic participants' responses are
+available immediately. Fundraising samples cover individuals, businesses and
+grantmakers, with full audience strategies and participation statements.
+Strategic samples cover every existing planning topic. Recommitment samples
+include active, advisory and stepping-down positions. Recruitment sample
+applications and downloadable synthetic PDF CVs appear only after the leader
+approves the profiles/materials and confirms campaign launch.
+
+The admin-only **Approve all sample resources for this test** shortcut explicitly
+approves the prepared initial collection. It cannot bypass profile approval or
+approve the final plan/strategy or applicant-specific documents. The group still
+adopts its own decisions and confirms participation before final approval.
+Participation form text is prefilled only in admin tests; consent stays unchecked.
+The browser suite completes all four admin paths to approved, downloadable
+outputs using clicks and confirmation checkboxes, without entering text.
