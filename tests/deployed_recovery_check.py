@@ -72,10 +72,12 @@ async def main():
                 errors.clear()
                 try:
                     await page.goto(BASE, wait_until="domcontentloaded", timeout=60000)
-                    link = page.locator(f'a[href="{home_path}"]').first
+                    link = page.locator(f'a[href="{start}"]').first
                     await expect(link).to_be_visible(timeout=20000)
                     await link.click()
-                    await page.wait_for_url("**" + home_path)
+                    await page.wait_for_url("**" + start)
+                    await expect(page.locator("form")).to_be_visible(timeout=20000)
+                    await page.goto(BASE + home_path, wait_until="domcontentloaded", timeout=60000)
                     await expect(page.locator("h1")).to_be_visible()
                     await expect(page.locator(f'a[href="{start}"]').first).to_be_visible()
                     count = page.get_by_test_id(prefix + "-testimonial-count")
