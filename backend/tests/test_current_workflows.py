@@ -37,6 +37,14 @@ class QuestionConfiguration(unittest.TestCase):
         result=fg.clean_response(value,submitting=True)
         self.assertEqual(len(result["audiences"]["individuals"]),2)
         self.assertNotEqual(result["audiences"]["individuals"][0]["who_why"],second["who_why"])
+    def test_personal_responsibilities_without_acknowledgement_are_not_assigned(self):
+        areas=[{"area_key":sp.KEYS[-1],"agreed_ideas":[{"participant_id":"person","text":"I would like to introduce employers."}]}]
+        pending=json.loads(sp.approved_context(areas))
+        accepted=json.loads(sp.approved_context(areas,accepted_participants={"person":True}))
+        self.assertFalse(pending["explicitly_adopted_decisions"][0]["agreed_ideas"][0]["individual_acceptance_confirmed"])
+        self.assertTrue(accepted["explicitly_adopted_decisions"][0]["agreed_ideas"][0]["individual_acceptance_confirmed"])
+        self.assertNotIn("individual_acceptance_confirmed",areas[0]["agreed_ideas"][0])
+
     def test_incomplete_audience_and_duplicate_identifier_rejected(self):
         from fastapi import HTTPException
         from current_workflow_fixtures import fundraising_answers

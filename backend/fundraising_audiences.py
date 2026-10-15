@@ -126,7 +126,7 @@ def document_sections(agreed, profile):
             sections.append({"key": f"audience_{cat}_{index}", "title": LABELS[cat] + ": " + proposal["strategy"]["who_why"].split("\n")[0][:120],
                              "text": "\n\n".join(label + "\n" + str(proposal["strategy"].get(key) or "Requires confirmation") for key, label in labels)})
     sections.append({"key": "board_roles", "title": "How We Have Agreed to Participate in Fundraising",
-                     "text": "\n\n".join(x["name"] + "\n" + x["contribution"] + ("\nNext step: " + x["next_action"] if x.get("next_action") else "") for x in agreed["commitments"]) or "No individual responsibilities were confirmed."})
+                     "text": "\n\n".join(x["name"] + "\n" + x["contribution"] + ("\nSupporting approved audiences: " + "; ".join(p["strategy"]["who_why"] for p in agreed["audiences"] if p["id"] in x.get("audience_ids", [])) if x.get("audience_ids") else "") + ("\nNext step: " + x["next_action"] if x.get("next_action") else "") for x in agreed["commitments"]) or "No individual responsibilities were confirmed."})
     return sections
 
 

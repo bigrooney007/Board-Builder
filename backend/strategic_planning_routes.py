@@ -2437,12 +2437,12 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
                 if p.get("questionnaire_version") == strategic24.VERSION:
                     generated = await generate_structured("strategic_session_final_plan",
-                        strategic24.approved_context(plan.get("areas") or [], p.get("mission", "")),
+                        strategic24.approved_context(plan.get("areas") or [], p.get("mission", ""), {person["participant_id"]: (person.get("direction_adoption") or {}).get("revision") == session.get("decision_revision") and bool(session.get("decision_revision")) for person in people}),
                         "Generate a practical 24-month plan using ONLY explicitly_adopted_decisions. Never use rejected ideas or infer adoption from a transcript. "
                         "Preserve the stored mission as background; never propose a revised mission. Include an executive summary, agreed goals and objectives, programmes, "
                         "beneficiary outcomes, capacity, technology, marketing, partnerships, fundraising, budget framework, risks, 90-day/12-month/24-month milestones, "
                         "measurement and agreed individual responsibilities where supplied. Mark missing costs, dates and targets as requiring confirmation. "
-                        "Do not invent figures, commitments or decisions. Clarify and structure the agreed wording without adding substantive recommendations.")
+                        "Do not invent figures, commitments or decisions. Individual responsibilities marked individual_acceptance_confirmed=false remain proposals requiring that person's confirmation, not assigned duties. Clarify and structure the agreed wording without adding substantive recommendations.")
                 else:
                     context=(
                         f"ORGANIZATION: {p['organization_name']}\n"

@@ -33,6 +33,7 @@ jobs:
           pip install -r /tmp/current-requirements.txt playwright
       - name: Current workflow integration and original regressions
         run: |
+          python tests/validate_current_workflow_scope.py
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_current_workflows.py -v
           python -m unittest discover -s backend/tests -p test_recovered_offer_content.py -v

@@ -68,9 +68,14 @@ def decision_revision(areas):
     return hashlib.sha256(json.dumps(areas, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def approved_context(areas, mission=""):
+def approved_context(areas, mission="", accepted_participants=None):
+    selected = copy.deepcopy(areas)
+    for area in selected:
+        if area.get("area_key") == KEYS[-1]:
+            for idea in area.get("agreed_ideas", []):
+                idea["individual_acceptance_confirmed"] = bool((accepted_participants or {}).get(idea.get("participant_id")))
     return json.dumps({"existing_mission_background_only": mission, "planning_period_months": 24,
-                       "explicitly_adopted_decisions": areas}, ensure_ascii=False)
+                       "explicitly_adopted_decisions": selected}, ensure_ascii=False)
 
 
 async def stored_mission(db, user_id, organization_name):
