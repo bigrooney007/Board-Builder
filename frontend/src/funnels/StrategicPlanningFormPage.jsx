@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import SpeakButton from "@/game/SpeakButton";
@@ -18,6 +18,12 @@ export default function StrategicPlanningFormPage() {
   const [stepError, setStepError] = useState("");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const saveQueue = useRef(Promise.resolve());
+  const saveProgress = (draft) => {
+    const task = saveQueue.current.catch(() => {}).then(() => axios.put(`${API}/strategic-planning-form/${token}`, {answers:draft}));
+    saveQueue.current = task;
+    return task;
+  };
 
   useEffect(() => {
     axios.get(`${API}/strategic-planning-form/${token}`).then((r) => {
@@ -31,9 +37,11 @@ export default function StrategicPlanningFormPage() {
   useEffect(() => {
     if (!data?.form?.questionnaire_version || done) return undefined;
     const timer = setTimeout(() => {
-      axios.put(`${API}/strategic-planning-form/${token}`, { answers }).catch(() => setStepError("Your latest changes could not be saved. Please try Next again before leaving."));
+      saveProgress(answers).catch(() => setStepError("Your latest changes could not be saved. Please try Next again before leaving."));
     }, 1000);
     return () => clearTimeout(timer);
+  // Requests share the same queue as Next, so autosaves cannot arrive out of order.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, token, data?.form?.questionnaire_version, done]);
 
   const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
@@ -74,7 +82,7 @@ export default function StrategicPlanningFormPage() {
     setStepError(problem);
     if (!problem) {
       if (data.form.questionnaire_version) {
-        try { await axios.put(`${API}/strategic-planning-form/${token}`, { answers }); }
+        try { await saveProgress(answers); }
         catch (e) { setStepError("Your progress could not be saved. Please try again."); return; }
       }
       setStep(step + 1); window.scrollTo(0, 0);

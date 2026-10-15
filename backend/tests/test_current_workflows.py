@@ -264,6 +264,14 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         data=await self.request("GET","/public/board-opportunities")
         self.assertEqual([x["slug"] for x in data["opportunities"]],["real-listing"])
 
+    async def test_stored_mission_is_reused_without_becoming_a_question(self):
+        await self.launch("strategic-planning","fresh")
+        await self.db.recruitment_profiles.insert_one({"user_id":self.user,"data":{"organization_name":"BrightPath Youth Alliance","mission":"Keep this exact existing mission."}})
+        await self.request("GET",f"/guided/dashboard?session_id={self.sid}&product=strategic-planning")
+        project=await self.db.sp_projects.find_one({"guided_session_id":self.sid})
+        self.assertEqual(project["mission"],"Keep this exact existing mission.")
+        self.assertNotIn("mission",(await self.db.guided_product_intakes.find_one({"session_id":self.sid}))["answers"])
+
     async def test_existing_game_records_are_not_migrated(self):
         await self.launch("board-fundraising-game")
         await self.db.game_profiles.update_one({"user_id":self.user},{"$unset":{"workflow_version":""}})

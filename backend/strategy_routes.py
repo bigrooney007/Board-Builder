@@ -425,7 +425,7 @@ def create_strategy_router(db) -> APIRouter:
     @router.get("/strategy/shared/{share_token}")
     async def shared_strategy(share_token: str):
         strategy = await db.game_strategies.find_one({"share_token": share_token}, {"_id": 0})
-        if not strategy:
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
             raise HTTPException(status_code=404, detail="This strategy link is not valid")
         profile = await get_profile(strategy["user_id"])
         return {"strategy": {

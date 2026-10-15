@@ -57,12 +57,15 @@ jobs:
           mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
           yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
       - name: Production build
+        id: build
         if: always()
         env:
           CI: 'false'
         run: yarn --cwd frontend build
       - run: python -m playwright install --with-deps chromium
+        if: always() && steps.build.outcome == 'success'
       - name: Current desktop and mobile workflows
+        if: always() && steps.build.outcome == 'success'
         run: |
           uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
           python tests/current_workflow_browser.py
