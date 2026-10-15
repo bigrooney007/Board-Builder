@@ -104,6 +104,10 @@ HOME_PAGE_KEYS = {
     "strategic-planning",
     "board-recommitment",
     "facilitated-game",
+    "offer-recruitment",
+    "offer-board-fundraising-game",
+    "offer-strategic-planning",
+    "offer-board-recommitment",
 }
 
 HOME_PATHS = {

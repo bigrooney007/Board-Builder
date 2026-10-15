@@ -138,10 +138,7 @@ export const useHomepageContent = (pageKey, defaults = {}) => {
       .catch(() => {});
     return () => { live = false; };
   }, [pageKey]);
-  return useMemo(() => (
-    pageKey === "board-fundraising-game" && remote.content_version !== defaults.content_version
-      ? defaults : { ...defaults, ...remote }
-  ), [pageKey, defaults, remote]);
+  return useMemo(() => ({ ...defaults, ...remote }), [defaults, remote]);
 };
 
 let videosCache = null;

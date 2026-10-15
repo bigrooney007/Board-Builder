@@ -9,7 +9,7 @@ import axios from "axios";
 const BASE = process.env.REACT_APP_BACKEND_URL;
 const INTRO = "Welcome. In six questions, tell me about your mission, the board you have now and the support you need. Say what is true for your organization, in your own words. We will use your answers to recommend the board members you should recruit. Ready? Let's begin.";
 
-export const QUESTIONS = [
+const QUESTIONS = [
   {
     key: "mission",
     audio: "rct_question_1",

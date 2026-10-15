@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { RefreshCw, Save } from "lucide-react";
 import { HOMEPAGE_KEYS } from "@/clean/platform";
@@ -6,6 +6,8 @@ import { MAIN_HOME_DEFAULTS } from "@/pages/MainHomePage";
 import { FACILITATED_GAME_HOME_DEFAULTS } from "@/game/FacilitatedGamePage";
 import { recruitmentHomeContent } from "@/content/siteContent";
 import { GUIDED_PRODUCT_CONFIG } from "@/funnels/GuidedProductPages";
+import { FREE_START_LABEL } from "@/funnels/publicStartRoutes";
+import { OFFER_PAGE_KEYS, OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
@@ -17,10 +19,14 @@ const stripIcon = (value) => {
 
 const LOCAL_DEFAULTS = {
   main: MAIN_HOME_DEFAULTS,
-  recruitment: recruitmentHomeContent,
+  recruitment: { ...recruitmentHomeContent,
+    headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+    subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
+    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL },
   "strategic-planning": stripIcon(GUIDED_PRODUCT_CONFIG["strategic-planning"]),
   "board-recommitment": stripIcon(GUIDED_PRODUCT_CONFIG["board-recommitment"]),
   "facilitated-game": FACILITATED_GAME_HOME_DEFAULTS,
+  ...OFFER_TEXT_DEFAULTS,
 };
 
 const prettyLabel = (value) => String(value)
@@ -100,13 +106,21 @@ function HomepageField({ row, onChange }) {
   );
 }
 
+const EDITABLE_PAGES = [...HOMEPAGE_KEYS, ...OFFER_PAGE_KEYS];
+
 export function HomepageTextSection() {
-  const [pageKey, setPageKey] = useState(HOMEPAGE_KEYS[0][0]);
+  const [pageKey, setPageKey] = useState(EDITABLE_PAGES[0][0]);
   const [content, setContent] = useState({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadedKey, setLoadedKey] = useState("");
+  const requestId = useRef(0);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async (key) => {
+    const id = ++requestId.current;
+    setLoading(true);
+    setLoadedKey("");
     setMessage("");
     try {
       const stored = (await axios.get(`${API}/platform/homepages/${key}`)).data.content || {};
@@ -114,10 +128,13 @@ export function HomepageTextSection() {
       if (key === "board-fundraising-game") {
         defaults = (await axios.get(`${API}/game/content`)).data.content || {};
       }
-      const current = key === "board-fundraising-game" && stored.content_version !== defaults.content_version ? {} : stored;
-      setContent({ ...cloneContent(defaults), ...cloneContent(current) });
+      if (id !== requestId.current) return;
+      setContent({ ...cloneContent(defaults), ...cloneContent(stored) });
+      setLoadedKey(key);
     } catch (error) {
-      setMessage(error.response?.data?.detail || "Could not load this home page text.");
+      if (id === requestId.current) setMessage(error.response?.data?.detail || "Could not load this home page text.");
+    } finally {
+      if (id === requestId.current) setLoading(false);
     }
   }, []);
 
@@ -126,6 +143,7 @@ export function HomepageTextSection() {
   const updateField = (path, value) => setContent((current) => setContentAtPath(current, path, value));
 
   const save = async () => {
+    if (loading || saving || loadedKey !== pageKey) return;
     setSaving(true);
     setMessage("");
     try {
@@ -143,26 +161,26 @@ export function HomepageTextSection() {
     <section data-testid="clean-homepage-editor">
       <div className="admin-funnel-numbers-head">
         <div>
-          <h2>Home Page Text Edit</h2>
-          <p>Choose one of the six public home pages and edit its words directly. Routes, dashboard destinations and product connections stay locked outside this editor.</p>
+          <h2>Landing Page &amp; Payment Page Text</h2>
+          <p>Edit the words on the existing public landing pages or the four payment pages. This does not change their design, routes, or checkout connections.</p>
         </div>
       </div>
       <div className="admin-filters">
         <label>
           Home Page
-          <select value={pageKey} onChange={(event) => setPageKey(event.target.value)}>
-            {HOMEPAGE_KEYS.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+          <select value={pageKey} disabled={saving} onChange={(event) => setPageKey(event.target.value)}>
+            {EDITABLE_PAGES.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
           </select>
         </label>
-        <button className="button button-back button-small" onClick={() => load(pageKey)}><RefreshCw size={15} /> Reload Saved Text</button>
+        <button className="button button-back button-small" disabled={saving || loading} onClick={() => load(pageKey)}><RefreshCw size={15} /> Reload Saved Text</button>
       </div>
       <div className="admin-homepage-text-fields">
-        {fields.map((row, index) => (
+        {!loading && loadedKey === pageKey && fields.map((row, index) => (
           <HomepageField key={row.path.join(".") || index} row={row} onChange={updateField} />
         ))}
       </div>
       {message && <p className="admin-message">{message}</p>}
-      <button className="button" disabled={saving} onClick={save}>
+      <button className="button" disabled={saving || loading || loadedKey !== pageKey} onClick={save}>
         <Save size={15} /> {saving ? "SAVING…" : "SAVE HOME PAGE TEXT"}
       </button>
     </section>
