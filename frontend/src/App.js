@@ -44,7 +44,7 @@ import StrategicPlanningSessionPage from "@/funnels/StrategicPlanningSessionPage
 import StrategicOrganizationSetupPage from "@/funnels/StrategicOrganizationSetupPage";
 import StrategicPresentationWatchPage from "@/funnels/StrategicPresentationWatchPage";
 
-import { MemberAuthProvider } from "@/member/MemberAuthContext";
+import { MemberAuthProvider, useMemberAuth } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
 import DashboardReturnPage from "@/member/DashboardReturnPage";
@@ -256,11 +256,17 @@ function CleanRoutes() {
   );
 }
 
+function AdminClientTestStatus() {
+  const {member}=useMemberAuth();
+  if(!member?.internal_dashboard_preview)return null;
+  return <aside role="status" style={{padding:"8px 16px",textAlign:"center",background:"#eef2ff",color:"#312e81",fontSize:14}}>Isolated admin client test · Workflow {sessionStorage.getItem("adminClientTestVersion") || "original-current"} · Emails captured · No charges</aside>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <MemberAuthProvider>
-        {sessionStorage.getItem("adminClientTest") === "1" && <aside role="status" style={{padding:"8px 16px",textAlign:"center",background:"#eef2ff",color:"#312e81",fontSize:14}}>Isolated admin client test · Workflow {sessionStorage.getItem("adminClientTestVersion") || "original-current"} · Emails captured · No charges</aside>}
+        <AdminClientTestStatus />
         <PublicCenteringScope />
         <PlatformAnalytics />
         <GoogleAuthGate>

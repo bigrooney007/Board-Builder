@@ -344,7 +344,7 @@ def create_game_router(db) -> APIRouter:
         if profile.get("workflow_version") == audiences6.VERSION:
             return {"workflow_version": audiences6.VERSION, "configuration": audiences6.configuration(), "response": saved,
                     "complete": bool(saved.get("completed")), "organization_name": (profile.get("organization") or {}).get("name", ""),
-                    "goal_amount": (profile.get("goal") or {}).get("amount", 0), "unlocked": GAME_ENTITLEMENT in member.get("entitlements", [])}
+                    "goal_amount": (profile.get("goal") or {}).get("amount", 0), "deadline": (profile.get("goal") or {}).get("deadline", ""), "unlocked": GAME_ENTITLEMENT in member.get("entitlements", [])}
         answers = saved.get("answers") or {}
         first_unanswered = next((index for index in range(1, FREE_QUESTION_COUNT + 1)
                                  if not str(answers.get(str(index), "")).strip()), FREE_QUESTION_COUNT + 1)
@@ -566,7 +566,7 @@ def create_game_router(db) -> APIRouter:
             "organization": profile.get("organization", {}),
             "goal": profile.get("goal", {}),
             "situation_completed": situation_completed,
-            "individual_game_completed": individual_game_completed,
+            "individual_game_completed": individual_game_completed, "workflow_version": profile.get("workflow_version"),
             "game_night_ready": game_night_ready,
             "game_night": night,
             "board_participant_count": board_participant_count,

@@ -686,7 +686,7 @@ def create_game_meeting_router(db) -> APIRouter:
         if not strategy:
             strategy = await db.game_strategies.find_one(
                 {"user_id": record["user_id"], "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
-        if not strategy:
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
             return {"ready": False, "organization_name": (profile.get("organization") or {}).get("name", "")}
         portfolio = await db.board_portfolios.find_one(
             {"user_id": record["user_id"], "board_member_id": record["member_id"]},
@@ -715,8 +715,8 @@ def create_game_meeting_router(db) -> APIRouter:
         profile = await get_profile(record["user_id"])
         strategy = await latest_final(record["user_id"]) or await db.game_strategies.find_one(
             {"user_id": record["user_id"], "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
-        if not strategy:
-            raise HTTPException(status_code=404, detail="No final strategy available yet")
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
+            raise HTTPException(status_code=404, detail="No approved final strategy available yet")
         org_name = (profile.get("organization") or {}).get("name", "")
         pdf = build_strategy_pdf(strategy, org_name)
         return HttpResponse(content=pdf, media_type="application/pdf", headers={

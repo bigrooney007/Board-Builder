@@ -424,7 +424,7 @@ def create_group_game_router(db) -> APIRouter:
                 "participants_joined": len(joined), "completed_at": session.get("completed_at", ""),
             }
         return {
-            "goal_display": fmt_goal(profile),
+            "goal_display": fmt_goal(profile), "workflow_version": profile.get("workflow_version"),
             "funding_deadline": night.get("funding_deadline") or (profile.get("goal") or {}).get("deadline", ""),
             "game_night_date": night.get("meeting_date", ""),
             "board_member_count": len(members),

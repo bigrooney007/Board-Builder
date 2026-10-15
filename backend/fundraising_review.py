@@ -64,10 +64,15 @@ class AudienceReview:
         profile = await self.db.game_profiles.find_one({"user_id": session["user_id"]}, {"_id": 0}) or {}
         sections = audience.document_sections(agreed, profile)
         body = "\n\n".join(s["title"] + "\n" + s["text"] for s in sections)
-        roles = [{"name": c["name"], "board_member_id": c["member_id"], "role": c["contribution"], "contribution": c["contribution"], "confirmed": True} for c in agreed["commitments"]]
+        roles = [{"name": c["name"], "responsibility":c["contribution"], "board_member_id": c["member_id"], "role": c["contribution"], "contribution": c["contribution"], "confirmed": True} for c in agreed["commitments"]]
+        # Preserve the existing portfolio engine's data contract, using approved
+        # audiences and confirmed commitments only.
+        compatible = {"fundraising_audiences": {("grantors" if cat == "grantmakers" else cat): [
+            {"title":p["strategy"]["who_why"],"explanation":p["strategy"]["who_why"],"focus":p["strategy"]["ask"]} for p in agreed["audiences"] if p["category"]==cat] for cat in audience.CATEGORIES},
+            "fundraising_goal":profile.get("goal") or {}, "execution_agreements":[c["name"]+": "+c["contribution"] for c in agreed["commitments"]]}
         record = {"strategy_id": "audience-" + session["session_id"], "user_id": session["user_id"], "mode": "final", "status": "final_draft", "version": 1,
             "schema_version": audience.VERSION, "share_token": secrets.token_urlsafe(24), "prepared_by": "The Board of " + (profile.get("organization") or {}).get("name", "your organization"),
-            "data": {**{s["key"]: s["text"] for s in sections}, "board_roles": roles}, "section_edits": {s["key"]: s["text"] for s in sections},
+            "data": {**compatible, **{s["key"]: s["text"] for s in sections}, "board_roles": roles}, "section_edits": {s["key"]: s["text"] for s in sections},
             "document_sections": sections, "document_text": body, "source": "explicitly-adopted-audiences", "source_revision": agreed["revision"],
             "agreed_audiences": agreed["audiences"], "confirmed_commitments": agreed["commitments"], "generated_at": now(), "created_at": now()}
         await self.db.game_strategies.update_one({"strategy_id": record["strategy_id"]}, {"$setOnInsert": record}, upsert=True)
@@ -80,7 +85,7 @@ class AudienceReview:
         owner = await self.db.members.find_one({"user_id": session["user_id"]}, {"_id": 0}) or {}
         members = await self.db.game_board_members.find({"user_id": session["user_id"], "removed": {"$ne": True}}, {"_id": 0}).to_list(1000)
         origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
-        recipients = {owner.get("email", ""): origin + "/game/group-game"}
+        recipients = {owner.get("email", ""): origin + "/game/group"}
         # Use each person's own existing secure final-strategy link.
         for person in members:
             if person.get("email") and person.get("token"):
@@ -168,7 +173,7 @@ class AudienceReview:
                 "document_sections": clean, "section_edits": {s["key"]: s["text"] for s in clean}, "document_text": "\n\n".join(s["title"] + "\n" + s["text"] for s in clean)}})
             review = copy.deepcopy(session["audience_review"]); review["phase"] = "approved"
             await self.save(session, review, status="completed", completed_at=now())
-            await self.db.game_strategy_jobs.update_one({"user_id": session["user_id"], "mode": "final"}, {"$set": {"status": "completed", "strategy_id": strategy["strategy_id"], "finished_at": now()}}, upsert=True)
+            await self.db.game_strategy_jobs.update_one({"user_id": session["user_id"], "mode": "final"}, {"$set": {"status": "done", "strategy_id": strategy["strategy_id"], "finished_at": now()}}, upsert=True)
             return {"status": "adopted", "delivery": await self.delivery(session)}
 
         @router.post("/game/group/audience/retry-delivery")

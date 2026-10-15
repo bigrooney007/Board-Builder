@@ -36,6 +36,7 @@ export default function StrategicPlanningSessionPage(){
  },[sid]);
 
  useEffect(()=>{load();},[load]);
+ useEffect(()=>{if(session?.status!=="REVIEW")return undefined;const timer=window.setInterval(load,3000);return()=>window.clearInterval(timer);},[session?.status,load]);
  useEffect(()=>{
   if(session?.status!=="COMPLETED")return undefined;
   const update=()=>axios.get(`${API}/guided/strategic-planning/workspace`,{params:{session_id:sid}})
@@ -146,7 +147,7 @@ export default function StrategicPlanningSessionPage(){
   {message&&<p role="alert">{message}</p>}
  </section></main></BfgShell>;
 
- if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><p className="bfg-eyebrow">LIVE BOARD REVIEW</p><h1>{planStatus==="Approved"?"Strategic Plan Adopted":"Review Your Strategic Plan Together"}</h1><p>{planText?"The shared Board screen shows this same plan. Discuss it together, make any agreed edits, then approve the final wording while everyone can see it.":"Your Board decisions and transcript are saved. The Strategic Plan is being prepared here. Keep this screen open."}</p>
+ if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><p className="bfg-eyebrow">LIVE BOARD REVIEW</p><h1>{planStatus==="Approved"?"Strategic Plan Adopted":"Review Your Strategic Plan Together"}</h1><p>{planText?"The shared Board screen shows this same plan. Discuss it together, make any agreed edits, then approve the final wording while everyone can see it.":"Your adopted Board decisions are saved. The Strategic Plan is being prepared here. Keep this screen open."}</p>
   {planText&&<><textarea className="sp-plan-preview" rows={28} value={planText} readOnly={planStatus==="Approved"} onChange={e=>{setPlanEditing(true);setPlanText(e.target.value)}} aria-label="Strategic Plan for Board review"/>
    {planStatus!=="Approved"&&<div className="sp-session-controls"><button className="bfg-btn bfg-btn-ghost" disabled={!!busy||!planEditing} onClick={savePlanDraft}>{busy==="draft"?"SAVING…":"SAVE AGREED EDITS TO SHARED SCREEN"}</button><button className="bfg-btn bfg-btn-primary" disabled={!!busy} onClick={adoptPlan}>{busy==="approve"?"SAVING…":"APPROVE & ADOPT WITH THE BOARD"}</button></div>}
   </>}

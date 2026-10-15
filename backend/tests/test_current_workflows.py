@@ -149,10 +149,10 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         record=await self.db.game_board_members.find_one({"member_id":primary["member_id"]});self.assertEqual(record["game_version"],6)
         response=await self.request("GET","/game/play/"+primary["token"]+"/audience-response")
         self.assertTrue(response["response"]["completed"]);self.assertEqual(response["configuration"],fg.configuration())
-        await self.request("POST","/game/board-members",{"full_name":"Sample B","email":"b@example.test"},409)
-        await self.db.game_nights.insert_one({"user_id":self.user,"meeting_date":"2026-11-15","start_time":"18:00","funding_deadline":"2027-01-01"})
+        await self.request("POST","/game/board-members",{"full_name":"Sample B","email":"b@example.org"},409)
+        await self.request("PUT","/game/night",{"meeting_date":"2026-11-15","start_time":"18:00","funding_deadline":"2027-01-01","timezone_name":"UTC"})
         await self.request("POST","/game/situation/complete")
-        board=await self.request("POST","/game/board-members",{"full_name":"Sample B","email":"b@example.test"},201)
+        board=await self.request("POST","/game/board-members",{"full_name":"Sample B","email":"b@example.org"},201)
         self.assertEqual((await self.db.game_board_members.find_one({"member_id":board["board_member"]["member_id"]}))["game_version"],6)
     async def test_fundraising_group_adoption_identity_final_freeze_delivery_and_retry(self):
         await self.launch("board-fundraising-game")
@@ -189,6 +189,31 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         r=await self.client.post("/api/admin/dashboard-preview/strategic-planning");self.assertEqual(r.status_code,401)
         await self.launch("strategic-planning")
         await self.request("POST","/guided/strategic-planning/session/acknowledge/not-a-token",{"revision":"x","confirmed":True,"accept_responsibilities":True},404)
+    async def test_failed_email_retry_and_duplicate_approval_use_same_provider_key(self):
+        from unittest.mock import AsyncMock, patch
+        from workflow_delivery import deliver_once
+        await self.db.members.insert_one({"user_id":"real-test-owner","email":"owner@example.test"})
+        transport=AsyncMock(side_effect=[RuntimeError("Synthetic provider failure"),{"id":"provider-accepted-on-retry"}])
+        args=(self.db,"real-test-owner","approved-version-one","owner@example.test","Approved document","Your approved resource is saved.","https://example.test/secure")
+        with patch("resend.Emails.send_async",transport):
+            self.assertEqual((await deliver_once(*args))["status"],"failed")
+            self.assertEqual((await deliver_once(*args))["status"],"sent")
+            self.assertEqual((await deliver_once(*args))["status"],"sent")
+        self.assertEqual(transport.await_count,2)
+        self.assertEqual(transport.await_args_list[0].args[1],transport.await_args_list[1].args[1])
+        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({"user_id":"real-test-owner"}),1)
+
+    async def test_test_email_scope_does_not_capture_other_customers(self):
+        from unittest.mock import AsyncMock, patch
+        from admin_test_safety import _scope, bind_test_scope
+        import resend
+        await self.launch("board-fundraising-game")
+        bind_test_scope(self.db,{"user_id":self.user,"internal_dashboard_preview":True})
+        result=await resend.Emails.send_async({"to":["recipient@example.test"],"subject":"Captured test","html":"test"})
+        self.assertTrue(result["test_capture"])
+        self.assertEqual(await self.db.admin_test_email_events.count_documents({"user_id":self.user}),1)
+        _scope.set(None)
+
     async def test_existing_game_records_are_not_migrated(self):
         await self.launch("board-fundraising-game")
         await self.db.game_profiles.update_one({"user_id":self.user},{"$unset":{"workflow_version":""}})

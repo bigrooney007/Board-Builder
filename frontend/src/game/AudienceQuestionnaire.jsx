@@ -7,7 +7,7 @@ import { useGuidedNarration } from "./useGuidedNarration";
 export default function AudienceQuestionnaire({ configuration: config, initial, storageKey, context, save, complete }) {
   const [value, setValue] = useState(() => {
     let local; try { local = JSON.parse(localStorage.getItem(storageKey) || "null"); } catch {}
-    return local || { audiences: initial?.audiences || {}, involvement: initial?.involvement || "", category_status: initial?.category_status || {}, progress: initial?.progress || { category: 0, phase: "welcome", question: 0, audience_index: 0 } };
+    return local || { audiences: initial?.audiences || {}, involvement: initial?.involvement || "", category_status: initial?.category_status || {}, progress: { category: 0, phase: "welcome", question: 0, audience_index: 0, ...(initial?.progress || {}) } };
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

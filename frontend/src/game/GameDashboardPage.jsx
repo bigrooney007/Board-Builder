@@ -65,7 +65,7 @@ const GroupGameStage = () => {
       <div className="bfg-clean-stage">
         <h3>Bring The Board's Ideas Into One Room</h3>
         <p className="bfg-panel-sub">
-          {completed
+          {overview.workflow_version === 6 ? (completed ? "Your approved audience approaches and confirmed participation are saved. Open the group review to read or download the exact final strategy." : "Discuss each complete audience approach, agree on participation, then review and approve your final strategy together.") : completed
             ? "Your Board completed all six decision screens. The final strategy is being built from the Board's agreed ideas and meeting transcript."
             : inProgress
               ? "Your Group Game is in progress. Continue from the exact screen where the Board stopped."
@@ -344,7 +344,7 @@ export default function GameDashboardPage() {
           testId="bfg-dashboard-section-strategy"
           audioKey="strategy"
         >
-          <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} compact />
+          {data.workflow_version === 6 ? <Link className="bfg-btn bfg-btn-primary" to="/game/group">OPEN THE GROUP STRATEGY REVIEW AND APPROVED DOCUMENT</Link> : <FinalOutputsSection overview={meeting} onRefresh={loadMeeting} compact />}
           <DelegationReviewStage ready={Boolean(postgame?.adopted)} />
         </DashboardSection>
 
