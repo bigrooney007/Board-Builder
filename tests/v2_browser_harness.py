@@ -197,6 +197,7 @@ async def check(base, artifact_dir):
                         assert await participation.locator("textarea").input_value()
                         await participation.get_by_role("checkbox", name="This participant has explicitly agreed to the responsibility recorded above.", exact=True).check()
                         await participation.get_by_role("button", name="Save confirmed participation", exact=True).click()
+                        await page.get_by_text("The participant's confirmed commitment has been saved.", exact=True).wait_for()
                     await page.get_by_role("button", name="Complete discussion and review the strategy" if product == "board-fundraising-game" else "Complete discussion and review the plan", exact=True).click()
                     await page.get_by_test_id("v2-final-confirm").check()
                     await page.get_by_test_id("v2-final-approve").click()
