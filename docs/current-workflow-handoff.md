@@ -31,7 +31,7 @@ Synthetic test requests capture Resend emails, including background tasks inheri
 
 ## Verification
 
-Run the `Current Customer Workflow Validation` GitHub Actions workflow on this branch. It installs existing pinned dependencies and the frozen frontend lockfile, executes current route integration tests against disposable Mongo, runs the recovered regression suites, builds the production frontend, and exercises current and original desktop/mobile pages with Chromium.
+The `Current Customer Workflow Validation` GitHub Actions workflow runs automatically on pushes and pull requests in branches carrying these updates. The previous recovery-only workflow stays pinned to its original recovery branch; the current workflow includes its relevant regression suites. It installs existing pinned dependencies and the frozen frontend lockfile, executes current route integration tests against disposable Mongo, runs the recovered regression suites, builds the production frontend, and exercises current and original desktop/mobile pages with Chromium.
 
 - Current backend tests cover shared question parity, all four admin launchers, introductory handoff, leader answer reuse, personal progress/submission, selection-only generation, individual acknowledgements, confirmed fundraising commitments, document approval, failed email retry, duplicate protection, immutable submissions, authorization and historical game compatibility.
 - The original backend suites and 31 React checks cover the recovered offers, original Start for Free/checkout connections, video preservation outside payment pages, and recruitment scheduling/publication handlers.

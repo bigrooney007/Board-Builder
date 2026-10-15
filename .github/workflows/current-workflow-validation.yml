@@ -1,7 +1,7 @@
 name: Current Customer Workflow Validation
 on:
-  push:
-    branches: [fix/planning-fundraising-current-flows-20261015]
+  push: {}
+  pull_request: {}
 jobs:
   validate:
     runs-on: ubuntu-latest
