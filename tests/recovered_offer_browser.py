@@ -23,7 +23,7 @@ TYPES = ["board_opportunity", "board_recruitment_job_post", "recruitment_emails"
 
 def material(kind, status="Generated"):
     return {"material_id": kind, "type": kind, "title": kind, "status": status, "current_version": 1,
-            "application_id": "", "versions": [{"version": 1, "text": "Synthetic campaign text", "rendered_text": "Synthetic campaign text", "structured": {}}]}
+            "application_id": "", "versions": [{"version": 1, "display_text": "Synthetic campaign text", "text": "Synthetic campaign text", "rendered_text": "Synthetic campaign text", "structured": {}}]}
 
 
 async def main():
@@ -82,6 +82,11 @@ async def main():
                     data = {"priority_roles": [{"role_name": "Community Leader", "why_this_person_is_important": "Local knowledge", "how_this_person_can_support": "Build relationships"}],
                             "material": state["materials"][0], "desired_count": 1}
                 elif path == "/workspace/materials": data = {"materials": state["materials"]}
+                elif path.startswith("/workspace/materials/") and req.method == "PUT":
+                    kind = path.split("/")[-1]
+                    item = next(m for m in state["materials"] if m["material_id"] == kind)
+                    item["versions"][0]["display_text"] = body["display_text"]
+                    data = {"material": item}
                 elif path.startswith("/workspace/materials/") and path.endswith("/approve"):
                     kind = path.split("/")[-2]
                     next(m for m in state["materials"] if m["material_id"] == kind)["status"] = "Approved"
@@ -112,6 +117,14 @@ async def main():
                     await expect(control).to_be_visible()
                     marker = f"My exact {width} words for {key}"
                     await control.fill(marker)
+                    extra_fields = ["Introduction", "Steps Heading", "Steps 1", "Self Guided Description", "Supported Description", "Offer Heading"] if key.startswith("offer-") else ["Intro Heading"] if product in ("recruitment", "board-fundraising-game") else ["Process Heading", "Deliverables Heading", "Final Heading"]
+                    extras = []
+                    for label in extra_fields:
+                        value = marker + " " + label
+                        extra = editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea")
+                        await expect(extra).to_be_visible()
+                        await extra.fill(value)
+                        extras.append((label, value))
                     if key == "board-fundraising-game":
                         version = editor.locator("label").filter(has=page.get_by_text("Content Version", exact=True)).locator("input")
                         await version.fill("1")  # Older saved content must still win.
@@ -120,8 +133,14 @@ async def main():
                     await page.reload()
                     await editor.locator("select").select_option(key)
                     await expect(control).to_have_value(marker)
+                    for label, value in extras:
+                        await expect(editor.locator("label").filter(has=page.get_by_text(label, exact=True)).locator("input,textarea")).to_have_value(value)
                     await page.goto(BASE + destination)
                     await expect(page.locator("h1")).to_have_text(marker)
+                    for _, value in extras:
+                        await expect(page.get_by_text(value, exact=False).first).to_be_visible()
+                    assert await page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+                    assert errors == [], errors
                     if key.startswith("offer-"):
                         roadmap = page.get_by_test_id("offer-text-roadmap")
                         await expect(roadmap).to_be_visible()
@@ -166,6 +185,11 @@ async def main():
             await page.wait_for_url("**/setup/materials")
             assert state["schedule"]["availability"] == "Tuesday 10 AM UTC"
             await page.reload()
+            await page.get_by_test_id("edit-board_opportunity").click()
+            await page.get_by_test_id("edit-board_opportunity-textarea").fill("Synthetic approved opportunity after editing")
+            await page.get_by_test_id("save-board_opportunity").click()
+            await page.reload()
+            await expect(page.get_by_test_id("material-board_opportunity-display")).to_have_text("Synthetic approved opportunity after editing")
             for kind in TYPES:
                 await expect(page.get_by_test_id("material-" + kind)).to_be_visible()
                 await page.get_by_test_id("approve-" + kind).click()

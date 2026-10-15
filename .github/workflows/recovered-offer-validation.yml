@@ -29,6 +29,7 @@ jobs:
           pip install -r /tmp/recovered-requirements.txt playwright
       - name: Backend compilation and original route regressions
         run: |
+          python tests/validate_recovered_offer_scope.py
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_recovered_offer_content.py -v
           python -m unittest discover -s backend/tests -p test_dashboard_walkthrough_videos.py -v
