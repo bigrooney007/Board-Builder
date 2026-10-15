@@ -130,7 +130,9 @@ async def authenticate_member(request: Request, db) -> dict:
         bind_test_scope(db, member)
         prevent_test_checkout(request, member)
         return member
-    except HTTPException:
+    except HTTPException as exc:
+        if exc.status_code not in {401, 403}:
+            raise
         reviewer = await review_mode_member(request, db)
         if reviewer:
             return reviewer

@@ -280,6 +280,13 @@ class CurrentJourneyHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(project["mission"],"Keep this exact existing mission.")
         self.assertNotIn("mission",(await self.db.guided_product_intakes.find_one({"session_id":self.sid}))["answers"])
 
+    async def test_blocked_test_checkout_cannot_fall_back_to_owner_review_mode(self):
+        from unittest.mock import patch
+        await self.launch("board-fundraising-game")
+        self.client.cookies.set("admin_access_token",self.admin)
+        with patch.dict(os.environ,{"OWNER_RECRUITMENT_REVIEW_MODE":"true"}):
+            await self.request("POST","/payments/supported-checkout",{"origin_url":"http://test","product":"board-fundraising-game"},409)
+
     async def test_existing_game_records_are_not_migrated(self):
         await self.launch("board-fundraising-game")
         await self.db.game_profiles.update_one({"user_id":self.user},{"$unset":{"workflow_version":""}})
