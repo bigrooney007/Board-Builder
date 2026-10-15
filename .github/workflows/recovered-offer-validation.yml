@@ -23,7 +23,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install fastapi httpx motor bcrypt PyJWT uvicorn email-validator playwright
+      - name: Install the existing pinned backend test dependencies
+        run: |
+          python -c 'from pathlib import Path; names={"fastapi","starlette","pydantic","pydantic_core","httpx","motor","pymongo","bcrypt","PyJWT","uvicorn","email-validator"}; Path("/tmp/recovered-requirements.txt").write_text("\n".join(x for x in Path("backend/requirements.txt").read_text().splitlines() if x.split("==")[0] in names))'
+          pip install -r /tmp/recovered-requirements.txt playwright
       - name: Backend compilation and original route regressions
         run: |
           python -m compileall -q backend
