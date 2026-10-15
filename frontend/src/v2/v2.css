@@ -48,6 +48,10 @@
 .v2-steps p { margin-bottom:0; }
 .v2-app .v2-landing-paragraph,.v2-app .v2-hero-note { white-space:pre-line; }
 .v2-steps p + p { margin-top:18px; }
+.v2-admin-test-banner { padding:18px; margin-bottom:28px; border:2px solid #d5a62b; border-radius:12px; background:#fff8df; color:#493913; }
+.v2-admin-test-banner p { margin:8px 0; font-size:15px; }
+.v2-test-inbox { margin-top:28px; }
+.v2-test-inbox details { padding:18px 0; border-bottom:1px solid #dce0eb; }
 .v2-service-explanation { padding:38px; background:#161d37; color:#fff; border-radius:20px; margin:20px 0 45px; }
 .v2-service-explanation h2,.v2-service-explanation p { color:#fff; max-width:840px; margin-left:auto; margin-right:auto; }
 .v2-service-explanation h2 { text-align:center; }

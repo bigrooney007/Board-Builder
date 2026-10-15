@@ -17,13 +17,15 @@ CONTACT_REMINDER = "Please add our sending address to your contacts and mark imp
 
 
 async def queue_email(db, event_key, to, subject, body, journey_id="", action_path="", resource_id="", revision=None, attachments=None, metadata=None, ready=True):
+    from v2_admin_test import is_admin_test
+    testing = is_admin_test(db)
     existing = await db.v2_email_outbox.find_one({"event_key": event_key}, {"_id": 0})
     if existing:
         return existing
     action_url = ""
     if action_path:
         action_path = internal_path(action_path)
-        if action_path.startswith(PUBLIC_ACTIONS):
+        if testing or action_path.startswith(PUBLIC_ACTIONS):
             action_url = origin() + action_path
         elif journey_id:
             journey = await find_journey(db, journey_id)
@@ -48,6 +50,8 @@ async def queue_email(db, event_key, to, subject, body, journey_id="", action_pa
         record.update({key: value for key, value in metadata.items() if key in {
             "purpose", "network_applicant_id", "network_mode", "campaign_revision", "sender_env", "unsubscribe_digest", "unsubscribe_expires_at",
         }})
+    if testing:
+        record.update(status="captured_not_sent", test_action_path=action_path, test_body=str(body))
     await db.v2_email_outbox.update_one({"event_key": event_key}, {"$setOnInsert": record}, upsert=True)
     return await db.v2_email_outbox.find_one({"event_key": event_key}, {"_id": 0})
 
@@ -66,6 +70,9 @@ async def send_provider(payload, idempotency_key):
 
 async def process_email(db, event_id, transport=None):
     record = await db.v2_email_outbox.find_one({"event_id": event_id}, {"_id": 0})
+    from v2_admin_test import is_admin_test
+    if is_admin_test(db):
+        return record
     if not record or record.get("status") == "sent":
         return record
     if record.get("status") == "sending" and record.get("lease_until", "") > now_iso():

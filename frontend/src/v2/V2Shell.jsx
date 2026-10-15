@@ -32,6 +32,9 @@ export function useV2Meta(title = "Nonprofit Board Builder preview") {
 }
 export default function V2Shell({ children, title, narrow = false, participant = false }) {
   useV2Meta(title);
+  const { pathname } = useLocation();
+  const testProduct = pathname.match(/admin-test-(recruit|board-fundraising-game|strategic-planning|board-recommitment)--/)?.[1];
+  const testing = Boolean(testProduct || pathname.startsWith("/v2/admin-test/"));
   return <div className="v2-app">
     <a className="v2-skip" href="#v2-main">Skip to content</a>
     <header className="v2-header">
@@ -40,7 +43,7 @@ export default function V2Shell({ children, title, narrow = false, participant =
         : <Link className="v2-brand" to="/v2"><span className="v2-brand-mark" aria-hidden="true">BB</span><span>Nonprofit Board Builder<small>Practical tools for your board</small></span></Link>}
       {!participant && <Link className="v2-recovery-link" to="/v2/recover">Recover my resources</Link>}
     </header>
-    <main id="v2-main" className={narrow ? "v2-main v2-main-narrow" : "v2-main"}>{children}</main>
+    <main id="v2-main" className={narrow ? "v2-main v2-main-narrow" : "v2-main"}>{testing && <aside className="v2-admin-test-banner" role="note"><strong>Admin test using sample data. No payment or live delivery.</strong><p>You are using the customer pages in separate test storage. Generated examples are samples. Emails are captured, and campaigns are not published to customers or sent to the live network.</p><Link to={testProduct ? `/v2/admin-test/${testProduct}` : "/admin?tab=v2"}>{testProduct ? "Open my test controls and captured emails" : "Return to admin"}</Link></aside>}{children}</main>
     <footer className="v2-footer"><p>© {new Date().getFullYear()} Nonprofit Board Builder</p><span><ShieldCheck size={15} aria-hidden="true" /> Self-guided board resources</span></footer>
   </div>;
 }

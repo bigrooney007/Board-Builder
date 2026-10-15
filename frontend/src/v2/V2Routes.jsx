@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import V2Shell, { ErrorNotice, Loading, PreviewGate } from "./V2Shell";
 import PaidSetupPage from "./PaidSetupPage";
+import AdminPaidTestPage from "./AdminPaidTestPage";
 import { errorMessage, v2Api } from "./api";
 import { FreeIntakePage, MarketplacePage, NotFoundPage, OfferPage, PaymentPage, ProductIndexPage, ProductLandingPage, RecoveryPage } from "./PublicPages";
 import { CampaignPage, InvitationsPage, ResourceEditorPage, ResourceLibraryPage, ResourcesPage, ResponsePage, ResponsesPage } from "./ResourcePages";
@@ -61,6 +62,8 @@ const protectedPage = (page) => <PreviewGate>{page}</PreviewGate>;
 export default function V2Routes() {
   return <SecureLinkExchange><Routes>
     <Route index element={protectedPage(<ProductIndexPage />)} />
+    <Route path="admin-test/marketplace" element={protectedPage(<MarketplacePage endpoint="/admin/test-api/marketplace" />)} />
+    <Route path="admin-test/:product" element={protectedPage(<AdminPaidTestPage />)} />
     <Route path="recover" element={<RecoveryPage />} />
     <Route path="access" element={<NotFoundPage />} />
     <Route path="forms/:token" element={<ParticipantPage />} />

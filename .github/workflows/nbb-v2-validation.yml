@@ -65,3 +65,12 @@ jobs:
             /tmp/nbb-v2-browser-results
             /tmp/nbb-v2-layout-results
             /tmp/nbb-v2-fixture.log
+      - name: Read-only public deployment check
+        continue-on-error: true
+        run: python tests/v2_live_smoke.py
+      - name: Save public deployment findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nbb-v2-live-public-check
+          path: /tmp/nbb-v2-live-results

@@ -217,7 +217,8 @@ async def _generate_resource(db, journey, resource):
             extra += "\nThe approved_board_member_profiles in the verified context are authoritative. Build the recruitment content for those exact approved roles and contributions. Do not add, replace or reassess roles using earlier unapproved intake suggestions."
         if gen_type in {"reactivation_conversation_script", "reactivation_response_analysis"}:
             extra = "\nUse the board member's exact submitted position. A submitted form is not a final commitment. Never presume motives or willingness beyond what they supplied. Do not add conversation-conclusion workflow stages."
-        generated = await generate_structured(gen_type, context, GENERATION_INSTRUCTIONS + extra)
+        from v2_admin_test import is_admin_test, sample_generation
+        generated = sample_generation(gen_type, context) if is_admin_test(db) else await generate_structured(gen_type, context, GENERATION_INSTRUCTIONS + extra)
         if not isinstance(generated, dict) or not generated:
             raise ValueError("The generator returned an empty resource.")
         generated = normalize_copy(generated)

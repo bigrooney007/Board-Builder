@@ -11,6 +11,7 @@ import json
 import os
 import re
 import secrets
+from v2_admin_test import is_admin_test
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -131,7 +132,7 @@ async def campaign_view(db, journey):
             "published_revision": snapshot.get("revision"), "preview": preview or current["preview"],
             "required_resources": current["required_resources"], "activities": list(activities.values()),
             "application_link": f"{origin()}/v2/forms/{journey['form_token']}",
-            "marketplace_link": f"{origin()}/v2/marketplace" if (activities.get("marketplace") or {}).get("status") == "published" else ""}
+            "marketplace_link": f"{origin()}/v2/{'admin-test/marketplace' if is_admin_test(db) else 'marketplace'}" if (activities.get("marketplace") or {}).get("status") == "published" else ""}
 
 
 async def _record_activity(db, jid, revision, key, value):

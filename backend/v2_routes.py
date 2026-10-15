@@ -116,7 +116,7 @@ async def existing_intake(db, member, product):
     return {}
 
 
-def create_v2_router(db):
+def create_v2_router(db, include_admin_tests=True):
     router = APIRouter(prefix="/api/v2", tags=["Simplified V2 preview"])
 
     @router.get("/access")
@@ -359,4 +359,7 @@ def create_v2_router(db):
     combined.include_router(create_v2_resource_router(db))
     combined.include_router(create_v2_form_router(db))
     combined.include_router(create_v2_campaign_router(db))
+    if include_admin_tests:
+        from v2_admin_test import create_admin_test_router
+        combined.include_router(create_admin_test_router(db))
     return combined

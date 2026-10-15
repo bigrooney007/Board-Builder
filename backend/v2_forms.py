@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import secrets
+from v2_admin_test import form_token
 from datetime import datetime
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -97,9 +98,9 @@ async def initialize_forms(db, journey):
     jid = journey['journey_id']
     updates = {}
     if not journey.get('form_token'):
-        updates['form_token'] = secrets.token_urlsafe(32)
+        updates['form_token'] = form_token(db, journey['product'])
     if not journey.get('group_token'):
-        updates['group_token'] = secrets.token_urlsafe(32)
+        updates['group_token'] = form_token(db, journey['product'])
     if updates:
         await db.v2_journeys.update_one({'journey_id': jid}, {'$set': updates})
         journey.update(updates)
@@ -107,7 +108,7 @@ async def initialize_forms(db, journey):
         leader = await db.v2_invitations.find_one({'journey_id': jid, 'role': 'Leader'}, {'_id': 0})
         if not leader:
             leader = {'invitation_id': c.new_id(), 'journey_id': jid, 'name': journey['name'], 'email': journey['email'],
-                      'role': 'Leader', 'form_token': secrets.token_urlsafe(32), 'status': 'prepared',
+                      'role': 'Leader', 'form_token': form_token(db, journey['product']), 'status': 'prepared',
                       'delivery_status': 'not_sent', 'created_at': c.now_iso()}
             await db.v2_invitations.update_one({'journey_id': jid, 'role': 'Leader'}, {'$setOnInsert': leader}, upsert=True)
             leader = await db.v2_invitations.find_one({'journey_id': jid, 'role': 'Leader'}, {'_id': 0})
@@ -550,7 +551,7 @@ def create_v2_form_router(db):
         row = await db.v2_invitations.find_one({'journey_id': jid, 'email': email}, {'_id': 0})
         if not row:
             row = {'invitation_id': core().new_id(), 'journey_id': jid, 'name': name, 'email': email, 'role': clean_text(body.get('role') or 'Board Member', 100),
-                   'form_token': secrets.token_urlsafe(32), 'status': 'prepared', 'delivery_status': 'not_sent', 'created_at': core().now_iso()}
+                   'form_token': form_token(db, journey['product']), 'status': 'prepared', 'delivery_status': 'not_sent', 'created_at': core().now_iso()}
             await db.v2_invitations.update_one({'journey_id': jid, 'email': email}, {'$setOnInsert': row}, upsert=True)
             row = await db.v2_invitations.find_one({'journey_id': jid, 'email': email}, {'_id': 0})
         if body.get('send') is True:

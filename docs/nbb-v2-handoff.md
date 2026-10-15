@@ -163,3 +163,43 @@ publishes changes.
 Validation includes admin permission and CSRF checks, private drafts, all four
 independent publications, persistence, stale revisions, failed saves, safe text
 rendering and genuine desktop/mobile admin-to-public-page browser checks.
+
+## Admin tests of all four paid experiences
+
+Open `/admin?tab=v2`, then use **Test what customers see after payment**:
+
+- `/v2/admin-test/recruit`
+- `/v2/admin-test/board-fundraising-game`
+- `/v2/admin-test/strategic-planning`
+- `/v2/admin-test/board-recommitment`
+
+Sign in with the existing administrator account. **Start a fresh paid test**
+creates a sample organization and opens the actual post-payment setup page,
+without checkout or a purchase record. **Continue my saved test** resumes the
+latest test for that product. Branding, required meeting setup, recruitment
+profile approval, resource editing/approval/downloads, forms, responses and group
+meetings reuse the actual V2 customer pages and backend handlers. Recruitment
+campaign publication uses a private test marketplace, not the public marketplace.
+
+A visible test banner remains on every test page. Invitation and form tokens are
+marked as admin tests and use an administrator-authenticated API adapter. Losing
+or sharing a test URL does not grant customer or public access. Each admin's
+records live in separately prefixed collections in the existing database. The
+original customer collections, purchases, entitlements and applicant network are
+not written. The adapter rejects checkout, payment, recovery and admin APIs.
+
+Resources that normally need AI use clearly labeled, deterministic sample output
+through the existing document renderers. No AI provider call or cost occurs.
+Transactional notifications and approved-document messages are captured in the
+**Captured test emails** section of the product's test-controls page. They are
+not sent. Email retry processing in the test database cannot reach the provider.
+The administrator can open captured action links and retrieve approved test
+resources from the same customer collection pages. Actual production Stripe,
+AI quality and email deliverability require separate live-provider verification;
+these admin tests do not certify those integrations.
+
+The validation workflow also records a separate read-only public deployment
+check. It performs public GET requests and opens homepage-to-education-to-intake
+pages on desktop/mobile. It does not submit forms, log into a real account,
+charge a card, generate customer resources or send email. Its report is separate
+from isolated application test results because deployment may be in progress.

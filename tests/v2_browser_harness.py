@@ -143,6 +143,42 @@ async def check(base, artifact_dir):
                 assert not errors, errors
                 await page.screenshot(path=str(artifact_dir / f"{device}-{product}-published-education.png"), full_page=True)
                 findings.append(f"PASS {device} {product}: real admin session, private saved draft, matching page preview, published writing and paragraphs, unchanged free entry, no overflow")
+            for product, name in product_names.items():
+                await page.goto(base + "/admin?tab=v2", wait_until="networkidle")
+                await page.get_by_role("link", name=f"Test {name}", exact=True).click()
+                await page.get_by_role("heading", name=f"{name}: after payment", exact=True).wait_for()
+                await page.get_by_role("button", name="Start a fresh paid test", exact=True).click()
+                await page.wait_for_url(re.compile(r"/v2/setup/admin-test-"))
+                await page.locator(".v2-admin-test-banner").wait_for()
+                await page.get_by_label("Organization name", exact=True).fill("Our Admin Test Charity")
+                if product in {"board-fundraising-game", "strategic-planning"}:
+                    await page.get_by_label("Meeting date", exact=True).fill("2030-11-30")
+                    await page.get_by_label("Meeting time", exact=True).fill("15:00")
+                    await page.get_by_label("Time zone", exact=True).fill("Europe/London")
+                await page.get_by_role("button", name=re.compile(r"Save and")).click()
+                await page.wait_for_url(re.compile(r"/v2/resources/admin-test-"))
+                jid = page.url.rsplit("/", 1)[-1]
+                if product == "recruit":
+                    await page.get_by_role("heading", name="Approve Your Board Member Recruitment Profiles", exact=True).wait_for()
+                    await page.get_by_role("link", name="View and edit", exact=True).first.click()
+                    await page.get_by_test_id("v2-resource-approve").click()
+                    await page.get_by_role("link", name="Open my recruitment pack", exact=True).click()
+                    await page.get_by_role("heading", name="Your Board Recruitment Pack", exact=True).wait_for()
+                else:
+                    invitation = await context.request.post(base + f"/api/v2/admin/test-api/journeys/{jid}/invitations", data={"name": "Sample Board Member", "email": "board@example.test", "send": True})
+                    assert invitation.status == 200, await invitation.text()
+                    token = (await invitation.json())["form_token"]
+                    await page.goto(base + "/v2/forms/" + token, wait_until="networkidle")
+                    await page.locator(".v2-admin-test-banner").wait_for()
+                    assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                await page.screenshot(path=str(artifact_dir / f"{device}-{product}-paid-admin-test.png"), full_page=True)
+                await page.goto(base + f"/v2/admin-test/{product}", wait_until="networkidle")
+                await page.get_by_role("link", name="Continue my saved test", exact=True).wait_for()
+                if product != "recruit":
+                    assert await page.locator(".v2-test-inbox details").count() >= 1
+                assert not errors, errors
+                assert not await page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
+                findings.append(f"PASS {device} {product}: admin dashboard to real paid setup, sample resources, isolated form links, persistent test and captured invitations")
             await context.close()
         await browser.close()
     (artifact_dir / "results.json").write_text(json.dumps({"origin": base, "provider_mode": "synthetic", "results": findings}, indent=2))
