@@ -140,7 +140,7 @@ export default function AdminPage() {
   const [checking,setChecking]=useState(true);
   const [tab,setTab]=useState(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
-    return ["blog", "videos"].includes(requested) ? requested : "pathways";
+    return ["blog", "videos", "homepages"].includes(requested) ? requested : "pathways";
   });
   const [applicants,setApplicants]=useState([]);
   const [filters,setFilters]=useState(blankFilters);
@@ -170,7 +170,7 @@ export default function AdminPage() {
   const tabs=[
     ["pathways","4 Board Builder Pathways"],
     ["videos","Platform Videos"],
-    ["homepages","6 Home Page Text"],
+    ["homepages","Landing & Payment Text"],
     ["analytics","Platform Analytics"],
     ["applicants","Board Applicant Network"],
     ["blog","Blog Post Generator"],
