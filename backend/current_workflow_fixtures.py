@@ -1,11 +1,39 @@
 """Synthetic data for the real current client routes, not parallel test forms."""
 import secrets
+import hashlib
+import json
+from pathlib import Path
 from datetime import datetime, timezone
 import strategic_questionnaire as planning
 import fundraising_audiences as fundraising
 
 WORKFLOWS = {"recruitment": "original-recruitment-materials-page", "board-fundraising-game": fundraising.VERSION,
              "strategic-planning": planning.VERSION, "board-recommitment": "original-recommitment"}
+
+
+WORKFLOW_FILES = {
+    "recruitment": ("recruit_free_routes.py", "workspace_routes.py", "workspace_service.py", "../frontend/src/funnels/RecruitmentGamePage.jsx", "../frontend/src/member/RecruitmentSetupMaterialsPage.jsx"),
+    "board-fundraising-game": ("fundraising_audiences.py", "fundraising_review.py", "game_routes.py", "game_night_routes.py", "game_meeting_routes.py", "group_game_routes.py", "strategy_pdf.py", "../frontend/src/game/AudienceQuestionnaire.jsx", "../frontend/src/game/AudienceGroupReview.jsx", "../frontend/src/game/GameDashboardPage.jsx"),
+    "strategic-planning": ("strategic_questionnaire.py", "strategic_questions.json", "strategic_planning_routes.py", "guided_product_routes.py", "../frontend/src/funnels/StrategicPlanningFormPage.jsx", "../frontend/src/funnels/StrategicPlanningSessionPage.jsx", "../frontend/src/funnels/StrategicPlanningDashboard.jsx"),
+    "board-recommitment": ("reactivation_routes.py", "reactivation_plan_routes.py", "guided_product_routes.py", "../frontend/src/funnels/BoardRecommitmentDashboard.jsx"),
+}
+
+
+def workflow_fingerprint(product):
+    """A changed client workflow automatically gets new preloaded test records.
+
+    Old synthetic records remain intact. Existing customers are never reseeded.
+    Backend configuration is authoritative even when frontend sources are packaged
+    separately in production.
+    """
+    config = planning.form_content() if product == "strategic-planning" else fundraising.configuration() if product == "board-fundraising-game" else WORKFLOWS[product]
+    digest = hashlib.sha256(json.dumps(config,sort_keys=True).encode())
+    root = Path(__file__).resolve().parent
+    for name in ("ai_service.py", "content_templates.py", *WORKFLOW_FILES[product]):
+        path = root / name
+        if path.is_file():
+            digest.update(name.encode()); digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
 
 
 def planning_answers(name="Sample leader"):

@@ -30,7 +30,7 @@ export const DashboardPreviewSection = () => {
       sessionStorage.removeItem("operateAsUserId");
       storeMemberToken(response.data.token);
       sessionStorage.setItem("adminClientTest", "1");
-      sessionStorage.setItem("adminClientTestVersion", String(response.data.workflow_version || "original-current"));
+      sessionStorage.setItem("adminClientTestVersion", [response.data.workflow_version || "original-current",response.data.build_identifier].filter(Boolean).join(" / "));
       window.location.assign(response.data.start_url || response.data.dashboard_url);
     } catch (err) {
       setError(err.response?.data?.detail || "The client test could not be opened.");

@@ -45,6 +45,15 @@ class QuestionConfiguration(unittest.TestCase):
         self.assertTrue(accepted["explicitly_adopted_decisions"][0]["agreed_ideas"][0]["individual_acceptance_confirmed"])
         self.assertNotIn("individual_acceptance_confirmed",areas[0]["agreed_ideas"][0])
 
+    def test_current_question_changes_automatically_invalidate_preloaded_fixture_identity(self):
+        from unittest.mock import patch
+        from current_workflow_fixtures import workflow_fingerprint
+        first=workflow_fingerprint("strategic-planning")
+        changed=copy.deepcopy(sp.QUESTIONS);changed[0]["prompt"]="An updated current question"
+        with patch.object(sp,"QUESTIONS",changed):
+            self.assertNotEqual(first,workflow_fingerprint("strategic-planning"))
+        self.assertEqual(first,workflow_fingerprint("strategic-planning"))
+
     def test_incomplete_audience_and_duplicate_identifier_rejected(self):
         from fastapi import HTTPException
         from current_workflow_fixtures import fundraising_answers

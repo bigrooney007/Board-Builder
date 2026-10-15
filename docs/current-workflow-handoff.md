@@ -23,7 +23,7 @@ The strategy preview uses only approved audiences and confirmed commitments. The
 
 ## Admin Client Testing Center
 
-Existing fresh and preloaded buttons remain. Planning and fundraising now seed the current canonical questionnaires rather than historical fixture copies. Additional introductory-question buttons open the real leader forms with authorized test access. No separate customer-facing test forms are maintained. The test banner displays the workflow version.
+Existing fresh and preloaded buttons remain. Planning and fundraising now seed the current canonical questionnaires rather than historical fixture copies. Additional introductory-question buttons open the real leader forms with authorized test access. No separate customer-facing test forms are maintained. The test banner displays the workflow version and a source/configuration fingerprint. Each preloaded identity includes that fingerprint, so a changed questionnaire or workflow automatically receives a new current fixture without erasing prior test progress.
 
 All four product launchers continue to open their real client routes. Existing Board Transformation and older Fundraising Activation service test buttons also use separate synthetic identities and the actual client intake routes; they no longer alter a real member's entitlements or copy an administrator password. Historical test progress and customer records are retained.
 

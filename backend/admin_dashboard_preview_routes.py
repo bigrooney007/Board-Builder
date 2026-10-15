@@ -1,6 +1,6 @@
 """Admin-only launchers and realistic test fixtures for the four customer product dashboards."""
 import hashlib
-from current_workflow_fixtures import WORKFLOWS, seed_current_workflow
+from current_workflow_fixtures import WORKFLOWS, seed_current_workflow, workflow_fingerprint
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -2747,7 +2747,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         await authenticate_admin(request, db)
         import strategic_questionnaire as planning
         import fundraising_audiences as fundraising
-        return {"workflows": WORKFLOWS, "planning_questions": planning.QUESTIONS, "fundraising": fundraising.configuration(),
+        return {"workflows": WORKFLOWS, "build_identifiers": {product:workflow_fingerprint(product) for product in PRODUCTS}, "planning_questions": planning.QUESTIONS, "fundraising": fundraising.configuration(),
                 "test_delivery": "captured", "routes": PRODUCTS}
 
     @router.post("/intro/{product}")
@@ -2759,7 +2759,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         await db.members.update_one({"user_id": member["user_id"]}, {"$set": {"internal_client_test": True, "client_test_product": product, "account_status": "guided_guest"}})
         url = await seed_current_workflow(db, member, product, intro=True)
         token = create_member_token(member["user_id"], member["email"]); set_member_cookie(response, token)
-        return {"start_url": url, "token": token, "workflow_version": WORKFLOWS[product]}
+        return {"start_url": url, "token": token, "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product)}
 
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):
@@ -2788,7 +2788,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             "dashboard_url": start_url,
             "start_url": start_url,
             "product": product,
-            "mode": "fresh", "workflow_version": WORKFLOWS[product],
+            "mode": "fresh", "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product),
             "test_member_email": member["email"],
             "token": member_token,
         }
@@ -2806,6 +2806,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             else FUNDRAISING_FIXTURE_VERSION if product == "board-fundraising-game"
             else FIXTURE_VERSION
         )
+        fixture_version += "-" + workflow_fingerprint(product)
         # Keep every product preview in its own isolated member identity. Two products may
         # legitimately share the same fixture version number, but they must never share
         # preview-member state, entitlements or downstream records.
@@ -2831,6 +2832,6 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
         member_token = create_member_token(member["user_id"], member["email"])
         set_member_cookie(response, member_token)
-        return {"dashboard_url": dashboard_url, "product": product, "token": member_token, "workflow_version": WORKFLOWS[product]}
+        return {"dashboard_url": dashboard_url, "product": product, "token": member_token, "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product)}
 
     return router
