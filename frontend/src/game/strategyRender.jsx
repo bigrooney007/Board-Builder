@@ -27,7 +27,7 @@ const LEGACY_CORE_STRATEGY_SECTIONS = [
   { key: "fundraising_process", title: "How We Will Raise Money From Them", stages: [["know", "KNOW"], ["like", "LIKE"], ["trust", "TRUST"], ["ask", "ASK"], ["follow_up", "FOLLOW UP"], ["steward", "STEWARD"]] },
 ];
 
-export const getStrategySections = (strategy) => Number(strategy?.schema_version || 1) >= 4
+export const getStrategySections = (strategy) => Number(strategy?.schema_version) === 6 ? (strategy.document_sections || []) : Number(strategy?.schema_version || 1) >= 4
   ? V4_STRATEGY_SECTIONS.filter((section) => !section.optional || (Array.isArray(strategy?.data?.[section.key]) && strategy.data[section.key].length > 0) || String(strategy?.section_edits?.[section.key] || "").trim())
   : Number(strategy?.schema_version || 1) >= 2 ? STRATEGY_SECTIONS
   : LEGACY_CORE_STRATEGY_SECTIONS;

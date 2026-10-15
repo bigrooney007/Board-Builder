@@ -99,6 +99,12 @@ export default function GameSituationPage() {
         axios.get(API + "/game/voice/manifest/" + self.data.token).then((r) => {
           if (active) setClips(r.data.clips || {});
         }).catch(() => {});
+        if (situation.data.workflow_version === 6) {
+          if (!participated) { navigate("/play/" + self.data.token, {replace:true}); return; }
+          if (!ready) { setPhase("meeting"); return; }
+          if (!situation.data.completed) await memberApi.post("/game/situation/complete");
+          navigate("/game/dashboard#bfg-board-members-section", {replace:true}); return;
+        }
         const realityReady = PRESENT_FUNDER_GROUPS.every((group) => groupComplete(saved, group));
         if (reviewMode) { setIndex(0); setPhase("reality"); return; }
         // Resume customers who reached the old resources page using their saved funder answers.

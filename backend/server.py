@@ -40,6 +40,8 @@ client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
 
 app = FastAPI(title="Nonprofit Board Builder")
+from admin_test_safety import install_email_capture
+install_email_capture(app, db)
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
 automation_task = None

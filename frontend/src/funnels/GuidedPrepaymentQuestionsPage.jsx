@@ -48,7 +48,7 @@ export default function GuidedPrepaymentQuestionsPage({ product }) {
   const ready = useRef(false);
   const saveChain = useRef(Promise.resolve());
   const isStrategic = product === "strategic-planning";
-  const base = isStrategic ? STRATEGIC : RECOMMITMENT;
+  const base = isStrategic ? (lead?.questions || STRATEGIC) : RECOMMITMENT;
   const steps = useMemo(() => base.flatMap((step) => step.type === "programs"
     ? (answers.program_details || [blankProgram()]).map((_, programIndex) => ({ ...step, programIndex }))
     : [step]), [base, answers.program_details]);
@@ -73,13 +73,14 @@ export default function GuidedPrepaymentQuestionsPage({ product }) {
       } catch { /* the server copy is still available */ }
       const restored = { ...latest, program_details: latest.program_details?.length ? latest.program_details : [blankProgram()] };
       setAnswers(restored);
-      const initialSteps = base.flatMap((step) => step.type === "programs"
+      const initialBase = isStrategic ? (data.questions || STRATEGIC) : RECOMMITMENT;
+      const initialSteps = initialBase.flatMap((step) => step.type === "programs"
         ? restored.program_details.map((_, programIndex) => ({ ...step, programIndex })) : [step]);
       setIndex(firstMissing(initialSteps, restored));
       ready.current = true;
     }).catch(() => setError("We could not open your saved answers. Please use the link from your email."))
       .finally(() => setLoading(false));
-  }, [token, product, navigate, isStrategic, base]);
+  }, [token, product, navigate, isStrategic]);
 
   useEffect(() => {
     if (!ready.current || !lead) return undefined;

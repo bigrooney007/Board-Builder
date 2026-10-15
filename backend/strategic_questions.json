@@ -1,0 +1,107 @@
+[
+  {
+    "key": "sp24_01",
+    "title": "The Next 24 Months",
+    "prompt": "What do you hope this organisation will achieve in the next 24 months?",
+    "help": "Imagine we are meeting again 24 months from today, and the organisation has become successful. Describe what you see. What has changed? What has the organisation achieved? What would success look like?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_02",
+    "title": "Goals And Objectives",
+    "prompt": "What goals and objectives must we accomplish to achieve what you have just described?",
+    "help": "Think about the most important things the organisation must achieve over the next 24 months to make that vision a reality. What should our priorities be? Which goals should we pursue first?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_03",
+    "title": "Programmes And Services",
+    "prompt": "What should we do about our programmes?",
+    "help": "What programmes do we currently run? Which existing programmes should we strengthen to have a greater impact? What new programmes should we introduce to help us achieve our goals? Are there any programmes we should discontinue or set aside?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_04",
+    "title": "The People We Serve",
+    "prompt": "Whose lives should be different because of what we achieve in the next 24 months?",
+    "help": "Think about the people and communities we serve. What changes would you like to see in their lives? How many people should we be reaching? What would show us that our work is making a difference?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_05",
+    "title": "Our Present Reality",
+    "prompt": "Considering where we are today, what must change for us to achieve these goals?",
+    "help": "What are we already doing well that we should continue or strengthen? What is currently limiting our progress? What opportunities are we overlooking? What must we start doing differently?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_06",
+    "title": "People And Organisational Capacity",
+    "prompt": "Who do we need to help us achieve these goals?",
+    "help": "Think about the people, skills, and experience the organisation will need over the next 24 months. Do we need to recruit additional board members, staff, volunteers, or other professionals? What responsibilities should our existing team take on?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_07",
+    "title": "Technology And Systems",
+    "prompt": "What technology or internal systems must we introduce or strengthen to achieve these goals?",
+    "help": "Think about how the organisation currently operates. What technology could help us work more effectively? What processes need improvement? Are there tools or systems we should introduce to strengthen our programmes and support our growth?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_08",
+    "title": "Marketing And Community Awareness",
+    "prompt": "How can we get more people to know about our organisation and support our work?",
+    "help": "Who needs to know about what we do? Where can we find these people? How should we reach them? What should we be doing consistently to increase awareness, attract supporters, and strengthen our presence in the communities we serve?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_09",
+    "title": "Partnerships",
+    "prompt": "Who should we partner with to help us achieve these goals?",
+    "help": "Think about organisations, businesses, institutions, and community groups that could help us reach more people, strengthen our programmes, or access resources. Who should we be building relationships with, and how could those relationships support our work?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_10",
+    "title": "Fundraising",
+    "prompt": "How should we raise the money we need to achieve these goals?",
+    "help": "Who should we raise money from? Think about individuals, businesses, foundations, and other funding sources. Where can we find potential funders? How can we attract their interest and secure their support? What should we ask them to support, and how much should we aim to raise?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_11",
+    "title": "Budget And Financial Resources",
+    "prompt": "What will it cost us to achieve these goals, and what might we be leaving out of our budget?",
+    "help": "Think about the resources and expenses required to achieve everything we want to accomplish in the next 24 months. What expenses do we already have? What new expenses will our goals introduce? Are there important budget items we have not yet captured? What resources do we already have, and what additional funding will we need?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_12",
+    "title": "Risks And Challenges",
+    "prompt": "What could prevent us from achieving these goals, and how should we prepare?",
+    "help": "Think about the challenges we might encounter over the next 24 months. What could delay our progress? Which goals depend on funding, people, or resources we do not yet have? What should we do to prepare for these challenges?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_13",
+    "title": "Actions And Milestones",
+    "prompt": "What exactly must we do, step by step, to achieve these goals?",
+    "help": "Think about the actions we must take to move from where we are today to where we want to be in 24 months. What should we accomplish in the first 90 days? What should we achieve within 12 months? What must be completed by the end of the 24 months?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_14",
+    "title": "Measuring Progress",
+    "prompt": "How will we know we are making progress toward these goals, and how should we hold ourselves accountable?",
+    "help": "What results should we measure? How often should we review our progress? Who should be responsible for reporting what has been achieved? What should happen when something is falling behind?",
+    "type": "text"
+  },
+  {
+    "key": "sp24_15",
+    "title": "Personal Contribution",
+    "prompt": "What role do you personally want to play in helping this organisation achieve these goals over the next 24 months?",
+    "help": "Think about your skills, experience, connections, and the time you can contribute. What specific responsibilities would you like to take on? What activities are you willing to lead or support? How would you personally like to contribute to the organisation's success?",
+    "type": "text"
+  }
+]

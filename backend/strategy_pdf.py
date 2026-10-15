@@ -234,6 +234,9 @@ class _StrategyDoc(BaseDocTemplate):
 
 
 def build_strategy_pdf(strategy: dict, org_name: str) -> bytes:
+    if int(strategy.get("schema_version") or 1) == 6:
+        from document_renderer import render_document_pdf
+        return render_document_pdf(title="Board Fundraising Strategy", org_name=org_name, body_text=strategy.get("document_text", ""))
     schema_version = int(strategy.get("schema_version") or 1)
     sections = V4_SECTIONS if schema_version >= 4 else V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
     data = strategy.get("data") or {}

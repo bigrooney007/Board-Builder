@@ -77,6 +77,7 @@ export default function StrategicPlanningDashboard(){
         axios.get(`${API}/guided/strategic-planning/session`,{params:{session_id:sid}}).catch(()=>({data:null})),
       ]);
       setCtx(workspace.data);
+      if(workspace.data.project?.questionnaire_version === "strategic-24-months-15") setOpen(current=>current==="1"?(workspace.data.project.planning_meeting?.meeting_date?"4":"2"):current);
       setSession(live.data);
       const savedMeeting=workspace.data.project?.planning_meeting||{};
       if(savedMeeting.meeting_date)setMeeting(savedMeeting);
@@ -116,7 +117,8 @@ export default function StrategicPlanningDashboard(){
   const boardResponses=boardPeople.filter(person=>person.status==="COMPLETED");
   const requiredOrg=["mission","goals","objectives","team_building","technology","marketing","partnerships","fundraising","budget","action_planning"];
   const programs=Array.isArray(answers.program_details)?answers.program_details.filter(x=>x?.name?.trim()):String(answers.programs||"").split("\n").filter(Boolean);
-  const organizationReady=Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
+  const currentQuestions=p.questionnaire_version === "strategic-24-months-15";
+  const organizationReady=currentQuestions || Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
   const meetingReady=Boolean(p.planning_meeting?.meeting_date&&p.planning_meeting?.start_time&&p.planning_meeting?.timezone_name);
   const formReady=p.form?.status==="Approved";
   const leadDone=lead?.status==="COMPLETED" || (p.facilitated && organizationReady);
@@ -211,15 +213,16 @@ export default function StrategicPlanningDashboard(){
     <DashboardWalkthroughVideo flow="strategic-planning" />
 
     <div className="sp-dash-stack">
-      <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
+      {!currentQuestions && <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
         <div className="sp-clean-stage">
           <h2>Give The Board A Real Starting Point</h2>
           <p>The organization information is not treated as the final strategy. It gives everyone something real to test, question, protect and improve.</p>
           {p.logo_data_url&&<img src={p.logo_data_url} className="sp-dashboard-logo" alt="Organization logo"/>}
           <Button onClick={()=>navigate(`/strategic-planning/organization?session_id=${encodeURIComponent(sid)}`)}>{organizationReady?"REVIEW ORGANIZATION INFORMATION":"TELL US ABOUT YOUR ORGANIZATION"}</Button>
         </div>
-      </Step>
+      </Step>}
 
+      {currentQuestions && <section className="sp-clean-stage"><h2>Your contribution is saved</h2><p>You have completed the same 15 questions your board members will answer. Set your meeting details, then invite them to share their own ideas.</p></section>}
       <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} audioKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
         <div className="sp-clean-stage">
           <h2>When Is Your Next Board Strategic Planning Meeting?</h2>
@@ -234,14 +237,14 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
+      {!currentQuestions && <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
         <div className="sp-clean-stage">
           <h2>{p.facilitated ? "The Founder’s Starting Point" : "Your Thinking Belongs In The Same Pool As Everyone Else's"}</h2>
           <p>{p.facilitated ? "The founder’s organization answers are saved as the starting context for every Board question. Board members will review that context and contribute their own ideas before the meeting." : "You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer."}</p>
           {!p.facilitated && (!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>)}
           {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> {p.facilitated ? "Founder context is ready for the Board’s review." : "Your response is saved and will enter the live session with everyone else's ideas."}</p>}
         </div>
-      </Step>
+      </Step>}
 
       <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the Strategic Planning Form to each Board Member and see every completed response in one place." status={!formReady?"Preparing":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!meetingReady} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
         <div className="sp-clean-stage">

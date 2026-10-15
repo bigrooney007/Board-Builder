@@ -1,4 +1,5 @@
 """Board Fundraising Game group meeting: one host-controlled screen shared by the whole board."""
+from fundraising_review import AudienceReview
 import re
 import secrets
 from datetime import datetime, timezone
@@ -227,6 +228,7 @@ class HostDecisionPayload(BaseModel):
 
 
 def create_group_game_router(db) -> APIRouter:
+    audience_review = AudienceReview(db)
     router = APIRouter(prefix="/api")
 
     async def game_member(request: Request) -> dict:
@@ -436,6 +438,8 @@ def create_group_game_router(db) -> APIRouter:
     async def prepare_group_game(request: Request):
         member = await game_member(request)
         profile = await get_profile(member["user_id"])
+        if profile.get("workflow_version") == 6:
+            return {"session": await audience_review.prepare(member["user_id"])}
         organization = (profile.get("organization") or {}).get("name", "your organization")
         session = await active_session(member["user_id"])
         if session and session.get("game_version") != GROUP_GAME_VERSION:
@@ -471,6 +475,11 @@ def create_group_game_router(db) -> APIRouter:
         session = await active_session(member["user_id"])
         if not session:
             raise HTTPException(status_code=404, detail="No Group Game session yet")
+        if session.get("game_version") == "audience-complete-v6":
+            state = await audience_review.state(session)
+            joined = await participants(session["session_id"])
+            return {"session": {"token": state["token"], "status": state["status"], "current_round": 0}, "audience_review": state["audience_review"],
+                    "players": [], "joined_count": len(joined), "board_member_count": len(state["audience_review"]["people"]), "current_round": None, "closed_rounds": [], "total_rounds": len(state["audience_review"]["proposals"])}
         members = await board_members(member["user_id"])
         joined = {row["board_member_id"]: row for row in await participants(session["session_id"])}
         rounds = await session_rounds(session["session_id"])
@@ -514,6 +523,10 @@ def create_group_game_router(db) -> APIRouter:
     async def start_group_game(request: Request):
         member = await game_member(request)
         session = await active_session(member["user_id"])
+        if session and session.get("game_version") == "audience-complete-v6":
+            if session["status"] in {"waiting", "prepared"}:
+                await db.group_game_sessions.update_one({"session_id": session["session_id"], "status": {"$in": ["waiting", "prepared"]}}, {"$set": {"status": "in_progress", "started_at": now_iso()}})
+            return {"status": "started"}
         if not session or session["status"] not in {"waiting", "prepared"}:
             raise HTTPException(status_code=409, detail="The Group Game is not ready to start")
         await db.group_game_sessions.update_one(
@@ -714,6 +727,12 @@ def create_group_game_router(db) -> APIRouter:
         if me:
             await db.group_game_participants.update_one(
                 {"participant_id": me["participant_id"]}, {"$set": {"last_active_at": now_iso()}})
+        if session.get("game_version") == "audience-complete-v6":
+            if not me: raise HTTPException(403, "Join with your own participant link first")
+            state = await audience_review.state(session)
+            return {"status": session["status"], "organization_name": (profile.get("organization") or {}).get("name", ""), "goal_display": fmt_goal(profile),
+                    "joined": True, "joined_count": len(joined), "total_rounds": len(state["audience_review"]["proposals"]), "current_round": None,
+                    "audience_review": state["audience_review"], "my_member_id": me["board_member_id"]}
         current_number = session.get("current_round", 0)
         current = await db.group_game_rounds.find_one(
             {"session_id": session["session_id"], "round_number": current_number}, {"_id": 0}) if current_number else None
@@ -776,4 +795,5 @@ def create_group_game_router(db) -> APIRouter:
         })
         return {"status": "submitted"}
 
+    router.include_router(audience_review.router())
     return router

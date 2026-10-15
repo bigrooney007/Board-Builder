@@ -1,5 +1,6 @@
 """Admin-only launchers and realistic test fixtures for the four customer product dashboards."""
 import hashlib
+from current_workflow_fixtures import WORKFLOWS, seed_current_workflow
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -30,11 +31,11 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v4"
-FRESH_TEST_VERSION = "fresh-v1"
+FRESH_TEST_VERSION = "fresh-current-v2"
 RECRUITMENT_FIXTURE_VERSION = "v8"
-STRATEGIC_FIXTURE_VERSION = "v7"
+STRATEGIC_FIXTURE_VERSION = "current-15-v1"
 RECOMMITMENT_FIXTURE_VERSION = "v9"
-FUNDRAISING_FIXTURE_VERSION = "v8"
+FUNDRAISING_FIXTURE_VERSION = "current-audience-6-v1"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -2512,6 +2513,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
     async def seed_fresh_client_test(member: dict, product: str, config: dict) -> str:
         """Create only the state a real customer would have immediately after payment."""
+        if product in {"strategic-planning", "board-fundraising-game"}:
+            return await seed_current_workflow(db, member, product)
         now = now_iso()
         tag = suffix(member)
         if config.get("entitlements"):
@@ -2739,6 +2742,25 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
         )
         return f"/purchase/success?session_id={session_id}"
 
+    @router.get("/manifest")
+    async def workflow_manifest(request: Request):
+        await authenticate_admin(request, db)
+        import strategic_questionnaire as planning
+        import fundraising_audiences as fundraising
+        return {"workflows": WORKFLOWS, "planning_questions": planning.QUESTIONS, "fundraising": fundraising.configuration(),
+                "test_delivery": "captured", "routes": PRODUCTS}
+
+    @router.post("/intro/{product}")
+    async def launch_intro_test(product: str, request: Request, response: Response):
+        admin = await authenticate_admin(request, db)
+        if product not in {"strategic-planning", "board-fundraising-game"}: raise HTTPException(404, "Use Start Fresh Client Test for this product")
+        ident = hashlib.sha256(f"{admin['user_id']}:{product}:{now_iso()}".encode()).hexdigest()[:12]
+        member = await preview_member(admin, f"{product}-intro-{ident}")
+        await db.members.update_one({"user_id": member["user_id"]}, {"$set": {"internal_client_test": True, "client_test_product": product, "account_status": "guided_guest"}})
+        url = await seed_current_workflow(db, member, product, intro=True)
+        token = create_member_token(member["user_id"], member["email"]); set_member_cookie(response, token)
+        return {"start_url": url, "token": token, "workflow_version": WORKFLOWS[product]}
+
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):
         admin = await authenticate_admin(request, db)
@@ -2766,7 +2788,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             "dashboard_url": start_url,
             "start_url": start_url,
             "product": product,
-            "mode": "fresh",
+            "mode": "fresh", "workflow_version": WORKFLOWS[product],
             "test_member_email": member["email"],
             "token": member_token,
         }
@@ -2797,7 +2819,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})
 
         dashboard_url = config["dashboard_path"]
-        if product == "recruitment":
+        if product in {"strategic-planning", "board-fundraising-game"}:
+            dashboard_url = await seed_current_workflow(db, member, product, preloaded=True)
+        elif product == "recruitment":
             await seed_recruitment_preview(member)
         elif product == "board-fundraising-game":
             await seed_fundraising_preview(member)
@@ -2807,6 +2831,6 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
         member_token = create_member_token(member["user_id"], member["email"])
         set_member_cookie(response, member_token)
-        return {"dashboard_url": dashboard_url, "product": product, "token": member_token}
+        return {"dashboard_url": dashboard_url, "product": product, "token": member_token, "workflow_version": WORKFLOWS[product]}
 
     return router

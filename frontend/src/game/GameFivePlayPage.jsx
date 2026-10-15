@@ -1,3 +1,4 @@
+import AudienceQuestionnaire from "./AudienceQuestionnaire";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -10,7 +11,7 @@ import "./guided-flow.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-export default function GameFivePlayPage() {
+function LegacyFivePlayPage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const [context, setContext] = useState(null);
@@ -115,4 +116,14 @@ export default function GameFivePlayPage() {
       </>}
     </section>}
   </main></BfgShell>;
+}
+
+export default function GameFivePlayPage() {
+  const { token } = useParams(); const navigate = useNavigate();
+  const [context, setContext] = useState(null); const [saved, setSaved] = useState(null); const [error, setError] = useState(""); const [done, setDone] = useState(false);
+  useEffect(() => { let live = true; Promise.all([axios.get(`${API}/game/play/${token}`), axios.get(`${API}/game/play/${token}/audience-response`)]).then(([a,b]) => { if(live){setContext(a.data);setSaved(b.data);setDone(Boolean(b.data.response?.completed));} }).catch(() => setError("This game link is not available.")); return () => {live=false}; }, [token]);
+  if (!context || !saved) return <BfgShell><main className="guided-flow"><p>{error || "Opening your individual game…"}</p></main></BfgShell>;
+  if (context.member?.game_version !== 6) return <LegacyFivePlayPage/>;
+  if (done) return <BfgShell><main className="guided-flow"><h1>Your Fundraising Ideas Are Saved</h1><p>Thank you. Your contribution will be discussed during the group meeting.</p>{context.member?.is_primary && <button className="bfg-btn bfg-btn-primary" onClick={() => navigate("/game/setup")}>CONTINUE TO MEETING SETUP</button>}</main></BfgShell>;
+  return <BfgShell><main className="guided-flow"><AudienceQuestionnaire configuration={saved.configuration} initial={saved.response} storageKey={"fundraising-person:"+token} context={context} save={value => axios.put(`${API}/game/play/${token}/audience-response`,value)} complete={async value => { await axios.post(`${API}/game/play/${token}/audience-response/complete`,value); if(context.member?.is_primary) navigate("/game/setup");else setDone(true); }}/></main></BfgShell>;
 }

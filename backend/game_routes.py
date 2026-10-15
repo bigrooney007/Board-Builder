@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timezone
 
 import resend
+import fundraising_audiences as audiences6
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -278,7 +279,7 @@ def present_reality_is_complete(doc: dict) -> bool:
 
 
 def situation_is_complete(doc: dict) -> bool:
-    return bool(doc and doc.get("completed") and present_reality_is_complete(doc))
+    return bool(doc and doc.get("completed") and (doc.get("workflow_version") == audiences6.VERSION or present_reality_is_complete(doc)))
 
 
 def create_game_router(db) -> APIRouter:
@@ -319,6 +320,20 @@ def create_game_router(db) -> APIRouter:
             "member": {"first_name": member.get("first_name", ""), "last_name": member.get("last_name", ""), "email": member.get("email", "")},
         }
 
+    @router.put("/game/free/audiences")
+    async def save_free_audiences(payload: dict, request: Request):
+        member = await authenticate_member(request, db)
+        profile = await get_profile_doc(member["user_id"])
+        if profile.get("workflow_version") != audiences6.VERSION:
+            raise HTTPException(409, "Continue your saved version of the game")
+        existing = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        if existing.get("completed"): raise HTTPException(409, "Your submitted ideas are already saved")
+        value = audiences6.clean_response(payload, submitting=payload.get("submit") is True)
+        value.update({"updated_at": datetime.now(timezone.utc).isoformat(), "completed": payload.get("submit") is True})
+        await db.game_free_responses.update_one({"user_id": member["user_id"]},
+            {"$set": value, "$setOnInsert": {"user_id": member["user_id"], "created_at": value["updated_at"]}}, upsert=True)
+        return {"saved": True, "complete": value["completed"]}
+
     @router.get("/game/free")
     async def free_game(request: Request):
         member = await authenticate_member(request, db)
@@ -326,6 +341,10 @@ def create_game_router(db) -> APIRouter:
         if not profile.get("profile_completed"):
             raise HTTPException(status_code=409, detail="Choose your fundraising goal and save your organization first")
         saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        if profile.get("workflow_version") == audiences6.VERSION:
+            return {"workflow_version": audiences6.VERSION, "configuration": audiences6.configuration(), "response": saved,
+                    "complete": bool(saved.get("completed")), "organization_name": (profile.get("organization") or {}).get("name", ""),
+                    "goal_amount": (profile.get("goal") or {}).get("amount", 0), "unlocked": GAME_ENTITLEMENT in member.get("entitlements", [])}
         answers = saved.get("answers") or {}
         first_unanswered = next((index for index in range(1, FREE_QUESTION_COUNT + 1)
                                  if not str(answers.get(str(index), "")).strip()), FREE_QUESTION_COUNT + 1)
@@ -395,7 +414,7 @@ def create_game_router(db) -> APIRouter:
             {"user_id": member["user_id"]},
             {"$set": {"organization": organization, "goal": goal, "primary_user": primary_user,
                       "profile_completed": completed, "updated_at": now},
-             "$setOnInsert": {"user_id": member["user_id"], "created_at": now}},
+             "$setOnInsert": {"user_id": member["user_id"], "created_at": now, "workflow_version": audiences6.VERSION}},
             upsert=True)
         if payload.homepage_capture and completed:
             try:
@@ -459,8 +478,8 @@ def create_game_router(db) -> APIRouter:
         require_entitlement(member, {GAME_ENTITLEMENT})
         doc = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0})
         if not doc:
-            return {"sections": {}, "current_step": 0, "completed": False}
-        return {**doc, "completed": situation_is_complete(doc)}
+            return {"sections": {}, "current_step": 0, "completed": False, "workflow_version": (await get_profile_doc(member["user_id"])).get("workflow_version")}
+        return {**doc, "completed": situation_is_complete(doc), "workflow_version": (await get_profile_doc(member["user_id"])).get("workflow_version")}
 
     @router.put("/game/situation")
     async def save_game_situation(payload: SituationUpdate, request: Request):
@@ -489,7 +508,8 @@ def create_game_router(db) -> APIRouter:
         member = await authenticate_member(request, db)
         require_entitlement(member, {GAME_ENTITLEMENT})
         situation = await db.game_situations.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
-        candidate = {**situation, "completed": True}
+        profile = await get_profile_doc(member["user_id"])
+        candidate = {**situation, "completed": True, "workflow_version": profile.get("workflow_version")}
         night = await db.game_nights.find_one({"user_id": member["user_id"]},
                                               {"_id": 0, "meeting_date": 1, "start_time": 1, "funding_deadline": 1}) or {}
         if not all(night.get(field) for field in ("meeting_date", "start_time", "funding_deadline")) or not situation_is_complete(candidate):
@@ -499,7 +519,7 @@ def create_game_router(db) -> APIRouter:
             )
         primary = await db.game_board_members.find_one(
             {"user_id": member["user_id"], "is_primary": True, "removed": {"$ne": True}}, {"_id": 0})
-        if primary and int(primary.get("game_version") or 0) == 5:
+        if primary and int(primary.get("game_version") or 0) >= 5:
             participation = await db.game_audience_responses.find_one(
                 {"board_member_id": primary["member_id"]}, {"_id": 0}) or {}
             if not participation.get("completed") or not str(participation.get("involvement") or "").strip():
@@ -507,7 +527,7 @@ def create_game_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         await db.game_situations.update_one(
             {"user_id": member["user_id"]},
-            {"$set": {"completed": True, "completed_at": now, "updated_at": now},
+            {"$set": {"completed": True, "completed_at": now, "updated_at": now, "workflow_version": profile.get("workflow_version")},
              "$setOnInsert": {"user_id": member["user_id"], "created_at": now}},
             upsert=True)
         await db.game_profiles.update_one(

@@ -312,6 +312,7 @@ def create_game_meeting_router(db) -> APIRouter:
         }
 
     async def run_final_compile(user_id: str):
+        if (await get_profile(user_id)).get("workflow_version") == 6: return
         try:
             profile = await get_profile(user_id)
             goal = profile.get("goal") or {}
@@ -544,6 +545,12 @@ def create_game_meeting_router(db) -> APIRouter:
     @router.post("/game/meeting/compile-final")
     async def compile_final(request: Request):
         member = await game_member(request)
+        profile = await get_profile(member["user_id"])
+        if profile.get("workflow_version") == 6:
+            from fundraising_review import AudienceReview
+            review = AudienceReview(db); session = await review.current(member["user_id"])
+            strategy = await review.strategy(session)
+            return {"status": "completed", "strategy_id": strategy["strategy_id"]}
         if not await completed_group_session(member["user_id"]):
             raise HTTPException(status_code=409, detail="Complete the Group Game before compiling the final strategy")
         job = await final_job(member["user_id"])
@@ -695,7 +702,7 @@ def create_game_meeting_router(db) -> APIRouter:
                 "schema_version": strategy.get("schema_version", 1),
                 "prepared_by": strategy.get("prepared_by", ""),
                 "generated_at": strategy["generated_at"], "data": strategy["data"],
-                "section_edits": strategy.get("section_edits", {}),
+                "section_edits": strategy.get("section_edits", {}), "document_sections": strategy.get("document_sections", []),
                 "organization_name": (profile.get("organization") or {}).get("name", ""),
             },
         }

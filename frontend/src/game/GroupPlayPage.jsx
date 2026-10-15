@@ -1,3 +1,4 @@
+import { AudienceParticipantReview } from "./AudienceGroupReview";
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
@@ -130,7 +131,9 @@ export default function GroupPlayPage() {
           </div>
         )}
 
-        {identity && state?.status === "in_progress" && round && (
+        {identity && state?.audience_review && <AudienceParticipantReview state={state} identity={identity} token={token} reload={poll}/>}
+
+        {identity && !state?.audience_review && state?.status === "in_progress" && round && (
           <>
             <RoundProgress current={round.round_number} total={state.total_rounds} />
             {round.status === "open" && (
@@ -159,7 +162,7 @@ export default function GroupPlayPage() {
           </>
         )}
 
-        {identity && state?.status === "completed" && (
+        {identity && !state?.audience_review && state?.status === "completed" && (
           <GroupReviewStage token={token} identity={identity} />
         )}
       </main>

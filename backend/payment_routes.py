@@ -1,3 +1,4 @@
+import fundraising_audiences as audiences6
 import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -734,7 +735,7 @@ def create_payment_router(db) -> APIRouter:
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.post("/guided-checkout")
-    async def create_guided_checkout(payload: DIYCheckoutRequest):
+    async def create_guided_checkout(payload: DIYCheckoutRequest, request: Request):
         product = payload.product
         config = {
             "strategic-planning": ("Strategic Planning With Your Board", "strategic_planning_497", "/strategic-planning"),
@@ -751,6 +752,11 @@ def create_payment_router(db) -> APIRouter:
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
+        if lead.get("internal_preview"):
+            member = await authenticate_member(request, db)
+            test_tx = await db.payment_transactions.find_one({"guided_lead_token": payload.result_token, "internal_preview": True, "claimed_by_user_id": member["user_id"]}, {"_id": 0})
+            if not member.get("internal_dashboard_preview") or not test_tx: raise HTTPException(403, "Use your own authorized admin test")
+            return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + test_tx["session_id"], "session_id": test_tx["session_id"]}
         kwargs = {
             "line_items": [{"price_data": {"currency": "usd", "unit_amount": 49700, "product_data": {"name": product_name}}, "quantity": 1}],
             "mode": "payment",
@@ -779,13 +785,17 @@ def create_payment_router(db) -> APIRouter:
     @router.post("/game-checkout")
     async def create_game_checkout(payload: DIYCheckoutRequest, request: Request):
         member = await authenticate_member(request, db)
-        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0, "answers": 1}) or {}
+        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         answers = saved.get("answers") or {}
-        if any(not str(answers.get(str(number), "")).strip() for number in range(1, 6)):
+        if (not saved.get("completed") if saved.get("workflow_version") == audiences6.VERSION else any(not str(answers.get(str(number), "")).strip() for number in range(1, 6))):
             raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
+        if member.get("internal_dashboard_preview"):
+            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": "board_fundraising_game_497"}, {"_id": 0})
+            if not tx: raise HTTPException(409, "Reopen your isolated admin test")
+            return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + tx["session_id"], "session_id": tx["session_id"]}
         kwargs = {
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
@@ -1008,8 +1018,8 @@ def create_payment_router(db) -> APIRouter:
                                         "lead_email": customer_email, "lead_organization": recruit.get("organization", "")}
         if payload.product == "board-fundraising-game":
             member = await authenticate_member(request, db)
-            saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0, "answers": 1}) or {}
-            if any(not str((saved.get("answers") or {}).get(str(n), "")).strip() for n in range(1, 6)):
+            saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+            if (not saved.get("completed") if saved.get("workflow_version") == audiences6.VERSION else any(not str((saved.get("answers") or {}).get(str(n), "")).strip() for n in range(1, 6))):
                 raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
             customer_email = member["email"]
             lead_context = {"user_id": member["user_id"], "lead_email": customer_email}

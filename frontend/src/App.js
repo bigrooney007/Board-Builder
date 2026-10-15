@@ -260,6 +260,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <MemberAuthProvider>
+        {sessionStorage.getItem("adminClientTest") === "1" && <aside role="status" style={{padding:"8px 16px",textAlign:"center",background:"#eef2ff",color:"#312e81",fontSize:14}}>Isolated admin client test · Workflow {sessionStorage.getItem("adminClientTestVersion") || "original-current"} · Emails captured · No charges</aside>}
         <PublicCenteringScope />
         <PlatformAnalytics />
         <GoogleAuthGate>

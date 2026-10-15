@@ -1,3 +1,4 @@
+import AudienceQuestionnaire from "./AudienceQuestionnaire";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
@@ -77,6 +78,7 @@ export default function GameFreeQuestionsPage() {
     finally { setBusy(false); }
   };
 
+  if (context?.workflow_version === 6) return <BfgShell><main className="guided-flow"><AudienceQuestionnaire configuration={context.configuration} initial={context.response} storageKey={"fundraising-free:" + member.user_id} context={{...context, goal_display: money(context.goal_amount)}} save={value => memberApi.put("/game/free/audiences", value)} complete={async value => { await memberApi.put("/game/free/audiences", {...value, submit: true}); navigate(context.unlocked ? "/game/setup" : "/game/upgrade"); }}/></main></BfgShell>;
   return <BfgShell><main className="guided-flow" data-testid="bfg-free-questions">
     {!context ? <><p className="guided-loading">{error || "Opening your Board Fundraising Game…"}</p>{error && <Link className="bfg-btn bfg-btn-primary" to={PUBLIC_START_ROUTES["board-fundraising-game"]}>RETURN TO THE OPENING FORM</Link>}</> : !started ? (
       <section className="guided-welcome" data-testid="bfg-free-welcome">

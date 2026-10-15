@@ -1,3 +1,4 @@
+import AudienceGroupReview from "./AudienceGroupReview";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
@@ -186,6 +187,7 @@ export default function GroupGamePage() {
     return memberApi.post("/game/group/start");
   };
 
+  if (session?.audience_review) return <BfgShell nav={<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/dashboard">Back to Dashboard</Link>}><main className="bfg-dash"><p className="bfg-eyebrow">GROUP BOARD FUNDRAISING GAME</p><h1>Board Fundraising Review Game</h1><p><button className="bfg-btn bfg-btn-ghost" onClick={copyLink}>{copied?"COPIED":"COPY PARTICIPANT MEETING LINK"}</button></p><AudienceGroupReview review={session.audience_review} session={session.session} reload={loadSession}/></main></BfgShell>;
   return (
     <BfgShell nav={<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/game/dashboard" data-testid="bfg-gg-back-dashboard">Back to Dashboard</Link>}>
       <main className="bfg-dash" data-testid="bfg-group-game-page">

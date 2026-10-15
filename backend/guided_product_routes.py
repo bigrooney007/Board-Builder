@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 import resend
+import strategic_questionnaire as strategic24
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
@@ -55,6 +56,8 @@ def create_guided_product_router(db):
 
     def clean_preanswers(product: str, answers: dict) -> dict:
         cleaned = {}
+        if product == "strategic-planning" and any(str(k).startswith("sp24_") for k in answers):
+            return {key: str(answers.get(key) or "").strip()[:12000] for key in strategic24.KEYS if key in answers}
         for key in prepayment_fields[product]:
             value = answers.get(key)
             if key == "program_details":
@@ -73,6 +76,8 @@ def create_guided_product_router(db):
         return cleaned
 
     def complete_preanswers(product: str, answers: dict) -> bool:
+        if product == "strategic-planning" and any(str(k).startswith("sp24_") for k in answers):
+            return strategic24.complete(answers)
         if product == "strategic-planning":
             programs = answers.get("program_details") or []
             if not programs or any(not item.get("name") for item in programs):
@@ -92,7 +97,7 @@ def create_guided_product_router(db):
         token, sid = secrets.token_urlsafe(32), f"sp-facilitated-{secrets.token_urlsafe(24)}"
         lead = {"token": token, "product": "strategic-planning", "name": payload.name.strip(),
                 "email": email, "organization": payload.organization.strip(), "board_count": payload.board_count,
-                "facilitated_by_admin": admin["user_id"], "facilitated_session_id": sid,
+                "facilitated_by_admin": admin["user_id"], "facilitated_session_id": sid, "questionnaire_version": strategic24.VERSION,
                 "followup_status": "facilitated", "followup_step": 0,
                 "converted_at": "", "created_at": now, "updated_at": now}
         await db.guided_product_leads.insert_one(lead)
@@ -128,11 +133,11 @@ def create_guided_product_router(db):
         if not project:
             await db.sp_projects.insert_one({"project_id": secrets.token_hex(16), "guided_session_id": sid,
                 "organization_name": lead["organization"], "founder_name": lead["name"], "founder_email": lead["email"],
-                "founder_title": "", "mission": lead["prepayment_answers"]["mission"], "organization_details_saved_at": now,
+                "founder_title": "", "mission": lead["prepayment_answers"].get("mission", ""), "questionnaire_version": strategic24.VERSION if strategic24.current(lead["prepayment_answers"]) else "legacy", "organization_details_saved_at": now,
                 "facilitated": True, "facilitator_email": admin["email"], "status": "Active", "generic_form_token": secrets.token_urlsafe(32), "created_at": now})
         else:
             await db.sp_projects.update_one({"guided_session_id": sid}, {"$set": {
-                "organization_name": lead["organization"], "mission": lead["prepayment_answers"]["mission"],
+                "organization_name": lead["organization"], **({"mission": lead["prepayment_answers"]["mission"]} if lead["prepayment_answers"].get("mission") else {}),
                 "organization_details_saved_at": now, "facilitated": True,
                 "facilitator_email": admin["email"], "updated_at": now}})
         await db.guided_product_leads.update_one({"token": token}, {"$set": {"followup_status": "facilitated", "converted_at": now}})
@@ -176,7 +181,8 @@ def create_guided_product_router(db):
                 await db.sp_projects.insert_one({"project_id": secrets.token_hex(16), "guided_session_id": sid,
                     "owner_user_id": member["user_id"], "organization_name": lead.get("organization") or "Organization",
                     "founder_name": lead.get("name") or "Organization Leader", "founder_email": lead.get("email") or "",
-                    "founder_title": "", "mission": answers["mission"], "organization_details_saved_at": now,
+                    "founder_title": "", "mission": answers.get("mission", ""), "organization_details_saved_at": now,
+                    "questionnaire_version": strategic24.VERSION if any(str(k).startswith("sp24_") for k in answers) else "legacy",
                     "status": "Active", "generic_form_token": secrets.token_urlsafe(32), "created_at": now})
                 project = await db.sp_projects.find_one({"guided_session_id": sid}, {"_id": 0})
             await db.sp_participants.update_one(
@@ -185,6 +191,13 @@ def create_guided_product_router(db):
                     "name": lead.get("name") or "Organization Leader", "email": str(lead.get("email") or "").lower(),
                     "role": "Lead User", "status": "INVITED", "form_token": secrets.token_urlsafe(32),
                     "review_status": "NOT SENT", "review_token": secrets.token_urlsafe(32), "created_at": now}}, upsert=True)
+            if any(str(k).startswith("sp24_") for k in answers) and strategic24.complete(answers):
+                await db.sp_participants.update_one(
+                    {"project_id": project["project_id"], "email": str(lead.get("email") or "").lower(), "status": {"$ne": "COMPLETED"}},
+                    {"$set": {"status": "COMPLETED", "response": {key: answers[key] for key in strategic24.KEYS},
+                              "questionnaire_version": strategic24.VERSION, "submitted_at": now,
+                              "response_questions": [{"id": q["key"], "prompt": q["prompt"], "section": q["title"]} for q in strategic24.QUESTIONS]}})
+
     audit_dimensions = {
         "co_leader": "Co-Leader", "co_facilitator": "Co-Facilitator", "co_architect": "Co-Architect",
         "co_mobilizer": "Co-Mobilizer", "co_evaluator": "Co-Evaluator", "co_reporter": "Co-Reporter",
@@ -278,6 +291,7 @@ def create_guided_product_router(db):
         doc={"token":token,**payload.model_dump(mode="json"),"email":str(payload.email).lower(),"created_at":now,"updated_at":now,
              "followup_status":"active","followup_step":0,
              "next_followup_at":(datetime.now(timezone.utc)+timedelta(hours=6)).isoformat(),"converted_at":""}
+        if payload.product == "strategic-planning": doc["questionnaire_version"] = strategic24.VERSION
         await db.guided_product_leads.insert_one(doc.copy())
         try:
             root=public_origin(payload.origin_url or "")
@@ -304,6 +318,8 @@ def create_guided_product_router(db):
         if doc.get("facilitated_by_admin"):
             doc.pop("facilitated_session_id", None)
             doc["facilitated_by_admin"] = True
+        if doc.get("questionnaire_version") == strategic24.VERSION:
+            doc["questions"] = strategic24.QUESTIONS
         return doc
 
     @router.put("/context/{token}/answers")
