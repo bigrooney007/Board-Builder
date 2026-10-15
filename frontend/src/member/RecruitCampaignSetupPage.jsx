@@ -4,7 +4,6 @@ import { MemberShell } from "./MemberShell";
 import { useMemberAuth } from "./MemberAuthContext";
 import { memberApi } from "./api";
 import { Module1Profile } from "./workspace/Module1Profile";
-import { Module3Launch, useMaterials } from "./workspace/WorkspaceModules";
 import "./sgr.css";
 
 const ANSWER_KEYS = ["mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join"];
@@ -12,11 +11,9 @@ const ANSWER_KEYS = ["mission", "current_board", "desired_board_members", "board
 export default function RecruitCampaignSetupPage() {
   const navigate = useNavigate();
   const { member, loading } = useMemberAuth();
-  const { refresh } = useMaterials();
   const [assessment, setAssessment] = useState(null);
   const [opportunity, setOpportunity] = useState(null);
   const [readiness, setReadiness] = useState({});
-  const [preparation, setPreparation] = useState({});
   const [schedule, setSchedule] = useState({ method: "", scheduling_link: "", availability: "" });
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -31,11 +28,9 @@ export default function RecruitCampaignSetupPage() {
     setAssessment(a.data);
     setOpportunity(o.data.opportunity);
     setReadiness(o.data.readiness || {});
-    setPreparation(o.data.preparation || {});
     setSchedule((old) => old.method ? old : (s.data.scheduling || old));
-    await refresh();
     return a.data;
-  }, [refresh]);
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -65,8 +60,8 @@ export default function RecruitCampaignSetupPage() {
     setBusy("schedule"); setError(""); setMessage("");
     try {
       await memberApi.put("/workspace/interview-scheduling", schedule);
-      setMessage("Interview scheduling saved. The invitation will include these details for each applicant.");
       await load();
+      navigate("/app/board-recruitment/setup/materials");
     } catch (err) { setError(err.response?.data?.detail || "Could not save interview scheduling."); }
     setBusy("");
   };
@@ -94,14 +89,12 @@ export default function RecruitCampaignSetupPage() {
         {schedule.method === "availability" && <label className="field"><span>Your available interview dates and times</span><textarea rows="3" value={schedule.availability || ""} onChange={(e) => setSchedule({ ...schedule, availability: e.target.value })} placeholder="Tuesday 10 AM to 1 PM; Thursday 2 PM to 5 PM" /></label>}
         <button className="button" disabled={!schedule.method || busy === "schedule"} onClick={saveSchedule}>{busy === "schedule" ? "SAVING…" : "SAVE INTERVIEW SCHEDULING"}</button>
       </section>}
-      {readiness.profiles_approved && readiness.scheduling_saved && <>
-        <section className="member-card"><p className="eyebrow">STEP 3 · REVIEW CAMPAIGN MATERIALS</p><h2>Your Application And Recruitment Copy</h2>
-          <p>These drafts use your approved board profiles and application link. Edit and approve each before launch. Preparation: {preparation.status || "queued"}{preparation.stage ? ` (${preparation.stage})` : ""}.</p><Module3Launch mode="materials" /></section>
-        <section className="member-card"><p className="eyebrow">STEP 4 · LAUNCH</p><h2>Publish Your Board Opportunity</h2>
-          <p>{readiness.materials_approved_count || 0}/{readiness.materials_total || 5} campaign materials approved. Your onboarding resources will be prepared when you have candidates to onboard.</p>
-          <Module3Launch mode="launch" onLaunched={() => navigate("/app/board-recruitment#br-section-applicants")} />
+      {readiness.profiles_approved && readiness.scheduling_saved && (
+        <section className="member-card">
+          <button className="button" onClick={() => navigate("/app/board-recruitment/setup/materials")}>OPEN CAMPAIGN MATERIALS</button>
         </section>
-      </>}
+      )}
+
     </>}
     {launched && <button className="button" onClick={() => navigate("/app/board-recruitment")}>OPEN MY RECRUITMENT DASHBOARD</button>}
   </main></MemberShell>;
