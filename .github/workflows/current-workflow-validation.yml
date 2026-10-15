@@ -14,6 +14,9 @@ jobs:
       MONGO_URL: mongodb://127.0.0.1:27017
       JWT_SECRET: isolated-current-workflow-secret-not-for-production
       REACT_APP_BACKEND_URL: http://127.0.0.1:8765
+      STRIPE_SECRET_KEY: sk_test_isolated_provider_disabled
+      PAID_PROGRAMS_LIVE: false
+      STRIPE_MODE: test
       RESEND_API_KEY: isolated-provider-disabled
       NONPROFIT_SENDER: test@example.test
       PUBLIC_ORIGIN: http://127.0.0.1:8765
@@ -39,18 +42,22 @@ jobs:
           python -m unittest discover -s backend/tests -p test_four_customer_journeys_contract.py -v
           python -m unittest discover -s backend/tests -p test_recovered_recruitment_routes.py -v
       - uses: actions/setup-node@v4
+        if: always()
         with:
           node-version: '20'
           cache: yarn
           cache-dependency-path: frontend/yarn.lock
       - run: yarn --cwd frontend install --frozen-lockfile
+        if: always()
       - name: Frontend journey regressions
+        if: always()
         env:
           CI: 'true'
         run: |
           mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
           yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
       - name: Production build
+        if: always()
         env:
           CI: 'false'
         run: yarn --cwd frontend build
