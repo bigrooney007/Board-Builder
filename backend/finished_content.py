@@ -2,8 +2,9 @@
 import re
 
 # These describe a container, not a meaningful section of an organization's work.
-CONTAINERS = {"title", "headline", "heading", "body", "content", "text", "sections", "section", "paragraphs"}
-PREFIX = re.compile(r"^(?:title|headline|heading|body|content|text)\s*:\s*", re.I)
+CONTAINERS = {"title", "headline", "heading", "body", "content", "text", "sections", "section", "paragraphs",
+              "document_title", "email_body", "post_body", "post_text"}
+PREFIX = re.compile(r"^(?:(?:document[ _])?title|headline|heading|(?:email[ _]|post[ _])?body|content|(?:post[ _])?text)\s*:\s*", re.I)
 CONTAINER_LINE = re.compile(r"^(?:sections?|paragraphs|version\s*\d+)\s*:?\s*$", re.I)
 
 

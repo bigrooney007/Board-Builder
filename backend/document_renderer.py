@@ -11,8 +11,8 @@ from reportlab.lib.colors import HexColor
 from reportlab.platypus import BaseDocTemplate, Frame, Image, NextPageTemplate, PageBreak, PageTemplate, Paragraph, Spacer
 
 ARTIFACT_LINE = re.compile(r"^(sections?|version\s*\d+)\s*:?\s*$", re.I)
-TITLE_PREFIX = re.compile(r"^(?:title|headline|heading)\s*:\s*", re.I)
-CONTENT_PREFIX = re.compile(r"^(?:content|body|text)\s*:\s*", re.I)
+TITLE_PREFIX = re.compile(r"^(?:(?:document[ _])?title|headline|heading)\s*:\s*", re.I)
+CONTENT_PREFIX = re.compile(r"^(?:content|(?:email[ _]|post[ _])?body|(?:post[ _])?text)\s*:\s*", re.I)
 HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 

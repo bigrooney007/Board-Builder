@@ -22,11 +22,14 @@ class FinishedCustomerContent(unittest.TestCase):
 
     def test_nested_resources_keep_actual_headings_and_topic_information(self):
         value = {"title": "Our Board Manual", "sections": [{"headline": "Our responsibilities", "body": "We guide the mission.",
-                  "meeting_frequency": "Monthly", "paragraphs": ["We prepare in advance."]}]}
+                  "meeting_frequency": "Monthly", "paragraphs": ["We prepare in advance."],
+                  "post_text": "Share the opportunity.", "email_body": "Thank you for your interest."}]}
         text = "\n".join(resource_lines(value))
         self.assertNotRegex(text, r"(?im)^\s*(title|headline|heading|body|content|sections|paragraphs)\s*:")
         for phrase in ("Our Board Manual", "Our responsibilities", "We guide the mission.", "Meeting Frequency: Monthly", "We prepare in advance."):
             self.assertIn(phrase, text)
+        self.assertNotIn("Post Text:", text)
+        self.assertNotIn("Email Body:", text)
 
     def test_all_four_product_resource_formats_use_finished_text(self):
         # Load the real formatter, substituting only an unusable AI transport.
