@@ -137,7 +137,7 @@ async def send_campaign_launch_email(db, opportunity: dict, member: dict, origin
         network_message = "The Applicant Network announcement has been initiated."
     body = (
         f"<p>Hello {html.escape(member.get('first_name') or 'there')},</p>"
-        f"<p>Your Board recruitment campaign for <strong>{html.escape(opportunity['organization_name'])}</strong> is live. "
+        f"<p>Your Board recruitment campaign for <strong>{html.escape(opportunity['organization_name'])}</strong> has launched. "
         f"Your opportunity is available to applicants in the Board Applicant Marketplace. {html.escape(network_message)}</p>"
         f"<p><a href='{html.escape(apply_url, quote=True)}'>View and share your Board Application</a> · "
         f"<a href='{html.escape(dashboard_url, quote=True)}'>Open your approved campaign materials</a></p>"
@@ -150,8 +150,8 @@ async def send_campaign_launch_email(db, opportunity: dict, member: dict, origin
     )
     try:
         email_id = await _send("NONPROFIT_SENDER", member["email"],
-                               f"Your Board Recruitment Campaign Is Live | {opportunity['organization_name']}",
-                               _wrap("Your Campaign Is Live", body))
+                               f"Your Board Recruitment Campaign Has Launched | {opportunity['organization_name']}",
+                               _wrap("Your Campaign Has Launched", body))
         await db.opportunities.update_one({"opportunity_id": opportunity["opportunity_id"]},
             {"$set": {"launch_email_status": "Sent", "launch_email_id": email_id, "launch_email_at": datetime.now(timezone.utc).isoformat()}})
     except Exception as exc:

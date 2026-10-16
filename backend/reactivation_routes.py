@@ -573,7 +573,8 @@ def create_reactivation_router(db) -> APIRouter:
         existing = await db.generated_materials.find_one(query, {"_id": 0, "versions.version": 1})
         now = datetime.now(timezone.utc).isoformat()
         version_number = (max((v["version"] for v in existing["versions"]), default=0) + 1) if existing else 1
-        version = {"version": version_number, "structured": structured, "display_text": display_text, "source": "generated", "created_at": now}
+        from finished_content import clean_resource_text
+        version = {"version": version_number, "structured": structured, "display_text": clean_resource_text(display_text), "source": "generated", "created_at": now}
         if existing:
             await db.generated_materials.update_one(query, {"$push": {"versions": version}, "$set": {"current_version": version_number, "status": "Draft", "updated_at": now}})
         else:

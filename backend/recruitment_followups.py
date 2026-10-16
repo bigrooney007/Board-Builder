@@ -93,7 +93,7 @@ async def send_amplify_followups(db, now: datetime) -> int:
         link = f"{origin()}/recruit/amplify?token={token}"
         first = html.escape(owner.get("first_name") or "there")
         org = html.escape(item.get("organization_name") or "your organization")
-        body = (f"<p>Hi {first},</p><p>Your recruitment campaign for {org} is live through Nonprofit Board Builder.</p>"
+        body = (f"<p>Hi {first},</p><p>Your recruitment campaign for {org} has launched through Nonprofit Board Builder.</p>"
                 "<p>If you want to reach an even larger pool of potential board candidates, we can amplify your campaign across additional channels and help you attract more applicants.</p>"
                 f"<p><a href='{html.escape(link, quote=True)}' style='display:inline-block;background:#087e5b;color:white;padding:12px 18px;text-decoration:none'>AMPLIFY MY CAMPAIGN — $497</a></p>"
                 "<p>You can review the price and complete payment securely through Stripe.</p>")

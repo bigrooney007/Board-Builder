@@ -140,10 +140,11 @@ def pack_display(structured: dict, area: str, organization: str) -> str:
 
 
 def final_display(structured: dict, organization: str) -> str:
+    from finished_content import clean_resource_text
     lines = ["STRATEGIC PLAN", organization, ""]
     for section in structured.get("sections", []):
         lines.extend([str(section.get("heading", "")).upper(), str(section.get("content", "")), ""])
-    return "\n".join(lines).strip()
+    return clean_resource_text("\n".join(lines))
 
 
 class ProjectCreate(BaseModel):

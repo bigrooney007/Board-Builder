@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import uuid
+from finished_content import clean_resource_text, resource_lines
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
@@ -1594,31 +1595,12 @@ SYSTEM_MESSAGE += (
 )
 
 def _flush_left(text: str) -> str:
-    return re.sub(r"(?m)^[ \t]+", "", text or "").strip()
+    return clean_resource_text(text)
 
 
 
 def _format_value(value, indent=0):
-    pad = "  " * indent
-    lines = []
-    if isinstance(value, dict):
-        for key, item in value.items():
-            label = key.replace("_", " ").title()
-            if isinstance(item, (dict, list)):
-                lines.append(f"{pad}{label}:")
-                lines.extend(_format_value(item, indent + 1))
-            else:
-                lines.append(f"{pad}{label}: {item}")
-    elif isinstance(value, list):
-        for item in value:
-            if isinstance(item, (dict, list)):
-                lines.extend(_format_value(item, indent))
-                lines.append("")
-            else:
-                lines.append(f"{pad}- {item}")
-    else:
-        lines.append(f"{pad}{value}")
-    return lines
+    return resource_lines(value, indent)
 
 
 STRATEGY_TIMELINE_TEXT = """4. RECRUITMENT TIMELINE
