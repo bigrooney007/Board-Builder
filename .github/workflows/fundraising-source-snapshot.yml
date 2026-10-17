@@ -1,0 +1,24 @@
+name: Fundraising Source Snapshot
+on:
+  push:
+    branches: [feature/fundraising-game-simplified]
+    paths: [.github/workflows/fundraising-source-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Package authorized development source without credentials or customer data
+        run: |
+          git bundle create /tmp/board-builder.bundle HEAD refs/remotes/origin/main refs/remotes/origin/fix/planning-fundraising-current-flows-20261015
+          ls -lh /tmp/board-builder.bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: board-builder-development-source
+          path: /tmp/board-builder.bundle
+          retention-days: 1
