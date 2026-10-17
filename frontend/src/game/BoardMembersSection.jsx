@@ -255,7 +255,7 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, 
               </div>
               <p className="bfg-bm-progress">{simplified?(completed?"Contribution submitted":"Personal game available"):`${member.sections_completed} of ${member.total_sections} sections complete`}</p>
               {editingId === member.member_id ? (
-                <MemberForm initial={{ full_name: member.full_name, email: member.email, board_title: member.board_title }}
+                <MemberForm initial={{ full_name: member.full_name, email: member.email, board_title: member.board_title, participant_role: member.participant_role }}
                   onSave={editMember(member.member_id)} onCancel={() => setEditingId("")} busy={busy === "edit"} saveLabel="Save Changes" />
               ) : (
                 <div className="bfg-bm-actions">

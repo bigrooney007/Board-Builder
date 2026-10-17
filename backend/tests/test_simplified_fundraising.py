@@ -78,6 +78,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.setup_and_complete_leader();guest=await self.add_guest()
         invitation=await self.db.admin_test_email_events.find_one({'message.subject':{'$regex':"You're Invited"}})
         self.assertIn('Treasurer',invitation['message']['html']);self.assertIn('/play/'+guest['token'],invitation['message']['html']);self.assertIn('Sample',invitation['message']['html'])
+        sent=await self.call('POST','/game/board-members/invite-all',{'origin_url':'http://test'});self.assertEqual(sent['sent'],0)
+        self.assertNotEqual((await self.db.game_board_members.find_one({'user_id':self.user,'is_primary':True})).get('invitation_status'),'invited')
         await self.call('POST','/game/group/prepare');review=await self.group()
         self.assertEqual(review['workflow_version'],7);self.assertEqual(review['proposals'][0]['contributor'],'Sample Guest');self.assertEqual(review['proposals'][-1]['contributor'],'Sample Leader')
         await self.call('POST','/game/group/start')

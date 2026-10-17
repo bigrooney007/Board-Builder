@@ -71,6 +71,7 @@ async def main():
             await page.get_by_role('button',name='Open My Workspace',exact=True).click()
             await page.wait_for_url('**/game/dashboard')
             await page.get_by_test_id('fundraising-workspace').wait_for()
+            await expect(page.get_by_test_id('bfg-board-members-section').get_by_text('Sample Leader',exact=True)).to_have_count(0)
             assert await page.get_by_role('button',name='Download Final Fundraising Strategy',exact=True).is_disabled()
             assert await page.get_by_role('button',name='Generate Board Portfolios',exact=True).is_disabled()
             await page.screenshot(path=f'test_reports/current-simplified-workspace-{width}.png',full_page=True)

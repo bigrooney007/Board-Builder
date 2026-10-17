@@ -212,6 +212,7 @@ def create_game_night_router(db) -> APIRouter:
         return {
             "member_id": record["member_id"], "full_name": record["full_name"], "email": record["email"],
             "board_title": record.get("board_title", ""), "token": record["token"],
+            "is_primary": bool(record.get("is_primary")), "participant_role": record.get("participant_role", "board_member"),
             "invitation_status": record.get("invitation_status", "not_invited"),
             "invited_at": record.get("invited_at", ""), "last_reminder_at": record.get("last_reminder_at", ""),
             "reminder_available_at": reminder_available_at,
@@ -489,7 +490,7 @@ def create_game_night_router(db) -> APIRouter:
         night = await require_board_setup(member["user_id"])
         profile = await get_profile(member["user_id"])
         records = await db.game_board_members.find(
-            {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": {"$ne": "invited"}},
+            {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": {"$ne": "invited"}, **({"is_primary":{"$ne":True}} if profile.get("workflow_version")==7 else {})},
             {"_id": 0}).to_list(200)
         sent = 0
         for record in records:
