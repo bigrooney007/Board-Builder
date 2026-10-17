@@ -34,6 +34,7 @@ const VideosManager = () => {
     setMessage("");
     try {
       await client.put(`/admin/flow-videos/${key}`, { url: drafts[key] || "" });
+      window.dispatchEvent(new Event("platform-videos-changed"));
       setMessage("Video saved.");
       await load();
     } catch (err) {

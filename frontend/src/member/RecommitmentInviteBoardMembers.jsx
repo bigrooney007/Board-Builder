@@ -16,8 +16,10 @@ export default function RecommitmentInviteBoardMembers({ onChanged }) {
       const created = await memberApi.post("/reactivation/board-members", form);
       const person = created.data.member;
       await memberApi.post(`/reactivation/board-members/${person.member_record_id}/send`, { type: "initial" });
+      const sessionId = new URLSearchParams(window.location.search).get("session_id") || "";
+      const saved = await memberApi.post("/members/dashboard-return-link", { product: "board-recommitment", session_id: sessionId }).catch(() => null);
       setForm({ name: "", email: "", role: "", form_variant: "active_advisory" });
-      setMessage(`The Recommitment Form was sent to ${person.name}.`);
+      setMessage(`The Recommitment Form was sent to ${person.name}.${saved?.data?.sent ? " Your private dashboard link was also emailed to you. Bookmark it for easy access." : ""}`);
       await load(); if (onChanged) onChanged();
     } catch (error) { setMessage(error.response?.data?.detail || "The invitation could not be sent."); }
     setBusy("");

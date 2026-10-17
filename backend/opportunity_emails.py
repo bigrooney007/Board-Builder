@@ -1,4 +1,4 @@
-"""Phase 3 opportunity emails: network broadcast (safe test mode), receipts, signature emails."""
+"""Board Applicant Network announcements, receipts and signature emails."""
 import html
 import logging
 import os
@@ -55,13 +55,12 @@ async def create_apply_token(db, applicant_id: str, opportunity_id: str) -> str:
 
 
 async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origin: str, force_test: bool = False) -> dict:
-    """Idempotent network announcement. Live=false or force_test (Owner Review Mode) -> owner test email only. Never emails the live Segment in test mode."""
-    live = os.environ.get("BOARD_APPLICANT_OPPORTUNITY_EMAILS_LIVE", "false").lower() == "true" and not force_test
+    """Real campaigns send to the applicant topic; only explicit owner review sends a preview."""
     slug = opportunity["slug"]
     view_url = f"{origin}/board-opportunities/{slug}/apply"
     subject = f"Board Leadership Opportunity | {org_name}"
 
-    if not live:
+    if force_test:
         test_email = os.environ.get("OWNER_TEST_EMAIL") or os.environ["OWNER_NOTIFICATION_EMAIL"]
         sample_applicant = await db.board_applicants.find_one({"email": test_email.lower()}, {"_id": 0}) or {}
         token = await create_apply_token(db, sample_applicant.get("applicant_id", "owner-preview"), opportunity["opportunity_id"])
@@ -70,21 +69,22 @@ async def send_opportunity_broadcast(db, opportunity: dict, org_name: str, origi
                                opportunity_email_html(opportunity, org_name, apply_url, view_url, sample_applicant.get("first_name") or "there"))
         return {"mode": "test", "broadcast_id": email_id or f"test-{secrets.token_hex(4)}", "recipients": 1}
 
-    # LIVE mode: personalized tokens + one Resend Broadcast to the existing Board Applicants Segment/Topic
+    # A published real campaign must never silently fall back to an owner preview.
+    for key in ("RESEND_API_KEY", "RESEND_BOARD_APPLICANTS_SEGMENT_ID", "RESEND_BOARD_OPPORTUNITIES_TOPIC_ID", "BOARD_APPLICANT_SENDER"):
+        if not os.environ.get(key):
+            raise RuntimeError(f"Applicant Network broadcast is not configured: {key}")
+    # Personalized tokens + one Resend Broadcast to the existing applicant Segment/Topic.
     resend.api_key = os.environ["RESEND_API_KEY"]
     eligible = await db.board_applicants.find(
-        {"board_opportunity_consent": {"$ne": False}, "status": {"$nin": ["Withdrawn", "Paused"]}, "resend_contact_id": {"$ne": ""}},
+        {"board_opportunity_consent": {"$ne": False}, "status": {"$nin": ["Withdrawn", "Paused"]}, "resend_contact_id": {"$type": "string", "$ne": ""}},
         {"_id": 0, "applicant_id": 1, "email": 1, "resend_contact_id": 1},
     ).to_list(5000)
     for applicant in eligible:
         token = await create_apply_token(db, applicant["applicant_id"], opportunity["opportunity_id"])
-        try:
-            await resend.Contacts.update_async({
-                "id": applicant["resend_contact_id"],
-                "properties": {"current_opportunity_apply_url": f"{origin}/apply/{token}"},
-            })
-        except Exception as exc:
-            logger.error("Contact property update failed for %s: %s", applicant["email"], exc)
+        await resend.Contacts.update_async({
+            "id": applicant["resend_contact_id"],
+            "properties": {"current_opportunity_apply_url": f"{origin}/apply/{token}"},
+        })
     broadcast = await resend.Broadcasts.create_async({
         "segment_id": os.environ["RESEND_BOARD_APPLICANTS_SEGMENT_ID"],
         "topic_id": os.environ["RESEND_BOARD_OPPORTUNITIES_TOPIC_ID"],
@@ -107,6 +107,57 @@ async def send_application_receipt(email: str, name: str, org_name: str) -> str:
         f"<p>Completing an application does not guarantee an interview or board appointment. You will be contacted if next steps are required.</p>"
     )
     return await _send("BOARD_APPLICANT_SENDER", email, f"Your Board Application Has Been Received — {org_name}", _wrap("Application Received", body))
+
+
+async def send_campaign_launch_email(db, opportunity: dict, member: dict, origin: str) -> None:
+    """Send the owner a practical launch pack after the marketplace listing is live."""
+    from dashboard_return import send_dashboard_return
+    try:
+        await send_dashboard_return(db, member, "recruitment", origin)
+    except Exception:
+        logger.exception("Private dashboard return email failed for %s", opportunity["opportunity_id"])
+    user_id = opportunity["user_id"]
+    materials = await db.generated_materials.find(
+        {"user_id": user_id, "type": {"$in": ["recruitment_emails", "social_posts", "board_recruitment_job_post"]},
+         "application_id": "", "status": "Approved"},
+        {"_id": 0, "type": 1, "versions": 1, "current_version": 1},
+    ).to_list(10)
+    extracts = []
+    for material in materials:
+        current = next((v for v in material.get("versions", []) if v.get("version") == material.get("current_version")), {})
+        extracts.append((material["type"].replace("_", " ").title(), current.get("display_text", "")[:4500]))
+    apply_url = f"{origin.rstrip('/')}/board-opportunities/{opportunity['slug']}/apply"
+    dashboard_url = f"{origin.rstrip('/')}/app/board-recruitment"
+    network_status = opportunity.get("broadcast_status")
+    if network_status == "Failed":
+        network_message = "The Applicant Network announcement needs a retry. Open your dashboard to retry the distribution."
+    elif opportunity.get("broadcast_mode") == "test":
+        network_message = "An internal preview of the Applicant Network announcement was sent to the program owner."
+    else:
+        network_message = "The Applicant Network announcement has been initiated."
+    body = (
+        f"<p>Hello {html.escape(member.get('first_name') or 'there')},</p>"
+        f"<p>Your Board recruitment campaign for <strong>{html.escape(opportunity['organization_name'])}</strong> has launched. "
+        f"Your opportunity is available to applicants in the Board Applicant Marketplace. {html.escape(network_message)}</p>"
+        f"<p><a href='{html.escape(apply_url, quote=True)}'>View and share your Board Application</a> · "
+        f"<a href='{html.escape(dashboard_url, quote=True)}'>Open your approved campaign materials</a></p>"
+        "<p>Post your approved job post on LinkedIn and professional opportunity sites. Share the social copy on your organization's pages, "
+        "send the outreach email to your contacts, and ask trusted people to forward the referral message. Use the same application link in every channel. "
+        "The dashboard also has the short launch video for guidance.</p>"
+        + "".join(f"<h3>{html.escape(title)}</h3><pre style='white-space:pre-wrap;font-family:Arial,sans-serif'>"
+                  f"{html.escape(copy)}</pre>" for title, copy in extracts if copy)
+        + "<p>You can review each new applicant and prepare interview, check, offer and onboarding resources in your dashboard.</p>"
+    )
+    try:
+        email_id = await _send("NONPROFIT_SENDER", member["email"],
+                               f"Your Board Recruitment Campaign Has Launched | {opportunity['organization_name']}",
+                               _wrap("Your Campaign Has Launched", body))
+        await db.opportunities.update_one({"opportunity_id": opportunity["opportunity_id"]},
+            {"$set": {"launch_email_status": "Sent", "launch_email_id": email_id, "launch_email_at": datetime.now(timezone.utc).isoformat()}})
+    except Exception as exc:
+        logger.exception("Campaign launch email failed for %s", opportunity["opportunity_id"])
+        await db.opportunities.update_one({"opportunity_id": opportunity["opportunity_id"]},
+            {"$set": {"launch_email_status": "Failed", "launch_email_error": str(exc)[:300]}})
 
 
 async def send_signature_request(email: str, name: str, org_name: str, agreement_title: str, sign_url: str) -> str:

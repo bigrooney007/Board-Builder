@@ -44,11 +44,15 @@ export default function DashboardAudioButton({ product, narrationId, className =
 
   useEffect(() => {
     let live = true;
-    loadManifest(product).then((clips) => {
+    const read = () => loadManifest(product).then((clips) => {
       if (live) setClip(clips[narrationId] || null);
     });
+    read();
+    const refresh = () => { refreshDashboardAudioManifest(product); read(); };
+    window.addEventListener("voice-audio-changed", refresh);
     return () => {
       live = false;
+      window.removeEventListener("voice-audio-changed", refresh);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;

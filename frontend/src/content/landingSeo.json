@@ -21,9 +21,9 @@
   {
     "path": "/recruit",
     "name": "Board Recruitment",
-    "title": "Nonprofit Board Recruitment | Nonprofit Board Builder",
-    "description": "Recruit the board members your nonprofit needs. Identify the right mix, launch your campaign and bring committed leaders through interviews into onboarding.",
-    "headline": "Recruit the Board Members Your Organization Needs",
+    "title": "Launch Your Board Recruitment Campaign in 30 Minutes | Nonprofit Board Builder",
+    "description": "Answer six questions, approve the board profiles and materials built for your nonprofit, then launch your recruitment campaign to board applicants in the next 30 minutes.",
+    "headline": "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     "eyebrow": "BOARD RECRUITMENT",
     "image": "board-recruitment-v1.png",
     "imageLines": [
@@ -32,8 +32,8 @@
     ],
     "imageSub": "Build your board around the support your mission needs.",
     "paragraphs": [
-      "Answer six focused questions about your organization and the board you want to build. Identify the mix of experience and perspectives that fits the support you are looking for.",
-      "Review and approve the board member profiles, then create your application and tailored recruitment materials. The platform helps you launch the campaign and carry candidates through interviews, reference checks where required, appointment and onboarding."
+      "Start with six focused questions about your organization and the board you want to build. Your answers save as you go. Unlock the campaign to see the exact recommended board profiles.",
+      "Approve the profiles and tailored recruitment materials, then launch the opportunity to the Board Applicant Marketplace and Applicant Network. Manage applicants, checks, offers and onboarding in one dashboard."
     ],
     "steps": [
       "Identify and approve the board member profiles you need.",
@@ -44,26 +44,27 @@
   },
   {
     "path": "/board-fundraising-game",
-    "name": "Board Fundraising Game",
-    "title": "Board Fundraising Game | Get Your Board Working With You to Raise Money",
-    "description": "Fundraising should not depend entirely on you. Start the Board Fundraising Game with your goal and five questions, then bring in your board to build a strategy together.",
-    "headline": "Get Your Board Working With You to Raise Money",
-    "eyebrow": "BOARD FUNDRAISING GAME",
-    "image": "board-fundraising-game-v2.png",
+    "name": "Board Fundraising Activation",
+    "title": "Get Your Board Fundraising | Nonprofit Board Builder",
+    "description": "Activate and equip your board to raise money from your next meeting. Build the fundraising strategy together, with a portfolio and personal assistant for each member.",
+    "headline": "Get Your Board Members Raising Money From Your Next Board Meeting",
+    "eyebrow": "BOARD FUNDRAISING",
+    "image": "board-fundraising-activation-v3.png",
     "imageLines": [
       "Get Your Board",
-      "Working With You."
+      "Fundraising From Your",
+      "Next Board Meeting."
     ],
-    "imageSub": "Fundraising should not depend entirely on you.",
+    "imageSub": "Build the fundraising strategy together and equip each member to begin.",
     "paragraphs": [
-      "Start with your organization's fundraising goal and five practical questions. Your answers stay in your own words as you begin the Board Fundraising Game.",
-      "Invite your board to share their own perspectives, agree on the strongest fundraising opportunities in the group game and build a strategy with clear roles for everyone."
+      "You and your board will decide who your organization's primary funding audience will be, how to find and attract them on a daily basis, and the exact process to raise money from them.",
+      "Getting your board members to raise money starts with working with them to create your organization's fundraising strategy.",
+      "By the end of the meeting, your board members will know the ideal funders you identified together and recognize them within their networks. They can recommend prospects and make introductions, then raise money using the process you all agreed on as a board."
     ],
     "steps": [
-      "Start the game yourself with a goal and five questions.",
-      "Invite each board member to answer the same questions and choose how they can participate.",
-      "Play the group Board Fundraising Game and agree on the best opportunities.",
-      "Build and execute your strategy with roles, portfolios and support."
+      "Before Your Next Board Meeting: Share your ideas on who the ideal funding audience of your organization is, where to find and attract them daily, the exact process to raise money from them, and what you will ask them to fund and how much. Each board member also shares their own ideas through the Board Fundraising Planning Form and says how they want to be involved.",
+      "During Your Next Board Meeting: Based on everyone's ideas, you and your board agree on your organization's primary funding audience and how you will raise money from them. You also agree on the role each board member will play in raising money and building your organization's fundraising system.",
+      "After Your Next Board Meeting: Each board member receives a copy of the strategy and a Board Fundraising Portfolio showing how they will support your organization to raise money. Their personal AI fundraising assistant understands the strategy and their role. It creates the content or materials they need, so they can begin working with you to raise money without always running back to you."
     ]
   },
   {
@@ -93,9 +94,9 @@
   {
     "path": "/board-recommitment",
     "name": "Board Recommitment",
-    "title": "Board Recommitment | Get Your Board Building With You Again",
-    "description": "Help your nonprofit board recommit to the mission. Understand each member's response and agree how they will contribute or make a respectful transition.",
-    "headline": "Get Your Board Members to Recommit and Build With You",
+    "title": "Board Recommitment | Recommit Your Board in Seven Days",
+    "description": "Get your nonprofit board members recommitted in the next seven days. Gather honest responses, guide one-on-one conversations and agree how each person will contribute.",
+    "headline": "Get Your Board Members Recommitted in the Next Seven Days",
     "eyebrow": "BOARD RECOMMITMENT",
     "image": "board-recommitment-v1.png",
     "imageLines": [

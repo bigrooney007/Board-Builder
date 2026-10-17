@@ -35,7 +35,6 @@ const CampaignLaunchOffer = ({ content, shared }) => {
           <h2 data-testid="campaign-launch-outcome-heading">{content.outcomeHeading}</h2>
           <p data-testid="campaign-launch-outcome-body">Within <strong>48 to 72 hours after your campaign is launched</strong>, you should begin receiving applicants you can review, select and invite into conversations about joining your board.</p>
           <h2 data-testid="campaign-launch-guarantee-heading">{content.guaranteeHeading}</h2>
-          <p data-testid="campaign-launch-guarantee-body">{content.guaranteeBody}</p>
           <p className="offer-sales-price" data-testid="campaign-launch-price">{content.price}</p>
           <button type="button" className="button" onClick={buy} disabled={busy} data-testid="campaign-launch-buy-button">
             {busy ? shared.startingCheckout : content.buttonLabel}
@@ -56,7 +55,7 @@ const OfferCard = ({ offer, choice, card, busy, startingLabel, guarantee, onBuy 
     <button type="button" className="button" onClick={() => onBuy(choice)} disabled={Boolean(busy)} data-testid={`offer-${choice}-button-${offer}`}>
       {busy === choice ? startingLabel : card.buttonLabel}
     </button>
-    <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>{guarantee}</p>
+    <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>100% Guarantee</p>
   </section>
 );
 
@@ -150,7 +149,7 @@ export default function OfferVideoPage({ offer }) {
                       <button type="button" className="button" onClick={() => startCheckout(choice)} disabled={Boolean(busy)} data-testid={`offer-${choice}-button-${offer}`}>
                         {busy === choice ? shared.startingCheckout : card.buttonLabel}
                       </button>
-                      <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>{shared.guarantee}</p>
+                      <p className="offer-sales-guarantee" data-testid={`offer-${choice}-guarantee-${offer}`}>100% Guarantee</p>
                     </section>
                   ))}
                 </div>
@@ -160,7 +159,7 @@ export default function OfferVideoPage({ offer }) {
                     <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.videoButtons.diyLabel}</button>
                     {content.videoButtons.dwyLabel && <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.videoButtons.dwyLabel}</button>}
                   </div>
-                  <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>{shared.guarantee}</p>
+                  <p className="offer-sales-guarantee" data-testid={`offer-guarantee-${offer}`}>100% Guarantee</p>
                 </>
               )}
               {notice && <p className="submit-error" style={{ marginTop: 12 }} data-testid={`offer-checkout-error-${offer}`}>{notice}</p>}
@@ -203,7 +202,7 @@ export default function OfferVideoPage({ offer }) {
                   <button type="button" className="button" onClick={() => startCheckout("diy")} disabled={Boolean(busy)} data-testid={`offer-closing-diy-button-${offer}`}>{busy === "diy" ? shared.startingCheckout : content.closing.diyLabel}</button>
                   <button type="button" className="button" onClick={() => startCheckout("dwy")} disabled={Boolean(busy)} data-testid={`offer-closing-dwy-button-${offer}`}>{busy === "dwy" ? shared.startingCheckout : content.closing.dwyLabel}</button>
                 </div>
-                <p className="offer-sales-guarantee" data-testid={`offer-closing-guarantee-${offer}`}>{shared.guarantee}</p>
+                <p className="offer-sales-guarantee" data-testid={`offer-closing-guarantee-${offer}`}>100% Guarantee</p>
               </>
             )}
           </section>

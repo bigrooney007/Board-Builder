@@ -1,15 +1,26 @@
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { recruitmentHomeContent as defaultCopy } from "@/content/siteContent";
 import { useHomepageContent } from "@/clean/platform";
+import { useLandingPageMeta } from "@/seo";
+import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "./publicStartRoutes";
 import "../game/game.css";
 import "./recruitment-home.css";
 
-export default function RecruitmentHomePage({ form }) {
+export default function RecruitmentHomePage() {
+  useLandingPageMeta("/recruit");
   const navigate = useNavigate();
-  const copy = useHomepageContent("recruitment", defaultCopy);
+  const startPath = PUBLIC_START_ROUTES.recruitment;
+  useEffect(() => {
+    if (window.location.hash === "#recruit-intake") navigate(startPath, { replace: true });
+  }, [navigate, startPath]);
+  const copy = useHomepageContent("recruitment", { ...defaultCopy,
+    headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
+    subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
+    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL });
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
@@ -29,27 +40,17 @@ export default function RecruitmentHomePage({ form }) {
       <main className="recruit-home" data-testid="recruitment-landing-page">
         <section className="recruit-hero" aria-labelledby="recruit-headline">
           <div className="recruit-hero-copy">
-            <p className="bfg-badge">{copy.eyebrow}</p>
             <h1 id="recruit-headline" data-testid="recruitment-headline">{copy.headline}</h1>
             <p className="recruit-hero-sub">{copy.subheadline}</p>
-            <a href="#recruit-intake" className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
-              {copy.primaryCta}<ArrowDown size={18} aria-hidden="true" />
-            </a>
-          </div>
-          <div className="recruit-hero-card">
-            <span className="recruit-card-mark" aria-hidden="true">01</span>
-            <h2>{copy.introHeading}</h2>
-            {copy.introParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            <Link to={startPath} className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
+              {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
+            </Link>
           </div>
         </section>
 
-        <section id="recruit-intake" className="recruit-intake-section" aria-labelledby="recruit-form-heading">
-          <div className="recruit-section-heading">
-            <p className="bfg-eyebrow">{copy.formEyebrow}</p>
-            <h2 id="recruit-form-heading">{copy.formHeading}</h2>
-            {copy.formText ? <p>{copy.formText}</p> : null}
-          </div>
-          <div className="recruit-intake-card" data-testid="recruit-embedded-form">{form}</div>
+        <section className="recruit-principle" aria-labelledby="recruit-principle-heading">
+          <h2 id="recruit-principle-heading">{copy.introHeading}</h2>
+          {copy.introParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </section>
 
         <section id="recruit-process" className="recruit-section" aria-labelledby="recruit-process-heading">
@@ -66,9 +67,9 @@ export default function RecruitmentHomePage({ form }) {
               </li>
             ))}
           </ol>
-          <a href="#recruit-intake" className="bfg-btn bfg-btn-primary recruit-section-cta">
+          <Link to={startPath} className="bfg-btn bfg-btn-primary recruit-section-cta">
             {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
-          </a>
+          </Link>
         </section>
 
         <section className="recruit-outcomes-band" aria-labelledby="recruit-outcomes-heading">
@@ -95,7 +96,7 @@ export default function RecruitmentHomePage({ form }) {
         <section className="recruit-closing" aria-labelledby="recruit-closing-heading">
           <h2 id="recruit-closing-heading">{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
-          <a href="#recruit-intake" className="bfg-btn bfg-btn-primary">{copy.primaryCta}<ArrowDown size={18} aria-hidden="true" /></a>
+          <Link to={startPath} className="bfg-btn bfg-btn-primary">{copy.primaryCta}<ArrowRight size={18} aria-hidden="true" /></Link>
         </section>
       </main>
       <footer className="bfg-footer recruit-footer">

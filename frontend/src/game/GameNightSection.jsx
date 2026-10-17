@@ -13,7 +13,7 @@ const fmtTime = (raw) => {
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 };
 
-export const GameNightSection = ({ onSaved = () => {} }) => {
+export const GameNightSection = ({ onSaved = () => {}, autoOpen = false }) => {
   const [night, setNight] = useState(null);
   const [defaultName, setDefaultName] = useState("");
   const [editing, setEditing] = useState(false);
@@ -26,9 +26,13 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
     memberApi.get("/game/night").then((response) => {
       setNight(response.data.night || {});
       setDefaultName(response.data.default_name || "");
+      if (autoOpen && !response.data.night?.meeting_date) {
+        setForm({ name: response.data.default_name || "Board Fundraising Day/Night", meeting_date: "", funding_deadline: "", start_time: "", timezone_name: Intl.DateTimeFormat().resolvedOptions().timeZone || "" });
+        setEditing(true);
+      }
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  }, []);
+  }, [autoOpen]);
 
   const startEdit = () => {
     setForm({
@@ -68,7 +72,7 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
     <section className="bfg-panel" data-testid="bfg-game-night-section">
       <div className="bfg-panel-head">
         <div>
-          <><p className="bfg-eyebrow">BOARD MEETING</p><h2>Set Your Board Fundraising Day/Night</h2></>
+          <><p className="bfg-eyebrow">BOARD MEETING</p><h2>Confirm Your Next Board Meeting</h2></>
           <p className="bfg-panel-sub">Set the date and time for the Group Game and the deadline for reaching the fundraising goal. That deadline will flow into the final strategy.</p>
         </div>
         {saved && !editing && (
@@ -83,7 +87,7 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
       {saved && !editing && (
         <div className="bfg-night-summary" data-testid="bfg-game-night-summary">
           <p className="bfg-eyebrow" style={{ margin: "8px 0 4px" }}>Your Next Board Fundraising Day/Night</p>
-          <div className="bfg-summary-row"><span>Board Meeting Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
+          <div className="bfg-summary-row"><span>Next Board Meeting Date</span><strong>{fmtDate(night.meeting_date)}</strong></div>
           <div className="bfg-summary-row"><span>Time</span><strong>{fmtTime(night.start_time)}</strong></div>
           <div className="bfg-summary-row"><span>Fundraising Deadline</span><strong>{fmtDate(night.funding_deadline)}</strong></div>
         </div>
@@ -92,7 +96,7 @@ export const GameNightSection = ({ onSaved = () => {} }) => {
       {editing && (
         <div style={{ marginTop: 8 }} data-testid="bfg-game-night-form">
           <div className="bfg-two-col">
-            <label className="bfg-field"><span>Meeting Date <b>*</b></span>
+            <label className="bfg-field"><span>Next Board Meeting Date <b>*</b></span>
               <input type="date" value={form.meeting_date} onChange={set("meeting_date")} data-testid="bfg-night-date" />
             </label>
             <label className="bfg-field"><span>Start Time <b>*</b></span>

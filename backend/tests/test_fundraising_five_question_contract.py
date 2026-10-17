@@ -11,12 +11,12 @@ def source(path):
 
 
 class FundraisingFiveQuestionContractTests(unittest.TestCase):
-    def test_homepage_starts_free_game_and_direct_demo_is_separate(self):
-        home = source("frontend/src/game/GameHomePage.jsx")
+    def test_opening_form_starts_free_game_and_direct_demo_is_separate(self):
+        start = source("frontend/src/game/GameStartPage.jsx")
         app = source("frontend/src/App.js")
         demo = source("frontend/src/game/GameDemonstrationPage.jsx")
-        self.assertIn('navigate("/game/questions")', home)
-        self.assertIn('to="/game/demonstration"', home)
+        self.assertIn('navigate("/game/questions")', start)
+        self.assertIn('path="/game/demonstration" element={<GameDemonstrationPage />}', app)
         self.assertIn('path="/game/questions" element={<GameFreeQuestionsPage />}', app)
         self.assertIn('path="/game/upgrade" element={<GameUpgradePage />}', app)
         self.assertNotIn('if (!member) return <Navigate', demo)
@@ -46,12 +46,12 @@ class FundraisingFiveQuestionContractTests(unittest.TestCase):
             self.assertIn('get("original_answers")', downstream)
         self.assertIn('cancel_path: "/game/upgrade"', source("frontend/src/game/GameUpgradePage.jsx"))
 
-    def test_homepage_promise_has_four_stages_and_four_outcomes(self):
+    def test_homepage_promise_has_three_meeting_steps_and_four_outcomes(self):
         tree = ast.parse(source("backend/game_routes.py"))
         content = next(ast.literal_eval(node.value) for node in tree.body if isinstance(node, ast.Assign)
                        and any(isinstance(target, ast.Name) and target.id == "DEFAULT_CONTENT" for target in node.targets))
-        self.assertEqual(content["headline"], "GET YOUR BOARD WORKING WITH YOU TO RAISE MONEY")
-        self.assertEqual(len(content["stages"]), 4)
+        self.assertEqual(content["headline"], "GET YOUR BOARD MEMBERS RAISING MONEY FROM YOUR NEXT BOARD MEETING")
+        self.assertEqual(len(content["stages"]), 3)
         self.assertEqual(len(content["outcomes"]), 4)
         self.assertEqual(len(content["agent_questions"]), 5)
 

@@ -33,6 +33,7 @@ When strategy_mode is working, create the best working strategy possible from al
 Do not invent facts, funders, organisations, relationships, commitments, results, financial information, tactics or recommendations.
 You are an editor and strategist presenting the Board's own decisions. Preserve the substance and intent of every adopted idea. You may combine repetition, correct grammar, explain the connection between supplied ideas, and turn vague wording into practical action only when the supplied context supports the detail. Never replace a Board idea with your own.
 The finished strategy is a proper plan, not meeting minutes. It contains: an executive summary stating the fundraising amount, purpose and deadline; who the organisation will raise money from across individuals, businesses and grantors and why each audience will support; where to find them; how to attract them and build credibility; what to ask each audience to fund and how much to ask; the step-by-step process for raising money from them; and the agreed role of every participating Board Member.
+This engagement produces a fundraising strategy. Do not create team requirements, resource recommendations, budgets or month-by-month execution plans. Include execution_agreements only for execution support, materials, responsibilities or timing explicitly agreed by the Board during its strategy meeting. If there are no such agreements, return an empty list. Personal participation choices are proposals until the Board agrees to them.
 Write in Rooney Akpesiri's clear, direct, practical and explanatory style. Use complete paragraphs where explanation is needed and specific actions where execution is required.
 Return only the required structured strategy output."""
 
@@ -46,7 +47,7 @@ GENERATION_RULES = """RULES:
 - Never invent donor names, company names, grantmaker names, existing relationships, board commitments, or amounts other than the fundraising goal supplied.
 - Never claim the organisation currently has a system, material, person or relationship unless the supplied data says so.
 - If information is missing, leave that part empty. Do not add a generic recommendation.
-- Board Member names may appear only in board_roles, using the responsibilities they agreed to during the Group Game.
+- Board Member names may appear only in board_roles and execution_agreements, using responsibilities explicitly agreed during the Group Game or Board meeting.
 - In working mode do not label any idea as a board priority; in board_prioritized mode keep priorities and additional ideas clearly separate."""
 
 OUTPUT_SCHEMA = {
@@ -69,10 +70,11 @@ OUTPUT_SCHEMA = {
         "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
     },
     "board_roles": [{"name": "Board Member's real name", "role": "Agreed fundraising role", "responsibility": "Specific agreed action and timing, using only the discussion and transcript"}],
+    "execution_agreements": ["Only execution support, materials, responsibilities or timing explicitly agreed during the Board meeting. Empty list when none were agreed."],
 }
 
 SECTION_ID_BY_KEY = {section["key"]: section["id"] for section in GAME_SECTION_DEFAULTS}
-CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"]
+CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles", "execution_agreements"]
 EDITABLE_SECTION_KEYS = CORE_STRATEGY_KEYS
 
 
@@ -203,6 +205,10 @@ def create_strategy_router(db) -> APIRouter:
             "current_grantor_profile", "current_grantor_where", "current_grantor_attraction", "current_grantor_support", "current_grantor_process",
             "current_individual_donors", "current_businesses", "current_grantors",
             "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
+            "individuals_status", "businesses_status", "grantors_status",
+            "current_individual_donor_motivation", "current_individual_donor_seeking",
+            "current_business_motivation", "current_grantor_motivation",
+            "current_business_seeking", "current_grantor_seeking",
         }
         context = {
             "strategy_mode": mode,
@@ -250,6 +256,8 @@ def create_strategy_router(db) -> APIRouter:
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
             generated = parse_json_response(text)
             data = {key: generated.get(key, {}) for key in CORE_STRATEGY_KEYS}
+            # Drafts precede the meeting's execution discussion.
+            data["execution_agreements"] = []
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": mode}) + 1
             member_doc = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1}) or {}
             prepared_by = f"{member_doc.get('first_name', '')} {member_doc.get('last_name', '')}".strip()
@@ -417,7 +425,7 @@ def create_strategy_router(db) -> APIRouter:
     @router.get("/strategy/shared/{share_token}")
     async def shared_strategy(share_token: str):
         strategy = await db.game_strategies.find_one({"share_token": share_token}, {"_id": 0})
-        if not strategy:
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
             raise HTTPException(status_code=404, detail="This strategy link is not valid")
         profile = await get_profile(strategy["user_id"])
         return {"strategy": {
@@ -425,7 +433,7 @@ def create_strategy_router(db) -> APIRouter:
             "schema_version": strategy.get("schema_version", 1),
             "generated_at": strategy["generated_at"], "data": strategy["data"],
             "adopted_at": strategy.get("adopted_at", ""),
-            "section_edits": strategy.get("section_edits", {}),
+            "section_edits": strategy.get("section_edits", {}), "document_sections": strategy.get("document_sections", []),
             "organization_name": (profile.get("organization") or {}).get("name", ""),
         }}
 

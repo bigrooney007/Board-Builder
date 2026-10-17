@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { pageForPath, canonicalUrl, metaTags, structuredData } from "./seo/landingMetadata";
-import { blogMetadata } from "./seo/blogMetadata";
+import { blogMetadata, BLOG_FEED_URL } from "./seo/blogMetadata";
 
 const setMeta = (attr, name, content) => {
   let el = document.head.querySelector(`meta[${attr}="${name}"]`);
@@ -19,9 +19,12 @@ export const useBlogMeta = (post = null, status = 200) => {
     let canonical = document.head.querySelector('link[rel="canonical"]');
     if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
     canonical.href = metadata.canonical;
+    let feed = document.head.querySelector('link[type="application/rss+xml"]');
+    if (!feed) { feed = document.createElement("link"); document.head.appendChild(feed); }
+    feed.rel = "alternate"; feed.type = "application/rss+xml"; feed.title = "Nonprofit Board Builder Insights"; feed.href = BLOG_FEED_URL;
     const schema = document.createElement("script"); schema.id = "blog-page-schema"; schema.type = "application/ld+json";
     if (metadata.schema) { schema.textContent = JSON.stringify(metadata.schema); document.head.appendChild(schema); }
-    return () => { owned.forEach((element) => element.remove()); canonical.remove(); schema.remove(); };
+    return () => { owned.forEach((element) => element.remove()); canonical.remove(); schema.remove(); feed.remove(); };
   }, [post, status]);
 };
 

@@ -178,17 +178,11 @@ class TestSituationWithEntitlement:
 
 # ---------- stripe game-checkout ----------
 class TestGameCheckout:
-    def test_game_checkout_creates_session(self, game_member):
+    def test_game_checkout_waits_for_five_answers(self, game_member):
         s = game_member["session"]
         r = s.post(f"{API}/payments/game-checkout", json={"origin_url": BASE_URL})
-        assert r.status_code == 200, r.text
-        data = r.json()
-        assert "checkout_url" in data
-        assert "checkout.stripe.com" in data["checkout_url"] or "stripe.com" in data["checkout_url"]
-        assert data["session_id"].startswith("cs_")
-
-        # verify DB row via admin-side (indirect check: this endpoint doesn't expose, so trust returned session_id)
-        # we could verify via mongo — skip to keep tests simple.
+        assert r.status_code == 409, r.text
+        assert "five fundraising questions" in r.json()["detail"]
 
 
 # ---------- google session negative test ----------

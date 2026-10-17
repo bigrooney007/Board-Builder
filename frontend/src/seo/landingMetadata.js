@@ -1,8 +1,15 @@
 /* eslint-env node */
 // Shared by the initial HTML renderer and React navigation. No browser or server-only dependencies.
 const pages = require("../content/landingSeo.json");
+const { articles, articlePath } = require("../content/fundraisingArticles");
 const SITE_ORIGIN = "https://nonprofitboardbuilder.com";
 const SITE_NAME = "Nonprofit Board Builder";
+const FREE_START_PATHS = {
+  "/recruit": "/recruit/start",
+  "/board-fundraising-game": "/board-fundraising/start",
+  "/strategic-planning": "/strategic-planning/start",
+  "/board-recommitment": "/board-recommitment/start",
+};
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
 const pageForPath = (pathname) => pages.find((page) => page.path === (pathname.replace(/\/+$/, "") || "/"));
 const canonicalUrl = (page) => SITE_ORIGIN + page.path;
@@ -53,8 +60,16 @@ function fallbackContent(page) {
   // A useful public page remains available before React loads and when JavaScript is unavailable.
   const paragraphs = page.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
   const steps = page.steps.length ? `<h2>How it works</h2><ol>${page.steps.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : "";
-  const links = pages.filter((item) => item.path !== page.path).map((item) => `<li><a href="${item.path}">${escapeHtml(item.name)}</a></li>`).join("");
-  return `<main id="landing-page-summary" style="max-width:900px;margin:56px auto;padding:24px;font-family:Inter,Arial,sans-serif;line-height:1.7;color:#0f172a"><p style="color:#4f46e5;font-weight:700">${SITE_NAME}</p><h1>${escapeHtml(page.headline)}</h1>${paragraphs}${steps}<nav aria-label="Explore Nonprofit Board Builder"><h2>Explore our pathways</h2><ul>${links}</ul></nav><noscript><p>Enable JavaScript to use the interactive forms and dashboard.</p></noscript></main>`;
+  const startPath = FREE_START_PATHS[page.path];
+  const startLink = startPath ? `<p><a href="${startPath}">Get Started for Free</a></p>` : "";
+  const links = pages.filter((item) => item.path !== page.path).map((item) => {
+    const name = page.path === "/board-fundraising-game" && item.path === "/organize-board-fundraising-game"
+      ? "Facilitated Board Fundraising Meeting" : item.name;
+    const path = page.path === "/" ? FREE_START_PATHS[item.path] || item.path : item.path;
+    const label = page.path === "/" && FREE_START_PATHS[item.path] ? `${name}: Get Started for Free` : name;
+    return `<li><a href="${path}">${escapeHtml(label)}</a></li>`;
+  }).join("");
+  return `<main id="landing-page-summary" style="max-width:900px;margin:56px auto;padding:24px;font-family:Inter,Arial,sans-serif;line-height:1.7;color:#0f172a"><p style="color:#4f46e5;font-weight:700">${SITE_NAME}</p><h1>${escapeHtml(page.headline)}</h1>${paragraphs}${startLink}${steps}<nav aria-label="Explore Nonprofit Board Builder"><h2>Explore our pathways</h2><ul>${links}</ul></nav><noscript><p>Enable JavaScript to use the interactive forms and dashboard.</p></noscript></main>`;
 }
 
 function renderLandingHtml(template, pathname) {
@@ -78,7 +93,8 @@ function robotsTxt() {
 }
 
 function sitemapXml() {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((page) => `  <url><loc>${canonicalUrl(page)}</loc></url>`).join("\n")}\n</urlset>\n`;
+  const paths = [...pages.map(page => page.path), ...articles.map(articlePath)];
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map(path => `  <url><loc>${SITE_ORIGIN}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
 }
 
 module.exports = { pages, SITE_ORIGIN, pageForPath, canonicalUrl, imageUrl, metaTags, structuredData, renderLandingHtml, robotsTxt, sitemapXml };

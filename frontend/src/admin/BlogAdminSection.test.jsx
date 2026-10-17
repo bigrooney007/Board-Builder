@@ -1,6 +1,7 @@
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import BlogAdminSection from "./BlogAdminSection";
+import { articles } from "@/content/fundraisingArticles";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const topics = [
@@ -14,7 +15,7 @@ const draft = { blog_post_id: "draft1", title: "An article to review", category:
 
 test("admin selects Friday, generates and reuses a draft, edits the cover and publishes", async () => {
   const client = {
-    get: jest.fn(async (path) => ({ data: path === "/admin/blog/topics" ? { schedule: topics, settings: { enabled: false, time: "08:00", timezone: "Europe/London" } } : { posts: [], has_more: false } })),
+    get: jest.fn(async (path) => ({ data: path === "/admin/blog/guides" ? { guides: articles } : path === "/admin/blog/topics" ? { schedule: topics, settings: { enabled: false, time: "08:00", timezone: "Europe/London" } } : { posts: [], has_more: false } })),
     post: jest.fn(async (path) => ({ data: { post: path.endsWith("/approve") ? { ...draft, publication_status: "Published", slug: "an-article", can_regenerate: false } : draft } })),
     patch: jest.fn(async (path, payload) => ({ data: { post: { ...draft, ...payload, image_path: "/api/admin/blog/posts/draft1/image?v=2" } } })),
     put: jest.fn(async (path, settings) => ({ data: { settings } })),
@@ -45,7 +46,7 @@ test("admin selects Friday, generates and reuses a draft, edits the cover and pu
 
 test("existing dated articles open without a regeneration call and errors remain visible", async () => {
   const client = {
-    get: jest.fn(async (path) => ({ data: path.endsWith("topics") ? { schedule: topics, settings: null } : { posts: [draft] } })),
+    get: jest.fn(async (path) => ({ data: path === "/admin/blog/guides" ? { guides: articles } : path.endsWith("topics") ? { schedule: topics, settings: null } : { posts: [draft] } })),
     post: jest.fn(async () => ({ data: { reused: true, post: draft } })),
   };
   const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);

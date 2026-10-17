@@ -1,3 +1,5 @@
+import strategic_questionnaire as strategic24
+from admin_test_safety import bind_test_scope
 """Strategic Planning: admin-only service-delivery pathway.
 
 Replicates the verified Activation planning architecture: hosted secure Board Member
@@ -138,10 +140,11 @@ def pack_display(structured: dict, area: str, organization: str) -> str:
 
 
 def final_display(structured: dict, organization: str) -> str:
+    from finished_content import clean_resource_text
     lines = ["STRATEGIC PLAN", organization, ""]
     for section in structured.get("sections", []):
         lines.extend([str(section.get("heading", "")).upper(), str(section.get("content", "")), ""])
-    return "\n".join(lines).strip()
+    return clean_resource_text("\n".join(lines))
 
 
 class ProjectCreate(BaseModel):
@@ -232,6 +235,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         project = await db.sp_projects.find_one({"project_id": project_id}, {"_id": 0})
         if not project:
             raise HTTPException(status_code=404, detail="Strategic Planning project not found")
+        bind_test_scope(db, project)
         return project
 
     async def owned_participant(project_id: str, participant_id: str) -> dict:
@@ -508,11 +512,13 @@ def create_strategic_planning_router(db) -> APIRouter:
             project = await owned_project(record["project_id"])
             content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
             is_lead = record.get("role") == "Lead User"
+            live = await db.sp_sessions.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
+            group_url = f"/strategic-session/{live['share_token']}?participant={token}" if record.get("status") == "COMPLETED" and live.get("share_token") else ""
             return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""),
                     "planning_meeting": project.get("planning_meeting") or {},
-                    "submitted": record["status"] == "COMPLETED" and not is_lead,
-                    "is_lead_user": is_lead,
-                    "existing_answers": record.get("response", {}) if is_lead else {},
+                    "submitted": record["status"] == "COMPLETED" and (not is_lead or content.get("questionnaire_version") == strategic24.VERSION),
+                    "is_lead_user": is_lead, "group_session_url": group_url,
+                    "existing_answers": record.get("response", {}) if is_lead else record.get("draft_answers", {}),
                     "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
                     "form": content}
         project = await db.sp_projects.find_one({"generic_form_token": token}, {"_id": 0})
@@ -521,6 +527,17 @@ def create_strategic_planning_router(db) -> APIRouter:
         content = await approved_form_content(project["project_id"], 0)
         return {"organization_name": project["organization_name"], "logo_data_url": project.get("logo_data_url", ""), "planning_meeting": project.get("planning_meeting") or {}, "submitted": False,
                 "prefill": {"full_name": "", "email": ""}, "form": content}
+
+    @router.put("/strategic-planning-form/{token}")
+    async def save_public_form_progress(token: str, request: Request):
+        person = await db.sp_participants.find_one({"form_token": token}, {"_id": 0})
+        if not person: raise HTTPException(404, "Use your personal form link")
+        if person.get("status") == "COMPLETED": raise HTTPException(409, "Your submitted contribution is already saved")
+        body = await request.json(); answers = body.get("answers") or {}
+        clean = {key: str(answers[key])[:12000] for key in strategic24.KEYS if key in answers}
+        await db.sp_participants.update_one({"participant_id": person["participant_id"], "status": {"$ne": "COMPLETED"}},
+            {"$set": {"draft_answers": clean, "draft_saved_at": now_iso()}})
+        return {"saved": True}
 
     @router.post("/strategic-planning-form/{token}", status_code=201)
     async def submit_form(token: str, payload: FormSubmission):
@@ -540,7 +557,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                     "created_at": now_iso(), "joined_via": "form_link",
                 }
                 await db.sp_participants.insert_one({**record})
-        if record["status"] == "COMPLETED" and record.get("role") != "Lead User":
+        if record["status"] == "COMPLETED" and (record.get("role") != "Lead User" or record.get("questionnaire_version") == strategic24.VERSION):
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         project = await owned_project(record["project_id"])
         content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
@@ -561,9 +578,11 @@ def create_strategic_planning_router(db) -> APIRouter:
             update_filter,
             {"$set": {"status": "COMPLETED", "response": answers, "submitted_at": now,
                       "name": payload.full_name, "email": str(payload.email).lower(),
+                      "questionnaire_version": content.get("questionnaire_version", "legacy"),
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
         if result.modified_count and record.get("role") != "Lead User":
             origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
+            response_link = f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}"
             try:
                 if project.get("founder_email"):
                     await send_email(
@@ -574,7 +593,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                         "Open their response to review every answer before your Strategic Planning Session.\n\n"
                         "Nonprofit Board Builder",
                         f"VIEW {payload.full_name.split(' ')[0].upper()}'S RESPONSE",
-                        f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}")
+                        response_link)
                     await db.sp_participants.update_one(
                         {"participant_id": record["participant_id"]},
                         {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now_iso()}})
@@ -583,7 +602,23 @@ def create_strategic_planning_router(db) -> APIRouter:
                 await db.sp_participants.update_one(
                     {"participant_id": record["participant_id"]},
                     {"$set": {"owner_notification_status": "Failed", "owner_notification_error": str(exc)[:300]}})
-        return {"status": "submitted", "organization_name": project["organization_name"]}
+            facilitator_email = str(project.get("facilitator_email") or "").strip().lower()
+            if project.get("facilitated") and facilitator_email and facilitator_email != str(project.get("founder_email") or "").lower():
+                try:
+                    await send_email(facilitator_email,
+                        f"Strategic Planning Response Received | {payload.full_name} | {project['organization_name']}",
+                        f"{payload.full_name} has submitted their Strategic Planning Form for {project['organization_name']}. "
+                        "Their response is saved in the planning dashboard for your review.",
+                        "VIEW BOARD RESPONSE", response_link)
+                    await db.sp_participants.update_one({"participant_id": record["participant_id"]},
+                        {"$set": {"facilitator_notification_status": "Sent", "facilitator_notification_sent_at": now_iso()}})
+                except Exception as exc:
+                    logger.exception("Strategic Planning facilitator notification failed for %s", record["participant_id"])
+                    await db.sp_participants.update_one({"participant_id": record["participant_id"]},
+                        {"$set": {"facilitator_notification_status": "Failed", "facilitator_notification_error": str(exc)[:300]}})
+        live = await db.sp_sessions.find_one({"project_id": project["project_id"]}, {"_id": 0}) or {}
+        return {"status": "submitted", "organization_name": project["organization_name"],
+                "group_session_url": f"/strategic-session/{live['share_token']}?participant={record['form_token']}" if live.get("share_token") else ""}
 
     @router.get("/strategic-planning-response/{participant_id}")
     async def public_response(participant_id: str):
@@ -1368,7 +1403,7 @@ def create_strategic_planning_router(db) -> APIRouter:
     def generic_form_email(project: dict, link: str) -> dict:
         organization = project["organization_name"]
         signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
-        return sp_generic_form_invitation_email(organization, link, signature)
+        return {**sp_generic_form_invitation_email(organization, link, signature), "button_label": "COMPLETE MY STRATEGIC PLANNING FORM"}
 
     @router.get("/admin/sp/projects/{project_id}/form-email")
     async def form_email(project_id: str, request: Request):
@@ -1606,6 +1641,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         project = await db.sp_projects.find_one({"project_id": project_id}, {"_id": 0})
         if not project:
             raise HTTPException(status_code=404, detail="Strategic Planning project not found")
+        bind_test_scope(db, project)
         return project
 
     async def send_email(to_email: str, subject: str, body: str, button_label: str, link: str, reply_to: str = ""):
@@ -1645,7 +1681,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     def generic_form_email(project: dict, link: str) -> dict:
         organization = project["organization_name"]
         signature = sp_signature(project["founder_name"], project.get("founder_title", ""), organization)
-        return sp_generic_form_invitation_email(organization, link, signature)
+        return {**sp_generic_form_invitation_email(organization, link, signature), "button_label": "COMPLETE MY STRATEGIC PLANNING FORM"}
 
     def review_email(project: dict, participant: dict, link: str) -> dict:
         first = (participant.get("name") or "").split(" ")[0]
@@ -1670,16 +1706,21 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "button_label": "OPEN MY AREA DEVELOPMENT PACK", "form_link": link}
 
     async def paid(session_id: str):
-        tx=await db.payment_transactions.find_one({"session_id":session_id,"payment_status":"paid","purchase_source":{"$in":["strategic_planning_497","strategic_planning_supported_2997"]}},{"_id":0})
+        tx=await db.payment_transactions.find_one({"session_id":session_id,"$or":[
+            {"payment_status":"paid","purchase_source":{"$in":["strategic_planning_497","strategic_planning_supported_2997"]}},
+            {"payment_status":"facilitated","internal_facilitated":True,"purchase_source":"strategic_planning_supported_2997"}]},{"_id":0})
         if not tx: raise HTTPException(status_code=402,detail="Paid Strategic Planning access could not be confirmed")
+        bind_test_scope(db, tx)
         lead=await db.guided_product_leads.find_one({"token":tx.get("guided_lead_token","")},{"_id":0}) or {}
         intake=await db.guided_product_intakes.find_one({"session_id":session_id,"product":"strategic-planning"},{"_id":0}) or {}
         return tx,lead,intake
 
     async def ensure_project(session_id: str):
         tx,lead,intake=await paid(session_id); p=await db.sp_projects.find_one({"guided_session_id":session_id},{"_id":0})
-        if p:return p
-        ans=intake.get("answers") or {}; now=now_iso(); p={"project_id":str(uuid.uuid4()),"guided_session_id":session_id,"organization_name":lead.get("organization") or "Organization","founder_name":lead.get("name") or "Organization Leader","founder_email":lead.get("email") or "","founder_title":"","mission":ans.get("mission",""),"status":"Active","generic_form_token":secrets.token_urlsafe(32),"created_at":now}
+        if p:
+            bind_test_scope(db, tx)
+            return p
+        ans=intake.get("answers") or {}; now=now_iso(); p={"project_id":str(uuid.uuid4()),"guided_session_id":session_id,"organization_name":lead.get("organization") or "Organization","founder_name":lead.get("name") or "Organization Leader","founder_email":lead.get("email") or "","founder_title":"","mission":ans.get("mission",""),"questionnaire_version":strategic24.VERSION if strategic24.current(ans) else "legacy","internal_preview":bool(tx.get("internal_preview")),"status":"Active","generic_form_token":secrets.token_urlsafe(32),"created_at":now}
         await db.sp_projects.insert_one(p.copy());return p
 
     async def detail(p):
@@ -1734,94 +1775,97 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/prepare-form")
     async def prepare_form(request:Request):
         body=await request.json();sid=body.get("session_id","");p=await ensure_project(sid);_,_,intake=await paid(sid);a=intake.get("answers") or {}
-        programs=a.get("programs") or a.get("areas") or ""
-        supplied_programs=a.get("program_details") if isinstance(a.get("program_details"),list) else []
-        program_details=[]
-        for item in supplied_programs[:20]:
-            if not isinstance(item,dict):continue
-            name=str(item.get("name","")).strip()
-            if not name:continue
-            program_details.append({"name":name,"description":str(item.get("description","")).strip(),"present_work":str(item.get("present_work","")).strip()})
-        if not program_details:
-            program_details=[{"name":x.strip(" -•\t"),"description":"","present_work":""} for x in str(programs).split("\n") if x.strip()][:12]
+        if strategic24.current(a):
+            content = strategic24.form_content()
+        else:
+            programs=a.get("programs") or a.get("areas") or ""
+            supplied_programs=a.get("program_details") if isinstance(a.get("program_details"),list) else []
+            program_details=[]
+            for item in supplied_programs[:20]:
+                if not isinstance(item,dict):continue
+                name=str(item.get("name","")).strip()
+                if not name:continue
+                program_details.append({"name":name,"description":str(item.get("description","")).strip(),"present_work":str(item.get("present_work","")).strip()})
+            if not program_details:
+                program_details=[{"name":x.strip(" -•\t"),"description":"","present_work":""} for x in str(programs).split("\n") if x.strip()][:12]
 
-        sections_data=[
-            ("Mission",[
-                f"From your view, does our present mission still clearly explain who we serve, how we serve them and the change we are trying to create? What would you keep or change, and why?\n\nPresent mission: {str(a.get('mission') or p.get('mission') or '').strip()}",
-                "What wording, focus or emphasis would make the mission more useful for guiding the organization's decisions over the next few years?",
-            ]),
-            ("Goals",[
-                f"Looking at our present goals for the next 12 to 24 months, which goals feel most important, which should change, and what goal do you believe we are missing?\n\nPresent goals: {str(a.get('goals') or '').strip()}",
-                "From what you know about the organization and the people we serve, what do you believe we should realistically be trying to achieve during this planning period?",
-            ]),
-            ("Objectives",[
-                f"Our objectives should help us achieve our goals. Looking at what we presently have, which objectives are useful, which need to change, and what specific objectives should we add?\n\nPresent objectives: {str(a.get('objectives') or '').strip()}",
-                "What evidence or result would make you say that these objectives are actually being achieved?",
-            ]),
-        ]
+            sections_data=[
+                ("Mission",[
+                    f"From your view, does our present mission still clearly explain who we serve, how we serve them and the change we are trying to create? What would you keep or change, and why?\n\nPresent mission: {str(a.get('mission') or p.get('mission') or '').strip()}",
+                    "What wording, focus or emphasis would make the mission more useful for guiding the organization's decisions over the next few years?",
+                ]),
+                ("Goals",[
+                    f"Looking at our present goals for the next 12 to 24 months, which goals feel most important, which should change, and what goal do you believe we are missing?\n\nPresent goals: {str(a.get('goals') or '').strip()}",
+                    "From what you know about the organization and the people we serve, what do you believe we should realistically be trying to achieve during this planning period?",
+                ]),
+                ("Objectives",[
+                    f"Our objectives should help us achieve our goals. Looking at what we presently have, which objectives are useful, which need to change, and what specific objectives should we add?\n\nPresent objectives: {str(a.get('objectives') or '').strip()}",
+                    "What evidence or result would make you say that these objectives are actually being achieved?",
+                ]),
+            ]
 
-        for program in program_details:
-            name=program["name"];description=program.get("description","");present_work=program.get("present_work","")
-            starting="\n\nPresent program information: "+(" | ".join(x for x in [description,present_work] if x) or "No additional description supplied.")
-            sections_data.append((f"Program: {name}",[
-                f"Thinking specifically about {name}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?{starting}",
-                f"From what you have observed, what would make {name} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
-            ]))
+            for program in program_details:
+                name=program["name"];description=program.get("description","");present_work=program.get("present_work","")
+                starting="\n\nPresent program information: "+(" | ".join(x for x in [description,present_work] if x) or "No additional description supplied.")
+                sections_data.append((f"Program: {name}",[
+                    f"Thinking specifically about {name}, what do you believe this program should accomplish for the people it serves? What should we protect, change or improve?{starting}",
+                    f"From what you have observed, what would make {name} more effective, useful or sustainable, and what should the organization do differently in delivering it?",
+                ]))
 
-        sections_data.extend([
-            ("Team & Capacity",[
-                f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {str(a.get('team_building') or '').strip()}",
-                "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
-            ]),
-            ("Marketing & Visibility",[
-                f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {str(a.get('marketing') or '').strip()}",
-                "From what you have seen, where should we be more visible and what would help the right people notice, trust and engage with the organization?",
-            ]),
-            ("Partnerships",[
-                f"Which types of organizations, institutions, businesses or community groups could materially strengthen our mission, and what could a useful partnership actually help us accomplish?\n\nPresent information: {str(a.get('partnerships') or '').strip()}",
-                "Are there relationships or partnership opportunities you believe we should prioritize because of what you know or have observed?",
-            ]),
-            ("Fundraising",[
-                f"From your perspective, what is working and not working about how we presently raise money?\n\nPresent information: {str(a.get('fundraising') or '').strip()}",
-                "Who do you believe is most likely to care about funding this work, where can we reach them, and what should we do to build enough trust to ask for support?",
-            ]),
-            ("Technology",[
-                f"What work do we need technology to make easier, faster or more reliable, and where are our present tools getting in the way?\n\nPresent information: {str(a.get('technology') or '').strip()}",
-                "What technology capability do you believe the organization genuinely needs in order to execute this strategy well?",
-            ]),
-            ("Budget & Resources",[
-                f"Looking at the direction we are considering, where do you believe the organization will need to spend, invest or secure additional resources?\n\nPresent information: {str(a.get('budget') or '').strip()}",
-                "What budget or resource decisions do you believe the Board needs to understand before committing to the strategy?",
-            ]),
-            ("Action Planning",[
-                f"Based on everything above, what should the organization do first, next and after that? Compare what is already happening with what needs to happen next.\n\nWhat the organization says it is presently doing and looking towards doing: {str(a.get('action_planning') or '').strip()}",
-                "What practical actions, decisions or resources do you believe are most important in the first 90 days after this Strategic Plan is adopted?",
-            ]),
-            ("Roles We Will Play",[
-                "Which Board committee, working group or recurring area of Board work would you genuinely be interested in joining or helping shape? If no formal committee exists yet, describe the kind of group or area you would be happy to participate in.",
-                "Which areas of this Strategic Plan would you personally be willing to LEAD at Board level? Only name areas you would genuinely be comfortable accepting responsibility for.",
-                "Which areas would you be happy to SUPPORT without being the lead? Describe the kind of contribution, expertise, relationships or help you would be comfortable providing.",
-            ]),
-        ])
+            sections_data.extend([
+                ("Team & Capacity",[
+                    f"Who do we presently have available to help execute this strategy — staff, Board Members, volunteers, contractors or other supporters? Where do you see enough capacity and where are we stretched?\n\nPresent information: {str(a.get('team_building') or '').strip()}",
+                    "What people, skills or leadership capacity do you believe we need to add or strengthen to execute the strategy successfully?",
+                ]),
+                ("Marketing & Visibility",[
+                    f"Who most needs to know about our work, and what do you believe they need to understand about us?\n\nPresent information: {str(a.get('marketing') or '').strip()}",
+                    "From what you have seen, where should we be more visible and what would help the right people notice, trust and engage with the organization?",
+                ]),
+                ("Partnerships",[
+                    f"Which types of organizations, institutions, businesses or community groups could materially strengthen our mission, and what could a useful partnership actually help us accomplish?\n\nPresent information: {str(a.get('partnerships') or '').strip()}",
+                    "Are there relationships or partnership opportunities you believe we should prioritize because of what you know or have observed?",
+                ]),
+                ("Fundraising",[
+                    f"From your perspective, what is working and not working about how we presently raise money?\n\nPresent information: {str(a.get('fundraising') or '').strip()}",
+                    "Who do you believe is most likely to care about funding this work, where can we reach them, and what should we do to build enough trust to ask for support?",
+                ]),
+                ("Technology",[
+                    f"What work do we need technology to make easier, faster or more reliable, and where are our present tools getting in the way?\n\nPresent information: {str(a.get('technology') or '').strip()}",
+                    "What technology capability do you believe the organization genuinely needs in order to execute this strategy well?",
+                ]),
+                ("Budget & Resources",[
+                    f"Looking at the direction we are considering, where do you believe the organization will need to spend, invest or secure additional resources?\n\nPresent information: {str(a.get('budget') or '').strip()}",
+                    "What budget or resource decisions do you believe the Board needs to understand before committing to the strategy?",
+                ]),
+                ("Action Planning",[
+                    f"Based on everything above, what should the organization do first, next and after that? Compare what is already happening with what needs to happen next.\n\nWhat the organization says it is presently doing and looking towards doing: {str(a.get('action_planning') or '').strip()}",
+                    "What practical actions, decisions or resources do you believe are most important in the first 90 days after this Strategic Plan is adopted?",
+                ]),
+                ("Roles We Will Play",[
+                    "Which Board committee, working group or recurring area of Board work would you genuinely be interested in joining or helping shape? If no formal committee exists yet, describe the kind of group or area you would be happy to participate in.",
+                    "Which areas of this Strategic Plan would you personally be willing to LEAD at Board level? Only name areas you would genuinely be comfortable accepting responsibility for.",
+                    "Which areas would you be happy to SUPPORT without being the lead? Describe the kind of contribution, expertise, relationships or help you would be comfortable providing.",
+                ]),
+            ])
 
-        sections=[]
-        for i,(title,prompts) in enumerate(sections_data,1):
-            sections.append({
-                "key":f"s{i}",
-                "title":title,
-                "questions":[{"id":f"s{i}_q{j}","prompt":prompt,"type":"long","options":[],"required":True} for j,prompt in enumerate(prompts,1)],
-            })
+            sections=[]
+            for i,(title,prompts) in enumerate(sections_data,1):
+                sections.append({
+                    "key":f"s{i}",
+                    "title":title,
+                    "questions":[{"id":f"s{i}_q{j}","prompt":prompt,"type":"long","options":[],"required":True} for j,prompt in enumerate(prompts,1)],
+                })
 
-        goal=str(a.get("goals") or "build a clear, practical direction for the organization").strip()
-        content={
-            "introduction":(
-                f"{p['organization_name']} is preparing its next Strategic Plan. We want your own thinking before the Board meets together. "
-                "There are no right or wrong answers. Speak from what you have observed, what you know, and what you genuinely believe would help the organization. "
-                "Your ideas will remain attributable to you during the Board's Strategic Planning Session so the group can review every contribution together. "
-                f"Our present planning direction is to {goal}."
-            ),
-            "sections":sections,
-        }
+            goal=str(a.get("goals") or "build a clear, practical direction for the organization").strip()
+            content={
+                "introduction":(
+                    f"{p['organization_name']} is preparing its next Strategic Plan. We want your own thinking before the Board meets together. "
+                    "There are no right or wrong answers. Speak from what you have observed, what you know, and what you genuinely believe would help the organization. "
+                    "Your ideas will remain attributable to you during the Board's Strategic Planning Session so the group can review every contribution together. "
+                    f"Our present planning direction is to {goal}."
+                ),
+                "sections":sections,
+            }
         now=now_iso()
         await db.sp_forms.update_one(
             {"project_id":p["project_id"]},
@@ -1840,6 +1884,16 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 })
             elif lead.get("role")!="Lead User":
                 await db.sp_participants.update_one({"participant_id":lead["participant_id"]},{"$set":{"role":"Lead User"}})
+        if strategic24.complete(a):
+            await db.sp_projects.update_one({"project_id": p["project_id"]}, {"$set": {"questionnaire_version": strategic24.VERSION}})
+            await db.sp_participants.update_one(
+                {"project_id": p["project_id"], "email": str(p.get("founder_email", "")).lower(), "status": {"$ne": "COMPLETED"}},
+                {"$set": {"status": "COMPLETED", "response": {key: a[key] for key in strategic24.KEYS},
+                          "questionnaire_version": strategic24.VERSION, "submitted_at": now}})
+        if strategic24.current(a):
+            await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$setOnInsert": {
+                "project_id": p["project_id"], "share_token": secrets.token_urlsafe(32), "current_section_index": 0,
+                "status": "NOT STARTED", "created_at": now}}, upsert=True)
         return {"status":"Approved"}
 
     @router.post("/branding")
@@ -1961,6 +2015,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "decision":"Select the ideas the Board agrees should influence this section."}
 
     def build_session_sections(form: dict, people: list, saved: dict, answers: dict, project: dict) -> list:
+        if (form.get("content") or {}).get("questionnaire_version") == strategic24.VERSION:
+            return strategic24.session_sections(people, saved)
         sections=[]
         for section in (form.get("content") or {}).get("sections",[]):
             ideas=[]
@@ -2016,7 +2072,12 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         sections=build_session_sections(form,people,saved,intake.get("answers") or {},p)
         return {"organization_name":p["organization_name"],"sections":sections,"transcript":saved.get("transcript",""),
                 "status":saved.get("status","NOT STARTED"),"share_token":saved.get("share_token",""),
-                "current_section_index":saved.get("current_section_index",0)}
+                "current_section_index":saved.get("current_section_index",0),
+                "questionnaire_version": (form.get("content") or {}).get("questionnaire_version", "legacy"),
+                "welcome": strategic24.WELCOME, "adopted_areas": saved.get("adopted_areas", []),
+                "decision_revision": saved.get("decision_revision", ""),
+                "acknowledgements": [{"participant_id": person["participant_id"], "name": person.get("name", ""),
+                    "acknowledged": (person.get("direction_adoption") or {}).get("revision") == saved.get("decision_revision") and bool(saved.get("decision_revision"))} for person in people]}
 
     @router.post("/session/share")
     async def share_strategic_session(request: Request):
@@ -2033,6 +2094,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not any(person.get("role")=="Lead User" for person in people):raise HTTPException(409,"Complete your own Strategic Planning Form before starting the session")
         if not any(person.get("role")!="Lead User" for person in people):raise HTTPException(409,"At least one Board Member must complete the Strategic Planning Form before starting the session")
         saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if p.get("questionnaire_version") == strategic24.VERSION and saved.get("status") in {"REVIEW", "COMPLETED"}: raise HTTPException(409, "This meeting has already reached review or adoption")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"status":"IN PROGRESS",
             "started_at":saved.get("started_at") or now_iso(),"current_section_index":saved.get("current_section_index",0),"updated_at":now_iso()}},upsert=True)
         return {"status":"IN PROGRESS"}
@@ -2046,6 +2108,10 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/session/progress")
     async def update_strategic_session_progress(request: Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));index=max(0,int(body.get("current_section_index",0)))
+        if p.get("questionnaire_version") == strategic24.VERSION:
+            saved = await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+            if saved.get("status") in {"REVIEW","COMPLETED"}: raise HTTPException(409,"Return to discussion before changing the review step")
+            if index >= len(strategic24.QUESTIONS): raise HTTPException(422,"Choose a valid planning question")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"current_section_index":index,"status":"IN PROGRESS","updated_at":now_iso()}},upsert=True)
         return {"current_section_index":index}
 
@@ -2058,12 +2124,15 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         sections=build_session_sections(form,people,saved,intake.get("answers") or {},p);section=next((x for x in sections if x["key"]==key),None)
         if not section:raise HTTPException(422,"Choose a valid strategic section")
+        canonical = (form.get("content") or {}).get("questionnaire_version") == strategic24.VERSION
+        if canonical and saved.get("status") in {"REVIEW", "COMPLETED"}: raise HTTPException(409, "Return to discussion before changing decisions")
+        if canonical and not isinstance(decision, list): raise HTTPException(422, "Select the individual ideas the group adopted")
         if isinstance(decision,list):
             valid={idea["idea_id"] for idea in section["ideas"]};clean=[]
             for idea_id in decision:
                 idea_id=str(idea_id)
                 if idea_id in valid and idea_id not in clean:clean.append(idea_id)
-            if not clean:
+            if not clean and (form.get("content") or {}).get("questionnaire_version") != strategic24.VERSION:
                 await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$unset":{f"decisions.{key}":""},"$set":{"updated_at":now_iso()}},upsert=True)
                 return {"section_key":key,"decision":[]}
             stored=clean
@@ -2076,10 +2145,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         return {"section_key":key,"decision":stored}
 
     @router.get("/session/watch/{token}")
-    async def watch_strategic_session(token: str):
+    async def watch_strategic_session(token: str, participant_token: str = ""):
         saved=await db.sp_sessions.find_one({"share_token":token},{"_id":0})
         if not saved:raise HTTPException(404,"This Strategic Planning session link is not valid")
         p=await db.sp_projects.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
+        final=await db.sp_plans.find_one({"project_id":saved["project_id"]},{"_id":0,"final_status":1,"final_display_text":1}) or {}
         intake=await db.guided_product_intakes.find_one({"session_id":p.get("guided_session_id"),"product":"strategic-planning"},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
         people=await db.sp_participants.find({"project_id":saved["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
@@ -2090,8 +2160,15 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             selected=set(section.get("selected_idea_ids") or [])
             section={**section,"ideas":[{**idea,"selected":idea["idea_id"] in selected} for idea in section["ideas"]]}
             section.pop("facilitator_prompt",None)
+        person = await db.sp_participants.find_one({"project_id": p["project_id"], "form_token": participant_token}, {"_id": 0}) if participant_token else None
         return {"organization_name":p.get("organization_name",""),"status":saved.get("status","NOT STARTED"),
-                "current_section_index":index,"section":section,"total_sections":len(sections)}
+                "current_section_index":index,"section":section,"total_sections":len(sections),
+                "questionnaire_version": (form.get("content") or {}).get("questionnaire_version", "legacy"),
+                "adopted_areas": saved.get("adopted_areas", []) if saved.get("status") in {"REVIEW", "COMPLETED"} else [],
+                "decision_revision": saved.get("decision_revision", ""),
+                "participant": {"name": person.get("name", ""), "acknowledged": (person.get("direction_adoption") or {}).get("revision") == saved.get("decision_revision")} if person else None,
+                "plan_status":final.get("final_status","NONE") if saved.get("status")=="COMPLETED" else "NONE",
+                "plan_text":final.get("final_display_text","") if saved.get("status")=="COMPLETED" else ""}
 
     @router.post("/session/complete")
     async def complete_strategic_session(request: Request):
@@ -2101,6 +2178,22 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         sections=build_session_sections(form,people,saved,intake.get("answers") or {},p)
+        if (form.get("content") or {}).get("questionnaire_version") == strategic24.VERSION:
+            if saved.get("status") == "COMPLETED":
+                return {"status": "COMPLETED"}
+            try:
+                areas = strategic24.adopted_areas(sections, decisions)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc))
+            revision = strategic24.decision_revision(areas)
+            if saved.get("status") == "REVIEW":
+                if revision != saved.get("decision_revision"): raise HTTPException(409, "Return to discussion before changing the reviewed direction")
+                return {"status":"REVIEW","adopted_areas":saved["adopted_areas"],"decision_revision":saved["decision_revision"]}
+            if saved.get("status") != "IN PROGRESS": raise HTTPException(409, "Start the group discussion before completing it")
+            await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$set": {
+                "project_id": p["project_id"], "decisions": decisions, "transcript": transcript,
+                "adopted_areas": areas, "decision_revision": revision, "status": "REVIEW", "updated_at": now_iso()}}, upsert=True)
+            return {"status": "REVIEW", "adopted_areas": areas, "decision_revision": revision}
         if not transcript:raise HTTPException(422,"Keep the microphone transcript running or paste the session transcript before ending the Strategic Planning Session")
         for section in sections:
             value=decisions.get(section["key"])
@@ -2144,6 +2237,60 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             "status":"SESSION COMPLETED","final_status":"NONE","final_display_text":"","final_share_token":"","active_delegation":{},"updated_at":now},
             "$setOnInsert":{"created_at":now}},upsert=True)
         return {"status":"COMPLETED","area_count":len(areas)}
+
+    @router.post("/session/idea")
+    async def save_discussion_idea(request: Request):
+        body = await request.json(); p = await ensure_project(body.get("session_id", ""))
+        key = body.get("section_key", ""); text = str(body.get("text", "")).strip()[:12000]
+        if key not in strategic24.KEYS or not text: raise HTTPException(422, "Choose a question and enter the agreed wording")
+        saved = await db.sp_sessions.find_one({"project_id": p["project_id"]}, {"_id": 0}) or {}
+        if saved.get("status") in {"REVIEW", "COMPLETED"}: raise HTTPException(409, "Return to the discussion before changing ideas")
+        participant_id = str(body.get("participant_id") or "")
+        person = await db.sp_participants.find_one({"project_id": p["project_id"], "participant_id": participant_id}, {"_id": 0}) if participant_id else None
+        if key == strategic24.KEYS[-1] and not person: raise HTTPException(422, "Connect this contribution to the person agreeing to it")
+        idea = {"idea_id": "discussion:" + secrets.token_hex(16), "participant_id": participant_id,
+                "participant_name": person.get("name", "Board discussion") if person else "Board discussion",
+                "question_id": key, "question": next(q["prompt"] for q in strategic24.QUESTIONS if q["key"] == key),
+                "idea": text, "source_idea_ids": [str(x) for x in body.get("source_idea_ids", [])][:20]}
+        await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$push": {f"discussion_ideas.{key}": idea},
+            "$set": {"project_id": p["project_id"], "updated_at": now_iso()}}, upsert=True)
+        return {"idea": idea}
+
+    @router.post("/session/reopen")
+    async def reopen_direction_review(request: Request):
+        p = await ensure_project((await request.json()).get("session_id", ""))
+        saved = await db.sp_sessions.find_one({"project_id": p["project_id"]}, {"_id": 0}) or {}
+        if saved.get("status") != "REVIEW": raise HTTPException(409, "Only an unfinished review can return to discussion")
+        await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$set": {"status": "IN PROGRESS", "updated_at": now_iso()}})
+        return {"status": "IN PROGRESS"}
+
+    @router.post("/session/adopt")
+    async def adopt_strategic_direction(request: Request):
+        body = await request.json(); p = await ensure_project(body.get("session_id", ""))
+        saved = await db.sp_sessions.find_one({"project_id": p["project_id"]}, {"_id": 0}) or {}
+        if saved.get("status") == "COMPLETED": return {"status": "COMPLETED"}
+        if saved.get("status") != "REVIEW" or body.get("confirmed") is not True or body.get("revision") != saved.get("decision_revision"):
+            raise HTTPException(409, "Review and explicitly approve the current agreed direction")
+        areas = saved.get("adopted_areas") or []
+        if not any(x.get("agreed_ideas") for x in areas): raise HTTPException(422, "Select at least one agreed idea before adoption")
+        await db.sp_plans.update_one({"project_id": p["project_id"]}, {"$set": {"areas": areas, "status": "SESSION COMPLETED",
+            "final_status": "NONE", "decision_revision": saved["decision_revision"], "updated_at": now_iso()}, "$setOnInsert": {"created_at": now_iso()}}, upsert=True)
+        await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$set": {"status": "COMPLETED", "completed_at": now_iso()}})
+        return {"status": "COMPLETED"}
+
+    @router.post("/session/acknowledge/{participant_token}")
+    async def acknowledge_strategic_direction(participant_token: str, request: Request):
+        body = await request.json()
+        person = await db.sp_participants.find_one({"form_token": participant_token}, {"_id": 0})
+        if not person: raise HTTPException(404, "Use your personal invitation link")
+        if person.get("status") != "COMPLETED": raise HTTPException(409, "Complete your own contribution before adopting the agreed direction")
+        saved = await db.sp_sessions.find_one({"project_id": person["project_id"]}, {"_id": 0}) or {}
+        if saved.get("status") not in {"REVIEW", "COMPLETED"} or body.get("confirmed") is not True or body.get("revision") != saved.get("decision_revision"):
+            raise HTTPException(409, "Review the current agreed direction before acknowledging it")
+        if body.get("accept_responsibilities") is not True: raise HTTPException(422, "Confirm your own agreed responsibilities before adopting")
+        await db.sp_participants.update_one({"participant_id": person["participant_id"]}, {"$set": {
+            "direction_adoption": {"revision": saved["decision_revision"], "accepted_responsibilities": True, "acknowledged_at": now_iso()}}})
+        return {"acknowledged": True, "revision": saved["decision_revision"]}
 
     @router.post("/community-research")
     async def community_research(request:Request):
@@ -2289,22 +2436,31 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         async def run_generation():
             try:
                 people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
-                context=(
-                    f"ORGANIZATION: {p['organization_name']}\n"
-                    f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
-                    f"ORGANIZATION STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
-                    f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
-                    f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}"
-                )
-                generated=await generate_structured(
-                    "strategic_session_final_plan",
-                    context,
-                    "Build one concise, professional, execution-ready Strategic Plan exactly from the Board's selected ideas and live session conclusions. "
-                    "Use this canonical order: Executive Summary; Mission; Goals; Objectives; Programs; Team Building / Team Structure; Technology; Marketing; Partnerships; Fundraising; Budget; Action Planning. "
-                    "Every program must be its own named subsection with its own description and Board-agreed direction. Do not create a separate Operations section. "
-                    "Action Planning must distinguish what is already happening from what the organization agreed should happen next and turn the adopted strategy into a practical sequence of work. "
-                    "Preserve the organization's and contributors' distinctive wording and logic. Do not attribute the final plan to individual contributors, invent consensus, or introduce a second planning process."
-                )
+                if p.get("questionnaire_version") == strategic24.VERSION:
+                    generated = await generate_structured("strategic_session_final_plan",
+                        strategic24.approved_context(plan.get("areas") or [], p.get("mission", ""), {person["participant_id"]: (person.get("direction_adoption") or {}).get("revision") == session.get("decision_revision") and bool(session.get("decision_revision")) for person in people}),
+                        "Generate a practical 24-month plan using ONLY explicitly_adopted_decisions. Never use rejected ideas or infer adoption from a transcript. "
+                        "Preserve the stored mission as background; never propose a revised mission. Include an executive summary, agreed goals and objectives, programmes, "
+                        "beneficiary outcomes, capacity, technology, marketing, partnerships, fundraising, budget framework, risks, 90-day/12-month/24-month milestones, "
+                        "measurement and agreed individual responsibilities where supplied. Mark missing costs, dates and targets as requiring confirmation. "
+                        "Do not invent figures, commitments or decisions. Individual responsibilities marked individual_acceptance_confirmed=false remain proposals requiring that person's confirmation, not assigned duties. Clarify and structure the agreed wording without adding substantive recommendations.")
+                else:
+                    context=(
+                        f"ORGANIZATION: {p['organization_name']}\n"
+                        f"ORGANIZATION STARTING MISSION: {p.get('mission','')}\n\n"
+                        f"ORGANIZATION STARTING REALITY:\n{json.dumps(intake.get('answers') or {},default=str)}\n\n"
+                        f"BOARD-SELECTED STRATEGIC SECTIONS. Each agreed_ideas entry contains the FULL ORIGINAL RESPONSE behind the concise session card:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+                        f"LIVE STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}"
+                    )
+                    generated=await generate_structured(
+                        "strategic_session_final_plan",
+                        context,
+                        "Build one concise, professional, execution-ready Strategic Plan exactly from the Board's selected ideas and live session conclusions. "
+                        "Use this canonical order: Executive Summary; Mission; Goals; Objectives; Programs; Team Building / Team Structure; Technology; Marketing; Partnerships; Fundraising; Budget; Action Planning. "
+                        "Every program must be its own named subsection with its own description and Board-agreed direction. Do not create a separate Operations section. "
+                        "Action Planning must distinguish what is already happening from what the organization agreed should happen next and turn the adopted strategy into a practical sequence of work. "
+                        "Preserve the organization's and contributors' distinctive wording and logic. Do not attribute the final plan to individual contributors, invent consensus, or introduce a second planning process."
+                    )
                 display=final_display(generated,p["organization_name"])
 
                 known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
@@ -2349,64 +2505,77 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                         },
                     }
 
-                api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","")
-                model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
-                system=("You extract execution responsibilities that people EXPLICITLY AGREED TO during one nonprofit Board Strategic Planning Session. "
-                        "The planning-form preferences supplied separately are statements of willingness, not assignments. "
-                        "Use the transcript only to identify explicit live-session agreements, changes or additions. "
-                        "A person may receive multiple responsibilities. Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
-                        "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, is knowledgeable about it, or said before the meeting that they might be willing to help. "
-                        "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
-                prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
-                        f"PARTICIPANT-STATED WILLINGNESS FROM THEIR OWN FORMS (context only; NOT automatically agreed roles):\n{json.dumps(list(preference_delegates.values()),default=str)}\n\n"
-                        f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
-                        f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
-                        '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}],"declined_participant_ids":[""]}\n'
-                        "Return that exact JSON shape. Include only responsibilities explicitly agreed in the live session. "
-                        "If the transcript clearly shows that a known participant declined or withdrew the role they had previously said they might be willing to take, put their exact known participant_id in declined_participant_ids. "
-                        "Do not mark someone declined merely because their role was not discussed.")
-                try:
-                    chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
-                    raw=await chat.send_message(UserMessage(text=prompt))
-                    parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
-                    extracted=parsed.get("delegations") or []
-                    declined_ids={str(x) for x in (parsed.get("declined_participant_ids") or []) if str(x)}
-                except Exception:
-                    logger.exception("Strategic session delegation extraction failed for %s",p["project_id"])
-                    extracted=[]
-                    declined_ids=set()
+                if p.get("questionnaire_version") == strategic24.VERSION:
+                    responsibility_area = next((x for x in plan.get("areas", []) if x.get("area_key") == strategic24.KEYS[-1]), {})
+                    confirmed = responsibility_area.get("agreed_ideas") or []
+                    delegates = []
+                    for person in people:
+                        statements = [x["text"] for x in confirmed if x.get("participant_id") == person["participant_id"]]
+                        accepted = (person.get("direction_adoption") or {}).get("revision") == session.get("decision_revision")
+                        if statements:
+                            delegates.append({"delegation_id": str(uuid.uuid4()), "participant_id": person["participant_id"],
+                                "name": person.get("name", ""), "email": person.get("email", ""), "role": person.get("role", ""),
+                                "responsibilities": statements, "areas": [], "first_action": "", "support_needed": "", "reporting_rhythm": "",
+                                "source": "Board-selected personal contribution", "participant_accepted": accepted})
+                else:
+                    api_key=os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY","")
+                    model=os.environ.get("CLAUDE_MODEL","claude-sonnet-4-6")
+                    system=("You extract execution responsibilities that people EXPLICITLY AGREED TO during one nonprofit Board Strategic Planning Session. "
+                            "The planning-form preferences supplied separately are statements of willingness, not assignments. "
+                            "Use the transcript only to identify explicit live-session agreements, changes or additions. "
+                            "A person may receive multiple responsibilities. Include a person who did not complete the planning form when the transcript clearly names them and gives them responsibility. "
+                            "Do not infer responsibility merely because somebody suggested an idea, spoke about a topic, is knowledgeable about it, or said before the meeting that they might be willing to help. "
+                            "Do not invent names, emails, roles, responsibilities, deadlines or consensus. Return only JSON.")
+                    prompt=(f"KNOWN PEOPLE:\n{json.dumps(known,default=str)}\n\n"
+                            f"PARTICIPANT-STATED WILLINGNESS FROM THEIR OWN FORMS (context only; NOT automatically agreed roles):\n{json.dumps(list(preference_delegates.values()),default=str)}\n\n"
+                            f"BOARD-SELECTED STRATEGIC AREAS:\n{json.dumps(plan.get('areas'),default=str)}\n\n"
+                            f"STRATEGIC PLANNING SESSION TRANSCRIPT:\n{session.get('transcript','')}\n\n"
+                            '{"delegations":[{"name":"","participant_id":"","responsibilities":[""],"areas":[""],"first_action":"","support_needed":"","reporting_rhythm":""}],"declined_participant_ids":[""]}\n'
+                            "Return that exact JSON shape. Include only responsibilities explicitly agreed in the live session. "
+                            "If the transcript clearly shows that a known participant declined or withdrew the role they had previously said they might be willing to take, put their exact known participant_id in declined_participant_ids. "
+                            "Do not mark someone declined merely because their role was not discussed.")
+                    try:
+                        chat=LlmChat(api_key=api_key,session_id=f"sp-session-delegation-{p['project_id']}-{uuid.uuid4()}",system_message=system).with_model("anthropic",model)
+                        raw=await chat.send_message(UserMessage(text=prompt))
+                        parsed=parse_json_response(raw if isinstance(raw,str) else getattr(raw,"text",str(raw)))
+                        extracted=parsed.get("delegations") or []
+                        declined_ids={str(x) for x in (parsed.get("declined_participant_ids") or []) if str(x)}
+                    except Exception:
+                        logger.exception("Strategic session delegation extraction failed for %s",p["project_id"])
+                        extracted=[]
+                        declined_ids=set()
 
-                by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
-                by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
-                delegates=[item for pid,item in preference_delegates.items() if pid not in declined_ids]
-                delegate_index={d.get("participant_id"):index for index,d in enumerate(delegates) if d.get("participant_id")}
-                for item in extracted:
-                    if not isinstance(item,dict):
-                        continue
-                    name=str(item.get("name","")).strip()
-                    responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
-                    if not name or not responsibilities:
-                        continue
-                    known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
-                    participant_id=known_person.get("participant_id","")
-                    live_delegate={
-                        "delegation_id":delegates[delegate_index[participant_id]]["delegation_id"] if participant_id in delegate_index else str(uuid.uuid4()),
-                        "participant_id":participant_id,
-                        "name":known_person.get("name") or name,
-                        "email":known_person.get("email",""),
-                        "role":known_person.get("role",""),
-                        "responsibilities":responsibilities[:20],
-                        "areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
-                        "first_action":str(item.get("first_action","")).strip()[:2000],
-                        "support_needed":str(item.get("support_needed","")).strip()[:2000],
-                        "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
-                        "source":"Explicit Strategic Planning Session agreement",
-                        "declared_preferences":preference_delegates.get(participant_id,{}).get("declared_preferences",{}),
-                    }
-                    if participant_id in delegate_index:
-                        delegates[delegate_index[participant_id]]=live_delegate
-                    else:
-                        delegates.append(live_delegate)
+                    by_id={x.get("participant_id"):x for x in known if x.get("participant_id")}
+                    by_name={str(x.get("name","")).strip().lower():x for x in known if str(x.get("name","")).strip()}
+                    delegates=[item for pid,item in preference_delegates.items() if pid not in declined_ids]
+                    delegate_index={d.get("participant_id"):index for index,d in enumerate(delegates) if d.get("participant_id")}
+                    for item in extracted:
+                        if not isinstance(item,dict):
+                            continue
+                        name=str(item.get("name","")).strip()
+                        responsibilities=[str(x).strip() for x in (item.get("responsibilities") or []) if str(x).strip()]
+                        if not name or not responsibilities:
+                            continue
+                        known_person=by_id.get(str(item.get("participant_id",""))) or by_name.get(name.lower()) or {}
+                        participant_id=known_person.get("participant_id","")
+                        live_delegate={
+                            "delegation_id":delegates[delegate_index[participant_id]]["delegation_id"] if participant_id in delegate_index else str(uuid.uuid4()),
+                            "participant_id":participant_id,
+                            "name":known_person.get("name") or name,
+                            "email":known_person.get("email",""),
+                            "role":known_person.get("role",""),
+                            "responsibilities":responsibilities[:20],
+                            "areas":[str(x).strip() for x in (item.get("areas") or []) if str(x).strip()][:20],
+                            "first_action":str(item.get("first_action","")).strip()[:2000],
+                            "support_needed":str(item.get("support_needed","")).strip()[:2000],
+                            "reporting_rhythm":str(item.get("reporting_rhythm","")).strip()[:1000],
+                            "source":"Explicit Strategic Planning Session agreement",
+                            "declared_preferences":preference_delegates.get(participant_id,{}).get("declared_preferences",{}),
+                        }
+                        if participant_id in delegate_index:
+                            delegates[delegate_index[participant_id]]=live_delegate
+                        else:
+                            delegates.append(live_delegate)
 
                 assignments={(d.get("participant_id") or d["delegation_id"]):"\n".join(d["responsibilities"]) for d in delegates}
                 active={"delegates":delegates,"assignments":assignments,"transcript":session.get("transcript",""),
@@ -2606,12 +2775,33 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         body=await request.json();p=await ensure_project(body.get("session_id",""));text=str(body.get("display_text","")).strip()[:120000];plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if plan.get("final_status")=="Approved":raise HTTPException(409,"The Final Strategic Plan is already approved")
         if not text:raise HTTPException(422,"The Strategic Plan cannot be empty")
-        await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Draft","final_display_text":text,"updated_at":now_iso()}});return {"status":"Draft"}
+        query = {"project_id":p["project_id"]}
+        if p.get("questionnaire_version") == strategic24.VERSION: query["final_status"]={"$ne":"Approved"}
+        result = await db.sp_plans.update_one(query,{"$set":{"final_status":"Draft","final_display_text":text,"updated_at":now_iso()}})
+        if not result.matched_count: raise HTTPException(409,"The final plan has already been approved")
+        return {"status":"Draft"}
+
+    async def deliver_approved_planning(p, plan, origin, include_participants=False):
+        from workflow_delivery import deliver_once
+        link = origin.rstrip("/") + "/strategic-plan/" + plan["final_share_token"]
+        recipients = {p.get("founder_email", "")}
+        if include_participants:
+            people = await db.sp_participants.find({"project_id": p["project_id"], "status": "COMPLETED"}, {"_id": 0}).to_list(300)
+            recipients.update(x.get("email", "") for x in people)
+        revision = strategic24.decision_revision([{"approved_text": plan["final_display_text"]}])
+        return [await deliver_once(db, p.get("owner_user_id") or p["project_id"], "strategic-plan:" + p["project_id"] + ":" + revision,
+            email, "Your Approved Strategic Plan", "Your approved 24-month strategic plan is saved. Use this secure link to read and download the exact version approved by your organization.", link)
+            for email in sorted(recipients) if email]
 
     @router.post("/final-plan/approve")
     async def approve_final_plan(request:Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not plan.get("final_display_text"):raise HTTPException(409,"Generate and review the Strategic Plan Draft first")
+        if p.get("questionnaire_version") == strategic24.VERSION:
+            token = plan.get("final_share_token") or secrets.token_urlsafe(32)
+            await db.sp_plans.update_one({"project_id": p["project_id"], "final_status": {"$ne": "Approved"}}, {"$set": {"final_status": "Approved", "final_share_token": token, "final_approved_at": now_iso()}})
+            approved = await db.sp_plans.find_one({"project_id": p["project_id"]}, {"_id": 0})
+            return {"status": "Approved", "delivery": await deliver_approved_planning(p, approved, origin_of(request))}
         token=plan.get("final_share_token") or secrets.token_urlsafe(32);await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Approved","final_share_token":token,"final_approved_at":now_iso(),"updated_at":now_iso()}});return {"status":"Approved"}
 
     @router.get("/final-plan/pdf")
@@ -2624,6 +2814,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def send_guided_final_plan(request: Request):
         sid=(await request.json()).get("session_id","");p=await ensure_project(sid);plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text") or not plan.get("final_share_token"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
+        if p.get("questionnaire_version") == strategic24.VERSION:
+            delivery = await deliver_approved_planning(p, plan, origin_of(request), include_participants=True)
+            return {"status": "saved", "delivery": delivery, "count": sum(d["status"] == "sent" for d in delivery)}
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300);link=f"{origin_of(request)}/strategic-plan/{plan['final_share_token']}";sent=0
         for person in people:
             first=(person.get("name") or "Board Member").split()[0];body=f"Dear {first},\n\nOur complete Strategic Plan for {p['organization_name']} is ready. It reflects the directions agreed during our Strategic Planning Session and the final plan approved by the organization.\n\n[VIEW THE STRATEGIC PLAN]\n\nThank you for helping build the plan.\n\n{p.get('founder_name','')}\n{p['organization_name']}";await send_email(person["email"],f"Our Strategic Plan | {p['organization_name']}",body,"VIEW THE STRATEGIC PLAN",link,reply_to=p.get("founder_email",""));sent+=1

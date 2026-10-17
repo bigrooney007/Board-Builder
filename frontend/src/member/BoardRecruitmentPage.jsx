@@ -11,6 +11,8 @@ import { RecruitmentCampaignLaunch, RecruitmentMaterials, useMaterials } from ".
 import {
   AutomatedReferenceChecks,
   BackgroundChecksWorkspace,
+  CandidateSelectionWorkspace,
+  FormalAppointmentWorkspace,
   InterviewsWorkspace,
   Module4Applicants,
   OnboardingPreparation,
@@ -18,6 +20,7 @@ import {
   RecruitmentPortfoliosWorkspace,
 } from "./workspace/ApplicantModules";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 import "./sgr.css";
 
 const FLOW_STEPS = [
@@ -26,9 +29,9 @@ const FLOW_STEPS = [
   ["br-section-materials", "Application & Materials"],
   ["br-section-campaign", "Launch Campaign"],
   ["br-section-applicants", "Applicants"],
-  ["br-section-interviews", "Interviews"],
   ["br-section-references", "References"],
   ["br-section-background", "Background Check"],
+  ["br-section-selection", "Final Selection"],
   ["br-section-onboarding-prep", "Onboarding Preparation"],
   ["br-section-onboarding-session", "Onboarding Session"],
   ["br-section-portfolios", "Board Member Portfolios"],
@@ -40,13 +43,18 @@ const RECRUITMENT_AUDIO = {
   materials: "dash_rct_materials",
   launch: "dash_rct_launch",
   applicants: "dash_rct_applicants",
-  interviews: "dash_rct_interviews",
   references: "dash_rct_references",
   background: "dash_rct_background",
+  selection: "dash_rct_selection",
   "onboarding-prep": "dash_rct_onboarding_prep",
   "onboarding-session": "dash_rct_onboarding_session",
   portfolios: "dash_rct_portfolios",
 };
+const QUESTION_LABELS = [
+  ["mission", "Your mission and community"], ["current_board", "Your current board"],
+  ["desired_board_members", "Who you think you need"], ["board_type", "Current situation and priorities"],
+  ["support_needs", "Support areas and recruitment target"], ["why_join", "What you already have and what is missing"],
+];
 
 const SectionAudioButton = ({ audioKey }) => (
   <DashboardAudioButton product="recruitment" narrationId={RECRUITMENT_AUDIO[audioKey]} />
@@ -83,6 +91,7 @@ export default function BoardRecruitmentPage() {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
   const [assessment,setAssessment]=useState(null);
+  const [campaign,setCampaign]=useState(null);
   const { byType: dashboardMaterials } = useMaterials();
 
   useEffect(() => {
@@ -104,6 +113,7 @@ export default function BoardRecruitmentPage() {
       }).catch(()=>{});
     };
     load();
+    memberApi.get("/workspace/opportunity").then((response)=>setCampaign(response.data.opportunity)).catch(()=>{});
     return()=>{active=false;if(timer)window.clearTimeout(timer)};
   },[member]);
 
@@ -114,6 +124,7 @@ export default function BoardRecruitmentPage() {
   const questionKeys=["mission","current_board","desired_board_members","support_needs","board_type","why_join"];
   const answeredCount=questionKeys.filter(key=>String(answers[key]||"").trim()).length;
   const questionsComplete=answeredCount===questionKeys.length;
+  const launched=["Published","Closed"].includes(campaign?.status);
   const generationStatus=assessment?.state?.generation_status||"not_started";
 
   const questionStatus=questionsComplete?"Complete":answeredCount?"In Progress":"Start";
@@ -140,6 +151,8 @@ export default function BoardRecruitmentPage() {
           </div>
         </header>
 
+        <DashboardWalkthroughVideo flow="recruitment" />
+
         {member&&!allowed&&(
           <section className="member-card">
             <p><strong>Board Recruitment is not included in your purchase yet.</strong></p>
@@ -149,6 +162,11 @@ export default function BoardRecruitmentPage() {
 
         {allowed&&(
           <>
+            <section className="member-card" data-testid="recruitment-campaign-status">
+              <h2>Campaign status: {campaign?.status === "Published" ? "Live" : campaign?.status || "Preparing"}</h2>
+              {!launched && <><p>Your guided campaign setup takes you from approved profiles to reviewed materials and launch.</p><button className="button" onClick={()=>navigate("/app/board-recruitment/setup")}>CONTINUE CAMPAIGN SETUP</button></>}
+              {launched && campaign?.slug && <><p>Your opportunity is visible in the <a href="/board-opportunities">Board Applicant Marketplace</a>.</p><a className="button button-back" href={`/board-opportunities/${campaign.slug}/apply`} target="_blank" rel="noreferrer">VIEW PUBLIC APPLICATION</a></>}
+            </section>
             <section className="sgr-dashboard-overview member-card">
               <div>
                 <p className="eyebrow">YOUR RECRUITMENT PROCESS</p>
@@ -170,21 +188,23 @@ export default function BoardRecruitmentPage() {
             <Section number={1} title="ANSWER THE SIX RECRUITMENT QUESTIONS"
               summary="Give us the information we need to understand the board you have, the board you want and the people you need."
               testId="br-section-questions" audioKey="questions" status={questionStatus} defaultOpen>
-              <p>Answer six focused questions on separate screens. Add your organization logo before you begin if you want it carried into your recruitment materials.</p>
+              {launched ? <div data-testid="recruitment-answers-read-only">{QUESTION_LABELS.map(([key,label])=><div key={key} className="detail-section"><h3>{label}</h3><p style={{whiteSpace:"pre-wrap"}}>{answers[key] || "No answer saved"}</p></div>)}</div> : <p>Answer six focused questions on separate screens. Add your organization logo before you begin if you want it carried into your recruitment materials.</p>}
+              {!launched && <>
               <button className="button" onClick={()=>navigate("/app/board-recruitment/questions")} data-testid="start-six-questions">
                 {questionsComplete?"REVIEW MY SIX ANSWERS":answeredCount?"CONTINUE THE SIX QUESTIONS":"START THE SIX QUESTIONS"}
               </button>
-              {questionsComplete&&<p className="member-success">All six answers are saved. The platform has already started identifying the board members your organization needs.</p>}
+              {questionsComplete&&<p className="member-success">All six answers are saved. Your board recommendations are available after payment.</p>}
+              </>}
             </Section>
 
-            <Section number={2} title="IDENTIFY THE BOARD MEMBERS YOUR ORGANIZATION NEEDS"
-              summary="Review the exact number of Board Member profiles built from your six answers and recruitment target."
+            <Section number={2} title="YOUR APPROVED BOARD MEMBER PROFILES"
+              summary="Review the Board Member profiles you approved during campaign setup."
               testId="br-section-identify" audioKey="identify" status={identifyStatus}>
-              {!questionsComplete?(
+              {!questionsComplete && !launched ?(
                 <p className="workspace-note">Complete all six Recruitment Questions first.</p>
               ):(
                 <>
-                  {!assessment?.result ? (
+                  {!assessment?.result && !boardProfilesApproved ? (
                     <div className="sgr-background-work"><span className="sgr-working-dot"/><div><strong>We are identifying your board members now.</strong><p>You can leave this section and continue using the dashboard. The result will surface here automatically when it is ready.</p></div></div>
                   ) : (
                     <Module1Profile key={"board-profiles-ready-" + (assessment.result_generated_at || "1")}/>
@@ -193,40 +213,41 @@ export default function BoardRecruitmentPage() {
               )}
             </Section>
 
-            <Section number={3} title="BUILD YOUR BOARD APPLICATION AND RECRUITMENT MATERIALS"
-              summary="Your approved Board Member profiles become the foundation for the application and campaign assets."
-              testId="br-section-materials" audioKey="materials" status={progress<3?"Locked":"Prepare"}>
-              {progress<3?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
+            <Section number={3} title="YOUR BOARD APPLICATION AND CAMPAIGN MATERIALS"
+              summary="Review the public application and the recruitment materials you approved before launch."
+              testId="br-section-materials" audioKey="materials" status={progress<3&&!launched?"Locked":"Ready"}>
+              {progress<3&&!launched?<p className="workspace-note">Approve the Board Members you need in Section 2 first.</p>:<RecruitmentMaterials/>}
             </Section>
 
             <Section number={4} title="LAUNCH YOUR RECRUITMENT CAMPAIGN"
               summary="Review what has been prepared, publish the opportunity and begin receiving applicants."
-              testId="br-section-campaign" audioKey="launch" status={progress<3?"Locked":"Prepare"}>
-              {progress<3?<p className="workspace-note">Approve your Board Member profiles first.</p>:<RecruitmentCampaignLaunch/>}
+              testId="br-section-campaign" audioKey="launch" status={progress<3&&!launched?"Locked":"Ready"}>
+              {progress<3&&!launched?<p className="workspace-note">Approve your Board Member profiles first.</p>:<RecruitmentCampaignLaunch/>}
             </Section>
 
             <Section number={5} title="APPLICANTS"
-              summary="Review everyone who applies, add outside candidates and decide who should receive an interview invitation."
+              summary="Review applications and CVs, prepare invitation or rejection emails, and open a tailored interview guide for each person."
               testId="br-section-applicants" audioKey="applicants">
               <Module4Applicants/>
-            </Section>
-
-            <Section number={6} title="INTERVIEWS"
-              summary="Interview candidates appear here after you generate their invitation. Create a tailored guide for each person."
-              testId="br-section-interviews" audioKey="interviews">
               <InterviewsWorkspace/>
             </Section>
 
-            <Section number={7} title="REFERENCE CHECKS"
-              summary="Candidates appear here after their interview guide is generated. Prepare emails to request and confirm their references."
+            <Section number={6} title="REFERENCE CHECKS"
+              summary="Select any applicant when you need to ask for or confirm references."
               testId="br-section-references" audioKey="references">
               <AutomatedReferenceChecks/>
             </Section>
 
-            <Section number={8} title="BACKGROUND CHECK"
+            <Section number={7} title="BACKGROUND CHECKS"
               summary="Use a local background-check provider or local sheriff/police option when your organization needs one."
               testId="br-section-background" audioKey="background">
               <BackgroundChecksWorkspace/>
+            </Section>
+
+            <Section number={8} title="FINAL CANDIDATE SELECTION"
+              summary="Confirm who moves forward after the interview, references and any background check your organization required."
+              testId="br-section-selection" audioKey="selection">
+              <CandidateSelectionWorkspace/>
             </Section>
 
             <Section number={9} title="PREPARE ONBOARDING AND THE APPOINTMENT"
@@ -242,8 +263,9 @@ export default function BoardRecruitmentPage() {
             </Section>
 
             <Section number={11} title="BOARD MEMBER PORTFOLIOS"
-              summary="Review and approve each person's Board role before generating a tailored Portfolio for the people who join."
+              summary="After the Board Member Profile is complete, confirm the appointment, generate the official letter and tailored Portfolio, then copy the final email."
               testId="br-section-portfolios" audioKey="portfolios">
+              <FormalAppointmentWorkspace/>
               <RecruitmentPortfoliosWorkspace/>
             </Section>
 

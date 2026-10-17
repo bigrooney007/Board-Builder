@@ -1,3 +1,4 @@
+import { AudienceDetails } from "./AudienceGroupReview";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { memberApi } from "@/member/api";
@@ -81,7 +82,8 @@ const ResponsesView = ({ memberId }) => {
         <div className="bfg-card" style={{ marginBottom: 14, padding: 16 }}><h4>How This Person Would Like To Support Fundraising</h4><p style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{audienceResponse.involvement || "Not answered yet"}</p></div>
         <a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`} data-testid="bfg-download-response">Download Response</a>
       </>}
-      {audienceResponse.audiences && <>
+      {audienceResponse.game_version === 6 && <>{Object.entries(audienceResponse.audiences || {}).map(([category, items]) => items.map(item=><AudienceDetails key={item.id} proposal={{category,contributor:data.board_member?.full_name || "Participant",strategy:item}}/>))}<h4>How This Person Would Like To Participate</h4><p>{audienceResponse.involvement}</p><a className="bfg-btn bfg-btn-primary bfg-btn-sm" href={`${process.env.REACT_APP_BACKEND_URL}/api/game/board-members/${memberId}/responses/download`}>Download Response</a></>}
+      {audienceResponse.game_version !== 6 && audienceResponse.audiences && <>
         {Object.entries(audienceResponse.audiences).map(([key, answer]) => (key === "individuals" || answer.enabled) && (
           <div key={key} className="bfg-card" style={{ marginBottom: 14, padding: 16 }}>
             <h4>{labels[key]}</h4>
@@ -158,7 +160,15 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
   const origin = { origin_url: window.location.origin };
   const run = async (key, fn, successMessage) => {
     setBusy(key); setNotice("");
-    try { await fn(); if (successMessage) setNotice(successMessage); await load(); }
+    try {
+      await fn();
+      if (key === "invite-all" || key.startsWith("invite-")) {
+        const saved = await memberApi.post("/members/dashboard-return-link", { product: "game" }).catch(() => null);
+        if (saved?.data?.sent) successMessage += " Your private dashboard link has been emailed to you. Bookmark it for easy access.";
+      }
+      if (successMessage) setNotice(successMessage);
+      await load();
+    }
     catch (err) {
       const detail = err.response?.data?.detail;
       if (detail === "meeting_details_required") {

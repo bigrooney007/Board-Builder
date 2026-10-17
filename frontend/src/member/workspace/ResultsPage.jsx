@@ -34,6 +34,16 @@ const PortfolioActions = ({ application, portfolio, refresh }) => {
     } catch { setMessage("The PDF could not be downloaded."); }
   };
 
+  const previewLetter = async () => {
+    try {
+      const response = await memberApi.get(`/workspace/applications/${applicationId}/appointment-letter/pdf`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url; link.download = `Board-Appointment-Letter-${(application.profile_snapshot?.full_name || "Member").replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) { setMessage(err.response?.data?.detail || "The appointment letter could not be prepared."); }
+  };
+
   const prepare = async () => {
     setBusy(true); setMessage("");
     try {
@@ -58,14 +68,14 @@ const PortfolioActions = ({ application, portfolio, refresh }) => {
       <div className="material-actions">
         <a className="button button-back" href={`/portfolio/${token}`} target="_blank" rel="noreferrer" data-testid={`portfolio-view-online-${applicationId}`}><ExternalLink size={14} /> View Online</a>
         <button className="button button-back" onClick={downloadPdf} data-testid={`portfolio-pdf-${applicationId}`}><Download size={14} /> Download PDF</button>
-        <button className="button button-back" disabled={busy} onClick={prepare} data-testid={`portfolio-prepare-email-${applicationId}`}><Mail size={14} /> Prepare Portfolio Email</button>
+        <button className="button button-back" disabled={busy} onClick={prepare} data-testid={`portfolio-prepare-email-${applicationId}`}><Mail size={14} /> Prepare Portfolio And Appointment Letter Email</button>
         {sent && <span className="blog-status-badge published" data-testid={`portfolio-sent-${applicationId}`}>Sent {new Date(portfolio.sent_at).toLocaleString()}</span>}
       </div>
       {message && <p className="submit-error" data-testid={`portfolio-actions-error-${applicationId}`}>{message}</p>}
       {email && (
         <div className="member-card" style={{ marginTop: 12 }} data-testid={`portfolio-email-modal-${applicationId}`}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h4 style={{ margin: 0 }}>Portfolio Email</h4>
+            <h4 style={{ margin: 0 }}>Board Portfolio And Official Appointment Letter</h4>
             <button className="link-button" onClick={() => setEmail(null)} data-testid={`portfolio-email-close-${applicationId}`}><X size={16} /></button>
           </div>
           <p className="material-meta">To: {email.to_name} &lt;{email.to_email || "no email on record"}&gt;</p>
@@ -78,7 +88,9 @@ const PortfolioActions = ({ application, portfolio, refresh }) => {
             <textarea rows="12" value={body} onChange={(event) => setBody(event.target.value)} style={{ width: "100%" }} data-testid={`portfolio-email-body-${applicationId}`} />
           </label>
           <p className="material-meta" data-testid={`portfolio-email-link-${applicationId}`}>Secure Portfolio link (inserted automatically): {email.portfolio_link}</p>
-          <button className="button" disabled={busy} onClick={send} data-testid={`portfolio-email-send-${applicationId}`}>{busy ? "Sending…" : "SEND PORTFOLIO"}</button>
+          <p className="material-meta">The organization-letterheaded {email.letter_status} Board Appointment Letter is attached as a PDF. Review it before sending.</p>
+          <button className="button button-back" disabled={busy} onClick={previewLetter} data-testid={`portfolio-letter-preview-${applicationId}`}><Download size={14} /> Download Letter For Review</button>
+          <button className="button" disabled={busy} onClick={send} data-testid={`portfolio-email-send-${applicationId}`}>{busy ? "Sending…" : "SEND PORTFOLIO AND LETTER"}</button>
         </div>
       )}
     </div>
@@ -92,7 +104,7 @@ export const BoardMemberResultCard = ({ application, branding, onChanged, portfo
   const engagement = byType.board_member_engagement_guide;
   return (
     <div className="board-member-result" data-testid={`board-member-${application.application_id}`}>
-      <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">Board Member</span></h3>
+      <h3><UserCheck size={17} /> {snapshot.full_name || application.applicant_email} <span className="blog-status-badge published">{application.final_outcome === "Joined Board" ? "Board Member" : application.appointment_offer_type === "Conditional" ? "Conditional Appointment" : "Appointed Candidate"}</span></h3>
       <p className="material-meta">{[snapshot.profession, snapshot.employer, snapshot.location].filter(Boolean).join(" · ")}{application.board_role ? ` · Role: ${application.board_role}` : ""}{application.formal_appointment_date ? ` · Joined ${new Date(application.formal_appointment_date).toLocaleDateString()}` : ""}</p>
       {!portfolioOnly && <MaterialCard type="board_member_engagement_guide" title={resultsPageText.boardMemberEngagementGuide} buttonLabel="Generate Engagement Guide"
         description="A one-page internal guide for you: where this member's expertise creates the most value, how to engage them, strong early responsibilities, relationships and fundraising, leadership alignment and their first 90 days. Built only from their application, CV and Board Member Profile — never from confidential references or background checks. This stays internal and is never sent to the member."
@@ -101,7 +113,7 @@ export const BoardMemberResultCard = ({ application, branding, onChanged, portfo
           <button className="button button-back" onClick={() => downloadMaterialPdf(engagement)} data-testid={`engagement-pdf-${application.application_id}`}><Download size={14} /> Download Branded PDF</button>
         ) : null} />}
       <MaterialCard type="board_member_portfolio" title={resultsPageText.boardMemberPortfolio} buttonLabel="Generate Board Member Portfolio"
-        description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included. Generate it, edit anything you want changed, approve it, then share it with the member using the secure link, PDF or portfolio email."
+        description="A professional portfolio built from this member's application, CV, profile form, skills, networks and board role. Confidential references, internal notes and internal evaluation material are never included. Generate, edit and approve it, then send the secure portfolio link together with the organization's letterheaded Board Appointment Letter."
         applicationId={application.application_id} material={portfolio} refresh={refresh} approvable />
       <PortfolioActions application={application} portfolio={portfolio} refresh={refresh} />
     </div>
@@ -124,7 +136,8 @@ export default function RecruitmentResultsPage() {
   }, [loading, member, navigate, load]);
 
   const list = applications || [];
-  const joined = list.filter((a) => a.final_outcome === "Joined Board" || a.status === "Selected");
+  const joined = list.filter((a) => a.final_outcome === "Joined Board" || a.status === "Selected" || a.appointment_offer_type === "Conditional");
+  const confirmedBoardCount = list.filter((a) => a.final_outcome === "Joined Board").length;
   const notSelected = list.filter((a) => !joined.includes(a) && (["Not Selected", "Not Moving Forward", "Withdrawn"].includes(a.status) || a.emails_sent?.after_interview_rejection || a.emails_sent?.general_rejection_email));
   const inProgress = list.filter((a) => !joined.includes(a) && !notSelected.includes(a));
   const interviewed = list.filter((a) => a.interview_completed).length;
@@ -157,13 +170,13 @@ export default function RecruitmentResultsPage() {
             <section className="workspace-panel" data-testid="results-summary">
               <h2>{myBoardText.h_recruitmentSummary}</h2>
               <div className="results-summary-grid">
-                {[["Applications Received", list.length, "results-count-applications"], ["Interviewed", interviewed, "results-count-interviewed"], ["Joined the Board", joined.length, "results-count-joined"], ["Not Selected", notSelected.length, "results-count-not-selected"], ["Still In Progress", inProgress.length, "results-count-in-progress"]].map(([label, value, testId]) => (
+                {[["Applications Received", list.length, "results-count-applications"], ["Interviewed", interviewed, "results-count-interviewed"], ["Joined the Board", confirmedBoardCount, "results-count-joined"], ["Not Selected", notSelected.length, "results-count-not-selected"], ["Still In Progress", inProgress.length, "results-count-in-progress"]].map(([label, value, testId]) => (
                   <div className="results-stat" key={label} data-testid={testId}><strong>{value}</strong><span>{label}</span></div>
                 ))}
               </div>
             </section>
             <section className="workspace-panel" data-testid="results-joined-section">
-              <h2>{myBoardText.h_myBoard}</h2>
+              <h2>My Board And Appointed Candidates</h2>
               {joined.length === 0 && <p className="workspace-note">{myBoardText.n_boardMembersAppearHereAs}</p>}
               {joined.map((application) => <BoardMemberResultCard application={application} branding={branding} onChanged={load} key={application.application_id} />)}
             </section>

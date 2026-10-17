@@ -336,7 +336,7 @@ async def run_weekly_nurture(db, origin: str, test_only: bool, test_email: str =
                 resend.api_key = os.environ["RESEND_API_KEY"]
                 recipient = test_email or os.environ.get("OWNER_TEST_EMAIL") or os.environ["OWNER_NOTIFICATION_EMAIL"]
                 preview_html = html_body.replace("{{{RESEND_UNSUBSCRIBE_URL}}}", f"{origin}/privacy-policy").replace("{{{FIRST_NAME|there}}}", "there")
-                response = await resend.Emails.send_async({"from": nurture_sender(source), "to": [recipient], "subject": f"[TEST] {template['subject']}", "html": preview_html})
+                response = await resend.Emails.send_async({"from": nurture_sender(source), "to": [recipient], "subject": template['subject'], "html": preview_html})
                 broadcast_id = response.get("id") if isinstance(response, dict) else getattr(response, "id", "")
             else:
                 segments = await get_nurture_segments(db)

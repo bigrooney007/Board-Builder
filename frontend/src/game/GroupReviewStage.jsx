@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { STRATEGY_SECTIONS, SectionBody, StrategyDocument, getStrategySections } from "./strategyRender";
+import { STRATEGY_SECTIONS, V4_STRATEGY_SECTIONS, SectionBody, StrategyDocument } from "./strategyRender";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const SectionContent = ({ section }) => {
-  const definition = [...getStrategySections({ schema_version: 4 }), ...STRATEGY_SECTIONS]
+  const definition = [...V4_STRATEGY_SECTIONS, ...STRATEGY_SECTIONS]
     .find((item) => item.key === section.key);
   if (section.edit) return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line", textAlign: "left" }}>{section.edit}</p>;
   if (!definition) return <p className="bfg-doc-text" style={{ whiteSpace: "pre-line", textAlign: "left" }}>{String(section.data || "")}</p>;

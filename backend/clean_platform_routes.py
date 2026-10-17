@@ -31,14 +31,38 @@ EVENT_TYPES = {
 
 VIDEO_DEFINITIONS = [
     {"key": "recruitment_demonstration", "name": "Board Recruitment Demonstration", "flow": "recruitment", "stage": "demonstration"},
+    {"key": "recruitment_upgrade", "name": "Recruitment Checkout Message", "flow": "recruitment", "stage": "upgrade"},
     {"key": "recruitment_welcome", "name": "Board Recruitment Onboarding", "flow": "recruitment", "stage": "onboarding"},
     {"key": "game_homepage", "name": "Board Fundraising Game Demonstration", "flow": "board-fundraising-game", "stage": "demonstration"},
+    {"key": "game_upgrade", "name": "Board Fundraising Checkout Message", "flow": "board-fundraising-game", "stage": "upgrade"},
     {"key": "game_welcome", "name": "Board Fundraising Game Onboarding", "flow": "board-fundraising-game", "stage": "onboarding"},
     {"key": "strategic_planning_demonstration", "name": "Strategic Planning Demonstration", "flow": "strategic-planning", "stage": "demonstration"},
     {"key": "strategic_planning_welcome", "name": "Strategic Planning Onboarding", "flow": "strategic-planning", "stage": "onboarding"},
     {"key": "board_recommitment_demonstration", "name": "Board Recommitment Demonstration", "flow": "board-recommitment", "stage": "demonstration"},
     {"key": "board_recommitment_welcome", "name": "Board Recommitment Onboarding", "flow": "board-recommitment", "stage": "onboarding"},
+    {"key": "recruitment_dashboard", "name": "Board Recruitment Dashboard Walkthrough", "flow": "recruitment", "stage": "dashboard"},
+    {"key": "game_dashboard", "name": "Board Fundraising Dashboard Walkthrough", "flow": "board-fundraising-game", "stage": "dashboard"},
+    {"key": "strategic_planning_dashboard", "name": "Strategic Planning Dashboard Walkthrough", "flow": "strategic-planning", "stage": "dashboard"},
+    {"key": "board_recommitment_dashboard", "name": "Board Recommitment Dashboard Walkthrough", "flow": "board-recommitment", "stage": "dashboard"},
 ]
+
+OFFER_VIDEO_RELEASE = "2026-10-08"
+OFFER_VIDEO_URLS = {
+    "recruitment_upgrade": "https://youtu.be/rOkPAcYRhxE",
+    "game_homepage": "https://youtu.be/iHr6ddUsp9Y",
+    "strategic_planning_demonstration": "https://youtu.be/00zyPIRIAjA",
+    "board_recommitment_demonstration": "https://youtu.be/jCaxd7eQWqk",
+}
+
+# These are the existing onboarding recordings. Saved Admin settings take
+# precedence; the defaults also keep walkthroughs available in a fresh preview.
+VIDEO_DEFAULT_URLS = {
+    **OFFER_VIDEO_URLS,
+    "recruitment_welcome": "https://youtu.be/PPn-5LpOoZQ",
+    "game_welcome": "https://youtu.be/LZBbDChNQDs",
+    "strategic_planning_welcome": "https://youtu.be/iRMokrM8mR8",
+    "board_recommitment_welcome": "https://youtu.be/5cR1l4qdldg",
+}
 
 STRATEGIC_PLANNING_SECTION_VIDEO_DEFINITIONS = [
     {"key": "organization", "name": "Tell Us About Your Organization"},
@@ -80,6 +104,10 @@ HOME_PAGE_KEYS = {
     "strategic-planning",
     "board-recommitment",
     "facilitated-game",
+    "offer-recruitment",
+    "offer-board-fundraising-game",
+    "offer-strategic-planning",
+    "offer-board-recommitment",
 }
 
 HOME_PATHS = {
@@ -153,6 +181,23 @@ def youtube_id(value: str) -> str:
 def create_clean_platform_router(db) -> APIRouter:
     router = APIRouter(prefix="/api")
 
+    @router.on_event("startup")
+    async def install_offer_video_release():
+        # Install this requested replacement once, including databases with older
+        # saved videos. Later Admin edits survive restarts and subsequent syncs.
+        values = {f"videos.{key}": url for key, url in OFFER_VIDEO_URLS.items()}
+        values["offer_video_release"] = OFFER_VIDEO_RELEASE
+        values["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.marketing_settings.update_one(
+            {"key": "flow_videos"},
+            {"$setOnInsert": {"key": "flow_videos"}},
+            upsert=True,
+        )
+        await db.marketing_settings.update_one(
+            {"key": "flow_videos", "offer_video_release": {"$ne": OFFER_VIDEO_RELEASE}},
+            {"$set": values},
+        )
+
     @router.post("/platform-analytics/event", status_code=201)
     async def record_event(payload: AnalyticsEvent):
         if payload.flow not in FLOW_KEYS:
@@ -174,7 +219,7 @@ def create_clean_platform_router(db) -> APIRouter:
         stored = doc.get("videos") or {}
         videos = []
         for item in VIDEO_DEFINITIONS:
-            raw = stored.get(item["key"], "")
+            raw = stored.get(item["key"], VIDEO_DEFAULT_URLS.get(item["key"], ""))
             try:
                 video_id = youtube_id(raw)
             except ValueError:

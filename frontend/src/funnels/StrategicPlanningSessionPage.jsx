@@ -13,7 +13,12 @@ export default function StrategicPlanningSessionPage(){
  const sid=new URLSearchParams(window.location.search).get("session_id")||"";
  const navigate=useNavigate();
  const [session,setSession]=useState(null),[decisions,setDecisions]=useState({}),[transcript,setTranscript]=useState(""),[shareUrl,setShareUrl]=useState(""),[listening,setListening]=useState(false),[busy,setBusy]=useState(""),[message,setMessage]=useState("");
+ const [planText,setPlanText]=useState(""),[planStatus,setPlanStatus]=useState("NONE"),[planEditing,setPlanEditing]=useState(false);
  const recognition=useRef(null);
+ const [discussionText,setDiscussionText]=useState("");
+ const [discussionPerson,setDiscussionPerson]=useState("");
+ const [sourceIds,setSourceIds]=useState([]);
+ const currentQuestions=session?.questionnaire_version === "strategic-24-months-15";
 
  const load=useCallback(async()=>{
   try{
@@ -31,6 +36,14 @@ export default function StrategicPlanningSessionPage(){
  },[sid]);
 
  useEffect(()=>{load();},[load]);
+ useEffect(()=>{if(session?.status!=="REVIEW")return undefined;const timer=window.setInterval(load,3000);return()=>window.clearInterval(timer);},[session?.status,load]);
+ useEffect(()=>{
+  if(session?.status!=="COMPLETED")return undefined;
+  const update=()=>axios.get(`${API}/guided/strategic-planning/workspace`,{params:{session_id:sid}})
+   .then(({data})=>{const final=data.project?.final_plan||{};setPlanStatus(final.status||"NONE");if(!planEditing)setPlanText(final.display_text||"");})
+   .catch(()=>{});
+  update();const timer=window.setInterval(update,4000);return()=>window.clearInterval(timer);
+ },[session?.status,sid,planEditing]);
  useEffect(()=>()=>recognition.current?.stop(),[]);
 
  const persistTranscript=async(value=transcript)=>{
@@ -69,16 +82,19 @@ export default function StrategicPlanningSessionPage(){
  const saveDecision=async(key,value)=>{
   setDecisions(current=>({...current,[key]:value}));
   try{await axios.post(`${API}/guided/strategic-planning/session/decision`,{session_id:sid,section_key:key,decision:value});}
-  catch(e){setMessage(e.response?.data?.detail||"That Board decision could not be saved.");}
+  catch(e){setMessage(e.response?.data?.detail||"That Board decision could not be saved.");await load();}
  };
 
- const toggleIdea=(section,ideaId)=>{
+ const toggleIdea=async(section,ideaId)=>{
   const current=Array.isArray(decisions[section.key])?decisions[section.key]:[];
   const next=current.includes(ideaId)?current.filter(id=>id!==ideaId):[...current,ideaId];
-  saveDecision(section.key,next);
+  setBusy("decision");
+  await saveDecision(section.key,next);
+  setBusy("");
  };
 
  const move=async index=>{
+  setDiscussionText("");setSourceIds([]);setDiscussionPerson("");
   await persistTranscript();
   await axios.post(`${API}/guided/strategic-planning/session/progress`,{session_id:sid,current_section_index:index});
   setSession(current=>({...current,current_section_index:index,status:"IN PROGRESS"}));
@@ -92,19 +108,55 @@ export default function StrategicPlanningSessionPage(){
   try{
    if(listening){recognition.current?.stop();setListening(false);}
    await axios.post(`${API}/guided/strategic-planning/session/complete`,{session_id:sid,decisions,transcript});
-   try { await axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}); } catch {}
+   if(!currentQuestions) { try { await axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid}); } catch {} }
    localStorage.removeItem(`sp-transcript-${sid}`);
-   navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-plan`);
+   await load();
   }catch(e){setMessage(e.response?.data?.detail||"The Strategic Planning Session could not be completed.");}
+  setBusy("");
+ };
+
+ const savePlanDraft=async()=>{
+  setBusy("draft");setMessage("");
+  try{
+   await axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:planText});
+   setPlanEditing(false);setPlanStatus("Draft");
+   setMessage("Agreed edits are saved and now appear on the shared Board screen.");
+  }catch(e){setMessage(e.response?.data?.detail||"The agreed edits could not be saved. Please try again.");}
+  setBusy("");
+ };
+
+ const adoptPlan=async()=>{
+  setBusy("approve");setMessage("");
+  try{
+   await axios.put(`${API}/guided/strategic-planning/final-plan/draft`,{session_id:sid,display_text:planText});
+   await axios.post(`${API}/guided/strategic-planning/final-plan/approve`,{session_id:sid});
+   setPlanEditing(false);setPlanStatus("Approved");
+  }catch(e){setMessage(e.response?.data?.detail||"The plan could not be adopted. Please try again.");}
   setBusy("");
  };
 
  if(!session)return <BfgShell><main className="guided-page"><section className="guided-section"><h1>Strategic Planning Session</h1><p>{message||"Preparing your session…"}</p></section></main></BfgShell>;
 
- if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><h1>Strategic Planning Session Complete</h1><p>Your Board decisions and transcript are saved. The Final Strategic Plan is now being prepared from the decisions you made together.</p><button className="bfg-btn bfg-btn-primary" onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-plan`)}>RETURN TO DASHBOARD</button></section></main></BfgShell>;
+ if(currentQuestions && session.status==="REVIEW")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-screen">
+  <p className="bfg-eyebrow">REVIEW YOUR AGREED DIRECTION</p><h1>What We Have Agreed To Achieve Together</h1>
+  {(session.adopted_areas||[]).map(area=><article className="sp-current-context" key={area.area_key}><h2>{area.area}</h2>{area.agreed_ideas.length?area.agreed_ideas.map((idea,i)=><p key={i}><strong>{idea.participant_name}: </strong>{idea.text}</p>):<p>No ideas were adopted for this question.</p>}</article>)}
+  <h2>Individual Acknowledgements</h2>{(session.acknowledgements||[]).map(person=><p key={person.participant_id}>{person.name}: {person.acknowledged?"Acknowledged":"Not yet acknowledged"}</p>)}
+  <p>Each participant can adopt this direction and accept their own agreed responsibilities through their personal session link. An absent participant remains unacknowledged.</p>
+  <div className="sp-session-controls"><button className="bfg-btn bfg-btn-ghost" disabled={!!busy} onClick={async()=>{await axios.post(`${API}/guided/strategic-planning/session/reopen`,{session_id:sid});await load()}}>RETURN TO DISCUSSION AND CORRECT IDEAS</button>
+  <button className="bfg-btn bfg-btn-primary" disabled={!!busy} onClick={async()=>{setBusy("adopt");try{await axios.post(`${API}/guided/strategic-planning/session/adopt`,{session_id:sid,revision:session.decision_revision,confirmed:true});await axios.post(`${API}/guided/strategic-planning/session-plan`,{session_id:sid});await load()}catch(e){setMessage(e.response?.data?.detail||"The agreed direction could not be adopted.")}setBusy("")}}>APPROVE OUR AGREED DIRECTION</button></div>
+  {message&&<p role="alert">{message}</p>}
+ </section></main></BfgShell>;
+
+ if(session.status==="COMPLETED")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-finished"><CheckCircle2 size={48}/><p className="bfg-eyebrow">LIVE BOARD REVIEW</p><h1>{planStatus==="Approved"?"Strategic Plan Adopted":"Review Your Strategic Plan Together"}</h1><p>{planText?"The shared Board screen shows this same plan. Discuss it together, make any agreed edits, then approve the final wording while everyone can see it.":"Your adopted Board decisions are saved. The Strategic Plan is being prepared here. Keep this screen open."}</p>
+  {planText&&<><textarea className="sp-plan-preview" rows={28} value={planText} readOnly={planStatus==="Approved"} onChange={e=>{setPlanEditing(true);setPlanText(e.target.value)}} aria-label="Strategic Plan for Board review"/>
+   {planStatus!=="Approved"&&<div className="sp-session-controls"><button className="bfg-btn bfg-btn-ghost" disabled={!!busy||!planEditing} onClick={savePlanDraft}>{busy==="draft"?"SAVING…":"SAVE AGREED EDITS TO SHARED SCREEN"}</button><button className="bfg-btn bfg-btn-primary" disabled={!!busy} onClick={adoptPlan}>{busy==="approve"?"SAVING…":"APPROVE & ADOPT WITH THE BOARD"}</button></div>}
+  </>}
+  {message&&<p className="bfg-error">{message}</p>}
+  {planStatus==="Approved"&&<button className="bfg-btn bfg-btn-ghost" onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}#sp-plan`)}>CONTINUE TO PORTFOLIOS IN DASHBOARD</button>}
+ </section></main></BfgShell>;
 
  if(session.status!=="IN PROGRESS")return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-prep">
-  <p className="bfg-eyebrow">BEFORE YOU START</p><h1>Prepare Your Strategic Planning Session</h1><p className="sp-session-lead">Set up the shared Board screen and start transcription before moving into the first strategic section.</p>
+  <p className="bfg-eyebrow">BEFORE YOU START</p><h1>Prepare Your Strategic Planning Session</h1><p className="sp-session-lead" style={{whiteSpace:"pre-wrap"}}>{currentQuestions?session.welcome:"Set up the shared Board screen and start transcription before moving into the first strategic section."}</p>
   <div className="sp-prep-grid">
    <article><span className="sp-prep-number">1</span><h2>Create The Shared Board Screen</h2><p>Create one no-login link and paste it into your Zoom, Teams or meeting chat. Board Members open it once and their screen follows you automatically.</p>{!shareUrl?<button className="bfg-btn bfg-btn-primary" disabled={busy==="share"} onClick={createShare}>{busy==="share"?"CREATING…":"CREATE SHARED SCREEN LINK"}</button>:<div className="sp-session-link"><span>{shareUrl}</span><button onClick={()=>navigator.clipboard?.writeText(shareUrl)}><Copy size={15}/> COPY LINK</button></div>}</article>
    <article><span className="sp-prep-number">2</span><h2>Start Microphone Transcription</h2><p>Tell everyone the session needs to be transcribed so the Strategic Plan and agreed responsibilities reflect what the Board actually decides. Ask for consent before starting.</p><button className="bfg-btn bfg-btn-primary" onClick={listening?stopListening:startListening}>{listening?<><MicOff size={16}/> STOP TRANSCRIPTION</>:<><Mic size={16}/> START MICROPHONE TRANSCRIPTION</>}</button>{listening&&<p className="sp-listening">Listening. Keep this page open during the session.</p>}</article>
@@ -120,6 +172,7 @@ export default function StrategicPlanningSessionPage(){
  return <BfgShell><main className="guided-page sp-live-session"><section className="sp-session-screen">
   <div className="sp-session-topline"><span>Section {index+1} of {session.sections.length}</span><span>{listening?"● TRANSCRIPTION ON":"TRANSCRIPTION OFF"}</span></div>
   <p className="bfg-eyebrow">LIVE STRATEGIC PLANNING SESSION</p><h1>{section.title}</h1>
+  {section.subtitle&&<p className="guided-preflow-help">{section.subtitle}</p>}
   {section.current_context&&<div className="sp-current-context"><span>WHERE THE ORGANIZATION IS STARTING</span><p>{section.current_context}</p></div>}
   <div className="sp-facilitator-prompt" data-testid="section-facilitator-prompt">
     <strong>{section.facilitator_prompt?.title || "Discuss this with the Board."}</strong>
@@ -127,13 +180,19 @@ export default function StrategicPlanningSessionPage(){
     {(section.facilitator_prompt?.questions||[]).length>0&&<ul>{section.facilitator_prompt.questions.map((question,index)=><li key={index}>{question}</li>)}</ul>}
     {section.facilitator_prompt?.decision&&<p><strong>Before you move on:</strong> {section.facilitator_prompt.decision}</p>}
   </div>
-  <div className="sp-idea-grid">{section.ideas.map(idea=>{const chosen=selected.includes(idea.idea_id);return <button type="button" className={`sp-idea-card ${chosen?"selected":""}`} key={idea.idea_id} onClick={()=>toggleIdea(section,idea.idea_id)}><span className="sp-idea-person">{idea.participant_name}</span><p>{idea.idea}</p><small>{chosen?"SELECTED BY THE BOARD":"CLICK IF THE BOARD AGREES"}</small></button>})}</div>
+  <div className="sp-idea-grid">{section.ideas.map(idea=>{const chosen=selected.includes(idea.idea_id);return <button type="button" className={`sp-idea-card ${chosen?"selected":""}`} key={idea.idea_id} disabled={!!busy} onClick={()=>toggleIdea(section,idea.idea_id)}><span className="sp-idea-person">{idea.participant_name}</span><p>{idea.idea}</p><small>{chosen?"SELECTED BY THE BOARD":"CLICK IF THE BOARD AGREES"}</small></button>})}</div>
+  {currentQuestions&&<div className="sp-current-context bfg-field"><h2>Refine An Idea Or Add An Agreed Contribution</h2>
+   <select aria-label="Idea to refine" value={sourceIds[0]||""} onChange={e=>{const idea=section.ideas.find(i=>i.idea_id===e.target.value);setSourceIds(idea?[idea.idea_id]:[]);setDiscussionText(idea?.idea||"");setDiscussionPerson(idea?.participant_id||"")}}><option value="">New discussion idea</option>{section.ideas.map(i=><option key={i.idea_id} value={i.idea_id}>{i.participant_name}: {i.idea.slice(0,80)}</option>)}</select>
+   {section.is_role_planning&&<select aria-label="Person agreeing to this contribution" value={discussionPerson} onChange={e=>setDiscussionPerson(e.target.value)}><option value="">Select the person</option>{(session.acknowledgements||[]).map(p=><option key={p.participant_id} value={p.participant_id}>{p.name}</option>)}</select>}
+   <textarea rows={4} aria-label="Agreed idea wording" value={discussionText} onChange={e=>setDiscussionText(e.target.value)}/>
+   <button className="bfg-btn bfg-btn-ghost" disabled={!!busy||!discussionText.trim()} onClick={async()=>{setBusy("idea");try{await axios.post(`${API}/guided/strategic-planning/session/idea`,{session_id:sid,section_key:section.key,text:discussionText,source_idea_ids:sourceIds,participant_id:discussionPerson});setDiscussionText("");setSourceIds([]);await load()}catch(e){setMessage(e.response?.data?.detail||"Could not save this idea")}setBusy("")}}>SAVE DISCUSSION IDEA FOR SELECTION</button>
+  </div>}
   {section.allow_keep_current_mission&&<button className={`sp-keep-current ${value==="__keep_current__"?"selected":""}`} onClick={()=>saveDecision(section.key,"__keep_current__")}>LEAVE THE MISSION STATEMENT THE WAY IT IS</button>}
-  {section.ideas.length>1&&<button className={`sp-use-all ${value==="__use_all_ideas__"?"selected":""}`} onClick={()=>saveDecision(section.key,"__use_all_ideas__")}>USE ALL IDEAS FROM THIS DISCUSSION</button>}
+  {!currentQuestions&&section.ideas.length>1&&<button className={`sp-use-all ${value==="__use_all_ideas__"?"selected":""}`} onClick={()=>saveDecision(section.key,"__use_all_ideas__")}>USE ALL IDEAS FROM THIS DISCUSSION</button>}
   {(section.recommendations||[]).length>0&&<details className="sp-nbb-perspective"><summary>Nonprofit Board Builder perspective</summary><ul>{section.recommendations.map((item,i)=><li key={i}>{item}</li>)}</ul><p>If the Board adopts one of these recommendations, say the decision aloud so it is captured in the transcript.</p></details>}
   {section.is_action_planning&&<div className="sp-action-planning-callout"><h2>Build The First Execution Cycle</h2><p>Agree what should happen first, next and after that. Keep this screen focused on priorities, sequence, decisions and resources. The next screen is where you discuss who is actually willing to help carry the work.</p></div>}
   {section.is_role_planning&&<div className="sp-action-planning-callout"><h2>Roles We Will Play</h2><p>Start with what each person volunteered before the meeting. Confirm it together if appropriate. If someone agrees to a different or additional role, say their name and exact responsibility aloud. If the Board prefers to confirm roles after the meeting, that is also fine: the lead user will still receive these stated preferences as editable proposals before anything is sent.</p></div>}
-  <div className="sp-session-controls">{index>0&&<button className="bfg-btn bfg-btn-ghost" onClick={()=>move(index-1)}>BACK</button>}{!isLast&&<button className="bfg-btn bfg-btn-primary" disabled={!ready(value)} onClick={()=>move(index+1)}>SAVE BOARD DECISION & NEXT</button>}{isLast&&<button className="bfg-btn bfg-btn-primary" disabled={!ready(value)||busy==="finish"} onClick={finish}>{busy==="finish"?"SAVING SESSION…":"SAVE & END STRATEGIC PLANNING SESSION"}</button>}</div>
+  <div className="sp-session-controls">{index>0&&<button className="bfg-btn bfg-btn-ghost" onClick={()=>move(index-1)}>BACK</button>}{!isLast&&<button className="bfg-btn bfg-btn-primary" disabled={!!busy||(!currentQuestions&&!ready(value))} onClick={()=>move(index+1)}>SAVE BOARD DECISION & NEXT</button>}{isLast&&<button className="bfg-btn bfg-btn-primary" disabled={!!busy||(!currentQuestions&&!ready(value))} onClick={finish}>{busy==="finish"?"SAVING SESSION…":"SAVE & END STRATEGIC PLANNING SESSION"}</button>}</div>
   <details className="sp-transcript-fallback"><summary>View / edit session transcript</summary><textarea rows={9} value={transcript} onChange={e=>{setTranscript(e.target.value);localStorage.setItem(`sp-transcript-${sid}`,e.target.value)}}/></details>
   {message&&<p className="bfg-error">{message}</p>}
  </section></main></BfgShell>;

@@ -1,25 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { BfgShell, money } from "./gameShared";
-import { trackPlatformEvent } from "@/clean/platform";
-
-const SHARED_AREAS = [
-  "Who you believe can help fund your organization.",
-  "Where you believe you can find them.",
-  "How you believe you can attract them.",
-  "What you think you should ask them for and how much you should ask.",
-  "How you think you can move them from first discovering your organization to eventually funding it.",
-];
+import { trackPlatformEvent, useHomepageContent } from "@/clean/platform";
+import { OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
+import OfferTextRoadmap from "@/funnels/OfferTextRoadmap";
+import DemoOfferCards from "@/components/DemoOfferCards";
+import "./guided-flow.css";
 
 export default function GameUpgradePage() {
   const { member, loading } = useMemberAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [game, setGame] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const copy = useHomepageContent("offer-board-fundraising-game", OFFER_TEXT_DEFAULTS["offer-board-fundraising-game"]);
 
   useEffect(() => { document.title = "Bring In Your Board | Board Fundraising Game"; }, []);
   useEffect(() => {
@@ -33,7 +30,7 @@ export default function GameUpgradePage() {
   }, [loading, member, navigate]);
 
   const upgrade = async () => {
-    setBusy(true); setError("");
+    setBusy("self-guided"); setError("");
     try {
       trackPlatformEvent("board-fundraising-game", "checkout_started");
       const response = await memberApi.post("/payments/game-checkout", {
@@ -42,26 +39,43 @@ export default function GameUpgradePage() {
       window.location.href = response.data.checkout_url;
     } catch (err) {
       setError(err.response?.data?.detail || "We could not open checkout. Please try again.");
-      setBusy(false);
+      setBusy("");
     }
   };
 
-  return <BfgShell><main className="bfg-flow" style={{ maxWidth: 820, margin: "0 auto", padding: "42px 20px 90px", textAlign: "center" }} data-testid="bfg-upgrade-page">
-    {!game ? <p>Opening your Board Fundraising Game…</p> : <>
-      <p className="bfg-eyebrow">YOUR IDEAS ARE SAVED • {money(game.goal_amount)} FUNDRAISING GOAL</p>
-      <h1>YOU'VE SHARED YOUR FUNDRAISING IDEAS. NOW LET'S BRING IN YOUR BOARD.</h1>
-      <p style={{ margin: "24px auto 10px", fontSize: 18 }}>You've now told us:</p>
-      <ul style={{ maxWidth: 670, margin: "0 auto", textAlign: "left", lineHeight: 1.8, fontSize: 17 }}>
-        {SHARED_AREAS.map((area) => <li key={area}>{area}</li>)}
-      </ul>
-      <p style={{ margin: "24px auto 8px", fontWeight: 700, fontSize: 19 }}>That's your perspective.</p>
-      <p style={{ maxWidth: 680, margin: "0 auto", fontSize: 17 }}>Now imagine bringing the thinking of your entire board into the same process. Invite each board member to answer these questions from their own point of view. During your Board Fundraising Game, bring everyone's ideas together, choose the strongest opportunities and build the fundraising strategy your organization will execute together.</p>
-      {params.get("checkout") === "cancelled" && <p className="bfg-error" style={{ marginTop: 22 }}>Your checkout was cancelled. You have not been charged.</p>}
-      {error && <p className="bfg-error" style={{ marginTop: 22 }}>{error}</p>}
-      <button className="bfg-btn bfg-btn-primary" style={{ marginTop: 28 }} onClick={upgrade} disabled={busy} data-testid="bfg-invite-board-cta">{busy ? "OPENING CHECKOUT…" : "INVITE MY BOARD AND CONTINUE"}</button>
-      <p style={{ maxWidth: 590, margin: "15px auto", fontSize: 15 }}>Upgrade to continue your Board Fundraising Game, invite your board members and build your organization's fundraising strategy together.</p>
-      <p style={{ fontSize: 14 }}>One-time payment: $497 for your organization and board.</p>
-      <Link to="/game/demonstration" style={{ display: "inline-block", marginTop: 10 }}>Watch Product Demonstration</Link>
-    </>}
+  const supported = async () => {
+    setBusy("supported"); setError("");
+    try {
+      trackPlatformEvent("board-fundraising-game", "checkout_started");
+      const response = await memberApi.post("/payments/supported-checkout", {
+        origin_url: window.location.origin, product: "board-fundraising-game",
+      });
+      window.location.href = response.data.checkout_url;
+    } catch (err) { setError(err.response?.data?.detail || "We could not open checkout. Please try again."); setBusy(""); }
+  };
+
+  const payButton = (testId) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" onClick={upgrade} disabled={busy}
+    data-testid={testId}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME — $497"}</button>;
+
+  return <BfgShell><main className="guided-flow" data-testid="bfg-upgrade-page">
+    {!game ? <p className="guided-loading">Opening your Board Fundraising Game…</p> : <section className="guided-upgrade">
+      <p className="guided-kicker">{copy.eyebrow}</p>
+      <h1>{copy.heading}</h1>
+      <div className="guided-goal"><span>THE FUNDRAISING GOAL YOU ARE BUILDING TOWARD</span><strong>{money(game.goal_amount)}</strong></div>
+      <OfferTextRoadmap copy={copy} />
+      {payButton("bfg-invite-board-cta")}
+      <p className="guided-price-note">One payment for your organization and board. Payment is next.</p>
+      <DemoOfferCards product="board-fundraising-game" busy={busy} onBuy={(choice) => choice === "supported" ? supported() : upgrade()} error={error}
+        intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
+        selfGuided={{ title: copy.selfGuidedTitle, description: copy.selfGuidedDescription,
+          features: copy.selfGuidedFeatures,
+          button: "START THE SELF-GUIDED GAME — $497" }}
+        supported={{ title: copy.supportedTitle, description: copy.supportedDescription,
+          features: copy.supportedFeatures,
+          price: "$2,997", button: "WORK WITH ROONEY — $2,997" }} />
+      {params.get("checkout") === "cancelled" && <p className="bfg-error" role="alert">Your checkout was cancelled. You have not been charged.</p>}
+      {error && <p className="bfg-error" role="alert">{error}</p>}
+      {payButton("bfg-invite-board-cta-bottom")}
+    </section>}
   </main></BfgShell>;
 }

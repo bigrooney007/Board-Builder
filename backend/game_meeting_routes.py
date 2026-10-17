@@ -86,6 +86,8 @@ The Board has completed its Individual Games and explicitly selected its ideas d
 Create a proper fundraising plan, not meeting minutes. It must contain an executive summary with the exact goal, purpose and deadline; who the organisation will raise money from across individuals, businesses and grantors and why; where to find them; how to attract them and build credibility; what to ask each audience to fund and how much to ask; the step-by-step fundraising process; and the agreed role of every participating Board Member.
 Use the Board's selected ideas and explicit transcript decisions as the sole authority. Preserve their distinctive language, intent and logic. Your job is to present their ideas clearly and make them practical and actionable only where their own context supports the detail. Do not replace their ideas with your own.
 Use the lead user's present donors, business supporters, grantors and current fundraising methods as valid options where the Board selected or retained them.
+Treat a funding category marked "none" as no current supporters in that category; never turn an absent category into an existing relationship.
+This engagement produces a fundraising strategy. Do not create team requirements, resource recommendations, budgets or month-by-month execution plans. Include execution_agreements only for execution support, materials, responsibilities or timing explicitly agreed by the Board during its strategy meeting. If there are no such agreements, return an empty list. Personal participation choices are proposals until the Board agrees to them.
 Do not write "the Board discussed", "a participant said", names of contributors outside agreed roles, or any meeting-history language.
 Do not add generic advice or invent funders, organisations, relationships, commitments, actions, amounts or results. Leave unsupported parts empty.
 Write proper explanatory paragraphs in Rooney Akpesiri's clear, direct and practical style.
@@ -113,9 +115,10 @@ FINAL_V2_SCHEMA = {
         "grantors": {"how_this_process_works": "string", "know": ["string"], "like": ["string"], "trust": ["string"], "ask": ["string"], "follow_up": ["string"], "steward": ["string"]},
     },
     "board_roles": [{"name": "Board Member's real name", "role": "Agreed role", "responsibility": "Specific agreed action and timing from the Group Game or transcript"}],
+    "execution_agreements": ["Only execution support, materials, responsibilities or timing explicitly agreed during the Board meeting. Empty list when none were agreed."],
 }
 
-CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"]
+CORE_STRATEGY_KEYS = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles", "execution_agreements"]
 
 BOARD_FUNDRAISING_PROCESS = {
     "know": [
@@ -309,6 +312,7 @@ def create_game_meeting_router(db) -> APIRouter:
         }
 
     async def run_final_compile(user_id: str):
+        if (await get_profile(user_id)).get("workflow_version") == 6: return
         try:
             profile = await get_profile(user_id)
             goal = profile.get("goal") or {}
@@ -322,6 +326,10 @@ def create_game_meeting_router(db) -> APIRouter:
                 "current_grantor_profile", "current_grantor_where", "current_grantor_attraction", "current_grantor_support", "current_grantor_process",
                 "current_individual_donors", "current_businesses", "current_grantors",
                 "individual_fundraising_process", "business_fundraising_process", "grant_fundraising_process",
+                "individuals_status", "businesses_status", "grantors_status",
+                "current_individual_donor_motivation", "current_individual_donor_seeking",
+                "current_business_motivation", "current_grantor_motivation",
+                "current_business_seeking", "current_grantor_seeking",
             }
             context = {
                 "organisation_profile": organization,
@@ -354,6 +362,7 @@ def create_game_meeting_router(db) -> APIRouter:
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
             generated = parse_json_response(text)
             data = {key: generated.get(key, {}) for key in CORE_STRATEGY_KEYS}
+            data["execution_agreements"] = generated.get("execution_agreements") or []
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": "final"}) + 1
             now = now_iso()
             record = {
@@ -536,6 +545,12 @@ def create_game_meeting_router(db) -> APIRouter:
     @router.post("/game/meeting/compile-final")
     async def compile_final(request: Request):
         member = await game_member(request)
+        profile = await get_profile(member["user_id"])
+        if profile.get("workflow_version") == 6:
+            from fundraising_review import AudienceReview
+            review = AudienceReview(db); session = await review.current(member["user_id"])
+            strategy = await review.strategy(session)
+            return {"status": "completed", "strategy_id": strategy["strategy_id"]}
         if not await completed_group_session(member["user_id"]):
             raise HTTPException(status_code=409, detail="Complete the Group Game before compiling the final strategy")
         job = await final_job(member["user_id"])
@@ -671,7 +686,7 @@ def create_game_meeting_router(db) -> APIRouter:
         if not strategy:
             strategy = await db.game_strategies.find_one(
                 {"user_id": record["user_id"], "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
-        if not strategy:
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
             return {"ready": False, "organization_name": (profile.get("organization") or {}).get("name", "")}
         portfolio = await db.board_portfolios.find_one(
             {"user_id": record["user_id"], "board_member_id": record["member_id"]},
@@ -687,7 +702,7 @@ def create_game_meeting_router(db) -> APIRouter:
                 "schema_version": strategy.get("schema_version", 1),
                 "prepared_by": strategy.get("prepared_by", ""),
                 "generated_at": strategy["generated_at"], "data": strategy["data"],
-                "section_edits": strategy.get("section_edits", {}),
+                "section_edits": strategy.get("section_edits", {}), "document_sections": strategy.get("document_sections", []),
                 "organization_name": (profile.get("organization") or {}).get("name", ""),
             },
         }
@@ -700,8 +715,8 @@ def create_game_meeting_router(db) -> APIRouter:
         profile = await get_profile(record["user_id"])
         strategy = await latest_final(record["user_id"]) or await db.game_strategies.find_one(
             {"user_id": record["user_id"], "status": "adopted"}, {"_id": 0}, sort=[("adopted_at", -1)])
-        if not strategy:
-            raise HTTPException(status_code=404, detail="No final strategy available yet")
+        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
+            raise HTTPException(status_code=404, detail="No approved final strategy available yet")
         org_name = (profile.get("organization") or {}).get("name", "")
         pdf = build_strategy_pdf(strategy, org_name)
         return HttpResponse(content=pdf, media_type="application/pdf", headers={

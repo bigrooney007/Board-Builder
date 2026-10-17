@@ -24,6 +24,36 @@ The original posts remain in the same `blog_posts` collection. Older articles ke
 content and URLs. Their recruitment, fundraising and recommitment buttons resolve to
 the current landing routes. Articles without a cover receive a cover using their own title.
 
+## Editing the two fundraising guides
+
+In the Admin Dashboard's **Blog** tab, **Edit Your Fundraising Guides** contains the
+two public three-step articles. **Edit Guide** opens the title, headings, introduction,
+three sections, closing invitation, button wording and sidebar text. Paragraphs are
+separated by blank lines. The preview shows changes before saving.
+**Save and Publish Guide** saves to the existing `marketing_settings` collection and
+updates the public page immediately. No frontend rebuild or GitHub sync is needed for
+subsequent wording edits. Page slugs and the `/board-fundraising/start` destination stay fixed.
+
+Both React and the frontend HTML server load the saved guide text. Search descriptions,
+Open Graph metadata and featured blog cards also use it. Complete original copy remains
+available if the content API is temporarily unreachable. The guide cover artwork remains
+the original PNG; its accessible description is editable. `backend/fundraising_guides.json`
+is the original fallback copy exported from `frontend/src/content/fundraisingArticles.js`.
+
+## LinkedIn company page RSS
+
+The public feed is **https://nonprofitboardbuilder.com/api/blog/feed.xml**. Copy it from
+the Admin Blog tab and paste it into the existing RSS field on the LinkedIn company page.
+LinkedIn manages its pickup and posting behavior. No LinkedIn credential is stored by this app.
+
+The feed contains the latest 50 published articles, including the two fundraising guides.
+Drafts and failed or archived articles stay private. Publishing an article adds it to the
+feed on the next request. Each item supplies its title, description, full escaped article,
+canonical link, category, original publication date and public cover image. Its GUID is the
+permanent article URL, so editing text preserves that identity and publication date.
+ETags allow conditional requests, and a cache lasts at most 60 seconds. Blog HTML advertises
+the RSS source through an alternate link.
+
 ## Automatic weekday drafts
 
 The admin's **Automatic weekday drafts** panel controls whether the backend prepares
@@ -81,5 +111,6 @@ the category's call to action. Sharing services may need to refresh an older cac
 preview after a published article is edited.
 
 Offline checks: `backend/tests/test_blog_workstation.py`,
-`frontend/src/admin/BlogAdminSection.test.jsx` and `frontend/src/seo/BlogMetadata.test.jsx`.
+`frontend/src/admin/BlogAdminSection.test.jsx`, `frontend/src/admin/FundraisingGuideAdmin.test.jsx`,
+`frontend/src/pages/FundraisingArticlePage.test.jsx` and `frontend/src/seo/BlogMetadata.test.jsx`.
 Tests mock the model and delivery boundaries and do not alter live content.

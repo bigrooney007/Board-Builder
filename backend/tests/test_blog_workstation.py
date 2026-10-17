@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import AsyncMock, patch
 from zoneinfo import ZoneInfo
 
@@ -219,6 +220,71 @@ class BlogWorkstation(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(presented['body'], legacy['body'])
         self.assertEqual(presented['cta_url'], '/board-recommitment')
         self.assertEqual(Image.open(BytesIO(cover_png(legacy))).size, (1200, 630))
+
+    async def test_guide_edits_require_admin_and_survive_new_router_with_fixed_urls(self):
+        public = (await self.client.get('/api/blog/guides')).json()['guides']
+        self.assertEqual(len(public), 2)
+        guide = public[0]
+        slug = guide['slug']
+        edit = {**guide, 'title': 'My own improved article title', 'headline': 'The heading I chose',
+                'intro': ['My first paragraph.', 'My second paragraph.'],
+                'slug': 'please-do-not-change-the-page-address', 'image': '../../private', 'cta_url': 'https://example.com'}
+        self.client.headers.clear()
+        self.assertEqual((await self.client.get('/api/admin/blog/guides')).status_code, 401)
+        self.assertEqual((await self.client.put('/api/admin/blog/guides/' + slug, json=edit)).status_code, 401)
+        self.client.headers['x-test-admin'] = 'yes'
+        saved = await self.client.put('/api/admin/blog/guides/' + slug, json=edit)
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()['guide']['slug'], slug)
+        self.assertEqual(saved.json()['guide']['image'], guide['image'])
+        self.assertIn('edited_at', saved.json()['guide'])
+        app = FastAPI(); app.include_router(routes.create_marketing_router(self.db))
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as fresh:
+            visible = await fresh.get('/api/blog/guides/' + slug)
+            self.assertEqual(visible.json()['intro'], edit['intro'])
+            self.assertEqual(visible.json()['title'], edit['title'])
+            related = await fresh.get('/api/blog/guides/' + public[1]['slug'])
+            self.assertEqual(related.json()['relatedGuide']['title'], edit['title'])
+            self.assertEqual((await fresh.get('/api/blog/guides/unknown')).status_code, 404)
+        self.assertEqual((await self.client.put('/api/admin/blog/guides/' + slug, json={**edit, 'title': ' '})).status_code, 422)
+        reversed_steps = list(reversed(guide['steps']))
+        self.assertEqual((await self.client.put('/api/admin/blog/guides/' + slug, json={**edit, 'steps': reversed_steps})).status_code, 422)
+        self.assertEqual((await self.client.put('/api/admin/blog/guides/unknown', json=edit)).status_code, 404)
+
+    async def test_rss_published_only_valid_xml_stable_ids_and_cache_updates(self):
+        pending = await self.generate('recruitment')
+        published = await self.generate('fundraising_activation')
+        await self.client.post('/api/admin/blog/posts/' + published['blog_post_id'] + '/approve')
+        await self.db.blog_posts.update_one({'blog_post_id': published['blog_post_id']}, {'$set': {'body': 'A paragraph with <script>markup</script> & punctuation.\u0001'}})
+        self.client.headers.clear()
+        response = await self.client.get('/api/blog/feed.xml')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('application/rss+xml', response.headers['content-type'])
+        tree = ET.fromstring(response.content)
+        items = tree.findall('./channel/item')
+        self.assertEqual(len(items), 3)
+        self.assertNotIn(pending['slug'], response.text)
+        self.assertNotIn('generation_token', response.text)
+        self.assertNotIn('content_brief', response.text)
+        item = next(item for item in items if item.findtext('link').endswith('/' + published['slug']))
+        self.assertEqual(item.findtext('guid'), item.findtext('link'))
+        self.assertEqual(item.find('guid').attrib['isPermaLink'], 'true')
+        self.assertIn('&lt;script&gt;', item.findtext('{http://purl.org/rss/1.0/modules/content/}encoded'))
+        self.assertIn('/board-fundraising-game', item.findtext('{http://purl.org/rss/1.0/modules/content/}encoded'))
+        self.assertEqual(item.find('{http://search.yahoo.com/mrss/}content').attrib['type'], 'image/png')
+        cached = await self.client.get('/api/blog/feed.xml', headers={'if-none-match': response.headers['etag']})
+        self.assertEqual(cached.status_code, 304)
+        guide = (await self.client.get('/api/blog/guides')).json()['guides'][0]
+        old_item = next(item for item in items if item.findtext('link').endswith('/' + guide['slug']))
+        self.client.headers['x-test-admin'] = 'yes'
+        await self.client.put('/api/admin/blog/guides/' + guide['slug'], json={**guide, 'title': 'A revised guide headline'})
+        updated = await self.client.get('/api/blog/feed.xml', headers={'if-none-match': response.headers['etag']})
+        self.assertEqual(updated.status_code, 200)
+        self.assertNotEqual(updated.headers['etag'], response.headers['etag'])
+        new_item = next(item for item in ET.fromstring(updated.content).findall('./channel/item') if item.findtext('link').endswith('/' + guide['slug']))
+        self.assertEqual(new_item.findtext('title'), 'A revised guide headline')
+        self.assertEqual(new_item.findtext('guid'), old_item.findtext('guid'))
+        self.assertEqual(new_item.findtext('pubDate'), old_item.findtext('pubDate'))
 
 
 if __name__ == '__main__': unittest.main()

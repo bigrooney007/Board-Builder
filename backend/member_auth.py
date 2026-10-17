@@ -1,3 +1,4 @@
+from admin_test_safety import bind_test_scope, prevent_test_checkout
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -126,8 +127,12 @@ async def authenticate_member(request: Request, db) -> dict:
         )
         if not member:
             raise HTTPException(status_code=401, detail="Account not found. Please log in again.")
+        bind_test_scope(db, member)
+        prevent_test_checkout(request, member)
         return member
-    except HTTPException:
+    except HTTPException as exc:
+        if exc.status_code not in {401, 403}:
+            raise
         reviewer = await review_mode_member(request, db)
         if reviewer:
             return reviewer

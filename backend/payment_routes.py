@@ -1,3 +1,4 @@
+import fundraising_audiences as audiences6
 import os
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -25,6 +26,10 @@ PRICE_ENV = {
 class RooneyCheckoutRequest(BaseModel):
     origin_url: str = Field(min_length=1)
     internal_test: bool = False
+
+
+class AmplifyCheckoutRequest(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
 
 
 class DirectProjectCheckoutRequest(BaseModel):
@@ -77,6 +82,36 @@ def resolve_offer_price_id(env_key: str, lookup_key: str, product_name: str, uni
     )
     _price_cache[lookup_key] = price.id
     return _price_cache[lookup_key]
+
+
+async def notify_amplify_purchase(db, session_id: str) -> None:
+    """Notify the operator once after Stripe confirms the separate manual service payment."""
+    txn = await db.payment_transactions.find_one(
+        {"session_id": session_id, "offer_source": "recruitment_amplify", "payment_status": "paid"}, {"_id": 0})
+    if not txn:
+        return
+    claimed = await db.payment_transactions.update_one(
+        {"session_id": session_id, "admin_notification_status": {"$exists": False}},
+        {"$set": {"admin_notification_status": "Sending"}},
+    )
+    if not claimed.modified_count:
+        return
+    try:
+        from html import escape
+        from opportunity_emails import _send, _wrap
+        org = txn.get("organization") or "Unknown organization"
+        buyer = txn.get("lead_email") or txn.get("payment_email") or "Unknown email"
+        body = (f"<p>{escape(org)} purchased Amplify My Campaign for $497.</p>"
+                f"<p>Customer: {escape(buyer)}</p><p>Campaign: {escape(txn.get('opportunity_id') or '')}</p>"
+                f"<p>Stripe checkout session: {escape(session_id)}</p>"
+                "<p>Handle the additional outreach manually. The original recruitment campaign remains live.</p>")
+        await _send("NONPROFIT_SENDER", os.environ["OWNER_NOTIFICATION_EMAIL"],
+                    f"Amplify My Campaign Purchased | {org}", _wrap("New Amplification Purchase", body))
+        await db.payment_transactions.update_one({"session_id": session_id},
+            {"$set": {"admin_notification_status": "Sent", "admin_notification_at": datetime.now(timezone.utc).isoformat()}})
+    except Exception as exc:
+        await db.payment_transactions.update_one({"session_id": session_id},
+            {"$set": {"admin_notification_status": "Failed", "admin_notification_error": str(exc)[:300]}})
 
 
 def resolve_diy_price_id() -> str:
@@ -201,6 +236,44 @@ def create_payment_router(db) -> APIRouter:
     router = APIRouter(prefix="/api/payments")
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
+    @router.post("/amplify-checkout")
+    async def amplify_checkout(payload: AmplifyCheckoutRequest):
+        opportunity = await db.opportunities.find_one(
+            {"amplify_token": payload.token, "status": "Published"}, {"_id": 0})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="This campaign amplification offer is no longer available")
+        prior_purchase = await db.payment_transactions.find_one(
+            {"opportunity_id": opportunity["opportunity_id"], "offer_source": "recruitment_amplify", "payment_status": "paid"},
+            {"_id": 0, "session_id": 1})
+        if prior_purchase:
+            raise HTTPException(status_code=409, detail="Amplification has already been purchased for this campaign")
+        owner = await db.members.find_one({"user_id": opportunity["user_id"]}, {"_id": 0, "email": 1}) or {}
+        if not owner.get("email"):
+            raise HTTPException(status_code=409, detail="Campaign owner email is unavailable")
+        price_id = resolve_offer_price_id("STRIPE_RECRUITMENT_AMPLIFY_497_PRICE_ID", "recruitment_amplify_497",
+                                          "Amplify My Board Recruitment Campaign", 49700)
+        site = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+        kwargs = {"line_items": [{"price": price_id, "quantity": 1}], "mode": "payment",
+                  "customer_email": owner["email"],
+                  "success_url": f"{site}/recruit/amplify?paid=1&session_id={{CHECKOUT_SESSION_ID}}",
+                  "cancel_url": f"{site}/recruit/amplify?token={payload.token}&cancelled=1",
+                  "metadata": {"offer_source": "recruitment_amplify", "selected_tier": "497",
+                               "opportunity_id": opportunity["opportunity_id"], "organization": opportunity["organization_name"]}}
+        try:
+            session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+        except stripe.InvalidRequestError as exc:
+            if "managed payments" not in str(exc).lower() and "ineligible" not in str(exc).lower():
+                raise
+            session = stripe.checkout.Session.create(**kwargs, automatic_tax={"enabled": True}, billing_address_collection="required")
+        ts = datetime.now(timezone.utc).isoformat()
+        await db.payment_transactions.insert_one({
+            "session_id": session.id, "opportunity_id": opportunity["opportunity_id"],
+            "organization": opportunity["organization_name"], "lead_email": owner["email"],
+            "offer_source": "recruitment_amplify", "selected_tier": "497", "amount": 49700,
+            "currency": "usd", "status": "initiated", "payment_status": "pending", "created_at": ts, "updated_at": ts,
+        })
+        return {"checkout_url": session.url}
+
     @router.get("/flow-status/{session_id}")
     async def flow_status(session_id: str, flow: str):
         contracts = {
@@ -244,6 +317,11 @@ def create_payment_router(db) -> APIRouter:
         lead = await db.funnel_leads.find_one({"lead_id": payload.lead_id}, {"_id": 0})
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found")
+        if lead.get("lead_source") == "recruitment_free_assessment" and payload.tier == "497":
+            answers = lead.get("answers") or {}
+            required = ("mission", "present_board", "desired_board_members", "strengthen_areas", "board_type", "why_join")
+            if any(not str(answers.get(key) or "").strip() for key in required):
+                raise HTTPException(status_code=409, detail="Complete and save all six Recruitment Questions before unlocking your campaign")
         if lead["offer_source"] == "recruitment":
             # The clean Recruitment funnel is the live $497 sales flow.
             paid_live = payload.tier == "497" or os.environ.get("RECRUITMENT_97_LIVE", "false").lower() == "true"
@@ -657,7 +735,7 @@ def create_payment_router(db) -> APIRouter:
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.post("/guided-checkout")
-    async def create_guided_checkout(payload: DIYCheckoutRequest):
+    async def create_guided_checkout(payload: DIYCheckoutRequest, request: Request):
         product = payload.product
         config = {
             "strategic-planning": ("Strategic Planning With Your Board", "strategic_planning_497", "/strategic-planning"),
@@ -669,15 +747,22 @@ def create_payment_router(db) -> APIRouter:
         lead = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
         if not lead or lead.get("product") != product:
             raise HTTPException(status_code=409, detail="This journey token belongs to a different product flow")
+        if not lead.get("prepayment_complete"):
+            raise HTTPException(status_code=409, detail="Finish and save your answers before moving to payment")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
+        if lead.get("internal_preview"):
+            member = await authenticate_member(request, db)
+            test_tx = await db.payment_transactions.find_one({"guided_lead_token": payload.result_token, "internal_preview": True, "claimed_by_user_id": member["user_id"]}, {"_id": 0})
+            if not member.get("internal_dashboard_preview") or not test_tx: raise HTTPException(403, "Use your own authorized admin test")
+            return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + test_tx["session_id"], "session_id": test_tx["session_id"]}
         kwargs = {
             "line_items": [{"price_data": {"currency": "usd", "unit_amount": 49700, "product_data": {"name": product_name}}, "quantity": 1}],
             "mode": "payment",
             "customer_email": lead.get("email", ""),
             "phone_number_collection": {"enabled": True},
-            "success_url": f"{payload.origin_url}{base_path}/payment-confirmed?session_id={{CHECKOUT_SESSION_ID}}",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{payload.origin_url}{base_path}/video?token={payload.result_token}&checkout=cancelled",
             "metadata": {"offer_source": product.replace("-", "_"), "selected_tier": "497", "purchase_source": purchase_source, "offer": product_name, "guided_lead_token": payload.result_token},
         }
@@ -700,15 +785,23 @@ def create_payment_router(db) -> APIRouter:
     @router.post("/game-checkout")
     async def create_game_checkout(payload: DIYCheckoutRequest, request: Request):
         member = await authenticate_member(request, db)
+        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        answers = saved.get("answers") or {}
+        if (not saved.get("completed") if saved.get("workflow_version") == audiences6.VERSION else any(not str(answers.get(str(number), "")).strip() for number in range(1, 6))):
+            raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
+        if member.get("internal_dashboard_preview"):
+            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": "board_fundraising_game_497"}, {"_id": 0})
+            if not tx: raise HTTPException(409, "Reopen your isolated admin test")
+            return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + tx["session_id"], "session_id": tx["session_id"]}
         kwargs = {
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
             "phone_number_collection": {"enabled": True},
             "customer_email": member["email"],
-            "success_url": f"{payload.origin_url}/game/welcome?session_id={{CHECKOUT_SESSION_ID}}",
+            "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
                 "offer_source": "board_fundraising_game", "selected_tier": "497",
@@ -892,7 +985,7 @@ def create_payment_router(db) -> APIRouter:
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.post("/supported-checkout")
-    async def create_supported_checkout(payload: SupportedCheckoutRequest):
+    async def create_supported_checkout(payload: SupportedCheckoutRequest, request: Request):
         meta = SUPPORTED_SERVICE_OFFERS.get(payload.product)
         if not meta:
             raise HTTPException(status_code=400, detail="Unknown supported-service product")
@@ -904,20 +997,39 @@ def create_payment_router(db) -> APIRouter:
         if payload.result_token:
             guided = await db.guided_product_leads.find_one({"token": payload.result_token}, {"_id": 0})
             if guided and guided.get("product") == payload.product:
+                if not guided.get("prepayment_complete"):
+                    raise HTTPException(status_code=409, detail="Finish and save your answers before moving to payment")
                 customer_email = guided.get("email", "")
                 lead_context = {"lead_name": guided.get("name", ""), "lead_email": customer_email,
                                 "lead_organization": guided.get("organization", ""), "guided_lead_token": payload.result_token}
             else:
-                recruit = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0})
-                if recruit:
-                    customer_email = recruit.get("email", "")
-                    lead_context = {"lead_id": recruit.get("lead_id", ""), "lead_name": recruit.get("name", ""),
-                                    "lead_email": customer_email, "lead_organization": recruit.get("organization", "")}
+                if payload.product == "recruitment":
+                    assessment = await db.recruitment_free_assessments.find_one({"token": payload.result_token}, {"_id": 0})
+                    if assessment and all(str((assessment.get("answers") or {}).get(k) or "").strip() for k in
+                                      ("mission", "current_board", "desired_board_members", "board_type", "support_needs", "why_join")):
+                        customer_email = assessment.get("email", "")
+                        lead_context = {"lead_id": assessment.get("lead_id", ""), "lead_name": assessment.get("name", ""),
+                                        "lead_email": customer_email, "lead_organization": assessment.get("organization", "")}
+                else:
+                    recruit = await db.funnel_leads.find_one({"result_token": payload.result_token}, {"_id": 0})
+                    if recruit:
+                        customer_email = recruit.get("email", "")
+                        lead_context = {"lead_id": recruit.get("lead_id", ""), "lead_name": recruit.get("name", ""),
+                                        "lead_email": customer_email, "lead_organization": recruit.get("organization", "")}
+        if payload.product == "board-fundraising-game":
+            member = await authenticate_member(request, db)
+            saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+            if (not saved.get("completed") if saved.get("workflow_version") == audiences6.VERSION else any(not str((saved.get("answers") or {}).get(str(n), "")).strip() for n in range(1, 6))):
+                raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
+            customer_email = member["email"]
+            lead_context = {"user_id": member["user_id"], "lead_email": customer_email}
+        if payload.product == "recruitment" and not customer_email:
+            raise HTTPException(status_code=409, detail="Finish your six recruitment answers before checkout")
         kwargs = {
             "line_items": [{"price": resolve_offer_price_id(meta["env_key"], meta["lookup_key"], meta["name"], meta["amount"]), "quantity": 1}],
             "mode": "payment", "phone_number_collection": {"enabled": True},
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{payload.origin_url}/{ 'recruit/walkthrough' if payload.product == 'recruitment' else 'game/demonstration' if payload.product == 'board-fundraising-game' else payload.product + '/video'}?checkout=cancelled" + (f"&token={payload.result_token}" if payload.result_token else ""),
+            "cancel_url": f"{payload.origin_url}/{ 'recruit/walkthrough' if payload.product == 'recruitment' else 'game/upgrade' if payload.product == 'board-fundraising-game' else payload.product + '/video'}?checkout=cancelled" + (f"&token={payload.result_token}" if payload.result_token else ""),
             "metadata": {"offer_source": meta["source"], "purchase_source": meta["source"],
                          "selected_tier": "supported", "offer": meta["name"], "product": payload.product,
                          "lead_id": lead_context.get("lead_id", ""), "guided_lead_token": lead_context.get("guided_lead_token", "")},
@@ -1025,7 +1137,7 @@ def create_payment_router(db) -> APIRouter:
         if transaction["payment_status"] != "paid":
             try:
                 session = stripe.checkout.Session.retrieve(session_id)
-                if session.payment_status == "paid" or session.status == "complete":
+                if session.payment_status == "paid":
                     now = datetime.now(timezone.utc).isoformat()
                     details = session.customer_details if session.customer_details else None
                     await db.payment_transactions.update_one(
@@ -1033,6 +1145,8 @@ def create_payment_router(db) -> APIRouter:
                         {"$set": {"status": "completed", "payment_status": "paid", "payment_email": (details.email if details else "") or "", "payment_phone": (details.phone if details else "") or "", "updated_at": now}},
                     )
                     transaction.update({"status": "completed", "payment_status": "paid"})
+                    if transaction.get("offer_source") == "recruitment_amplify":
+                        await notify_amplify_purchase(db, session_id)
                     try:
                         from marketing_service import stop_recruitment_nurture_for_purchase
                         buyer_email = (session.customer_details.email if session.customer_details else "") or ""
@@ -1080,11 +1194,13 @@ def create_stripe_webhook_router(db) -> APIRouter:
             )
             if item.get("payment_status", "paid") == "paid":
                 await _stop_nurture_after_paid(item)
+                await notify_amplify_purchase(db, item["id"])
         elif event_type == "checkout.session.async_payment_succeeded":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"]}, {"$set": {"status": "completed", "payment_status": "paid", "updated_at": now}}
             )
             await _stop_nurture_after_paid(item)
+            await notify_amplify_purchase(db, item["id"])
         elif event_type == "checkout.session.async_payment_failed":
             await db.payment_transactions.update_one(
                 {"session_id": item["id"], "payment_status": {"$ne": "paid"}},

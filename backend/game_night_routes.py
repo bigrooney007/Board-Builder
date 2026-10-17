@@ -7,6 +7,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import resend
+import fundraising_audiences as audiences6
+from admin_test_safety import bind_test_scope
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr, Field
 
@@ -15,6 +17,7 @@ from member_auth import authenticate_member, new_uuid, require_entitlement
 from game_content import EDITABLE_FIELDS, merged_sections
 from game_content_v3 import GAME_V3
 from game_response_quality import is_meaningful_game_response, response_input_hash, response_texts
+from game_routes import present_reality_is_complete, situation_is_complete
 from reactivation_routes import email_html
 
 logger = logging.getLogger(__name__)
@@ -105,6 +108,9 @@ class AudienceAnswer(BaseModel):
 
 
 class AudienceResponseSave(BaseModel):
+    workflow_version: int = 4
+    progress: dict = Field(default_factory=dict)
+    category_status: dict = Field(default_factory=dict)
     audiences: dict = Field(default_factory=dict)
     involvement: str = Field(default="", max_length=6000)
     current_audience: str = Field(default="individuals", max_length=30)
@@ -144,6 +150,22 @@ def create_game_night_router(db) -> APIRouter:
 
     async def get_profile(user_id: str) -> dict:
         return await db.game_profiles.find_one({"user_id": user_id}, {"_id": 0}) or {}
+
+    async def require_board_setup(user_id: str) -> dict:
+        night = await get_night(user_id)
+        if not all(night.get(key) for key in ("meeting_date", "start_time", "funding_deadline")):
+            raise HTTPException(status_code=409, detail="Confirm your next Board meeting and fundraising deadline before inviting your board.")
+        situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
+        if (await get_profile(user_id)).get("workflow_version") != audiences6.VERSION and not situation_is_complete(situation):
+            raise HTTPException(status_code=409, detail="Complete your present fundraising answers before inviting your board.")
+        primary = await db.game_board_members.find_one(
+            {"user_id": user_id, "is_primary": True, "removed": {"$ne": True}}, {"_id": 0, "member_id": 1})
+        response = (await db.game_audience_responses.find_one(
+            {"board_member_id": primary["member_id"]}, {"_id": 0, "completed": 1, "involvement": 1})
+                    if primary else None)
+        if not response or not response.get("completed") or not str(response.get("involvement") or "").strip():
+            raise HTTPException(status_code=409, detail="Answer how you will personally participate before inviting your board.")
+        return night
 
     async def get_sections_content() -> list:
         doc = await db.marketing_settings.find_one({"key": "game_individual_content"}, {"_id": 0}) or {}
@@ -248,6 +270,8 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members", status_code=201)
     async def add_board_member(payload: BoardMemberCreate, request: Request):
         member = await game_member(request)
+        await require_board_setup(member["user_id"])
+        version = audiences6.VERSION if (await get_profile(member["user_id"])).get("workflow_version") == audiences6.VERSION else 5
         now = now_iso()
         record = {
             "member_id": new_uuid(), "user_id": member["user_id"],
@@ -256,7 +280,7 @@ def create_game_night_router(db) -> APIRouter:
             "board_title": payload.board_title.strip(),
             "participant_role": payload.participant_role if payload.participant_role in
             {"board_member", "staff", "volunteer", "other_leader"} else "board_member",
-            "game_version": 5, "total_sections": 6,
+            "game_version": version, "total_sections": 6,
             "invitation_status": "not_invited", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
         }
@@ -278,18 +302,25 @@ def create_game_night_router(db) -> APIRouter:
                     {"$set": {"game_version": 4, "total_sections": 7, "updated_at": now_iso()}})
             return {"token": existing["token"], "member_id": existing["member_id"]}
         primary = profile.get("primary_user") or {}
+        version = audiences6.VERSION if profile.get("workflow_version") == audiences6.VERSION else 5
         now = now_iso()
         record = {
             "member_id": new_uuid(), "user_id": member["user_id"],
             "token": secrets.token_urlsafe(24),
             "full_name": primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip() or "Primary User",
             "email": member["email"], "board_title": primary.get("job_title", ""),
-            "is_primary": True, "game_version": 5, "total_sections": 6,
+            "is_primary": True, "game_version": version, "total_sections": 6,
             "invitation_status": "self", "invited_at": "", "last_reminder_at": "",
             "removed": False, "created_at": now, "updated_at": now,
         }
         await db.game_board_members.insert_one(record.copy())
         free = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+        if version == audiences6.VERSION:
+            value = audiences6.clean_response(free)
+            value.update({"response_id": new_uuid(), "board_member_id": record["member_id"], "user_id": member["user_id"],
+                          "completed": bool(free.get("completed")), "created_at": now, "updated_at": now})
+            await db.game_audience_responses.update_one({"board_member_id": record["member_id"]}, {"$setOnInsert": value}, upsert=True)
+            return {"token": record["token"], "member_id": record["member_id"]}
         original = free.get("answers") or {}
         if all(str(original.get(str(index), "")).strip() for index in range(1, 6)):
             await db.game_board_members.update_one(
@@ -424,11 +455,11 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/{member_id}/invite")
     async def invite_board_member(member_id: str, payload: SendPayload, request: Request):
         member = await game_member(request)
+        night = await require_board_setup(member["user_id"])
         record = await db.game_board_members.find_one(
             {"member_id": member_id, "user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="Board member not found")
-        night = await require_night(member["user_id"])
         profile = await get_profile(member["user_id"])
         await send_invitation(member, record, profile, night, payload.origin_url)
         await db.game_board_members.update_one(
@@ -440,7 +471,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/invite-all")
     async def invite_all(payload: SendPayload, request: Request):
         member = await game_member(request)
-        night = await require_night(member["user_id"])
+        night = await require_board_setup(member["user_id"])
         profile = await get_profile(member["user_id"])
         records = await db.game_board_members.find(
             {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": {"$ne": "invited"}},
@@ -551,6 +582,15 @@ def create_game_night_router(db) -> APIRouter:
             "process": "Step-by-step fundraising process",
         }
         lines = [f"BOARD FUNDRAISING GAME RESPONSE", "", record.get("full_name", "Board Member"), record.get("board_title", ""), ""]
+        if response.get("game_version") == audiences6.VERSION:
+            for category in audiences6.CATEGORIES:
+                for item in (response.get("audiences") or {}).get(category, []):
+                    lines.append(audiences6.LABELS[category])
+                    for field, question in zip(audiences6.FIELDS, audiences6.QUESTIONS[category]):
+                        lines.extend([question[0], item.get(field, ""), ""])
+            lines.extend(["Personal participation", response.get("involvement", "")])
+            from fastapi.responses import Response
+            return Response("\n".join(lines), media_type="text/plain", headers={"Content-Disposition": 'attachment; filename="fundraising-response.txt"'})
         if response.get("game_version") == 5:
             for index, label in enumerate(("Who could fund us", "Where to find them", "How to attract them",
                                            "What to ask and how much", "Relationship process"), 1):
@@ -604,6 +644,7 @@ def create_game_night_router(db) -> APIRouter:
         record = await db.game_board_members.find_one({"token": token, "removed": {"$ne": True}}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="This game link is not valid")
+        bind_test_scope(db, record)
         return record
 
     @router.get("/game/play/{token}/ideas")
@@ -652,6 +693,10 @@ def create_game_night_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="Complete all five questions first")
         if response.get("completed"):
             return {"status": "completed"}
+        if record.get("is_primary"):
+            situation = await db.game_situations.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
+            if not present_reality_is_complete(situation):
+                raise HTTPException(status_code=409, detail="Complete your present fundraising answers before saving how you will participate.")
         now = now_iso()
         await db.game_audience_responses.update_one(
             {"board_member_id": record["member_id"], "completed": {"$ne": True}},
@@ -747,11 +792,18 @@ def create_game_night_router(db) -> APIRouter:
         record = await playing_member(token)
         response = await db.game_audience_responses.find_one(
             {"board_member_id": record["member_id"]}, {"_id": 0}) or {}
-        return {"response": response}
+        return {"response": response, "configuration": audiences6.configuration() if record.get("game_version") == audiences6.VERSION else None}
 
     @router.put("/game/play/{token}/audience-response")
     async def save_audience_response(token: str, payload: AudienceResponseSave):
         record = await playing_member(token)
+        if record.get("game_version") == audiences6.VERSION:
+            existing = await db.game_audience_responses.find_one({"board_member_id": record["member_id"]}, {"_id": 0}) or {}
+            if existing.get("completed"): raise HTTPException(409, "Your submitted contribution is already saved")
+            value = audiences6.clean_response(payload.model_dump() if hasattr(payload, "model_dump") else payload.dict())
+            result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id": record["member_id"]}, {**value,"updated_at":now_iso()}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now_iso()})
+            if not result.matched_count: raise HTTPException(409,"Your submitted contribution is already saved")
+            return {"status": "saved"}
         now = now_iso()
         await db.game_audience_responses.update_one(
             {"board_member_id": record["member_id"]},
@@ -772,6 +824,22 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/play/{token}/audience-response/complete")
     async def complete_audience_response(token: str, payload: AudienceResponseSave):
         record = await playing_member(token)
+        if record.get("game_version") == audiences6.VERSION:
+            value = audiences6.clean_response(payload.model_dump() if hasattr(payload, "model_dump") else payload.dict(), submitting=True)
+            now = now_iso()
+            existing = await db.game_audience_responses.find_one({"board_member_id": record["member_id"]}, {"_id": 0}) or {}
+            if existing.get("completed"): return {"status": "completed"}
+            result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id":record["member_id"]}, {**value,"completed":True,"completed_at":now,"updated_at":now}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now})
+            if not result.matched_count: return {"status":"completed"}
+            await db.game_board_members.update_one({"member_id": record["member_id"]}, {"$set": {"completed_at": now}})
+            if not record.get("is_primary"):
+                owner = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
+                from workflow_delivery import deliver_once
+                origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+                await deliver_once(db, record["user_id"], "fundraising-response:" + record["member_id"], owner.get("email", ""),
+                    "A Board Member Has Shared Their Fundraising Ideas", "A participant has completed their fundraising ideas. Review their original contribution before your meeting.",
+                    origin + "/game/dashboard?response=" + record["member_id"] + "#bfg-board-members-section")
+            return {"status": "completed"}
         audiences = clean_audience_payload(payload)
         missing = []
         for key in AUDIENCE_KEYS:

@@ -37,10 +37,10 @@ class FundraisingV4ContractTests(unittest.TestCase):
         self.assertIn('@router.post("/game/play/{token}/audience-response/complete")', routes)
         self.assertIn("Complete every question for each audience you selected", routes)
 
-    def test_lead_present_context_has_five_fields_for_each_audience(self):
+    def test_lead_present_context_has_four_fields_for_each_audience(self):
         page = source("frontend/src/game/GameSituationPage.jsx")
         for audience in ("individual_donor", "business", "grantor"):
-            for field in ("profile", "where", "attraction", "support", "process"):
+            for field in ("profile", "where", "support", "process"):
                 self.assertIn(f'current_{audience}_{field}', page)
         self.assertIn('reviewed: "yes"', page)
         self.assertIn('Number(situation.data.current_step || 0)', page)
@@ -68,13 +68,16 @@ class FundraisingV4ContractTests(unittest.TestCase):
     def test_final_strategy_is_v4_and_contains_only_the_required_plan_sections(self):
         strategy = source("backend/strategy_routes.py")
         final = source("backend/game_meeting_routes.py")
-        expected = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles"]
+        expected = ["executive_summary", "fundraising_audiences", "where_to_find", "attraction", "funding_ask", "fundraising_process", "board_roles", "execution_agreements"]
         self.assertEqual(literal_assignment("backend/strategy_routes.py", "CORE_STRATEGY_KEYS"), expected)
         self.assertEqual(literal_assignment("backend/game_meeting_routes.py", "CORE_STRATEGY_KEYS"), expected)
         self.assertIn('"schema_version": 4', strategy)
         self.assertIn('"schema_version": 4', final)
         self.assertIn("Do not replace their ideas with your own", final)
         self.assertIn("Leave unsupported parts empty", final)
+        for engine in (strategy, final):
+            self.assertIn("Do not create team requirements, resource recommendations, budgets or month-by-month execution plans", engine)
+            self.assertIn("If there are no such agreements, return an empty list", engine)
         self.assertIn('"schema_version": strategy.get("schema_version", 1)', strategy)
 
     def test_v4_response_view_does_not_repeat_legacy_sections(self):

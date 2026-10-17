@@ -5,6 +5,8 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { FunnelLayout } from "@/funnels/FunnelLayout";
 import { useBlogMeta } from "@/seo";
 import { blogPagesText } from "../content/siteContent";
+import { articles, articleBySlug, articlePath, mergeGuide } from "@/content/fundraisingArticles";
+import FundraisingArticlePage from "./FundraisingArticlePage";
 
 const ORIGIN = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/$/, "");
 const API = `${ORIGIN}/api`;
@@ -25,6 +27,7 @@ const PostCard = ({ post }) => (
 export const BlogPage = () => {
   useBlogMeta();
   const [posts, setPosts] = useState([]);
+  const [guides, setGuides] = useState(articles);
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,6 +40,13 @@ export const BlogPage = () => {
     }).catch(() => setError("The articles could not load. Please refresh to try again.")).finally(() => setLoading(false));
   }, []);
   useEffect(() => { load(filter); }, [filter, load]);
+  useEffect(() => {
+    let active = true;
+    axios.get(`${API}/blog/guides`).then(response => {
+      if (active && Array.isArray(response.data.guides)) setGuides(articles.map(article => mergeGuide(article, response.data.guides.find(guide => guide.slug === article.slug))));
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   return (
     <FunnelLayout>
       <main className="member-page blog-page" data-testid="blog-page">
@@ -45,6 +55,14 @@ export const BlogPage = () => {
           <h1 data-testid="blog-heading">{blogPagesText.nonprofitBoardBuilderInsights}</h1>
           <p>{blogPagesText.practicalStrategiesToHelpYou}</p>
         </header>
+        <section className="fa-featured-guides" aria-label="Free fundraising guides">
+          <link rel="stylesheet" href="/styles/fundraising-articles.css" precedence="article" />
+          <p>Free fundraising guides</p>
+          <div className="fa-featured-grid">{guides.map(article => <Link className="fa-featured-card" to={articlePath(article)} key={article.slug}>
+            <img src={`/social/${article.image}`} alt="" width="1200" height="630" />
+            <h2>{article.title}</h2><p>{article.excerpt}</p><span>Read the guide →</span>
+          </Link>)}</div>
+        </section>
         <div className="blog-filters" data-testid="blog-filters">
           <button className={filter === "" ? "active" : ""} onClick={() => setFilter("")} data-testid="blog-filter-all">All</button>
           {categories.map((category) => (
@@ -62,6 +80,11 @@ export const BlogPage = () => {
 
 export const BlogPostPage = () => {
   const { slug } = useParams();
+  const article = articleBySlug(slug);
+  return article ? <FundraisingArticlePage key={slug} article={article} /> : <PublishedBlogPostPage slug={slug} />;
+};
+
+const PublishedBlogPostPage = ({ slug }) => {
   const [post, setPost] = useState(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState(200);

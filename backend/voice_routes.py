@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from auth_service import authenticate_admin
-from voice_content import DEFAULT_VOICE_SETTINGS, PERSONALIZED_POINTS, RETIRED_RECRUITMENT_SCRIPT_HASHES, STATIC_NARRATIONS, TEXTS
+from voice_content import DEFAULT_VOICE_SETTINGS, PERSONALIZED_POINTS, RETIRED_FUNDRAISING_SCRIPT_HASHES, RETIRED_RECRUITMENT_SCRIPT_HASHES, STATIC_NARRATIONS, TEXTS
 from voice_script_state import SOURCE_REVISION, recording_status, resolve_script, script_hash
 
 STATIC_BY_ID = {item["narration_id"]: item for item in STATIC_NARRATIONS}
@@ -93,6 +93,10 @@ def create_voice_router(db) -> APIRouter:
             merged["voice_environment"] = "test"
         return merged
 
+    async def selected_voice_id(environment: str) -> str:
+        settings = await get_settings()
+        return str(settings.get(f"{environment}_voice_id") or "").strip() or env_voice_id(environment)
+
     async def text_doc(narration_id: str) -> dict:
         doc = await db.game_voice_assets.find_one({"narration_id": narration_id}, {"_id": 0, "audio": 0}) or {}
         default_text = TEXTS.get(narration_id, "")
@@ -103,7 +107,7 @@ def create_voice_router(db) -> APIRouter:
             default_text,
             doc,
             force_revision=narration_id in {"a1_deeper", "a2_deeper", "a3_deeper", "a4_deeper", "approval_review"},
-            superseded_hashes=(RETIRED_RECRUITMENT_SCRIPT_HASHES.get(narration_id),),
+            superseded_hashes=(RETIRED_RECRUITMENT_SCRIPT_HASHES.get(narration_id), RETIRED_FUNDRAISING_SCRIPT_HASHES.get(narration_id)),
         )
         # The recruitment dashboard clips already exist in production from the deployed
         # workspace. Keep same-version approved recordings live when their historical
@@ -133,7 +137,7 @@ def create_voice_router(db) -> APIRouter:
         script = await text_doc(narration_id)
         if not script["text"]:
             raise HTTPException(status_code=409, detail="No script text exists for this clip")
-        voice_id = env_voice_id(environment)
+        voice_id = await selected_voice_id(environment)
         audio = await eleven_tts(script["text"], voice_id)
         await db.game_voice_audio.update_one(
             {"narration_id": narration_id, "environment": environment},
@@ -156,6 +160,7 @@ def create_voice_router(db) -> APIRouter:
     @router.get("/game/voice/tutorial/{tutorial_name}")
     async def tutorial_manifest(tutorial_name: str):
         prefixes = {
+            "fundraising-free": "fundraising-free-",
             "recruitment-free": "recruitment-free-",
             "recruitment": "rct_",
             "dashboard-recruitment": "dash_rct_",
@@ -167,7 +172,7 @@ def create_voice_router(db) -> APIRouter:
         if not prefix:
             raise HTTPException(status_code=404, detail="Unknown tutorial")
         settings = await get_settings()
-        environment = "live" if tutorial_name.startswith("dashboard-") else settings["voice_environment"]
+        environment = "live"
         selected = [item for item in STATIC_NARRATIONS if item["narration_id"].startswith(prefix)]
         rows = await db.game_voice_audio.find(
             {"environment": environment, "status": "ready",
@@ -186,6 +191,7 @@ def create_voice_router(db) -> APIRouter:
             clips[narration_id] = {
                 "ready": ready,
                 "label": item["label"],
+                "text": script["text"],
                 "url": f"/api/game/voice/audio/{narration_id}?environment={environment}&v={environment[:1]}{version}",
             }
         return {"clips": clips}
@@ -259,7 +265,7 @@ def create_voice_router(db) -> APIRouter:
         if not first_name or not template or "[FIRST NAME]" not in template:
             return fallback
         environment = settings["voice_environment"]
-        voice_id = env_voice_id(environment)
+        voice_id = await selected_voice_id(environment)
         text = template.replace("[FIRST NAME]", first_name)
         cache_key = hashlib.sha256(f"{text}|{environment}|{voice_id}|v1".encode()).hexdigest()
         cached = await db.game_voice_personal_cache.find_one({"cache_key": cache_key}, {"_id": 0, "cache_key": 1})
@@ -286,8 +292,8 @@ def create_voice_router(db) -> APIRouter:
         await authenticate_admin(request, db)
         settings = await get_settings()
         settings["provider_key_configured"] = bool(os.environ.get("ELEVENLABS_API_KEY", "").strip())
-        settings["test_voice_ref"] = mask(env_voice_id("test"))
-        settings["live_voice_ref"] = mask(env_voice_id("live"))
+        settings["test_voice_ref"] = mask(await selected_voice_id("test"))
+        settings["live_voice_ref"] = mask(await selected_voice_id("live"))
         return {"settings": settings}
 
     @router.put("/admin/game/voice/settings")
@@ -295,6 +301,11 @@ def create_voice_router(db) -> APIRouter:
         await authenticate_admin(request, db)
         allowed = set(DEFAULT_VOICE_SETTINGS) | {"voice_environment"}
         clean = {k: v for k, v in (payload.settings or {}).items() if k in allowed and k != "voice_id"}
+        for key in ("test_voice_id", "live_voice_id"):
+            if key in clean:
+                clean[key] = str(clean[key] or "").strip()[:120]
+                if clean[key] and not re.fullmatch(r"[A-Za-z0-9_-]+", clean[key]):
+                    raise HTTPException(status_code=422, detail="Enter a valid ElevenLabs Voice ID")
         if "max_personal_clips" in clean:
             clean["max_personal_clips"] = max(0, min(10, int(clean["max_personal_clips"] or 0)))
         if clean.get("voice_environment") not in (None, "test", "live"):
@@ -354,7 +365,7 @@ def create_voice_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This personalized template has no script text")
         settings = await get_settings()
         environment = settings["voice_environment"]
-        voice_id = env_voice_id(environment)
+        voice_id = await selected_voice_id(environment)
         text = template.replace("[FIRST NAME]", first_name)
         cache_key = hashlib.sha256(f"{text}|{environment}|{voice_id}|v1".encode()).hexdigest()
         cached = await db.game_voice_personal_cache.find_one({"cache_key": cache_key}, {"_id": 0, "cache_key": 1})

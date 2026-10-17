@@ -16,5 +16,5 @@ export default function GamePlayRoute() {
   }, [token]);
   if (version === null) return <div className="bfg" style={{ minHeight: "100vh" }} />;
   if (version === -1) return <div className="bfg"><main className="bfg-flow"><h1>This game link is not available.</h1></main></div>;
-  return version === 5 ? <GameFivePlayPage /> : <GamePlayPage />;
+  return version >= 5 ? <GameFivePlayPage /> : <GamePlayPage />;
 }

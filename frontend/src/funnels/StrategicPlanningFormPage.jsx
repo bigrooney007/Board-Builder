@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import SpeakButton from "@/game/SpeakButton";
 import { strategicPlanningPublicContent } from "../content/appContent";
 
 const F = strategicPlanningPublicContent.form;
@@ -17,6 +18,12 @@ export default function StrategicPlanningFormPage() {
   const [stepError, setStepError] = useState("");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const saveQueue = useRef(Promise.resolve());
+  const saveProgress = (draft) => {
+    const task = saveQueue.current.catch(() => {}).then(() => axios.put(`${API}/strategic-planning-form/${token}`, {answers:draft}));
+    saveQueue.current = task;
+    return task;
+  };
 
   useEffect(() => {
     axios.get(`${API}/strategic-planning-form/${token}`).then((r) => {
@@ -26,6 +33,16 @@ export default function StrategicPlanningFormPage() {
       if (r.data.submitted) setDone(true);
     }).catch((e) => setError(e.response?.data?.detail || F.invalidLink));
   }, [token]);
+
+  useEffect(() => {
+    if (!data?.form?.questionnaire_version || done) return undefined;
+    const timer = setTimeout(() => {
+      saveProgress(answers).catch(() => setStepError("Your latest changes could not be saved. Please try Next again before leaving."));
+    }, 1000);
+    return () => clearTimeout(timer);
+  // Requests share the same queue as Next, so autosaves cannot arrive out of order.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, token, data?.form?.questionnaire_version, done]);
 
   const setAnswer = (id, value) => setAnswers((a) => ({ ...a, [id]: value }));
   const toggleMulti = (id, option) => setAnswers((a) => {
@@ -39,6 +56,7 @@ export default function StrategicPlanningFormPage() {
     <main className="legal-page" data-testid="sp-public-thanks">
       <h1>{F.thanksHeading}</h1>
       <p>{F.thanks(data.organization_name)}</p>
+      {data.group_session_url && <a className="bfg-btn bfg-btn-primary" href={data.group_session_url}>OPEN YOUR GROUP SESSION AND ADOPTION LINK</a>}
     </main>
   );
 
@@ -59,10 +77,16 @@ export default function StrategicPlanningFormPage() {
     return "";
   };
 
-  const next = () => {
+  const next = async () => {
     const problem = validateStep();
     setStepError(problem);
-    if (!problem) { setStep(step + 1); window.scrollTo(0, 0); }
+    if (!problem) {
+      if (data.form.questionnaire_version) {
+        try { await saveProgress(answers); }
+        catch (e) { setStepError("Your progress could not be saved. Please try again."); return; }
+      }
+      setStep(step + 1); window.scrollTo(0, 0);
+    }
   };
 
   const submit = async () => {
@@ -71,7 +95,8 @@ export default function StrategicPlanningFormPage() {
     if (problem) return;
     setBusy(true);
     try {
-      await axios.post(`${API}/strategic-planning-form/${token}`, { ...identity, answers });
+      const response = await axios.post(`${API}/strategic-planning-form/${token}`, { ...identity, answers });
+      setData(current => ({ ...current, group_session_url: response.data.group_session_url }));
       setDone(true);
     } catch (ex) { setStepError(ex.response?.data?.detail || F.submitFailed); }
     setBusy(false);
@@ -105,6 +130,7 @@ export default function StrategicPlanningFormPage() {
           {section.questions.map((q) => (
             <div key={q.id} style={{ marginTop: "12px" }}>
               <label style={{ fontWeight: 600 }}>{q.prompt}{q.required ? " *" : ""}</label>
+              {q.help && <p className="guided-preflow-help">{q.help}</p>}
               {q.type === "multi" ? (
                 <div>{q.options.map((option) => (
                   <label key={option} style={{ display: "block" }}>
@@ -116,6 +142,7 @@ export default function StrategicPlanningFormPage() {
               ) : (
                 <textarea rows="4" style={{ width: "100%" }} value={answers[q.id] || ""} onChange={(e) => setAnswer(q.id, e.target.value)} data-testid={`sp-q-${q.id}`} />
               )}
+              {q.type !== "multi" && <SpeakButton value={answers[q.id] || ""} onChange={value => setAnswer(q.id, value)} />}
             </div>
           ))}
         </section>

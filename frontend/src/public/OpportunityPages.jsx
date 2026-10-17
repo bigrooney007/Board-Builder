@@ -78,6 +78,8 @@ export const OpportunityApplyPage = () => {
               <p className="eyebrow">Nonprofit board opportunity</p>
               <h1 data-testid="public-org-name">{data.organization_name}</h1>
               <p className="apply-intro" data-testid="public-apply-intro">{(data.intro_sentences || []).join(" ")}</p>
+              {data.board_opportunity && <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", lineHeight: 1.6 }}>{data.board_opportunity}</pre>}
+              {!data.board_opportunity && <>{data.roles_sought && <p><strong>Board members sought:</strong> {data.roles_sought}</p>}{data.expectations && <p><strong>Expectations:</strong> {data.expectations}</p>}{data.location && <p><strong>Location / format:</strong> {data.location}</p>}</>}
             </header>
             {data.status === "Closed" ? (
               <div className="member-card" data-testid="applications-closed"><h2>Applications Closed</h2><p>{opportunityPagesText.thisRecruitmentCampaignIsNo}</p></div>

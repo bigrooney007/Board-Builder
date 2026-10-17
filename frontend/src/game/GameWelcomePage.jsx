@@ -90,7 +90,7 @@ export default function GameWelcomePage() {
               <p className="bfg-eyebrow">Payment confirmed</p>
               <h1 style={{ fontSize: "clamp(28px, 4.5vw, 42px)" }}>Welcome To Your Board Fundraising Game</h1>
               <p style={{ maxWidth: 560, margin: "14px auto 0" }}>
-                Your five original ideas are saved. Continue with your part of the game, share how you want to participate and review your organization's present fundraising before inviting your board.
+                Your five original ideas are saved. Confirm your next Board meeting and fundraising deadline, review your present fundraising and resources, then share how you will personally participate before inviting your board.
               </p>
             </div>
             <GameVideo video={video} testId="bfg-welcome-video" />

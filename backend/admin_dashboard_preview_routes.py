@@ -1,5 +1,6 @@
 """Admin-only launchers and realistic test fixtures for the four customer product dashboards."""
 import hashlib
+from current_workflow_fixtures import WORKFLOWS, seed_current_workflow, workflow_fingerprint
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -30,11 +31,11 @@ PRODUCTS = {
 }
 
 FIXTURE_VERSION = "v4"
-FRESH_TEST_VERSION = "fresh-v1"
+FRESH_TEST_VERSION = "fresh-current-v2"
 RECRUITMENT_FIXTURE_VERSION = "v8"
-STRATEGIC_FIXTURE_VERSION = "v7"
+STRATEGIC_FIXTURE_VERSION = "current-15-v1"
 RECOMMITMENT_FIXTURE_VERSION = "v9"
-FUNDRAISING_FIXTURE_VERSION = "v8"
+FUNDRAISING_FIXTURE_VERSION = "current-audience-6-v1"
 ORG_NAME = "BrightPath Youth Alliance"
 MISSION = (
     "BrightPath Youth Alliance helps young people ages 12 to 24 in underserved communities "
@@ -1213,7 +1214,10 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        answers = {"mission": MISSION, "goals": GOALS}
+        answers = {"mission": MISSION,
+                   "why_recommit": "BrightPath is entering a growth phase and needs every continuing Board Member to take a clear responsibility.",
+                   "board_help_accomplish": "Diversify revenue, build partnerships and strengthen accountability.",
+                   "need_by": "2026-11-01"} if product == "board-recommitment" else {"mission": MISSION, "goals": GOALS}
         if product == "strategic-planning":
             answers.update({
                 "objectives": (
@@ -2509,6 +2513,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
 
     async def seed_fresh_client_test(member: dict, product: str, config: dict) -> str:
         """Create only the state a real customer would have immediately after payment."""
+        if product in {"strategic-planning", "board-fundraising-game"}:
+            return await seed_current_workflow(db, member, product)
         now = now_iso()
         tag = suffix(member)
         if config.get("entitlements"):
@@ -2533,7 +2539,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             await db.funnel_leads.update_one(
                 {"lead_id": lead_id},
                 {"$set": {
-                    "lead_id": lead_id, "offer_source": "recruitment",
+                    "lead_id": lead_id, "result_token": assessment_token, "offer_source": "recruitment",
                     "name": "Rooney Akpesiri", "email": member["email"],
                     "organization": ORG_NAME, "desired_count": "3",
                     "answers": {"new_members_needed": "3", **recruitment_answers},
@@ -2570,7 +2576,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 }},
                 upsert=True,
             )
-            return f"/recruit/welcome?session_id={session_id}"
+            return f"/purchase/success?session_id={session_id}"
 
         if product == "board-fundraising-game":
             await db.game_profiles.update_one(
@@ -2588,6 +2594,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                         "job_title": "Founder and Executive Director",
                     },
                     "profile_completed": True, "situation_completed": False,
+                    "welcome_email_sent": True,
                     "internal_preview": True, "updated_at": now,
                 }, "$setOnInsert": {"created_at": now}},
                 upsert=True,
@@ -2672,18 +2679,51 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                     "involvement": "", "current_question": 5, "completed": False,
                     "internal_preview": True, "created_at": now, "updated_at": now,
                 }}, upsert=True)
-            return "/game/welcome"
+            session_id = f"admin-fresh-game-session-{tag}"
+            await db.payment_transactions.update_one(
+                {"session_id": session_id}, {"$set": {
+                    "session_id": session_id, "user_id": member["user_id"],
+                    "offer_source": "board_fundraising_game", "purchase_source": "board_fundraising_game_497",
+                    "status": "completed", "payment_status": "paid", "claimed_by_user_id": member["user_id"],
+                    "amount": 0, "currency": "usd",
+                    "internal_preview": True, "created_at": now, "updated_at": now,
+                }}, upsert=True)
+            return f"/purchase/success?session_id={session_id}"
 
         session_id = f"admin_fresh_{product.replace('-', '_')}_{tag}"
         lead_token = f"admin-fresh-{product}-{tag}"
         offer_source = "strategic_planning" if product == "strategic-planning" else "board_recommitment"
+        prepayment_answers = ({
+            "mission": MISSION,
+            "goals": "Help more young people move into education and meaningful employment while strengthening our board's leadership.",
+            "objectives": "Increase program reach, broaden funding sources and agree named owners for the next phase.",
+            "program_details": [
+                {"name": "Youth Employment", "description": "Connect young people to mentors, training and employers.",
+                 "present_work": "We currently run workshops and work with employers through warm relationships."},
+                {"name": "Board Leadership", "description": "Build the board's capacity to guide and sustain the organization.",
+                 "present_work": "Our founder currently carries much of the strategy and partner development."},
+            ],
+            "team_building": "A founder, small staff team, five board members and several volunteers carry the present work. We need clearer leadership ownership.",
+            "technology": "We use a shared spreadsheet and email. We need a better relationship and program outcomes system.",
+            "marketing": "Most people find us through community introductions. We want to share participant outcomes more consistently.",
+            "partnerships": "Schools and local employers help us now. We want stronger long-term employer and community partnerships.",
+            "fundraising": "We rely mostly on grants and events and want a more reliable individual donor and business pipeline.",
+            "budget": "Our current annual operating budget is about $650,000. We need to fund growth and fundraising capacity.",
+            "action_planning": "In the next few months we want to agree board roles and a funding plan. In the next few years we want a larger, sustainable program.",
+        } if product == "strategic-planning" else {
+            "mission": MISSION,
+            "why_recommit": "Only two of five board members participate consistently. We need every person to say honestly what they can carry now.",
+            "board_help_accomplish": "Strengthen fundraising, connect with employers and share responsibility for the next phase of growth.",
+            "need_by": "2026-10-15",
+        })
         await db.guided_product_leads.update_one(
             {"token": lead_token},
             {"$set": {
                 "token": lead_token, "product": product,
                 "name": "Rooney Akpesiri", "email": member["email"],
                 "organization": ORG_NAME, "board_count": 5,
-                "internal_preview": True, "followup_status": "converted",
+                "internal_preview": True, "followup_status": "converted", "prepayment_answers": prepayment_answers,
+                "prepayment_complete": True,
                 "created_at": now, "updated_at": now,
             }},
             upsert=True,
@@ -2700,7 +2740,26 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             }},
             upsert=True,
         )
-        return f"/{product}/welcome?session_id={session_id}"
+        return f"/purchase/success?session_id={session_id}"
+
+    @router.get("/manifest")
+    async def workflow_manifest(request: Request):
+        await authenticate_admin(request, db)
+        import strategic_questionnaire as planning
+        import fundraising_audiences as fundraising
+        return {"workflows": WORKFLOWS, "build_identifiers": {product:workflow_fingerprint(product) for product in PRODUCTS}, "planning_questions": planning.QUESTIONS, "fundraising": fundraising.configuration(),
+                "test_delivery": "captured", "routes": PRODUCTS}
+
+    @router.post("/intro/{product}")
+    async def launch_intro_test(product: str, request: Request, response: Response):
+        admin = await authenticate_admin(request, db)
+        if product not in {"strategic-planning", "board-fundraising-game"}: raise HTTPException(404, "Use Start Fresh Client Test for this product")
+        ident = hashlib.sha256(f"{admin['user_id']}:{product}:{now_iso()}".encode()).hexdigest()[:12]
+        member = await preview_member(admin, f"{product}-intro-{ident}")
+        await db.members.update_one({"user_id": member["user_id"]}, {"$set": {"internal_client_test": True, "client_test_product": product, "account_status": "guided_guest"}})
+        url = await seed_current_workflow(db, member, product, intro=True)
+        token = create_member_token(member["user_id"], member["email"]); set_member_cookie(response, token)
+        return {"start_url": url, "token": token, "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product)}
 
     @router.post("/fresh/{product}")
     async def launch_fresh_client_test(product: str, request: Request, response: Response):
@@ -2718,17 +2777,20 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
                 "internal_client_test": True,
                 "client_test_product": product,
                 "client_test_started_at": now_iso(),
+                "account_status": "guided_guest",
             }},
         )
         member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})
         start_url = await seed_fresh_client_test(member, product, config)
-        set_member_cookie(response, create_member_token(member["user_id"], member["email"]))
+        member_token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, member_token)
         return {
             "dashboard_url": start_url,
             "start_url": start_url,
             "product": product,
-            "mode": "fresh",
+            "mode": "fresh", "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product),
             "test_member_email": member["email"],
+            "token": member_token,
         }
 
     @router.post("/{product}")
@@ -2744,6 +2806,7 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             else FUNDRAISING_FIXTURE_VERSION if product == "board-fundraising-game"
             else FIXTURE_VERSION
         )
+        fixture_version += "-" + workflow_fingerprint(product)
         # Keep every product preview in its own isolated member identity. Two products may
         # legitimately share the same fixture version number, but they must never share
         # preview-member state, entitlements or downstream records.
@@ -2757,7 +2820,9 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             member = await db.members.find_one({"user_id": member["user_id"]}, {"_id": 0})
 
         dashboard_url = config["dashboard_path"]
-        if product == "recruitment":
+        if product in {"strategic-planning", "board-fundraising-game"}:
+            dashboard_url = await seed_current_workflow(db, member, product, preloaded=True)
+        elif product == "recruitment":
             await seed_recruitment_preview(member)
         elif product == "board-fundraising-game":
             await seed_fundraising_preview(member)
@@ -2765,7 +2830,8 @@ def create_admin_dashboard_preview_router(db) -> APIRouter:
             session_id = await seed_guided_product(member, product, config)
             dashboard_url = f"{dashboard_url}?session_id={session_id}"
 
-        set_member_cookie(response, create_member_token(member["user_id"], member["email"]))
-        return {"dashboard_url": dashboard_url, "product": product}
+        member_token = create_member_token(member["user_id"], member["email"])
+        set_member_cookie(response, member_token)
+        return {"dashboard_url": dashboard_url, "product": product, "token": member_token, "workflow_version": WORKFLOWS[product], "build_identifier": workflow_fingerprint(product)}
 
     return router

@@ -1,3 +1,4 @@
+import { storeMemberToken } from "@/member/api";
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { enterOperatorMode } from "@/operatorMode";
@@ -46,6 +47,9 @@ export const ClientDeliverySection = () => {
     setMessage("");
     try {
       const r = await client.post("/admin/board-fix/preview-access");
+      storeMemberToken(r.data.token);
+      sessionStorage.setItem("adminClientTest", "1");
+      sessionStorage.setItem("adminClientTestVersion", r.data.workflow_version);
       window.location.href = r.data.intake_url;
     } catch (e) { setMessage(err(e)); }
   };
@@ -54,6 +58,9 @@ export const ClientDeliverySection = () => {
     setMessage("");
     try {
       const r = await client.post("/admin/board-fix/activation-preview-access");
+      storeMemberToken(r.data.token);
+      sessionStorage.setItem("adminClientTest", "1");
+      sessionStorage.setItem("adminClientTestVersion", r.data.workflow_version);
       window.location.href = r.data.intake_url;
     } catch (e) { setMessage(err(e)); }
   };
@@ -94,8 +101,7 @@ export const ClientDeliverySection = () => {
         <button className="button button-small" onClick={testCompleteTransformation} data-testid="test-journey-complete-transformation">Test Complete Board Transformation</button>
         <button className="button button-small" onClick={testFundraisingActivation} data-testid="test-journey-fundraising-activation">Test Fundraising Activation</button>
       </div>
-      <p className="admin-message">The Complete Board Transformation test automatically provisions your member identity from this admin login (same email and password — no separate account to create), grants the normal Complete customer entitlement, logs you in as a member, and opens the real customer intake at /board-fix-intake. No Stripe payment is created and it is excluded from revenue and customer reporting. Your previous test progress is never erased.</p>
-      <p className="admin-message" data-testid="test-activation-explainer">The Fundraising Activation test grants your member identity ONLY the Fundraising Activation entitlement (temporarily replacing other test entitlements so you see exactly what a $497 customer sees), logs you in as a member, and opens the real customer intake at /board-activation-intake. No Stripe payment is created. Run the Complete Board Transformation test again any time to restore that access.</p>
+      <p className="admin-message">These tests open the actual customer intake using a separate synthetic member identity. No customer account or administrator password is changed. Test entitlements replace the payment step, and outbound emails are captured.</p>
       <h2 className="reference-heading" style={{ marginTop: "28px" }} data-testid="activation-delivery-settings-heading">Email-Led Activation Settings</h2>
       <p className="admin-message">How many days BEFORE a Fundraising Activation client's Board meeting should the readiness check run? When it runs and responses are still outstanding, the client is emailed and asked whether to proceed with the responses received so far. Leave the field empty to keep this check off (the separate 3-day outstanding-response reminder always runs).</p>
       <div className="admin-filters" style={{ alignItems: "center" }}>

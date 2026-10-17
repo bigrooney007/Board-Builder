@@ -7,13 +7,16 @@ import { memberApi } from "@/member/api";
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const mockNavigate = jest.fn();
 const mockMember = { email: "founder@example.org" };
-jest.mock("react-router-dom", () => ({ useNavigate: () => mockNavigate }), { virtual: true });
+jest.mock("react-router-dom", () => ({ useNavigate: () => mockNavigate,
+  Link: ({ to, children, ...props }) => <a href={to} {...props}>{children}</a> }), { virtual: true });
 jest.mock("@/member/MemberAuthContext", () => ({ useMemberAuth: () => ({ member: mockMember, loading: false }) }), { virtual: true });
 jest.mock("@/member/api", () => ({ memberApi: { get: jest.fn(), put: jest.fn() } }), { virtual: true });
 jest.mock("./gameShared", () => ({
   BfgShell: ({ children }) => <div>{children}</div>,
   money: (value) => `$${Number(value).toLocaleString("en-US")}`,
 }));
+jest.mock("./useGuidedNarration", () => ({ useGuidedNarration: () => ({ muted: false, toggle: jest.fn(), stop: jest.fn() }) }));
+jest.mock("./SpeakButton", () => ({ SpeakButton: () => null }));
 
 test("saves five original answers in sequence and opens upgrade with no review or AI step", async () => {
   window.scrollTo = jest.fn();
@@ -24,6 +27,9 @@ test("saves five original answers in sequence and opens upgrade with no review o
   try {
     await act(async () => root.render(<GameFreeQuestionsPage />));
     expect(node.textContent).toContain("$250,000");
+    expect(node.querySelector('[data-testid="bfg-free-welcome"]')).toBeTruthy();
+    expect(node.querySelector('[data-testid="bfg-free-question"]')).toBeNull();
+    await act(async () => node.querySelector('[data-testid="bfg-free-start"]').click());
     for (let index = 0; index < 5; index += 1) {
       expect(node.querySelector('[data-testid="bfg-free-question"]').textContent)
         .toBe(fiveQuestionText(index, answers[0]));
@@ -38,7 +44,18 @@ test("saves five original answers in sequence and opens upgrade with no review o
 });
 
 test("foundation and company answers receive a natural second question", () => {
+  expect(FIVE_QUESTIONS[0].title).toContain("why do you think they would give");
   expect(fiveQuestionText(1, "local foundations")).toContain("Where do they spend their time");
   expect(fiveQuestionText(1, "local foundations")).toContain("funders you just identified");
   expect(fiveQuestionText(1, "small businesses")).toContain("organizations you just identified");
+});
+
+test("an unavailable saved journey offers a direct return to its opening form", async () => {
+  memberApi.get.mockRejectedValueOnce(new Error("Saved journey unavailable"));
+  const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);
+  try {
+    await act(async () => root.render(<GameFreeQuestionsPage />));
+    expect(node.querySelector('a[href="/board-fundraising/start"]').textContent).toBe("RETURN TO THE OPENING FORM");
+    expect(node.querySelector("textarea")).toBeNull();
+  } finally { await act(async () => root.unmount()); node.remove(); }
 });

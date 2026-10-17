@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowRight, CheckCircle2, Map, RefreshCw } from "lucide-react";
 import { BfgShell } from "@/game/gameShared";
@@ -13,17 +13,25 @@ import "@/game/game.css";
 import BoardRecommitmentDashboard from "@/member/BoardRecommitmentDashboard";
 import StrategicPlanningDashboard from "@/funnels/StrategicPlanningDashboard";
 import "./guided-products.css";
-import { useLandingPageMeta } from "@/seo";
+import { useLandingPageMeta, usePageMeta } from "@/seo";
+import PublicStartLayout from "./PublicStartLayout";
+import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "./publicStartRoutes";
+import GuidedPrepaymentQuestionsPage from "./GuidedPrepaymentQuestionsPage";
+import { OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
+import OfferTextRoadmap from "./OfferTextRoadmap";
 
 const API=`${process.env.REACT_APP_BACKEND_URL}/api`;
 export const GUIDED_PRODUCT_CONFIG={
   "strategic-planning":{
     eyebrow:"STRATEGIC PLANNING WITH YOUR BOARD", icon:Map,
     headline:"Have Your Strategic Plan Reviewed And Adopted By Your Next Board Meeting.",
+    processHeading:"Turn Your Next Board Meetings Into The Beginning Of Real Delegation.",
+    deliverablesHeading:"A Guided Process You Can Actually Use With Your Board.",
+    finalHeading:"Ready To Build Your Strategic Plan With Your Board?",
     sub:"Build the roadmap with your board, create real ownership and begin delegating leadership responsibility for building the organization your mission needs.",
     promise:"Your responsibility, and your board's responsibility, is to create the roadmap and build the team that does the job. Strategic planning is how you create the roadmap.",
-    formTitle:"See The Exact Step-By-Step Process",
-    formText:"Enter your details and we will show you the exact process to build or review your next strategic plan with your board and get board members working with you to build the structures your organization needs.",
+    formTitle:"Let's Build From What You Know About Your Organization",
+    formText:"Enter your details, then tell us about your organization one area at a time. Your answers are saved and become the starting point for your board's plan.",
     videoTitle:"See How To Build And Adopt Your Strategic Plan With Your Board",
     videoSub:"Press Play And Watch The Short Video",
     payTitle:"Build The Roadmap. Give Your Board Ownership. Start Delegating Leadership.",
@@ -36,7 +44,6 @@ export const GUIDED_PRODUCT_CONFIG={
     supportedTitle:"Build Your Strategic Plan With Rooney",
     supportedDescription:"Rooney works with you and your Board to facilitate the planning process and carry it through adoption and delegation.",
     supportedFeatures:["Prepare the planning process with you","Facilitate the Strategic Planning session","Create the final Strategic Plan from the Board's decisions","Support adoption, delegation and Board leadership handoff"],
-    guarantee:"Complete the guided process. If the platform does not help your Board produce an adopted, usable Strategic Plan with clear next responsibilities, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Give The Board The Real Starting Information","Tell the platform about your mission, goals, objectives, programs, people, systems, fundraising, technology, budget and present reality."],
       ["2","Everyone Contributes Their Own Thinking","You and your Board Members complete the same Strategic Planning Form before the meeting so every person's original ideas are preserved."],
@@ -63,11 +70,14 @@ export const GUIDED_PRODUCT_CONFIG={
   },
   "board-recommitment":{
     eyebrow:"BOARD RECOMMITMENT", icon:RefreshCw,
-    headline:"Your Next Board Meeting Can Be The Meeting Where Passive Board Members Step Up Or Step Down Gracefully.",
-    sub:"Give disengaged or inactive board members a structured opportunity to recommit, clarify how they can contribute and have the one-on-one conversation needed to move forward.",
+    headline:"Get Your Board Members Recommitted In The Next Seven Days.",
+    processHeading:"Give Every Board Member A Clear Choice About How They Move Forward.",
+    deliverablesHeading:"A Guided Process You Can Actually Use With Your Board.",
+    finalHeading:"Ready To Start Your Board Recommitment Process?",
+    sub:"Give each board member a clear opportunity to recommit, identify how they can contribute and move the right people into action over the next seven days.",
     promise:"Stop guessing who is still committed. Give every board member the opportunity to tell you where they stand, then have the right conversation from there.",
     formTitle:"Start Your Board Recommitment Process",
-    formText:"Tell us who you are and how many board members you need to recommit. We will show you the guided process for getting clear answers and moving each person forward.",
+    formText:"Tell us who you are and how many board members you need to recommit. Then answer four questions so we can prepare the right process for your organization.",
     videoTitle:"See How To Recommit Your Board Members",
     videoSub:"Press Play And Watch The Short Video",
     payTitle:"Get Clear Answers. Have The Right Conversation. Rebuild An Active Board.",
@@ -80,7 +90,6 @@ export const GUIDED_PRODUCT_CONFIG={
     supportedTitle:"Recommit Your Board With Rooney",
     supportedDescription:"Rooney works directly with you to initiate the process, guide the conversations and help rebuild an active Board.",
     supportedFeatures:["Initiate the Board recommitment process with you","Work through each Board Member's response","Guide the one-on-one recommitment conversations","Help get active members working with you again"],
-    guarantee:"Complete the guided process. If the platform does not help you reach a clear, usable recommitment decision and next step for each participating Board Member, tell us and we will refund 100% of your purchase.",
     steps:[
       ["1","Send The Recommitment Form","Use the email and form we provide to invite each disengaged, inactive or passive board member to respond."],
       ["2","Let Them Tell You The Truth","They explain why they disengaged, whether they are ready to recommit, how they can contribute satisfactorily or whether they want to step down."],
@@ -99,29 +108,121 @@ const CONFIG=GUIDED_PRODUCT_CONFIG;
 const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); const content=useHomepageContent(p,CONFIG[p]); return [p,content]};
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
-export function GuidedLandingPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});const [busy,setBusy]=useState(false),[error,setError]=useState("");
+export function GuidedLandingPage({ product: explicitProduct }) {
+ const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();
+ const startPath=PUBLIC_START_ROUTES[product];
  useLandingPageMeta(`/${product}`);
- const start=async()=>{if(!form.name||!form.email||!form.organization||!form.board_count){setError("Complete your name, email, organization and number of board members.");return}setBusy(true);setError("");try{const auth=await memberApi.post("/members/guided-free-start",{name:form.name,email:form.email});if(auth.data.token)storeMemberToken(auth.data.token);let r=await axios.post(`${API}/guided/lead`,{product,...form,board_count:Number(form.board_count),origin_url:window.location.origin});trackPlatformEvent(product,"contact_entered");nav(`/${product}/video?token=${r.data.token}`)}catch{setError("We could not start this process. Please check your details and try again.")}setBusy(false)};
- const scrollToForm=()=>document.getElementById(`${product}-lead-form`)?.scrollIntoView({behavior:"smooth",block:"start"});
- return <BfgShell><main className="guided-page">
-  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><button className="bfg-btn bfg-btn-primary guided-hero-cta" onClick={scrollToForm}>START MY PROCESS <ArrowRight size={17}/></button></section>
+ useEffect(()=>{if(window.location.hash===`#${product}-lead-form`)nav(startPath,{replace:true})},[product,startPath,nav]);
+ return <BfgShell><main className="guided-page" data-testid={`${product}-landing-page`}>
+  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
   <section className="guided-principle"><h2>{c.promise}</h2></section>
-  <section id={`${product}-lead-form`} className="guided-lead-section"><div className="guided-form-card"><h2>{c.formTitle}</h2><p>{c.formText}</p><input placeholder="Your Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><input type="email" placeholder="Email Address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/><input placeholder="Organization Name" value={form.organization} onChange={e=>setForm({...form,organization:e.target.value})}/><input inputMode="numeric" placeholder={product==="strategic-planning"?"How many board members do you have?":"How many board members do you need to recommit?"} value={form.board_count} onChange={e=>setForm({...form,board_count:e.target.value.replace(/\D/g,"")})}/>{error&&<p className="bfg-error">{error}</p>}<button className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy} onClick={start}>{busy?"OPENING…":"SHOW ME THE STEP-BY-STEP PROCESS"}</button></div></section>
-  <section className="guided-section"><p className="bfg-eyebrow">THE PROCESS</p><h2>{product==="strategic-planning"?"Turn Your Next Board Meetings Into The Beginning Of Real Delegation.":"Give Every Board Member A Clear Choice About How They Move Forward."}</h2><div className="guided-steps">{c.steps.map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p></article>)}</div></section>
-  <section className="guided-section guided-soft"><p className="bfg-eyebrow">WHAT YOU GET</p><h2>A Guided Process You Can Actually Use With Your Board.</h2><div className="guided-outcomes">{c.outcomes.map(x=><div key={x}>✓ {x}</div>)}</div></section>
+  <section className="guided-section"><p className="bfg-eyebrow">THE PROCESS</p><h2>{c.processHeading}</h2><div className="guided-steps">{c.steps.map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p></article>)}</div></section>
+  <section className="guided-section guided-soft"><p className="bfg-eyebrow">WHAT YOU GET</p><h2>{c.deliverablesHeading}</h2><div className="guided-outcomes">{c.outcomes.map(x=><div key={x}>✓ {x}</div>)}</div></section>
   <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={product}/>
-  <section className="guided-final-cta"><h2>{product==="strategic-planning"?"Ready To Build Your Strategic Plan With Your Board?":"Ready To Start Your Board Recommitment Process?"}</h2><button className="bfg-btn bfg-btn-primary guided-final-button" onClick={scrollToForm}>START MY PROCESS <ArrowRight size={17}/></button></section>
+  <section className="guided-final-cta"><h2>{c.finalHeading}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
  </main></BfgShell>
 }
-export function GuidedVideoPage({ product: explicitProduct }){
- const [product,c]=useProduct(explicitProduct);const q=new URLSearchParams(useLocation().search);const token=q.get("token")||"";const [busy,setBusy]=useState(""),[error,setError]=useState(""),[validToken,setValidToken]=useState(false);const video=usePlatformVideo(product==="strategic-planning"?"strategic_planning_demonstration":"board_recommitment_demonstration");
- useEffect(()=>{if(!token){setError("This link is missing its journey token.");return}axios.get(`${API}/guided/context/${token}`).then(r=>{if(r.data.product!==product)throw new Error("wrong flow");setValidToken(true)}).catch(()=>setError("This link belongs to a different product flow or is no longer valid."))},[token,product]);
- const buy=async(pathway)=>{setBusy(pathway);setError("");try{trackPlatformEvent(product,"checkout_started");let r=pathway==="supported"?await axios.post(`${API}/payments/supported-checkout`,{origin_url:window.location.origin,result_token:token,product}):await axios.post(`${API}/payments/guided-checkout`,{origin_url:window.location.origin,result_token:token,product});window.location.href=r.data.checkout_url}catch{setError("We could not open secure checkout. Please try again.");setBusy("")}};
- return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{maxWidth:1120}}><p className="bfg-eyebrow">{c.eyebrow}</p><h1>{c.videoTitle}</h1><h2>{c.videoSub}</h2><div className="guided-video"><TrackedYouTubeVideo video={video} flow={product} testId={`${product}-demonstration-video`} title={`${c.eyebrow} demonstration`}/></div><DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
- selfGuided={{title:c.selfGuidedTitle,description:"Use the complete platform with your Board and work through the process yourselves.",features:c.selfGuidedFeatures,guarantee:c.guarantee,button:product==="strategic-planning"?"START MY SELF-GUIDED PLANNING — $497":"START MY SELF-GUIDED RECOMMITMENT — $497"}}
- supported={{title:c.supportedTitle,description:c.supportedDescription,features:c.supportedFeatures,price:c.supportedPrice,button:`WORK WITH ROONEY — ${c.supportedPrice}`}}/>
- <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`}/></section></main></BfgShell>
+
+export function GuidedStartPage({ product }) {
+ const { search }=useLocation();
+ // Existing email and facilitator links still open their saved questions.
+ if(new URLSearchParams(search).get("token"))return <GuidedPrepaymentQuestionsPage product={product}/>;
+ return <GuidedLeadStartPage product={product}/>;
+}
+
+function GuidedLeadStartPage({ product: explicitProduct }) {
+ const [product,c]=useProduct(explicitProduct);const nav=useNavigate();
+ const [form,setForm]=useState({name:"",email:"",organization:"",board_count:""});
+ const [busy,setBusy]=useState(false),[error,setError]=useState("");
+ usePageMeta(`Start Your ${product==="strategic-planning"?"Strategic Planning":"Board Recommitment"} | Nonprofit Board Builder`,c.formText,true);
+ const start=async(event)=>{
+  event.preventDefault();
+  const details={name:form.name.trim(),email:form.email.trim(),organization:form.organization.trim(),board_count:Number(form.board_count)};
+  if(!details.name||!details.email||!details.organization||!Number.isInteger(details.board_count)||details.board_count<1||details.board_count>200){setError("Complete your name, email, organization and number of board members.");return}
+  setBusy(true);setError("");
+  try{
+   const auth=await memberApi.post("/members/guided-free-start",{name:details.name,email:details.email});
+   if(auth.data.token)storeMemberToken(auth.data.token);
+   const response=await axios.post(`${API}/guided/lead`,{product,...details,origin_url:window.location.origin});
+   localStorage.setItem(`guidedLead:${product}`,response.data.token);
+   trackPlatformEvent(product,"contact_entered");
+   window.scrollTo({top:0});
+   nav(`/${product}/start?token=${encodeURIComponent(response.data.token)}`);
+  }catch{setError("We could not start this process. Please check your details and try again.")}
+  setBusy(false);
+ };
+ return <PublicStartLayout className="guided-page" backTo={`/${product}`} backLabel={`Read about ${product==="strategic-planning"?"Strategic Planning":"Board Recommitment"}`} testId={`${product}-start-page`}>
+  <form className="guided-form-card public-start-card" onSubmit={start}>
+   <h1>{c.formTitle}</h1><p>{c.formText}</p>
+   <label>Your name<input required autoComplete="name" placeholder="Your name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
+   <label>Email address<input type="email" required autoComplete="email" placeholder="Your email address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
+   <label>Organization name<input required autoComplete="organization" placeholder="Your organization" value={form.organization} onChange={e=>setForm({...form,organization:e.target.value})}/></label>
+   <label>{product==="strategic-planning"?"How many board members do you have?":"How many board members do you need to recommit?"}<input type="number" min="1" max="200" required inputMode="numeric" placeholder="Number of board members" value={form.board_count} onChange={e=>setForm({...form,board_count:e.target.value.replace(/\D/g,"")})}/></label>
+   <p className="guided-form-assurance">Your answers are saved as you go. The founder video and your options come after the questions.</p>
+   {error&&<p className="bfg-error" role="alert">{error}</p>}
+   <button type="submit" className="bfg-btn bfg-btn-primary guided-lead-submit" disabled={busy}>{busy?"OPENING…":"CONTINUE FOR FREE"}</button>
+  </form>
+ </PublicStartLayout>
+}
+export function GuidedVideoPage({ product: explicitProduct }) {
+  const [product, c] = useProduct(explicitProduct);
+  const nav = useNavigate();
+  const q = new URLSearchParams(useLocation().search);
+  const token = q.get("token") || localStorage.getItem(`guidedLead:${product}`) || "";
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const [validToken, setValidToken] = useState(false);
+  const copy = useHomepageContent(`offer-${product}`, OFFER_TEXT_DEFAULTS[`offer-${product}`]);
+
+  useEffect(() => {
+    if (!token) { setError("This link is missing its journey token."); return; }
+    axios.get(`${API}/guided/context/${token}`).then(({ data }) => {
+      if (data.product !== product) throw new Error("wrong flow");
+      if (!data.prepayment_complete) {
+        nav(`/${product}/start?token=${encodeURIComponent(token)}`, { replace: true });
+        return;
+      }
+      setValidToken(true);
+    }).catch(() => setError("This link belongs to a different product flow or is no longer valid."));
+  }, [token, product, nav]);
+
+  const buy = async (pathway) => {
+    setBusy(pathway);
+    setError("");
+    try {
+      trackPlatformEvent(product, "checkout_started");
+      const response = pathway === "supported"
+        ? await axios.post(`${API}/payments/supported-checkout`, { origin_url: window.location.origin, result_token: token, product })
+        : await axios.post(`${API}/payments/guided-checkout`, { origin_url: window.location.origin, result_token: token, product });
+      window.location.href = response.data.checkout_url;
+    } catch {
+      setError("We could not open secure checkout. Please try again.");
+      setBusy("");
+    }
+  };
+
+  return <BfgShell><main className="guided-page"><section className="guided-video-page" style={{ maxWidth: 1120, textAlign: "center" }}>
+    <p className="bfg-eyebrow">{copy.eyebrow}</p>
+    <h1>{copy.heading}</h1>
+    <OfferTextRoadmap copy={copy} />
+    <DemoOfferCards product={product} busy={busy} disabled={!validToken} onBuy={buy} error={error}
+      intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
+      selfGuided={{
+        title: copy.selfGuidedTitle || c.selfGuidedTitle,
+        description: copy.selfGuidedDescription || "Use the complete platform with your Board and work through the process yourselves.",
+        features: copy.selfGuidedFeatures || c.selfGuidedFeatures,
+        button: product === "strategic-planning" ? "START MY SELF-GUIDED PLANNING — $497" : "START MY SELF-GUIDED RECOMMITMENT — $497"
+      }}
+      supported={{
+        title: copy.supportedTitle || c.supportedTitle,
+        description: copy.supportedDescription || c.supportedDescription,
+        features: copy.supportedFeatures || c.supportedFeatures,
+        price: c.supportedPrice,
+        button: `WORK WITH ROONEY — ${c.supportedPrice}`
+      }}
+    />
+    <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={`${product}-demo`} />
+  </section></main></BfgShell>;
 }
 
 export function GuidedPaymentConfirmedPage({ product: explicitProduct }){

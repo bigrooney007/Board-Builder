@@ -1,0 +1,97 @@
+/* Free entry and checkout screens. Paid dashboard pages keep their existing layout. */
+.bfg .guided-flow {
+  width: min(100%, 870px);
+  margin: 0 auto;
+  padding: clamp(34px, 6vw, 76px) 20px 96px;
+  color: #111827;
+}
+.bfg .guided-flow p { color: #334155; }
+.bfg .guided-welcome,
+.bfg .guided-question,
+.bfg .guided-upgrade,
+.bfg .guided-recruit-upgrade {
+  position: relative;
+  margin: 0 auto;
+  border: 1px solid #dbe1eb;
+  border-radius: 28px;
+  background: #fff;
+  padding: clamp(28px, 5.6vw, 60px);
+  box-shadow: 0 22px 64px rgba(15, 23, 42, .075);
+}
+.bfg .guided-welcome,
+.bfg .guided-upgrade,
+.bfg .guided-recruit-upgrade { text-align: center; }
+.bfg .guided-welcome h1,
+.bfg .guided-upgrade h1,
+.bfg .guided-recruit-upgrade h1 {
+  margin: 8px auto 0;
+  max-width: 730px;
+  color: #111827;
+  font-size: clamp(34px, 5.1vw, 54px);
+  line-height: 1.11;
+}
+.bfg .guided-kicker,
+.bfg .guided-question-top {
+  color: #3730a3 !important;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.bfg .guided-audio-position { display: flex; justify-content: flex-end; margin: -22px -20px 4px 0; }
+.bfg .guided-audio-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: #f8fafc;
+  color: #312e81;
+  cursor: pointer;
+}
+.bfg .guided-audio-button:hover,
+.bfg .guided-audio-button:focus-visible { border-color: #4f46e5; outline-offset: 2px; }
+.bfg .guided-goal {
+  max-width: 530px;
+  margin: 30px auto 26px;
+  padding: 23px 18px 25px;
+  border: 1px solid #a7f3d0;
+  border-radius: 22px;
+  background: #ecfdf5;
+}
+.bfg .guided-goal span,
+.bfg .guided-goal strong { display: block; }
+.bfg .guided-goal span { color: #065f46; font-size: 14px; font-weight: 800; letter-spacing: .1em; }
+.bfg .guided-goal strong { margin-top: 4px; color: #047857; font: 800 clamp(40px, 7vw, 68px)/1.12 "Outfit", sans-serif; }
+.bfg .guided-lead { max-width: 650px; margin: 0 auto; font-size: clamp(19px, 2.3vw, 22px); font-weight: 650; line-height: 1.5; }
+.bfg .guided-instruction { max-width: 630px; margin: 18px auto 0; font-size: 17px; line-height: 1.65; }
+.bfg .guided-action { margin: 28px auto 0; min-height: 54px; max-width: 100%; white-space: normal; }
+.bfg .guided-question { max-width: 780px; }
+.bfg .guided-question-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bfg .guided-question h1 { margin: 42px auto 28px; max-width: 700px; text-align: center; font-size: clamp(27px, 3.8vw, 39px); line-height: 1.26; color: #111827; }
+.bfg .guided-answer-label { display: block; font-size: 16px; color: #111827; font-weight: 700; margin-bottom: 8px; }
+.bfg .guided-question textarea { width: 100%; min-height: 190px; resize: vertical; padding: 18px; border: 1.5px solid #b9c3d3; border-radius: 16px; color: #111827; background: #fff; font: 17px/1.55 "Inter", sans-serif; }
+.bfg .guided-question textarea:focus-visible { border-color: #4f46e5; outline: 3px solid #ddd6fe; }
+.bfg .guided-process-summary { margin: 0 auto 24px; padding: 18px 22px; border: 1px solid #c7d2fe; border-radius: 16px; background: #f8faff; color: #111827; }
+.bfg .guided-process-summary strong { color: #312e81; font-size: 16px; }
+.bfg .guided-process-summary p { margin: 8px 0 0; color: #334155; line-height: 1.55; white-space: pre-wrap; }
+.bfg .guided-question .bfg-btn-ghost { color: #312e81; border-color: #b8b9d9; }
+.bfg .guided-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
+.bfg .guided-loading { padding: 60px 0; text-align: center; }
+.bfg .guided-video { max-width: 740px; margin: 28px auto 20px; }
+.bfg .guided-video .bfg-video-frame { border-radius: 18px; background: #eef2ff; box-shadow: 0 16px 38px rgba(15,23,42,.12); }
+.bfg .guided-video .bfg-video-placeholder p { color: #312e81; padding: 18px; font-size: 19px; }
+.bfg .guided-upgrade-copy { max-width: 650px; margin: 20px auto 0; font-size: 18px; line-height: 1.65; }
+.bfg .guided-upgrade-next { max-width: 650px; margin: 24px auto 0; padding-top: 22px; border-top: 1px solid #e2e8f0; font-size: 17px; line-height: 1.65; }
+.bfg .guided-upgrade .bfg-btn-primary,
+.bfg .guided-recruit-upgrade .bfg-btn-primary { color: #fff; font-size: 17px; }
+.bfg .guided-price-note { margin: 12px auto 0; font-size: 15px; color: #475569 !important; }
+.bfg .guided-recruit-upgrade .guided-outcomes { margin: 24px auto; max-width: 670px; padding: 20px 24px; border-radius: 18px; background: #f8fafc; text-align: left; }
+.bfg .guided-recruit-upgrade .guided-outcomes p { margin: 0; font-size: 17px; }
+.bfg .guided-recruit-upgrade .guided-outcomes p + p { margin-top: 10px; }
+@media (max-width: 560px) {
+  .bfg .guided-welcome, .bfg .guided-question, .bfg .guided-upgrade, .bfg .guided-recruit-upgrade { padding: 26px 20px 34px; border-radius: 20px; }
+  .bfg .guided-audio-position { margin: 0 0 10px; }
+  .bfg .guided-question h1 { margin: 32px 0 24px; }
+  .bfg .guided-actions .bfg-btn { flex: 1; }
+}

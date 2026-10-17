@@ -1,0 +1,147 @@
+.fundraising-article {
+  --fa-ink: #171b36; --fa-muted: #535a70; --fa-purple: #4f46d6; --fa-paper: #faf9f6;
+  color: var(--fa-ink); background: var(--fa-paper); font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh; text-align: left; line-height: 1.65; -webkit-font-smoothing: antialiased;
+}
+.fundraising-article *, .fundraising-article *::before, .fundraising-article *::after { box-sizing: border-box; }
+.fundraising-article h1, .fundraising-article h2, .fundraising-article p { margin: 0; }
+.fundraising-article a { color: inherit; text-decoration: none; }
+.fundraising-article a:focus-visible { outline: 3px solid #9e95ff; outline-offset: 6px; }
+.fa-masthead, .fundraising-article main, .fa-footer { max-width: 1200px; margin: 0 auto; padding-left: 48px; padding-right: 48px; }
+.fa-masthead { display: flex; justify-content: space-between; align-items: center; min-height: 112px; border-bottom: 1px solid #e0dfdf; }
+.fa-brand { display: flex; align-items: center; gap: 13px; font-weight: 800; font-size: 18px; line-height: 1.18; letter-spacing: -.5px; }
+.fa-brand-mark { width: 30px; height: 36px; display: flex; gap: 4px; align-items: flex-end; }
+.fa-brand-mark i { display: block; width: 13px; height: 28px; background: var(--fa-purple); border-radius: 3px; transform: skewY(-15deg); }
+.fa-brand-mark i:last-child { height: 36px; background: #8278eb; }
+.fa-masthead nav { display: flex; align-items: center; gap: 30px; font-size: 14px; font-weight: 650; }
+.fa-all-articles:hover, .fa-read-link:hover, .fa-contents a:hover { color: var(--fa-purple); }
+.fa-nav-start { padding: 12px 17px; border: 1px solid #c9c5de; border-radius: 7px; background: #fff; }
+.fa-nav-start:hover { border-color: var(--fa-purple); }
+.fa-nav-start span { padding-left: 10px; }
+.fa-kicker { color: var(--fa-purple); font-size: 11px; letter-spacing: 1.7px; text-transform: uppercase; font-weight: 750; }
+.fa-hero { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(270px, 1fr); gap: 60px; align-items: center; padding: 72px 0 64px; }
+.fa-hero-copy > .fa-kicker span { margin: 0 9px; color: #a2a0b3; }
+.fa-hero h1 { font-size: clamp(38px, 4.25vw, 57px); line-height: 1.12; letter-spacing: -2.5px; font-weight: 800; margin: 21px 0 23px; }
+.fa-hero h1 span { color: var(--fa-purple); }
+.fa-deck { font-size: 18px; line-height: 1.65; color: var(--fa-muted); max-width: 580px; }
+.fa-byline { margin: 26px 0 23px; display: flex; gap: 12px; align-items: center; }
+.fa-author-initials { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: var(--fa-purple); background: #ece9fa; font-weight: 750; font-size: 13px; }
+.fa-byline p { font-size: 13px; font-weight: 700; }
+.fa-byline div > span { font-size: 12px; color: var(--fa-muted); }
+.fa-read-link { font-size: 13px; font-weight: 700; border-bottom: 1px solid #b9b3d6; padding-bottom: 4px; }
+.fa-read-link span { padding-left: 18px; }
+.fa-visual { background: #1c2145; color: #fff; border-radius: 14px; padding: 28px; position: relative; box-shadow: 0 18px 40px #1c21451a; border: 1px solid #35395b; }
+.fa-visual::before { content: ""; position: absolute; inset: 9px -9px -9px 9px; border: 1px solid #d5d0ee; border-radius: 14px; pointer-events: none; z-index: 0; }
+.fa-visual > * { position: relative; z-index: 1; }
+.fa-visual-top { display: flex; align-items: center; gap: 8px; color: #b9b4f7; font-size: 11px; font-weight: 600; }
+.fa-visual-dot { width: 6px; height: 6px; border-radius: 50%; background: #bcb6ff; }
+.fa-visual h2 { font-size: 25px; letter-spacing: -.8px; line-height: 1.25; margin-top: 19px; max-width: 270px; }
+.fa-visual ol { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 14px; }
+.fa-visual li { display: flex; gap: 12px; align-items: center; font-size: 13px; line-height: 1.5; padding: 13px 12px; background: #ffffff08; border: 1px solid #ffffff1a; border-radius: 7px; }
+.fa-visual-number { color: #c0baff; font-size: 11px; font-weight: 750; }
+.fa-visual-bottom { padding-top: 16px; border-top: 1px solid #ffffff20; font-size: 11px; color: #d7d6e9; }
+.fa-visual-bottom span { color: #c0baff; margin-right: 6px; }
+.fa-reading-layout { display: grid; grid-template-columns: 220px minmax(0, 720px); justify-content: space-between; gap: 48px; padding: 54px 0 0; border-top: 1px solid #dfdde3; scroll-margin-top: 25px; }
+.fa-contents { align-self: start; position: sticky; top: 35px; padding-top: 7px; }
+.fa-contents ol { list-style: none; padding: 0; margin: 20px 0 30px; }
+.fa-contents li { margin-bottom: 17px; font-size: 13px; line-height: 1.5; }
+.fa-contents a { display: flex; gap: 11px; align-items: baseline; }
+.fa-contents a span { font-size: 10px; color: #8c86ae; font-weight: 700; }
+.fa-open-note { font-size: 11px; color: var(--fa-muted); border-top: 1px solid #dfdde3; padding-top: 19px; line-height: 1.75; }
+.fa-body { min-width: 0; }
+.fa-body p { font-size: 17px; line-height: 1.85; margin-bottom: 21px; color: #3a4154; }
+.fa-intro > p:first-child { color: var(--fa-ink); font-size: 21px; line-height: 1.7; font-weight: 500; }
+.fa-takeaway { margin: 32px 0 40px; padding: 23px 25px; background: #eeecf8; border-left: 3px solid var(--fa-purple); border-radius: 0 8px 8px 0; }
+.fa-takeaway p { margin: 0; font-size: 18px; color: #373263; line-height: 1.65; font-weight: 600; }
+.fa-step { display: grid; grid-template-columns: 39px minmax(0, 1fr); gap: 15px; border-top: 1px solid #e0dfe4; padding: 35px 0 18px; scroll-margin-top: 30px; }
+.fa-step-number { color: var(--fa-purple); padding-top: 4px; font-weight: 750; font-size: 21px; letter-spacing: -1px; }
+.fa-step-copy > .fa-kicker { font-size: 10px; line-height: 1.5; color: var(--fa-purple); margin: 0 0 10px; font-weight: 750; }
+.fa-step h2 { font-size: 29px; line-height: 1.25; letter-spacing: -.9px; margin: 0 0 21px; font-weight: 750; }
+.fa-questions { counter-reset: fundraising-question; list-style: none; margin: 26px 0; padding: 0; }
+.fa-questions li { counter-increment: fundraising-question; display: flex; gap: 13px; align-items: baseline; font-size: 15px; padding: 12px 0; line-height: 1.65; border-bottom: 1px solid #e3e0ec; }
+.fa-questions li::before { content: counter(fundraising-question); color: var(--fa-purple); font-size: 11px; font-weight: 750; min-width: 12px; }
+.fa-start-panel { margin: 38px 0 55px; padding: 40px; background: #eeecf8; border: 1px solid #dad6ee; border-radius: 12px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 55px; align-items: center; }
+.fa-start-panel h2 { font-size: 32px; line-height: 1.2; letter-spacing: -1px; font-weight: 750; margin: 13px 0 16px; }
+.fa-start-panel > div > p:not(.fa-kicker) { font-size: 15px; line-height: 1.8; color: var(--fa-muted); }
+.fa-start-button { display: flex; justify-content: space-between; gap: 25px; align-items: center; padding: 18px 22px; background: var(--fa-purple); color: #fff !important; border-radius: 8px; font-size: 16px; font-weight: 650; line-height: 1.55; box-shadow: 0 5px 12px #4f46d61a; }
+.fa-start-button:hover { background: #3c35bb; }
+.fa-start-button span { font-size: 24px; }
+.fa-start-action .fa-offer-note { font-size: 11px; line-height: 1.8; color: #62627a; margin-top: 13px; }
+.fa-related { padding: 0 0 45px; }
+.fa-related > a { display: flex; justify-content: space-between; gap: 28px; max-width: 740px; margin-top: 12px; font-size: 19px; line-height: 1.5; font-weight: 650; }
+.fa-related > a:hover { color: var(--fa-purple); }
+.fa-related > a > span:last-child { font-size: 26px; }
+.fa-footer { min-height: 105px; display: flex; gap: 20px; justify-content: space-between; align-items: center; font-size: 11px; color: var(--fa-muted); border-top: 1px solid #dfdde3; }
+.fa-footer nav { display: flex; gap: 24px; }
+.fa-skip { position: absolute; top: 8px; left: -9999px; padding: 9px; z-index: 10; background: #fff; }
+.fa-skip:focus { left: 12px; }
+.fa-featured-guides { margin: 20px 0 38px; }
+.fa-featured-guides > p { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #4f46d6; font-weight: 750; }
+.fa-featured-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 16px; }
+.fa-featured-card { display: block; padding: 0 0 22px; border: 1px solid #dfdbea; border-radius: 12px; overflow: hidden; background: #fff; text-decoration: none; color: #171b36; }
+.fa-featured-card img { width: 100%; height: auto; aspect-ratio: 1200 / 630; display: block; }
+.fa-featured-card h2 { font-size: 21px; line-height: 1.35; margin: 19px 22px 12px; }
+.fa-featured-card p { font-size: 14px; line-height: 1.7; margin: 0 22px 13px; color: #535a70; }
+.fa-featured-card span { margin: 0 22px; color: #4f46d6; font-size: 13px; font-weight: 700; }
+.fa-featured-card:hover { border-color: #9389dd; }
+@media (max-width: 900px) {
+  .fa-masthead, .fundraising-article main, .fa-footer { padding-left: 30px; padding-right: 30px; }
+  .fa-hero { gap: 35px; grid-template-columns: 1.5fr 1fr; }
+  .fa-hero h1 { font-size: 42px; letter-spacing: -1.8px; }
+  .fa-visual { padding: 22px; }
+  .fa-visual h2 { font-size: 22px; }
+  .fa-reading-layout { grid-template-columns: 160px minmax(0, 1fr); gap: 30px; }
+  .fa-start-panel { padding: 30px; gap: 30px; }
+}
+@media (max-width: 640px) {
+  .fa-masthead, .fundraising-article main, .fa-footer { padding-left: 22px; padding-right: 22px; }
+  .fa-masthead { min-height: 87px; }
+  .fa-brand { font-size: 15px; gap: 9px; }
+  .fa-brand-mark { transform: scale(.8); transform-origin: left center; width: 25px; }
+  .fa-masthead nav { gap: 0; font-size: 11px; }
+  .fa-all-articles { display: none; }
+  .fa-nav-start { padding: 9px 10px; }
+  .fa-nav-start span { padding-left: 3px; }
+  .fa-hero { display: block; padding: 40px 0 36px; }
+  .fa-hero h1 { font-size: clamp(34px, 8.8vw, 46px); letter-spacing: -1.5px; margin: 18px 0; }
+  .fa-kicker { font-size: 9px; letter-spacing: 1.4px; }
+  .fa-deck { font-size: 16px; line-height: 1.7; }
+  .fa-byline { margin: 23px 0 20px; }
+  .fa-visual { margin-top: 31px; padding: 23px; }
+  .fa-visual h2 { font-size: 23px; max-width: none; }
+  .fa-visual ol { margin: 19px 0; gap: 9px; }
+  .fa-visual li { padding: 11px; }
+  .fa-reading-layout { display: block; padding-top: 29px; }
+  .fa-contents { position: static; padding: 0 0 22px; }
+  .fa-contents ol { display: flex; flex-wrap: wrap; gap: 9px 16px; margin: 13px 0 0; }
+  .fa-contents li { font-size: 11px; margin: 0; }
+  .fa-contents a { gap: 5px; }
+  .fa-open-note { border: 0; padding: 12px 0 0; font-size: 10px; }
+  .fa-open-note br { display: none; }
+  .fa-open-note br::after { content: " "; }
+  .fa-body p { font-size: 16px; line-height: 1.85; margin-bottom: 19px; }
+  .fa-intro > p:first-child { font-size: 19px; }
+  .fa-takeaway { margin: 26px 0 31px; padding: 19px; }
+  .fa-takeaway p { margin: 0; font-size: 17px; }
+  .fa-step { grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding-top: 28px; }
+  .fa-step-number { font-size: 18px; }
+  .fa-step h2 { font-size: 24px; letter-spacing: -.6px; }
+  .fa-step-copy > .fa-kicker { font-size: 9px; }
+  .fa-questions li { font-size: 14px; gap: 10px; }
+  .fa-start-panel { display: block; margin: 24px -3px 34px; padding: 24px; }
+  .fa-start-panel h2 { font-size: 27px; }
+  .fa-start-action { margin-top: 22px; }
+  .fa-start-button { padding: 16px; font-size: 15px; gap: 15px; }
+  .fa-related { padding-bottom: 30px; }
+  .fa-related > a { font-size: 16px; }
+  .fa-footer { flex-wrap: wrap; justify-content: flex-start; padding-top: 24px; padding-bottom: 24px; min-height: auto; font-size: 10px; }
+  .fa-featured-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  .fa-masthead nav, .fa-visual, .fa-contents, .fa-read-link, .fa-related, .fa-skip { display: none; }
+  .fa-hero, .fa-reading-layout, .fa-start-panel { display: block; }
+  .fundraising-article { background: #fff; }
+  .fa-hero { padding: 25px 0; }
+  .fa-body p { font-size: 12pt; }
+  .fa-step { break-inside: avoid; }
+}

@@ -5,6 +5,7 @@ import axios from "axios";
 import { BfgShell } from "@/game/gameShared";
 import { trackPlatformEvent } from "@/clean/platform";
 import DashboardAudioButton from "@/clean/DashboardAudioButton";
+import DashboardWalkthroughVideo from "@/clean/DashboardWalkthroughVideo";
 import "@/game/game.css";
 import "./guided-products.css";
 import "./strategic-planning-dashboard.css";
@@ -76,6 +77,7 @@ export default function StrategicPlanningDashboard(){
         axios.get(`${API}/guided/strategic-planning/session`,{params:{session_id:sid}}).catch(()=>({data:null})),
       ]);
       setCtx(workspace.data);
+      if(workspace.data.project?.questionnaire_version === "strategic-24-months-15") setOpen(current=>current==="1"?(workspace.data.project.planning_meeting?.meeting_date?"4":"2"):current);
       setSession(live.data);
       const savedMeeting=workspace.data.project?.planning_meeting||{};
       if(savedMeeting.meeting_date)setMeeting(savedMeeting);
@@ -115,10 +117,11 @@ export default function StrategicPlanningDashboard(){
   const boardResponses=boardPeople.filter(person=>person.status==="COMPLETED");
   const requiredOrg=["mission","goals","objectives","team_building","technology","marketing","partnerships","fundraising","budget","action_planning"];
   const programs=Array.isArray(answers.program_details)?answers.program_details.filter(x=>x?.name?.trim()):String(answers.programs||"").split("\n").filter(Boolean);
-  const organizationReady=Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
+  const currentQuestions=p.questionnaire_version === "strategic-24-months-15";
+  const organizationReady=currentQuestions || Boolean(p.organization_details_saved_at&&requiredOrg.every(key=>String(answers[key]||"").trim())&&programs.length);
   const meetingReady=Boolean(p.planning_meeting?.meeting_date&&p.planning_meeting?.start_time&&p.planning_meeting?.timezone_name);
   const formReady=p.form?.status==="Approved";
-  const leadDone=lead?.status==="COMPLETED";
+  const leadDone=lead?.status==="COMPLETED" || (p.facilitated && organizationReady);
   const guideReady=Boolean(p.meeting_guide_text);
   const sessionDone=session?.status==="COMPLETED";
   const finalStatus=p.final_plan?.status||"NONE";
@@ -166,9 +169,15 @@ export default function StrategicPlanningDashboard(){
     setBusy("");
   };
 
-  const saveMeeting=()=>act("meeting",()=>axios.put(`${API}/guided/strategic-planning/planning-meeting`,{session_id:sid,...meeting}));
+  const saveMeeting=()=>act("meeting",async()=>{
+    await axios.put(`${API}/guided/strategic-planning/planning-meeting`,{session_id:sid,...meeting});
+    setOpen("4");
+    window.location.hash="sp-board";
+  });
   const sendInvite=()=>act("invite",async()=>{
     await axios.post(`${API}/guided/strategic-planning/invite`,{session_id:sid,...invite});
+    const saved=await axios.post(`${API}/members/dashboard-return-link`,{product:"strategic-planning",session_id:sid}).catch(()=>null);
+    if(saved?.data?.sent)setMessage("Invitation sent. Your private dashboard link was emailed to you. Bookmark it for easy access.");
     setInvite({name:"",email:""});
   });
   const generateGuide=()=>act("guide",()=>axios.post(`${API}/guided/strategic-planning/facilitation-guide`,{session_id:sid}));
@@ -201,16 +210,19 @@ export default function StrategicPlanningDashboard(){
       <p>Start with what is true about the organization today. Let every person think independently. Bring those ideas into one Board conversation, make the decisions together, then turn the decisions into a Strategic Plan and confirmed execution roles.</p>
     </section>
 
+    <DashboardWalkthroughVideo flow="strategic-planning" />
+
     <div className="sp-dash-stack">
-      <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
+      {!currentQuestions && <Step n="1" title="TELL US ABOUT YOUR ORGANIZATION" summary="Capture the organization's present mission, goals, objectives, programs, people, tools, growth functions, budget and action planning." status={organizationReady?"Complete":"Start Here"} audioKey="organization" open={open==="1"} setOpen={v=>setOpen(v?"1":"")} testId="sp-organization">
         <div className="sp-clean-stage">
           <h2>Give The Board A Real Starting Point</h2>
           <p>The organization information is not treated as the final strategy. It gives everyone something real to test, question, protect and improve.</p>
           {p.logo_data_url&&<img src={p.logo_data_url} className="sp-dashboard-logo" alt="Organization logo"/>}
           <Button onClick={()=>navigate(`/strategic-planning/organization?session_id=${encodeURIComponent(sid)}`)}>{organizationReady?"REVIEW ORGANIZATION INFORMATION":"TELL US ABOUT YOUR ORGANIZATION"}</Button>
         </div>
-      </Step>
+      </Step>}
 
+      {currentQuestions && <section className="sp-clean-stage"><h2>Your contribution is saved</h2><p>You have completed the same 15 questions your board members will answer. Set your meeting details, then invite them to share their own ideas.</p>{p.logo_data_url&&<img src={p.logo_data_url} className="sp-dashboard-logo" alt="Organization logo"/>}<label>Organization logo (optional)<input type="file" accept="image/png,image/jpeg,image/webp" disabled={!!busy} onChange={e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>1800000){setMessage("Choose an image smaller than 1.8 MB.");return;}const reader=new FileReader();reader.onload=()=>act("branding",()=>axios.post(`${API}/guided/strategic-planning/branding`,{session_id:sid,logo_data_url:reader.result}));reader.readAsDataURL(file);}}/></label></section>}
       <Step n="2" title="SET YOUR NEXT STRATEGIC PLANNING MEETING" summary="Save the date, time and timezone for the Board session before the planning form goes out." status={!organizationReady?"Locked":meetingReady?"Scheduled":"Set Meeting"} locked={!organizationReady} audioKey="meeting" open={open==="2"} setOpen={v=>setOpen(v?"2":"")} testId="sp-meeting">
         <div className="sp-clean-stage">
           <h2>When Is Your Next Board Strategic Planning Meeting?</h2>
@@ -225,29 +237,33 @@ export default function StrategicPlanningDashboard(){
         </div>
       </Step>
 
-      <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
+      {!currentQuestions && <Step n="3" title="COMPLETE YOUR OWN STRATEGIC PLANNING FORM" summary="Critique the organization's starting ideas yourself before asking the rest of the Board to do the same." status={!meetingReady?"Locked":leadDone?"Complete":formReady?"Ready":"Preparing"} locked={!meetingReady} audioKey="founder-form" open={open==="3"} setOpen={v=>setOpen(v?"3":"")} testId="sp-founder-form">
         <div className="sp-clean-stage">
-          <h2>Your Thinking Belongs In The Same Pool As Everyone Else's</h2>
-          <p>You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer.</p>
-          {!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>}
-          {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> Your response is saved and will enter the live session with everyone else's ideas.</p>}
+          <h2>{p.facilitated ? "The Founder’s Starting Point" : "Your Thinking Belongs In The Same Pool As Everyone Else's"}</h2>
+          <p>{p.facilitated ? "The founder’s organization answers are saved as the starting context for every Board question. Board members will review that context and contribute their own ideas before the meeting." : "You complete the same Strategic Planning Form the Board will complete. Your ideas stay attributable to you during the session instead of becoming the assumed answer."}</p>
+          {!p.facilitated && (!formReady?<p className="workspace-note">Preparing your Strategic Planning Form from the organization information you supplied…</p>:leadLink?<Button href={leadLink}>{leadDone?"REVIEW / UPDATE MY STRATEGIC PLANNING FORM":"COMPLETE MY STRATEGIC PLANNING FORM"}</Button>:<p className="workspace-note">Preparing your personal form link…</p>)}
+          {leadDone&&<p className="member-success"><CheckCircle2 size={15}/> {p.facilitated ? "Founder context is ready for the Board’s review." : "Your response is saved and will enter the live session with everyone else's ideas."}</p>}
         </div>
-      </Step>
+      </Step>}
 
-      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the same Strategic Planning Form to each Board Member and see every completed response in one place." status={!leadDone?"Locked":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!leadDone} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
+      <Step n="4" title="INVITE YOUR BOARD AND COLLECT THEIR IDEAS" summary="Send the Strategic Planning Form to each Board Member and see every completed response in one place." status={!formReady?"Preparing":boardResponses.length?`${boardResponses.length} Responded`:"Invite Board"} locked={!meetingReady} audioKey="board-forms" open={open==="4"} setOpen={v=>setOpen(v?"4":"")} testId="sp-board">
         <div className="sp-clean-stage">
           <h2>Invite Board Members To Think Before The Meeting</h2>
           <p>Add each Board Member's name and email. They receive their own secure form link and the meeting date. Their original ideas remain traceable to them during the live session.</p>
+          {!formReady&&<p className="workspace-note">Preparing the Board form from your saved organization information. Invitations open as soon as it is ready.</p>}
           <div className="sp-invite-grid">
             <input placeholder="Board Member Name" value={invite.name} onChange={e=>setInvite({...invite,name:e.target.value})}/>
             <input type="email" placeholder="Board Member Email" value={invite.email} onChange={e=>setInvite({...invite,email:e.target.value})}/>
-            <Button disabled={!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={14}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
+            <Button disabled={!formReady||!invite.name.trim()||!invite.email.trim()||busy==="invite"} onClick={sendInvite}><Mail size={14}/> {busy==="invite"?"SENDING…":"SEND STRATEGIC PLANNING FORM"}</Button>
           </div>
           {formLink&&<div className="sp-linkbox"><span>{formLink}</span><button onClick={()=>copy(formLink)}><Copy size={14}/> COPY GENERAL FORM LINK</button></div>}
         </div>
+        {boardPeople.length>0&&<div className="sp-actions"><Button secondary onClick={()=>navigate(`/strategic-planning/dashboard?session_id=${encodeURIComponent(sid)}`)}>CONTINUE TO DASHBOARD</Button><p>You can also leave now and return using the private link emailed to you.</p></div>}
         <div className="sp-response-list">
           {!boardPeople.length?<p className="sp-empty">No Board Members added yet.</p>:boardPeople.map(person=><article key={person.participant_id}>
-            <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small></div>
+            <Users size={20}/><div><strong>{person.name}</strong><span>{person.email}</span><small>{person.status==="COMPLETED"?"RESPONSE COMPLETED":person.status==="SENT"?"FORM SENT":"WAITING"}</small>
+              {person.status==="COMPLETED"&&<small>Submitted {person.submitted_at ? new Date(person.submitted_at).toLocaleString() : ""} · Founder email: {person.owner_notification_status||"Pending"}{p.facilitated ? ` · Facilitator email: ${person.facilitator_notification_status||"Pending"}` : ""}</small>}
+            </div>
             <div className="sp-actions">
               {person.status==="COMPLETED"&&<Button secondary href={`/strategic-planning-response/${person.participant_id}`}>VIEW RESPONSE</Button>}
               {person.status==="COMPLETED"&&<Button secondary onClick={()=>downloadResponse(person.participant_id)}><Download size={14}/> DOWNLOAD</Button>}

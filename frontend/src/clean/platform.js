@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { articleForPath } from "@/content/fundraisingArticles";
 
 export const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -15,14 +16,22 @@ export const FLOW_ROUTES = {
 
 export const VIDEO_KEYS = [
   ["recruitment_demonstration", "Board Recruitment Demonstration", "recruitment"],
+  ["recruitment_upgrade", "Recruitment Checkout Message", "recruitment"],
   ["recruitment_welcome", "Board Recruitment Onboarding", "recruitment"],
   ["game_homepage", "Board Fundraising Game Demonstration", "board-fundraising-game"],
+  ["game_upgrade", "Board Fundraising Checkout Message", "board-fundraising-game"],
   ["game_welcome", "Board Fundraising Game Onboarding", "board-fundraising-game"],
   ["strategic_planning_demonstration", "Strategic Planning Demonstration", "strategic-planning"],
   ["strategic_planning_welcome", "Strategic Planning Onboarding", "strategic-planning"],
   ["board_recommitment_demonstration", "Board Recommitment Demonstration", "board-recommitment"],
   ["board_recommitment_welcome", "Board Recommitment Onboarding", "board-recommitment"],
+  ["recruitment_dashboard", "Board Recruitment Dashboard Walkthrough", "recruitment"],
+  ["game_dashboard", "Board Fundraising Dashboard Walkthrough", "board-fundraising-game"],
+  ["strategic_planning_dashboard", "Strategic Planning Dashboard Walkthrough", "strategic-planning"],
+  ["board_recommitment_dashboard", "Board Recommitment Dashboard Walkthrough", "board-recommitment"],
 ];
+
+export const DASHBOARD_VIDEO_KEYS = ["recruitment_dashboard", "game_dashboard", "strategic_planning_dashboard", "board_recommitment_dashboard"];
 
 export const HOMEPAGE_KEYS = [
   ["main", "Main Home Page"],
@@ -91,11 +100,12 @@ export const trackPlatformEvent = (flow, event, extra = {}) => {
 };
 
 export const flowForPath = (pathname) => {
+  if (articleForPath(pathname)) return "board-fundraising-game";
   if (pathname === "/") return "main";
   if (pathname === "/join-a-board") return "board-applicant-network";
   if (pathname.startsWith("/organize-board-fundraising-game")) return "facilitated-game";
   if (pathname.startsWith("/recruit") || pathname.startsWith("/app/board-recruitment") || pathname.startsWith("/onboarding-session")) return "recruitment";
-  if (pathname.startsWith("/board-fundraising-game") || pathname.startsWith("/game") || pathname.startsWith("/play/") || pathname.startsWith("/group-game/") || pathname.startsWith("/board-portfolio/") || pathname.startsWith("/board-assistant/") || pathname.startsWith("/relationship-mapping/") || pathname.startsWith("/strategy/")) return "board-fundraising-game";
+  if (pathname.startsWith("/board-fundraising-game") || pathname.startsWith("/board-fundraising/") || pathname.startsWith("/game") || pathname.startsWith("/play/") || pathname.startsWith("/group-game/") || pathname.startsWith("/board-portfolio/") || pathname.startsWith("/board-assistant/") || pathname.startsWith("/relationship-mapping/") || pathname.startsWith("/strategy/")) return "board-fundraising-game";
   if (pathname.startsWith("/strategic-") || pathname.startsWith("/community-need-research") || pathname.startsWith("/area-pack")) return "strategic-planning";
   if (pathname.startsWith("/board-recommitment") || pathname.startsWith("/portfolio/")) return "board-recommitment";
   return "";
@@ -128,33 +138,37 @@ export const useHomepageContent = (pageKey, defaults = {}) => {
       .catch(() => {});
     return () => { live = false; };
   }, [pageKey]);
-  return useMemo(() => (
-    pageKey === "board-fundraising-game" && remote.content_version !== defaults.content_version
-      ? defaults : { ...defaults, ...remote }
-  ), [pageKey, defaults, remote]);
+  return useMemo(() => ({ ...defaults, ...remote }), [defaults, remote]);
 };
 
 let videosCache = null;
-let videosPromise = null;
 
 const loadVideos = () => {
-  if (videosCache) return Promise.resolve(videosCache);
-  if (!videosPromise) {
-    videosPromise = axios.get(`${API}/platform/videos`).then((response) => {
+  return axios.get(`${API}/platform/videos`).then((response) => {
       videosCache = response.data.videos || [];
       return videosCache;
-    }).catch(() => []);
-  }
-  return videosPromise;
+    }).catch(() => videosCache || []);
 };
 
-export const usePlatformVideo = (key) => {
-  const [video, setVideo] = useState(() => videosCache?.find((item) => item.key === key) || null);
+const selectPlatformVideo = (rows, key, fallbackKey) => {
+  const configured = rows?.find((item) => item.key === key);
+  return configured?.youtube_id ? configured : rows?.find((item) => item.key === fallbackKey && item.youtube_id) || configured || null;
+};
+
+export const usePlatformVideo = (key, fallbackKey = "") => {
+  const [video, setVideo] = useState(() => selectPlatformVideo(videosCache, key, fallbackKey));
   useEffect(() => {
     let live = true;
-    loadVideos().then((rows) => { if (live) setVideo(rows.find((item) => item.key === key) || null); });
-    return () => { live = false; };
-  }, [key]);
+    const refresh = () => loadVideos().then((rows) => { if (live) setVideo(selectPlatformVideo(rows, key, fallbackKey)); });
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("platform-videos-changed", refresh);
+    return () => {
+      live = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("platform-videos-changed", refresh);
+    };
+  }, [key, fallbackKey]);
   return video;
 };
 

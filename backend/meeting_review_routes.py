@@ -78,6 +78,7 @@ Do not invent donors, businesses, grantmakers, relationships, board commitments,
 Do not include rejected proposed changes.
 Do not convert unresolved discussion into a decision.
 Keep the same structured fundraising strategy format as the Board-Prioritised Draft.
+Do not create team requirements, resource recommendations, budgets or month-by-month execution plans. Include execution_agreements only for execution support, materials, responsibilities or timing explicitly agreed by the Board and retained in the meeting review. If no such agreements exist, return an empty list. Participation proposals do not establish agreed responsibilities.
 Write clearly, directly and professionally.
 Return only the required structured JSON."""
 
@@ -93,6 +94,15 @@ def section_content(strategy: dict, key: str):
     if edits.get(key):
         return edits[key]
     return (strategy.get("data") or {}).get(key)
+
+
+def final_review_sections(strategy: dict) -> list:
+    sections = list(STRATEGY_SECTIONS)
+    agreements = (strategy.get("data") or {}).get("execution_agreements")
+    edited = str((strategy.get("section_edits") or {}).get("execution_agreements") or "").strip()
+    if (isinstance(agreements, list) and agreements) or edited:
+        sections.append(("execution_agreements", "Execution Agreed By The Board"))
+    return sections
 
 
 class StartPayload(BaseModel):
@@ -131,7 +141,7 @@ class CommitmentPayload(BaseModel):
 
 class FinalReviewPayload(BaseModel):
     action: str = Field(min_length=1)
-    index: int = Field(default=0, ge=0, le=TOTAL_SECTIONS - 1)
+    index: int = Field(default=0, ge=0, le=TOTAL_SECTIONS)
 
 
 class AdoptPayload(BaseModel):
@@ -562,6 +572,8 @@ def create_meeting_review_router(db) -> APIRouter:
                 {"review_id": review["review_id"], "kind": "change", "status": "accepted"}, {"_id": 0}).to_list(500)
             resolved = await db.meeting_decisions.find(
                 {"review_id": review["review_id"], "kind": "unresolved", "status": "manually_resolved"}, {"_id": 0}).to_list(500)
+            commitments = await db.meeting_execution_commitments.find(
+                {"review_id": review["review_id"], "review_status": {"$in": ["keep", "edited"]}}, {"_id": 0}).to_list(500)
             context = {
                 "organisation_profile": profile.get("organization") or {},
                 "fundraising_goal": {
@@ -578,6 +590,11 @@ def create_meeting_review_router(db) -> APIRouter:
                 "manually_resolved_meeting_items": [{
                     "section": row["section_key"], "item": row["proposed_content"], "decision": row["resolution_text"],
                 } for row in resolved],
+                "retained_board_execution_agreements": [{
+                    "name": row.get("board_member_name", ""),
+                    "commitment": row.get("edited_commitment") if row.get("review_status") == "edited" else row.get("commitment", ""),
+                    "deadline": row.get("deadline", ""),
+                } for row in commitments],
             }
             api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("EMERGENT_LLM_KEY", "")
             model = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
@@ -596,6 +613,7 @@ def create_meeting_review_router(db) -> APIRouter:
             text = response if isinstance(response, str) else getattr(response, "text", str(response))
             generated = parse_json_response(text)
             data = {key: generated.get(key, {}) for key in EDITABLE_SECTION_KEYS}
+            data["execution_agreements"] = generated.get("execution_agreements") or []
             version = await db.game_strategies.count_documents({"user_id": user_id, "mode": "final"}) + 1
             record = {
                 "strategy_id": new_uuid(), "user_id": user_id, "mode": "final",
@@ -655,6 +673,9 @@ def create_meeting_review_router(db) -> APIRouter:
             if review.get("final_strategy_id"):
                 await db.final_board_approvals.delete_many({"strategy_id": review["final_strategy_id"]})
         elif payload.action == "section":
+            strategy = await get_strategy(member["user_id"], review["final_strategy_id"])
+            if payload.index >= len(final_review_sections(strategy)):
+                raise HTTPException(status_code=422, detail="Unknown final strategy section")
             updates = {"final_section_index": payload.index}
         elif payload.action == "finish":
             updates = {"final_review_status": "response"}
@@ -768,12 +789,16 @@ def create_meeting_review_router(db) -> APIRouter:
                     "data": final.get("data", {}), "section_edits": final.get("section_edits", {}),
                     "organization_name": (profile.get("organization") or {}).get("name", ""),
                 }
+                payload["total_sections"] = len(final_review_sections(final))
             if review.get("final_review_status") == "reviewing" and review.get("final_strategy_id"):
                 index = review.get("final_section_index", 0)
-                key = SECTION_KEYS[index]
                 final = await get_strategy(session["user_id"], review["final_strategy_id"])
+                sections = final_review_sections(final)
+                if index >= len(sections):
+                    index = len(sections) - 1
+                key, title = sections[index]
                 payload["section"] = {
-                    "index": index, "key": key, "title": SECTION_TITLES[key], "mode": final.get("mode", ""),
+                    "index": index, "key": key, "title": title, "mode": final.get("mode", ""),
                     "data": (final.get("data") or {}).get(key),
                     "edit": (final.get("section_edits") or {}).get(key, ""),
                 }
