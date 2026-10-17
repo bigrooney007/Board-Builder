@@ -177,7 +177,8 @@ request, and the transcript never overrides the group’s explicit decisions.
 ## Final corrections from the latest supplied files
 
 New sales cost $997 once per organization. The Stripe resolver verifies one-time
-USD 99700 pricing; claims verify that amount before granting a new $997 purchase.
+USD 99700 pricing; claims verify that subtotal and the currency before granting
+a new $997 purchase. Existing Stripe tax calculation can add tax to the total.
 Historical $497 purchases retain their price and entitlement. No $97 offer exists.
 
 The complete supplied How It Works copy is authoritative and has four steps. Its

@@ -123,7 +123,7 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             raise HTTPException(409,"Use the email entered before payment to claim your Fundraising Game")
     tier = metadata.get("selected_tier", "")
     if offer_source == "board_fundraising_game" and tier == "997":
-        if session.amount_total != 99700 or str(session.currency).lower() != "usd":
+        if session.amount_subtotal != 99700 or session.amount_total < session.amount_subtotal or str(session.currency).lower() != "usd":
             raise HTTPException(409, "The Fundraising Game payment amount could not be verified. Please contact support.")
     extra_entitlements = []
     if offer_source == "recruit_with_rooney" and tier == "997":

@@ -225,13 +225,15 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'997')
         self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],99700)
         self.assertFalse((await self.db.members.find_one({'user_id':'real-account'}))['entitlements'])
-        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_total=99700,currency='usd',customer_details={'email':account['email']})
+        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_subtotal=99700,amount_total=99700,currency='usd',customer_details={'email':account['email']})
         with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
             await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},402,headers=headers)
             session.payment_status='paid'
+            session.amount_subtotal=49700
             session.amount_total=49700
             await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},409,headers=headers)
-            session.amount_total=99700
+            session.amount_subtotal=99700
+            session.amount_total=100000  # Stripe's existing automatic-tax checkout may add tax.
             with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})):
                 await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},headers=headers)
                 await self.call('PUT','/game/launch/organization',{'fundraising_goal':50000,'mission':'Our real supplied mission.','annual_budget':'Not yet confirmed','community':'Young people'},headers=headers)
@@ -240,6 +242,21 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(profile['workflow_version'],7);self.assertTrue(profile['profile_completed']);self.assertEqual(profile['organization']['name'],'BrightPath')
         self.assertEqual((await self.db.game_journey_progress.find_one({'user_id':'real-account'}))['stage'],'questions')
         self.assertEqual(await self.db.purchases.count_documents({'session_id':'cs_paid'}),1)
+        purchase=await self.db.purchases.find_one({'session_id':'cs_paid'})
+        self.assertEqual(purchase['price_paid'],997);self.assertEqual(purchase['amount'],100000)
+
+    async def test_price_resolver_rejects_old_prices_and_creates_997_once(self):
+        from types import SimpleNamespace
+        import payment_routes as payments
+        payments._price_cache.clear()
+        old=SimpleNamespace(id='price_obsolete',active=True,unit_amount=49700,currency='usd',recurring=None)
+        with patch.dict(os.environ,{'STRIPE_BOARD_FUNDRAISING_GAME_997_PRICE_ID':'price_obsolete'}),patch.object(payments.stripe.Price,'retrieve',return_value=old),patch.object(payments.stripe.Price,'list',return_value=SimpleNamespace(data=[old])),patch.object(payments.stripe.Product,'create',return_value=SimpleNamespace(id='prod_997')),patch.object(payments.stripe.Price,'create',return_value=SimpleNamespace(id='price_997')) as create:
+            self.assertEqual(payments.resolve_game_price_id(),'price_997')
+            self.assertEqual(payments.resolve_game_price_id(),'price_997')
+            self.assertEqual(create.call_count,1)
+            self.assertEqual(create.call_args.kwargs['unit_amount'],99700)
+            self.assertEqual(create.call_args.kwargs['currency'],'usd')
+        payments._price_cache.clear()
 
     async def test_historical_497_claim_retains_price_and_entitlement(self):
         from types import SimpleNamespace
