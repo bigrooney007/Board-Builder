@@ -133,6 +133,60 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
     async def test_unique_funnel_visitors_and_refreshes_are_not_extra_customers(self):
         for _ in range(3):await self.call('POST','/fundraising/events',{'kind':'homepage','visitor_id':'same-visitor-12345'})
         data=await self.call('GET','/admin/fundraising/overview');self.assertEqual(data['counts']['unique_homepage_visitors'],1)
+    async def test_real_checkout_adapter_and_verified_claim_preserve_progress(self):
+        from types import SimpleNamespace
+        from member_auth import create_member_token
+        lead=await self.call('POST','/fundraising/leads',{'name':'Paying Leader','email':'paying@example.org','organization':'BrightPath','visitor_id':'paying-browser-123456'},201,headers={})
+        account={'user_id':'real-account','email':'paying@example.org','first_name':'Paying','last_name':'Leader','entitlements':[],'account_status':'active'}
+        await self.db.members.insert_one(account.copy())
+        headers={'Authorization':'Bearer '+create_member_token(account['user_id'],account['email'])}
+        with patch('payment_routes.resolve_game_price_id',return_value='price_497'),patch('payment_routes.stripe.checkout.Session.create',return_value=SimpleNamespace(id='cs_paid',url='https://checkout.stripe.test/session')) as checkout:
+            await self.call('POST','/payments/game-checkout',{'origin_url':'http://test','result_token':lead['token']},headers={})
+            kwargs=checkout.call_args.kwargs
+        self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'497')
+        self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],49700)
+        self.assertFalse((await self.db.members.find_one({'user_id':'real-account'}))['entitlements'])
+        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_total=49700,currency='usd',customer_details={'email':account['email']})
+        with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
+            await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},402,headers=headers)
+            session.payment_status='paid'
+            with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})):
+                await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},headers=headers)
+                await self.call('PUT','/game/launch/organization',{'fundraising_goal':50000,'mission':'Our real supplied mission.','annual_budget':'Not yet confirmed','community':'Young people'},headers=headers)
+                await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},headers=headers)
+        profile=await self.db.game_profiles.find_one({'user_id':'real-account'})
+        self.assertEqual(profile['workflow_version'],7);self.assertTrue(profile['profile_completed']);self.assertEqual(profile['organization']['name'],'BrightPath')
+        self.assertEqual((await self.db.game_journey_progress.find_one({'user_id':'real-account'}))['stage'],'questions')
+        self.assertEqual(await self.db.purchases.count_documents({'session_id':'cs_paid'}),1)
+
+    async def test_partial_setup_is_saved_without_premature_completion(self):
+        await self.fresh()
+        await self.call('PUT','/game/launch/draft',{'stage':'organization','values':{'mission':'Part of my mission','fundraising_goal':'','private_admin':'must not be stored'}})
+        state=await self.call('GET','/game/launch/state')
+        self.assertEqual(state['draft']['organization']['mission'],'Part of my mission');self.assertNotIn('private_admin',state['draft']['organization']);self.assertFalse(state['profile']['profile_completed'])
+        duplicate=await self.call('POST','/fundraising/leads',{'name':'Sample Leader','email':'lead@example.org','organization':'BrightPath','visitor_id':'unique-browser-123456'},201)
+        self.assertEqual(duplicate['token'],self.lead['token'])
+
+    async def test_all_five_followups_use_one_sequence_per_email_and_stop_after_payment(self):
+        import fundraising_launch as launch
+        from workflow_delivery import deliver_once as original_delivery
+        lead=await self.call('POST','/fundraising/leads',{'name':'Consenting Lead','email':'consent@example.org','organization':'Example','visitor_id':'consent-browser-123456','marketing_consent':True},201,headers={})
+        created=datetime.now(timezone.utc)-timedelta(days=16)
+        await self.db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'created_at':created.isoformat()}})
+        # Real durable delivery, with only the external provider substituted.
+        async def capture(*args,**kwargs):
+            with patch('workflow_delivery.resend.Emails.send_async',new=AsyncMock(return_value={'id':'provider-example'})):return await original_delivery(*args,**kwargs)
+        for index in range(1,6):
+            await self.db.workflow_email_deliveries.update_many({},{'$set':{'updated_at':(created+timedelta(days=(index-1)*3)).isoformat()}})
+            with patch.object(launch,'deliver_once',side_effect=capture):await launch.send_due(self.db);await launch.send_due(self.db)
+            self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':{'$regex':'^followup:'}}),index)
+        other=await self.call('POST','/fundraising/leads',{'name':'Consenting Lead','email':'consent@example.org','organization':'Example','visitor_id':'another-browser-123456','marketing_consent':True},201,headers={})
+        await self.db.funnel_leads.update_one({'lead_id':other['lead_id']},{'$set':{'created_at':created.isoformat()}})
+        with patch.object(launch,'deliver_once',new=AsyncMock()) as send:await launch.send_due(self.db);send.assert_not_awaited()
+        await self.db.payment_transactions.insert_one({'session_id':'paid-before-claim','lead_email':'consent@example.org','payment_status':'paid'})
+        await self.db.workflow_email_deliveries.delete_many({})
+        with patch.object(launch,'deliver_once',new=AsyncMock()) as send:await launch.send_due(self.db);send.assert_not_awaited()
+
     async def test_test_payment_rejects_another_synthetic_owner(self):
         await self.fresh();lead=self.lead
         other=await self.call('POST','/admin/fundraising/test-start',headers=self.admin)

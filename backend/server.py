@@ -381,4 +381,8 @@ async def startup_tasks():
 async def shutdown_db_client():
     if automation_task:
         automation_task.cancel()
+    for name in ("checkout_recovery_task", "fundraising_launch_recovery_task"):
+        task = getattr(app.state, name, None)
+        if task:
+            task.cancel()
     client.close()

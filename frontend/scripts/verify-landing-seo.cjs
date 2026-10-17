@@ -15,7 +15,7 @@ async function read(route) {
 }
 
 (async () => {
-  for (const page of pages) {
+  for (const page of pages.filter(page => !page.retired)) {
     const html = await read(baseUrl ? page.path : path.posix.join(page.path, "index.html"));
     const doc = new JSDOM(html.toString()).window.document;
     assert.equal(doc.title, page.title, page.path);
@@ -32,7 +32,7 @@ async function read(route) {
     console.log(`PASS ${page.path}: initial HTML, metadata, structured data and 1200x630 image`);
   }
   const sitemap = (await read("/sitemap.xml")).toString();
-  for (const page of pages) assert(sitemap.includes(`<loc>${SITE_ORIGIN}${page.path}</loc>`));
+  for (const page of pages) assert.equal(sitemap.includes(`<loc>${SITE_ORIGIN}${page.path}</loc>`), !page.retired, page.path);
   assert((await read("/robots.txt")).toString().includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`));
   console.log("PASS sitemap and robots.txt");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

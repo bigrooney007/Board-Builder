@@ -386,7 +386,6 @@ def create_fundraising_launch_router(db):
             return isinstance(value,type(template))
         if not validate(DEFAULT,payload) or len(payload['how']['steps'])!=5 or len(payload['followups'])!=5:raise HTTPException(422,'Preserve the page fields, five steps and five follow-up emails')
         for i,row in enumerate(payload['followups'],1):row['day']=i*3
-        payload['how']['purchase_heading']='Start The Fundraising Game Today: $497.'
         await db.site_content.update_one({'key':SOURCE},{'$set':{'content':payload,'updated_at':now()}},upsert=True)
         return {'saved':True,'content':await content(db)}
 
@@ -467,14 +466,63 @@ def create_fundraising_launch_router(db):
     return router
 
 
+def portfolio_tools(name, role, organization):
+    """Practical, editable worksheets for the accepted role, without new duties."""
+    org=organization.get('name') or 'our organization'
+    tools=[{'name':'Your Agreed Action Worksheet','text':
+        'Board member: '+name+'\nAgreed responsibility: '+role+
+        '\nApproved audience or activity this supports: ____________________'
+        '\nFirst action within this responsibility: ____________________'
+        '\nInformation or permission needed from the organization: ____________________'
+        '\nTiming agreed with the lead user: ____________________'
+        '\nHow I will report back: ____________________'},
+        {'name':'Progress Update You Can Adapt','text':
+        'Hello,\n\nHere is my update on the responsibility I accepted: '+role+
+        '\n\nI have completed: ____________________'
+        '\nMy next agreed action is: ____________________'
+        '\nI need your guidance or approval on: ____________________'
+        '\n\n'+name}]
+    lower=role.lower()
+    if any(word in lower for word in ('introduc','outreach','contact','relationship','invite','donor','prospect','funder','grant')):
+        tools.append({'name':'Contact and Handoff Record','text':
+            'Use this only for contacts relevant to your accepted responsibility. Do not add private contact information without appropriate permission.'
+            '\nPerson or organization: ____________________'
+            '\nConnection to the approved audience and mission: ____________________'
+            '\nExisting relationship and permission to make contact: ____________________'
+            '\nRelevant approved approach: ____________________'
+            '\nLast conversation and agreed next step: ____________________'
+            '\nWho needs the handoff: ____________________'})
+    if 'introduc' in lower:
+        tools.append({'name':'Warm Introduction Message','text':
+            'Subject: An introduction to '+org+
+            '\n\nHello [contact name],\n\nI would like to introduce you to [lead user name] at '+org+
+            '. Their mission is: '+(organization.get('mission') or '[insert the approved mission]')+
+            '\n\nI thought a conversation could be relevant because [explain the actual connection to the approved audience]. Would you be comfortable with me making an introduction?'
+            '\n\nThank you,\n'+name+
+            '\n\nConfirm permission before sharing contact details. Add only facts you know and use the approach your board approved.'})
+    if any(word in lower for word in ('grant','research','identify','prospect')):
+        tools.append({'name':'Opportunity Fit Worksheet','text':
+            'Opportunity: ____________________'
+            '\nWhich approved audience does it fit? ____________________'
+            '\nEvidence of mission and community alignment: ____________________'
+            '\nKnown eligibility, restrictions and deadline: ____________________'
+            '\nApproved funding request it could support: ____________________'
+            '\nQuestions still requiring confirmation: ____________________'
+            '\nRecommendation for the lead user to review: ____________________'})
+    return tools
+
+
 async def build_portfolio_draft(db,user_id,record,strategy):
     """Use confirmed responsibilities and approved content; no AI assignments."""
     if not record.get('launch_role_confirmed'):raise HTTPException(409,'Confirm this board member’s agreed role before generating a portfolio')
     role=record.get('launch_role','')
     response=await db.game_audience_responses.find_one({'user_id':user_id,'board_member_id':record['member_id'],'completed':True},{'_id':0}) or {}
+    profile=await db.game_profiles.find_one({'user_id':user_id},{'_id':0}) or {}
+    tools=portfolio_tools(record['full_name'],role,profile.get('organization') or {})
     context='\n\n'.join(s['title']+'\n'+s['text'] for s in strategy.get('document_sections',[]) if s['key'].startswith('audience_'))
     text=record['full_name']+'\n\nYOUR AGREED FUNDRAISING RESPONSIBILITY\n'+role+'\n\nYOUR ORIGINAL PARTICIPATION IDEAS\n'+(response.get('involvement') or 'No personal participation statement was submitted.')+'\n\nTHE BOARD’S ADOPTED FUNDRAISING APPROACHES\n'+context+'\n\nUSING YOUR PORTFOLIO\nUse your agreed responsibility above to guide your contribution. The approaches in this document are the ones your board adopted. Confirm any wording, contact details, timing or expenditure with your organization before communicating externally. If circumstances change, discuss the change with your lead user rather than assuming a different responsibility.'
+    text+='\n\nPRACTICAL RESOURCES FOR YOUR AGREED ROLE\n\n'+'\n\n'.join(tool['name']+'\n'+tool['text'] for tool in tools)
     return {'portfolio_id':secrets.token_urlsafe(24),'user_id':user_id,'board_member_id':record['member_id'],'member_name':record['full_name'],'member_email':record.get('email',''),
         'strategy_id':strategy['strategy_id'],'token':secrets.token_urlsafe(32),'workflow_version':7,'status':'draft','version':1,'approved_version':0,'leader_approved_at':'',
-        'agreed_role':role,'portfolio_text':text,'original_participation':response.get('involvement',''),'system_roles':[{'item_id':secrets.token_hex(12),'role_key':'custom','label':role,'source':'meeting_commitment','commitment':role,'requires_confirmation':False,'active':True}],
+        'agreed_role':role,'portfolio_text':text,'practical_resources':tools,'original_participation':response.get('involvement',''),'system_roles':[{'item_id':secrets.token_hex(12),'role_key':'custom','label':role,'source':'meeting_commitment','commitment':role,'requires_confirmation':False,'active':True}],
         'direct_activities':[],'additional_commitments':[],'do_not_want':[],'availability':'','org_note':'','change_request':'','sent_at':'','approved_at':'','approved_snapshot':None,'created_at':now(),'updated_at':now()}

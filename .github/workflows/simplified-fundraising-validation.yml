@@ -66,7 +66,10 @@ jobs:
         if: always()
         env:
           CI: 'false'
-        run: yarn --cwd frontend build
+        run: |
+          yarn --cwd frontend build
+          node frontend/scripts/verify-landing-seo.cjs
+          node tests/fundraising_redirects.cjs
       - run: python -m playwright install --with-deps chromium
         if: always() && steps.build.outcome == 'success'
       - name: Current desktop and mobile workflows
