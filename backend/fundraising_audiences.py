@@ -181,7 +181,10 @@ def document_sections(agreed, profile):
     goal = profile.get("goal") or {}; organization = (profile.get("organization") or {}).get("name", "Your organization")
     purpose = str(goal.get("purpose") or "")
     goal_text = f"${goal['amount']:,}" if isinstance(goal.get("amount"), (int, float)) else "the fundraising goal supplied by the organization"
-    sections = [{"key": "executive_summary", "title": "Executive Summary", "text": f"{organization} will pursue {len(agreed['audiences'])} approved funding audiences toward {goal_text}" + (f" for {purpose}" if purpose else "") + (f" by {goal['deadline']}" if goal.get("deadline") else "") + ". The approaches and confirmed contributions below record the group's decisions. They do not guarantee a particular fundraising result."}]
+    if profile.get("workflow_version")==LAUNCH_VERSION and isinstance(goal.get("amount"),(int,float)):
+        goal_text=f"${goal['amount']:,.2f}".removesuffix(".00")
+    audience_label="audience" if len(agreed['audiences'])==1 else "audiences"
+    sections = [{"key": "executive_summary", "title": "Executive Summary", "text": f"{organization} will pursue {len(agreed['audiences'])} approved funding {audience_label} toward {goal_text}" + (f" for {purpose}" if purpose else "") + (f" by {goal['deadline']}" if goal.get("deadline") else "") + ". The approaches and confirmed contributions below record the group's decisions. They do not guarantee a particular fundraising result."}]
     if profile.get("workflow_version")==LAUNCH_VERSION and (profile.get("organization") or {}).get("mission"):
         sections.append({"key":"organization_mission","title":"Our Organization's Mission","text":profile["organization"]["mission"]})
     labels = [("who_why", "Audience and why they may fund us"), ("where", "Where to find them"), ("attraction", "How to attract them"), ("process", "How to develop relationships and raise money"), ("ask", "What to ask for"), ("amount", "How much to ask")]

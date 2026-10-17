@@ -119,6 +119,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         from pypdf import PdfReader
         document_text='\n'.join(page.extract_text() or '' for page in PdfReader(io.BytesIO(pdf.content)).pages)
         self.assertIn('Help young people enter employment.',document_text);self.assertIn('Sample Leader',document_text)
+        self.assertIn('1 approved funding audience toward',document_text.replace('\n',' '))
+        self.assertIn('$100,000.',document_text);self.assertNotIn('$100,000.0',document_text)
         await self.call('POST','/game/portfolios/prepare',status=410)
         self.assertEqual(await self.db.board_portfolios.count_documents({'user_id':self.user}),0)
         shared=await self.call('GET','/strategy/shared/'+strategy['share_token'],headers={})
