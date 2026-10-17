@@ -18,7 +18,7 @@ async def main():
     async with async_playwright() as p:
         browser=await p.chromium.launch()
         for width in (1440,390):
-            context=await browser.new_context(viewport={'width':width,'height':1000 if width==1440 else 844},accept_downloads=True,record_video_dir=f'test_reports/current-simplified-video-{width}',record_video_size={'width':width,'height':1000 if width==1440 else 844})
+            context=await browser.new_context(viewport={'width':width,'height':1000 if width==1440 else 844},accept_downloads=True,permissions=['clipboard-read','clipboard-write'],record_video_dir=f'test_reports/current-simplified-video-{width}',record_video_size={'width':width,'height':1000 if width==1440 else 844})
             auth=(await (await context.request.get(BASE+'/__test/session')).json())['token']
             response=await context.request.post(BASE+'/api/admin/fundraising/test-start',headers={'Authorization':'Bearer '+auth});assert response.ok,await response.text()
             test=await response.json();
@@ -195,6 +195,9 @@ async def main():
             assert (await final_document.value).suggested_filename=='fundraising-strategy.pdf'
             await (await final_document.value).save_as(f'test_reports/current-simplified-strategy-{width}.pdf')
             await expect(page.get_by_role('button',name='Generate Board Portfolios',exact=True)).to_have_count(0)
+            await page.evaluate('''()=>{const original=navigator.clipboard.writeText.bind(navigator.clipboard);let deny=true;navigator.clipboard.writeText=async text=>{if(deny){deny=false;throw new DOMException('Copy denied for this test','NotAllowedError')}return original(text)}}''')
+            await page.get_by_role('button',name='Copy Strategy Email',exact=True).click()
+            await expect(page.get_by_role('textbox',name='Strategy link or email',exact=True)).to_contain_text('/strategy/')
             await page.get_by_role('button',name='Copy Strategy Email',exact=True).click()
             await page.get_by_role('button',name='Strategy Email Copied',exact=True).wait_for()
             shared_url=await page.get_by_role('link',name='View Shared Strategy',exact=True).get_attribute('href')

@@ -820,7 +820,7 @@ def create_payment_router(db) -> APIRouter:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
         if member and member.get("internal_dashboard_preview"):
-            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": "board_fundraising_game_997"}, {"_id": 0})
+            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": {"$in": ["board_fundraising_game_497", "board_fundraising_game_997"]}}, {"_id": 0})
             if not tx: raise HTTPException(409, "Reopen your isolated admin test")
             return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + tx["session_id"], "session_id": tx["session_id"]}
         kwargs = {
