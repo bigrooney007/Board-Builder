@@ -73,8 +73,8 @@ async def main():
             await page.get_by_test_id('fundraising-workspace').wait_for()
             assert await page.get_by_role('button',name='Download Final Fundraising Strategy',exact=True).is_disabled()
             assert await page.get_by_role('button',name='Generate Board Portfolios',exact=True).is_disabled()
-            assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             await page.screenshot(path=f'test_reports/current-simplified-workspace-{width}.png',full_page=True)
+            assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2'), await page.locator('body *').evaluate_all('(rows)=>rows.filter(e=>e.getBoundingClientRect().right>window.innerWidth+2).slice(0,8).map(e=>({tag:e.tagName,css:e.className,text:e.textContent.slice(0,100),width:e.getBoundingClientRect().width}))')
             results.append({'width':width,'case':'real_workspace_locked_outputs_and_responses','passed':True})
             # Sample identities use the current real participant records and forms.
             await page.get_by_role('button',name='Add Three Sample Board Members',exact=True).click()

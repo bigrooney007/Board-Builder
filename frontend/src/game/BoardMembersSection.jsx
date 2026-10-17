@@ -135,7 +135,7 @@ const ResponsesView = ({ memberId }) => {
 };
 
 const noChange = () => {};
-export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false }) => {
+export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, simplified = false }) => {
   const [members, setMembers] = useState([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState("");
@@ -152,10 +152,10 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false }
   const load = useCallback(async () => {
     try {
       const response = await memberApi.get("/game/board-members");
-      setMembers(response.data.board_members || []);
+      setMembers((response.data.board_members || []).filter(person=>!simplified||!person.is_primary));
       onChanged(response.data.board_members || []);
     } catch { /* ignore */ }
-  }, [onChanged]);
+  }, [onChanged,simplified]);
   useEffect(() => { load(); }, [load]);
 
   const origin = { origin_url: window.location.origin };
@@ -253,7 +253,7 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false }
                 </div>
                 <span className={`bfg-status-pill ${statusClass(member.status)}`} data-testid={`bfg-bm-status-${member.member_id}`}>{member.status}</span>
               </div>
-              <p className="bfg-bm-progress">{member.sections_completed} of {member.total_sections} sections complete</p>
+              <p className="bfg-bm-progress">{simplified?(completed?"Contribution submitted":"Personal game available"):`${member.sections_completed} of ${member.total_sections} sections complete`}</p>
               {editingId === member.member_id ? (
                 <MemberForm initial={{ full_name: member.full_name, email: member.email, board_title: member.board_title }}
                   onSave={editMember(member.member_id)} onCancel={() => setEditingId("")} busy={busy === "edit"} saveLabel="Save Changes" />
@@ -273,8 +273,8 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false }
                         data-testid={`bfg-remind-btn-${member.member_id}`}>Send Reminder</button>
                     )
                   )}
-                  <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to={`/game/host/call-script?member=${member.member_id}`}
-                    data-testid={`bfg-call-script-${member.member_id}`}>Call Script</Link>
+                  {!simplified&&<Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to={`/game/host/call-script?member=${member.member_id}`}
+                    data-testid={`bfg-call-script-${member.member_id}`}>Call Script</Link>}
                   <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={() => copyLink(member)} data-testid={`bfg-copy-link-${member.member_id}`}>
                     {copiedId === member.member_id ? "Link Copied" : "Copy Game Link"}
                   </button>

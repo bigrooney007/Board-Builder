@@ -1,3 +1,4 @@
+import "./fundraisingSimplified.css";
 import { AudienceParticipantReview } from "./AudienceGroupReview";
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
@@ -69,7 +70,7 @@ export default function GroupPlayPage() {
 
   if (notFound) {
     return (
-      <div className="bfg bfg-gg" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
+      <div className={`bfg bfg-gg ${state?.audience_review?.workflow_version===7?"fundraising-simplified":""}`} style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
         <div className="bfg-gg-card" style={{ maxWidth: 420, textAlign: "center" }} data-testid="bfg-gg-invalid">
           <h2>This Group Game Link Is Not Valid</h2>
           <p>Please ask your host to share the current Game Night link.</p>
@@ -77,13 +78,13 @@ export default function GroupPlayPage() {
       </div>
     );
   }
-  if (!entry) return <div className="bfg bfg-gg" style={{ minHeight: "100vh" }} />;
+  if (!entry) return <div className={`bfg bfg-gg ${state?.audience_review?.workflow_version===7?"fundraising-simplified":""}`} style={{ minHeight: "100vh" }} />;
 
   const round = state?.current_round;
   const myName = identity ? (entry.players.find((player) => player.slot_id === identity.slot_id)?.name || "") : "";
 
   return (
-    <div className="bfg bfg-gg" style={{ minHeight: "100vh" }}>
+    <div className={`bfg bfg-gg ${state?.audience_review?.workflow_version===7?"fundraising-simplified":""}`} style={{ minHeight: "100vh" }}>
       <header className="bfg-gg-nav">
         <span><strong>Nonprofit Board Builder</strong> · Board Fundraising Game</span>
         {myName && <span className="bfg-gg-me">{myName}</span>}

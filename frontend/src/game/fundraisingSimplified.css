@@ -1,0 +1,10 @@
+/* Keep existing visual styles while allowing finished text and actions to wrap. */
+.fundraising-simplified .bfg-panel,
+.fundraising-simplified .bfg-dash-head > *,
+.fundraising-simplified .bfg-bm-top > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.fundraising-simplified .bfg-btn { max-width: 100%; white-space: normal; text-align: center; }
+.fundraising-simplified textarea,
+.fundraising-simplified input,
+.fundraising-simplified select { max-width: 100%; }
+.fundraising-simplified .bfg-dash-head { display: block; }
+.fundraising-simplified .bfg-dash-head p { margin: 12px 0; }
