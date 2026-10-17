@@ -720,6 +720,13 @@ def create_portfolio_router(db) -> APIRouter:
                 updates["version"] = portfolio.get("version", 1) + 1
                 updates["change_request"] = ""
         await db.board_portfolios.update_one({"portfolio_id": portfolio_id}, {"$set": updates})
+        if portfolio.get("workflow_version")==7:
+            strategy=await adopted_strategy(member["user_id"])
+            expected={c["member_id"] for c in strategy.get("confirmed_commitments",[])}
+            sent_rows=await db.board_portfolios.find({"user_id":member["user_id"],"workflow_version":7,"sent_at":{"$nin":["",None]}},{"_id":0,"board_member_id":1}).to_list(300)
+            if expected and expected.issubset({x["board_member_id"] for x in sent_rows}):
+                from fundraising_launch import touch
+                await touch(db,member["user_id"],"complete","/game/dashboard")
         return {"status": "sent"}
 
     @router.post("/game/portfolios/send-all")

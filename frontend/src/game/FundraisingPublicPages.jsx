@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { memberApi } from "@/member/api";
 import { useMemberAuth } from "@/member/MemberAuthContext";
+import { useLandingPageMeta } from "@/seo";
 import "@/pages/MainHomePage.css";
 import "./game.css";
 
@@ -12,6 +13,7 @@ export const visitorId = () => {
   return value;
 };
 export default function FundraisingPublicPage({ how=false }) {
+  useLandingPageMeta(how?"/how-the-fundraising-game-works":"/");
   const navigate=useNavigate();const location=useLocation();const {member,loading}=useMemberAuth();
   const [content,setContent]=useState(null);const [capture,setCapture]=useState(false);const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem("fundraisingLeadDetails")||"{}")}catch{return {}}});
   const [consent,setConsent]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState("");

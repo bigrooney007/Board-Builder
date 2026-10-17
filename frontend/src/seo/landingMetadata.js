@@ -48,6 +48,9 @@ function structuredData(page) {
     { "@type": "WebSite", "@id": websiteId, name: SITE_NAME, url: SITE_ORIGIN + "/", publisher: { "@id": organizationId } },
     { "@type": page.path === "/" ? "CollectionPage" : "WebPage", "@id": url + "#webpage", url, name: page.title, description: page.description, inLanguage: "en", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId }, primaryImageOfPage: { "@type": "ImageObject", url: imageUrl(page), width: 1200, height: 630 } },
   ];
+  if (page.path === "/" || page.path === "/how-the-fundraising-game-works") {
+    graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"497.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
+  }
   if (page.path !== "/") {
     graph[2].mainEntity = { "@id": url + "#service" };
     graph.push({ "@type": "Service", "@id": url + "#service", name: page.name, serviceType: page.name, url, description: page.description, provider: { "@id": organizationId }, image: imageUrl(page) });
@@ -60,21 +63,22 @@ function fallbackContent(page) {
   // A useful public page remains available before React loads and when JavaScript is unavailable.
   const paragraphs = page.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
   const steps = page.steps.length ? `<h2>How it works</h2><ol>${page.steps.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : "";
-  const startPath = FREE_START_PATHS[page.path];
-  const startLink = startPath ? `<p><a href="${startPath}">Get Started for Free</a></p>` : "";
-  const links = pages.filter((item) => item.path !== page.path).map((item) => {
+  const startPath = page.retired ? null : (page.path === "/" ? "/#start" : page.path === "/how-the-fundraising-game-works" ? "/how-the-fundraising-game-works#start" : null);
+  const startLink = startPath ? `<p><a href="${startPath}">Play The Fundraising Game With Your Board</a></p>` : "";
+  const links = pages.filter((item) => !item.retired && item.path !== "/join-a-board" && item.path !== page.path).map((item) => {
     const name = page.path === "/board-fundraising-game" && item.path === "/organize-board-fundraising-game"
       ? "Facilitated Board Fundraising Meeting" : item.name;
     const path = page.path === "/" ? FREE_START_PATHS[item.path] || item.path : item.path;
     const label = page.path === "/" && FREE_START_PATHS[item.path] ? `${name}: Get Started for Free` : name;
     return `<li><a href="${path}">${escapeHtml(label)}</a></li>`;
   }).join("");
-  return `<main id="landing-page-summary" style="max-width:900px;margin:56px auto;padding:24px;font-family:Inter,Arial,sans-serif;line-height:1.7;color:#0f172a"><p style="color:#4f46e5;font-weight:700">${SITE_NAME}</p><h1>${escapeHtml(page.headline)}</h1>${paragraphs}${startLink}${steps}<nav aria-label="Explore Nonprofit Board Builder"><h2>Explore our pathways</h2><ul>${links}</ul></nav><noscript><p>Enable JavaScript to use the interactive forms and dashboard.</p></noscript></main>`;
+  return `<main id="landing-page-summary" style="max-width:900px;margin:56px auto;padding:24px;font-family:Inter,Arial,sans-serif;line-height:1.7;color:#0f172a"><p style="color:#4f46e5;font-weight:700">${SITE_NAME}</p><h1>${escapeHtml(page.headline)}</h1>${paragraphs}${startLink}${steps}<nav aria-label="Explore Nonprofit Board Builder"><h2>The Fundraising Game</h2><ul>${links}</ul></nav><noscript><p>Enable JavaScript to use the interactive forms and dashboard.</p></noscript></main>`;
 }
 
 function renderLandingHtml(template, pathname) {
   const page = pageForPath(pathname);
   if (!page) return template;
+  if(page.retired)return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>The Fundraising Game | Nonprofit Board Builder</title><link rel="canonical" href="${SITE_ORIGIN}/"><meta http-equiv="refresh" content="0;url=/"></head><body><p><a href="/">Continue to The Fundraising Game</a></p></body></html>`;
   const tags = [`<title>${escapeHtml(page.title)}</title>`, ...metaTags(page).map(([attr, key, value]) => `<meta ${attr}="${key}" content="${escapeHtml(value)}" />`), `<link rel="canonical" href="${canonicalUrl(page)}" />`, `<script id="landing-page-schema" type="application/ld+json">${JSON.stringify(structuredData(page)).replace(/</g, "\\u003c")}</script>`].join("\n");
   return template
     .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
@@ -93,7 +97,7 @@ function robotsTxt() {
 }
 
 function sitemapXml() {
-  const paths = [...pages.map(page => page.path), ...articles.map(articlePath)];
+  const paths = [...pages.filter(page=>!page.retired).map(page => page.path), ...articles.map(articlePath)];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map(path => `  <url><loc>${SITE_ORIGIN}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
 }
 

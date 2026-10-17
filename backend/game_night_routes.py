@@ -814,6 +814,9 @@ def create_game_night_router(db) -> APIRouter:
             value = audiences6.clean_response(payload.model_dump() if hasattr(payload, "model_dump") else payload.dict(), version=record["game_version"])
             result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id": record["member_id"]}, {**value,"updated_at":now_iso()}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now_iso()})
             if not result.matched_count: raise HTTPException(409,"Your submitted contribution is already saved")
+            if record.get("game_version")==7 and record.get("is_primary"):
+                from fundraising_launch import touch
+                await touch(db,record["user_id"],"questions","/play/"+token)
             return {"status": "saved"}
         now = now_iso()
         await db.game_audience_responses.update_one(
@@ -842,6 +845,9 @@ def create_game_night_router(db) -> APIRouter:
             if existing.get("completed"): return {"status": "completed"}
             result = await audiences6.persist_draft(db.game_audience_responses, {"board_member_id":record["member_id"]}, {**value,"completed":True,"completed_at":now,"updated_at":now}, {"response_id":new_uuid(),"user_id":record["user_id"],"created_at":now})
             if not result.matched_count: return {"status":"completed"}
+            if record.get("game_version")==7 and record.get("is_primary"):
+                from fundraising_launch import touch
+                await touch(db,record["user_id"],"meeting","/game/setup")
             await db.game_board_members.update_one({"member_id": record["member_id"]}, {"$set": {"completed_at": now}})
             if not record.get("is_primary"):
                 owner = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}

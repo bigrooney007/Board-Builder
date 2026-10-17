@@ -5,7 +5,7 @@ import os
 import time
 import urllib.request
 from pathlib import Path
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, expect
 BASE='http://127.0.0.1:8765'
 assert os.environ.get('RECOVERY_ACCEPTANCE')=='1'
 
@@ -54,6 +54,7 @@ async def main():
             await page.get_by_role('button',name='START MY GAME',exact=True).click()
             await page.get_by_role('button',name='YES',exact=True).click()
             for index,value in enumerate(['Former mentors care about youth employment.','Community networks.','Share programme outcomes.','Ask for introductions and invite support.','Fund mentoring places, $500 each.']):
+                await expect(page.locator('.guided-question-top span').first).to_contain_text(f'Question {index+1} of 5')
                 await page.get_by_role('textbox',name='Your audience answer').fill(value)
                 await page.get_by_role('button',name='NEXT QUESTION' if index<4 else 'SAVE THIS AUDIENCE AND CONTINUE',exact=True).click()
             for _ in range(3):await page.get_by_role('button',name='NO, CONTINUE',exact=True).click()

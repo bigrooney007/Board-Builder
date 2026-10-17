@@ -107,11 +107,35 @@ async def send_due(db):
         for attempt in (1,2):
             record=await db.workflow_email_deliveries.find_one({'user_id':member['user_id'],'event_key':f'resume:{progress["stage"]}:{attempt}'},{'_id':0})
             if record and record.get('status') in ('sent','captured'): continue
-            if attempt==2 and progress['updated_at']>(datetime.now(timezone.utc)-timedelta(days=4)).isoformat(): break
+            if attempt==2:
+                first=await db.workflow_email_deliveries.find_one({'user_id':member['user_id'],'event_key':f'resume:{progress["stage"]}:1'},{'_id':0}) or {}
+                if first.get('updated_at','')>(datetime.now(timezone.utc)-timedelta(days=3)).isoformat():break
+                if progress['updated_at']>(datetime.now(timezone.utc)-timedelta(days=4)).isoformat():break
             # Authentication is required; the next path resumes saved state.
             link=origin()+'/login?next='+quote(progress['path'],safe='')
             await deliver_once(db,member['user_id'],f'resume:{progress["stage"]}:{attempt}',member['email'],'Continue Your Fundraising Game','Your progress is saved. Sign in to continue from where you stopped.',link)
             break
+
+    # Participants resume their own personal form; responses never appear in email.
+    drafts=await db.game_audience_responses.find({'workflow_version':7,'completed':False,'updated_at':{'$lte':stale}},{'_id':0}).to_list(1000)
+    for draft in drafts:
+        person=await db.game_board_members.find_one({'member_id':draft['board_member_id'],'removed':{'$ne':True},'is_primary':{'$ne':True}},{'_id':0})
+        if not person or not person.get('invited_at'):continue
+        for attempt in (1,2):
+            key='participant-resume:'+person['member_id']+':'+str(attempt)
+            sent=await db.workflow_email_deliveries.find_one({'user_id':person['user_id'],'event_key':key},{'_id':0}) or {}
+            if sent.get('status') in ('sent','captured'):continue
+            if attempt==2:
+                first=await db.workflow_email_deliveries.find_one({'user_id':person['user_id'],'event_key':'participant-resume:'+person['member_id']+':1'},{'_id':0}) or {}
+                if first.get('updated_at','')>(datetime.now(timezone.utc)-timedelta(days=3)).isoformat():break
+                if draft['updated_at']>(datetime.now(timezone.utc)-timedelta(days=4)).isoformat():break
+            await deliver_once(db,person['user_id'],key,person['email'],'Continue Your Fundraising Ideas','Your answers are saved. You can return to your personal questionnaire and continue where you stopped.',origin()+'/play/'+person['token'])
+            break
+    # Retry only stable transactional notices. Marketing retries still pass the
+    # consent, unsubscribe and purchase checks above; portfolios require approval.
+    failures=await db.workflow_email_deliveries.find({'status':'failed','event_key':{'$regex':'^(launch-welcome:|help:|meeting-strategy-ready:)'}},{'_id':0}).to_list(200)
+    for row in failures:
+        await deliver_once(db,row['user_id'],row['event_key'],row['recipient'],row['subject'],row['text'],row['link'])
 
 async def recovery_loop(db):
     while True:
@@ -338,6 +362,13 @@ def create_fundraising_launch_router(db):
         counts['dropoffs']=len(leads)-counts['paid']
         conversions={'visitor_to_lead':round(100*len(leads)/len(visitors),1) if visitors else 0,'lead_to_paid':round(100*counts['paid']/len(leads),1) if leads else 0}
         customers=await db.purchases.find({'entitlement':'board_fundraising_game'},{'_id':0}).sort('created_at',-1).to_list(5000)
+        ids=[x['user_id'] for x in customers]
+        profiles={x['user_id']:x for x in await db.game_profiles.find({'user_id':{'$in':ids}},{'_id':0}).to_list(5000)}
+        members={x['user_id']:x for x in await db.members.find({'user_id':{'$in':ids}},{'_id':0,'email':1,'first_name':1,'last_name':1,'user_id':1}).to_list(5000)}
+        for row in customers:
+            row['organization_name']=(profiles.get(row['user_id'],{}).get('organization') or {}).get('name','')
+            person=members.get(row['user_id'],{})
+            row['customer_name']=(person.get('first_name','')+' '+person.get('last_name','')).strip();row['customer_email']=person.get('email','')
         help_rows=await db.help_requests.find({'status':'open'},{'_id':0}).sort('created_at',-1).to_list(500)
         strategies=await db.game_strategies.find({'status':'adopted'},{'_id':0,'strategy_id':1,'user_id':1,'adopted_at':1,'document_text':1}).sort('adopted_at',-1).to_list(1000)
         return {'counts':counts,'conversions':conversions,'leads':leads,'customers':customers,'help_requests':help_rows,'strategies':strategies}
