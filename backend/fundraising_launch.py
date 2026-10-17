@@ -363,8 +363,10 @@ def create_fundraising_launch_router(db):
         return {'participants':rows,'prefilled':payload.get('prefill') is True}
 
     @router.post('/admin/fundraising/test-start')
-    async def fresh_test(request:Request):
+    async def fresh_test(request:Request,response:Response):
         actor=await admin(request,'start-current-fundraising-test')
+        from member_auth import clear_member_cookie
+        clear_member_cookie(response)  # A previous real member cookie must not override the synthetic identity.
         from member_auth import create_member_token
         user='admin-dashboard-preview-launch-'+secrets.token_hex(12)
         row={'user_id':user,'email':user+'@nonprofitboardbuilder.internal','first_name':'Sample','last_name':'Leader','entitlements':[],

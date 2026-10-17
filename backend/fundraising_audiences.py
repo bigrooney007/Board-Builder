@@ -57,6 +57,9 @@ def configuration(version=VERSION):
         result["another_questions"]["other"]="Would you like to recommend another funding audience?"
         result["questions"]["other"]=[dict(q) for q in result["questions"]["individuals"][:5]]
         result["questions"]["other"][0].update(prompt="Who should fund the mission, and why?",help="Describe this audience and why it has a strong reason to support the mission.")
+        result["questions"]["other"][1].update(prompt="Where could your organization find this audience?",help="Share the places, communities or networks you know.")
+        result["questions"]["other"][2].update(prompt="How could your organization attract this audience?",help="Explain how you would build interest and credibility.")
+        result["questions"]["other"][3].update(prompt="How could your organization raise money from this audience?",help="Describe the approach you recommend, or say where you are unsure.")
         result["questions"]["other"][4].update(prompt="What should we ask for, and how much?",help="Explain the request and recommended amount, or indicate uncertainty.")
         for cat in CATEGORIES:
             result["questions"][cat] = result["questions"][cat][:5]

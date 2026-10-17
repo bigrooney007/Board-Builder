@@ -4,7 +4,7 @@ import { memberApi } from "@/member/api";
 
 const LABELS = {who_why:"Audience and why they may give",where:"Where to find them",attraction:"How to attract their interest",process:"How to develop relationships and raise money",ask:"What to ask for",amount:"How much to ask"};
 export function AudienceDetails({ proposal }) {
-  return <div className="bfg-panel"><p className="bfg-eyebrow">{proposal.category} · Proposed by {proposal.contributor}</p>{Object.entries(LABELS).filter(([key])=>key!=="amount"||proposal.strategy.amount).map(([key,label]) => <div key={key} style={{marginTop:16}}><h3>{label}</h3><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{proposal.strategy[key]}</p></div>)}</div>;
+  return <div className="bfg-panel"><p className="bfg-eyebrow">{proposal.category} · Proposed by {proposal.contributor}</p>{Object.entries(LABELS).filter(([key])=>key!=="amount"||proposal.strategy.amount).map(([key,label]) => <div key={key} style={{marginTop:16}}><h3>{key==="ask"&&!proposal.strategy.amount?"What to ask for and how much":label}</h3><p style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{proposal.strategy[key]}</p></div>)}</div>;
 }
 export function AgreedAudienceSummary({ review }) {
   return <><h2>What We Have Agreed To Do Together</h2>{review.summary.audiences.map(p => <AudienceDetails key={p.id} proposal={p}/>)}<div className="bfg-panel"><h2>Confirmed Participation</h2>{review.summary.commitments.length ? review.summary.commitments.map(c => <p key={c.member_id}><strong>{c.name}</strong><br/>{c.contribution}{c.next_action && <><br/>Next step: {c.next_action}</>}</p>) : <p>No individual responsibilities have been confirmed.</p>}</div></>;
