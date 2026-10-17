@@ -35,6 +35,7 @@ export const PurchaseSuccessPage = () => {
   const nextStep = useCallback((source) => ({
     recruitment_497: "/app/board-recruitment/setup",
     board_fundraising_game_497: "/game/setup",
+    board_fundraising_game_997: "/game/setup",
     strategic_planning_497: `/strategic-planning/dashboard?session_id=${encodeURIComponent(sessionId)}#sp-meeting`,
     board_recommitment_497: `/board-recommitment/dashboard?session_id=${encodeURIComponent(sessionId)}#recommitment-forms`,
   }[source] || supportedEntry(source, sessionId)), [sessionId]);

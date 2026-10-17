@@ -159,6 +159,9 @@ class AudienceReview:
                 review["commitments"].append({"member_id": person["member_id"], "name": person["full_name"], "contribution": contribution, "audience_ids": ids,
                     "next_action": str(payload.get("next_action") or "").strip()[:2000], "confirmed": True, "confirmed_at": now()})
             elif operation == "summary":
+                if profile.get("workflow_version")==7:
+                    from fundraising_transcript import require_reviewed
+                    await require_reviewed(self.db,session)
                 approved = {p["id"] for p in audience.summary(review)["audiences"]}
                 if any(i not in approved for c in review["commitments"] for i in c.get("audience_ids", [])):
                     raise HTTPException(422, "Update participation linked to an audience that is no longer adopted")
@@ -166,6 +169,9 @@ class AudienceReview:
                 review["phase"] = "summary"
             elif operation == "reopen": review["phase"] = "audiences"
             elif operation == "adopt":
+                if profile.get("workflow_version")==7:
+                    from fundraising_transcript import require_reviewed
+                    await require_reviewed(self.db,session)
                 if review["phase"] != "summary" or payload.get("confirmed") is not True or payload.get("summary_revision") != audience.summary(review)["revision"]: raise HTTPException(409, "Review and confirm the current agreed strategy")
                 if not audience.summary(review)["audiences"]: raise HTTPException(422, "Adopt at least one audience before generating a strategy")
                 review["phase"] = "adopted"; review["facilitator_adopted_at"] = now()
@@ -211,6 +217,9 @@ class AudienceReview:
             if profile.get("workflow_version")!=7: raise HTTPException(409,"Use the closing steps for your saved game")
             if payload.get("confirmed") is not True: raise HTTPException(422,"Confirm that the meeting is ready to close")
             if session["audience_review"]["phase"] not in ("adopted","approved"): raise HTTPException(409,"Complete the group's adoption first")
+            if session["status"]!="completed":
+                from fundraising_transcript import require_reviewed
+                await require_reviewed(self.db,session)
             strategy=await self.strategy(session)
             state=await self.state(session)
             adoption=[{"name":p["name"],"member_id":p["member_id"],"adopted":p["acknowledged"],"joined":p["joined"]} for p in state["audience_review"]["people"]]
@@ -222,9 +231,9 @@ class AudienceReview:
                 review=copy.deepcopy(session["audience_review"]);review["phase"]="approved"
                 await self.save(session,review,status="completed",completed_at=now())
                 from fundraising_launch import touch
-                await touch(self.db,session["user_id"],"workspace","/game/dashboard")
+                await touch(self.db,session["user_id"],"complete","/game/dashboard")
             owner=await self.db.members.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
-            result=await deliver_once(self.db,session["user_id"],"meeting-strategy-ready:"+strategy["strategy_id"],owner.get("email",""),"Your Board's Fundraising Strategy Is Ready","Your board's adopted fundraising strategy is available in your workspace. Review and download it, confirm the responsibilities agreed at your meeting, and prepare your board members' portfolios.",(os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")+"/game/dashboard#final-strategy")
+            result=await deliver_once(self.db,session["user_id"],"meeting-strategy-ready:"+strategy["strategy_id"],owner.get("email",""),"Your Board's Fundraising Strategy Is Ready","Your board's adopted fundraising strategy is ready. Open the download page to confirm your logo and brand colors, download the document and share it with your board. The responsibilities agreed at your meeting are included.",(os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")+"/game/dashboard#final-strategy")
             return {"closed":True,"delivery":result}
 
         @router.post("/game/group/audience/retry-delivery")
@@ -252,4 +261,6 @@ class AudienceReview:
             review["acknowledgements"][person["board_member_id"]] = {"revision": revision, "acknowledged_at": now()}
             await self.save(session, review)
             return {"acknowledged": True}
+        from fundraising_transcript import create_transcript_router
+        router.include_router(create_transcript_router(self.db,self))
         return router

@@ -22,9 +22,9 @@ real charge, real email delivery or applicant-network broadcast was performed.
    existing typography, colors, founder image and original testimonial carousel.
 2. The homepage CTA opens contact capture. Name, email and organization are saved.
    The form discloses product follow-up without an optional checkbox. New requests enter the five-email sequence; unsubscribe and historical opt-outs remain respected.
-3. `/how-the-fundraising-game-works`: the supplied five steps, $497 one-time offer
+3. `/how-the-fundraising-game-works`: the supplied four steps, $997 one-time offer
    and existing 100% Guarantee. It also works as a shared direct URL.
-4. Existing `/api/payments/game-checkout` creates a $497 Stripe payment. The existing
+4. Existing `/api/payments/game-checkout` creates a $997 Stripe payment. The existing
    success/account-claim page reuses captured details. Only verified payment grants
    a real entitlement. Existing paid clients are directed to their saved game.
 5. `/game/setup`: fundraising goal, mission, annual budget, website and community.
@@ -35,7 +35,7 @@ real charge, real email delivery or applicant-network broadcast was performed.
 7. The leader returns to setup only after completing their own ideas, then saves the
    meeting date/time/time zone/location or online link and invites board members.
 8. `/game/dashboard`: own answers, invitations, submitted contributions, facilitation
-   guidance, meeting access, strategy, approved portfolios and a help request.
+   guidance, meeting access, strategy download/sharing and a help request.
 9. `/game/group`: private facilitator controls and prompts. `/group-game/:token`:
    synchronized participant screens. Board proposals precede all leader proposals.
    Approve or disapprove each complete audience before moving forward. Preserve the
@@ -44,15 +44,17 @@ real charge, real email delivery or applicant-network broadcast was performed.
     absent and unacknowledged people remain distinct. Close the meeting and let people
     leave. On entering the Group Game, the leader is asked to enable the microphone.
     The request explains transcription and confirms that everyone has been informed
-    and agrees before requesting browser access. Transcript text cannot override adopted decisions.
+    and agrees before requesting browser access. Transcript extraction proposes source-quoted additions under the appropriate
+    audience/question. Each addition requires explicit facilitator confirmation.
+    New audiences remain pending until separately approved. Rejected contributions
+    stay excluded. Manual transcript review remains available if the provider fails.
+    A changed transcript requires a fresh review before strategy adoption.
 11. Closing prepares the final strategy from adopted information and sends the leader
     “Your Board's Fundraising Strategy Is Ready”. The workspace asks for brand colors,
-    previews them and downloads the existing professional PDF. The leader is preparer.
-12. Confirm or edit accepted responsibilities, then generate board portfolios. Each
-    contains that person's original participation statement, agreed role, adopted
-    approaches and practical worksheets/templates for that role. Review, edit, save
-    and approve before sending. Copyable email, secure personal link, PDF, delivery
-    status and explicit resend are available. Drafts cannot be publicly downloaded.
+    accepts a PNG/JPEG logo, previews the branding and downloads the professional PDF.
+    A secure approved-strategy link and copyable board email are provided. This is
+    the final stage. New games cannot generate portfolios; historical records and
+    legacy access remain. The leader is identified as the preparer.
 
 New games use a version field on existing records. Previously saved questionnaires
 and dashboards continue to use their existing components and rules.
@@ -66,9 +68,10 @@ status, webhook and entitlement verification are retained.
 
 - Board fundraising blog generation, with original articles/RSS retained.
 - Independent authoritative homepage and How It Works text editors, including
-  biography, CTA text, step explanations, purchase heading and guarantee wording.
+  biography, CTA text, the complete four-step written offer and guarantee wording.
 - Paying customers and audited read-only inspection of organization details,
-  invitations, contributions, meeting state, strategy and portfolios.
+  invitations, contributions, meeting state and strategy. Historical portfolios
+  are visible only when previously saved records exist.
 - Final-strategy downloads and workspace help requests with administrator notice.
 - Identified leads, follow-up enrollment, delivery status, clicks and paid attribution.
 - Date-range funnel counts and conversions, distinguishing page views from visitors.
@@ -97,11 +100,13 @@ The synthetic export test does not establish that production record's existence.
 - Audience questionnaire, speech/narration components, invitation and response tools.
 - Shared Group Game sessions, participant device identities, polling and decisions.
 - Existing microphone chunks, transcript persistence and document rendering.
-- Existing strategy records, PDF renderer, portfolios and secure personal links.
+- Existing strategy records, PDF renderer and secure personal links. Historical
+  portfolio records and customer access remain preserved.
 - Existing design CSS, carousel, founder image, blog generation and RSS.
 
-There are no AI-generated funding audiences or independent recommendations in this
-journey. Document assembly preserves approved wording and recorded commitments.
+AI extracts only source-backed meeting contributions. It cannot independently
+adopt an idea or invent fundraising recommendations. Document assembly preserves
+approved wording and confirmed responsibilities.
 
 ## Verification
 
@@ -119,15 +124,15 @@ Checks include:
 - Admin save/read/public content, authentication and exact original-response PDF.
 - Draft resume, capped recovery, five durable marketing deliveries, shared-email
   duplicate protection, unsubscribe and verified-payment stop before account claim.
-- Explicit adoption, recoverable meeting closure, branded PDF, confirmed roles,
-  portfolio approval before send and duplicate delivery prevention.
+- Explicit adoption, recoverable meeting closure, logo/color-branded PDF, approved
+  responsibilities, secure sharing and no active portfolio generation.
 - Existing planning/fundraising, finished-resource, recruitment, prepayment and
   historical route regression tests.
 - Existing React journey tests, frozen-lockfile dependency install and production build.
 - Initial HTML, canonical metadata, social images, sitemap and retired HTTP redirects.
 - Playwright Chromium at 1440×1000 and 390×844, real customer pages, three participant
   browsers, private host prompts, live device updates, speech-event integration,
-  individual adoption, strategy PDF, portfolio editing/approval/captured send,
+  individual adoption, strategy PDF, logo upload and secure sharing without portfolios,
   both admin editors and a fresh test after a previous member session.
 
 CI artifacts include screenshots, walkthrough videos, browser results and server
@@ -168,3 +173,37 @@ completion thanks them and explains the next board-meeting discussion.
 The host is prompted for microphone access when entering an unfinished Group Game.
 Browser denial and retry are supported. Participant consent is explained in the
 request, and the transcript never overrides the group’s explicit decisions.
+
+## Final corrections from the latest supplied files
+
+New sales cost $997 once per organization. The Stripe resolver verifies one-time
+USD 99700 pricing; claims verify that amount before granting a new $997 purchase.
+Historical $497 purchases retain their price and entitlement. No $97 offer exists.
+
+The complete supplied How It Works copy is authoritative and has four steps. Its
+wording is stored as editable content. Old CMS revisions cannot silently restore
+the superseded offer or portfolio promises. The homepage retains the earlier
+supplied copy, biography, design and testimonial carousel, with four CTAs.
+
+Both leader and participants use the exact five-question audience flow and final
+participation question. The leader finishes before meeting setup/invitations.
+The Group Game discusses all board recommendations before all leader proposals.
+
+The transcript review has explicit include/dismiss controls and source quotes.
+New audiences must be completed and approved; responsibilities require agreement.
+A provider outage or a long transcript offers manual review rather than blocking
+the meeting. No suggestions enter the document until confirmed.
+
+The last stage is the adopted strategy, with a ready notification, optional logo
+and brand colors, PDF, secure share link and copyable email. There are no active
+portfolio buttons, generation, approval or delivery steps for new games.
+
+Follow-ups retain days 3/6/9/12/15, unsubscribe, paid stop and durable deduplication.
+No optional checkbox appears on the public form. Explicit historical opt-outs are
+preserved. Where explicit opt-in is required, the existing deployment can enable
+FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN to prevent automatic follow-up enrollment.
+This task does not change environment configuration or claim checkbox consent.
+
+The latest CI run linked to the final commit is the source for test results.
+Real provider quality, Gmail receipt, physical microphone recognition and the
+actual Catherine/Katherine production record remain unverified here.

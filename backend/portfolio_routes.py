@@ -359,8 +359,7 @@ def create_portfolio_router(db) -> APIRouter:
 
     async def build_draft(user_id: str, record: dict, strategy: dict, commitments: list) -> dict:
         if strategy.get("schema_version")==7:
-            from fundraising_launch import build_portfolio_draft
-            return await build_portfolio_draft(db,user_id,record,strategy)
+            raise HTTPException(410,"The Fundraising Game ends with your adopted strategy. Historical portfolio records remain available through their existing links.")
         member_id = record["member_id"]
         audiences = strategy_audiences(strategy)
         system_response = await db.game_section_responses.find_one(
@@ -496,6 +495,7 @@ def create_portfolio_router(db) -> APIRouter:
     async def prepare_portfolios(request: Request):
         member = await game_member(request)
         strategy = await adopted_strategy(member["user_id"])
+        if strategy.get("schema_version")==7:raise HTTPException(410,"The Fundraising Game ends with your adopted strategy.")
         review_id = strategy.get("meeting_review_id", "")
         commitments = await db.meeting_execution_commitments.find(
             {"review_id": review_id, "review_status": {"$in": ["keep", "edited"]}}, {"_id": 0}).to_list(500) if review_id else []

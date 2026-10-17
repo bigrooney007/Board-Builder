@@ -49,7 +49,7 @@ function structuredData(page) {
     { "@type": page.path === "/" ? "CollectionPage" : "WebPage", "@id": url + "#webpage", url, name: page.title, description: page.description, inLanguage: "en", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId }, primaryImageOfPage: { "@type": "ImageObject", url: imageUrl(page), width: 1200, height: 630 } },
   ];
   if (page.path === "/" || page.path === "/how-the-fundraising-game-works") {
-    graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"497.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
+    graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"997.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
   }
   if (page.path !== "/") {
     graph[2].mainEntity = { "@id": url + "#service" };
@@ -91,7 +91,7 @@ function renderLandingHtml(template, pathname) {
 }
 
 function robotsTxt() {
-  const privatePaths = ["/api/", "/admin", "/app/", "/login", "/forgot-password", "/reset-password/", "/purchase/", "/apply/", "/sign/", "/shared/", "/board-profile/", "/reference-form/", "/referee-form/", "/onboarding-session/", "/game/", "/play/", "/group-game/", "/strategic-planning/dashboard", "/strategic-planning/intake", "/board-recommitment/dashboard", "/board-recommitment/intake"];
+  const privatePaths = ["/strategy/","/api/", "/admin", "/app/", "/login", "/forgot-password", "/reset-password/", "/purchase/", "/apply/", "/sign/", "/shared/", "/board-profile/", "/reference-form/", "/referee-form/", "/onboarding-session/", "/game/", "/play/", "/group-game/", "/strategic-planning/dashboard", "/strategic-planning/intake", "/board-recommitment/dashboard", "/board-recommitment/intake"];
   // The wildcard rules allow Googlebot and OAI-SearchBot to crawl every public landing page.
   return ["User-agent: *", "Allow: /", ...privatePaths.map((path) => `Disallow: ${path}`), "Allow: /api/blog/images/", "Allow: /api/blog/sitemap.xml", "", `Sitemap: ${SITE_ORIGIN}/sitemap.xml`, `Sitemap: ${SITE_ORIGIN}/api/blog/sitemap.xml`, ""].join("\n");
 }

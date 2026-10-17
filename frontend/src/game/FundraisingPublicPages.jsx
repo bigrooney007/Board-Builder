@@ -1,3 +1,4 @@
+import WrittenOfferContent from "./WrittenOfferContent";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -15,15 +16,15 @@ export const visitorId = () => {
 export default function FundraisingPublicPage({ how=false }) {
   useLandingPageMeta(how?"/how-the-fundraising-game-works":"/");
   const navigate=useNavigate();const location=useLocation();const {member,loading}=useMemberAuth();
-  const [content,setContent]=useState(null);const [capture,setCapture]=useState(false);const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem("fundraisingLeadDetails")||"{}")}catch{return {}}});
+  const [content,setContent]=useState(null);const [price,setPrice]=useState(null);const [capture,setCapture]=useState(false);const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem("fundraisingLeadDetails")||"{}")}catch{return {}}});
   const [busy,setBusy]=useState(false);const [error,setError]=useState("");
   const token=new URLSearchParams(location.search).get("lead")||localStorage.getItem("fundraisingLeadToken")||"";
-  useEffect(()=>{let active=true;memberApi.get("/fundraising/content").then(r=>{if(active)setContent(r.data.content)}).catch(()=>setError("The page could not load. Please refresh to try again."));return()=>{active=false}},[]);
+  useEffect(()=>{let active=true;memberApi.get("/fundraising/content").then(r=>{if(active){setContent(r.data.content);setPrice(r.data.price)}}).catch(()=>setError("The page could not load. Please refresh to try again."));return()=>{active=false}},[]);
   useEffect(()=>{
     document.title=how?"How The Fundraising Game Works | Nonprofit Board Builder":"The Fundraising Game | Nonprofit Board Builder";
     const canonical=window.location.origin+(how?"/how-the-fundraising-game-works":"/");
     let node=document.querySelector('link[rel="canonical"]');if(!node){node=document.createElement("link");node.rel="canonical";document.head.appendChild(node)}node.href=canonical;
-    const meta=document.querySelector('meta[name="description"]')||document.createElement("meta");meta.name="description";meta.content="Get your board involved in developing, adopting and executing your organization's fundraising strategy by your next board meeting. The Fundraising Game costs $497 once.";if(!meta.parentNode)document.head.appendChild(meta);
+    const meta=document.querySelector('meta[name="description"]')||document.createElement("meta");meta.name="description";meta.content="Get your board involved in developing, adopting and executing your organization's fundraising strategy by your next board meeting. The Fundraising Game costs $997 once.";if(!meta.parentNode)document.head.appendChild(meta);
     memberApi.post("/fundraising/events",{kind:how?"page_two":"homepage",visitor_id:visitorId(),lead_token:token}).catch(()=>{});
     if(how&&token)memberApi.get("/fundraising/leads/"+token).then(r=>setLead(r.data)).catch(()=>{});
   },[how,token]);
@@ -41,11 +42,11 @@ export default function FundraisingPublicPage({ how=false }) {
   return <div className="nBB-home" data-testid={how?"fundraising-how-page":"fundraising-home-page"}>
     <header className="nBB-home-nav" style={{justifyContent:"flex-end",gap:20}}><Link className="nBB-home-login" to="/">Nonprofit Board Builder</Link>{!loading&&<Link className="nBB-home-login" to={member?"/game/dashboard":"/login"}>{member?"My Workspace":"Log In"}</Link>}<Link className="nBB-home-login" to="/blog">Blog</Link></header>
     <main>{!c?<section className="nBB-home-problem"><p>{error||"Opening The Fundraising Game…"}</p></section>:<>
-      <section className="nBB-home-hero"><p className="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>{c.title}</h1>{c.introduction&&<p className="nBB-home-lead">{c.introduction}</p>}<button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening…":c.cta}</button></section>
+      <section className="nBB-home-hero"><p className="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>{c.title}</h1>{c.introduction&&<p className="nBB-home-lead">{c.introduction}</p>}<button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening…":c.cta}</button>{price&&<p>One-time payment: ${price} per organization.</p>}</section>
       <section className="nBB-home-problem" style={{textAlign:"left",maxWidth:800,margin:"0 auto",padding:"42px 24px",lineHeight:1.85,fontSize:19}}>
-        {how&&c.steps.map((step,index)=><article key={index} style={{marginBottom:36}}><h2>Step {index+1}: {step.heading}</h2>{step.paragraphs.map((p,i)=><p key={i} style={{textAlign:"left"}}>{p}</p>)}</article>)}
+        {how?<><WrittenOfferContent text={c.article}/><div style={{textAlign:"center",marginTop:36}}><p>{c.guarantee}</p><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening checkout…":c.cta}</button></div></>:<>
         {c.paragraphs.map((p,i)=><p key={i} style={{marginBottom:20,textAlign:"left"}}>{p}</p>)}
-        {how?<div style={{textAlign:"center",marginTop:36}}><h2>{c.purchase_heading}</h2><p>{c.guarantee}</p><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening checkout…":c.cta}</button></div>:<><div data-testid="fundraising-cta-after-explanation"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div><article style={{marginTop:44}}><h2>{c.biography_heading}</h2><img src={process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL||"https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp"} alt="Rooney A." loading="lazy" style={{width:"100%",maxWidth:280,borderRadius:16,display:"block",margin:"20px auto"}}/>{c.biography.map((p,i)=><p key={i} style={{textAlign:"left"}}>{p}</p>)}<div data-testid="fundraising-cta-after-biography"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div></article></>}
+        <div data-testid="fundraising-cta-after-explanation"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div><article style={{marginTop:44}}><h2>{c.biography_heading}</h2><img src={process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL||"https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp"} alt="Rooney A." loading="lazy" style={{width:"100%",maxWidth:280,borderRadius:16,display:"block",margin:"20px auto"}}/>{c.biography.map((p,i)=><p key={i} style={{textAlign:"left"}}>{p}</p>)}<div data-testid="fundraising-cta-after-biography"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div></article></>}
         {error&&<p role="alert" className="submit-error">{error}</p>}
       </section>
       <section className="nBB-home-proof"><TestimonialCarousel heading="What Nonprofit Leaders Have Said" idPrefix="fundraising-launch"/></section>

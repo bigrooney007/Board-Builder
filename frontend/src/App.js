@@ -4,7 +4,7 @@ import "@/App.css";
 
 import FundraisingPublicPage from "@/game/FundraisingPublicPages";
 import FundraisingSetup from "@/game/FundraisingSetup";
-import FundraisingWorkspace from "@/game/FundraisingWorkspace";
+import FundraisingWorkspace, { LegacyFundraisingTool } from "@/game/FundraisingWorkspace";
 import FundraisingAdminPage from "@/admin/FundraisingAdminPage";
 import LegacyCustomerRoute from "@/game/LegacyCustomerRoute";
 import JoinBoardPage from "@/pages/JoinBoardPage";
@@ -167,8 +167,8 @@ function CleanRoutes() {
       <Route path="/game/group" element={<GroupGamePage />} />
       <Route path="/group-game/:token" element={<GroupPlayPage />} />
       <Route path="/game/strategy/view/:strategyId" element={<StrategyPage />} />
-      <Route path="/game/portfolios" element={<PortfoliosPage />} />
-      <Route path="/game/portfolios/:portfolioId" element={<PortfolioEditPage />} />
+      <Route path="/game/portfolios" element={<LegacyFundraisingTool><PortfoliosPage /></LegacyFundraisingTool>} />
+      <Route path="/game/portfolios/:portfolioId" element={<LegacyFundraisingTool><PortfolioEditPage /></LegacyFundraisingTool>} />
       <Route path="/game/portfolios/:portfolioId/toolkit" element={<Navigate to="/game/portfolios" replace />} />
       <Route path="/board-portfolio/:token" element={<BoardPortfolioPage />} />
       <Route path="/board-assistant/:token" element={<BoardExecutionAssistantPage />} />

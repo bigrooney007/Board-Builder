@@ -36,7 +36,16 @@ async def content(db):
     def merge(base,override):
         if isinstance(base,dict) and isinstance(override,dict):return {k:merge(v,override.get(k,v)) for k,v in base.items()}
         return copy.deepcopy(override)
-    return merge(DEFAULT,saved.get('content',{}))
+    override=saved.get('content',{})
+    if saved.get('content_revision',0)<2:
+        override=copy.deepcopy(override)
+        override['how']=DEFAULT['how']
+        for i,row in enumerate(override.get('followups',[])):
+            if 'portfolio' in str(row).lower():override['followups'][i]=copy.deepcopy(DEFAULT['followups'][i])
+            else:
+                row['body']=row.get('body','').replace('$497','$997')
+                row['subject']=row.get('subject','').replace('$497','$997')
+    return merge(DEFAULT,override)
 
 class Lead(BaseModel):
     name: str = Field(min_length=2, max_length=200)
@@ -97,7 +106,7 @@ async def send_due(db):
             paid=await db.payment_transactions.find_one({'launch_lead_token':lead['result_token'],'payment_status':'paid'},{'_id':0,'session_id':1})
             paid_account=await db.members.find_one({'email':lead['email'].lower(),'entitlements':'board_fundraising_game'},{'_id':0,'user_id':1})
             other_payment=await db.payment_transactions.find_one({'lead_email':lead['email'].lower(),'payment_status':'paid'},{'_id':0,'session_id':1})
-            if not (current.get('marketing_consent') or current.get('followup_enrolled')):break
+            if not current.get('marketing_consent') and (not current.get('followup_enrolled') or os.environ.get('FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN','false').lower()=='true'):break
             if current.get('paid_at') or current.get('unsubscribed') or paid or paid_account or other_payment: break
             previous=await db.workflow_email_deliveries.find_one({'user_id':sequence_owner,'event_key':'followup:'+str(index)},{'_id':0})
             if previous and previous.get('status') in ('sent','captured'): continue
@@ -166,7 +175,7 @@ def create_fundraising_launch_router(db):
         return actor
 
     @router.get('/fundraising/content')
-    async def site_content(): return {'content':await content(db),'price':497,'currency':'usd'}
+    async def site_content(): return {'content':await content(db),'price':997,'currency':'usd'}
 
     @router.post('/fundraising/leads',status_code=201)
     async def capture(payload:Lead,request:Request):
@@ -190,7 +199,8 @@ def create_fundraising_launch_router(db):
         if payload.marketing_consent is None:
             # The current contact form requests product information and discloses
             # follow-up. Do not invent a checkbox opt-in or reverse an unsubscribe.
-            updates.update(followup_enrolled=not bool(opted_out),followup_basis='product_information_request',followup_notice=FOLLOWUP_NOTICE,followup_notice_version=2,followup_enrolled_at=now())
+            requires_optin=os.environ.get('FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN','false').lower()=='true'
+            updates.update(followup_enrolled=not bool(opted_out) and not requires_optin,followup_basis='product_information_request',followup_notice=FOLLOWUP_NOTICE,followup_notice_version=2,followup_enrolled_at=now())
         else:
             # Preserve explicit preferences from historical form integrations.
             updates.update(marketing_consent=payload.marketing_consent,consent_recorded_at=now(),followup_enrolled=False)
@@ -290,8 +300,33 @@ def create_fundraising_launch_router(db):
         member=await owner(request)
         colors={k:str(payload.get(k,'')).strip() for k in ('primary_color','secondary_color')}
         if any(v and not re.fullmatch(r'#[0-9a-fA-F]{6}',v) for v in colors.values()):raise HTTPException(422,'Choose valid brand colors')
+        if 'logo_data' in payload:
+            import base64
+            from io import BytesIO
+            from PIL import Image
+            logo=str(payload.get('logo_data') or '')
+            if logo:
+                if len(logo)>1500000 or not re.match(r'^data:image/(png|jpeg);base64,',logo):raise HTTPException(422,'Upload a PNG or JPEG logo up to 1 MB')
+                try:
+                    raw=base64.b64decode(logo.split(',',1)[1],validate=True)
+                    if len(raw)>1000000:raise ValueError('Too large')
+                    image=Image.open(BytesIO(raw))
+                    if image.width*image.height>16000000 or image.format not in ('PNG','JPEG'):raise ValueError('Unsupported image')
+                    image.thumbnail((1000,1000));image=image.convert('RGBA');buffer=BytesIO();image.save(buffer,format='PNG')
+                    colors['logo_data']='data:image/png;base64,'+base64.b64encode(buffer.getvalue()).decode()
+                except Exception as exc:raise HTTPException(422,'Upload a valid PNG or JPEG logo up to 1 MB') from exc
+            else:colors['logo_data']=''
         await db.game_profiles.update_one({'user_id':member['user_id']},{'$set':{**{'branding.'+k:v for k,v in colors.items()},'updated_at':now()}})
         return {'branding':colors}
+
+    @router.get('/fundraising/strategy/{token}/document.pdf')
+    async def shared_document(token:str):
+        strategy=await db.game_strategies.find_one({'share_token':token,'schema_version':7,'status':'adopted'},{'_id':0})
+        if not strategy:raise HTTPException(404,'This approved strategy is not available')
+        p=await db.game_profiles.find_one({'user_id':strategy['user_id']},{'_id':0}) or {}
+        from strategy_pdf import build_strategy_pdf
+        strategy['branding']=p.get('branding') or {}
+        return Response(build_strategy_pdf(strategy,(p.get('organization') or {}).get('name','')),media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="fundraising-strategy.pdf"','X-Robots-Tag':'noindex, nofollow'})
 
     @router.post('/game/launch/roles')
     async def confirm_role(payload:dict,request:Request):
@@ -397,9 +432,9 @@ def create_fundraising_launch_router(db):
             if isinstance(template,list):return isinstance(value,list) and len(value)<=100 and all(validate(template[0],v) for v in value)
             if isinstance(template,dict):return isinstance(value,dict) and set(value)==set(template) and all(validate(v,value[k]) for k,v in template.items())
             return isinstance(value,type(template))
-        if not validate(DEFAULT,payload) or len(payload['how']['steps'])!=5 or len(payload['followups'])!=5:raise HTTPException(422,'Preserve the page fields, five steps and five follow-up emails')
+        if not validate(DEFAULT,payload) or len(payload['followups'])!=5:raise HTTPException(422,'Preserve both page editors and the five follow-up emails')
         for i,row in enumerate(payload['followups'],1):row['day']=i*3
-        await db.site_content.update_one({'key':SOURCE},{'$set':{'content':payload,'updated_at':now()}},upsert=True)
+        await db.site_content.update_one({'key':SOURCE},{'$set':{'content':payload,'content_revision':2,'updated_at':now()}},upsert=True)
         return {'saved':True,'content':await content(db)}
 
     @router.get('/admin/fundraising/overview')

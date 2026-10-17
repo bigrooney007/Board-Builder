@@ -15,11 +15,11 @@ class Configuration(unittest.TestCase):
     def test_shared_five_questions_and_exact_personal_participation(self):
         config=audience.configuration(7)
         self.assertTrue(all(len(rows)==5 for rows in config['questions'].values()))
-        self.assertEqual(config['participation_question'],'How do you see yourself participating in helping your organization reach its fundraising goal, based on the suggestions and ideas you have shared?')
+        self.assertEqual(config['participation_question'],'How do you see yourself participating and supporting your organization to reach this fundraising goal?')
         self.assertEqual(len(audience.configuration(6)['questions']['individuals']),6)
         self.assertEqual(config['categories'],['individuals','businesses','grantmakers'])
         self.assertIn('strongest reason',config['questions']['individuals'][0]['prompt'])
-        self.assertIn('daily basis',config['questions']['individuals'][2]['prompt'])
+        self.assertIn('consistently',config['questions']['individuals'][2]['prompt'])
         self.assertIn('first time',config['questions']['individuals'][3]['prompt'])
         self.assertIn('proposal asking for money',config['questions']['businesses'][3]['prompt'])
         self.assertIn('not just about writing an application',config['questions']['grantmakers'][3]['prompt'])
@@ -81,7 +81,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         result=await self.call('GET','/game/group/session');return result['audience_review']
     async def action(self,**payload):
         review=await self.group();return await self.call('POST','/game/group/audience/action',{'revision':review['revision'],**payload})
-    async def test_complete_customer_journey_and_guarded_portfolio_delivery(self):
+    async def test_complete_customer_journey_ends_with_branded_shared_strategy(self):
         await self.setup_and_complete_leader();guest=await self.add_guest()
         invitation=await self.db.admin_test_email_events.find_one({'message.subject':{'$regex':"You're Invited"}})
         self.assertIn('Treasurer',invitation['message']['html']);self.assertIn('/play/'+guest['token'],invitation['message']['html']);self.assertIn('Sample',invitation['message']['html'])
@@ -109,22 +109,23 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         session=await self.db.group_game_sessions.find_one({'user_id':self.user})
         await self.call('POST','/game/group/play/'+session['token']+'/acknowledge',{'slot_id':'late','device_id':'late','confirmed':True},409)
         self.assertNotIn('Leader businesses',strategy['document_text'])
-        await self.call('PUT','/game/launch/branding',{'primary_color':'#123456','secondary_color':'#eeeeee'})
+        from PIL import Image
+        import base64
+        image=Image.new('RGB',(20,20),'blue');buffer=io.BytesIO();image.save(buffer,format='PNG')
+        logo='data:image/png;base64,'+base64.b64encode(buffer.getvalue()).decode()
+        await self.call('PUT','/game/launch/branding',{'primary_color':'#123456','secondary_color':'#eeeeee','logo_data':logo})
+        await self.call('PUT','/game/launch/branding',{'logo_data':'data:image/png;base64,not-an-image'},422)
         pdf=await self.call('GET','/game/group/audience/download');self.assertEqual(pdf.content[:4],b'%PDF')
         from pypdf import PdfReader
         document_text='\n'.join(page.extract_text() or '' for page in PdfReader(io.BytesIO(pdf.content)).pages)
         self.assertIn('Help young people enter employment.',document_text);self.assertIn('Sample Leader',document_text)
-        await self.call('POST','/game/portfolios/prepare')
-        self.assertFalse((await self.call('GET','/game/launch/portfolios'))['portfolios'])
-        await self.call('POST','/game/launch/roles',{'member_id':guest['member_id'],'role':'Introduce two interested employers.','confirmed':True})
-        await self.call('POST','/game/portfolios/prepare');row=(await self.call('GET','/game/launch/portfolios'))['portfolios'][0]
-        self.assertIn('Introduce two interested employers.',row['portfolio_text'])
-        await self.call('POST',f"/game/portfolios/{row['portfolio_id']}/send",{'origin_url':'http://test'},409)
-        await self.call('POST',f"/game/launch/portfolios/{row['portfolio_id']}/approve",{'version':row['version'],'confirmed':True})
-        await self.call('POST',f"/game/portfolios/{row['portfolio_id']}/send",{'origin_url':'http://test'})
-        await self.call('POST',f"/game/portfolios/{row['portfolio_id']}/send",{'origin_url':'http://test'})
-        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':f"portfolio:{row['portfolio_id']}:{row['version']}"}),1)
-        public=await self.call('GET','/board-portfolio/'+row['token']);self.assertEqual(public['approved_text'],row['portfolio_text'])
+        await self.call('POST','/game/portfolios/prepare',status=410)
+        self.assertEqual(await self.db.board_portfolios.count_documents({'user_id':self.user}),0)
+        shared=await self.call('GET','/strategy/shared/'+strategy['share_token'],headers={})
+        self.assertEqual(shared['strategy']['status'],'adopted')
+        self.assertNotIn('transcript',shared['strategy'])
+        public_pdf=await self.call('GET','/fundraising/strategy/'+strategy['share_token']+'/document.pdf',headers={})
+        self.assertTrue(public_pdf.content.startswith(b'%PDF'))
     async def test_admin_content_is_authoritative_and_requires_admin(self):
         data=await self.call('GET','/admin/fundraising/content');data['content']['home']['title']='My own homepage wording'
         await self.call('PUT','/admin/fundraising/content',data['content'])
@@ -157,6 +158,48 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         with patch('fundraising_launch.deliver_once',new=AsyncMock()) as send:await send_due(self.db);send.assert_not_awaited()
         await self.db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'unsubscribed':False,'marketing_consent':True,'paid_at':datetime.now(timezone.utc).isoformat()}})
         with patch('fundraising_launch.deliver_once',new=AsyncMock()) as send:await send_due(self.db);send.assert_not_awaited()
+    async def test_transcript_contributions_require_source_and_explicit_approval(self):
+        await self.setup_and_complete_leader();guest=await self.add_guest()
+        await self.call('POST','/game/group/prepare');await self.call('POST','/game/group/start')
+        proposals=(await self.group())['proposals'];chosen=proposals[0]
+        for i,proposal in enumerate(proposals):
+            await self.action(action='decision',proposal_id=proposal['id'],status='adopted' if i==0 else 'rejected',strategy=proposal['strategy'])
+            await self.action(action='progress',index=i+1)
+        text='We agreed to find these donors at the alumni association. We rejected purchasing a donor list. Local architects care about mentoring.'
+        await self.db.game_meeting_transcripts.insert_one({'user_id':self.user,'text':text,'submitted_at':datetime.now(timezone.utc).isoformat()})
+        await self.call('POST','/game/group/audience/action',{'action':'summary','revision':(await self.group())['revision']},409)
+        output={'suggestions':[
+            {'kind':'field','proposal_id':chosen['id'],'field':'where','text':'the alumni association','quote':'We agreed to find these donors at the alumni association.','adoption':'agreed'},
+            {'kind':'field','proposal_id':chosen['id'],'field':'process','text':'purchasing a donor list','quote':'We rejected purchasing a donor list.','adoption':'rejected'},
+            {'kind':'field','proposal_id':chosen['id'],'field':'ask','text':'Invented $100000 request','quote':'Not actually in the transcript','adoption':'agreed'},
+            {'kind':'new_audience','category':'businesses','strategy':{'who_why':'Local architects care about mentoring.','where':'','attraction':'','process':'','ask':''},'quote':'Local architects care about mentoring.','adoption':'unclear'}]}
+        with patch('fundraising_transcript.extract_contributions',new=AsyncMock(return_value=output)):
+            data=await self.call('POST','/game/group/audience/transcript/extract')
+        self.assertEqual(len(data['suggestions']),3)
+        self.assertNotIn('alumni association',(await self.group())['summary']['audiences'][0]['strategy']['where'])
+        item=data['suggestions'][0]
+        await self.call('POST','/game/group/audience/transcript/confirm',{'suggestion_id':item['suggestion_id'],'revision':(await self.group())['revision'],'confirmed':True,'action':'include'})
+        self.assertIn('alumni association',(await self.group())['summary']['audiences'][0]['strategy']['where'])
+        item=data['suggestions'][-1]
+        await self.call('POST','/game/group/audience/transcript/confirm',{'suggestion_id':item['suggestion_id'],'revision':(await self.group())['revision'],'confirmed':True,'action':'include'})
+        review=await self.group();new=review['proposals'][-1]
+        self.assertTrue(new['id'].startswith('transcript:'));self.assertNotIn(new['id'],[p['id'] for p in review['summary']['audiences']])
+        await self.action(action='decision',proposal_id=new['id'],status='adopted',strategy={**new['strategy'],'where':'Our local professional association.','attraction':'Share results.','process':'Meet before asking.','ask':'Mentoring support; amount to confirm.'})
+        await self.action(action='progress',index=len(review['proposals']))
+        await self.action(action='summary')
+        result=await self.group();self.assertEqual(len(result['summary']['audiences']),2)
+        self.assertNotIn('purchasing a donor list',str(result['summary']))
+        await self.call('POST','/game/group/audience/transcript/extract',status=401,headers={})
+
+    async def test_new_offer_copy_and_optin_required_policy(self):
+        data=await self.call('GET','/fundraising/content')
+        self.assertEqual(data['price'],997);self.assertEqual(data['content']['how']['title'],'Get Your Board Members Fundraising By Your Next Board Meeting.')
+        self.assertNotIn('portfolio',str(data['content']).lower());self.assertNotIn('$497',str(data['content']))
+        self.assertEqual(data['content']['how']['article'].count('### Step '),4)
+        with patch.dict(os.environ,{'FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN':'true'}):
+            lead=await self.call('POST','/fundraising/leads',{'name':'Policy Visitor','email':'policy@example.org','organization':'Example','visitor_id':'policy-browser-123456'},201,headers={})
+            row=await self.db.funnel_leads.find_one({'lead_id':lead['lead_id']});self.assertFalse(row['followup_enrolled'])
+
     async def test_legacy_founder_export_keeps_full_original_wording(self):
         from pypdf import PdfReader
         await self.db.sp_projects.insert_one({'project_id':'historical','organization_name':'For All the Children','founder_name':'Katherine','founder_email':'founder@example.org'})
@@ -176,16 +219,19 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         account={'user_id':'real-account','email':'paying@example.org','first_name':'Paying','last_name':'Leader','entitlements':[],'account_status':'active'}
         await self.db.members.insert_one(account.copy())
         headers={'Authorization':'Bearer '+create_member_token(account['user_id'],account['email'])}
-        with patch('payment_routes.resolve_game_price_id',return_value='price_497'),patch('payment_routes.stripe.checkout.Session.create',return_value=SimpleNamespace(id='cs_paid',url='https://checkout.stripe.test/session')) as checkout:
+        with patch('payment_routes.resolve_game_price_id',return_value='price_997'),patch('payment_routes.stripe.checkout.Session.create',return_value=SimpleNamespace(id='cs_paid',url='https://checkout.stripe.test/session')) as checkout:
             await self.call('POST','/payments/game-checkout',{'origin_url':'http://test','result_token':lead['token']},headers={})
             kwargs=checkout.call_args.kwargs
-        self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'497')
-        self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],49700)
+        self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'997')
+        self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],99700)
         self.assertFalse((await self.db.members.find_one({'user_id':'real-account'}))['entitlements'])
-        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_total=49700,currency='usd',customer_details={'email':account['email']})
+        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_total=99700,currency='usd',customer_details={'email':account['email']})
         with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
             await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},402,headers=headers)
             session.payment_status='paid'
+            session.amount_total=49700
+            await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},409,headers=headers)
+            session.amount_total=99700
             with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})):
                 await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},headers=headers)
                 await self.call('PUT','/game/launch/organization',{'fundraising_goal':50000,'mission':'Our real supplied mission.','annual_budget':'Not yet confirmed','community':'Young people'},headers=headers)
@@ -194,6 +240,20 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(profile['workflow_version'],7);self.assertTrue(profile['profile_completed']);self.assertEqual(profile['organization']['name'],'BrightPath')
         self.assertEqual((await self.db.game_journey_progress.find_one({'user_id':'real-account'}))['stage'],'questions')
         self.assertEqual(await self.db.purchases.count_documents({'session_id':'cs_paid'}),1)
+
+    async def test_historical_497_claim_retains_price_and_entitlement(self):
+        from types import SimpleNamespace
+        from member_auth import create_member_token
+        account={'user_id':'legacy-account','email':'legacy@example.org','first_name':'Legacy','last_name':'Leader','entitlements':[],'account_status':'active'}
+        await self.db.members.insert_one(account.copy())
+        headers={'Authorization':'Bearer '+create_member_token(account['user_id'],account['email'])}
+        session=SimpleNamespace(id='cs_legacy',payment_status='paid',metadata={'offer_source':'board_fundraising_game','selected_tier':'497','member_user_id':account['user_id']},customer='cus_legacy',payment_intent='pi_legacy',amount_total=49700,currency='usd',customer_details={'email':account['email']})
+        with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
+            await self.call('POST','/members/claim-purchase',{'session_id':'cs_legacy'},headers=headers)
+        purchase=await self.db.purchases.find_one({'session_id':'cs_legacy'})
+        self.assertEqual(purchase['price_paid'],497)
+        self.assertEqual(purchase['purchase_source'],'board_fundraising_game_497')
+        self.assertIn('board_fundraising_game',(await self.db.members.find_one({'user_id':account['user_id']}))['entitlements'])
 
     async def test_partial_setup_is_saved_without_premature_completion(self):
         await self.fresh()

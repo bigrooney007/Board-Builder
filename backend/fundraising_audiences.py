@@ -40,7 +40,7 @@ QUESTIONS = {
 
 
 LAUNCH_VERSION = 7
-PARTICIPATION_LAUNCH = "How do you see yourself participating in helping your organization reach its fundraising goal, based on the suggestions and ideas you have shared?"
+PARTICIPATION_LAUNCH = "How do you see yourself participating and supporting your organization to reach this fundraising goal?"
 LAUNCH_INSTRUCTIONS = "You can write or speak your answers freely. There are no perfect answers expected. We want your ideas about who should fund this mission and how the organization could raise money from them."
 
 def configuration(version=VERSION):
@@ -58,18 +58,18 @@ def configuration(version=VERSION):
             "other": "Is there another funding audience from your saved answers you would like to review?",
         }
         result["another_questions"] = {
-            "individuals": "Do you know another type of individual you would like to recommend?",
+            "individuals": "Do you have another type of individual you would like to recommend?",
             "businesses": "Do you know another type of business you would like to recommend?",
             "grantmakers": "Do you know any other grantors, grantmakers or foundations you would like to recommend?",
             "other": "Would you like to review another saved funding audience?",
         }
         prompts = {
             "individuals": [
-                "Which type of individual do you think has the strongest reason to fund our organization's mission, and why?",
-                "Where can we find these types of individuals?",
-                "What can we give to these individuals, or put out on a daily basis, that would attract their interest in our organization?",
-                "Since we cannot ask these individuals to give the first time we speak to them, what process should we follow to develop the relationship and get them to give to our organization?",
-                "When we are finally in front of these individuals and ready to ask, what should we ask them to give to, and how much should we ask them to give?",
+                "Which type of individuals do you think have the strongest reason to fund your organization's mission, and why?",
+                "Where can your organization find these individuals?",
+                "What can your organization give to these individuals, or put out consistently, that will attract their interest in your organization?",
+                "How should your organization develop relationships with these individuals and eventually raise money from them, considering that you cannot simply ask them for money the first time you contact them? What process should you follow?",
+                "When you're ready to ask these individuals for support, what should you ask them to fund, and how much should you ask them to contribute?",
             ],
             "businesses": [
                 "Which type of business do you think has the strongest reason to give to our organization, and why?",

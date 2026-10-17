@@ -12,6 +12,7 @@ export default function SharedStrategyPage() {
 
   useEffect(() => {
     document.title = "Fundraising Strategy";
+    const robots=document.createElement("meta");robots.name="robots";robots.content="noindex, nofollow";document.head.appendChild(robots);
     axios.get(`${API}/strategy/shared/${shareToken}`)
       .then((response) => setStrategy(response.data.strategy))
       .catch(() => setNotFound(true));
@@ -36,6 +37,7 @@ export default function SharedStrategyPage() {
       </header>
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px 70px" }}>
         <StrategyDocument strategy={strategy} />
+        {strategy.schema_version===7&&<a className="bfg-btn bfg-btn-primary" href={`${API}/fundraising/strategy/${shareToken}/document.pdf`}>Download Adopted Strategy</a>}
       </main>
     </div>
   );
