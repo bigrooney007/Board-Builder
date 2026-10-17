@@ -47,7 +47,7 @@ export default function AudienceQuestionnaire({ configuration: config, initial, 
     const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     move({ ...value, audiences: { ...value.audiences, [category]: [...list, { id }] }, category_status: { ...value.category_status, [category]: "" }, progress: { category: progress.category || 0, audience_index: list.length, question: 0, phase: "answer" } });
   };
-  const finishCategory = () => move({ ...value, category_status: { ...value.category_status, [category]: "complete" }, progress: progress.category < 2 ? { category: progress.category + 1, phase: "gate", question: 0, audience_index: 0 } : { ...progress, phase: "participation" } });
+  const finishCategory = () => move({ ...value, category_status: { ...value.category_status, [category]: "complete" }, progress: progress.category < config.categories.length - 1 ? { category: progress.category + 1, phase: "gate", question: 0, audience_index: 0 } : { ...progress, phase: "participation" } });
   const submit = async () => {
     setBusy(true); setError("");
     try { await persist(value); await complete(value); localStorage.removeItem(storageKey); }

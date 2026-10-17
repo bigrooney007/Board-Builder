@@ -136,7 +136,7 @@ class AudienceReview:
                 review["decisions"][proposal["id"]] = {"status": payload["status"], "strategy": value}
             elif operation == "add":
                 category = payload.get("category"); raw = payload.get("strategy") or {}
-                if category not in audience.CATEGORIES or not all(str(raw.get(k) or "").strip() for k in fields): raise HTTPException(422, "Supply the complete audience agreed during discussion")
+                if category not in ((*audience.CATEGORIES,"other") if profile.get("workflow_version")==7 else audience.CATEGORIES) or not all(str(raw.get(k) or "").strip() for k in fields): raise HTTPException(422, "Supply the complete audience agreed during discussion")
                 sources = payload.get("source_ids") or []
                 if not isinstance(sources, list) or any(i not in {p["id"] for p in review["proposals"]} for i in sources): raise HTTPException(422, "Choose valid source proposals")
                 proposal = {"id": "discussion:" + new_uuid(), "category": category, "member_id": "", "contributor": "Board discussion", "source_ids": sources,

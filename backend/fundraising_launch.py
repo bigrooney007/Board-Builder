@@ -220,7 +220,7 @@ def create_fundraising_launch_router(db):
         response=await db.game_audience_responses.find_one({'board_member_id':leader['member_id']},{'_id':0}) if leader else None
         night=await db.game_nights.find_one({'user_id':member['user_id']},{'_id':0}) or {}
         strategy=await db.game_strategies.find_one({'user_id':member['user_id'],'status':'adopted'},{'_id':0},sort=[('adopted_at',-1)])
-        return {'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'configuration_version':7}
+        return {'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
 
     @router.put('/game/launch/organization')
     async def save_organization(payload:Organization,request:Request):
@@ -313,6 +313,27 @@ def create_fundraising_launch_router(db):
         if not row or not row.get('leader_approved_at'):raise HTTPException(404,'This approved portfolio is not available')
         p=await db.game_profiles.find_one({'user_id':row['user_id']},{'_id':0}) or {}
         return Response(render_document_pdf(title='Board Fundraising Portfolio',org_name=(p.get('organization') or {}).get('name',''),body_text=row['leader_approved_text'],branding=p.get('branding') or {},prepared_for=row['member_name']),media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="board-fundraising-portfolio.pdf"'})
+
+    @router.post('/game/launch/test-participants')
+    async def sample_participants(payload:dict,request:Request):
+        member=await owner(request)
+        p=await profile(member)
+        if not member.get('internal_dashboard_preview') or p.get('workflow_version')!=7:raise HTTPException(403,'This control is only available inside your isolated admin simulation')
+        import fundraising_audiences as questions
+        rows=[]
+        for index,name in enumerate(('Alex Morgan','Taylor Reed','Jordan Ellis')):
+            ident='launch-sample-'+digest(member['user_id']+str(index))[:24]
+            row={'member_id':ident,'user_id':member['user_id'],'full_name':name,'email':ident+'@nonprofitboardbuilder.internal','board_title':'Board Member','game_version':7,'total_sections':6,'participant_role':'board_member','token':secrets.token_urlsafe(32),'invitation_status':'not_invited','invited_at':'','last_reminder_at':'','internal_preview':True,'removed':False,'created_at':now(),'updated_at':now()}
+            await db.game_board_members.update_one({'member_id':ident},{'$setOnInsert':row},upsert=True)
+            row=await db.game_board_members.find_one({'member_id':ident},{'_id':0})
+            if payload.get('prefill') is True:
+                fields={'who_why':name+' suggests former mentors who care about youth employment.','where':'Community and professional networks.','attraction':'Share the approved programme outcomes.','process':'Ask for an introduction, listen to their interests and invite suitable support.','ask':'Support mentoring places at $500 each.'}
+                config=questions.configuration(7)
+                bucket={'id':'sample-'+str(index),**{q['key']:fields.get(q['key'],'A sample response to '+q['prompt']) for q in config['questions']['individuals']}}
+                value=questions.clean_response({'workflow_version':7,'audiences':{'individuals':[bucket]},'category_status':{cat:'complete' for cat in config['categories']},'involvement':name+' would like to introduce interested employers.'},submitting=True,version=7)
+                await db.game_audience_responses.update_one({'board_member_id':ident},{'$setOnInsert':{**value,'board_member_id':ident,'user_id':member['user_id'],'response_id':secrets.token_hex(16),'completed':True,'created_at':now(),'updated_at':now(),'completed_at':now()}},upsert=True)
+            rows.append({'name':name,'url':'/play/'+row['token'],'member_id':ident})
+        return {'participants':rows,'prefilled':payload.get('prefill') is True}
 
     @router.post('/admin/fundraising/test-start')
     async def fresh_test(request:Request):

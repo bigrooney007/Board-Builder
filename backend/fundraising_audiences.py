@@ -51,6 +51,13 @@ def configuration(version=VERSION):
             "questions": {cat: [{"key": field, "prompt": text, "help": helper} for field, (text, helper) in zip(FIELDS, QUESTIONS[cat])] for cat in CATEGORIES}}
     if version == LAUNCH_VERSION:
         result.update(instructions=LAUNCH_INSTRUCTIONS, participation_question=PARTICIPATION_LAUNCH)
+        result["categories"].append("other")
+        result["labels"]={**LABELS,"other":"Other Funding Audiences"}
+        result["opening_questions"]["other"]="Is there another type of funding audience you would like to recommend?"
+        result["another_questions"]["other"]="Would you like to recommend another funding audience?"
+        result["questions"]["other"]=[dict(q) for q in result["questions"]["individuals"][:5]]
+        result["questions"]["other"][0].update(prompt="Who should fund the mission, and why?",help="Describe this audience and why it has a strong reason to support the mission.")
+        result["questions"]["other"][4].update(prompt="What should we ask for, and how much?",help="Explain the request and recommended amount, or indicate uncertainty.")
         for cat in CATEGORIES:
             result["questions"][cat] = result["questions"][cat][:5]
             result["questions"][cat][4].update(prompt="What should we ask for, and how much?", help="Explain what this audience should support, the amount you recommend, and why. If you are unsure, say so.")
@@ -66,7 +73,8 @@ def clean_response(payload, *, submitting=False, version=None):
     if not isinstance(payload.get("audiences") or {},dict) or not isinstance(payload.get("category_status") or {},dict):
         raise HTTPException(422,"Use the separate audience and category fields")
     audiences = {}; seen = set()
-    for cat in CATEGORIES:
+    categories=(*CATEGORIES,"other") if version==LAUNCH_VERSION else CATEGORIES
+    for cat in categories:
         bucket = (payload.get("audiences") or {}).get(cat, [])
         if not isinstance(bucket, list): raise HTTPException(422, "Each audience must be saved separately")
         audiences[cat] = []
@@ -84,12 +92,12 @@ def clean_response(payload, *, submitting=False, version=None):
     progress = payload.get("progress") or {}
     if not isinstance(progress, dict): raise HTTPException(422, "Invalid progress")
     if progress.get("phase", "welcome") not in {"welcome","gate","answer","participation","review"}: raise HTTPException(422,"Invalid questionnaire step")
-    if any(not isinstance(progress.get(key,0),int) or not 0 <= progress.get(key,0) <= limit for key,limit in (("category",2),("question",4 if version == LAUNCH_VERSION else 5),("audience_index",100000))): raise HTTPException(422,"Invalid questionnaire progress")
+    if any(not isinstance(progress.get(key,0),int) or not 0 <= progress.get(key,0) <= limit for key,limit in (("category",3 if version == LAUNCH_VERSION else 2),("question",4 if version == LAUNCH_VERSION else 5),("audience_index",100000))): raise HTTPException(422,"Invalid questionnaire progress")
     if submitting and not all((payload.get("category_status") or {}).get(cat) == "complete" for cat in CATEGORIES):
         raise HTTPException(422, "Finish or skip each funding category")
     return {"workflow_version": version, "game_version": version, "audiences": audiences, "involvement": participation,
             "progress": {k: progress[k] for k in ("category", "audience_index", "question", "phase") if k in progress},
-            "category_status": {cat: (payload.get("category_status") or {}).get(cat, "") for cat in CATEGORIES}}
+            "category_status": {cat: (payload.get("category_status") or {}).get(cat, "complete" if cat=="other" else "") for cat in categories}}
 
 
 def proposed_audiences(responses, members):
@@ -97,7 +105,8 @@ def proposed_audiences(responses, members):
     if any(r.get("workflow_version") == LAUNCH_VERSION for r in responses):
         responses = sorted(responses, key=lambda r: bool(people.get(r.get("board_member_id"), {}).get("is_primary")))
     proposals = []; statements = []
-    for cat in CATEGORIES:
+    categories=(*CATEGORIES,"other") if any(r.get("workflow_version")==LAUNCH_VERSION for r in responses) else CATEGORIES
+    for cat in categories:
         for response in responses:
             member = people.get(response.get("board_member_id"))
             if not member: continue
@@ -141,9 +150,10 @@ def document_sections(agreed, profile):
     if profile.get("workflow_version") == LAUNCH_VERSION:
         labels = [(k, label) for k, label in labels if k != "amount"]
         labels = [(k, "What to ask for and how much" if k == "ask" else label) for k, label in labels]
-    for cat in CATEGORIES:
+    categories=(*CATEGORIES,"other") if profile.get("workflow_version")==LAUNCH_VERSION else CATEGORIES
+    for cat in categories:
         for index, proposal in enumerate(x for x in agreed["audiences"] if x["category"] == cat):
-            sections.append({"key": f"audience_{cat}_{index}", "title": LABELS[cat] + ": " + proposal["strategy"]["who_why"].split("\n")[0][:120],
+            sections.append({"key": f"audience_{cat}_{index}", "title": LABELS.get(cat,"Other Funding Audiences") + ": " + proposal["strategy"]["who_why"].split("\n")[0][:120],
                              "text": "\n\n".join(label + "\n" + str(proposal["strategy"].get(key) or "Requires confirmation") for key, label in labels)})
     sections.append({"key": "board_roles", "title": "How We Have Agreed to Participate in Fundraising",
                      "text": "\n\n".join(x["name"] + "\n" + x["contribution"] + ("\nSupporting approved audiences: " + "; ".join(p["strategy"]["who_why"] for p in agreed["audiences"] if p["id"] in x.get("audience_ids", [])) if x.get("audience_ids") else "") + ("\nNext step: " + x["next_action"] if x.get("next_action") else "") for x in agreed["commitments"]) or "No individual responsibilities were confirmed."})
