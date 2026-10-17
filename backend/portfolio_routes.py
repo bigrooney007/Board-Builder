@@ -272,6 +272,7 @@ class StatusPayload(BaseModel):
 
 class SendPayload(BaseModel):
     origin_url: str = Field(min_length=1)
+    resend: bool = False
 
 
 class RespondPayload(BaseModel):
@@ -706,11 +707,13 @@ def create_portfolio_router(db) -> APIRouter:
             if not portfolio.get("leader_approved_at") or portfolio.get("leader_approved_version")!=portfolio["version"]:
                 raise HTTPException(409,"Approve the current portfolio before sending")
             from workflow_delivery import deliver_once
-            delivery=await deliver_once(db,member["user_id"],f"portfolio:{portfolio_id}:{portfolio['version']}",portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
+            event_key=f"portfolio:{portfolio_id}:{portfolio['version']}"+(":resend:"+portfolio["sent_at"] if payload.resend and portfolio.get("sent_at") else "")
+            delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
             if delivery['status'] not in ('sent','captured'): raise HTTPException(502,"The portfolio is approved but its email needs a retry")
         else:
             await send_portfolio_email(member, portfolio, profile, payload.origin_url)
         updates = {"sent_at": now_iso(), "updated_at": now_iso()}
+        if portfolio.get("workflow_version")==7:updates["email_delivery_status"]=delivery["status"]
         if portfolio["status"] in {"ready_to_send", "change_requested"}:
             updates["status"] = "sent"
             if portfolio["status"] == "change_requested":

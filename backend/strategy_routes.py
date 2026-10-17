@@ -330,6 +330,8 @@ def create_strategy_router(db) -> APIRouter:
     @router.post("/game/strategy/generate")
     async def generate_strategy(payload: GeneratePayload, request: Request):
         member = await game_member(request)
+        p=await db.game_profiles.find_one({"user_id":member["user_id"]},{"_id":0}) or {}
+        if p.get("workflow_version")==7:raise HTTPException(409,"Your strategy is prepared from your board's adopted decisions after the meeting. No separate AI recommendations are generated.")
         if payload.mode not in MODES:
             raise HTTPException(status_code=422, detail="Unknown strategy mode")
         job = await db.game_strategy_jobs.find_one({"user_id": member["user_id"], "mode": payload.mode}, {"_id": 0})
@@ -425,7 +427,7 @@ def create_strategy_router(db) -> APIRouter:
     @router.get("/strategy/shared/{share_token}")
     async def shared_strategy(share_token: str):
         strategy = await db.game_strategies.find_one({"share_token": share_token}, {"_id": 0})
-        if not strategy or (strategy.get("schema_version") == 6 and strategy.get("status") != "adopted"):
+        if not strategy or (strategy.get("schema_version") in (6,7) and strategy.get("status") != "adopted"):
             raise HTTPException(status_code=404, detail="This strategy link is not valid")
         profile = await get_profile(strategy["user_id"])
         return {"strategy": {

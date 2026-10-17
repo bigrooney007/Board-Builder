@@ -842,7 +842,7 @@ def create_payment_router(db) -> APIRouter:
         await db.payment_transactions.insert_one({
             "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "board_fundraising_game",
             "user_id": member["user_id"] if member else "",
-            **({"launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"lead_email":lead["email"],"lead_name":lead["name"],"lead_organization":lead["organization"]} if lead else {}),
+            **({"launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"lead_email":lead["email"],"lead_name":lead["name"],"lead_organization":lead["organization"],"attributed_followup_email":lead.get("last_followup_email")} if lead else {}),
             "selected_tier": "497", "purchase_source": "board_fundraising_game_497",
             "offer": "Board Fundraising Game",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",

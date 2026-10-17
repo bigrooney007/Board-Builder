@@ -41,8 +41,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         for name in await self.db.list_collection_names():await self.db[name].delete_many({})
         self.app=fixture.build_app(self.db)
         self.client=httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app),base_url='http://test')
-        await self.db.users.insert_one({'user_id':'launch-admin','email':'admin@example.test','role':'admin'})
-        self.admin={'Authorization':'Bearer '+fixture.create_access_token('launch-admin','admin@example.test')};self.headers=self.admin
+        await self.db.users.insert_one({'user_id':'launch-admin','email':'admin@example.org','role':'admin'})
+        self.admin={'Authorization':'Bearer '+fixture.create_access_token('launch-admin','admin@example.org')};self.headers=self.admin
     async def asyncTearDown(self):await self.client.aclose();self.mongo.close()
     async def call(self,method,path,body=None,status=200,headers=None):
         r=await self.client.request(method,'/api'+path,json=body,headers=headers if headers is not None else self.headers)
@@ -51,7 +51,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
     async def fresh(self):
         row=await self.call('POST','/admin/fundraising/test-start')
         self.headers={'Authorization':'Bearer '+row['token']};self.user=row['member']['user_id']
-        lead=await self.call('POST','/fundraising/leads',{'name':'Sample Leader','email':'lead@example.test','organization':'BrightPath','visitor_id':'unique-browser-123456','marketing_consent':True},201)
+        lead=await self.call('POST','/fundraising/leads',{'name':'Sample Leader','email':'lead@example.org','organization':'BrightPath','visitor_id':'unique-browser-123456','marketing_consent':True},201)
         self.lead=lead
         result=await self.call('POST','/payments/game-checkout',{'origin_url':'http://test','result_token':lead['token']})
         self.assertTrue(result['simulated']);self.assertTrue(result['checkout_url'].endswith('/game/setup'))
@@ -66,7 +66,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('POST','/game/play/'+own['token']+'/audience-response/complete',answers('Leader'))
         await self.call('PUT','/game/night',{'meeting_date':'2026-12-01','start_time':'16:00','timezone_name':'Europe/London','meeting_format':'online','meeting_link':'https://example.org/meeting'})
     async def add_guest(self,name='Sample Guest'):
-        row=await self.call('POST','/game/board-members',{'full_name':name,'email':name.replace(' ','').lower()+'@example.test','board_title':'Treasurer'},201)
+        row=await self.call('POST','/game/board-members',{'full_name':name,'email':name.replace(' ','').lower()+'@example.org','board_title':'Treasurer'},201)
         p=row['board_member'];await self.call('POST','/game/board-members/'+p['member_id']+'/invite',{'origin_url':'http://test'})
         await self.call('POST','/game/play/'+p['token']+'/audience-response/complete',answers(name))
         return p
@@ -112,7 +112,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('PUT','/admin/fundraising/content',data['content'],401,headers={})
     async def test_marketing_consent_paid_stop_unsubscribe_and_duplicate_protection(self):
         from fundraising_launch import send_due
-        lead=await self.call('POST','/fundraising/leads',{'name':'New Lead','email':'new@example.test','organization':'Example','visitor_id':'lead-browser-123456','marketing_consent':True},201)
+        lead=await self.call('POST','/fundraising/leads',{'name':'New Lead','email':'new@example.org','organization':'Example','visitor_id':'lead-browser-123456','marketing_consent':True},201)
         await self.db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'created_at':(datetime.now(timezone.utc)-timedelta(days=4)).isoformat()}})
         with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})) as send:
             await send_due(self.db);self.assertEqual(send.await_count,1);self.assertIn('unsubscribe_url',send.await_args.kwargs)
@@ -123,8 +123,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         with patch('fundraising_launch.deliver_once',new=AsyncMock()) as send:await send_due(self.db);send.assert_not_awaited()
     async def test_legacy_founder_export_keeps_full_original_wording(self):
         from pypdf import PdfReader
-        await self.db.sp_projects.insert_one({'project_id':'historical','organization_name':'For All the Children','founder_name':'Katherine','founder_email':'founder@example.test'})
-        await self.db.sp_participants.insert_one({'project_id':'historical','email':'founder@example.test','name':'Katherine','original_response':{'q1':'Every original word must remain, including this final sentence.'},'response':{'q1':'Later edited summary'}})
+        await self.db.sp_projects.insert_one({'project_id':'historical','organization_name':'For All the Children','founder_name':'Katherine','founder_email':'founder@example.org'})
+        await self.db.sp_participants.insert_one({'project_id':'historical','email':'founder@example.org','name':'Katherine','original_response':{'q1':'Every original word must remain, including this final sentence.'},'response':{'q1':'Later edited summary'}})
         rows=await self.call('GET','/admin/fundraising/legacy-planning');self.assertEqual(len(rows['projects']),1)
         response=await self.call('GET','/admin/fundraising/legacy-planning/historical/founder.pdf')
         text='\n'.join(p.extract_text() or '' for p in PdfReader(io.BytesIO(response.content)).pages)

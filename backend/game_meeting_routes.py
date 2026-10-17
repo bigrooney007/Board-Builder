@@ -312,7 +312,7 @@ def create_game_meeting_router(db) -> APIRouter:
         }
 
     async def run_final_compile(user_id: str):
-        if (await get_profile(user_id)).get("workflow_version") == 6: return
+        if (await get_profile(user_id)).get("workflow_version") in (6,7): return
         try:
             profile = await get_profile(user_id)
             goal = profile.get("goal") or {}
@@ -525,6 +525,9 @@ def create_game_meeting_router(db) -> APIRouter:
     @router.post("/game/meeting/recording/chunk")
     async def save_recording_chunk(payload: TranscriptPaste, request: Request):
         member=await game_member(request);text=str(payload.text).strip()
+        if (await get_profile(member["user_id"])).get("workflow_version")==7:
+            session=await db.group_game_sessions.find_one({"user_id":member["user_id"],"status":{"$ne":"archived"}},{"_id":0}) or {}
+            if not session.get("transcript_consent"):raise HTTPException(409,"Confirm participant consent before recording")
         if not text:raise HTTPException(status_code=422,detail="The transcript chunk is empty")
         await db.game_meeting_live_recordings.update_one(
             {"user_id":member["user_id"]},
@@ -546,7 +549,7 @@ def create_game_meeting_router(db) -> APIRouter:
     async def compile_final(request: Request):
         member = await game_member(request)
         profile = await get_profile(member["user_id"])
-        if profile.get("workflow_version") == 6:
+        if profile.get("workflow_version") in (6,7):
             from fundraising_review import AudienceReview
             review = AudienceReview(db); session = await review.current(member["user_id"])
             strategy = await review.strategy(session)

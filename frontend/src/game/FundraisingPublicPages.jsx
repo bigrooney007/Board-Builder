@@ -43,7 +43,7 @@ export default function FundraisingPublicPage({ how=false }) {
       <section className="nBB-home-problem" style={{textAlign:"left",maxWidth:800,margin:"0 auto",padding:"42px 24px",lineHeight:1.85,fontSize:19}}>
         {how&&c.steps.map((step,index)=><article key={index} style={{marginBottom:36}}><h2>Step {index+1}: {step.heading}</h2>{step.paragraphs.map((p,i)=><p key={i}>{p}</p>)}</article>)}
         {c.paragraphs.map((p,i)=><p key={i} style={{marginBottom:20}}>{p}</p>)}
-        {how?<div style={{textAlign:"center",marginTop:36}}><h2>{c.purchase_heading}</h2><p>{c.guarantee}</p><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening checkout…":c.cta}</button></div>:<article style={{marginTop:44}}><h2>{c.biography_heading}</h2>{c.biography.map((p,i)=><p key={i}>{p}</p>)}</article>}
+        {how?<div style={{textAlign:"center",marginTop:36}}><h2>{c.purchase_heading}</h2><p>{c.guarantee}</p><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening checkout…":c.cta}</button></div>:<article style={{marginTop:44}}><h2>{c.biography_heading}</h2><img src={process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL||"https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp"} alt="Rooney A." loading="lazy" style={{width:"100%",maxWidth:280,borderRadius:16,display:"block",margin:"20px auto"}}/>{c.biography.map((p,i)=><p key={i}>{p}</p>)}</article>}
         {error&&<p role="alert" className="submit-error">{error}</p>}
       </section>
       <section className="nBB-home-proof"><TestimonialCarousel heading="What Nonprofit Leaders Have Said" idPrefix="fundraising-launch"/></section>

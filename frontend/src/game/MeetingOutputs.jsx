@@ -129,11 +129,11 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
             ) : (
               <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={resume} data-testid="bfg-recording-resume"><Play size={13} /> RESUME</button>
             )}
-            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={finish} data-testid="bfg-recording-finish"><Square size={13} /> FINISH MEETING</button>
+            <button className="bfg-btn bfg-btn-primary bfg-btn-sm" onClick={finish} data-testid="bfg-recording-finish"><Square size={13} /> {compileOnFinish?"FINISH MEETING":"STOP TRANSCRIPTION"}</button>
           </div>
         </div>
       )}
-      {status === "finishing" && <p style={{ marginTop: 12, fontWeight: 700 }}>COMPILING YOUR FINAL FUNDRAISING STRATEGY…</p>}
+      {status === "finishing" && <p style={{ marginTop: 12, fontWeight: 700 }}>{compileOnFinish?"COMPILING YOUR FINAL FUNDRAISING STRATEGY…":"Saving your meeting transcript…"}</p>}
       {error && <p className="bfg-error" style={{ marginTop: 10 }} data-testid="bfg-recording-error">{error}</p>}
     </div>
   );

@@ -76,24 +76,27 @@ async def send_due(db):
     """Existing Resend transport with durable keys, paid-stop checks and consent."""
     templates=(await content(db))['followups']
     threshold=(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()
-    leads=await db.funnel_leads.find({'lead_source':SOURCE,'marketing_consent':True,'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000)
+    leads=await db.funnel_leads.find({'lead_source':SOURCE,'internal_preview':{'$ne':True},'marketing_consent':True,'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000)
     for lead in leads:
         created=datetime.fromisoformat(lead['created_at'])
+        sequence_owner='launch-sequence:'+digest(lead['email'].lower())
         for index,template in enumerate(templates,1):
             due=created+timedelta(days=index*3)
             if due>datetime.now(timezone.utc): break
             # Recheck immediately before dispatch, including unclaimed paid checkouts.
             current=await db.funnel_leads.find_one({'lead_id':lead['lead_id']},{'_id':0})
             paid=await db.payment_transactions.find_one({'launch_lead_token':lead['result_token'],'payment_status':'paid'},{'_id':0,'session_id':1})
-            if current.get('paid_at') or current.get('unsubscribed') or paid: break
-            previous=await db.workflow_email_deliveries.find_one({'user_id':'lead:'+lead['lead_id'],'event_key':'followup:'+str(index)},{'_id':0})
+            paid_account=await db.members.find_one({'email':lead['email'].lower(),'entitlements':'board_fundraising_game'},{'_id':0,'user_id':1})
+            other_payment=await db.payment_transactions.find_one({'lead_email':lead['email'].lower(),'payment_status':'paid'},{'_id':0,'session_id':1})
+            if current.get('paid_at') or current.get('unsubscribed') or paid or paid_account or other_payment: break
+            previous=await db.workflow_email_deliveries.find_one({'user_id':sequence_owner,'event_key':'followup:'+str(index)},{'_id':0})
             if previous and previous.get('status') in ('sent','captured'): continue
             # Do not send multiple overdue promotional messages on the same day.
-            recent=await db.workflow_email_deliveries.find_one({'user_id':'lead:'+lead['lead_id'],'status':{'$in':['sent','captured']},'updated_at':{'$gte':(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()}},{'_id':0})
+            recent=await db.workflow_email_deliveries.find_one({'user_id':sequence_owner,'status':{'$in':['sent','captured']},'updated_at':{'$gte':(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()}},{'_id':0})
             if recent: break
             link=origin()+'/api/fundraising/return/'+lead['result_token']+'?email='+str(index)
             unsubscribe=origin()+'/api/fundraising/unsubscribe/'+lead['unsubscribe_token']
-            await deliver_once(db,'lead:'+lead['lead_id'],'followup:'+str(index),lead['email'],template['subject'],template['body'],link,unsubscribe_url=unsubscribe)
+            await deliver_once(db,sequence_owner,'followup:'+str(index),lead['email'],template['subject'],template['body'],link,unsubscribe_url=unsubscribe)
             break
     # Transactional recovery is separate, capped and bound to a purchased account.
     stale=(datetime.now(timezone.utc)-timedelta(hours=24)).isoformat()
@@ -171,12 +174,15 @@ def create_fundraising_launch_router(db):
         lead=await db.funnel_leads.find_one({'result_token':token,'lead_source':SOURCE},{'_id':0})
         if not lead: raise HTTPException(404,'This link is not available')
         await db.fundraising_followup_clicks.insert_one({'lead_id':lead['lead_id'],'sequence_email':email,'created_at':now()})
+        await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'last_followup_email':email,'last_followup_click_at':now()}})
         return RedirectResponse(origin()+'/how-the-fundraising-game-works?lead='+token,status_code=303)
 
     @router.get('/fundraising/unsubscribe/{token}')
     @router.post('/fundraising/unsubscribe/{token}')
     async def unsubscribe(token:str):
-        result=await db.funnel_leads.update_one({'unsubscribe_token':token,'lead_source':SOURCE},{'$set':{'unsubscribed':True,'marketing_consent':False,'unsubscribed_at':now()}})
+        source=await db.funnel_leads.find_one({'unsubscribe_token':token,'lead_source':SOURCE},{'_id':0})
+        if not source:raise HTTPException(404,'This unsubscribe link is not available')
+        result=await db.funnel_leads.update_many({'email':source['email'],'lead_source':SOURCE},{'$set':{'unsubscribed':True,'marketing_consent':False,'unsubscribed_at':now()}})
         if not result.matched_count: raise HTTPException(404,'This unsubscribe link is not available')
         return Response('You have unsubscribed from Fundraising Game promotional follow-ups. Necessary account messages are unaffected.',media_type='text/plain')
 
@@ -320,7 +326,10 @@ def create_fundraising_launch_router(db):
         leads=await db.funnel_leads.find(query,{'_id':0,'result_token':0,'unsubscribe_token':0}).sort('created_at',-1).to_list(5000)
         # Verified payment state, including buyers who have not claimed accounts yet.
         paid_ids={x.get('lead_id') for x in await db.payment_transactions.find({'payment_status':'paid','launch_lead_token':{'$exists':True}},{'_id':0,'lead_id':1}).to_list(10000)}
-        for lead in leads:lead['paid']=bool(lead.get('paid_at') or lead['lead_id'] in paid_ids)
+        for lead in leads:
+            lead['paid']=bool(lead.get('paid_at') or lead['lead_id'] in paid_ids)
+            lead['followup_delivery']=await db.workflow_email_deliveries.find({'user_id':'launch-sequence:'+digest(lead['email'].lower())},{'_id':0,'event_key':1,'status':1,'updated_at':1,'provider_id':1}).to_list(5)
+            lead['followup_clicks']=await db.fundraising_followup_clicks.count_documents({'lead_id':lead['lead_id']})
         events=await db.funnel_events.find({'source':SOURCE,**({'created_at':bounds} if bounds else {})},{'_id':0}).to_list(50000)
         visitors={x['visitor_id'] for x in events if x['kind']=='homepage'}
         counts={'unique_homepage_visitors':len(visitors),'identified_leads':len(leads),'page_two':sum(bool(x.get('page_two_at')) for x in leads),'checkout_started':sum(bool(x.get('checkout_started_at')) for x in leads),'paid':sum(x['paid'] for x in leads)}
@@ -362,7 +371,7 @@ def create_fundraising_launch_router(db):
         await admin(request,'export-original-founder',project_id)
         project=await db.sp_projects.find_one({'project_id':project_id},{'_id':0})
         if not project:raise HTTPException(404,'Project not found')
-        person=await db.sp_participants.find_one({'project_id':project_id,'$or':[{'is_founder':True},{'email':project.get('founder_email','')}]},{'_id':0},sort=[('created_at',1)])
+        person=await db.sp_participants.find_one({'project_id':project_id,'$or':[{'is_founder':True},{'is_primary':True},{'email':project.get('founder_email','')}]},{'_id':0},sort=[('created_at',1)])
         if not person:raise HTTPException(404,'No saved founder submission was found. No replacement or summary has been generated.')
         answers=person.get('original_response') or person.get('submitted_response') or person.get('response') or {}
         if not answers:raise HTTPException(404,'The founder has no stored responses to export')

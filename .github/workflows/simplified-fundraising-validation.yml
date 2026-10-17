@@ -20,7 +20,8 @@ jobs:
       PAID_PROGRAMS_LIVE: false
       STRIPE_MODE: test
       RESEND_API_KEY: isolated-provider-disabled
-      NONPROFIT_SENDER: test@example.test
+      NONPROFIT_SENDER: test@example.org
+      GAME_EMAIL_SENDER: test@example.org
       PUBLIC_ORIGIN: http://127.0.0.1:8765
     steps:
       - uses: actions/checkout@v4

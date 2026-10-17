@@ -34,7 +34,7 @@ async def main():
             results.append({'width':width,'case':'supplied_homepage_and_layout','passed':True})
             await page.get_by_role('button',name='Play The Fundraising Game With Your Board',exact=True).first.click()
             await page.get_by_label('Full name',exact=True).fill('Sample Leader')
-            await page.get_by_label('Email address',exact=True).fill('leader@example.test')
+            await page.get_by_label('Email address',exact=True).fill('leader@example.org')
             await page.get_by_label('Organization name',exact=True).fill('BrightPath Youth Alliance')
             await page.get_by_role('button',name='See How The Fundraising Game Works',exact=True).click()
             await page.wait_for_url('**/how-the-fundraising-game-works?lead=*')
