@@ -95,6 +95,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('POST','/game/group/audience/close',{'confirmed':True})
         self.assertEqual((await self.db.group_game_sessions.find_one({'user_id':self.user}))['status'],'completed')
         self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':'meeting-strategy-ready:'+strategy['strategy_id']}),1)
+        session=await self.db.group_game_sessions.find_one({'user_id':self.user})
+        await self.call('POST','/game/group/play/'+session['token']+'/acknowledge',{'slot_id':'late','device_id':'late','confirmed':True},409)
         self.assertNotIn('Leader businesses',strategy['document_text'])
         await self.call('PUT','/game/launch/branding',{'primary_color':'#123456','secondary_color':'#eeeeee'})
         pdf=await self.call('GET','/game/group/audience/download');self.assertEqual(pdf.content[:4],b'%PDF')

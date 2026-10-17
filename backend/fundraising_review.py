@@ -242,6 +242,8 @@ class AudienceReview:
         async def acknowledge(token: str, payload: dict):
             session = await self.db.group_game_sessions.find_one({"token": token, "game_version": "audience-complete-v6", "status": {"$ne": "archived"}}, {"_id": 0})
             if not session: raise HTTPException(404, "This meeting link is not valid")
+            profile=await self.db.game_profiles.find_one({"user_id":session["user_id"]},{"_id":0,"workflow_version":1}) or {}
+            if profile.get("workflow_version")==7 and session["status"]=="completed":raise HTTPException(409,"The meeting is closed. Its adoption record has been saved.")
             person = await self.db.group_game_participants.find_one({"session_id": session["session_id"], "slot_id": payload.get("slot_id"), "device_id": payload.get("device_id")}, {"_id": 0})
             if not person: raise HTTPException(403, "Join with your own participant link first")
             review = copy.deepcopy(session["audience_review"]); revision = audience.summary(review)["revision"]

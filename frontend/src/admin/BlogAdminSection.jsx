@@ -25,7 +25,7 @@ function Brief({ brief }) {
 export default function BlogAdminSection({ client }) {
   const [schedule, setSchedule] = useState([]);
   const [settings, setSettings] = useState(null);
-  const [category, setCategory] = useState("recruitment");
+  const [category, setCategory] = useState("fundraising_activation");
   const [topicId, setTopicId] = useState("");
   const [date, setDate] = useState("");
   const [posts, setPosts] = useState([]);

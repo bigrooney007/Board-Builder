@@ -184,9 +184,9 @@ def create_marketing_router(db) -> APIRouter:
             if key != "fundraising_activation":continue
             next_topic = await next_topic_for(db, key)
             usage = await topic_usage(db, key)
-            schedule.append({"category_key": key, "category": config["name"], "publish_day": config["publish_day"],
+            schedule.append({"category_key": key, "category": config["name"], "publish_day": "Weekdays",
                 "cta_url": config["cta_url"], "audience": config["audience"], "mechanism": config["mechanism"],
-                "scheduled_date": str(today + timedelta(days=(config["day"] - today.weekday()) % 7)),
+                "scheduled_date": str(today + timedelta(days=0 if today.weekday()<5 else 7-today.weekday())),
                 "next_topic_id": next_topic["topic_id"], "topics": [{**angle, "drafts_and_posts": usage[angle["topic_id"]]} for angle in config["angles"]]})
         return {"schedule": schedule, "settings": settings}
 
