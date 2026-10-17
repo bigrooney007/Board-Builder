@@ -56,7 +56,7 @@ class AudienceReview:
         joined_rows = await self.db.group_game_participants.find({"session_id":session["session_id"]},{"_id":0}).to_list(1000)
         joined_ids = {x["board_member_id"] for x in joined_rows}
         people = await self.db.game_board_members.find({"user_id": session["user_id"], "removed": {"$ne": True}}, {"_id": 0}).to_list(1000)
-        review["people"] = [{"member_id": p["member_id"], "name": p["full_name"], "joined": p["member_id"] in joined_ids,
+        review["people"] = [{"member_id": p["member_id"], "name": p["full_name"], "joined": p["member_id"] in joined_ids or bool(p.get("is_primary")),
             "acknowledged": (review.get("acknowledgements", {}).get(p["member_id"], {}).get("revision") == review["summary"]["revision"])} for p in people]
         strategy = await self.db.game_strategies.find_one({"strategy_id": session.get("strategy_id", "")}, {"_id": 0})
         review["strategy"] = strategy
@@ -169,6 +169,9 @@ class AudienceReview:
                 if review["phase"] != "summary" or payload.get("confirmed") is not True or payload.get("summary_revision") != audience.summary(review)["revision"]: raise HTTPException(409, "Review and confirm the current agreed strategy")
                 if not audience.summary(review)["audiences"]: raise HTTPException(422, "Adopt at least one audience before generating a strategy")
                 review["phase"] = "adopted"; review["facilitator_adopted_at"] = now()
+                if profile.get("workflow_version")==7:
+                    leader=await self.db.game_board_members.find_one({"user_id":session["user_id"],"is_primary":True,"removed":{"$ne":True}},{"_id":0})
+                    if leader:review["acknowledgements"][leader["member_id"]]={"revision":audience.summary(review)["revision"],"acknowledged_at":now(),"source":"leader-explicit-adoption"}
             elif operation == "document":
                 await self.strategy(session); review["phase"] = "document"
             else: raise HTTPException(422, "Unknown meeting action")

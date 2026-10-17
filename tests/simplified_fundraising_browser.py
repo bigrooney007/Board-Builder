@@ -20,11 +20,11 @@ async def main():
         for width in (1440,390):
             context=await browser.new_context(viewport={'width':width,'height':1000 if width==1440 else 844},accept_downloads=True)
             auth=(await (await context.request.get(BASE+'/__test/session')).json())['token']
-            await context.set_extra_http_headers({'Authorization':'Bearer '+auth})
-            response=await context.request.post(BASE+'/api/admin/fundraising/test-start');assert response.ok,await response.text()
-            test=await response.json();page=await context.new_page();errors=[]
+            response=await context.request.post(BASE+'/api/admin/fundraising/test-start',headers={'Authorization':'Bearer '+auth});assert response.ok,await response.text()
+            test=await response.json();
+            defaults=json.loads(Path("backend/fundraising_launch_content.json").read_text());reset=await context.request.put(BASE+"/api/admin/fundraising/content",data=defaults,headers={"Authorization":"Bearer "+auth});assert reset.ok,await reset.text()
+            page=await context.new_page();errors=[]
             page.on('pageerror',lambda e:errors.append(str(e)))
-            await page.add_init_script('(token)=>localStorage.setItem("memberToken",token)',test['token']) if False else None
             await page.goto(BASE);await page.evaluate('(token)=>localStorage.setItem("memberToken",token)',test['token']);await page.reload()
             await page.get_by_test_id('fundraising-home-page').wait_for()
             await page.get_by_role('heading',name='The Fundraising Game',exact=True).wait_for()
@@ -36,7 +36,9 @@ async def main():
             await page.get_by_label('Full name',exact=True).fill('Sample Leader')
             await page.get_by_label('Email address',exact=True).fill('leader@example.org')
             await page.get_by_label('Organization name',exact=True).fill('BrightPath Youth Alliance')
-            await page.get_by_role('button',name='See How The Fundraising Game Works',exact=True).click()
+            async with page.expect_response(lambda r:'/api/fundraising/leads' in r.url and r.request.method=='POST') as captured:
+                await page.get_by_role('button',name='See How The Fundraising Game Works',exact=True).click()
+            saved=await captured.value;assert saved.ok,await saved.text()
             await page.wait_for_url('**/how-the-fundraising-game-works?lead=*')
             await page.get_by_test_id('fundraising-how-page').wait_for()
             await page.get_by_text('Start The Fundraising Game Today: $497.',exact=True).wait_for()
@@ -73,6 +75,7 @@ async def main():
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             await page.screenshot(path=f'test_reports/current-simplified-workspace-{width}.png',full_page=True)
             results.append({'width':width,'case':'real_workspace_locked_outputs_and_responses','passed':True})
+            await context.set_extra_http_headers({'Authorization':'Bearer '+auth})
             await page.goto(BASE+'/admin?tab=home')
             await page.get_by_test_id('fundraising-admin').wait_for()
             await page.get_by_label('Page heading',exact=True).fill('Our board fundraising homepage')

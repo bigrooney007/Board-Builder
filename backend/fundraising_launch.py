@@ -63,6 +63,7 @@ async def activate_purchase(db, member, lead_token, session_id):
     await db.game_profiles.update_one({'user_id':member['user_id']},{'$setOnInsert':{'user_id':member['user_id'],'workflow_version':7,'simplified_product':True,
         'organization':{'name':lead['organization']},'primary_user':{'full_name':name,'email':member['email']},'profile_completed':False,'created_at':now()},'$set':{'updated_at':now()}},upsert=True)
     await touch(db,member['user_id'],'organization','/game/setup')
+    await deliver_once(db,member['user_id'],'launch-welcome:'+session_id,member['email'],'Your Fundraising Game Is Ready','Your payment is confirmed. Save your organization details, answer your own fundraising questions, then set your meeting and invite your board. Your progress is saved so you can return whenever you need to.',origin()+'/login?next=%2Fgame%2Fsetup')
 
 async def touch(db,user,stage,path):
     await db.game_journey_progress.update_one({'user_id':user},{'$set':{'stage':stage,'path':path,'updated_at':now(),'completed':stage=='complete'},'$setOnInsert':{'user_id':user,'created_at':now()}},upsert=True)
@@ -138,7 +139,8 @@ def create_fundraising_launch_router(db):
     async def capture(payload:Lead,request:Request):
         test_member=None
         if request.headers.get("Authorization"):
-            candidate=await authenticate_member(request,db)
+            try:candidate=await authenticate_member(request,db)
+            except HTTPException:candidate={}  # Contact capture itself is public; only verified test identities gain a simulation scope.
             if candidate.get("internal_dashboard_preview"):test_member=candidate
         # Returning bearer token permits updating this one lead, never another's.
         lead=await db.funnel_leads.find_one({'result_token':payload.resume_token,'lead_source':SOURCE},{'_id':0}) if payload.resume_token else None
@@ -376,9 +378,11 @@ def create_fundraising_launch_router(db):
         answers=person.get('original_response') or person.get('submitted_response') or person.get('response') or {}
         if not answers:raise HTTPException(404,'The founder has no stored responses to export')
         form=await db.sp_forms.find_one({'project_id':project_id},{'_id':0}) or {}
-        labels={q.get('id'):q.get('prompt') for sec in form.get('sections',[]) for q in sec.get('questions',[])}
+        form_content=next((v['content'] for v in form.get('approved_versions',[]) if v.get('version')==person.get('form_version')),form.get('content') or {})
+        labels={q.get('id'):q.get('prompt') for sec in form_content.get('sections',[]) for q in sec.get('questions',[])}
+        labels.update({q['id']:q['prompt'] for q in person.get('response_questions',[]) if q.get('id') and q.get('prompt')})
         text='\n\n'.join((labels.get(k) or k)+'\n'+(v if isinstance(v,str) else json.dumps(v,ensure_ascii=False)) for k,v in answers.items())
-        return Response(render_document_pdf(title='Founder Strategic Planning Submission',org_name=project['organization_name'],body_text=text,prepared_for=person.get('name',project.get('founder_name',''))),media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="founder-original-submission.pdf"','X-Submission-Source':'original-response' if person.get('original_response') else 'stored-founder-response'})
+        return Response(render_document_pdf(title='Founder Strategic Planning Submission',org_name=project['organization_name'],body_text=text,prepared_for=person.get('name',project.get('founder_name','')),preserve_source_text=True),media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="founder-original-submission.pdf"','X-Submission-Source':'original-response' if person.get('original_response') else 'stored-founder-response'})
     return router
 
 

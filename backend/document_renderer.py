@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
-from reportlab.platypus import BaseDocTemplate, Frame, Image, NextPageTemplate, PageBreak, PageTemplate, Paragraph, Spacer
+from reportlab.platypus import BaseDocTemplate, Frame, Image, NextPageTemplate, PageBreak, PageTemplate, Paragraph, Spacer, Preformatted
 
 ARTIFACT_LINE = re.compile(r"^(sections?|version\s*\d+)\s*:?\s*$", re.I)
 TITLE_PREFIX = re.compile(r"^(?:(?:document[ _])?title|headline|heading)\s*:\s*", re.I)
@@ -84,7 +84,7 @@ def clean_document_lines(text: str, title: str) -> list:
 
 
 def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", branding: dict = None,
-                        created_by: dict = None, prepared_for: str = "") -> bytes:
+                        created_by: dict = None, prepared_for: str = "", preserve_source_text: bool = False) -> bytes:
     """One consistent professional document format for every generated document."""
     branding = branding or {}
     color = brand_color(branding)
@@ -158,7 +158,11 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
         story.append(Paragraph(esc(cover_created), cover_meta))
     story.extend([NextPageTemplate("content"), PageBreak()])
 
-    for kind, text in clean_document_lines(body_text, title):
+    if preserve_source_text:
+        # Original submitted wording is evidence, not generated copy. Do not run
+        # the structural-label cleaner on it, or interpret it as markup.
+        story.append(Preformatted(body_text or "", body, maxLineLength=82))
+    for kind, text in ([] if preserve_source_text else clean_document_lines(body_text, title)):
         if kind == "heading":
             story.append(Paragraph(esc(text), heading))
         elif kind == "bullet":
