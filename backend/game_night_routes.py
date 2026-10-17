@@ -436,6 +436,9 @@ def create_game_night_router(db) -> APIRouter:
             f"{night_details_html(night, primary_first)}"
             f"<div style='margin-top:26px;'>{signature_html(profile, member)}</div>"
         )
+        if profile.get("workflow_version")==7:
+            role=record.get("board_title") or {"board_member":"Board Member","staff":"Staff / Team Member","volunteer":"Volunteer","other_leader":"Organizational Leader"}.get(record.get("participant_role"),"Participant")
+            body=f"<p>Your role: {html.escape(role)}</p>"+body+"<p>Add our sending address to your contacts and mark important emails as favorites so you can find your personal link again.</p>"
         subject = f"You're Invited To Play The Board Fundraising Game For {organization}"
         await send_game_email(record["email"], member["email"], subject, body)
 

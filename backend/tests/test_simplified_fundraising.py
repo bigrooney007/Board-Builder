@@ -76,6 +76,8 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         review=await self.group();return await self.call('POST','/game/group/audience/action',{'revision':review['revision'],**payload})
     async def test_complete_customer_journey_and_guarded_portfolio_delivery(self):
         await self.setup_and_complete_leader();guest=await self.add_guest()
+        invitation=await self.db.admin_test_email_events.find_one({'message.subject':{'$regex':"You're Invited"}})
+        self.assertIn('Treasurer',invitation['message']['html']);self.assertIn('/play/'+guest['token'],invitation['message']['html']);self.assertIn('Sample',invitation['message']['html'])
         await self.call('POST','/game/group/prepare');review=await self.group()
         self.assertEqual(review['workflow_version'],7);self.assertEqual(review['proposals'][0]['contributor'],'Sample Guest');self.assertEqual(review['proposals'][-1]['contributor'],'Sample Leader')
         await self.call('POST','/game/group/start')
