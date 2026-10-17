@@ -62,8 +62,8 @@ async def next_topic_for(db, category_key):
 
 
 async def reserve_blog_post(db, category_key, scheduled_date, topic_id=""):
-    if category_key not in BLOG_CATEGORIES:
-        raise ValueError("Choose one of the five current blog topics.")
+    if category_key != "fundraising_activation":
+        raise ValueError("New articles focus on board fundraising.")
     config = BLOG_CATEGORIES[category_key]
     choice = next((a for a in config["angles"] if a["topic_id"] == topic_id), None) if topic_id else await next_topic_for(db, category_key)
     if not choice:
@@ -210,7 +210,7 @@ async def run_blog_schedule(db):
     now = datetime.now(ZoneInfo(settings["timezone"]))
     if now.strftime("%H:%M") < settings["time"]:
         return
-    category = next((key for key, config in BLOG_CATEGORIES.items() if config["day"] == now.weekday()), None)
+    category = "fundraising_activation" if now.weekday()<5 else None
     if category:
         # Automatic jobs prepare drafts. Publishing remains the administrator's action.
         await create_scheduled_blog_post(db, category, now.strftime("%Y-%m-%d"), publish_now=False)

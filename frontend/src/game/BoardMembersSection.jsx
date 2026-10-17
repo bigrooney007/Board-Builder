@@ -134,7 +134,8 @@ const ResponsesView = ({ memberId }) => {
   );
 };
 
-export const BoardMembersSection = ({ onChanged = () => {} }) => {
+const noChange = () => {};
+export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false }) => {
   const [members, setMembers] = useState([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState("");
@@ -184,7 +185,7 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
   const addMember = (form, setError) => {
     setBusy("add");
     memberApi.post("/game/board-members", form)
-      .then(() => { setAdding(false); load(); })
+      .then(async (r) => { if(autoInvite) await memberApi.post(`/game/board-members/${r.data.board_member.member_id}/invite`,origin);setAdding(false);load(); })
       .catch((err) => setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not add this board member."))
       .finally(() => setBusy(""));
   };
@@ -234,7 +235,7 @@ export const BoardMembersSection = ({ onChanged = () => {} }) => {
 
       {adding && (
         <MemberForm initial={{ full_name: "", email: "", board_title: "" }} onSave={addMember}
-          onCancel={() => setAdding(false)} busy={busy === "add"} saveLabel="Add Board Member" />
+          onCancel={() => setAdding(false)} busy={busy === "add"} saveLabel={autoInvite?"Invite Board Member":"Add Board Member"} />
       )}
       {notice && <p className="bfg-note" data-testid="bfg-bm-notice">{notice}</p>}
 

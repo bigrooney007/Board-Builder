@@ -22,7 +22,11 @@ export const PurchaseSuccessPage = () => {
   const sessionId = new URLSearchParams(location.search).get("session_id") || "";
   const [paymentState, setPaymentState] = useState("checking");
   const [mode, setMode] = useState("register");
-  const [form, setForm] = useState({ first_name: "", last_name: "", email: "", password: "", confirm_password: "" });
+  const [form, setForm] = useState(() => {
+    let lead={};try{lead=JSON.parse(localStorage.getItem("fundraisingLeadDetails")||"{}")}catch{}
+    const names=(lead.name||"").trim().split(/\s+/);
+    return {first_name:names.shift()||"",last_name:names.join(" "),email:lead.email||"",password:"",confirm_password:""};
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [claimed, setClaimed] = useState("");

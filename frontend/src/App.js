@@ -2,7 +2,11 @@ import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "@/App.css";
 
-import MainHomePage from "@/pages/MainHomePage";
+import FundraisingPublicPage from "@/game/FundraisingPublicPages";
+import FundraisingSetup from "@/game/FundraisingSetup";
+import FundraisingWorkspace from "@/game/FundraisingWorkspace";
+import FundraisingAdminPage from "@/admin/FundraisingAdminPage";
+import LegacyCustomerRoute from "@/game/LegacyCustomerRoute";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
@@ -60,15 +64,9 @@ import { OpportunityApplyPage, SavedProfileApplyPage, SignAgreementPage } from "
 import { SharedResourcePage, BoardProfileFormPage } from "@/pages/SharedPages";
 import CandidateReferenceFormPage, { RefereeFormPage } from "@/public/ReferencePages";
 
-import GameHomePage from "@/game/GameHomePage";
-import GameStartPage from "@/game/GameStartPage";
-import GameDemonstrationPage from "@/game/GameDemonstrationPage";
 import GameFreeQuestionsPage from "@/game/GameFreeQuestionsPage";
-import GameUpgradePage from "@/game/GameUpgradePage";
 import GameResumePage from "@/game/GameResumePage";
 import GameAuthCallback from "@/game/GameAuthCallback";
-import GameSituationPage from "@/game/GameSituationPage";
-import GameDashboardPage from "@/game/GameDashboardPage";
 import GamePlayRoute from "@/game/GamePlayRoute";
 import GroupGamePage from "@/game/GroupGamePage";
 import StrategyPage from "@/game/StrategyPage";
@@ -82,8 +80,6 @@ import HostCallScriptPage from "@/game/HostCallScriptPage";
 import HostFacilitationPage from "@/game/HostFacilitationPage";
 import HostChecklistPage from "@/game/HostChecklistPage";
 import GameNightCompletePage from "@/game/GameNightCompletePage";
-import FacilitatedGamePage from "@/game/FacilitatedGamePage";
-import FacilitatedGameApplicationPage from "@/game/FacilitatedGameApplicationPage";
 import RelationshipMapDashboardPage from "@/game/RelationshipMapDashboardPage";
 import RelationshipMappingPage from "@/game/RelationshipMappingPage";
 import FinalStrategyMemberPage from "@/game/FinalStrategyMemberPage";
@@ -126,13 +122,13 @@ function GuidedPaidContinue({ product }) {
 function CleanRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<MainHomePage />} />
+      <Route path="/" element={<FundraisingPublicPage />} />
 
       {/* Board Recruitment */}
-      <Route path="/recruit" element={<RecruitmentHomePage />} />
-      <Route path={PUBLIC_START_ROUTES.recruitment} element={<RecruitFreePage />} />
-      <Route path="/recruit/questions" element={<RecruitQuestionsPage />} />
-      <Route path="/recruit/walkthrough" element={<RecruitWalkthroughPage />} />
+      <Route path="/recruit" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitmentHomePage /></LegacyCustomerRoute>} />
+      <Route path={PUBLIC_START_ROUTES.recruitment} element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitFreePage /></LegacyCustomerRoute>} />
+      <Route path="/recruit/questions" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitQuestionsPage /></LegacyCustomerRoute>} />
+      <Route path="/recruit/walkthrough" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitWalkthroughPage /></LegacyCustomerRoute>} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />
       <Route path="/recruit/welcome" element={<Navigate to="/app/board-recruitment/setup" replace />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
@@ -158,14 +154,15 @@ function CleanRoutes() {
       <Route path="/referee-form/:token" element={<RefereeFormPage />} />
 
       {/* Board Fundraising Game */}
-      <Route path="/board-fundraising-game" element={<GameHomePage />} />
-      <Route path={PUBLIC_START_ROUTES["board-fundraising-game"]} element={<GameStartPage />} />
-      <Route path="/game/demonstration" element={<GameDemonstrationPage />} />
+      <Route path="/board-fundraising-game" element={<Navigate to="/" replace />} />
+      <Route path="/how-the-fundraising-game-works" element={<FundraisingPublicPage how />} />
+      <Route path={PUBLIC_START_ROUTES["board-fundraising-game"]} element={<Navigate to="/how-the-fundraising-game-works" replace />} />
+      <Route path="/game/demonstration" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
       <Route path="/game/questions" element={<GameFreeQuestionsPage />} />
       <Route path="/game/resume/:token" element={<GameResumePage />} />
       <Route path="/game/welcome" element={<Navigate to="/game/setup" replace />} />
-      <Route path="/game/setup" element={<GameSituationPage />} />
-      <Route path="/game/dashboard" element={<GameDashboardPage />} />
+      <Route path="/game/setup" element={<FundraisingSetup />} />
+      <Route path="/game/dashboard" element={<FundraisingWorkspace />} />
       <Route path="/play/:token" element={<GamePlayRoute />} />
       <Route path="/game/group" element={<GroupGamePage />} />
       <Route path="/group-game/:token" element={<GroupPlayPage />} />
@@ -185,7 +182,7 @@ function CleanRoutes() {
       <Route path="/strategy/:shareToken" element={<SharedStrategyPage />} />
       <Route path="/game/signup" element={<Navigate to={PUBLIC_START_ROUTES["board-fundraising-game"]} replace />} />
       <Route path="/game/start" element={<Navigate to={PUBLIC_START_ROUTES["board-fundraising-game"]} replace />} />
-      <Route path="/game/upgrade" element={<GameUpgradePage />} />
+      <Route path="/game/upgrade" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
       <Route path="/game/unlock" element={<Navigate to="/game/demonstration" replace />} />
       <Route path="/game/board-review" element={<Navigate to="/game/dashboard" replace />} />
       <Route path="/game/meeting-review" element={<Navigate to="/game/dashboard" replace />} />
@@ -195,15 +192,15 @@ function CleanRoutes() {
       <Route path="/game/execution-materials" element={<Navigate to="/game/portfolios" replace />} />
 
       {/* Facilitated Board Fundraising Game, application ends after submission */}
-      <Route path="/organize-board-fundraising-game" element={<FacilitatedGamePage />} />
-      <Route path="/organize-board-fundraising-game/apply" element={<FacilitatedGameApplicationPage />} />
+      <Route path="/organize-board-fundraising-game" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
+      <Route path="/organize-board-fundraising-game/apply" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
 
       {/* Strategic Planning */}
-      <Route path="/strategic-planning" element={<GuidedLandingPage product="strategic-planning" />} />
-      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<GuidedStartPage product="strategic-planning" />} />
+      <Route path="/strategic-planning" element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedLandingPage product="strategic-planning" /></LegacyCustomerRoute>} />
+      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedStartPage product="strategic-planning" /></LegacyCustomerRoute>} />
       <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
       <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
-      <Route path="/strategic-planning/video" element={<GuidedVideoPage product="strategic-planning" />} />
+      <Route path="/strategic-planning/video" element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedVideoPage product="strategic-planning" /></LegacyCustomerRoute>} />
       <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaidContinue product="strategic-planning" />} />
       <Route path="/strategic-planning/welcome" element={<GuidedPaidContinue product="strategic-planning" />} />
       <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
@@ -224,9 +221,9 @@ function CleanRoutes() {
       <Route path="/strategic-leadership-assistant/:token" element={<StrategicLeadershipAssistantPage />} />
 
       {/* Board Recommitment */}
-      <Route path="/board-recommitment" element={<GuidedLandingPage product="board-recommitment" />} />
-      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<GuidedStartPage product="board-recommitment" />} />
-      <Route path="/board-recommitment/video" element={<GuidedVideoPage product="board-recommitment" />} />
+      <Route path="/board-recommitment" element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedLandingPage product="board-recommitment" /></LegacyCustomerRoute>} />
+      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedStartPage product="board-recommitment" /></LegacyCustomerRoute>} />
+      <Route path="/board-recommitment/video" element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedVideoPage product="board-recommitment" /></LegacyCustomerRoute>} />
       <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/welcome" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/intake" element={<GuidedIntakePage product="board-recommitment" />} />
@@ -243,7 +240,8 @@ function CleanRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin" element={<FundraisingAdminPage />} />
+      <Route path="/admin/legacy" element={<AdminPage />} />
       <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
       <Route path="/terms" element={<LegalPage type="terms" />} />
       <Route path="/blog" element={<BlogPage />} />

@@ -49,6 +49,8 @@ export default function BoardPortfolioPage() {
   }
   if (!data) return <div className="bfg-pf-page" />;
 
+  if (data.workflow_version === 7) return <div className="bfg-pf-page"><main className="bfg-pf-doc"><h1>Your Board Fundraising Portfolio</h1><p style={{whiteSpace:"pre-wrap",lineHeight:1.8}}>{data.approved_text}</p><a className="bfg-btn bfg-btn-primary" href={`${API}/board-portfolio/${token}/document.pdf`}>DOWNLOAD YOUR PORTFOLIO</a></main></div>;
+
   const respond = async (action, text = "") => {
     setBusy(true); setError("");
     try {

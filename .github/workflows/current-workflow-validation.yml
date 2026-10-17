@@ -1,7 +1,9 @@
 name: Current Customer Workflow Validation
 on:
-  push: {}
-  pull_request: {}
+  push:
+    branches-ignore: [feature/fundraising-game-simplified]
+  pull_request:
+    branches-ignore: [feature/fundraising-game-simplified]
 jobs:
   validate:
     runs-on: ubuntu-latest

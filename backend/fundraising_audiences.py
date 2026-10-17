@@ -39,15 +39,28 @@ QUESTIONS = {
 }
 
 
-def configuration():
-    return {"workflow_version": VERSION, "categories": list(CATEGORIES), "labels": LABELS,
+LAUNCH_VERSION = 7
+PARTICIPATION_LAUNCH = "How do you see yourself participating and supporting your organization to reach this fundraising goal?"
+LAUNCH_INSTRUCTIONS = "You can write or speak your answers freely. There are no perfect answers expected. We want your ideas about who should fund this mission and how the organization could raise money from them."
+
+def configuration(version=VERSION):
+    result = {"workflow_version": version, "categories": list(CATEGORIES), "labels": LABELS,
             "opening_questions": {"individuals":"Do you know a specific type of individual who would have strong reasons to fund our organization's mission?", "businesses":"Do you know a specific type of business that would have strong reasons to support our organization's mission?", "grantmakers":"Do you know a specific type of grantmaker that would have strong reasons to fund our mission?"},
             "another_questions": {"individuals":"Do you know another type of individual who could have strong reasons to fund our mission?", "businesses":"Do you know another type of business that could have strong reasons to support our mission?", "grantmakers":"Do you know another type of grantmaker that could fund our mission?"},
             "instructions": INSTRUCTIONS, "participation_question": PARTICIPATION, "participation_help": PARTICIPATION_HELP,
             "questions": {cat: [{"key": field, "prompt": text, "help": helper} for field, (text, helper) in zip(FIELDS, QUESTIONS[cat])] for cat in CATEGORIES}}
+    if version == LAUNCH_VERSION:
+        result.update(instructions=LAUNCH_INSTRUCTIONS, participation_question=PARTICIPATION_LAUNCH)
+        for cat in CATEGORIES:
+            result["questions"][cat] = result["questions"][cat][:5]
+            result["questions"][cat][4].update(prompt="What should we ask for, and how much?", help="Explain what this audience should support, the amount you recommend, and why. If you are unsure, say so.")
+    return result
 
 
-def clean_response(payload, *, submitting=False):
+def clean_response(payload, *, submitting=False, version=None):
+    version = version or payload.get("workflow_version") or VERSION
+    if version not in (VERSION, LAUNCH_VERSION): raise HTTPException(422, "Unsupported questionnaire version")
+    required_fields = FIELDS[:5] if version == LAUNCH_VERSION else FIELDS
     if not isinstance(payload, dict) or len(json.dumps(payload)) > 1_000_000:
         raise HTTPException(422, "Please keep your contribution within the form's storage capacity")
     if not isinstance(payload.get("audiences") or {},dict) or not isinstance(payload.get("category_status") or {},dict):
@@ -63,24 +76,26 @@ def clean_response(payload, *, submitting=False):
             ident = str(raw.get("id") or "").strip()
             if not ident or ident in seen or len(ident) > 100: raise HTTPException(422, "Each audience needs its own unique identifier")
             seen.add(ident); item["id"] = ident
-            if submitting and any(not item[key] for key in FIELDS):
-                raise HTTPException(422, "Complete each audience's six answers, or say where you are unsure")
+            if submitting and any(not item[key] for key in required_fields):
+                raise HTTPException(422, "Complete each audience's answers, or say where you are unsure")
             audiences[cat].append(item)
     participation = str(payload.get("involvement") or "").strip()[:12000]
     if submitting and not participation: raise HTTPException(422, "Tell us how you would like to participate")
     progress = payload.get("progress") or {}
     if not isinstance(progress, dict): raise HTTPException(422, "Invalid progress")
     if progress.get("phase", "welcome") not in {"welcome","gate","answer","participation","review"}: raise HTTPException(422,"Invalid questionnaire step")
-    if any(not isinstance(progress.get(key,0),int) or not 0 <= progress.get(key,0) <= limit for key,limit in (("category",2),("question",5),("audience_index",100000))): raise HTTPException(422,"Invalid questionnaire progress")
+    if any(not isinstance(progress.get(key,0),int) or not 0 <= progress.get(key,0) <= limit for key,limit in (("category",2),("question",4 if version == LAUNCH_VERSION else 5),("audience_index",100000))): raise HTTPException(422,"Invalid questionnaire progress")
     if submitting and not all((payload.get("category_status") or {}).get(cat) == "complete" for cat in CATEGORIES):
         raise HTTPException(422, "Finish or skip each funding category")
-    return {"workflow_version": VERSION, "game_version": VERSION, "audiences": audiences, "involvement": participation,
+    return {"workflow_version": version, "game_version": version, "audiences": audiences, "involvement": participation,
             "progress": {k: progress[k] for k in ("category", "audience_index", "question", "phase") if k in progress},
             "category_status": {cat: (payload.get("category_status") or {}).get(cat, "") for cat in CATEGORIES}}
 
 
 def proposed_audiences(responses, members):
     people = {m["member_id"]: m for m in members}
+    if any(r.get("workflow_version") == LAUNCH_VERSION for r in responses):
+        responses = sorted(responses, key=lambda r: bool(people.get(r.get("board_member_id"), {}).get("is_primary")))
     proposals = []; statements = []
     for cat in CATEGORIES:
         for response in responses:
@@ -100,6 +115,8 @@ def proposed_audiences(responses, members):
         member = people.get(response.get("board_member_id"))
         if member and response.get("involvement"):
             statements.append({"member_id": member["member_id"], "name": member["full_name"], "statement": response["involvement"]})
+    if any(r.get("workflow_version") == LAUNCH_VERSION for r in responses):
+        proposals.sort(key=lambda p: bool(people.get(p.get("member_id"), {}).get("is_primary")))
     return proposals, statements
 
 
@@ -121,6 +138,9 @@ def document_sections(agreed, profile):
     goal_text = f"${goal['amount']:,}" if isinstance(goal.get("amount"), (int, float)) else "the fundraising goal supplied by the organization"
     sections = [{"key": "executive_summary", "title": "Executive Summary", "text": f"{organization} will pursue {len(agreed['audiences'])} approved funding audiences toward {goal_text}" + (f" for {purpose}" if purpose else "") + (f" by {goal['deadline']}" if goal.get("deadline") else "") + ". The approaches and confirmed contributions below record the group's decisions. They do not guarantee a particular fundraising result."}]
     labels = [("who_why", "Audience and why they may fund us"), ("where", "Where to find them"), ("attraction", "How to attract them"), ("process", "How to develop relationships and raise money"), ("ask", "What to ask for"), ("amount", "How much to ask")]
+    if profile.get("workflow_version") == LAUNCH_VERSION:
+        labels = [(k, label) for k, label in labels if k != "amount"]
+        labels = [(k, "What to ask for and how much" if k == "ask" else label) for k, label in labels]
     for cat in CATEGORIES:
         for index, proposal in enumerate(x for x in agreed["audiences"] if x["category"] == cat):
             sections.append({"key": f"audience_{cat}_{index}", "title": LABELS[cat] + ": " + proposal["strategy"]["who_why"].split("\n")[0][:120],

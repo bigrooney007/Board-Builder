@@ -131,6 +131,7 @@ export default function GroupPlayPage() {
           </div>
         )}
 
+        {identity && state?.recording_notice && <p role="status">Your host has enabled meeting transcription and confirmed that participants were informed and consented.</p>}
         {identity && state?.audience_review && <AudienceParticipantReview state={state} identity={identity} token={token} reload={poll}/>}
 
         {identity && !state?.audience_review && state?.status === "in_progress" && round && (

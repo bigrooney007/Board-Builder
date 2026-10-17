@@ -6,7 +6,7 @@ import { useWakeLock } from "./useWakeLock";
 
 const Recognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
-export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false, controllerRef = null }) => {
+export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false, controllerRef = null, compileOnFinish = true }) => {
   const [status, setStatus] = useState("idle"); // idle | recording | paused | finishing
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -80,7 +80,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
     await flush();
     try {
       await memberApi.post("/game/meeting/recording/finish");
-      await memberApi.post("/game/meeting/compile-final");
+      if (compileOnFinish) await memberApi.post("/game/meeting/compile-final");
       setElapsed(0);
       statusRef.current = "idle";
       setStatus("idle");

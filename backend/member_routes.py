@@ -115,6 +115,11 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             raise HTTPException(status_code=409, detail="Use the email you entered before payment to create this account")
     if offer_source == "board_fundraising_game" and metadata.get("member_user_id") and metadata["member_user_id"] != member["user_id"]:
         raise HTTPException(status_code=409, detail="This Board Fundraising Game purchase belongs to another account")
+    launch_token = metadata.get("launch_lead_token", "")
+    if launch_token:
+        launch_lead=await db.funnel_leads.find_one({"result_token":launch_token,"lead_source":"fundraising-game-simplified"},{"_id":0})
+        if not launch_lead or launch_lead["email"].lower()!=member["email"].lower():
+            raise HTTPException(409,"Use the email entered before payment to claim your Fundraising Game")
     tier = metadata.get("selected_tier", "")
     extra_entitlements = []
     if offer_source == "recruit_with_rooney" and tier == "997":
@@ -361,6 +366,9 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
             await enroll_reactivation_engagement(db, member, purchase)
         except Exception:
             pass
+    if launch_token:
+        from fundraising_launch import activate_purchase
+        await activate_purchase(db,member,launch_token,session_id)
     return purchase
 
 

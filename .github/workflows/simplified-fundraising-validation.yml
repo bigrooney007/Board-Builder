@@ -1,0 +1,85 @@
+name: Simplified Fundraising Game Validation
+on:
+  push:
+    branches: [feature/fundraising-game-simplified]
+  pull_request:
+    branches: [feature/fundraising-game-simplified]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+    env:
+      RECOVERY_ACCEPTANCE: '1'
+      MONGO_URL: mongodb://127.0.0.1:27017
+      JWT_SECRET: isolated-current-workflow-secret-not-for-production
+      REACT_APP_BACKEND_URL: http://127.0.0.1:8765
+      STRIPE_SECRET_KEY: sk_test_isolated_provider_disabled
+      PAID_PROGRAMS_LIVE: false
+      STRIPE_MODE: test
+      RESEND_API_KEY: isolated-provider-disabled
+      NONPROFIT_SENDER: test@example.test
+      PUBLIC_ORIGIN: http://127.0.0.1:8765
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing pinned test dependencies
+        run: |
+          python -c 'from pathlib import Path; names={"fastapi","starlette","pydantic","pydantic_core","httpx","motor","pymongo","bcrypt","PyJWT","uvicorn","email-validator","resend","stripe","reportlab","Pillow","python-multipart","python-docx","pypdf"}; Path("/tmp/current-requirements.txt").write_text("\n".join(x for x in Path("backend/requirements.txt").read_text().splitlines() if x.split("==")[0] in names))'
+          pip install -r /tmp/current-requirements.txt playwright
+      - name: Current workflow integration and original regressions
+        run: |
+          python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
+          python -m compileall -q backend
+          python -m unittest discover -s backend/tests -p test_current_workflows.py -v
+          python -m unittest discover -s backend/tests -p test_finished_customer_content.py -v
+          python -m unittest discover -s backend/tests -p test_recovered_offer_content.py -v
+          python -m unittest discover -s backend/tests -p test_dashboard_walkthrough_videos.py -v
+          python -m unittest discover -s backend/tests -p test_agentic_recruitment_contract.py -v
+          python -m unittest discover -s backend/tests -p test_guided_prepayment_handoff.py -v
+          python -m unittest discover -s backend/tests -p test_four_customer_journeys_contract.py -v
+          python -m unittest discover -s backend/tests -p test_recovered_recruitment_routes.py -v
+      - uses: actions/setup-node@v4
+        if: always()
+        with:
+          node-version: '20'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - run: yarn --cwd frontend install --frozen-lockfile
+        if: always()
+      - name: Frontend journey regressions
+        if: always()
+        env:
+          CI: 'true'
+        run: |
+          mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
+          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
+      - name: Production build
+        id: build
+        if: always()
+        env:
+          CI: 'false'
+        run: yarn --cwd frontend build
+      - run: python -m playwright install --with-deps chromium
+        if: always() && steps.build.outcome == 'success'
+      - name: Current desktop and mobile workflows
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
+          python tests/simplified_fundraising_browser.py
+      - name: Read-only deployed public availability and payment mode
+        if: always()
+        run: python tests/customer_launch_readiness.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-workflow-acceptance
+          path: |
+            test_reports/current*
+            /tmp/current-server.log

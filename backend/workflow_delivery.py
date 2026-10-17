@@ -15,7 +15,7 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-async def deliver_once(db, user_id, event_key, recipient, subject, text, link):
+async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *, unsubscribe_url=None):
     recipient = str(recipient or "").strip().lower()
     key = hashlib.sha256(f"{user_id}:{event_key}:{recipient}".encode()).hexdigest()
     events = db.workflow_email_deliveries
@@ -38,8 +38,10 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link):
         else:
             if "@" not in recipient: raise ValueError("A valid recipient is required")
             resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
-            response = await resend.Emails.send_async({"from": os.environ["NONPROFIT_SENDER"], "to": [recipient], "subject": subject,
-                "html": "<div style='max-width:640px;margin:auto;font-family:Arial;line-height:1.6'><p>" + html.escape(text).replace("\n", "<br>") + "</p><p><a href='" + html.escape(link, quote=True) + "'>OPEN YOUR RESOURCE</a></p><p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p></div>"},
+            footer = ("<p><a href='" + html.escape(unsubscribe_url, quote=True) + "'>Unsubscribe from these follow-up emails</a></p>") if unsubscribe_url else ""
+            headers = {"List-Unsubscribe": "<" + unsubscribe_url + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"} if unsubscribe_url else {}
+            response = await resend.Emails.send_async({"headers": headers,"from": os.environ["NONPROFIT_SENDER"], "to": [recipient], "subject": subject,
+                "html": "<div style='max-width:640px;margin:auto;font-family:Arial;line-height:1.6'><p>" + html.escape(text).replace("\n", "<br>") + "</p><p><a href='" + html.escape(link, quote=True) + "'>OPEN YOUR RESOURCE</a></p><p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p>" + footer + "</div>"},
                 {"idempotency_key": key})
             provider_id = response.get("id", "") if isinstance(response, dict) else getattr(response, "id", "")
             if not provider_id: raise ValueError("The email provider did not confirm acceptance")

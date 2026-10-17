@@ -51,8 +51,12 @@ class AudienceReview:
         result.pop("_id", None)
         review = result["audience_review"]
         review["summary"] = audience.summary(review)
+        profile = await self.db.game_profiles.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
+        review["workflow_version"] = profile.get("workflow_version",6)
+        joined_rows = await self.db.group_game_participants.find({"session_id":session["session_id"]},{"_id":0}).to_list(1000)
+        joined_ids = {x["board_member_id"] for x in joined_rows}
         people = await self.db.game_board_members.find({"user_id": session["user_id"], "removed": {"$ne": True}}, {"_id": 0}).to_list(1000)
-        review["people"] = [{"member_id": p["member_id"], "name": p["full_name"],
+        review["people"] = [{"member_id": p["member_id"], "name": p["full_name"], "joined": p["member_id"] in joined_ids,
             "acknowledged": (review.get("acknowledgements", {}).get(p["member_id"], {}).get("revision") == review["summary"]["revision"])} for p in people]
         strategy = await self.db.game_strategies.find_one({"strategy_id": session.get("strategy_id", "")}, {"_id": 0})
         review["strategy"] = strategy
@@ -81,7 +85,7 @@ class AudienceReview:
             {"title":p["strategy"]["who_why"],"explanation":p["strategy"]["who_why"],"focus":p["strategy"]["ask"]} for p in agreed["audiences"] if p["category"]==cat] for cat in audience.CATEGORIES},
             "fundraising_goal":profile.get("goal") or {}, "execution_agreements":[c["name"]+": "+c["contribution"] for c in agreed["commitments"]]}
         record = {"strategy_id": "audience-" + session["session_id"], "user_id": session["user_id"], "mode": "final", "status": "final_draft", "version": 1,
-            "schema_version": audience.VERSION, "share_token": secrets.token_urlsafe(24), "prepared_by": "The Board of " + (profile.get("organization") or {}).get("name", "your organization"),
+            "schema_version": profile.get("workflow_version",audience.VERSION), "branding":profile.get("branding") or {}, "share_token": secrets.token_urlsafe(24), "prepared_by": (profile.get("primary_user") or {}).get("full_name") or "The Board of " + (profile.get("organization") or {}).get("name", "your organization"),
             "data": {**compatible, **{s["key"]: s["text"] for s in sections}, "board_roles": roles}, "section_edits": {s["key"]: s["text"] for s in sections},
             "document_sections": sections, "document_text": body, "source": "explicitly-adopted-audiences", "source_revision": agreed["revision"],
             "agreed_audiences": agreed["audiences"], "confirmed_commitments": agreed["commitments"], "generated_at": now(), "created_at": now()}
@@ -115,6 +119,8 @@ class AudienceReview:
         @router.post("/game/group/audience/action")
         async def action(payload: dict, request: Request):
             session = await host(request); review = copy.deepcopy(session["audience_review"])
+            profile=await self.db.game_profiles.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
+            fields=audience.FIELDS[:5] if profile.get("workflow_version")==7 else audience.FIELDS
             if payload.get("revision") != review["revision"]: raise HTTPException(409, "Refresh to use the latest meeting decisions")
             operation = payload.get("action")
             if review["phase"] in {"document", "approved"}: raise HTTPException(409, "The agreed direction is already saved")
@@ -126,19 +132,21 @@ class AudienceReview:
                 if not proposal or payload.get("status") not in {"adopted", "rejected", "pending"}: raise HTTPException(422, "Choose a valid audience and decision")
                 strategy = payload.get("strategy") or proposal["strategy"]
                 value = {k: str(strategy.get(k) or "").strip()[:12000] for k in audience.FIELDS}
-                if payload["status"] == "adopted" and not all(value.values()): raise HTTPException(422, "Complete the six agreed audience fields, or indicate uncertainty")
+                if payload["status"] == "adopted" and not all(value[k] for k in fields): raise HTTPException(422, "Complete the six agreed audience fields, or indicate uncertainty")
                 review["decisions"][proposal["id"]] = {"status": payload["status"], "strategy": value}
             elif operation == "add":
                 category = payload.get("category"); raw = payload.get("strategy") or {}
-                if category not in audience.CATEGORIES or not all(str(raw.get(k) or "").strip() for k in audience.FIELDS): raise HTTPException(422, "Supply the complete audience agreed during discussion")
+                if category not in audience.CATEGORIES or not all(str(raw.get(k) or "").strip() for k in fields): raise HTTPException(422, "Supply the complete audience agreed during discussion")
                 sources = payload.get("source_ids") or []
                 if not isinstance(sources, list) or any(i not in {p["id"] for p in review["proposals"]} for i in sources): raise HTTPException(422, "Choose valid source proposals")
                 proposal = {"id": "discussion:" + new_uuid(), "category": category, "member_id": "", "contributor": "Board discussion", "source_ids": sources,
-                            "strategy": {k: str(raw[k]).strip()[:12000] for k in audience.FIELDS}}
+                            "strategy": {k: str(raw.get(k) or "").strip()[:12000] for k in audience.FIELDS}}
                 review["proposals"].append(proposal)  # Explicit adoption is still required.
             elif operation == "progress":
                 index = payload.get("index")
                 if not isinstance(index, int) or index < 0 or index > len(review["proposals"]): raise HTTPException(422, "Choose a valid discussion step")
+                if profile.get("workflow_version")==7 and index>review["index"] and any(review["decisions"].get(p["id"],{}).get("status") not in ("adopted","rejected") for p in review["proposals"][:index]):
+                    raise HTTPException(409,"Approve or disapprove this audience before moving on")
                 review["index"] = index; review["phase"] = "participation" if index == len(review["proposals"]) else "audiences"
             elif operation == "commitment":
                 person = await self.db.game_board_members.find_one({"user_id": session["user_id"], "member_id": payload.get("member_id"), "removed": {"$ne": True}}, {"_id": 0})
@@ -186,6 +194,35 @@ class AudienceReview:
             await self.db.game_strategy_jobs.update_one({"user_id": session["user_id"], "mode": "final"}, {"$set": {"status": "done", "strategy_id": strategy["strategy_id"], "finished_at": now()}}, upsert=True)
             return {"status": "adopted", "delivery": await self.delivery(session)}
 
+        @router.post("/game/group/audience/recording-consent")
+        async def recording_consent(payload:dict,request:Request):
+            session=await host(request)
+            if payload.get("confirmed") is not True:raise HTTPException(422,"Confirm that participants have been informed and consented")
+            await self.db.group_game_sessions.update_one({"session_id":session["session_id"]},{"$set":{"transcript_consent":True,"transcript_consent_at":now()}})
+            return {"confirmed":True}
+
+        @router.post("/game/group/audience/close")
+        async def close_meeting(payload:dict,request:Request):
+            session=await host(request)
+            profile=await self.db.game_profiles.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
+            if profile.get("workflow_version")!=7: raise HTTPException(409,"Use the closing steps for your saved game")
+            if payload.get("confirmed") is not True: raise HTTPException(422,"Confirm that the meeting is ready to close")
+            if session["audience_review"]["phase"] not in ("adopted","approved"): raise HTTPException(409,"Complete the group's adoption first")
+            strategy=await self.strategy(session)
+            state=await self.state(session)
+            adoption=[{"name":p["name"],"member_id":p["member_id"],"adopted":p["acknowledged"],"joined":p["joined"]} for p in state["audience_review"]["people"]]
+            if strategy["status"]!="adopted":
+                adoption_text="\n".join(p["name"]+": "+("Adopted this strategy" if p["adopted"] else "Present; adoption not recorded" if p["joined"] else "Absent or did not join") for p in adoption)
+                sections=strategy["document_sections"]+[{"key":"board_adoption","title":"Record of Board Adoption","text":adoption_text}]
+                await self.db.game_strategies.update_one({"strategy_id":strategy["strategy_id"],"status":"final_draft"},{"$set":{"status":"adopted","adopted_at":now(),"adoption_record":adoption,"document_sections":sections,"document_text":"\n\n".join(s["title"]+"\n"+s["text"] for s in sections)}})
+                review=copy.deepcopy(session["audience_review"]);review["phase"]="approved"
+                await self.save(session,review,status="completed",completed_at=now())
+                from fundraising_launch import touch
+                await touch(self.db,session["user_id"],"workspace","/game/dashboard")
+            owner=await self.db.members.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
+            result=await deliver_once(self.db,session["user_id"],"meeting-strategy-ready:"+strategy["strategy_id"],owner.get("email",""),"Your Board's Fundraising Strategy Is Ready","Your board's adopted fundraising strategy is available in your workspace. Review and download it, confirm the responsibilities agreed at your meeting, and prepare your board members' portfolios.",(os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")+"/game/dashboard#final-strategy")
+            return {"closed":True,"delivery":result}
+
         @router.post("/game/group/audience/retry-delivery")
         async def retry(request: Request): return {"delivery": await self.delivery(await host(request))}
 
@@ -194,6 +231,7 @@ class AudienceReview:
             session = await host(request); strategy = await self.strategy(session)
             from strategy_pdf import build_strategy_pdf
             profile = await self.db.game_profiles.find_one({"user_id": session["user_id"]}, {"_id": 0}) or {}
+            strategy["branding"]=profile.get("branding") or {}
             return Response(build_strategy_pdf(strategy, (profile.get("organization") or {}).get("name", "")), media_type="application/pdf", headers={"Content-Disposition": 'attachment; filename="fundraising-strategy.pdf"'})
 
         @router.post("/game/group/play/{token}/acknowledge")

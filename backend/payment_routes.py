@@ -784,15 +784,32 @@ def create_payment_router(db) -> APIRouter:
 
     @router.post("/game-checkout")
     async def create_game_checkout(payload: DIYCheckoutRequest, request: Request):
-        member = await authenticate_member(request, db)
-        saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
-        answers = saved.get("answers") or {}
-        if (not saved.get("completed") if saved.get("workflow_version") == audiences6.VERSION else any(not str(answers.get(str(number), "")).strip() for number in range(1, 6))):
-            raise HTTPException(status_code=409, detail="Complete your five fundraising questions before checkout")
+        lead = await db.funnel_leads.find_one({"result_token":payload.result_token,"lead_source":"fundraising-game-simplified"},{"_id":0}) if payload.result_token else None
+        member = None
+        if lead and lead.get("internal_preview"):
+            member=await authenticate_member(request,db)
+            if not member.get("internal_dashboard_preview") or lead.get("test_user_id")!=member["user_id"]:raise HTTPException(403,"Use your own admin simulation")
+            sid="launch-test-"+lead["lead_id"]
+            await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"board_fundraising_game"}})
+            await db.payment_transactions.update_one({"session_id":sid},{"$setOnInsert":{"session_id":sid,"user_id":member["user_id"],"claimed_by_user_id":member["user_id"],"internal_preview":True,"payment_status":"paid","status":"completed","purchase_source":"board_fundraising_game_497","offer_source":"board_fundraising_game","launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"amount":0,"created_at":datetime.now(timezone.utc).isoformat()}},upsert=True)
+            from fundraising_launch import activate_purchase
+            # Synthetic lead email is used only inside this isolated account.
+            test_owner={**member,"email":lead["email"]}
+            await activate_purchase(db,test_owner,lead["result_token"],sid)
+            return {"checkout_url":payload.origin_url.rstrip('/')+"/game/setup","session_id":sid,"simulated":True}
+        if lead:
+            existing = await db.members.find_one({"email":lead["email"],"entitlements":"board_fundraising_game"},{"_id":0})
+            if existing: raise HTTPException(409,"You already have access. Sign in to your saved Fundraising Game workspace.")
+        else:
+            member = await authenticate_member(request, db)
+            saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
+            answers = saved.get("answers") or {}
+            if (not saved.get("completed") if saved.get("workflow_version") in (6,7) else any(not str(answers.get(str(number), "")).strip() for number in range(1, 6))):
+                raise HTTPException(409,"Complete your saved fundraising questions before checkout")
         parsed = urlparse(payload.origin_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
-        if member.get("internal_dashboard_preview"):
+        if member and member.get("internal_dashboard_preview"):
             tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": "board_fundraising_game_497"}, {"_id": 0})
             if not tx: raise HTTPException(409, "Reopen your isolated admin test")
             return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + tx["session_id"], "session_id": tx["session_id"]}
@@ -800,14 +817,16 @@ def create_payment_router(db) -> APIRouter:
             "line_items": [{"price": resolve_game_price_id(), "quantity": 1}],
             "mode": "payment",
             "phone_number_collection": {"enabled": True},
-            "customer_email": member["email"],
+            "customer_email": lead["email"] if lead else member["email"],
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
                 "offer_source": "board_fundraising_game", "selected_tier": "497",
                 "purchase_source": "board_fundraising_game_497",
                 "offer": "Board Fundraising Game",
-                "member_user_id": member["user_id"],
+                "member_user_id": member["user_id"] if member else "",
+                "launch_lead_token": lead["result_token"] if lead else "",
+                "lead_id": lead["lead_id"] if lead else "",
             },
         }
         try:
@@ -822,13 +841,16 @@ def create_payment_router(db) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         await db.payment_transactions.insert_one({
             "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "board_fundraising_game",
-            "user_id": member["user_id"],
+            "user_id": member["user_id"] if member else "",
+            **({"launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"lead_email":lead["email"],"lead_name":lead["name"],"lead_organization":lead["organization"]} if lead else {}),
             "selected_tier": "497", "purchase_source": "board_fundraising_game_497",
             "offer": "Board Fundraising Game",
             "amount": 49700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })
+        if lead:
+            await db.funnel_leads.update_one({"lead_id":lead["lead_id"]},{"$set":{"checkout_started_at":now,"stage":"checkout","session_id":session.id}})
         return {"checkout_url": session.url, "session_id": session.id}
 
     @router.post("/activation-diy-checkout")
@@ -1165,6 +1187,9 @@ def create_stripe_webhook_router(db) -> APIRouter:
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 
     async def _stop_nurture_after_paid(item: dict) -> None:
+        token=(item.get("metadata") or {}).get("launch_lead_token")
+        if token:
+            await db.funnel_leads.update_one({"result_token":token,"lead_source":"fundraising-game-simplified"},{"$set":{"paid_at":datetime.now(timezone.utc).isoformat(),"stage":"paid","followup_stopped":True}})
         try:
             from marketing_service import stop_recruitment_nurture_for_purchase
             transaction = await db.payment_transactions.find_one({"session_id": item["id"]}, {"_id": 0})

@@ -190,3 +190,5 @@ export default function AdminPage() {
     {profile&&<Profile applicant={profile} close={()=>setProfile(null)} refresh={loadApplicants}/>}
   </main>;
 }
+
+export { Login };

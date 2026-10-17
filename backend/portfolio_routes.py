@@ -357,6 +357,9 @@ def create_portfolio_router(db) -> APIRouter:
     # ---------- Preparation (deterministic, no AI) ----------
 
     async def build_draft(user_id: str, record: dict, strategy: dict, commitments: list) -> dict:
+        if strategy.get("schema_version")==7:
+            from fundraising_launch import build_portfolio_draft
+            return await build_portfolio_draft(db,user_id,record,strategy)
         member_id = record["member_id"]
         audiences = strategy_audiences(strategy)
         system_response = await db.game_section_responses.find_one(
@@ -525,9 +528,17 @@ def create_portfolio_router(db) -> APIRouter:
                 participating_records.append(record)
         created = 0
         for record in participating_records:
+            if strategy.get("schema_version")==7 and not record.get("launch_role_confirmed"): continue
             existing = await db.board_portfolios.find_one(
                 {"user_id": member["user_id"], "board_member_id": record["member_id"]}, {"_id": 0, "portfolio_id": 1})
             if existing:
+                if strategy.get("schema_version")==7:
+                    full=await get_portfolio(member["user_id"],existing["portfolio_id"])
+                    if full.get("role_changed"):
+                        draft=await build_draft(member["user_id"],record,strategy,commitments)
+                        for key in ("portfolio_id","token","created_at"):draft[key]=full[key]
+                        draft["version"]=full.get("version",1)+1
+                        await db.board_portfolios.replace_one({"portfolio_id":full["portfolio_id"]},draft)
                 continue
             draft = await build_draft(member["user_id"], record, strategy, commitments)
             await db.board_portfolios.insert_one(draft.copy())
@@ -691,7 +702,14 @@ def create_portfolio_router(db) -> APIRouter:
         if not portfolio.get("member_email"):
             raise HTTPException(status_code=409, detail="This board member has no email address")
         profile = await get_profile(member["user_id"])
-        await send_portfolio_email(member, portfolio, profile, payload.origin_url)
+        if portfolio.get("workflow_version")==7:
+            if not portfolio.get("leader_approved_at") or portfolio.get("leader_approved_version")!=portfolio["version"]:
+                raise HTTPException(409,"Approve the current portfolio before sending")
+            from workflow_delivery import deliver_once
+            delivery=await deliver_once(db,member["user_id"],f"portfolio:{portfolio_id}:{portfolio['version']}",portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
+            if delivery['status'] not in ('sent','captured'): raise HTTPException(502,"The portfolio is approved but its email needs a retry")
+        else:
+            await send_portfolio_email(member, portfolio, profile, payload.origin_url)
         updates = {"sent_at": now_iso(), "updated_at": now_iso()}
         if portfolio["status"] in {"ready_to_send", "change_requested"}:
             updates["status"] = "sent"
@@ -711,6 +729,8 @@ def create_portfolio_router(db) -> APIRouter:
         for portfolio in rows:
             if not portfolio.get("member_email"):
                 continue
+            if portfolio.get("workflow_version")==7:
+                continue  # Use the version-scoped, approved single-portfolio delivery action.
             try:
                 await send_portfolio_email(member, portfolio, profile, payload.origin_url)
             except HTTPException:
@@ -764,6 +784,8 @@ def create_portfolio_router(db) -> APIRouter:
     @router.get("/board-portfolio/{token}")
     async def public_portfolio(token: str):
         portfolio = await portfolio_by_token(token)
+        if portfolio.get("workflow_version")==7 and not portfolio.get("leader_approved_at"):
+            raise HTTPException(404,"This approved portfolio is not available")
         profile = await get_profile(portfolio["user_id"])
         strategy = await db.game_strategies.find_one(
             {"strategy_id": portfolio["strategy_id"]}, {"_id": 0, "share_token": 1}) or {}
@@ -772,6 +794,8 @@ def create_portfolio_router(db) -> APIRouter:
         record = await db.game_board_members.find_one(
             {"member_id": portfolio["board_member_id"]}, {"_id": 0, "token": 1}) or {}
         view["play_token"] = record.get("token", "")
+        view["workflow_version"]=portfolio.get("workflow_version")
+        if portfolio.get("workflow_version")==7:view["approved_text"]=portfolio.get("leader_approved_text","")
         return view
 
     @router.get("/board-portfolio/{token}/toolkit/download")

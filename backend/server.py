@@ -42,6 +42,13 @@ db = client[os.environ["DB_NAME"]]
 app = FastAPI(title="Nonprofit Board Builder")
 from admin_test_safety import install_email_capture
 install_email_capture(app, db)
+@app.middleware("http")
+async def single_public_product_sales(request, call_next):
+    if request.method=="POST" and request.url.path.startswith("/api/payments/") and request.url.path.endswith("checkout") and request.url.path!="/api/payments/game-checkout":
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail":"This offer is no longer available for new purchases. The Fundraising Game is available at /how-the-fundraising-game-works."},status_code=410)
+    return await call_next(request)
+
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
 automation_task = None
@@ -236,6 +243,8 @@ from fbb_routes import create_fbb_router
 app.include_router(create_fbb_router(db))
 from game_routes import create_game_router
 app.include_router(create_game_router(db))
+from fundraising_launch import create_fundraising_launch_router
+app.include_router(create_fundraising_launch_router(db))
 from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
 from game_finetune_routes import create_finetune_router
@@ -332,6 +341,8 @@ async def startup_tasks():
     await db.signature_requests.create_index("token", unique=True)
     await db.blog_posts.create_index([("category_key", 1), ("scheduled_date", 1)], unique=True)
     await db.blog_posts.create_index("slug")
+    await db.funnel_events.create_index("event_id", unique=True)
+    await db.funnel_leads.create_index("result_token", sparse=True)
     await db.nurture_sends.create_index([("segment", 1), ("scheduled_week", 1)], unique=True)
     await db.nurture_contacts.create_index("email", unique=True)
     await db.rooney_engagements.create_index("purchase_id", unique=True)
@@ -361,6 +372,8 @@ async def startup_tasks():
     app.state.activation_accountability_task = asyncio.create_task(activation_accountability_loop(db))
     from checkout_recovery import checkout_recovery_loop
     app.state.checkout_recovery_task = asyncio.create_task(checkout_recovery_loop(db))
+    from fundraising_launch import recovery_loop
+    app.state.fundraising_launch_recovery_task = asyncio.create_task(recovery_loop(db))
 
 
 @app.on_event("shutdown")

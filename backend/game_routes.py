@@ -324,11 +324,11 @@ def create_game_router(db) -> APIRouter:
     async def save_free_audiences(payload: dict, request: Request):
         member = await authenticate_member(request, db)
         profile = await get_profile_doc(member["user_id"])
-        if profile.get("workflow_version") != audiences6.VERSION:
+        if profile.get("workflow_version") not in (6, 7):
             raise HTTPException(409, "Continue your saved version of the game")
         existing = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         if existing.get("completed"): raise HTTPException(409, "Your submitted ideas are already saved")
-        value = audiences6.clean_response(payload, submitting=payload.get("submit") is True)
+        value = audiences6.clean_response(payload, submitting=payload.get("submit") is True, version=profile["workflow_version"])
         value.update({"updated_at": datetime.now(timezone.utc).isoformat(), "completed": payload.get("submit") is True})
         result = await audiences6.persist_draft(db.game_free_responses, {"user_id": member["user_id"]}, value, {"created_at":value["updated_at"]})
         if not result.matched_count: raise HTTPException(409,"Your submitted ideas are already saved")
@@ -341,8 +341,8 @@ def create_game_router(db) -> APIRouter:
         if not profile.get("profile_completed"):
             raise HTTPException(status_code=409, detail="Choose your fundraising goal and save your organization first")
         saved = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
-        if profile.get("workflow_version") == audiences6.VERSION:
-            return {"workflow_version": audiences6.VERSION, "configuration": audiences6.configuration(), "response": saved,
+        if profile.get("workflow_version") in (6, 7):
+            return {"workflow_version": profile["workflow_version"], "configuration": audiences6.configuration(profile["workflow_version"]), "response": saved,
                     "complete": bool(saved.get("completed")), "organization_name": (profile.get("organization") or {}).get("name", ""),
                     "goal_amount": (profile.get("goal") or {}).get("amount", 0), "deadline": (profile.get("goal") or {}).get("deadline", ""), "unlocked": GAME_ENTITLEMENT in member.get("entitlements", [])}
         answers = saved.get("answers") or {}

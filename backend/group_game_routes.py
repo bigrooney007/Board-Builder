@@ -438,7 +438,7 @@ def create_group_game_router(db) -> APIRouter:
     async def prepare_group_game(request: Request):
         member = await game_member(request)
         profile = await get_profile(member["user_id"])
-        if profile.get("workflow_version") == 6:
+        if profile.get("workflow_version") in (6, 7):
             return {"session": await audience_review.prepare(member["user_id"])}
         organization = (profile.get("organization") or {}).get("name", "your organization")
         session = await active_session(member["user_id"])
@@ -478,7 +478,7 @@ def create_group_game_router(db) -> APIRouter:
         if session.get("game_version") == "audience-complete-v6":
             state = await audience_review.state(session)
             joined = await participants(session["session_id"])
-            return {"session": {"token": state["token"], "status": state["status"], "current_round": 0}, "audience_review": state["audience_review"],
+            return {"session": {"token": state["token"], "status": state["status"], "current_round": 0,"transcript_consent":bool(session.get("transcript_consent"))}, "audience_review": state["audience_review"],
                     "players": [], "joined_count": len(joined), "board_member_count": len(state["audience_review"]["people"]), "current_round": None, "closed_rounds": [], "total_rounds": len(state["audience_review"]["proposals"])}
         members = await board_members(member["user_id"])
         joined = {row["board_member_id"]: row for row in await participants(session["session_id"])}
@@ -733,7 +733,7 @@ def create_group_game_router(db) -> APIRouter:
             state = await audience_review.state(session)
             return {"status": session["status"], "organization_name": (profile.get("organization") or {}).get("name", ""), "goal_display": fmt_goal(profile),
                     "joined": True, "joined_count": len(joined), "total_rounds": len(state["audience_review"]["proposals"]), "current_round": None,
-                    "audience_review": state["audience_review"], "my_member_id": me["board_member_id"]}
+                    "audience_review": state["audience_review"], "recording_notice":bool(session.get("transcript_consent")), "my_member_id": me["board_member_id"]}
         current_number = session.get("current_round", 0)
         current = await db.group_game_rounds.find_one(
             {"session_id": session["session_id"], "round_number": current_number}, {"_id": 0}) if current_number else None

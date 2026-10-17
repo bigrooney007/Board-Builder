@@ -25,8 +25,8 @@ class BlogGenerate(BaseModel):
     @field_validator("category")
     @classmethod
     def valid_category(cls, value):
-        if value not in BLOG_CATEGORIES:
-            raise ValueError("Choose one of the five current blog topics.")
+        if value != "fundraising_activation":
+            raise ValueError("Choose Board Fundraising for new content.")
         return value
 
     @field_validator("scheduled_date", mode="before")
@@ -181,6 +181,7 @@ def create_marketing_router(db) -> APIRouter:
         today = datetime.now(ZoneInfo(settings["timezone"])).date()
         schedule = []
         for key, config in BLOG_CATEGORIES.items():
+            if key != "fundraising_activation":continue
             next_topic = await next_topic_for(db, key)
             usage = await topic_usage(db, key)
             schedule.append({"category_key": key, "category": config["name"], "publish_day": config["publish_day"],

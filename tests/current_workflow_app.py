@@ -32,6 +32,8 @@ from payment_routes import create_payment_router
 from board_fix_routes import create_board_fix_router
 from public_opportunity_routes import create_public_opportunity_router
 from admin_test_safety import install_email_capture
+from fundraising_launch import create_fundraising_launch_router
+from portfolio_routes import create_portfolio_router
 from member_routes import create_member_router
 import strategic_planning_routes as sp
 mongo = AsyncIOMotorClient(os.environ["MONGO_URL"])
@@ -41,7 +43,7 @@ def build_app(database):
     install_email_capture(app, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
-                    create_payment_router, create_member_router, create_board_fix_router, create_public_opportunity_router):
+                    create_payment_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router):
         app.include_router(factory(database))
     return app
 
