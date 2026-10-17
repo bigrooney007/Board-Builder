@@ -91,6 +91,10 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         closed=await self.call('POST','/game/group/audience/close',{'confirmed':True});self.assertTrue(closed['closed'])
         state=await self.call('GET','/game/launch/state');strategy=state['strategy']
         self.assertEqual(strategy['status'],'adopted');self.assertEqual(strategy['schema_version'],7);self.assertEqual(len(strategy['agreed_audiences']),1)
+        await self.db.group_game_sessions.update_one({'user_id':self.user},{'$set':{'status':'in_progress','audience_review.phase':'adopted'}})
+        await self.call('POST','/game/group/audience/close',{'confirmed':True})
+        self.assertEqual((await self.db.group_game_sessions.find_one({'user_id':self.user}))['status'],'completed')
+        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':'meeting-strategy-ready:'+strategy['strategy_id']}),1)
         self.assertNotIn('Leader businesses',strategy['document_text'])
         await self.call('PUT','/game/launch/branding',{'primary_color':'#123456','secondary_color':'#eeeeee'})
         pdf=await self.call('GET','/game/group/audience/download');self.assertEqual(pdf.content[:4],b'%PDF')
@@ -187,9 +191,29 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.db.workflow_email_deliveries.delete_many({})
         with patch.object(launch,'deliver_once',new=AsyncMock()) as send:await launch.send_due(self.db);send.assert_not_awaited()
 
+    async def test_recovery_resumes_saved_stage_and_stops_after_two_reminders(self):
+        from fundraising_launch import send_due
+        await self.fresh()
+        await self.call('PUT','/game/launch/draft',{'stage':'meeting','values':{'meeting_date':'2026-12-01'}})
+        old=(datetime.now(timezone.utc)-timedelta(days=5)).isoformat()
+        await self.db.game_journey_progress.update_one({'user_id':self.user},{'$set':{'updated_at':old}})
+        await send_due(self.db);await send_due(self.db)
+        events=await self.db.workflow_email_deliveries.find({'event_key':{'$regex':'^resume:'}}).to_list(20)
+        self.assertEqual(len(events),1);self.assertTrue(events[0]['link'].endswith('/login?next=%2Fgame%2Fsetup'))
+        await self.db.workflow_email_deliveries.update_many({'event_key':{'$regex':'^resume:'}},{'$set':{'updated_at':old}})
+        await send_due(self.db);await send_due(self.db)
+        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':{'$regex':'^resume:'}}),2)
+        await self.call('POST','/game/launch/progress',{'stage':'complete'})
+        await self.db.game_journey_progress.update_one({'user_id':self.user},{'$set':{'updated_at':old}})
+        await send_due(self.db)
+        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':{'$regex':'^resume:'}}),2)
+
     async def test_test_payment_rejects_another_synthetic_owner(self):
         await self.fresh();lead=self.lead
         other=await self.call('POST','/admin/fundraising/test-start',headers=self.admin)
         await self.call('POST','/payments/game-checkout',{'origin_url':'http://test','result_token':lead['token']},403,headers={'Authorization':'Bearer '+other['token']})
+        reused=await self.call('POST','/fundraising/leads',{'name':'New Sample Leader','email':'lead@example.org','organization':'BrightPath','visitor_id':'unique-browser-123456','resume_token':lead['token']},201,headers={'Authorization':'Bearer '+other['token']})
+        self.assertNotEqual(reused['token'],lead['token'])
+        self.assertEqual((await self.db.funnel_leads.find_one({'lead_id':lead['lead_id']}))['test_user_id'],self.user)
 
 if __name__=='__main__':unittest.main()

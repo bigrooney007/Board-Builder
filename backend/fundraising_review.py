@@ -218,6 +218,7 @@ class AudienceReview:
                 adoption_text="\n".join(p["name"]+": "+("Adopted this strategy" if p["adopted"] else "Present; adoption not recorded" if p["joined"] else "Absent or did not join") for p in adoption)
                 sections=strategy["document_sections"]+[{"key":"board_adoption","title":"Record of Board Adoption","text":adoption_text}]
                 await self.db.game_strategies.update_one({"strategy_id":strategy["strategy_id"],"status":"final_draft"},{"$set":{"status":"adopted","adopted_at":now(),"adoption_record":adoption,"document_sections":sections,"document_text":"\n\n".join(s["title"]+"\n"+s["text"] for s in sections)}})
+            if session["status"]!="completed":
                 review=copy.deepcopy(session["audience_review"]);review["phase"]="approved"
                 await self.save(session,review,status="completed",completed_at=now())
                 from fundraising_launch import touch

@@ -175,11 +175,11 @@ def create_fundraising_launch_router(db):
             if candidate.get("internal_dashboard_preview"):test_member=candidate
         # Returning bearer token permits updating this one lead, never another's.
         lead=await db.funnel_leads.find_one({'result_token':payload.resume_token,'lead_source':SOURCE},{'_id':0}) if payload.resume_token else None
-        if lead and lead['email'].lower()!=str(payload.email).lower(): lead=None
+        if lead and (lead['email'].lower()!=str(payload.email).lower() or bool(lead.get('internal_preview'))!=bool(test_member) or (test_member and lead.get('test_user_id')!=test_member['user_id'])): lead=None
         if not lead:
             lead={'lead_id':secrets.token_urlsafe(24),'result_token':secrets.token_urlsafe(32),'lead_source':SOURCE,'offer_source':'board_fundraising_game',
                   'created_at':now(),'unsubscribe_token':secrets.token_urlsafe(32),'visitor_id':payload.visitor_id,'stage':'contact'}
-            capture_key=digest(payload.visitor_id+str(payload.email).lower())
+            capture_key=digest((test_member['user_id'] if test_member else '')+payload.visitor_id+str(payload.email).lower())
             lead['capture_key']=capture_key
             await db.funnel_leads.update_one({'capture_key':capture_key,'lead_source':SOURCE},{'$setOnInsert':lead.copy()},upsert=True)
             lead=await db.funnel_leads.find_one({'capture_key':capture_key,'lead_source':SOURCE},{'_id':0})
