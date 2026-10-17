@@ -512,13 +512,10 @@ async def marketing_loop(db) -> None:
     while True:
         try:
             await run_blog_schedule(db)
-            if os.environ.get("LEAD_NURTURE_ENABLED", "false").lower() == "true" or enabled_nurture_sources():
-                now = now_tz("LEAD_NURTURE_TIMEZONE")
-                day_name = os.environ.get("LEAD_NURTURE_DAY", "Tuesday")
-                send_time = os.environ.get("LEAD_NURTURE_TIME", "07:00")
-                if now.strftime("%A") == day_name and now.strftime("%H:%M") >= send_time:
-                    await run_weekly_nurture(db, origin, test_only=False)
-            await run_reco_nurture_drip(db, origin)
+            # The public business now has one offer. The consent-based five-email
+            # launch sequence is processed by fundraising_launch.recovery_loop.
+            # Keep legacy marketing records/functions for audit and manual review;
+            # do not schedule advertisements for the retired products.
             from activation_delivery import run_activation_delivery_checks
             await run_activation_delivery_checks(db)
         except Exception as exc:

@@ -18,7 +18,7 @@ async def main():
     async with async_playwright() as p:
         browser=await p.chromium.launch()
         for width in (1440,390):
-            context=await browser.new_context(viewport={'width':width,'height':1000 if width==1440 else 844},accept_downloads=True)
+            context=await browser.new_context(viewport={'width':width,'height':1000 if width==1440 else 844},accept_downloads=True,record_video_dir=f'test_reports/current-simplified-video-{width}',record_video_size={'width':width,'height':1000 if width==1440 else 844})
             auth=(await (await context.request.get(BASE+'/__test/session')).json())['token']
             response=await context.request.post(BASE+'/api/admin/fundraising/test-start',headers={'Authorization':'Bearer '+auth});assert response.ok,await response.text()
             test=await response.json();
@@ -128,6 +128,7 @@ async def main():
                 await pp.get_by_role('checkbox',name='I acknowledge the agreed direction and the contribution I have personally accepted.',exact=True).check()
                 await pp.get_by_role('button',name='Adopt This Strategy',exact=True).click()
                 await pp.get_by_text('You have acknowledged this agreed direction.',exact=True).wait_for()
+            await participant_pages[0].screenshot(path=f'test_reports/current-simplified-participant-{width}.png',full_page=True)
             await review.get_by_role('button',name='Close Meeting and Prepare Our Strategy',exact=True).click()
             await review.get_by_role('heading',name='Thank you for playing The Fundraising Game.',exact=True).wait_for()
             await participant_pages[0].get_by_text('Your organization has now agreed on its fundraising strategy.',exact=True).wait_for()
@@ -159,6 +160,7 @@ async def main():
             await context.set_extra_http_headers({'Authorization':'Bearer '+auth})
             await page.goto(BASE+'/admin?tab=home')
             await page.get_by_test_id('fundraising-admin').wait_for()
+            await page.get_by_role('button',name='Homepage Editor',exact=True).click()
             await page.get_by_label('Page heading',exact=True).fill('Our board fundraising homepage')
             await page.get_by_role('button',name='Save Website Content',exact=True).click()
             await page.get_by_text('Your changes are saved and appear on the public website after refresh.',exact=True).wait_for()

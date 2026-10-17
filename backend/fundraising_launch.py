@@ -32,7 +32,10 @@ def origin(): return (os.environ.get('PUBLIC_ORIGIN') or 'https://nonprofitboard
 def digest(value): return hashlib.sha256(str(value).encode()).hexdigest()
 async def content(db):
     saved = await db.site_content.find_one({'key': SOURCE}, {'_id': 0}) or {}
-    return {**copy.deepcopy(DEFAULT), **saved.get('content', {})}
+    def merge(base,override):
+        if isinstance(base,dict) and isinstance(override,dict):return {k:merge(v,override.get(k,v)) for k,v in base.items()}
+        return copy.deepcopy(override)
+    return merge(DEFAULT,saved.get('content',{}))
 
 class Lead(BaseModel):
     name: str = Field(min_length=2, max_length=200)
@@ -54,15 +57,19 @@ async def activate_purchase(db, member, lead_token, session_id):
     lead = await db.funnel_leads.find_one({'result_token': lead_token,'lead_source': SOURCE},{'_id':0})
     if not lead or lead['email'].lower() != member['email'].lower():
         raise HTTPException(409,'Use the email entered before checkout to claim this purchase')
-    await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'paid_at':now(),'stage':'paid','member_user_id':member['user_id'],'session_id':session_id,'followup_stopped':True}})
+    await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'paid_at':lead.get('paid_at') or now(),'stage':'paid','member_user_id':member['user_id'],'session_id':session_id,'followup_stopped':True}})
     # Never replace an existing historical organization/game to sell a second one.
     existing = await db.game_profiles.find_one({'user_id':member['user_id']},{'_id':0})
-    if existing and existing.get('workflow_version') not in (None,7):
-        raise HTTPException(409,'This account already has a saved game. Use its workspace or contact support before starting another.')
+    if existing and existing.get('workflow_version')!=7:
+        historical=await db.purchases.find_one({'user_id':member['user_id'],'entitlement':'board_fundraising_game','session_id':{'$ne':session_id}},{'_id':0})
+        if historical:raise HTTPException(409,'This account already has a purchased game. Contact support before starting another.')
+        await db.legacy_game_profiles.update_one({'user_id':member['user_id']},{'$setOnInsert':{'user_id':member['user_id'],'profile':existing,'archived_at':now()}},upsert=True)
+        await db.game_profiles.update_one({'user_id':member['user_id']},{'$set':{'workflow_version':7,'simplified_product':True,'organization':{'name':lead['organization']},'primary_user':{'full_name':lead['name'],'email':member['email']},'profile_completed':False,'goal':{}}})
     name = lead['name']
     await db.game_profiles.update_one({'user_id':member['user_id']},{'$setOnInsert':{'user_id':member['user_id'],'workflow_version':7,'simplified_product':True,
         'organization':{'name':lead['organization']},'primary_user':{'full_name':name,'email':member['email']},'profile_completed':False,'created_at':now()},'$set':{'updated_at':now()}},upsert=True)
-    await touch(db,member['user_id'],'organization','/game/setup')
+    if not await db.game_journey_progress.find_one({'user_id':member['user_id']}):
+        await touch(db,member['user_id'],'organization','/game/setup')
     await deliver_once(db,member['user_id'],'launch-welcome:'+session_id,member['email'],'Your Fundraising Game Is Ready','Your payment is confirmed. Save your organization details, answer your own fundraising questions, then set your meeting and invite your board. Your progress is saved so you can return whenever you need to.',origin()+'/login?next=%2Fgame%2Fsetup')
 
 async def touch(db,user,stage,path):
@@ -70,8 +77,8 @@ async def touch(db,user,stage,path):
 
 async def event(db, visitor, kind, lead_id=''):
     if kind not in {'homepage','page_two','contact','checkout'}: raise HTTPException(422,'Unknown funnel event')
-    key=digest(f'{visitor}:{kind}:{lead_id}')
-    await db.funnel_events.update_one({'event_id':key},{'$setOnInsert':{'event_id':key,'source':SOURCE,'visitor_id':visitor,'kind':kind,'lead_id':lead_id,'created_at':now()}},upsert=True)
+    key=digest(f'{visitor}:{kind}:{lead_id}:{datetime.now(timezone.utc).date().isoformat()}')
+    await db.funnel_events.update_one({'event_id':key},{'$setOnInsert':{'event_id':key,'source':SOURCE,'visitor_id':visitor,'kind':kind,'lead_id':lead_id,'created_at':now()},'$inc':{'views':1},'$set':{'last_seen_at':now()}},upsert=True)
 
 async def send_due(db):
     """Existing Resend transport with durable keys, paid-stop checks and consent."""
@@ -172,7 +179,10 @@ def create_fundraising_launch_router(db):
         if not lead:
             lead={'lead_id':secrets.token_urlsafe(24),'result_token':secrets.token_urlsafe(32),'lead_source':SOURCE,'offer_source':'board_fundraising_game',
                   'created_at':now(),'unsubscribe_token':secrets.token_urlsafe(32),'visitor_id':payload.visitor_id,'stage':'contact'}
-            await db.funnel_leads.insert_one(lead.copy())
+            capture_key=digest(payload.visitor_id+str(payload.email).lower())
+            lead['capture_key']=capture_key
+            await db.funnel_leads.update_one({'capture_key':capture_key,'lead_source':SOURCE},{'$setOnInsert':lead.copy()},upsert=True)
+            lead=await db.funnel_leads.find_one({'capture_key':capture_key,'lead_source':SOURCE},{'_id':0})
         await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'name':payload.name.strip(),'email':str(payload.email).lower(),'organization':payload.organization.strip(),
             'marketing_consent':payload.marketing_consent,'consent_recorded_at':now(),'updated_at':now()}})
         if test_member:
@@ -220,7 +230,22 @@ def create_fundraising_launch_router(db):
         response=await db.game_audience_responses.find_one({'board_member_id':leader['member_id']},{'_id':0}) if leader else None
         night=await db.game_nights.find_one({'user_id':member['user_id']},{'_id':0}) or {}
         strategy=await db.game_strategies.find_one({'user_id':member['user_id'],'status':'adopted'},{'_id':0},sort=[('adopted_at',-1)])
-        return {'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
+        draft=await db.game_setup_drafts.find_one({'user_id':member['user_id']},{'_id':0}) or {}
+        return {'draft':draft,'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
+
+    @router.put('/game/launch/draft')
+    async def setup_draft(payload:dict,request:Request):
+        member=await owner(request);p=await profile(member)
+        if p.get('workflow_version')!=7:raise HTTPException(409,'Use your saved game format')
+        stage=payload.get('stage');values=payload.get('values') or {}
+        allowed={'organization':{'fundraising_goal','mission','annual_budget','website','community'},'meeting':{'meeting_date','start_time','timezone_name','meeting_format','meeting_link','meeting_location'}}
+        if stage not in allowed or not isinstance(values,dict):raise HTTPException(422,'Unknown setup stage')
+        if stage=='organization' and p.get('profile_completed'):return {'saved':True,'completed':True}
+        if len(json.dumps(values))>30000:raise HTTPException(422,'Keep the saved setup within its size limit')
+        clean={k:v for k,v in values.items() if k in allowed[stage] and isinstance(v,(str,int,float))}
+        await db.game_setup_drafts.update_one({'user_id':member['user_id']},{'$set':{stage:clean,'updated_at':now()},'$setOnInsert':{'user_id':member['user_id']}},upsert=True)
+        await touch(db,member['user_id'],stage,'/game/setup')
+        return {'saved':True}
 
     @router.put('/game/launch/organization')
     async def save_organization(payload:Organization,request:Request):
@@ -285,7 +310,8 @@ def create_fundraising_launch_router(db):
         if row.get('leader_approved_at'):raise HTTPException(409,'The approved portfolio is saved. Reopen it explicitly before making changes.')
         text=str(payload.get('text','')).strip()
         if not text or len(text)>100000:raise HTTPException(422,'Keep a complete portfolio within the document limit')
-        await db.board_portfolios.update_one({'portfolio_id':portfolio_id,'leader_approved_at':{'$in':['',None]}},{'$set':{'portfolio_text':text,'status':'draft','updated_at':now()},'$inc':{'version':1}})
+        result=await db.board_portfolios.update_one({'portfolio_id':portfolio_id,'leader_approved_at':{'$in':['',None]}},{'$set':{'portfolio_text':text,'status':'draft','updated_at':now()},'$inc':{'version':1}})
+        if not result.modified_count:raise HTTPException(409,'This portfolio changed. Reload before editing again.')
         return {'saved':True}
 
     @router.post('/game/launch/portfolios/{portfolio_id}/approve')
@@ -296,7 +322,8 @@ def create_fundraising_launch_router(db):
         person=await db.game_board_members.find_one({'user_id':member['user_id'],'member_id':row['board_member_id']},{'_id':0}) or {}
         if not person.get('launch_role_confirmed') or person.get('launch_role')!=row.get('agreed_role') or row.get('role_changed'):raise HTTPException(409,'Generate the portfolio from the currently confirmed role first')
         if payload.get('confirmed') is not True or payload.get('version')!=row['version']:raise HTTPException(409,'Review and approve the current portfolio version')
-        await db.board_portfolios.update_one({'portfolio_id':portfolio_id,'version':row['version']},{'$set':{'leader_approved_at':now(),'leader_approved_version':row['version'],'leader_approved_text':row['portfolio_text'],'status':'ready_to_send'}})
+        result=await db.board_portfolios.update_one({'portfolio_id':portfolio_id,'version':row['version']},{'$set':{'leader_approved_at':now(),'leader_approved_version':row['version'],'leader_approved_text':row['portfolio_text'],'status':'ready_to_send'}})
+        if not result.matched_count:raise HTTPException(409,'This portfolio changed. Review the current version before approval.')
         return {'approved':True}
 
     @router.post('/game/launch/portfolios/{portfolio_id}/reopen')
@@ -381,7 +408,9 @@ def create_fundraising_launch_router(db):
         visitors={x['visitor_id'] for x in events if x['kind']=='homepage'}
         counts={'unique_homepage_visitors':len(visitors),'identified_leads':len(leads),'page_two':sum(bool(x.get('page_two_at')) for x in leads),'checkout_started':sum(bool(x.get('checkout_started_at')) for x in leads),'paid':sum(x['paid'] for x in leads)}
         counts['dropoffs']=len(leads)-counts['paid']
+        counts['homepage_page_views']=sum(x.get('views',1) for x in events if x['kind']=='homepage')
         conversions={'visitor_to_lead':round(100*len(leads)/len(visitors),1) if visitors else 0,'lead_to_paid':round(100*counts['paid']/len(leads),1) if leads else 0}
+        conversions.update(homepage_to_page_two=round(100*counts['page_two']/len(visitors),1) if visitors else 0,page_two_to_checkout=round(100*counts['checkout_started']/counts['page_two'],1) if counts['page_two'] else 0,checkout_to_paid=round(100*counts['paid']/counts['checkout_started'],1) if counts['checkout_started'] else 0,lead_dropoff=round(100*counts['dropoffs']/len(leads),1) if leads else 0)
         customers=await db.purchases.find({'entitlement':'board_fundraising_game'},{'_id':0}).sort('created_at',-1).to_list(5000)
         ids=[x['user_id'] for x in customers]
         profiles={x['user_id']:x for x in await db.game_profiles.find({'user_id':{'$in':ids}},{'_id':0}).to_list(5000)}

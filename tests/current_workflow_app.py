@@ -15,10 +15,10 @@ chat.LlmChat = ForbiddenProvider; chat.UserMessage = lambda **kwargs: kwargs
 for name in ("emergentintegrations", "emergentintegrations.llm"):
     sys.modules.setdefault(name, types.ModuleType(name))
 sys.modules[chat.__name__] = chat
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-from auth_service import create_access_token
+from auth_service import create_access_token, authenticate_admin
 from member_auth import create_member_token
 from clean_platform_routes import create_clean_platform_router
 from game_routes import create_game_router
@@ -41,6 +41,9 @@ db = mongo["nbb_current_workflow_acceptance"]
 def build_app(database):
     app = FastAPI()
     install_email_capture(app, database)
+    @app.get("/api/auth/me")
+    async def admin_identity(request: Request):
+        return await authenticate_admin(request, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
                     create_payment_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router):

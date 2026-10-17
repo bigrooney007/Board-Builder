@@ -327,7 +327,8 @@ def create_game_night_router(db) -> APIRouter:
         await db.game_board_members.insert_one(record.copy())
         free = await db.game_free_responses.find_one({"user_id": member["user_id"]}, {"_id": 0}) or {}
         if version in (6, 7):
-            value = audiences6.clean_response(free)
+            if version==7 and free.get("workflow_version")!=7:free={}
+            value = audiences6.clean_response(free,version=version)
             value.update({"response_id": new_uuid(), "board_member_id": record["member_id"], "user_id": member["user_id"],
                           "completed": bool(free.get("completed")), "created_at": now, "updated_at": now})
             await db.game_audience_responses.update_one({"board_member_id": record["member_id"]}, {"$setOnInsert": value}, upsert=True)

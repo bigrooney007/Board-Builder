@@ -69,9 +69,10 @@ def resolve_offer_price_id(env_key: str, lookup_key: str, product_name: str, uni
         except stripe.StripeError:
             pass
     existing = stripe.Price.list(lookup_keys=[lookup_key], active=True, limit=1).data
-    if existing:
-        _price_cache[lookup_key] = existing[0].id
-        return _price_cache[lookup_key]
+    for price in existing:
+        if price.active and price.unit_amount == unit_amount and price.currency == "usd" and not price.recurring:
+            _price_cache[lookup_key] = price.id
+            return price.id
     product = stripe.Product.create(
         name=product_name, tax_code="txcd_10000000",
         metadata={"managed_by": "emergent", "emergent_product_id": lookup_key},
@@ -784,6 +785,9 @@ def create_payment_router(db) -> APIRouter:
 
     @router.post("/game-checkout")
     async def create_game_checkout(payload: DIYCheckoutRequest, request: Request):
+        parsed = urlparse(payload.origin_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="Invalid application origin")
         lead = await db.funnel_leads.find_one({"result_token":payload.result_token,"lead_source":"fundraising-game-simplified"},{"_id":0}) if payload.result_token else None
         member = None
         if lead and lead.get("internal_preview"):
@@ -798,6 +802,12 @@ def create_payment_router(db) -> APIRouter:
             await activate_purchase(db,test_owner,lead["result_token"],sid)
             return {"checkout_url":payload.origin_url.rstrip('/')+"/game/setup","session_id":sid,"simulated":True}
         if lead:
+            paid=await db.payment_transactions.find_one({"launch_lead_token":lead["result_token"],"payment_status":"paid"},{"_id":0})
+            if paid:return {"checkout_url":payload.origin_url.rstrip('/')+"/purchase/success?session_id="+paid["session_id"],"session_id":paid["session_id"]}
+            account=await db.members.find_one({"email":lead["email"]},{"_id":0})
+            if account and "board_fundraising_game" not in account.get("entitlements",[]):
+                records=await db.game_board_members.find_one({"user_id":account["user_id"]},{"_id":0})
+                if records:raise HTTPException(409,"This account already has a saved game in progress. Contact support before starting another; no new payment has been taken.")
             existing = await db.members.find_one({"email":lead["email"],"entitlements":"board_fundraising_game"},{"_id":0})
             if existing: raise HTTPException(409,"You already have access. Sign in to your saved Fundraising Game workspace.")
         else:

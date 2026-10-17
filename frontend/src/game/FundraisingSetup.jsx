@@ -1,4 +1,4 @@
-import { useEffect,useState } from "react";
+import { useEffect,useState,useRef } from "react";
 import { useNavigate,Link } from "react-router-dom";
 import { memberApi } from "@/member/api";
 import { BfgShell } from "./gameShared";
@@ -6,10 +6,18 @@ import { BoardMembersSection } from "./BoardMembersSection";
 import LegacySetup from "./GameSituationPage";
 
 export default function FundraisingSetup(){
- const navigate=useNavigate();const [data,setData]=useState(null);const [form,setForm]=useState({});const [meeting,setMeeting]=useState({meeting_date:"",start_time:"",timezone_name:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",meeting_format:"online",meeting_link:"",meeting_location:""});const [error,setError]=useState("");const [busy,setBusy]=useState(false);
- const load=async()=>{try{const r=await memberApi.get("/game/launch/state");setData(r.data);const p=r.data.profile;setForm({fundraising_goal:p.goal?.amount||"",mission:p.organization?.mission||"",annual_budget:p.organization?.annual_budget||"",website:p.organization?.website||"",community:p.organization?.beneficiaries||""});if(r.data.night?.meeting_date)setMeeting({...meeting,...r.data.night,timezone_name:r.data.night.timezone})}catch(e){setError(e.response?.data?.detail||"Sign in to open your purchased game.")}};
+ const navigate=useNavigate();const [data,setData]=useState(null);const [form,setForm]=useState({});const [meeting,setMeeting]=useState({meeting_date:"",start_time:"",timezone_name:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",meeting_format:"online",meeting_link:"",meeting_location:""});const [error,setError]=useState("");const [busy,setBusy]=useState(false);const saves=useRef(Promise.resolve());
+ const load=async()=>{try{const r=await memberApi.get("/game/launch/state");setData(r.data);const p=r.data.profile;setForm({fundraising_goal:p.goal?.amount||"",mission:p.organization?.mission||"",annual_budget:p.organization?.annual_budget||"",website:p.organization?.website||"",community:p.organization?.beneficiaries||"",...(r.data.draft?.organization||{})});if(r.data.draft?.meeting&&!r.data.night?.meeting_date)setMeeting({...meeting,...r.data.draft.meeting});if(r.data.night?.meeting_date)setMeeting({...meeting,...r.data.night,timezone_name:r.data.night.timezone})}catch(e){setError(e.response?.data?.detail||"Sign in to open your purchased game.")}};
  useEffect(()=>{load();/* initial saved state only */ // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
+ useEffect(()=>{
+   if(!data||data.profile.workflow_version!==7)return;
+   const stage=!data.profile.profile_completed?"organization":data.response?.completed&&!data.night.meeting_date?"meeting":null;
+   if(!stage)return;
+   const values=stage==="organization"?form:meeting;
+   const timer=setTimeout(()=>{saves.current=saves.current.catch(()=>{}).then(()=>memberApi.put("/game/launch/draft",{stage,values})).catch(()=>setError("Your latest setup changes could not be saved. Keep this page open and try again."))},900);
+   return()=>clearTimeout(timer);
+ },[form,meeting,data]);
  const run=async fn=>{setBusy(true);setError("");try{await fn();await load()}catch(e){setError(typeof e.response?.data?.detail==="string"?e.response.data.detail:"We could not save this step.")}setBusy(false)};
  if(!data)return <BfgShell><main className="guided-flow"><p>{error||"Opening your Fundraising Game…"}</p>{error&&<Link to="/login?next=%2Fgame%2Fsetup">Sign in</Link>}</main></BfgShell>;
  if(data.profile.workflow_version!==7)return <LegacySetup/>;

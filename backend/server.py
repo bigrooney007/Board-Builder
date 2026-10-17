@@ -342,6 +342,7 @@ async def startup_tasks():
     await db.blog_posts.create_index([("category_key", 1), ("scheduled_date", 1)], unique=True)
     await db.blog_posts.create_index("slug")
     await db.funnel_events.create_index("event_id", unique=True)
+    await db.funnel_leads.create_index("capture_key", unique=True, sparse=True)
     await db.funnel_leads.create_index("result_token", sparse=True)
     await db.nurture_sends.create_index([("segment", 1), ("scheduled_week", 1)], unique=True)
     await db.nurture_contacts.create_index("email", unique=True)
