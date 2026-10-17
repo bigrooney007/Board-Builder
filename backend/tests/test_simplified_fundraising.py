@@ -104,6 +104,9 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('Leader businesses',strategy['document_text'])
         await self.call('PUT','/game/launch/branding',{'primary_color':'#123456','secondary_color':'#eeeeee'})
         pdf=await self.call('GET','/game/group/audience/download');self.assertEqual(pdf.content[:4],b'%PDF')
+        from pypdf import PdfReader
+        document_text='\n'.join(page.extract_text() or '' for page in PdfReader(io.BytesIO(pdf.content)).pages)
+        self.assertIn('Help young people enter employment.',document_text);self.assertIn('Sample Leader',document_text)
         await self.call('POST','/game/portfolios/prepare')
         self.assertFalse((await self.call('GET','/game/launch/portfolios'))['portfolios'])
         await self.call('POST','/game/launch/roles',{'member_id':guest['member_id'],'role':'Introduce two interested employers.','confirmed':True})

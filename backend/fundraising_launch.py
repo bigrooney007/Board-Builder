@@ -252,7 +252,7 @@ def create_fundraising_launch_router(db):
         member=await owner(request);p=await profile(member)
         if p.get('workflow_version')!=7: raise HTTPException(409,'Continue your saved game in its existing format')
         await db.game_profiles.update_one({'user_id':member['user_id']},{'$set':{'organization.mission':payload.mission,'organization.annual_budget':payload.annual_budget,
-            'organization.website':payload.website,'organization.beneficiaries':payload.community,'goal':{'amount':payload.fundraising_goal,'purpose':'Reach our organization’s fundraising goal'},'profile_completed':True,'updated_at':now()}})
+            'organization.website':payload.website,'organization.beneficiaries':payload.community,'goal':{'amount':payload.fundraising_goal},'profile_completed':True,'updated_at':now()}})
         await touch(db,member['user_id'],'questions','/game/setup')
         return {'saved':True}
 
