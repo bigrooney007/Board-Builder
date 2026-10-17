@@ -29,6 +29,12 @@ async def main():
             await page.get_by_test_id('fundraising-home-page').wait_for()
             await page.get_by_role('heading',name='The Fundraising Game',exact=True).wait_for()
             assert await page.get_by_text('Imagine walking into your next board meeting',exact=False).count()==1
+            await expect(page.get_by_role('button',name='Play The Fundraising Game With Your Board',exact=True)).to_have_count(4)
+            for slot in ('fundraising-cta-after-explanation','fundraising-cta-after-biography'):
+                await page.get_by_test_id(slot).get_by_role('button').click()
+                await page.get_by_role('dialog').wait_for()
+                await expect(page.get_by_role('dialog').get_by_role('checkbox')).to_have_count(0)
+                await page.get_by_role('button',name='Close',exact=True).click()
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             await page.screenshot(path=f'test_reports/current-simplified-home-{width}.png',full_page=True)
             results.append({'width':width,'case':'supplied_homepage_and_layout','passed':True})
@@ -52,12 +58,22 @@ async def main():
             await page.get_by_role('button',name='Save and Start The Game',exact=True).click()
             await page.wait_for_url('**/play/*')
             await page.get_by_role('button',name='START MY GAME',exact=True).click()
-            await page.get_by_role('button',name='YES',exact=True).click()
-            for index,value in enumerate(['Former mentors care about youth employment.','Community networks.','Share programme outcomes.','Ask for introductions and invite support.','Fund mentoring places, $500 each.']):
-                await expect(page.locator('.guided-question-top span').first).to_contain_text(f'Question {index+1} of 5')
-                await page.get_by_role('textbox',name='Your audience answer').fill(value)
-                await page.get_by_role('button',name='NEXT QUESTION' if index<4 else 'SAVE THIS AUDIENCE AND CONTINUE',exact=True).click()
-            for _ in range(4):await page.get_by_role('button',name='NO, CONTINUE',exact=True).click()
+            audience_rows=(('individuals',('Former mentors','Parents of former participants')),('businesses',('Local employers','Professional services businesses')),('grantmakers',('Youth employment foundations','Community foundations')))
+            for category,proposed in audience_rows:
+                for who in proposed:
+                    await page.get_by_role('button',name='YES',exact=True).click()
+                    values=[who+' care about youth employment.','Community networks.','Share programme outcomes.','Ask for introductions, develop trust and then invite support.','Fund mentoring places, $500 each.']
+                    for index,value in enumerate(values):
+                        await expect(page.locator('.guided-question-top span').first).to_contain_text(f'Question {index+1} of 5')
+                        await expect(page.get_by_role('textbox',name='Your audience answer')).to_have_count(1)
+                        if category=='individuals' and index==2:await expect(page.get_by_role('heading',level=1)).to_contain_text('daily basis')
+                        if category=='businesses' and index==3:await expect(page.get_by_role('heading',level=1)).to_contain_text('proposal asking for money')
+                        if category=='grantmakers' and index==3:await expect(page.get_by_role('heading',level=1)).to_contain_text('not just about writing an application')
+                        await page.get_by_role('textbox',name='Your audience answer').fill(value)
+                        await page.get_by_role('button',name='NEXT QUESTION' if index<4 else 'SAVE THIS AUDIENCE AND CONTINUE',exact=True).click()
+                    await expect(page.get_by_role('heading',level=1)).to_contain_text('recommend')
+                await page.get_by_role('button',name='NO, CONTINUE',exact=True).click()
+            await expect(page.get_by_role('heading',level=1)).to_contain_text('based on the suggestions and ideas you have shared')
             await page.get_by_role('textbox',name='Your personal participation').fill('I can introduce local employers.')
             await page.get_by_role('button',name='REVIEW MY CONTRIBUTION',exact=True).click()
             await page.get_by_role('button',name='SUBMIT MY CONTRIBUTION',exact=True).click()
@@ -80,22 +96,44 @@ async def main():
             # Sample identities use the current real participant records and forms.
             await page.get_by_role('button',name='Add Three Sample Board Members',exact=True).click()
             await page.get_by_role('link',name="Open Alex Morgan's Personal Game",exact=True).wait_for()
+            alex_personal=await page.get_by_role('link',name="Open Alex Morgan's Personal Game",exact=True).get_attribute("href")
             member_token=await page.evaluate("localStorage.getItem('memberToken')")
             member_headers={'Authorization':'Bearer '+member_token}
             await page.add_init_script("""window.SpeechRecognition=class {
               start(){if(this.onresult){const row=[{transcript:'Alex agrees to introduce interested employers.'}];row.isFinal=true;this.onresult({resultIndex:0,results:[row]})}}
               stop(){if(this.onend)this.onend()}
-            };""")
+            };window.__microphoneRequests=0;
+            Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{
+              window.__microphoneRequests++;
+              if(window.__denyMicrophoneOnce){window.__denyMicrophoneOnce=false;throw new DOMException('Denied for this test','NotAllowedError')}
+              return {getTracks:()=>[{stop:()=>{}}]};
+            }}});""")
             await page.get_by_role('button',name='Start The Group Game',exact=True).click()
             await page.wait_for_url('**/game/group')
             review=page.get_by_test_id('bfg-audience-group-review');await review.wait_for()
-            await review.get_by_role('button',name='START GROUP REVIEW',exact=True).click()
-            await page.get_by_test_id('private-facilitation-guide').wait_for()
             group_response=await context.request.get(BASE+'/api/game/group/session',headers=member_headers);assert group_response.ok
             group=await group_response.json();group_token=group['session']['token']
             participant_contexts=[];participant_pages=[]
+            microphone=page.get_by_role('dialog',name='Enable your meeting microphone')
+            await microphone.wait_for()
+            if width==390:
+                await page.evaluate('window.__denyMicrophoneOnce=true')
+                await microphone.get_by_role('button',name='Enable Meeting Microphone',exact=True).click()
+                await expect(microphone.get_by_role('alert')).to_contain_text('Microphone access was not enabled')
+                denied_state=await (await context.request.get(BASE+'/api/game/group/session',headers=member_headers)).json()
+                assert not denied_state['session'].get('transcript_consent')
+            await microphone.get_by_role('button',name='Enable Meeting Microphone',exact=True).click()
+            await page.get_by_test_id('bfg-recording-state').wait_for()
+            assert await page.evaluate('window.__microphoneRequests')==(2 if width==390 else 1)
+            await review.get_by_role('button',name='START GROUP REVIEW',exact=True).click()
+            await page.get_by_test_id('private-facilitation-guide').wait_for()
             for name in ('Alex','Taylor','Jordan'):
                 pc=await browser.new_context(viewport={'width':width,'height':844});pp=await pc.new_page()
+                if name=='Alex':
+                    await pp.goto(BASE+alex_personal)
+                    await pp.get_by_role('heading',name='Your Fundraising Ideas Are Saved',exact=True).wait_for()
+                    await expect(pp.get_by_text('We are grateful for your contribution.',exact=False)).to_be_visible()
+                    await expect(pp.get_by_role('button',name='CONTINUE TO MEETING SETUP',exact=True)).to_have_count(0)
                 await pp.goto(BASE+'/group-game/'+group_token)
                 await pp.get_by_role('button',name=name,exact=True).click()
                 await pp.get_by_role('button',name='Join The Game',exact=True).click()
@@ -103,21 +141,24 @@ async def main():
                 assert await pp.get_by_test_id('private-facilitation-guide').count()==0
                 assert await pp.get_by_role('button',name='Approve Audience',exact=True).count()==0
                 participant_contexts.append(pc);participant_pages.append(pp)
-            page.on('dialog',lambda dialog:dialog.accept())
-            await page.get_by_role('button',name='Confirm Participant Consent',exact=True).click()
-            await page.get_by_test_id('bfg-record-meeting-btn').click()
             await page.get_by_test_id('bfg-recording-state').wait_for()
             async with page.expect_response(lambda r:'/game/meeting/recording/finish' in r.url) as recorded:
                 await page.get_by_test_id('bfg-recording-finish').click()
             assert (await recorded.value).ok
-            names=('Alex Morgan','Taylor Reed','Jordan Ellis','Sample Leader')
+            if width==390:
+                await page.reload()
+                resumed_microphone=page.get_by_role('dialog',name='Enable your meeting microphone')
+                await resumed_microphone.get_by_role('button',name='Continue Without Microphone',exact=True).click()
+                await expect(page.get_by_test_id('bfg-recording-state')).to_have_count(0)
+                await page.get_by_test_id('private-facilitation-guide').wait_for()
+            names=('Alex Morgan','Taylor Reed','Jordan Ellis')+('Sample Leader',)*6
             for index,name in enumerate(names):
                 await expect(review.locator('.bfg-eyebrow').first).to_contain_text(name)
                 if index==1:
                     await expect(participant_pages[0].locator('.bfg-eyebrow').first).to_contain_text('Taylor Reed')
                 await review.get_by_role('button',name='Approve Audience' if index==0 else 'Disapprove Audience',exact=True).click()
                 await expect(review.get_by_text('Decision: adopted' if index==0 else 'Decision: rejected',exact=True)).to_be_visible()
-                await review.get_by_role('button',name='NEXT FUNDING AUDIENCE' if index<3 else 'DISCUSS PARTICIPATION',exact=True).click()
+                await review.get_by_role('button',name='NEXT FUNDING AUDIENCE' if index<len(names)-1 else 'DISCUSS PARTICIPATION',exact=True).click()
             await review.get_by_role('combobox',name='Person agreeing to participate',exact=True).select_option(label='Alex Morgan')
             await review.get_by_role('textbox',name='Confirmed contribution',exact=True).fill('Introduce two interested employers.')
             await review.get_by_role('checkbox',name='This person has explicitly agreed to this contribution.',exact=True).check()

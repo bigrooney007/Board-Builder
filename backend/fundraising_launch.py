@@ -26,6 +26,7 @@ VERSION = 7
 SOURCE = "fundraising-game-simplified"
 DEFAULT = json.loads(Path(__file__).with_name('fundraising_launch_content.json').read_text())
 logger = logging.getLogger(__name__)
+FOLLOWUP_NOTICE = "We will email you follow-up guidance about The Fundraising Game. You can unsubscribe from any of these emails."
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def origin(): return (os.environ.get('PUBLIC_ORIGIN') or 'https://nonprofitboardbuilder.com').rstrip('/')
@@ -42,7 +43,7 @@ class Lead(BaseModel):
     email: EmailStr
     organization: str = Field(min_length=1,max_length=300)
     visitor_id: str = Field(min_length=12,max_length=100)
-    marketing_consent: bool = False
+    marketing_consent: bool | None = None
     resume_token: str = Field(default='',max_length=100)
 
 class Organization(BaseModel):
@@ -81,10 +82,10 @@ async def event(db, visitor, kind, lead_id=''):
     await db.funnel_events.update_one({'event_id':key},{'$setOnInsert':{'event_id':key,'source':SOURCE,'visitor_id':visitor,'kind':kind,'lead_id':lead_id,'created_at':now()},'$inc':{'views':1},'$set':{'last_seen_at':now()}},upsert=True)
 
 async def send_due(db):
-    """Existing Resend transport with durable keys, paid-stop checks and consent."""
+    """Product follow-up through existing Resend, with durable keys and paid/opt-out stops."""
     templates=(await content(db))['followups']
     threshold=(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()
-    leads=await db.funnel_leads.find({'lead_source':SOURCE,'internal_preview':{'$ne':True},'marketing_consent':True,'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000)
+    leads=await db.funnel_leads.find({'lead_source':SOURCE,'internal_preview':{'$ne':True},'$or':[{'marketing_consent':True},{'followup_enrolled':True}],'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000)
     for lead in leads:
         created=datetime.fromisoformat(lead['created_at'])
         sequence_owner='launch-sequence:'+digest(lead['email'].lower())
@@ -96,6 +97,7 @@ async def send_due(db):
             paid=await db.payment_transactions.find_one({'launch_lead_token':lead['result_token'],'payment_status':'paid'},{'_id':0,'session_id':1})
             paid_account=await db.members.find_one({'email':lead['email'].lower(),'entitlements':'board_fundraising_game'},{'_id':0,'user_id':1})
             other_payment=await db.payment_transactions.find_one({'lead_email':lead['email'].lower(),'payment_status':'paid'},{'_id':0,'session_id':1})
+            if not (current.get('marketing_consent') or current.get('followup_enrolled')):break
             if current.get('paid_at') or current.get('unsubscribed') or paid or paid_account or other_payment: break
             previous=await db.workflow_email_deliveries.find_one({'user_id':sequence_owner,'event_key':'followup:'+str(index)},{'_id':0})
             if previous and previous.get('status') in ('sent','captured'): continue
@@ -139,7 +141,7 @@ async def send_due(db):
             await deliver_once(db,person['user_id'],key,person['email'],'Continue Your Fundraising Ideas','Your answers are saved. You can return to your personal questionnaire and continue where you stopped.',origin()+'/play/'+person['token'])
             break
     # Retry only stable transactional notices. Marketing retries still pass the
-    # consent, unsubscribe and purchase checks above; portfolios require approval.
+    # enrollment, unsubscribe and purchase checks above; portfolios require approval.
     failures=await db.workflow_email_deliveries.find({'status':'failed','event_key':{'$regex':'^(launch-welcome:|help:|meeting-strategy-ready:)'}},{'_id':0}).to_list(200)
     for row in failures:
         await deliver_once(db,row['user_id'],row['event_key'],row['recipient'],row['subject'],row['text'],row['link'])
@@ -183,8 +185,17 @@ def create_fundraising_launch_router(db):
             lead['capture_key']=capture_key
             await db.funnel_leads.update_one({'capture_key':capture_key,'lead_source':SOURCE},{'$setOnInsert':lead.copy()},upsert=True)
             lead=await db.funnel_leads.find_one({'capture_key':capture_key,'lead_source':SOURCE},{'_id':0})
-        await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'name':payload.name.strip(),'email':str(payload.email).lower(),'organization':payload.organization.strip(),
-            'marketing_consent':payload.marketing_consent,'consent_recorded_at':now(),'updated_at':now()}})
+        opted_out=await db.funnel_leads.find_one({'lead_source':SOURCE,'email':str(payload.email).lower(),'unsubscribed':True},{'_id':0,'lead_id':1})
+        updates={'name':payload.name.strip(),'email':str(payload.email).lower(),'organization':payload.organization.strip(),'updated_at':now()}
+        if payload.marketing_consent is None:
+            # The current contact form requests product information and discloses
+            # follow-up. Do not invent a checkbox opt-in or reverse an unsubscribe.
+            updates.update(followup_enrolled=not bool(opted_out),followup_basis='product_information_request',followup_notice=FOLLOWUP_NOTICE,followup_notice_version=2,followup_enrolled_at=now())
+        else:
+            # Preserve explicit preferences from historical form integrations.
+            updates.update(marketing_consent=payload.marketing_consent,consent_recorded_at=now(),followup_enrolled=False)
+        if opted_out:updates.update(unsubscribed=True,followup_enrolled=False)
+        await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':updates})
         if test_member:
             await db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'internal_preview':True,'test_user_id':test_member['user_id']}})
         await event(db,payload.visitor_id,'contact',lead['lead_id'])
@@ -218,7 +229,7 @@ def create_fundraising_launch_router(db):
     async def unsubscribe(token:str):
         source=await db.funnel_leads.find_one({'unsubscribe_token':token,'lead_source':SOURCE},{'_id':0})
         if not source:raise HTTPException(404,'This unsubscribe link is not available')
-        result=await db.funnel_leads.update_many({'email':source['email'],'lead_source':SOURCE},{'$set':{'unsubscribed':True,'marketing_consent':False,'unsubscribed_at':now()}})
+        result=await db.funnel_leads.update_many({'email':source['email'],'lead_source':SOURCE},{'$set':{'unsubscribed':True,'marketing_consent':False,'followup_enrolled':False,'unsubscribed_at':now()}})
         if not result.matched_count: raise HTTPException(404,'This unsubscribe link is not available')
         return Response('You have unsubscribed from Fundraising Game promotional follow-ups. Necessary account messages are unaffected.',media_type='text/plain')
 

@@ -40,7 +40,7 @@ QUESTIONS = {
 
 
 LAUNCH_VERSION = 7
-PARTICIPATION_LAUNCH = "How do you see yourself participating and supporting your organization to reach this fundraising goal?"
+PARTICIPATION_LAUNCH = "How do you see yourself participating in helping your organization reach its fundraising goal, based on the suggestions and ideas you have shared?"
 LAUNCH_INSTRUCTIONS = "You can write or speak your answers freely. There are no perfect answers expected. We want your ideas about who should fund this mission and how the organization could raise money from them."
 
 def configuration(version=VERSION):
@@ -51,19 +51,52 @@ def configuration(version=VERSION):
             "questions": {cat: [{"key": field, "prompt": text, "help": helper} for field, (text, helper) in zip(FIELDS, QUESTIONS[cat])] for cat in CATEGORIES}}
     if version == LAUNCH_VERSION:
         result.update(instructions=LAUNCH_INSTRUCTIONS, participation_question=PARTICIPATION_LAUNCH)
-        result["categories"].append("other")
-        result["labels"]={**LABELS,"other":"Other Funding Audiences"}
-        result["opening_questions"]["other"]="Is there another type of funding audience you would like to recommend?"
-        result["another_questions"]["other"]="Would you like to recommend another funding audience?"
-        result["questions"]["other"]=[dict(q) for q in result["questions"]["individuals"][:5]]
-        result["questions"]["other"][0].update(prompt="Who should fund the mission, and why?",help="Describe this audience and why it has a strong reason to support the mission.")
-        result["questions"]["other"][1].update(prompt="Where could your organization find this audience?",help="Share the places, communities or networks you know.")
-        result["questions"]["other"][2].update(prompt="How could your organization attract this audience?",help="Explain how you would build interest and credibility.")
-        result["questions"]["other"][3].update(prompt="How could your organization raise money from this audience?",help="Describe the approach you recommend, or say where you are unsure.")
-        result["questions"]["other"][4].update(prompt="What should we ask for, and how much?",help="Explain the request and recommended amount, or indicate uncertainty.")
-        for cat in CATEGORIES:
-            result["questions"][cat] = result["questions"][cat][:5]
-            result["questions"][cat][4].update(prompt="What should we ask for, and how much?", help="Explain what this audience should support, the amount you recommend, and why. If you are unsure, say so.")
+        result["opening_questions"] = {
+            "individuals": "Do you know a type of individual you think has the strongest reason to fund our organization's mission?",
+            "businesses": "Do you know a type of business you think has a strong reason to give to our organization and would like to recommend?",
+            "grantmakers": "Do you know grantors, grantmakers or foundations you think have a strong reason to give to our organization?",
+            "other": "Is there another funding audience from your saved answers you would like to review?",
+        }
+        result["another_questions"] = {
+            "individuals": "Do you know another type of individual you would like to recommend?",
+            "businesses": "Do you know another type of business you would like to recommend?",
+            "grantmakers": "Do you know any other grantors, grantmakers or foundations you would like to recommend?",
+            "other": "Would you like to review another saved funding audience?",
+        }
+        prompts = {
+            "individuals": [
+                "Which type of individual do you think has the strongest reason to fund our organization's mission, and why?",
+                "Where can we find these types of individuals?",
+                "What can we give to these individuals, or put out on a daily basis, that would attract their interest in our organization?",
+                "Since we cannot ask these individuals to give the first time we speak to them, what process should we follow to develop the relationship and get them to give to our organization?",
+                "When we are finally in front of these individuals and ready to ask, what should we ask them to give to, and how much should we ask them to give?",
+            ],
+            "businesses": [
+                "Which type of business do you think has the strongest reason to give to our organization, and why?",
+                "Where can we find these types of businesses?",
+                "What can we give to these businesses to attract their interest in our organization and establish our credibility with them?",
+                "Since we cannot begin by simply sending these businesses a proposal asking for money, what process should we follow to develop the relationship and raise money from them?",
+                "When we are ready to ask these businesses for support, what should we ask them to give to, and how much should we ask for?",
+            ],
+            "grantmakers": [
+                "Which types of grantors, grantmakers or foundations do you think have a strong reason to give to our organization, and why?",
+                "Where can we find these grantors, grantmakers or foundations?",
+                "What can we give to these grantmakers to attract their interest, demonstrate our credibility and get them to trust our organization?",
+                "Since getting a grant is not just about writing an application, what process should we follow to raise money from these grantmakers and increase our chances of receiving a grant?",
+                "When we apply to these grantmakers, what should we ask them to fund, and how much should we ask for?",
+            ],
+            # Keep previously saved optional audiences readable and editable. New
+            # journeys go directly from grantmakers to personal participation.
+            "other": [
+                "Who should fund the mission, and why?",
+                "Where could your organization find this audience?",
+                "How could your organization attract this audience?",
+                "What process should we follow to develop the relationship and raise money from this audience?",
+                "When we are ready to ask, what should we ask for and how much?",
+            ],
+        }
+        result["labels"]={**LABELS,"other":"Other Saved Funding Audiences"}
+        result["questions"] = {cat: [{"key":field,"prompt":text,"help":"Share your own ideas. If you do not know an answer yet, you can say so."} for field,text in zip(FIELDS[:5],rows)] for cat,rows in prompts.items()}
     return result
 
 

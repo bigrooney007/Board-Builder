@@ -6,7 +6,7 @@ import { useWakeLock } from "./useWakeLock";
 
 const Recognition = typeof window !== "undefined" ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
-export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false, controllerRef = null, compileOnFinish = true }) => {
+export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The Board Meeting", startLabel = "START MEETING TRANSCRIPTION", autoStart = false, controllerRef = null, compileOnFinish = true, requestMicrophone = false, beforeStart }) => {
   const [status, setStatus] = useState("idle"); // idle | recording | paused | finishing
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
@@ -15,6 +15,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
   const statusRef = useRef("idle");
   const tickRef = useRef(null);
   const flushRef = useRef(null);
+  const startingRef = useRef(false);
   useWakeLock(status === "recording");
 
   const flush = async () => {
@@ -37,7 +38,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
     };
     rec.onend = () => { if (statusRef.current === "recording") { try { rec.start(); } catch { /* noop */ } } };
     rec.onerror = (event) => { if (event.error === "not-allowed") { setError("Microphone permission was denied. You can continue the Group Game; transcription is optional and the Board's saved decisions remain authoritative."); stopAll("idle"); } };
-    try { rec.start(); } catch { /* noop */ }
+    try { rec.start(); } catch (err) { if (requestMicrophone) throw err; }
     recRef.current = rec;
   };
 
@@ -49,14 +50,28 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
     clearInterval(flushRef.current);
   };
 
-  const start = () => {
-    if (!Recognition) { setError("Live transcription is not supported in this browser. You can continue the Group Game; the final strategy will still use the Board's saved decisions."); return; }
+  const start = async () => {
+    if (startingRef.current || ["recording", "paused"].includes(statusRef.current)) return false;
+    if (!Recognition) { setError("Live transcription is not supported in this browser. You can continue the Group Game; the final strategy will still use the Board's saved decisions."); return false; }
+    startingRef.current = true;
     setError("");
-    statusRef.current = "recording";
-    setStatus("recording");
-    startRecognition();
-    tickRef.current = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
-    flushRef.current = setInterval(flush, 20000);
+    try {
+      if (requestMicrophone && navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (beforeStart) await beforeStart();
+      statusRef.current = "recording";
+      setStatus("recording");
+      startRecognition();
+      tickRef.current = setInterval(() => setElapsed((seconds) => seconds + 1), 1000);
+      flushRef.current = setInterval(flush, 20000);
+      return true;
+    } catch (err) {
+      stopAll("idle");
+      setError(err?.name === "NotAllowedError" ? "Microphone permission was denied. You can allow access and try again, or continue without transcription." : "The microphone could not start. Check your microphone access and try again, or continue without transcription.");
+      return false;
+    } finally { startingRef.current = false; }
   };
 
   const pause = () => {
@@ -95,6 +110,7 @@ export const LiveMeetingRecorder = ({ onFinished = () => {}, title = "Record The
   useEffect(() => {
     if (!controllerRef) return undefined;
     controllerRef.current = {
+      start,
       finish,
       isActive: () => ["recording", "paused"].includes(statusRef.current),
     };

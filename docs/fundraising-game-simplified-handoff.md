@@ -21,7 +21,7 @@ real charge, real email delivery or applicant-network broadcast was performed.
 1. `/`: The Fundraising Game, the supplied homepage copy and Rooney biography,
    existing typography, colors, founder image and original testimonial carousel.
 2. The homepage CTA opens contact capture. Name, email and organization are saved.
-   Optional marketing consent is separate from necessary account communications.
+   The form discloses product follow-up without an optional checkbox. New requests enter the five-email sequence; unsubscribe and historical opt-outs remain respected.
 3. `/how-the-fundraising-game-works`: the supplied five steps, $497 one-time offer
    and existing 100% Guarantee. It also works as a shared direct URL.
 4. Existing `/api/payments/game-checkout` creates a $497 Stripe payment. The existing
@@ -30,7 +30,7 @@ real charge, real email delivery or applicant-network broadcast was performed.
 5. `/game/setup`: fundraising goal, mission, annual budget, website and community.
    Partial organization and meeting information is saved independently of completion.
 6. `/play/:token`: the same personal questionnaire for leader and board members.
-   Five answers per audience; repeat or skip each category, optional other audiences,
+   Five answers per audience, using Rooney’s detailed wording; repeat or skip individuals, businesses and grantmakers,
    then personal participation. Text, existing speech input, editing and resume remain.
 7. The leader returns to setup only after completing their own ideas, then saves the
    meeting date/time/time zone/location or online link and invites board members.
@@ -42,8 +42,9 @@ real charge, real email delivery or applicant-network broadcast was performed.
    original proposal, edited adopted wording, rejected decisions and accepted roles.
 10. Review the agreed summary. Each participant records their own adoption; joined,
     absent and unacknowledged people remain distinct. Close the meeting and let people
-    leave. Microphone transcription requires explicit host confirmation of informed
-    participant consent. Transcript text cannot override adopted decisions.
+    leave. On entering the Group Game, the leader is asked to enable the microphone.
+    The request explains transcription and confirms that everyone has been informed
+    and agrees before requesting browser access. Transcript text cannot override adopted decisions.
 11. Closing prepares the final strategy from adopted information and sends the leader
     “Your Board's Fundraising Strategy Is Ready”. The workspace asks for brand colors,
     previews them and downloads the existing professional PDF. The leader is preparer.
@@ -69,10 +70,10 @@ status, webhook and entitlement verification are retained.
 - Paying customers and audited read-only inspection of organization details,
   invitations, contributions, meeting state, strategy and portfolios.
 - Final-strategy downloads and workspace help requests with administrator notice.
-- Identified leads, consent, follow-up status, clicks and paid attribution.
+- Identified leads, follow-up enrollment, delivery status, clicks and paid attribution.
 - Date-range funnel counts and conversions, distinguishing page views from visitors.
 - The five editable follow-up emails on days 3, 6, 9, 12 and 15. Per-email durable
-  delivery keys, purchase stop checks and unsubscribe prevent unwanted duplicates.
+  delivery keys, purchase stop checks and unsubscribe prevent unwanted duplicates. Existing opt-outs are not reversed.
 - Protected legacy planning search/export and access to `/admin/legacy`.
 - Client Testing: a fresh synthetic identity using the actual customer components.
   Checkout and email are captured safely. The workspace can add three sample board
@@ -150,3 +151,20 @@ without the owner's approval. No new preview-enablement environment flag is requ
 The admin test uses existing administrator permissions and the same application flow.
 After approval, synchronize the exact tested feature-branch SHA. Emergent should only
 synchronize; the owner decides when to deploy. Do not synchronize an old V2 branch.
+
+## Latest requested corrections
+
+The homepage has four purchase-path buttons: after the heading/introduction, after
+the main explanation, after the biography, and after the testimonials. Each opens
+the same contact form. The follow-up checkbox is removed; the form discloses the
+product follow-up, and every promotional email retains unsubscribe.
+
+Both leader and participants see one detailed question at a time. They complete
+one audience before adding another, proceed through individuals, businesses and
+grantmakers, then explain how they want to help based on their own ideas. Earlier
+saved optional audiences remain preserved and editable when present. Board-member
+completion thanks them and explains the next board-meeting discussion.
+
+The host is prompted for microphone access when entering an unfinished Group Game.
+Browser denial and retry are supported. Participant consent is explained in the
+request, and the transcript never overrides the group’s explicit decisions.

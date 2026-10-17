@@ -15,8 +15,15 @@ class Configuration(unittest.TestCase):
     def test_shared_five_questions_and_exact_personal_participation(self):
         config=audience.configuration(7)
         self.assertTrue(all(len(rows)==5 for rows in config['questions'].values()))
-        self.assertEqual(config['participation_question'],'How do you see yourself participating and supporting your organization to reach this fundraising goal?')
+        self.assertEqual(config['participation_question'],'How do you see yourself participating in helping your organization reach its fundraising goal, based on the suggestions and ideas you have shared?')
         self.assertEqual(len(audience.configuration(6)['questions']['individuals']),6)
+        self.assertEqual(config['categories'],['individuals','businesses','grantmakers'])
+        self.assertIn('strongest reason',config['questions']['individuals'][0]['prompt'])
+        self.assertIn('daily basis',config['questions']['individuals'][2]['prompt'])
+        self.assertIn('first time',config['questions']['individuals'][3]['prompt'])
+        self.assertIn('proposal asking for money',config['questions']['businesses'][3]['prompt'])
+        self.assertIn('not just about writing an application',config['questions']['grantmakers'][3]['prompt'])
+        self.assertTrue(all('how much' in config['questions'][cat][-1]['prompt'] for cat in config['categories']))
     def test_skips_and_complete_five_answer_audiences(self):
         value=answers();value['audiences']['businesses']=[]
         result=audience.clean_response(value,submitting=True,version=7)
@@ -123,6 +130,22 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('PUT','/admin/fundraising/content',data['content'])
         self.assertEqual((await self.call('GET','/fundraising/content'))['content']['home']['title'],'My own homepage wording')
         await self.call('PUT','/admin/fundraising/content',data['content'],401,headers={})
+    async def test_current_contact_form_enrolls_followup_without_fabricating_optin_and_honors_existing_unsubscribe(self):
+        from fundraising_launch import send_due
+        body={'name':'Product Visitor','email':'visitor@example.org','organization':'Example','visitor_id':'visitor-new-form-123456'}
+        lead=await self.call('POST','/fundraising/leads',body,201,headers={})
+        row=await self.db.funnel_leads.find_one({'lead_id':lead['lead_id']})
+        self.assertTrue(row['followup_enrolled']);self.assertNotIn('consent_recorded_at',row);self.assertNotIn('marketing_consent',row)
+        self.assertEqual(row['followup_basis'],'product_information_request')
+        self.assertIn('unsubscribe',row['followup_notice'])
+        await self.db.funnel_leads.update_one({'lead_id':lead['lead_id']},{'$set':{'created_at':(datetime.now(timezone.utc)-timedelta(days=4)).isoformat()}})
+        with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})) as send:
+            await send_due(self.db);self.assertEqual(send.await_count,1)
+        await self.call('POST','/fundraising/unsubscribe/'+row['unsubscribe_token'])
+        await self.call('POST','/fundraising/leads',{**body,'visitor_id':'another-browser-123456'},201,headers={})
+        self.assertEqual(await self.db.funnel_leads.count_documents({'email':body['email'],'followup_enrolled':True}),0)
+        with patch('fundraising_launch.deliver_once',new=AsyncMock()) as send:await send_due(self.db);send.assert_not_awaited()
+
     async def test_marketing_consent_paid_stop_unsubscribe_and_duplicate_protection(self):
         from fundraising_launch import send_due
         lead=await self.call('POST','/fundraising/leads',{'name':'New Lead','email':'new@example.org','organization':'Example','visitor_id':'lead-browser-123456','marketing_consent':True},201)
