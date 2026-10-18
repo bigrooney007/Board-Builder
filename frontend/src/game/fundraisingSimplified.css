@@ -49,3 +49,6 @@
 .fundraising-admin nav,.fundraising-admin .guided-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .fundraising-admin .button { white-space: normal; max-width: 100%; }
 @media(max-width:600px) { .fundraising-public-centered .nBB-home-nav { gap: 16px; padding: 18px; } .fundraising-admin { padding: 16px; } .fundraising-admin article { padding: 16px; } }
+
+.fundraising-simplified select { text-align: center; text-align-last: center; }
+.fundraising-simplified .bfg-bm-top,.fundraising-simplified .bfg-bm-actions { justify-content: center; gap: 16px; flex-wrap: wrap; }

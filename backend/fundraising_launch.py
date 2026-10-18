@@ -26,7 +26,7 @@ VERSION = 7
 SOURCE = "fundraising-game-simplified"
 DEFAULT = json.loads(Path(__file__).with_name('fundraising_launch_content.json').read_text())
 logger = logging.getLogger(__name__)
-FOLLOWUP_NOTICE = "We will email you follow-up guidance about The Fundraising Game. You can unsubscribe from any of these emails."
+FOLLOWUP_NOTICE = "Requested information about The Fundraising Game. Follow-up emails include an unsubscribe link."
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def origin(): return (os.environ.get('PUBLIC_ORIGIN') or 'https://nonprofitboardbuilder.com').rstrip('/')
@@ -141,6 +141,7 @@ async def send_due(db):
     # Transactional recovery is separate, capped and bound to a purchased account.
     stale=(datetime.now(timezone.utc)-timedelta(hours=24)).isoformat()
     for progress in await db.game_journey_progress.find({'completed':False,'updated_at':{'$lte':stale}},{'_id':0}).to_list(500):
+        if progress.get("stage") in {"workspace","awaiting_review"}:continue
         member=await db.members.find_one({'user_id':progress['user_id']},{'_id':0}) or {}
         if 'board_fundraising_game' not in member.get('entitlements',[]): continue
         for attempt in (1,2):
@@ -221,7 +222,7 @@ def create_fundraising_launch_router(db):
             # The current contact form requests product information and discloses
             # follow-up. Do not invent a checkbox opt-in or reverse an unsubscribe.
             requires_optin=os.environ.get('FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN','false').lower()=='true'
-            updates.update(followup_enrolled=not bool(opted_out) and not requires_optin,followup_basis='product_information_request',followup_notice=FOLLOWUP_NOTICE,followup_notice_version=2,followup_enrolled_at=now())
+            updates.update(followup_enrolled=not bool(opted_out) and not requires_optin,followup_basis='product_information_request',followup_notice=FOLLOWUP_NOTICE,followup_notice_version=3,followup_enrolled_at=now())
         else:
             # Preserve explicit preferences from historical form integrations.
             updates.update(marketing_consent=payload.marketing_consent,consent_recorded_at=now(),followup_enrolled=False)

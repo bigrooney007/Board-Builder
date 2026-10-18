@@ -216,6 +216,22 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('GET','/game/launch/plan-upload',status=401,headers={})
         response=await self.client.post('/api/game/launch/plan-upload',files={'file':('bad.html',b'<script>alert(1)</script>','text/html')},headers=self.headers)
         self.assertEqual(response.status_code,422)
+
+    async def test_failed_strategy_email_retry_preserves_booking_link_and_sends_once(self):
+        from workflow_delivery import deliver_once
+        await self.db.members.insert_one({'user_id':'delivery-fixture','email':'leader@example.org'})
+        args=(self.db,'delivery-fixture','admin-strategy-approved:saved-document','leader@example.org','Your Strategy Is Ready','Your approved strategy is ready.','https://example.org/strategy/saved')
+        with patch('workflow_delivery.resend.Emails.send_async',new=AsyncMock(side_effect=RuntimeError('Provider unavailable'))):
+            result=await deliver_once(*args,secondary_links=[{'label':'Book a Conversation','url':'https://example.org/approved-booking'}])
+        self.assertEqual(result['status'],'failed')
+        with patch.dict(os.environ,{'RESEND_API_KEY':'fixture-only','NONPROFIT_SENDER':'sender@example.org'}),patch('workflow_delivery.resend.Emails.send_async',new=AsyncMock(return_value={'id':'accepted-fixture'})) as send:
+            result=await deliver_once(*args,secondary_links=[{'label':'Book a Conversation','url':'https://example.org/new-booking'}])
+            self.assertEqual(result['status'],'sent')
+            message=send.call_args.args[0]['html']
+            self.assertIn('https://example.org/approved-booking',message)
+            self.assertNotIn('https://example.org/new-booking',message)
+            again=await deliver_once(*args)
+            self.assertEqual(again['status'],'sent');self.assertEqual(send.await_count,1)
     async def test_current_contact_form_enrolls_followup_without_fabricating_optin_and_honors_existing_unsubscribe(self):
         from fundraising_launch import send_due
         body={'name':'Product Visitor','email':'visitor@example.org','organization':'Example','visitor_id':'visitor-new-form-123456'}
@@ -355,6 +371,20 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         purchase=await self.db.purchases.find_one({'session_id':'cs_legacy'})
         self.assertEqual(purchase['price_paid'],497)
         self.assertEqual(purchase['purchase_source'],'board_fundraising_game_497')
+        self.assertIn('board_fundraising_game',(await self.db.members.find_one({'user_id':account['user_id']}))['entitlements'])
+
+    async def test_historical_997_claim_retains_price_and_entitlement(self):
+        from types import SimpleNamespace
+        from member_auth import create_member_token
+        account={'user_id':'legacy-account','email':'legacy@example.org','first_name':'Legacy','last_name':'Leader','entitlements':[],'account_status':'active'}
+        await self.db.members.insert_one(account.copy())
+        headers={'Authorization':'Bearer '+create_member_token(account['user_id'],account['email'])}
+        session=SimpleNamespace(id='cs_legacy',payment_status='paid',metadata={'offer_source':'board_fundraising_game','selected_tier':'997','member_user_id':account['user_id']},customer='cus_legacy',payment_intent='pi_legacy',amount_subtotal=99700,amount_total=99700,currency='usd',customer_details={'email':account['email']})
+        with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
+            await self.call('POST','/members/claim-purchase',{'session_id':'cs_legacy'},headers=headers)
+        purchase=await self.db.purchases.find_one({'session_id':'cs_legacy'})
+        self.assertEqual(purchase['price_paid'],997)
+        self.assertEqual(purchase['purchase_source'],'board_fundraising_game_997')
         self.assertIn('board_fundraising_game',(await self.db.members.find_one({'user_id':account['user_id']}))['entitlements'])
 
     async def test_partial_setup_is_saved_without_premature_completion(self):

@@ -252,10 +252,10 @@ class AudienceReview:
                 sections=strategy["document_sections"]+[{"key":"board_adoption","title":"Record of Board Adoption","text":adoption_text}]
                 await self.db.game_strategies.update_one({"strategy_id":strategy["strategy_id"],"status":"final_draft"},{"$set":{"meeting_adopted_at":now(),"adoption_record":adoption,"document_sections":sections,"document_text":"\n\n".join(s["title"]+"\n"+s["text"] for s in sections)}})
             if session["status"]!="completed":
-                review=copy.deepcopy(session["audience_review"]);review["phase"]="document"
+                review=copy.deepcopy(session["audience_review"]);review["phase"]="approved" if strategy["status"]=="adopted" else "document"
                 await self.save(session,review,status="completed",completed_at=now())
                 from fundraising_launch import touch
-                await touch(self.db,session["user_id"],"awaiting_review","/game/dashboard")
+                await touch(self.db,session["user_id"],"complete" if strategy["status"]=="adopted" else "awaiting_review","/game/dashboard")
             return {"closed":True,"strategy_id":strategy["strategy_id"],"status":strategy["status"]}
 
         @router.post("/game/group/audience/retry-delivery")

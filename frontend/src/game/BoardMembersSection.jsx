@@ -135,7 +135,7 @@ const ResponsesView = ({ memberId }) => {
 };
 
 const noChange = () => {};
-export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, simplified = false }) => {
+export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, simplified = false, facilitator = false }) => {
   const [members, setMembers] = useState([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState("");
@@ -163,7 +163,7 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, 
     setBusy(key); setNotice("");
     try {
       await fn();
-      if (key === "invite-all" || key.startsWith("invite-")) {
+      if (!simplified && (key === "invite-all" || key.startsWith("invite-"))) {
         const saved = await memberApi.post("/members/dashboard-return-link", { product: "game" }).catch(() => null);
         if (saved?.data?.sent) successMessage += " Your private dashboard link has been emailed to you. Bookmark it for easy access.";
       }
@@ -264,6 +264,7 @@ export const BoardMembersSection = ({ onChanged = noChange, autoInvite = false, 
                       onClick={() => run(`invite-${member.member_id}`, () => memberApi.post(`/game/board-members/${member.member_id}/invite`, origin), "Invitation sent.")}
                       data-testid={`bfg-invite-btn-${member.member_id}`}>Send Invitation</button>
                   )}
+                  {facilitator&&member.invitation_status==='invited'&&<button className="bfg-btn bfg-btn-ghost bfg-btn-sm" disabled={Boolean(busy)} onClick={()=>run(`invite-${member.member_id}`,()=>memberApi.post(`/game/board-members/${member.member_id}/invite`,origin),'Invitation resent.')}>Resend Invitation</button>}
                   {member.invitation_status === "invited" && !completed && (
                     remaining ? (
                       <span className="bfg-note" data-testid={`bfg-reminder-wait-${member.member_id}`}>Reminder sent. Available again in {remaining}.</span>
