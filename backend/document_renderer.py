@@ -84,7 +84,7 @@ def clean_document_lines(text: str, title: str) -> list:
 
 
 def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", branding: dict = None,
-                        created_by: dict = None, prepared_for: str = "", preserve_source_text: bool = False) -> bytes:
+                        created_by: dict = None, prepared_for: str = "", preserve_source_text: bool = False, sections: list = None) -> bytes:
     """One consistent professional document format for every generated document."""
     branding = branding or {}
     color = brand_color(branding)
@@ -158,11 +158,29 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
         story.append(Paragraph(esc(cover_created), cover_meta))
     story.extend([NextPageTemplate("content"), PageBreak()])
 
+    if sections is not None:
+        section_heading=ParagraphStyle("strategy_section",parent=heading,fontSize=19,leading=25,spaceBefore=0,spaceAfter=16)
+        subheading=ParagraphStyle("strategy_subheading",parent=heading,fontSize=11.5,leading=17,spaceBefore=12,spaceAfter=5)
+        strategy_body=ParagraphStyle("strategy_body",parent=body,fontSize=11,leading=17,spaceAfter=8)
+        strategy_bullet=ParagraphStyle("strategy_bullet",parent=strategy_body,leftIndent=14,spaceAfter=6)
+        for section in sections:
+            if section.get("page_break_before"):
+                story.append(PageBreak())
+            if section.get("eyebrow"):
+                story.append(Paragraph(esc(section["eyebrow"]),subheading))
+            story.append(Paragraph(esc(section["title"]),section_heading))
+            blocks=section.get("blocks")
+            if not blocks:blocks=[{"kind":kind,"text":value} for kind,value in clean_document_lines(section.get("text",""),section["title"])]
+            for block in blocks:
+                kind=block.get("kind");value=block.get("text","")
+                if kind=="subheading" or kind=="heading":story.append(Paragraph(esc(value),subheading))
+                elif kind=="bullet":story.append(Paragraph("• "+esc(value),strategy_bullet))
+                elif kind=="body" and value:story.append(Paragraph(esc(value),strategy_body))
     if preserve_source_text:
         # Original submitted wording is evidence, not generated copy. Do not run
         # the structural-label cleaner on it, or interpret it as markup.
         story.append(Preformatted(body_text or "", body, maxLineLength=82))
-    for kind, text in ([] if preserve_source_text else clean_document_lines(body_text, title)):
+    for kind, text in ([] if preserve_source_text or sections is not None else clean_document_lines(body_text, title)):
         if kind == "heading":
             story.append(Paragraph(esc(text), heading))
         elif kind == "bullet":

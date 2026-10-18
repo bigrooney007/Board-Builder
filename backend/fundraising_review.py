@@ -59,6 +59,8 @@ class AudienceReview:
         review["people"] = [{"member_id": p["member_id"], "name": p["full_name"], "joined": p["member_id"] in joined_ids or bool(p.get("is_primary")),
             "acknowledged": (review.get("acknowledgements", {}).get(p["member_id"], {}).get("revision") == review["summary"]["revision"])} for p in people]
         strategy = await self.db.game_strategies.find_one({"strategy_id": session.get("strategy_id", "")}, {"_id": 0})
+        if profile.get("workflow_version")==7 and review["summary"].get("written_audiences"):
+            review["written_sections"]=audience.document_sections(review["summary"],profile)
         review["strategy"] = strategy
         return result
 
@@ -131,7 +133,9 @@ class AudienceReview:
                 proposal = next((p for p in review["proposals"] if p["id"] == payload.get("proposal_id")), None)
                 if not proposal or payload.get("status") not in {"adopted", "rejected", "pending"}: raise HTTPException(422, "Choose a valid audience and decision")
                 strategy = payload.get("strategy") or proposal["strategy"]
-                value = {k: str(strategy.get(k) or "").strip()[:12000] for k in audience.FIELDS}
+                from fundraising_strategy_writing import OPTIONAL_FIELDS
+                save_fields=(*audience.FIELDS,*OPTIONAL_FIELDS) if profile.get("workflow_version")==7 else audience.FIELDS
+                value = {k: str(strategy.get(k) or "").strip()[:12000] for k in save_fields}
                 if payload["status"] == "adopted" and not all(value[k] for k in fields): raise HTTPException(422, "Complete the six agreed audience fields, or indicate uncertainty")
                 review["decisions"][proposal["id"]] = {"status": payload["status"], "strategy": value}
             elif operation == "add":
@@ -140,7 +144,7 @@ class AudienceReview:
                 sources = payload.get("source_ids") or []
                 if not isinstance(sources, list) or any(i not in {p["id"] for p in review["proposals"]} for i in sources): raise HTTPException(422, "Choose valid source proposals")
                 proposal = {"id": "discussion:" + new_uuid(), "category": category, "member_id": "", "contributor": "Board discussion", "source_ids": sources,
-                            "strategy": {k: str(raw.get(k) or "").strip()[:12000] for k in audience.FIELDS}}
+                            "strategy": {k: str(raw.get(k) or "").strip()[:12000] for k in ((*audience.FIELDS,"audience_name","follow_up","stewardship") if profile.get("workflow_version")==7 else audience.FIELDS)}}
                 review["proposals"].append(proposal)  # Explicit adoption is still required.
             elif operation == "progress":
                 index = payload.get("index")
@@ -166,6 +170,11 @@ class AudienceReview:
                 if any(i not in approved for c in review["commitments"] for i in c.get("audience_ids", [])):
                     raise HTTPException(422, "Update participation linked to an audience that is no longer adopted")
                 if any(review["decisions"].get(p["id"], {}).get("status") not in {"adopted", "rejected"} for p in review["proposals"]): raise HTTPException(422, "Adopt or reject each audience before reviewing the complete strategy")
+                if profile.get("workflow_version")==7:
+                    from fundraising_strategy_writing import written_strategy
+                    agreed=audience.summary(review)
+                    if (review.get("written_strategy") or {}).get("source_revision")!=agreed["revision"]:
+                        review["written_strategy"]=await written_strategy(agreed)
                 review["phase"] = "summary"
             elif operation == "reopen": review["phase"] = "audiences"
             elif operation == "adopt":
@@ -173,6 +182,8 @@ class AudienceReview:
                     from fundraising_transcript import require_reviewed
                     await require_reviewed(self.db,session)
                 if review["phase"] != "summary" or payload.get("confirmed") is not True or payload.get("summary_revision") != audience.summary(review)["revision"]: raise HTTPException(409, "Review and confirm the current agreed strategy")
+                if profile.get("workflow_version")==7 and (review.get("written_strategy") or {}).get("source_revision")!=audience.summary(review)["revision"]:
+                    raise HTTPException(409,"Review the current written strategy before adopting it")
                 if not audience.summary(review)["audiences"]: raise HTTPException(422, "Adopt at least one audience before generating a strategy")
                 review["phase"] = "adopted"; review["facilitator_adopted_at"] = now()
                 if profile.get("workflow_version")==7:

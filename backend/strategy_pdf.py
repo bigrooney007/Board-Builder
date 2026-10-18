@@ -1,4 +1,4 @@
-"""Fundraising Strategy PDF — approved minimal professional document design (thin border, no logo)."""
+"""Fundraising Strategy PDF, preserving legacy layouts and structured approved documents."""
 from io import BytesIO
 
 from reportlab.lib.pagesizes import LETTER
@@ -236,7 +236,7 @@ class _StrategyDoc(BaseDocTemplate):
 def build_strategy_pdf(strategy: dict, org_name: str) -> bytes:
     if int(strategy.get("schema_version") or 1) in (6, 7):
         from document_renderer import render_document_pdf
-        return render_document_pdf(title="Board Fundraising Strategy", org_name=org_name, body_text=strategy.get("document_text", ""), branding=strategy.get("branding") or {}, created_by={"name":strategy.get("prepared_by","")})
+        return render_document_pdf(title="Board Fundraising Strategy", org_name=org_name, body_text=strategy.get("document_text", ""), branding=strategy.get("branding") or {}, created_by={"name":strategy.get("prepared_by","")}, sections=strategy["document_sections"] if strategy.get("schema_version")==7 and any(s.get("blocks") for s in strategy.get("document_sections",[])) else None)
     schema_version = int(strategy.get("schema_version") or 1)
     sections = V4_SECTIONS if schema_version >= 4 else V3_SECTIONS if schema_version >= 3 else V2_SECTIONS if schema_version >= 2 else V1_SECTIONS
     data = strategy.get("data") or {}

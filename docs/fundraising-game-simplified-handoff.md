@@ -208,3 +208,29 @@ This task does not change environment configuration or claim checkbox consent.
 The latest CI run linked to the final commit is the source for test results.
 Real provider quality, Gmail receipt, physical microphone recognition and the
 actual Catherine/Katherine production record remain unverified here.
+
+## Centered public copy and written strategy presentation
+
+The homepage and complete How It Works copy now use centered text within the
+existing readable column. Their wording, four homepage CTAs and testimonials are
+retained. Contact form inputs and customer tools keep their normal alignment.
+
+When the facilitator reviews the agreed strategy, the existing AI transport edits
+only adopted audience content into the organization's voice. Supporting source
+quotes and amounts are checked. A source-preserving fallback handles outages.
+The written preview is shown to the leader and participating devices before the
+existing strategy-adoption step. Returning to discussion and changing a decision
+invalidates that preview. Closing saves and delivers the exact preview adopted.
+
+The Group Game retains original submissions and contributor names. The finished
+strategy removes reporting such as "Alex said". Named agreed responsibilities and
+the adoption record remain. Five personal questionnaire questions are unchanged.
+The facilitator can record an audience name, separate amount, follow-up and donor
+stewardship details when agreed; these are optional, not extra intake steps.
+Unsupported follow-up or stewardship activities are never filled in automatically.
+
+New structured PDFs have bold headings and subheadings, readable paragraphs and
+bullets. Each approved audience starts on a new page and cannot share a page with
+the next audience; long content continues naturally rather than becoming illegible.
+Logo/color branding is preserved. Shared web documents use the same structure.
+Historical finalized documents and the original generic renderer remain unchanged.

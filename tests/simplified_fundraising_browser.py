@@ -36,6 +36,7 @@ async def main():
                 await expect(page.get_by_role('dialog').get_by_role('checkbox')).to_have_count(0)
                 await page.get_by_role('button',name='Close',exact=True).click()
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
+            assert await page.locator('.nBB-home-problem p').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
             await page.screenshot(path=f'test_reports/current-simplified-home-{width}.png',full_page=True)
             results.append({'width':width,'case':'supplied_homepage_and_layout','passed':True})
             await page.get_by_role('button',name='Play The Fundraising Game With Your Board',exact=True).first.click()
@@ -50,6 +51,9 @@ async def main():
             await page.get_by_role('heading',name='Get Your Board Members Fundraising By Your Next Board Meeting.',exact=True).wait_for()
             await expect(page.get_by_text('What You\'re Getting for $997',exact=True)).to_be_visible()
             assert await page.get_by_test_id('fundraising-how-page').get_by_text('portfolio',exact=False).count()==0
+            assert await page.locator('.nBB-home-problem p,.nBB-home-problem li').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
+            assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
+            await page.screenshot(path=f'test_reports/current-simplified-how-{width}.png',full_page=True)
             await page.get_by_role('button',name='Start The Fundraising Game',exact=True).first.click()
             await page.wait_for_url('**/game/setup')
             await page.get_by_label('Fundraising goal',exact=True).fill('100000')
@@ -158,8 +162,15 @@ async def main():
                 await expect(review.locator('.bfg-eyebrow').first).to_contain_text(name)
                 if index==1:
                     await expect(participant_pages[0].locator('.bfg-eyebrow').first).to_contain_text('Taylor Reed')
-                await review.get_by_role('button',name='Approve Audience' if index==0 else 'Disapprove Audience',exact=True).click()
-                await expect(review.get_by_text('Decision: adopted' if index==0 else 'Decision: rejected',exact=True)).to_be_visible()
+                if index==0:
+                    await review.get_by_role('textbox',name='Audience and why they may give',exact=True).fill('Teachers in Pittsburgh benefit from the children we help.')
+                    await review.get_by_text('Additional details agreed for this audience',exact=True).click()
+                    await review.get_by_role('textbox',name='Audience name',exact=True).fill('Teachers in Pittsburgh')
+                    await review.get_by_role('textbox',name='How much we will ask',exact=True).fill('We will ask for $100 for each backpack.')
+                    await review.get_by_role('textbox',name='Follow-up if they do not give',exact=True).fill('We will invite teachers who have not given to our next event.')
+                    await review.get_by_role('textbox',name='How we will thank and steward donors',exact=True).fill('We will send a thank-you email immediately.')
+                await review.get_by_role('button',name='Approve Audience' if index<2 else 'Disapprove Audience',exact=True).click()
+                await expect(review.get_by_text('Decision: adopted' if index<2 else 'Decision: rejected',exact=True)).to_be_visible()
                 await review.get_by_role('button',name='NEXT FUNDING AUDIENCE' if index<len(names)-1 else 'DISCUSS PARTICIPATION',exact=True).click()
             await review.get_by_role('combobox',name='Person agreeing to participate',exact=True).select_option(label='Alex Morgan')
             await review.get_by_role('textbox',name='Confirmed contribution',exact=True).fill('Introduce two interested employers.')
@@ -171,6 +182,9 @@ async def main():
             await transcript.get_by_role('button',name='Confirm Transcript Review',exact=True).click()
             await transcript.get_by_text('Your review is saved.',exact=False).wait_for()
             await review.get_by_role('button',name='REVIEW THE AGREED STRATEGY',exact=True).click()
+            await page.get_by_test_id('written-strategy-preview').wait_for()
+            await expect(page.get_by_test_id('written-strategy-preview').get_by_role('heading',name='1. Teachers in Pittsburgh',exact=True)).to_be_visible()
+            await expect(page.get_by_test_id('written-strategy-preview').get_by_text('Alex Morgan suggests',exact=False)).to_have_count(0)
             await review.get_by_role('checkbox',name='I confirm that this is the direction agreed during our meeting.',exact=True).check()
             await review.get_by_role('button',name='ADOPT OUR AGREED DIRECTION',exact=True).click()
             for pp in participant_pages:
@@ -193,7 +207,14 @@ async def main():
             async with page.expect_download() as final_document:
                 await page.get_by_role('button',name='Save Colors and Download PDF',exact=True).click()
             assert (await final_document.value).suggested_filename=='fundraising-strategy.pdf'
-            await (await final_document.value).save_as(f'test_reports/current-simplified-strategy-{width}.pdf')
+            final_path=f'test_reports/current-simplified-strategy-{width}.pdf'
+            await (await final_document.value).save_as(final_path)
+            from pypdf import PdfReader
+            pages=[p.extract_text() for p in PdfReader(final_path).pages]
+            audience_pages=[i for i,p in enumerate(pages) if 'Approved Ideal Funding Audiences' in p]
+            assert len(audience_pages)==2 and len(set(audience_pages))==2
+            assert 'Alex Morgan suggests' not in '\n'.join(pages)
+            assert 'How We Will Thank and Steward Those Who Give' in '\n'.join(pages)
             await expect(page.get_by_role('button',name='Generate Board Portfolios',exact=True)).to_have_count(0)
             await page.evaluate('''()=>{const original=navigator.clipboard.writeText.bind(navigator.clipboard);let deny=true;navigator.clipboard.writeText=async text=>{if(deny){deny=false;throw new DOMException('Copy denied for this test','NotAllowedError')}return original(text)}}''')
             await page.get_by_role('button',name='Copy Strategy Email',exact=True).click()
@@ -203,6 +224,7 @@ async def main():
             shared_url=await page.get_by_role('link',name='View Shared Strategy',exact=True).get_attribute('href')
             await participant_pages[0].goto(BASE+shared_url)
             await participant_pages[0].get_by_test_id('bfg-shared-strategy-page').wait_for()
+            await expect(participant_pages[0].get_by_role('heading',name='1. Teachers in Pittsburgh',exact=True)).to_be_visible()
             async with participant_pages[0].expect_download() as shared_document:
                 await participant_pages[0].get_by_role('link',name='Download Adopted Strategy',exact=True).click()
             assert (await shared_document.value).suggested_filename=='fundraising-strategy.pdf'

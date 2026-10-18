@@ -7,6 +7,7 @@ import { useMemberAuth } from "@/member/MemberAuthContext";
 import { useLandingPageMeta } from "@/seo";
 import "@/pages/MainHomePage.css";
 import "./game.css";
+import "./fundraisingSimplified.css";
 
 export const visitorId = () => {
   let value=localStorage.getItem("fundraisingVisitor");
@@ -39,14 +40,14 @@ export default function FundraisingPublicPage({ how=false }) {
   }catch(e){setError(typeof e.response?.data?.detail==="string"?e.response.data.detail:"Secure checkout could not open. Please try again.");setBusy(false)}};
   const action=()=>how?checkout(token):setCapture(true);
   const c=content?.[how?"how":"home"];
-  return <div className="nBB-home" data-testid={how?"fundraising-how-page":"fundraising-home-page"}>
+  return <div className="nBB-home fundraising-public-centered" data-testid={how?"fundraising-how-page":"fundraising-home-page"}>
     <header className="nBB-home-nav" style={{justifyContent:"flex-end",gap:20}}><Link className="nBB-home-login" to="/">Nonprofit Board Builder</Link>{!loading&&<Link className="nBB-home-login" to={member?"/game/dashboard":"/login"}>{member?"My Workspace":"Log In"}</Link>}<Link className="nBB-home-login" to="/blog">Blog</Link></header>
     <main>{!c?<section className="nBB-home-problem"><p>{error||"Opening The Fundraising Game…"}</p></section>:<>
       <section className="nBB-home-hero"><p className="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>{c.title}</h1>{c.introduction&&<p className="nBB-home-lead">{c.introduction}</p>}<button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening…":c.cta}</button>{price&&<p>One-time payment: ${price} per organization.</p>}</section>
-      <section className="nBB-home-problem" style={{textAlign:"left",maxWidth:800,margin:"0 auto",padding:"42px 24px",lineHeight:1.85,fontSize:19}}>
+      <section className="nBB-home-problem" style={{textAlign:"center",maxWidth:800,margin:"0 auto",padding:"42px 24px",lineHeight:1.85,fontSize:19}}>
         {how?<><WrittenOfferContent text={c.article}/><div style={{textAlign:"center",marginTop:36}}><p>{c.guarantee}</p><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?"Opening checkout…":c.cta}</button></div></>:<>
-        {c.paragraphs.map((p,i)=><p key={i} style={{marginBottom:20,textAlign:"left"}}>{p}</p>)}
-        <div data-testid="fundraising-cta-after-explanation"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div><article style={{marginTop:44}}><h2>{c.biography_heading}</h2><img src={process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL||"https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp"} alt="Rooney A." loading="lazy" style={{width:"100%",maxWidth:280,borderRadius:16,display:"block",margin:"20px auto"}}/>{c.biography.map((p,i)=><p key={i} style={{textAlign:"left"}}>{p}</p>)}<div data-testid="fundraising-cta-after-biography"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div></article></>}
+        {c.paragraphs.map((p,i)=><p key={i} style={{marginBottom:20,textAlign:"center"}}>{p}</p>)}
+        <div data-testid="fundraising-cta-after-explanation"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div><article style={{marginTop:44}}><h2>{c.biography_heading}</h2><img src={process.env.REACT_APP_ROONEY_HOMEPAGE_PHOTO_URL||"https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/ezw4nj2a_InShot_20260413_074422056%20%281%29.webp"} alt="Rooney A." loading="lazy" style={{width:"100%",maxWidth:280,borderRadius:16,display:"block",margin:"20px auto"}}/>{c.biography.map((p,i)=><p key={i} style={{textAlign:"center"}}>{p}</p>)}<div data-testid="fundraising-cta-after-biography"><button className="nBB-home-primary" disabled={busy} onClick={action}>{c.cta}</button></div></article></>}
         {error&&<p role="alert" className="submit-error">{error}</p>}
       </section>
       <section className="nBB-home-proof"><TestimonialCarousel heading="What Nonprofit Leaders Have Said" idPrefix="fundraising-launch"/></section>

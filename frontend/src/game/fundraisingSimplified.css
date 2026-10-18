@@ -8,3 +8,13 @@
 .fundraising-simplified select { max-width: 100%; }
 .fundraising-simplified .bfg-dash-head { display: block; }
 .fundraising-simplified .bfg-dash-head p { margin: 12px 0; }
+
+.fundraising-public-centered .nBB-home-problem { text-align: center; }
+.fundraising-public-centered .nBB-home-problem ul { list-style-position: inside; padding-left: 0 !important; }
+.fundraising-public-centered .nBB-home-problem li { text-align: center; }
+.written-strategy-section { margin: 28px 0; padding: 28px; background: white; border: 1px solid #e5e7eb; border-radius: 14px; text-align: left; }
+.written-strategy-section h3 { margin: 24px 0 8px; }
+.written-strategy-section p { line-height: 1.8; margin: 0 0 14px; white-space: pre-line; }
+.written-strategy-section li { line-height: 1.8; margin-bottom: 8px; }
+@media (max-width: 600px) { .written-strategy-section { padding: 18px; } }
+@media print { .written-strategy-section[data-audience-page="true"] { break-before: page; } }

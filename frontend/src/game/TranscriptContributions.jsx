@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { memberApi } from "@/member/api";
-const fields={who_why:"Audience and why they may give",where:"Where to find them",attraction:"How to attract their interest",process:"How to raise money",ask:"What to ask for and how much"};
+const fields={who_why:"Audience and why they may give",where:"Where to find them",attraction:"How to attract their interest",process:"How to raise money",ask:"What to ask for",amount:"How much to ask",follow_up:"Follow-up if they do not give",stewardship:"How to thank and steward donors"};
 export default function TranscriptContributions({data,review,reload,onUpdate,onExtract,busy,onApplied=()=>{}}) {
   const [edits,setEdits]=useState({});const [confirmed,setConfirmed]=useState(false);const [error,setError]=useState("");const [saving,setSaving]=useState(false);
   const act=async(row,action)=>{setSaving(true);setError("");try{await memberApi.post('/game/group/audience/transcript/confirm',{suggestion_id:row.suggestion_id,revision:review.revision,action,confirmed:true,text:edits[row.suggestion_id]??row.text});onApplied(row,action,(edits[row.suggestion_id]??row.text)||row.text);await reload();await onUpdate()}catch(e){setError(e.response?.data?.detail||"The contribution could not be saved. Refresh and try again.")}setSaving(false)};

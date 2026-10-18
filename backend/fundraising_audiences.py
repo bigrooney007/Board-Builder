@@ -174,10 +174,15 @@ def summary(review):
     commitments = [copy.deepcopy(x) for x in review.get("commitments", []) if x.get("confirmed")]
     content = {"audiences": audiences, "commitments": commitments}
     content["revision"] = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
+    written=review.get("written_strategy") or {}
+    if written.get("source_revision")==content["revision"]:content["written_audiences"]=copy.deepcopy(written["audiences"])
     return content
 
 
 def document_sections(agreed, profile):
+    if profile.get("workflow_version")==LAUNCH_VERSION:
+        from fundraising_strategy_writing import document_sections as written_sections
+        return written_sections(agreed,profile)
     goal = profile.get("goal") or {}; organization = (profile.get("organization") or {}).get("name", "Your organization")
     purpose = str(goal.get("purpose") or "")
     goal_text = f"${goal['amount']:,}" if isinstance(goal.get("amount"), (int, float)) else "the fundraising goal supplied by the organization"

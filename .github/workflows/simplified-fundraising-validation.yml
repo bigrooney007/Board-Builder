@@ -37,6 +37,7 @@ jobs:
       - name: Current workflow integration and original regressions
         run: |
           python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
+          python -m unittest discover -s backend/tests -p test_fundraising_strategy_writing.py -v
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_current_workflows.py -v
           python -m unittest discover -s backend/tests -p test_finished_customer_content.py -v
@@ -60,7 +61,7 @@ jobs:
           CI: 'true'
         run: |
           mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
-          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
+          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview|strategyRender)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
       - name: Production build
         id: build
         if: always()

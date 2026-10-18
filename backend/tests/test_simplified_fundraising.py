@@ -98,6 +98,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
             await self.action(action='progress',index=i+1)
         await self.action(action='commitment',member_id=guest['member_id'],contribution='Introduce two interested employers.',confirmed=True,audience_ids=[chosen['id']])
         await self.action(action='summary');review=await self.group()
+        self.assertTrue(review['written_sections']);self.assertEqual(review['written_strategy']['source_revision'],review['summary']['revision'])
         await self.action(action='adopt',confirmed=True,summary_revision=review['summary']['revision'])
         closed=await self.call('POST','/game/group/audience/close',{'confirmed':True});self.assertTrue(closed['closed'])
         state=await self.call('GET','/game/launch/state');strategy=state['strategy']

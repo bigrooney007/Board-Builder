@@ -1,4 +1,5 @@
 import "./game.css";
+import "./fundraisingSimplified.css";
 
 export const STRATEGY_SECTIONS = [
   { key: "fundraising_audiences", title: "Who We Will Raise Money From", v2: "audiences" },
@@ -336,6 +337,13 @@ export const sectionToText = (section, data) => {
   return parts.join("\n\n");
 };
 
+export function WrittenStrategySection({section}) {
+  return <section id={`strategy-${section.key}`} className="written-strategy-section" data-testid={`bfg-strategy-section-${section.key}`} data-audience-page={section.page_break_before&&section.key.startsWith("audience_")?"true":"false"}>
+    {section.eyebrow&&<p className="bfg-eyebrow">{section.eyebrow}</p>}<h2>{section.title}</h2>
+    {section.blocks?.length?section.blocks.map((block,i)=>block.kind==="subheading"?<h3 key={i}>{block.text}</h3>:block.kind==="bullet"?<ul key={i}><li>{block.text}</li></ul>:<p key={i}>{block.text}</p>):<p>{section.text}</p>}
+  </section>;
+}
+
 export const StrategyDocument = ({ strategy }) => {
   const data = strategy.data || {};
   const edits = strategy.section_edits || {};
@@ -368,7 +376,7 @@ export const StrategyDocument = ({ strategy }) => {
           ))}
         </ol>
       </nav>
-      {sections.map((section, index) => (
+      {sections.map((section, index) => section.blocks ? <WrittenStrategySection key={section.key} section={section}/> : (
         <section key={section.key} id={`strategy-${section.key}`} className="bfg-doc-section" data-testid={`bfg-strategy-section-${section.key}`}>
           <h2><span>{index + 1}.</span> {section.title}</h2>
           {edits[section.key] ? (
