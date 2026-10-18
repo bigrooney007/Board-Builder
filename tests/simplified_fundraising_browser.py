@@ -78,6 +78,8 @@ async def main():
             await page.get_by_label('Primary brand color',exact=True).fill('#123456')
             await page.get_by_role('button',name='Save and Start The Game',exact=True).click()
             await page.wait_for_url('**/play/*')
+            await expect(page.get_by_test_id('bfg-speak-answer-btn')).to_have_count(0)
+            await expect(page.locator('.guided-question-top button')).to_have_count(0)
             await page.get_by_role('button',name='START MY GAME',exact=True).click()
             audience_rows=(('individuals',('Former mentors','Parents of former participants')),('businesses',('Local employers','Professional services businesses')),('grantmakers',('Youth employment foundations','Community foundations')))
             for category,proposed in audience_rows:

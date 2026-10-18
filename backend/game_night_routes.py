@@ -241,7 +241,8 @@ def create_game_night_router(db) -> APIRouter:
             if not done:raise HTTPException(409,"Complete your fundraising questions before setting the meeting")
         try:
             meeting_date = datetime.strptime(payload.meeting_date.strip(), "%Y-%m-%d").date()
-            funding_deadline = datetime.strptime(payload.funding_deadline.strip(), "%Y-%m-%d").date() if payload.funding_deadline else None
+            deadline_value=payload.funding_deadline.strip() or ((current_profile.get("goal") or {}).get("deadline", "") if current_profile.get("workflow_version")==7 else "")
+            funding_deadline = datetime.strptime(deadline_value, "%Y-%m-%d").date() if deadline_value else None
             datetime.strptime(payload.start_time.strip(), "%H:%M")
         except ValueError:
             raise HTTPException(status_code=422, detail="Use a valid meeting date, time and fundraising deadline")

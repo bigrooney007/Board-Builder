@@ -61,7 +61,7 @@ jobs:
           CI: 'true'
         run: |
           mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
-          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview|strategyRender)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
+          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview|strategyRender|PurchaseSuccessPage)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
       - name: Production build
         id: build
         if: always()

@@ -36,6 +36,7 @@ export const PurchaseSuccessPage = () => {
     recruitment_497: "/app/board-recruitment/setup",
     board_fundraising_game_497: "/game/setup",
     board_fundraising_game_997: "/game/setup",
+    board_fundraising_game_1497: "/game/setup",
     strategic_planning_497: `/strategic-planning/dashboard?session_id=${encodeURIComponent(sessionId)}#sp-meeting`,
     board_recommitment_497: `/board-recommitment/dashboard?session_id=${encodeURIComponent(sessionId)}#recommitment-forms`,
   }[source] || supportedEntry(source, sessionId)), [sessionId]);
@@ -143,7 +144,7 @@ export const PurchaseSuccessPage = () => {
 
   return (
     <MemberShell>
-      <main className="member-auth-page purchase-success-page" data-testid="purchase-success-page">
+      <main className="member-auth-page purchase-success-page fundraising-simplified" data-testid="purchase-success-page">
         {paymentState === "checking" && <div className="member-auth-card" data-testid="purchase-checking"><h1>{purchaseSuccessText.h_confirmingYourPayment}</h1><p>{purchaseSuccessPageText.pleaseWaitWhileWeVerify}</p></div>}
         {paymentState === "missing" && <div className="member-auth-card"><h1>{purchaseSuccessText.h_missingPurchaseDetails}</h1><p>{purchaseSuccessPageText.weCouldNotFindA}</p><Link className="button" to="/">Return Home</Link></div>}
         {(paymentState === "failed" || paymentState === "timeout") && <div className="member-auth-card" data-testid="purchase-failed"><h1>{purchaseSuccessText.h_weCouldNotConfirmYour}</h1><p>{purchaseSuccessPageText.ifYouCompletedThePayment}</p></div>}
