@@ -159,16 +159,17 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
     story.extend([NextPageTemplate("content"), PageBreak()])
 
     if sections is not None:
-        section_heading=ParagraphStyle("strategy_section",parent=heading,fontSize=19,leading=25,spaceBefore=0,spaceAfter=16)
-        subheading=ParagraphStyle("strategy_subheading",parent=heading,fontSize=11.5,leading=17,spaceBefore=12,spaceAfter=5)
+        section_heading=ParagraphStyle("strategy_section",parent=heading,fontSize=19,leading=25,spaceBefore=0,spaceAfter=12)
+        subheading=ParagraphStyle("strategy_subheading",parent=heading,fontSize=11.5,leading=16,spaceBefore=8,spaceAfter=4)
+        eyebrow=ParagraphStyle("strategy_eyebrow",parent=subheading,spaceBefore=0)
         bullet_heading=ParagraphStyle("strategy_bullet_heading",parent=subheading,leftIndent=14,firstLineIndent=-14)
-        strategy_body=ParagraphStyle("strategy_body",parent=body,fontSize=11,leading=17,spaceAfter=8)
+        strategy_body=ParagraphStyle("strategy_body",parent=body,fontSize=11,leading=16,spaceAfter=5)
         strategy_bullet=ParagraphStyle("strategy_bullet",parent=strategy_body,leftIndent=14,spaceAfter=6)
         for section in sections:
             if section.get("page_break_before"):
                 story.append(PageBreak())
             if section.get("eyebrow"):
-                story.append(Paragraph(esc(section["eyebrow"]),subheading))
+                story.append(Paragraph(esc(section["eyebrow"]),eyebrow))
             story.append(Paragraph(esc(section["title"]),section_heading))
             blocks=section.get("blocks")
             if not blocks:blocks=[{"kind":kind,"text":value} for kind,value in clean_document_lines(section.get("text",""),section["title"])]

@@ -62,6 +62,62 @@ class Writing(unittest.IsolatedAsyncioTestCase):
         row=result['audiences'][0];self.assertNotIn('Alex Morgan said',str(row));self.assertFalse(row['stewardship']);self.assertFalse(row['follow_up'])
         value['written_audiences']=result['audiences'];sections=document_sections(value,{'goal':{'amount':100000}})
         self.assertNotIn('Steward',str(sections));self.assertNotIn('Alex Morgan said',str(sections))
+    async def test_full_eight_part_audience_fits_one_legible_page(self):
+        from pypdf import PdfReader
+        section = {'key': 'audience_1',
+         'title': '1. Teachers in Pittsburgh',
+         'eyebrow': 'Ideal Funding Audience:',
+         'blocks': [{'kind': 'bullet_heading', 'text': 'Why They Would Give'},
+                    {'kind': 'body',
+                     'text': 'They benefit from what we do. When a child is empowered, the teacher has an easier job '
+                             'to do.'},
+                    {'kind': 'bullet_heading', 'text': 'Where We Can Find Them'},
+                    {'kind': 'body',
+                     'text': 'They congregate in online communities such as Facebook and LinkedIn groups and discuss '
+                             'education and child education online. We can find them by joining teachers communities '
+                             'and running ads targeting them.'},
+                    {'kind': 'bullet_heading', 'text': 'How We Will Attract Their Interest'},
+                    {'kind': 'body',
+                     'text': 'We can attract teachers by giving them a free resource, such as a guide to becoming '
+                             'the best teacher they can be in five years. They can provide their names, email '
+                             'addresses and where they work to receive it.'},
+                    {'kind': 'bullet_heading', 'text': 'How We Will Raise Money From Them'},
+                    {'kind': 'body',
+                     'text': 'Once teachers receive our resource, we will send follow-up emails that help them know '
+                             'and like our organization. We will introduce our organization, explain the good work '
+                             'we do and share testimonials. To build trust, we can organize an event for teachers, '
+                             'introduce them to the children we are helping and invite them to partner with us by '
+                             'making a pledge.'},
+                    {'kind': 'bullet_heading', 'text': 'What We Will Ask Them to Support'},
+                    {'kind': 'body',
+                     'text': 'We can ask them to support each child with a backpack for the next school session. For '
+                             'every backpack they buy, 10 teachers across Pittsburgh receive our free guide to help '
+                             'them get the best from their teaching careers.'},
+                    {'kind': 'bullet_heading', 'text': 'How Much We Will Ask For'},
+                    {'kind': 'body',
+                     'text': 'Each backpack costs $100, plus logistics and administration fees. We will ask for $100 '
+                             'for a backpack for a student.'},
+                    {'kind': 'bullet_heading', 'text': 'How We Will Follow Up If They Do Not Give'},
+                    {'kind': 'body',
+                     'text': 'We will follow up through email, call them and invite them to our next teachers event. '
+                             'This allows us to respectfully invite them to give again. Even when they do not give, '
+                             'as long as they do not unsubscribe, they will remain part of our quarterly fundraising '
+                             'campaign.'},
+                    {'kind': 'bullet_heading', 'text': 'How We Will Thank and Steward Those Who Give'},
+                    {'kind': 'body',
+                     'text': 'We will send a thank-you email immediately, send a Christmas card annually, ask an '
+                             'agreed board member to call and thank each donor personally, and invite them to '
+                             'support the next backpack programme.'}]}
+        pdf=build_strategy_pdf({'schema_version':7,'document_sections':[section],'branding':{'primary_color':'#233a72'}},'')
+        pages=PdfReader(io.BytesIO(pdf)).pages
+        self.assertEqual(len(pages),2)  # Cover, then the full audience.
+        text=pages[1].extract_text()
+        for detail in ('Facebook','LinkedIn','10 teachers','quarterly','unsubscribe','Christmas','personally'):
+            self.assertIn(detail,text)
+        sizes=[]
+        pages[1].extract_text(visitor_text=lambda text,cm,tm,font,size:sizes.append(size) if 'They benefit from what we do' in text else None)
+        self.assertTrue(sizes);self.assertTrue(all(size>=11 for size in sizes))
+
     async def test_each_audience_starts_its_own_pdf_page_with_bold_subheadings(self):
         from pypdf import PdfReader
         value=approved();second=copy.deepcopy(value['audiences'][0]);second['id']='businesses';second['category']='businesses';second['strategy']['audience_name']='Local Architecture Businesses';second['strategy']['who_why']='Local architecture businesses support youth education.';value['audiences'].append(second)

@@ -241,3 +241,6 @@ retained rather than replaced with generic summaries. Editorial checks reject
 rewrites that omit source details or numbers; the original approved narrative
 remains available as the fallback. Teachers and parents in Pittsburgh are sample
 audiences only and are never inserted into customer strategies automatically.
+
+The complete eight-part teachers example fits one audience page at 11-point body
+text. The layout test checks both complete detail retention and readable type.
