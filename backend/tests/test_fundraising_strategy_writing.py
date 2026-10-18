@@ -19,15 +19,39 @@ def approved():
         "stewardship":"We will send a thank-you email and ask an agreed board member to call each donor."}}]}
 
 class Writing(unittest.IsolatedAsyncioTestCase):
+    async def test_detailed_approved_followup_stewardship_and_offer_are_not_shortened(self):
+        value=approved();source=value['audiences'][0]['strategy']
+        source['where']='We can find teachers in Facebook and LinkedIn groups, join teachers communities and run targeted ads.'
+        source['ask']='We will ask for a backpack for a student. For every backpack funded, 10 teachers receive our free guide.'
+        source['follow_up']='We will follow up by email, call and invite them to the next teachers event. Unless they unsubscribe, they will remain part of our quarterly fundraising campaign.'
+        source['stewardship']='We will immediately send a thank-you email, send a Christmas card annually, arrange a personal call from an agreed board member and invite donors to support the next backpack programme.'
+        output={'audiences':[{'id':'teachers','title':{'text':'A Different City','quote':source['who_why']},'where':{'text':'We will reach teachers online.','quote':source['where']},'ask':{'text':'We will ask for a backpack for a student.','quote':source['ask']},'follow_up':{'text':'We will follow up by email.','quote':source['follow_up']},'stewardship':{'text':'We will send a thank-you email.','quote':source['stewardship']}}]}
+        with patch('fundraising_strategy_writing.edit_approved_audiences',new=AsyncMock(return_value=output)):result=await written_strategy(value)
+        row=result['audiences'][0]
+        for detail in ('Facebook','LinkedIn','10 teachers','unsubscribe','quarterly','Christmas','annually','personal call'):
+            self.assertIn(detail,str(row))
+        self.assertEqual(row['title'],'Teachers in Pittsburgh')
+        value['written_audiences']=result['audiences'];section=document_sections(value,{})[1]
+        self.assertEqual(section['eyebrow'],'Ideal Funding Audience:')
+        self.assertEqual(len([b for b in section['blocks'] if b['kind']=='bullet_heading']),8)
+
+    async def test_next_audience_does_not_inherit_the_teachers_strategy(self):
+        value=approved();value['audiences'].append({'id':'parents','category':'individuals','contributor':'Taylor Reed','strategy':{'audience_name':'Parents in Pittsburgh (Ages 5 to 12)','who_why':'Parents in Pittsburgh (Ages 5 to 12)'}})
+        with patch('fundraising_strategy_writing.edit_approved_audiences',new=AsyncMock(side_effect=RuntimeError('provider unavailable'))):result=await written_strategy(value)
+        parent=result['audiences'][1]
+        self.assertEqual(parent['title'],'Parents in Pittsburgh (Ages 5 to 12)')
+        self.assertFalse(parent['ask']);self.assertFalse(parent['amount']);self.assertFalse(parent['follow_up']);self.assertFalse(parent['stewardship'])
+        self.assertNotIn('backpack',str(parent));self.assertNotIn('teachers',str(parent).lower())
+
     async def test_source_only_editorial_output_and_optional_details(self):
         agreed=approved();before=copy.deepcopy(agreed)
-        edited={"audiences":[{"id":"teachers","why":{"text":"Teachers would give because they benefit from the children we help.","quote":"teachers in Pittsburgh benefit from the children we help."},
+        edited={"audiences":[{"id":"teachers","why":{"text":"Teachers in Pittsburgh would give because they benefit from the children we help.","quote":"teachers in Pittsburgh benefit from the children we help."},
             "amount":{"text":"We will ask for $9999 for each backpack.","quote":"We will ask for $100 for each backpack."},
             "where":{"text":"We will buy a national list.","quote":"An invented source quote"}}]}
         with patch('fundraising_strategy_writing.edit_approved_audiences',new=AsyncMock(return_value=edited)):
             result=await written_strategy(agreed)
         row=result['audiences'][0]
-        self.assertIn('Teachers would give because',row['why'])
+        self.assertIn('Teachers in Pittsburgh would give because',row['why'])
         self.assertNotIn('Alex Morgan said',str(row));self.assertIn('$100',row['amount']);self.assertNotIn('$9999',str(row))
         self.assertNotIn('national list',str(row));self.assertEqual(agreed,before)
         self.assertTrue(row['follow_up']);self.assertTrue(row['stewardship'])

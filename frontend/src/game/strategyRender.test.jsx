@@ -29,13 +29,14 @@ test("actual Board execution agreements appear as an optional final section", as
 });
 
 test("the approved strategy renders structured headings and bullets with an audience page boundary",async()=>{
-  const strategy={schema_version:7,mode:"final",status:"adopted",version:1,data:{},document_sections:[{key:"audience_1",title:"1. Teachers in Pittsburgh",eyebrow:"Approved Ideal Funding Audiences",page_break_before:true,text:"old raw text",blocks:[{kind:"subheading",text:"Why They Would Give"},{kind:"body",text:"Teachers benefit from our work."},{kind:"subheading",text:"How We Will Attract Their Interest"},{kind:"bullet",text:"We will offer the guide agreed by our board."}]}],section_edits:{audience_1:"old raw text"}};
+  const strategy={schema_version:7,mode:"final",status:"adopted",version:1,data:{},document_sections:[{key:"audience_1",title:"1. Teachers in Pittsburgh",eyebrow:"Ideal Funding Audience:",page_break_before:true,text:"old raw text",blocks:[{kind:"bullet_heading",text:"Why They Would Give"},{kind:"body",text:"Teachers benefit from our work."},{kind:"subheading",text:"How We Will Attract Their Interest"},{kind:"bullet",text:"We will offer the guide agreed by our board."}]}],section_edits:{audience_1:"old raw text"}};
   const node=document.createElement("div");document.body.appendChild(node);const root=createRoot(node);
   try{
     await act(async()=>root.render(<StrategyDocument strategy={strategy}/>));
     expect(node.querySelector('[data-audience-page="true"]')).toBeTruthy();
     expect(node.querySelector('#strategy-audience_1 h2').textContent).toBe("1. Teachers in Pittsburgh");
     expect(node.querySelector('#strategy-audience_1 h3').textContent).toBe("Why They Would Give");
+    expect(node.querySelector('#strategy-audience_1 h3').className).toBe("written-strategy-bullet-heading");
     expect(node.querySelector('#strategy-audience_1 li').textContent).toContain("offer the guide");
     expect(node.textContent).not.toContain("old raw text");
   }finally{await act(async()=>root.unmount());node.remove()}

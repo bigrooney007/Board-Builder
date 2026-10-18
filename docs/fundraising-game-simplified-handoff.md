@@ -234,3 +234,10 @@ bullets. Each approved audience starts on a new page and cannot share a page wit
 the next audience; long content continues naturally rather than becoming illegible.
 Logo/color branding is preserved. Shared web documents use the same structure.
 Historical finalized documents and the original generic renderer remain unchanged.
+
+The latest audience presentation uses "Ideal Funding Audience:", a specific
+audience name and eight bullet subheadings. Approved detailed explanations are
+retained rather than replaced with generic summaries. Editorial checks reject
+rewrites that omit source details or numbers; the original approved narrative
+remains available as the fallback. Teachers and parents in Pittsburgh are sample
+audiences only and are never inserted into customer strategies automatically.

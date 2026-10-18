@@ -212,7 +212,7 @@ async def main():
             await (await final_document.value).save_as(final_path)
             from pypdf import PdfReader
             pages=[p.extract_text() for p in PdfReader(final_path).pages]
-            audience_pages=[i for i,p in enumerate(pages) if 'Approved Ideal Funding Audiences' in p]
+            audience_pages=[i for i,p in enumerate(pages) if 'Ideal Funding Audience:' in p]
             assert len(audience_pages)==2 and len(set(audience_pages))==2
             assert 'Alex Morgan suggests' not in '\n'.join(pages)
             assert 'How We Will Thank and Steward Those Who Give' in '\n'.join(pages)

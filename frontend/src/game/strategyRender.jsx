@@ -340,7 +340,7 @@ export const sectionToText = (section, data) => {
 export function WrittenStrategySection({section}) {
   return <section id={`strategy-${section.key}`} className="written-strategy-section" data-testid={`bfg-strategy-section-${section.key}`} data-audience-page={section.page_break_before&&section.key.startsWith("audience_")?"true":"false"}>
     {section.eyebrow&&<p className="bfg-eyebrow">{section.eyebrow}</p>}<h2>{section.title}</h2>
-    {section.blocks?.length?section.blocks.map((block,i)=>block.kind==="subheading"?<h3 key={i}>{block.text}</h3>:block.kind==="bullet"?<ul key={i}><li>{block.text}</li></ul>:<p key={i}>{block.text}</p>):<p>{section.text}</p>}
+    {section.blocks?.length?section.blocks.map((block,i)=>["subheading","bullet_heading"].includes(block.kind)?<h3 key={i} className={block.kind==="bullet_heading"?"written-strategy-bullet-heading":undefined}>{block.text}</h3>:block.kind==="bullet"?<ul key={i}><li>{block.text}</li></ul>:<p key={i}>{block.text}</p>):<p>{section.text}</p>}
   </section>;
 }
 

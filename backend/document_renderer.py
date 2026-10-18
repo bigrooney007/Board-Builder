@@ -161,6 +161,7 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
     if sections is not None:
         section_heading=ParagraphStyle("strategy_section",parent=heading,fontSize=19,leading=25,spaceBefore=0,spaceAfter=16)
         subheading=ParagraphStyle("strategy_subheading",parent=heading,fontSize=11.5,leading=17,spaceBefore=12,spaceAfter=5)
+        bullet_heading=ParagraphStyle("strategy_bullet_heading",parent=subheading,leftIndent=14,firstLineIndent=-14)
         strategy_body=ParagraphStyle("strategy_body",parent=body,fontSize=11,leading=17,spaceAfter=8)
         strategy_bullet=ParagraphStyle("strategy_bullet",parent=strategy_body,leftIndent=14,spaceAfter=6)
         for section in sections:
@@ -173,7 +174,8 @@ def render_document_pdf(*, title: str, org_name: str = "", body_text: str = "", 
             if not blocks:blocks=[{"kind":kind,"text":value} for kind,value in clean_document_lines(section.get("text",""),section["title"])]
             for block in blocks:
                 kind=block.get("kind");value=block.get("text","")
-                if kind=="subheading" or kind=="heading":story.append(Paragraph(esc(value),subheading))
+                if kind=="bullet_heading":story.append(Paragraph("• "+esc(value),bullet_heading))
+                elif kind=="subheading" or kind=="heading":story.append(Paragraph(esc(value),subheading))
                 elif kind=="bullet":story.append(Paragraph("• "+esc(value),strategy_bullet))
                 elif kind=="body" and value:story.append(Paragraph(esc(value),strategy_body))
     if preserve_source_text:

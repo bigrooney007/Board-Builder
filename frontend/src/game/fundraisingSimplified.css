@@ -18,3 +18,5 @@
 .written-strategy-section li { line-height: 1.8; margin-bottom: 8px; }
 @media (max-width: 600px) { .written-strategy-section { padding: 18px; } }
 @media print { .written-strategy-section[data-audience-page="true"] { break-before: page; } }
+
+.written-strategy-bullet-heading { display: list-item; list-style-type: disc; margin-left: 18px !important; }
