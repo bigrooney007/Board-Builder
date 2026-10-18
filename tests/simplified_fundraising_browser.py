@@ -227,6 +227,7 @@ async def main():
             await editor.get_by_text('The strategy is approved. Its email is recorded in this administrator simulation.',exact=True).wait_for()
             await page.goto(BASE+'/game/dashboard')
             await page.get_by_role('button',name='Download Final Fundraising Strategy',exact=True).wait_for()
+            assert await page.get_by_role('link',name='View Approved Strategy',exact=True).evaluate("e=>getComputedStyle(e).color")=='rgb(255, 255, 255)'
             async with page.expect_download() as final_document:
                 await page.get_by_role('button',name='Download Final Fundraising Strategy',exact=True).click()
             assert (await final_document.value).suggested_filename=='fundraising-strategy.pdf'
