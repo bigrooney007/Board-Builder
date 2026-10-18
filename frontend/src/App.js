@@ -6,6 +6,7 @@ import FundraisingPublicPage from "@/game/FundraisingPublicPages";
 import FundraisingSetup from "@/game/FundraisingSetup";
 import FundraisingWorkspace, { LegacyFundraisingTool } from "@/game/FundraisingWorkspace";
 import FundraisingAdminPage from "@/admin/FundraisingAdminPage";
+import FacilitatorWorkspace from "@/admin/FacilitatorWorkspace";
 import LegacyCustomerRoute from "@/game/LegacyCustomerRoute";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
@@ -241,6 +242,8 @@ function CleanRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/admin" element={<FundraisingAdminPage />} />
+      <Route path="/admin/fundraising/customer/:userId" element={<FacilitatorWorkspace />} />
+      <Route path="/admin/fundraising/customer/:userId/group" element={<FacilitatorWorkspace group />} />
       <Route path="/admin/legacy" element={<AdminPage />} />
       <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
       <Route path="/terms" element={<LegalPage type="terms" />} />
@@ -254,17 +257,11 @@ function CleanRoutes() {
   );
 }
 
-function AdminClientTestStatus() {
-  const {member}=useMemberAuth();
-  if(!member?.internal_dashboard_preview)return null;
-  return <aside role="status" style={{padding:"8px 16px",textAlign:"center",background:"#eef2ff",color:"#312e81",fontSize:14}}>Isolated admin client test · Workflow {sessionStorage.getItem("adminClientTestVersion") || "original-current"} · Emails captured · No charges</aside>;
-}
 
 export default function App() {
   return (
     <BrowserRouter>
       <MemberAuthProvider>
-        <AdminClientTestStatus />
         <PublicCenteringScope />
         <PlatformAnalytics />
         <GoogleAuthGate>

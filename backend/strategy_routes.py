@@ -437,6 +437,7 @@ def create_strategy_router(db) -> APIRouter:
             "adopted_at": strategy.get("adopted_at", ""),
             "section_edits": strategy.get("section_edits", {}), "document_sections": strategy.get("document_sections", []),
             "organization_name": (profile.get("organization") or {}).get("name", ""),
+            "branding":profile.get("branding") or {},
         }}
 
     return router

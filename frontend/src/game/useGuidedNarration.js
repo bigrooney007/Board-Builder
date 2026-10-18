@@ -19,6 +19,7 @@ export function useGuidedNarration(tutorial, narrationId, words) {
   }, []);
 
   useEffect(() => {
+    if (!tutorial) { setClips({}); return stop; }
     let active = true;
     axios.get(`${BASE}/api/game/voice/tutorial/${tutorial}`)
       .then(({ data }) => { if (active) setClips(data.clips || {}); })

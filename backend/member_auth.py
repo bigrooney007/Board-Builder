@@ -102,6 +102,19 @@ async def admin_preview_member(request: Request, db):
 
 
 async def authenticate_member(request: Request, db) -> dict:
+    target=request.headers.get('X-Fundraising-Customer','').strip()
+    if target:
+        from auth_service import authenticate_admin
+        actor=await authenticate_admin(request,db)
+        member=await db.members.find_one({'user_id':target},{'_id':0,'password_hash':0})
+        profile=await db.game_profiles.find_one({'user_id':target,'workflow_version':7},{'_id':0,'user_id':1})
+        if not member or not profile:raise HTTPException(404,'This Fundraising Game customer was not found')
+        if not (request.url.path.startswith(('/api/game/','/api/members/me'))):
+            raise HTTPException(403,'This administrator access is scoped to the Fundraising Game')
+        if request.method not in ('GET','HEAD','OPTIONS'):
+            await db.admin_access_audit.insert_one({'actor':actor['user_id'],'action':request.method+' '+request.url.path,'target':target,'created_at':datetime.now(timezone.utc).isoformat()})
+        bind_test_scope(db,member)
+        return {**member,'fundraising_facilitator':True,'facilitator_admin_id':actor['user_id']}
     preview = await admin_preview_member(request, db)
     if preview:
         return preview
@@ -127,6 +140,9 @@ async def authenticate_member(request: Request, db) -> dict:
         )
         if not member:
             raise HTTPException(status_code=401, detail="Account not found. Please log in again.")
+        if request.url.path.startswith(('/api/game/group/','/api/game/meeting/')):
+            profile=await db.game_profiles.find_one({'user_id':member['user_id'],'workflow_version':7},{'_id':0,'user_id':1})
+            if profile:raise HTTPException(403,'Your facilitator manages the group meeting. You can view submitted ideas and the approved strategy from your resources.')
         bind_test_scope(db, member)
         prevent_test_checkout(request, member)
         return member

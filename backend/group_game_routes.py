@@ -730,7 +730,7 @@ def create_group_game_router(db) -> APIRouter:
                 {"participant_id": me["participant_id"]}, {"$set": {"last_active_at": now_iso()}})
         if session.get("game_version") == "audience-complete-v6":
             if not me: raise HTTPException(403, "Join with your own participant link first")
-            state = await audience_review.state(session)
+            state = await audience_review.state(session,include_draft=False)
             return {"status": session["status"], "organization_name": (profile.get("organization") or {}).get("name", ""), "goal_display": fmt_goal(profile),
                     "joined": True, "joined_count": len(joined), "total_rounds": len(state["audience_review"]["proposals"]), "current_round": None,
                     "audience_review": state["audience_review"], "recording_notice":bool(session.get("transcript_consent")), "my_member_id": me["board_member_id"]}

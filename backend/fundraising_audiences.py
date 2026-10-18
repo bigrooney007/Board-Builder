@@ -41,7 +41,15 @@ QUESTIONS = {
 
 LAUNCH_VERSION = 7
 PARTICIPATION_LAUNCH = "How do you see yourself participating and supporting your organization to reach this fundraising goal?"
-LAUNCH_INSTRUCTIONS = "You can write or speak your answers freely. There are no perfect answers expected. We want your ideas about who should fund this mission and how the organization could raise money from them."
+LAUNCH_INSTRUCTIONS = "Share your ideas freely and in as much detail as you can. There are no perfect answers. We want your ideas about who should fund this mission and how the organization could raise money from them."
+
+async def saved_configuration(db,version=VERSION):
+    result=configuration(version)
+    if version==7:
+        from fundraising_launch import content
+        editable=(await content(db))['questionnaire']
+        result.update(copy.deepcopy(editable))
+    return result
 
 def configuration(version=VERSION):
     result = {"workflow_version": version, "categories": list(CATEGORIES), "labels": LABELS,

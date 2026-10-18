@@ -1,3 +1,34 @@
+# Current release: administrator-facilitated Fundraising Game
+
+This update supersedes the customer-facilitated meeting instructions below. Historical records, purchases and legacy private routes are preserved. No AutoFundraiser application code is changed.
+
+## Customer path
+
+1. `/` opens the Fundraising Game immediately. The explanation and biography have separate backgrounds. The explanation heading and text are editable in administration. The biography includes **Build Your Fundraising Strategy Alone**, linking to `https://autofundraiser.com`. Pricing appears on the next page, not the homepage.
+2. A minimal name, email and organization popup opens `/how-the-fundraising-game-works`. Each written section has independent heading, body and button fields. Administrators may delete sections without leaving reserved space. Original testimonials remain.
+3. The current one-time Stripe checkout is **$1,497 USD** per organization. Verified older $997 and $497 purchases retain their original access and prices. Claiming a new purchase verifies the expected subtotal and currency, allowing Stripe's existing tax handling.
+4. `/game/setup` collects mission, community, fundraising goal/deadline, board size, location, funding consequences, existing approach or private plan upload, and optional logo/colors. The customer answers the audience-by-audience questions before scheduling the meeting and inviting board members.
+5. Personal `/play/:token` forms are text only. The same admin-editable questions, subtitles, instructions and transition questions apply to the leader and invited people. Each audience is saved separately. Participants see organization branding, goal and inviter.
+6. The leader can view original responses, invite/remind board members, ask for help and retrieve an approved strategy at `/game/dashboard`. They receive response notifications. They receive no instruction to facilitate the meeting.
+7. The administrator opens `/admin/fundraising/customer/:userId`, invites or reminds participants and opens `/admin/fundraising/customer/:userId/group`. Admin access requires the existing authenticated administrator session and is scoped/audited to that game. A customer cannot acquire facilitation permissions by changing a URL or header.
+8. The administrator controls discussion, transcription consent/microphone, audience decisions and confirmed responsibilities. Participants follow the synchronized `/group-game/:token` view and adopt on their own devices. Only explicit decisions enter the strategy.
+9. Closing a meeting saves a **draft** and adoption record, with **no final strategy email**. Admin → Strategy Review and Approval shows the transcript and editable document. Saving and approving the exact current version sends the leader the secure `/strategy/:token` view/download link and booking link. Approval and retries use the same durable delivery key.
+10. Admin → Booking Link edits the HTTPS booking URL for future strategy emails and resource access. Initially it reuses the existing `https://calendly.com/boardbuilder/recruitboard` link. Already queued delivery retries keep their original saved links.
+
+## Administration
+
+Homepage and How It Works editors, Game Questions, Booking Link, Customers and Workspaces, Strategy Review and Approval, Help Requests, Contact Leads, Follow-up Emails, Homepage Visitors and Blog Generator remain available. Historical Administration preserves access to old records. Analytics shows homepage views/unique visitors, captured contacts and paid customers.
+
+Client Testing starts at the post-payment setup with a prefilled example organization. It never charges or emails real people. The latest sample workstation is accessible from the same admin tab. Ordinary public pages have no simulation banner. Public homepage navigation clears stale synthetic account access rather than allowing an admin simulation to become a live checkout identity.
+
+## Verification
+
+The release is verified using the repository's production build, existing frontend and backend regressions, and the updated disposable-Mongo desktop/mobile browser acceptance suite. External payment, AI and email transports are substituted in fixtures; real Stripe charges, Gmail receipt and physical microphone capture are not asserted by those tests. No deployment or Emergent synchronization is performed by Codex.
+
+---
+
+## Historical implementation notes (superseded where inconsistent)
+
 # Simplified Fundraising Game handoff
 
 ## Branch and preservation

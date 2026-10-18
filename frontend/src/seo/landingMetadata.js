@@ -49,7 +49,7 @@ function structuredData(page) {
     { "@type": page.path === "/" ? "CollectionPage" : "WebPage", "@id": url + "#webpage", url, name: page.title, description: page.description, inLanguage: "en", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId }, primaryImageOfPage: { "@type": "ImageObject", url: imageUrl(page), width: 1200, height: 630 } },
   ];
   if (page.path === "/" || page.path === "/how-the-fundraising-game-works") {
-    graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"997.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
+    graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"1497.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
   }
   if (page.path !== "/") {
     graph[2].mainEntity = { "@id": url + "#service" };
@@ -60,6 +60,10 @@ function structuredData(page) {
 }
 
 function fallbackContent(page) {
+  if(page.path==="/") {
+    const home=require("../content/fundraisingDefaults.json").home;
+    return `<div class="nBB-home fundraising-public-centered"><header class="nBB-home-nav"><a class="nBB-home-login" href="/">Nonprofit Board Builder</a><a class="nBB-home-login" href="/login">Log In</a><a class="nBB-home-login" href="/blog">Blog</a></header><main id="landing-page-summary"><section class="nBB-home-hero"><p class="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>${escapeHtml(home.title)}</h1><p class="nBB-home-lead">${escapeHtml(home.introduction)}</p><a class="nBB-home-primary" href="/#start">${escapeHtml(home.cta)}</a></section></main></div>`;
+  }
   // A useful public page remains available before React loads and when JavaScript is unavailable.
   const paragraphs = page.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
   const steps = page.steps.length ? `<h2>How it works</h2><ol>${page.steps.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : "";

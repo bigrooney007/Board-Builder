@@ -31,7 +31,7 @@ export default function SharedStrategyPage() {
   if (!strategy) return <div className="bfg bfg-gg" style={{ minHeight: "100vh" }} />;
 
   return (
-    <div className="bfg bfg-gg" style={{ minHeight: "100vh" }} data-testid="bfg-shared-strategy-page">
+    <div className="bfg bfg-gg fundraising-simplified" style={{ minHeight: "100vh" }} data-testid="bfg-shared-strategy-page">
       <header className="bfg-gg-nav">
         <span><strong>{strategy.organization_name} Fundraising Strategy</strong> · {MODE_LABELS[strategy.mode] || strategy.mode}</span>
       </header>

@@ -8,9 +8,13 @@ export const memberApi = axios.create({
 
 memberApi.interceptors.request.use((config) => {
   const token = localStorage.getItem("memberToken");
+  const fundraisingCustomer=sessionStorage.getItem("fundraisingCustomer");
   const operateAs = sessionStorage.getItem("operateAsUserId");
   const preview = previewHeaders();
-  if (Object.keys(preview).length > 0) {
+  if(fundraisingCustomer && (/^\/game\//.test(config.url)||config.url==="/members/me")){
+    config.headers["X-Fundraising-Customer"]=fundraisingCustomer;
+    delete config.headers.Authorization;
+  } else if (Object.keys(preview).length > 0) {
     Object.assign(config.headers, preview);
     delete config.headers.Authorization;
   } else if (operateAs) {

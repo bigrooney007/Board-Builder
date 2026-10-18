@@ -89,12 +89,13 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         test_tx = await db.payment_transactions.find_one({"session_id": session_id,
             "internal_preview": True, "claimed_by_user_id": member["user_id"],
             "payment_status": "paid", "purchase_source": {"$in": [
-                "recruitment_497", "board_fundraising_game_497", "board_fundraising_game_997", "strategic_planning_497", "board_recommitment_497"]}}, {"_id": 0})
+                "recruitment_497", "board_fundraising_game_497", "board_fundraising_game_997", "board_fundraising_game_1497", "strategic_planning_497", "board_recommitment_497"]}}, {"_id": 0})
         if test_tx:
             return {"entitlement": {
                 "recruitment_497": "recruitment_self_guided",
                 "board_fundraising_game_497": "board_fundraising_game",
                 "board_fundraising_game_997": "board_fundraising_game",
+                "board_fundraising_game_1497": "board_fundraising_game",
                 "strategic_planning_497": "strategic_planning_497",
                 "board_recommitment_497": "reactivation_self_guided",
             }[test_tx["purchase_source"]], "purchase_source": test_tx["purchase_source"]}
@@ -122,8 +123,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         if not launch_lead or launch_lead["email"].lower()!=member["email"].lower():
             raise HTTPException(409,"Use the email entered before payment to claim your Fundraising Game")
     tier = metadata.get("selected_tier", "")
-    if offer_source == "board_fundraising_game" and tier == "997":
-        if session.amount_subtotal != 99700 or session.amount_total < session.amount_subtotal or str(session.currency).lower() != "usd":
+    if offer_source == "board_fundraising_game" and tier in {"997","1497"}:
+        if session.amount_subtotal != int(tier)*100 or session.amount_total < session.amount_subtotal or str(session.currency).lower() != "usd":
             raise HTTPException(409, "The Fundraising Game payment amount could not be verified. Please contact support.")
     extra_entitlements = []
     if offer_source == "recruit_with_rooney" and tier == "997":
@@ -290,8 +291,8 @@ async def claim_recruitment_purchase(db, member: dict, session_id: str) -> dict:
         })
     elif offer_source == "board_fundraising_game":
         purchase.update({
-            "purchase_source": "board_fundraising_game_997" if tier=="997" else "board_fundraising_game_497",
-            "offer": "The Fundraising Game", "price_paid": 997 if tier=="997" else int((session.amount_total or 49700)/100),
+            "purchase_source": "board_fundraising_game_"+tier if tier in {"997","1497"} else "board_fundraising_game_497",
+            "offer": "The Fundraising Game", "price_paid": int(tier) if tier in {"997","1497"} else int((session.amount_total or 49700)/100),
         })
     elif offer_source in {"strategic_planning", "board_recommitment"}:
         purchase.update({
@@ -385,6 +386,7 @@ def public_member(member: dict) -> dict:
         "internal_client_test": bool(member.get("internal_client_test")),
         "client_test_product": member.get("client_test_product", "") if member.get("internal_client_test") else "",
         "internal_dashboard_preview": bool(member.get("internal_dashboard_preview")),
+        "fundraising_facilitator": bool(member.get("fundraising_facilitator")),
         "supported_service_product": member.get("supported_service_product", ""),
         "supported_service_session_id": member.get("supported_service_session_id", ""),
         "supported_service_handoff_complete": bool(member.get("supported_service_handoff_complete")),

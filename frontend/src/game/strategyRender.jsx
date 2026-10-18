@@ -350,7 +350,8 @@ export const StrategyDocument = ({ strategy }) => {
   const sections = getStrategySections(strategy);
   return (
     <div className="bfg-doc" data-testid="bfg-strategy-document">
-      <header className="bfg-doc-header">
+      <header className="bfg-doc-header" style={strategy.branding?.primary_color?{color:strategy.branding.primary_color}:undefined}>
+        {strategy.branding?.logo_data&&<img className="fundraising-org-logo" src={strategy.branding.logo_data} alt="Organization logo"/>}
         <p className="bfg-doc-org">{strategy.organization_name}</p>
         <h1>{strategy.mode === "final" && strategy.status !== "adopted" ? "Final Fundraising Strategy" : "Fundraising Strategy"}</h1>
         {(strategy.prepared_by || strategy.organization_name) && (

@@ -45,6 +45,22 @@ async def content(db):
             else:
                 row['body']=row.get('body','').replace('$497','$997')
                 row['subject']=row.get('subject','').replace('$497','$997')
+    override=copy.deepcopy(override)
+    if saved.get('content_revision',0)<3:
+        # Split the existing saved copy without replacing an administrator's words.
+        how=override.get('how',{})
+        if how.get('article') and 'sections' not in how:
+            how['sections']=[]
+            for i,part in enumerate(re.split(r'(?m)^## ',how['article'])):
+                title,_,body=part.partition('\n')
+                how['sections'].append({'id':f'how-section-{i+1}','heading':title.removeprefix('### ').strip(),'body':body.strip(),'cta':how.get('cta',DEFAULT['how']['cta'])})
+        # This migration changes the authorized current price only, never purchases.
+        def price(value):
+            if isinstance(value,str):return value.replace('$997','$1,497')
+            if isinstance(value,list):return [price(v) for v in value]
+            if isinstance(value,dict):return {k:price(v) for k,v in value.items()}
+            return value
+        override=price(override)
     return merge(DEFAULT,override)
 
 class Lead(BaseModel):
@@ -58,9 +74,14 @@ class Lead(BaseModel):
 class Organization(BaseModel):
     fundraising_goal: float = Field(gt=0,le=1e12)
     mission: str = Field(min_length=1,max_length=10000)
-    annual_budget: str = Field(min_length=1,max_length=1000)
+    annual_budget: str = Field(default='',max_length=1000)
     website: str = Field(default='',max_length=2000)
     community: str = Field(min_length=1,max_length=6000)
+    funding_deadline: str = Field(default='',max_length=100)
+    board_member_count: int = Field(default=0,ge=0,le=10000)
+    location: str = Field(default='',max_length=1000)
+    funding_consequences: str = Field(default='',max_length=12000)
+    current_approach: str = Field(default='',max_length=20000)
 
 async def activate_purchase(db, member, lead_token, session_id):
     """Called only after the existing Stripe verification confirms a paid purchase."""
@@ -151,9 +172,9 @@ async def send_due(db):
             break
     # Retry only stable transactional notices. Marketing retries still pass the
     # enrollment, unsubscribe and purchase checks above; portfolios require approval.
-    failures=await db.workflow_email_deliveries.find({'status':'failed','event_key':{'$regex':'^(launch-welcome:|help:|meeting-strategy-ready:)'}},{'_id':0}).to_list(200)
+    failures=await db.workflow_email_deliveries.find({'status':'failed','event_key':{'$regex':'^(launch-welcome:|help:|meeting-strategy-ready:|admin-strategy-approved:)'}},{'_id':0}).to_list(200)
     for row in failures:
-        await deliver_once(db,row['user_id'],row['event_key'],row['recipient'],row['subject'],row['text'],row['link'])
+        await deliver_once(db,row['user_id'],row['event_key'],row['recipient'],row['subject'],row['text'],row['link'],secondary_links=row.get('secondary_links'))
 
 async def recovery_loop(db):
     while True:
@@ -175,7 +196,7 @@ def create_fundraising_launch_router(db):
         return actor
 
     @router.get('/fundraising/content')
-    async def site_content(): return {'content':await content(db),'price':997,'currency':'usd'}
+    async def site_content(): return {'content':await content(db),'price':1497,'currency':'usd'}
 
     @router.post('/fundraising/leads',status_code=201)
     async def capture(payload:Lead,request:Request):
@@ -252,14 +273,16 @@ def create_fundraising_launch_router(db):
         night=await db.game_nights.find_one({'user_id':member['user_id']},{'_id':0}) or {}
         strategy=await db.game_strategies.find_one({'user_id':member['user_id'],'status':'adopted'},{'_id':0},sort=[('adopted_at',-1)])
         draft=await db.game_setup_drafts.find_one({'user_id':member['user_id']},{'_id':0}) or {}
-        return {'draft':draft,'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
+        meeting=await db.group_game_sessions.find_one({'user_id':member['user_id'],'status':{'$ne':'archived'}},{'_id':0}) or {}
+        settings=(await content(db))['settings']
+        return {'draft':draft,'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'meeting_url':('/group-game/'+meeting['token']) if meeting.get('token') else '', 'booking_url':settings['booking_url'],'facilitator':bool(member.get('fundraising_facilitator')),'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
 
     @router.put('/game/launch/draft')
     async def setup_draft(payload:dict,request:Request):
         member=await owner(request);p=await profile(member)
         if p.get('workflow_version')!=7:raise HTTPException(409,'Use your saved game format')
         stage=payload.get('stage');values=payload.get('values') or {}
-        allowed={'organization':{'fundraising_goal','mission','annual_budget','website','community'},'meeting':{'meeting_date','start_time','timezone_name','meeting_format','meeting_link','meeting_location'}}
+        allowed={'organization':{'fundraising_goal','mission','annual_budget','website','community','funding_deadline','board_member_count','location','funding_consequences','current_approach','primary_color','secondary_color'},'meeting':{'meeting_date','start_time','timezone_name','meeting_format','meeting_link','meeting_location'}}
         if stage not in allowed or not isinstance(values,dict):raise HTTPException(422,'Unknown setup stage')
         if stage=='organization' and p.get('profile_completed'):return {'saved':True,'completed':True}
         if len(json.dumps(values))>30000:raise HTTPException(422,'Keep the saved setup within its size limit')
@@ -273,7 +296,9 @@ def create_fundraising_launch_router(db):
         member=await owner(request);p=await profile(member)
         if p.get('workflow_version')!=7: raise HTTPException(409,'Continue your saved game in its existing format')
         await db.game_profiles.update_one({'user_id':member['user_id']},{'$set':{'organization.mission':payload.mission,'organization.annual_budget':payload.annual_budget,
-            'organization.website':payload.website,'organization.beneficiaries':payload.community,'goal':{'amount':payload.fundraising_goal},'profile_completed':True,'updated_at':now()}})
+            'organization.website':payload.website,'organization.beneficiaries':payload.community,'organization.location':payload.location,
+            'organization.board_member_count':payload.board_member_count,'organization.funding_consequences':payload.funding_consequences,'organization.current_approach':payload.current_approach,
+            'goal':{'amount':payload.fundraising_goal,'deadline':payload.funding_deadline},'profile_completed':True,'updated_at':now()}})
         await touch(db,member['user_id'],'questions','/game/setup')
         return {'saved':True}
 
@@ -415,10 +440,13 @@ def create_fundraising_launch_router(db):
         clear_member_cookie(response)  # A previous real member cookie must not override the synthetic identity.
         from member_auth import create_member_token
         user='admin-dashboard-preview-launch-'+secrets.token_hex(12)
-        row={'user_id':user,'email':user+'@nonprofitboardbuilder.internal','first_name':'Sample','last_name':'Leader','entitlements':[],
+        row={'user_id':user,'email':user+'@nonprofitboardbuilder.internal','first_name':'Sample','last_name':'Leader','entitlements':['board_fundraising_game'],
              'account_status':'active','internal_client_test':True,'internal_dashboard_preview':True,'created_at':now()}
         await db.members.insert_one(row.copy())
-        return {'token':create_member_token(user,row['email']),'member':row,'url':'/','workflow_version':7}
+        await db.game_profiles.insert_one({'user_id':user,'workflow_version':7,'simplified_product':True,'organization':{'name':'BrightPath Youth Alliance'},'primary_user':{'full_name':'Sample Leader','email':row['email']},'profile_completed':False,'goal':{},'created_at':now()})
+        await db.purchases.insert_one({'purchase_id':'admin-example-'+user,'session_id':'admin-example-'+user,'user_id':user,'entitlement':'board_fundraising_game','offer':'The Fundraising Game','price_paid':0,'internal_preview':True,'created_at':now()})
+        await db.game_setup_drafts.insert_one({'user_id':user,'organization':{'fundraising_goal':100000,'mission':'Help young people prepare for meaningful employment.','community':'Young people and their families.','board_member_count':3,'funding_deadline':'2027-12-31','location':'Pittsburgh','funding_consequences':'Fewer young people would receive mentoring.','current_approach':'Individual donations and community fundraising.'},'updated_at':now()})
+        return {'token':create_member_token(user,row['email']),'member':row,'url':'/game/setup','workflow_version':7}
 
     @router.get('/admin/fundraising/content')
     async def admin_content(request:Request):await admin(request,'read-content');return {'content':await content(db)}
@@ -432,9 +460,16 @@ def create_fundraising_launch_router(db):
             if isinstance(template,list):return isinstance(value,list) and len(value)<=100 and all(validate(template[0],v) for v in value)
             if isinstance(template,dict):return isinstance(value,dict) and set(value)==set(template) and all(validate(v,value[k]) for k,v in template.items())
             return isinstance(value,type(template))
-        if not validate(DEFAULT,payload) or len(payload['followups'])!=5:raise HTTPException(422,'Preserve both page editors and the five follow-up emails')
+        if not validate(DEFAULT,payload) or len(payload['followups'])!=5:raise HTTPException(422,'Preserve the page editors, questionnaire and five follow-up emails')
+        from fundraising_facilitation import valid_booking
+        if not valid_booking(payload['settings']['booking_url']):raise HTTPException(422,'Enter a complete HTTPS booking link')
+        for cat,rows in DEFAULT['questionnaire']['questions'].items():
+            edited=payload['questionnaire']['questions'][cat]
+            if [q['key'] for q in edited]!=[q['key'] for q in rows] or any(not q['prompt'].strip() for q in edited):raise HTTPException(422,'Keep the existing question keys and supply each question')
+        sections=payload['how']['sections']
+        if len({s['id'] for s in sections})!=len(sections):raise HTTPException(422,'Keep each section identifier unique')
         for i,row in enumerate(payload['followups'],1):row['day']=i*3
-        await db.site_content.update_one({'key':SOURCE},{'$set':{'content':payload,'content_revision':2,'updated_at':now()}},upsert=True)
+        await db.site_content.update_one({'key':SOURCE},{'$set':{'content':payload,'content_revision':3,'updated_at':now()}},upsert=True)
         return {'saved':True,'content':await content(db)}
 
     @router.get('/admin/fundraising/overview')
@@ -443,7 +478,7 @@ def create_fundraising_launch_router(db):
         bounds={}
         if start: bounds['$gte']=datetime.fromisoformat(start).replace(tzinfo=timezone.utc).isoformat()
         if end: bounds['$lt']=(datetime.fromisoformat(end).replace(tzinfo=timezone.utc)+timedelta(days=1)).isoformat()
-        query={'lead_source':SOURCE,**({'created_at':bounds} if bounds else {})}
+        query={'lead_source':SOURCE,'internal_preview':{'$ne':True},**({'created_at':bounds} if bounds else {})}
         leads=await db.funnel_leads.find(query,{'_id':0,'result_token':0,'unsubscribe_token':0}).sort('created_at',-1).to_list(5000)
         # Verified payment state, including buyers who have not claimed accounts yet.
         paid_ids={x.get('lead_id') for x in await db.payment_transactions.find({'payment_status':'paid','launch_lead_token':{'$exists':True}},{'_id':0,'lead_id':1}).to_list(10000)}
@@ -467,7 +502,7 @@ def create_fundraising_launch_router(db):
             person=members.get(row['user_id'],{})
             row['customer_name']=(person.get('first_name','')+' '+person.get('last_name','')).strip();row['customer_email']=person.get('email','')
         help_rows=await db.help_requests.find({'status':'open'},{'_id':0}).sort('created_at',-1).to_list(500)
-        strategies=await db.game_strategies.find({'status':'adopted'},{'_id':0,'strategy_id':1,'user_id':1,'adopted_at':1,'document_text':1}).sort('adopted_at',-1).to_list(1000)
+        strategies=await db.game_strategies.find({'status':{'$in':['adopted','final_draft']}},{'_id':0,'strategy_id':1,'user_id':1,'schema_version':1,'version':1,'status':1,'adopted_at':1,'document_text':1}).sort('created_at',-1).to_list(1000)
         return {'counts':counts,'conversions':conversions,'leads':leads,'customers':customers,'help_requests':help_rows,'strategies':strategies}
 
     @router.get('/admin/fundraising/strategies/{strategy_id}/document.pdf')
@@ -486,7 +521,7 @@ def create_fundraising_launch_router(db):
         customer=await db.members.find_one({'user_id':user_id},{'_id':0,'password_hash':0})
         if not customer:raise HTTPException(404,'Customer not found')
         records={}
-        for name in ('game_profiles','game_board_members','game_audience_responses','game_nights','group_game_sessions','game_strategies','board_portfolios'):
+        for name in ('game_profiles','game_board_members','game_audience_responses','game_nights','group_game_sessions','game_strategies','board_portfolios','workflow_email_deliveries'):
             records[name]=await db[name].find({'user_id':user_id},{'_id':0}).to_list(1000)
         return {'customer':customer,'workspace':records}
 
@@ -511,6 +546,8 @@ def create_fundraising_launch_router(db):
         labels.update({q['id']:q['prompt'] for q in person.get('response_questions',[]) if q.get('id') and q.get('prompt')})
         text='\n\n'.join((labels.get(k) or k)+'\n'+(v if isinstance(v,str) else json.dumps(v,ensure_ascii=False)) for k,v in answers.items())
         return Response(render_document_pdf(title='Founder Strategic Planning Submission',org_name=project['organization_name'],body_text=text,prepared_for=person.get('name',project.get('founder_name','')),preserve_source_text=True),media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="founder-original-submission.pdf"','X-Submission-Source':'original-response' if person.get('original_response') else 'stored-founder-response'})
+    from fundraising_facilitation import create_facilitation_router
+    router.routes.extend(create_facilitation_router(db).routes)
     return router
 
 

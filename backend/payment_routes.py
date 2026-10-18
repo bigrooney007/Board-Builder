@@ -176,7 +176,7 @@ def resolve_campaign_launch_price_id() -> str:
 
 
 def resolve_game_price_id() -> str:
-    return resolve_offer_price_id("STRIPE_BOARD_FUNDRAISING_GAME_997_PRICE_ID", "board_fundraising_game_997", "The Fundraising Game", 99700)
+    return resolve_offer_price_id("STRIPE_BOARD_FUNDRAISING_GAME_1497_PRICE_ID", "board_fundraising_game_1497", "The Fundraising Game", 149700)
 
 
 DFY_CHECKOUT_OFFERS = {
@@ -795,7 +795,7 @@ def create_payment_router(db) -> APIRouter:
             if not member.get("internal_dashboard_preview") or lead.get("test_user_id")!=member["user_id"]:raise HTTPException(403,"Use your own admin simulation")
             sid="launch-test-"+lead["lead_id"]
             await db.members.update_one({"user_id":member["user_id"]},{"$addToSet":{"entitlements":"board_fundraising_game"}})
-            await db.payment_transactions.update_one({"session_id":sid},{"$setOnInsert":{"session_id":sid,"user_id":member["user_id"],"claimed_by_user_id":member["user_id"],"internal_preview":True,"payment_status":"paid","status":"completed","purchase_source":"board_fundraising_game_997","offer_source":"board_fundraising_game","launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"amount":0,"created_at":datetime.now(timezone.utc).isoformat()}},upsert=True)
+            await db.payment_transactions.update_one({"session_id":sid},{"$setOnInsert":{"session_id":sid,"user_id":member["user_id"],"claimed_by_user_id":member["user_id"],"internal_preview":True,"payment_status":"paid","status":"completed","purchase_source":"board_fundraising_game_1497","offer_source":"board_fundraising_game","launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"amount":0,"created_at":datetime.now(timezone.utc).isoformat()}},upsert=True)
             from fundraising_launch import activate_purchase
             # Synthetic lead email is used only inside this isolated account.
             test_owner={**member,"email":lead["email"]}
@@ -820,7 +820,7 @@ def create_payment_router(db) -> APIRouter:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="Invalid application origin")
         if member and member.get("internal_dashboard_preview"):
-            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": {"$in": ["board_fundraising_game_497", "board_fundraising_game_997"]}}, {"_id": 0})
+            tx = await db.payment_transactions.find_one({"user_id": member["user_id"], "internal_preview": True, "purchase_source": {"$in": ["board_fundraising_game_497", "board_fundraising_game_997", "board_fundraising_game_1497"]}}, {"_id": 0})
             if not tx: raise HTTPException(409, "Reopen your isolated admin test")
             return {"checkout_url": payload.origin_url.rstrip("/") + "/purchase/success?session_id=" + tx["session_id"], "session_id": tx["session_id"]}
         kwargs = {
@@ -831,8 +831,8 @@ def create_payment_router(db) -> APIRouter:
             "success_url": f"{payload.origin_url}/purchase/success?session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": resolve_cancel_url(payload, "/game/demonstration"),
             "metadata": {
-                "offer_source": "board_fundraising_game", "selected_tier": "997",
-                "purchase_source": "board_fundraising_game_997",
+                "offer_source": "board_fundraising_game", "selected_tier": "1497",
+                "purchase_source": "board_fundraising_game_1497",
                 "offer": "Board Fundraising Game",
                 "member_user_id": member["user_id"] if member else "",
                 "launch_lead_token": lead["result_token"] if lead else "",
@@ -853,9 +853,9 @@ def create_payment_router(db) -> APIRouter:
             "session_id": session.id, "origin_url": payload.origin_url, "offer_source": "board_fundraising_game",
             "user_id": member["user_id"] if member else "",
             **({"launch_lead_token":lead["result_token"],"lead_id":lead["lead_id"],"lead_email":lead["email"],"lead_name":lead["name"],"lead_organization":lead["organization"],"attributed_followup_email":lead.get("last_followup_email")} if lead else {}),
-            "selected_tier": "997", "purchase_source": "board_fundraising_game_997",
+            "selected_tier": "1497", "purchase_source": "board_fundraising_game_1497",
             "offer": "Board Fundraising Game",
-            "amount": 99700, "currency": "usd", "status": "initiated", "payment_status": "pending",
+            "amount": 149700, "currency": "usd", "status": "initiated", "payment_status": "pending",
             "test_mode": os.environ.get("STRIPE_MODE", "test") != "live",
             "created_at": now, "updated_at": now,
         })

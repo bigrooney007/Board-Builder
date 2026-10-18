@@ -52,7 +52,9 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.admin={'Authorization':'Bearer '+fixture.create_access_token('launch-admin','admin@example.org')};self.headers=self.admin
     async def asyncTearDown(self):await self.client.aclose();self.mongo.close()
     async def call(self,method,path,body=None,status=200,headers=None):
-        r=await self.client.request(method,'/api'+path,json=body,headers=headers if headers is not None else self.headers)
+        chosen=headers if headers is not None else self.headers
+        if headers is None and hasattr(self,'user') and path.startswith(('/game/group/','/game/meeting/')):chosen={**self.admin,'X-Fundraising-Customer':self.user}
+        r=await self.client.request(method,'/api'+path,json=body,headers=chosen)
         self.assertEqual(r.status_code,status,r.text[:1200])
         return r if 'application/json' not in r.headers.get('content-type','') else r.json()
     async def fresh(self):
@@ -81,6 +83,16 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         result=await self.call('GET','/game/group/session');return result['audience_review']
     async def action(self,**payload):
         review=await self.group();return await self.call('POST','/game/group/audience/action',{'revision':review['revision'],**payload})
+    async def approve(self):
+        row=await self.db.game_strategies.find_one({'user_id':self.user},{'_id':0})
+        self.assertEqual(row['status'],'final_draft')
+        before=await self.db.workflow_email_deliveries.count_documents({'event_key':{'$regex':'^admin-strategy-approved:'}})
+        self.assertEqual(before,0)
+        await self.call('GET','/strategy/shared/'+row['share_token'],status=404,headers={})
+        saved=await self.call('PUT','/admin/fundraising/strategies/'+row['strategy_id'],{'version':row['version'],'sections':row['document_sections']},headers=self.admin)
+        row=saved['strategy']
+        for _ in range(2):await self.call('POST','/admin/fundraising/strategies/'+row['strategy_id']+'/approve',{'version':row['version'],'confirmed':True},headers=self.admin)
+        return (await self.call('GET','/game/launch/state'))['strategy']
     async def test_complete_customer_journey_ends_with_branded_shared_strategy(self):
         await self.setup_and_complete_leader();guest=await self.add_guest()
         invitation=await self.db.admin_test_email_events.find_one({'message.subject':{'$regex':"You're Invited"}})
@@ -101,12 +113,12 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(review['written_sections']);self.assertEqual(review['written_strategy']['source_revision'],review['summary']['revision'])
         await self.action(action='adopt',confirmed=True,summary_revision=review['summary']['revision'])
         closed=await self.call('POST','/game/group/audience/close',{'confirmed':True});self.assertTrue(closed['closed'])
-        state=await self.call('GET','/game/launch/state');strategy=state['strategy']
+        state=await self.call('GET','/game/launch/state');self.assertIsNone(state['strategy']);strategy=await self.approve()
         self.assertEqual(strategy['status'],'adopted');self.assertEqual(strategy['schema_version'],7);self.assertEqual(len(strategy['agreed_audiences']),1)
         await self.db.group_game_sessions.update_one({'user_id':self.user},{'$set':{'status':'in_progress','audience_review.phase':'adopted'}})
         await self.call('POST','/game/group/audience/close',{'confirmed':True})
         self.assertEqual((await self.db.group_game_sessions.find_one({'user_id':self.user}))['status'],'completed')
-        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':'meeting-strategy-ready:'+strategy['strategy_id']}),1)
+        self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'event_key':'admin-strategy-approved:'+strategy['strategy_id']}),1)
         session=await self.db.group_game_sessions.find_one({'user_id':self.user})
         await self.call('POST','/game/group/play/'+session['token']+'/acknowledge',{'slot_id':'late','device_id':'late','confirmed':True},409)
         self.assertNotIn('Leader businesses',strategy['document_text'])
@@ -147,6 +159,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertIn('approved alumni community',str(current['written_sections']))
         await self.action(action='adopt',confirmed=True,summary_revision=current['summary']['revision'])
         await self.call('POST','/game/group/audience/close',{'confirmed':True})
+        await self.approve()
         state=await self.call('GET','/game/launch/state')
         self.assertEqual(state['strategy']['source_revision'],current['summary']['revision'])
         self.assertIn('approved alumni community',state['strategy']['document_text'])
@@ -157,6 +170,52 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.call('PUT','/admin/fundraising/content',data['content'])
         self.assertEqual((await self.call('GET','/fundraising/content'))['content']['home']['title'],'My own homepage wording')
         await self.call('PUT','/admin/fundraising/content',data['content'],401,headers={})
+
+    async def test_sections_questions_and_booking_are_independently_editable(self):
+        value=(await self.call('GET','/admin/fundraising/content'))['content']
+        value['home']['explanation_heading']='Our next board meeting'
+        removed=value['how']['sections'].pop(2)
+        value['settings']['booking_url']='https://example.org/strategy-discussion'
+        value['questionnaire']['instructions']='Share everything you think would help our mission.'
+        value['questionnaire']['questions']['individuals'][0]['prompt']='Which people would give, and why?'
+        value['questionnaire']['questions']['individuals'][0]['help']='Explain your own thinking.'
+        value['questionnaire']['another_questions']['businesses']='Another business audience?'
+        await self.call('PUT','/admin/fundraising/content',value)
+        saved=(await self.call('GET','/fundraising/content'))['content']
+        self.assertEqual(saved,value)
+        self.assertNotIn(removed['id'],[s['id'] for s in saved['how']['sections']])
+        await self.setup_and_complete_leader();guest=await self.add_guest()
+        for token in (self.own['token'],guest['token']):
+            config=(await self.call('GET','/game/play/'+token+'/audience-response'))['configuration']
+            self.assertEqual(config['instructions'],value['questionnaire']['instructions'])
+            self.assertEqual(config['questions']['individuals'][0]['prompt'],'Which people would give, and why?')
+        invalid=copy.deepcopy(value);invalid['settings']['booking_url']='javascript:alert(1)'
+        await self.call('PUT','/admin/fundraising/content',invalid,422,headers=self.admin)
+        invalid=copy.deepcopy(value);invalid['questionnaire']['questions']['individuals'][0]['key']='changed'
+        await self.call('PUT','/admin/fundraising/content',invalid,422,headers=self.admin)
+        self.assertEqual((await self.call('GET','/fundraising/content'))['content'],value)
+
+    async def test_only_admin_can_facilitate_and_customer_header_cannot_be_forged(self):
+        await self.setup_and_complete_leader()
+        await self.call('POST','/game/group/prepare',status=403,headers=self.headers)
+        await self.call('POST','/game/group/prepare',status=403,headers={**self.headers,'X-Fundraising-Customer':self.user})
+        await self.call('POST','/game/group/prepare')
+        await self.call('GET','/members/me',headers={**self.admin,'X-Fundraising-Customer':self.user})
+        await self.call('GET','/game/launch/state',status=404,headers={**self.admin,'X-Fundraising-Customer':'another-organization'})
+
+    async def test_plan_upload_stays_private_and_preserves_the_funding_deadline(self):
+        await self.setup_and_complete_leader()
+        await self.call('PUT','/game/launch/organization',{'fundraising_goal':50000,'mission':'Our mission','community':'Our community','funding_deadline':'2027-12-31','board_member_count':4,'location':'Pittsburgh','funding_consequences':'Less support','current_approach':'Community appeals'})
+        await self.call('PUT','/game/night',{'meeting_date':'2026-12-01','start_time':'16:00','timezone_name':'Europe/London'})
+        profile=(await self.call('GET','/game/launch/state'))['profile']
+        self.assertEqual(profile['goal']['deadline'],'2027-12-31')
+        response=await self.client.post('/api/game/launch/plan-upload',files={'file':('current-plan.txt',b'We use community appeals.','text/plain')},headers=self.headers)
+        self.assertEqual(response.status_code,200,response.text)
+        saved=await self.call('GET','/game/launch/plan-upload')
+        self.assertEqual(saved.content,b'We use community appeals.')
+        await self.call('GET','/game/launch/plan-upload',status=401,headers={})
+        response=await self.client.post('/api/game/launch/plan-upload',files={'file':('bad.html',b'<script>alert(1)</script>','text/html')},headers=self.headers)
+        self.assertEqual(response.status_code,422)
     async def test_current_contact_form_enrolls_followup_without_fabricating_optin_and_honors_existing_unsubscribe(self):
         from fundraising_launch import send_due
         body={'name':'Product Visitor','email':'visitor@example.org','organization':'Example','visitor_id':'visitor-new-form-123456'}
@@ -219,7 +278,7 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def test_new_offer_copy_and_optin_required_policy(self):
         data=await self.call('GET','/fundraising/content')
-        self.assertEqual(data['price'],997);self.assertEqual(data['content']['how']['title'],'Get Your Board Members Fundraising By Your Next Board Meeting.')
+        self.assertEqual(data['price'],1497);self.assertEqual(data['content']['how']['title'],'Get Your Board Members Fundraising By Your Next Board Meeting.')
         self.assertNotIn('portfolio',str(data['content']).lower());self.assertNotIn('$497',str(data['content']))
         self.assertEqual(data['content']['how']['article'].count('### Step '),4)
         with patch.dict(os.environ,{'FUNDRAISING_FOLLOWUP_REQUIRES_OPT_IN':'true'}):
@@ -245,21 +304,21 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         account={'user_id':'real-account','email':'paying@example.org','first_name':'Paying','last_name':'Leader','entitlements':[],'account_status':'active'}
         await self.db.members.insert_one(account.copy())
         headers={'Authorization':'Bearer '+create_member_token(account['user_id'],account['email'])}
-        with patch('payment_routes.resolve_game_price_id',return_value='price_997'),patch('payment_routes.stripe.checkout.Session.create',return_value=SimpleNamespace(id='cs_paid',url='https://checkout.stripe.test/session')) as checkout:
+        with patch('payment_routes.resolve_game_price_id',return_value='price_1497'),patch('payment_routes.stripe.checkout.Session.create',return_value=SimpleNamespace(id='cs_paid',url='https://checkout.stripe.test/session')) as checkout:
             await self.call('POST','/payments/game-checkout',{'origin_url':'http://test','result_token':lead['token']},headers={})
             kwargs=checkout.call_args.kwargs
-        self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'997')
-        self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],99700)
+        self.assertEqual(kwargs['customer_email'],account['email']);self.assertEqual(kwargs['metadata']['selected_tier'],'1497')
+        self.assertEqual((await self.db.payment_transactions.find_one({'session_id':'cs_paid'}))['amount'],149700)
         self.assertFalse((await self.db.members.find_one({'user_id':'real-account'}))['entitlements'])
-        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_subtotal=99700,amount_total=99700,currency='usd',customer_details={'email':account['email']})
+        session=SimpleNamespace(id='cs_paid',payment_status='unpaid',metadata=kwargs['metadata'],customer='cus_example',payment_intent='pi_example',amount_subtotal=149700,amount_total=149700,currency='usd',customer_details={'email':account['email']})
         with patch('member_routes.stripe.checkout.Session.retrieve',return_value=session):
             await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},402,headers=headers)
             session.payment_status='paid'
             session.amount_subtotal=49700
             session.amount_total=49700
             await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},409,headers=headers)
-            session.amount_subtotal=99700
-            session.amount_total=100000  # Stripe's existing automatic-tax checkout may add tax.
+            session.amount_subtotal=149700
+            session.amount_total=150000  # Stripe's existing automatic-tax checkout may add tax.
             with patch('fundraising_launch.deliver_once',new=AsyncMock(return_value={'status':'sent'})):
                 await self.call('POST','/members/claim-purchase',{'session_id':'cs_paid'},headers=headers)
                 await self.call('PUT','/game/launch/organization',{'fundraising_goal':50000,'mission':'Our real supplied mission.','annual_budget':'Not yet confirmed','community':'Young people'},headers=headers)
@@ -269,18 +328,18 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.db.game_journey_progress.find_one({'user_id':'real-account'}))['stage'],'questions')
         self.assertEqual(await self.db.purchases.count_documents({'session_id':'cs_paid'}),1)
         purchase=await self.db.purchases.find_one({'session_id':'cs_paid'})
-        self.assertEqual(purchase['price_paid'],997);self.assertEqual(purchase['amount'],100000)
+        self.assertEqual(purchase['price_paid'],1497);self.assertEqual(purchase['amount'],150000)
 
-    async def test_price_resolver_rejects_old_prices_and_creates_997_once(self):
+    async def test_price_resolver_rejects_old_prices_and_creates_1497_once(self):
         from types import SimpleNamespace
         import payment_routes as payments
         payments._price_cache.clear()
         old=SimpleNamespace(id='price_obsolete',active=True,unit_amount=49700,currency='usd',recurring=None)
-        with patch.dict(os.environ,{'STRIPE_BOARD_FUNDRAISING_GAME_997_PRICE_ID':'price_obsolete'}),patch.object(payments.stripe.Price,'retrieve',return_value=old),patch.object(payments.stripe.Price,'list',return_value=SimpleNamespace(data=[old])),patch.object(payments.stripe.Product,'create',return_value=SimpleNamespace(id='prod_997')),patch.object(payments.stripe.Price,'create',return_value=SimpleNamespace(id='price_997')) as create:
-            self.assertEqual(payments.resolve_game_price_id(),'price_997')
-            self.assertEqual(payments.resolve_game_price_id(),'price_997')
+        with patch.dict(os.environ,{'STRIPE_BOARD_FUNDRAISING_GAME_1497_PRICE_ID':'price_obsolete'}),patch.object(payments.stripe.Price,'retrieve',return_value=old),patch.object(payments.stripe.Price,'list',return_value=SimpleNamespace(data=[old])),patch.object(payments.stripe.Product,'create',return_value=SimpleNamespace(id='prod_1497')),patch.object(payments.stripe.Price,'create',return_value=SimpleNamespace(id='price_1497')) as create:
+            self.assertEqual(payments.resolve_game_price_id(),'price_1497')
+            self.assertEqual(payments.resolve_game_price_id(),'price_1497')
             self.assertEqual(create.call_count,1)
-            self.assertEqual(create.call_args.kwargs['unit_amount'],99700)
+            self.assertEqual(create.call_args.kwargs['unit_amount'],149700)
             self.assertEqual(create.call_args.kwargs['currency'],'usd')
         payments._price_cache.clear()
 

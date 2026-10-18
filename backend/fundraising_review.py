@@ -46,7 +46,7 @@ class AudienceReview:
         await self.db.group_game_sessions.update_one({"_id": sid}, {"$setOnInsert": value}, upsert=True)
         return await self.current(user_id)
 
-    async def state(self, session):
+    async def state(self, session, include_draft=True):
         result = copy.deepcopy(session)
         result.pop("_id", None)
         review = result["audience_review"]
@@ -61,7 +61,7 @@ class AudienceReview:
         strategy = await self.db.game_strategies.find_one({"strategy_id": session.get("strategy_id", "")}, {"_id": 0})
         if profile.get("workflow_version")==7 and review["summary"].get("written_audiences"):
             review["written_sections"]=audience.document_sections(review["summary"],profile)
-        review["strategy"] = strategy
+        review["strategy"] = strategy if include_draft or (strategy or {}).get("status")=="adopted" else None
         return result
 
     async def save(self, session, review, **fields):
@@ -103,6 +103,10 @@ class AudienceReview:
 
     async def delivery(self, session):
         strategy = await self.strategy(session)
+        if strategy.get("schema_version")==7:
+            if strategy.get("status")!="adopted":raise HTTPException(409,"Approve the strategy in administration before delivery")
+            from fundraising_facilitation import deliver_approved
+            return [await deliver_approved(self.db,strategy)]
         if strategy["status"] != "adopted": raise HTTPException(409, "Approve the exact strategy before delivery")
         owner = await self.db.members.find_one({"user_id": session["user_id"]}, {"_id": 0}) or {}
         members = await self.db.game_board_members.find({"user_id": session["user_id"], "removed": {"$ne": True}}, {"_id": 0}).to_list(1000)
@@ -206,6 +210,7 @@ class AudienceReview:
         @router.post("/game/group/audience/document")
         async def approve_document(payload: dict, request: Request):
             session = await host(request); strategy = await self.strategy(session)
+            if strategy.get("schema_version")==7:raise HTTPException(409,"Save and approve this strategy from the administrator workstation")
             if strategy["status"] == "adopted":
                 await self.db.group_game_sessions.update_one({"session_id":session["session_id"]},{"$set":{"status":"completed","audience_review.phase":"approved"}})
                 return {"status": "adopted", "delivery": await self.delivery(session)}
@@ -235,25 +240,23 @@ class AudienceReview:
             profile=await self.db.game_profiles.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
             if profile.get("workflow_version")!=7: raise HTTPException(409,"Use the closing steps for your saved game")
             if payload.get("confirmed") is not True: raise HTTPException(422,"Confirm that the meeting is ready to close")
-            if session["audience_review"]["phase"] not in ("adopted","approved"): raise HTTPException(409,"Complete the group's adoption first")
+            if session["audience_review"]["phase"] not in ("adopted","approved","document"): raise HTTPException(409,"Complete the group's adoption first")
             if session["status"]!="completed":
                 from fundraising_transcript import require_reviewed
                 await require_reviewed(self.db,session)
             strategy=await self.strategy(session)
             state=await self.state(session)
             adoption=[{"name":p["name"],"member_id":p["member_id"],"adopted":p["acknowledged"],"joined":p["joined"]} for p in state["audience_review"]["people"]]
-            if strategy["status"]!="adopted":
+            if strategy["status"]!="adopted" and not strategy.get("adoption_record"):
                 adoption_text="\n".join(p["name"]+": "+("Adopted this strategy" if p["adopted"] else "Present; adoption not recorded" if p["joined"] else "Absent or did not join") for p in adoption)
                 sections=strategy["document_sections"]+[{"key":"board_adoption","title":"Record of Board Adoption","text":adoption_text}]
-                await self.db.game_strategies.update_one({"strategy_id":strategy["strategy_id"],"status":"final_draft"},{"$set":{"status":"adopted","adopted_at":now(),"adoption_record":adoption,"document_sections":sections,"document_text":"\n\n".join(s["title"]+"\n"+s["text"] for s in sections)}})
+                await self.db.game_strategies.update_one({"strategy_id":strategy["strategy_id"],"status":"final_draft"},{"$set":{"meeting_adopted_at":now(),"adoption_record":adoption,"document_sections":sections,"document_text":"\n\n".join(s["title"]+"\n"+s["text"] for s in sections)}})
             if session["status"]!="completed":
-                review=copy.deepcopy(session["audience_review"]);review["phase"]="approved"
+                review=copy.deepcopy(session["audience_review"]);review["phase"]="document"
                 await self.save(session,review,status="completed",completed_at=now())
                 from fundraising_launch import touch
-                await touch(self.db,session["user_id"],"complete","/game/dashboard")
-            owner=await self.db.members.find_one({"user_id":session["user_id"]},{"_id":0}) or {}
-            result=await deliver_once(self.db,session["user_id"],"meeting-strategy-ready:"+strategy["strategy_id"],owner.get("email",""),"Your Board's Fundraising Strategy Is Ready","Your board's adopted fundraising strategy is ready. Open the download page to confirm your logo and brand colors, download the document and share it with your board. The responsibilities agreed at your meeting are included.",(os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")+"/game/dashboard#final-strategy")
-            return {"closed":True,"delivery":result}
+                await touch(self.db,session["user_id"],"awaiting_review","/game/dashboard")
+            return {"closed":True,"strategy_id":strategy["strategy_id"],"status":strategy["status"]}
 
         @router.post("/game/group/audience/retry-delivery")
         async def retry(request: Request): return {"delivery": await self.delivery(await host(request))}

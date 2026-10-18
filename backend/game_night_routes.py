@@ -151,9 +151,10 @@ def create_game_night_router(db) -> APIRouter:
     async def get_profile(user_id: str) -> dict:
         return await db.game_profiles.find_one({"user_id": user_id}, {"_id": 0}) or {}
 
-    async def require_board_setup(user_id: str) -> dict:
+    async def require_board_setup(user_id: str, facilitator=False) -> dict:
         night = await get_night(user_id)
         version=(await get_profile(user_id)).get("workflow_version")
+        if version==7 and facilitator:return night
         if not all(night.get(key) for key in (("meeting_date", "start_time") if version==7 else ("meeting_date", "start_time", "funding_deadline"))):
             raise HTTPException(status_code=409, detail="Confirm your next Board meeting and fundraising deadline before inviting your board.")
         situation = await db.game_situations.find_one({"user_id": user_id}, {"_id": 0}) or {}
@@ -256,7 +257,7 @@ def create_game_night_router(db) -> APIRouter:
             {"$set": {
                 "name": payload.name.strip() or existing.get("name") or default_name,
                 "meeting_date": payload.meeting_date.strip(), "start_time": payload.start_time.strip(),
-                "funding_deadline": payload.funding_deadline.strip(),
+                "funding_deadline": payload.funding_deadline.strip() or ((current_profile.get('goal') or {}).get('deadline','') if current_profile.get('workflow_version')==7 else ''),
                 "timezone": payload.timezone_name.strip() or existing.get("timezone", ""),
                 "meeting_format":payload.meeting_format,"meeting_link":payload.meeting_link,"meeting_location":payload.meeting_location,"note":payload.note,
                 "status": "scheduled", "updated_at": now},
@@ -264,7 +265,7 @@ def create_game_night_router(db) -> APIRouter:
             upsert=True)
         await db.game_profiles.update_one(
             {"user_id": member["user_id"]},
-            {"$set": {"goal.deadline": payload.funding_deadline.strip(), "updated_at": now}}, upsert=True)
+            {"$set": {"goal.deadline": payload.funding_deadline.strip() or ((current_profile.get('goal') or {}).get('deadline','') if current_profile.get('workflow_version')==7 else ''), "updated_at": now}}, upsert=True)
         return {"night": await get_night(member["user_id"])}
 
     # ---------- Board member management ----------
@@ -279,7 +280,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members", status_code=201)
     async def add_board_member(payload: BoardMemberCreate, request: Request):
         member = await game_member(request)
-        await require_board_setup(member["user_id"])
+        await require_board_setup(member["user_id"],member.get("fundraising_facilitator",False))
         version = (await get_profile(member["user_id"])).get("workflow_version", 5)
         if version==7:
             existing=await db.game_board_members.find_one({"user_id":member["user_id"],"email":str(payload.email).lower(),"removed":{"$ne":True}},{"_id":0})
@@ -385,6 +386,7 @@ def create_game_night_router(db) -> APIRouter:
         return "".join(f"<p style='margin:2px 0;'>{html.escape(line)}</p>" for line in lines if line and line.strip())
 
     def night_details_html(night: dict, primary_first: str) -> str:
+        if not night.get("meeting_date"):return ""
         parts = [f"<p style='margin:2px 0;'><strong>Game Night</strong></p>",
                  f"<p style='margin:2px 0;'>Date: {html.escape(fmt_meeting_date(night))}</p>",
                  f"<p style='margin:2px 0;'>Time: {html.escape(fmt_time(night))}</p>"]
@@ -471,7 +473,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/{member_id}/invite")
     async def invite_board_member(member_id: str, payload: SendPayload, request: Request):
         member = await game_member(request)
-        night = await require_board_setup(member["user_id"])
+        night = await require_board_setup(member["user_id"],member.get("fundraising_facilitator",False))
         record = await db.game_board_members.find_one(
             {"member_id": member_id, "user_id": member["user_id"], "removed": {"$ne": True}}, {"_id": 0})
         if not record:
@@ -487,7 +489,7 @@ def create_game_night_router(db) -> APIRouter:
     @router.post("/game/board-members/invite-all")
     async def invite_all(payload: SendPayload, request: Request):
         member = await game_member(request)
-        night = await require_board_setup(member["user_id"])
+        night = await require_board_setup(member["user_id"],member.get("fundraising_facilitator",False))
         profile = await get_profile(member["user_id"])
         records = await db.game_board_members.find(
             {"user_id": member["user_id"], "removed": {"$ne": True}, "invitation_status": {"$ne": "invited"}, **({"is_primary":{"$ne":True}} if profile.get("workflow_version")==7 else {})},
@@ -769,6 +771,8 @@ def create_game_night_router(db) -> APIRouter:
             "paid": GAME_ENTITLEMENT in org_member.get("entitlements", []),
             "first_name": record["full_name"].split(" ")[0],
             "organization_name": organization.get("name", ""),
+            "branding":profile.get("branding") or {},
+            "inviter_name":(profile.get("primary_user") or {}).get("full_name", "Your organization leader"),
             "goal_display": fmt_goal(profile),
             "deadline_display": fmt_deadline(profile),
             "game_night": {
@@ -808,7 +812,7 @@ def create_game_night_router(db) -> APIRouter:
         record = await playing_member(token)
         response = await db.game_audience_responses.find_one(
             {"board_member_id": record["member_id"]}, {"_id": 0}) or {}
-        return {"response": response, "configuration": audiences6.configuration(record["game_version"]) if record.get("game_version") in (6, 7) else None}
+        return {"response": response, "configuration": await audiences6.saved_configuration(db,record["game_version"]) if record.get("game_version") in (6, 7) else None}
 
     @router.put("/game/play/{token}/audience-response")
     async def save_audience_response(token: str, payload: AudienceResponseSave):
