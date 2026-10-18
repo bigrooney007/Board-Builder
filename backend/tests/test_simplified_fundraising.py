@@ -129,6 +129,29 @@ class SimplifiedHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('transcript',shared['strategy'])
         public_pdf=await self.call('GET','/fundraising/strategy/'+strategy['share_token']+'/document.pdf',headers={})
         self.assertTrue(public_pdf.content.startswith(b'%PDF'))
+    async def test_written_preview_and_early_draft_follow_the_latest_approved_source(self):
+        await self.setup_and_complete_leader();await self.call('POST','/game/group/prepare');await self.call('POST','/game/group/start')
+        proposals=(await self.group())['proposals'];chosen=proposals[0]
+        for i,p in enumerate(proposals):
+            await self.action(action='decision',proposal_id=p['id'],status='adopted' if i==0 else 'rejected',strategy=p['strategy'])
+            await self.action(action='progress',index=i+1)
+        await self.action(action='summary');first=await self.group()
+        await self.action(action='adopt',confirmed=True,summary_revision=first['summary']['revision'])
+        await self.call('GET','/game/group/audience/download')
+        await self.action(action='reopen')
+        changed={**chosen['strategy'],'where':'Our approved alumni community.'}
+        await self.action(action='decision',proposal_id=chosen['id'],status='adopted',strategy=changed)
+        current=await self.group();self.assertNotEqual(first['summary']['revision'],current['summary']['revision']);self.assertNotIn('written_audiences',current['summary'])
+        await self.call('POST','/game/group/audience/action',{'revision':current['revision'],'action':'adopt','confirmed':True,'summary_revision':first['summary']['revision']},409)
+        await self.action(action='summary');current=await self.group()
+        self.assertIn('approved alumni community',str(current['written_sections']))
+        await self.action(action='adopt',confirmed=True,summary_revision=current['summary']['revision'])
+        await self.call('POST','/game/group/audience/close',{'confirmed':True})
+        state=await self.call('GET','/game/launch/state')
+        self.assertEqual(state['strategy']['source_revision'],current['summary']['revision'])
+        self.assertIn('approved alumni community',state['strategy']['document_text'])
+        self.assertEqual(await self.db.game_strategies.count_documents({'user_id':self.user}),1)
+
     async def test_admin_content_is_authoritative_and_requires_admin(self):
         data=await self.call('GET','/admin/fundraising/content');data['content']['home']['title']='My own homepage wording'
         await self.call('PUT','/admin/fundraising/content',data['content'])

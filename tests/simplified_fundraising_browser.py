@@ -164,6 +164,7 @@ async def main():
                     await expect(participant_pages[0].locator('.bfg-eyebrow').first).to_contain_text('Taylor Reed')
                 if index==0:
                     await review.get_by_role('textbox',name='Audience and why they may give',exact=True).fill('Teachers in Pittsburgh benefit from the children we help.')
+                    await review.get_by_role('textbox',name='What to ask for',exact=True).fill('We will ask teachers to fund a backpack for a student.')
                     await review.get_by_text('Additional details agreed for this audience',exact=True).click()
                     await review.get_by_role('textbox',name='Audience name',exact=True).fill('Teachers in Pittsburgh')
                     await review.get_by_role('textbox',name='How much we will ask',exact=True).fill('We will ask for $100 for each backpack.')

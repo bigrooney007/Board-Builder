@@ -28,7 +28,8 @@ def without_attribution(text, contributor=""):
     value = str(text or "").strip()
     names = [contributor, contributor.split()[0] if contributor else ""]
     for name in filter(None, names):
-        value = re.sub(r"^" + re.escape(name) + r"\s+(?:said|says|suggested|suggests|recommended|recommends|proposed|proposes|believes|thinks)(?:\s+that)?\s*:?\s*", "", value, flags=re.I)
+        value = re.sub(r"^"+re.escape(name)+r"\s*:\s*", "", value, flags=re.I)
+        value = re.sub(r"^" + re.escape(name) + r"\s+(?:said|says|suggested|suggests|recommended|recommends|proposed|proposes|believes|thinks)(?:\s+that)?\s*[:,]?\s*", "", value, flags=re.I)
     value = re.sub(r"^(?:I think|I believe|I suggest|I recommend|in my opinion)(?:\s+that)?\s*[:,]?\s*", "", value, flags=re.I)
     return value[:1].upper() + value[1:]
 

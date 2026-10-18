@@ -75,9 +75,10 @@ class AudienceReview:
         review = session["audience_review"]
         if review["phase"] not in {"adopted", "document", "approved"}: raise HTTPException(409, "Adopt the group's summary first")
         existing = await self.db.game_strategies.find_one({"strategy_id": "audience-" + session["session_id"]}, {"_id": 0})
-        if existing: return existing
         agreed = audience.summary(review)
         profile = await self.db.game_profiles.find_one({"user_id": session["user_id"]}, {"_id": 0}) or {}
+        if existing and (profile.get("workflow_version")!=7 or existing.get("source_revision")==agreed["revision"]):return existing
+        if existing and existing.get("status")=="adopted":raise HTTPException(409,"The approved strategy is already saved")
         sections = audience.document_sections(agreed, profile)
         body = "\n\n".join(s["title"] + "\n" + s["text"] for s in sections)
         roles = [{"name": c["name"], "responsibility":c["contribution"], "board_member_id": c["member_id"], "role": c["contribution"], "contribution": c["contribution"], "confirmed": True} for c in agreed["commitments"]]
@@ -91,7 +92,12 @@ class AudienceReview:
             "data": {**compatible, **{s["key"]: s["text"] for s in sections}, "board_roles": roles}, "section_edits": {s["key"]: s["text"] for s in sections},
             "document_sections": sections, "document_text": body, "source": "explicitly-adopted-audiences", "source_revision": agreed["revision"],
             "agreed_audiences": agreed["audiences"], "confirmed_commitments": agreed["commitments"], "generated_at": now(), "created_at": now()}
-        await self.db.game_strategies.update_one({"strategy_id": record["strategy_id"]}, {"$setOnInsert": record}, upsert=True)
+        if existing:
+            record.update(share_token=existing["share_token"],version=existing.get("version",1)+1,created_at=existing.get("created_at",now()))
+            saved=await self.db.game_strategies.update_one({"strategy_id":record["strategy_id"],"status":"final_draft","source_revision":existing["source_revision"]},{"$set":record})
+            if not saved.modified_count:raise HTTPException(409,"The strategy changed. Refresh before preparing it again.")
+        else:
+            await self.db.game_strategies.update_one({"strategy_id": record["strategy_id"]}, {"$setOnInsert": record}, upsert=True)
         await self.db.group_game_sessions.update_one({"session_id": session["session_id"]}, {"$set": {"strategy_id": record["strategy_id"]}})
         return await self.db.game_strategies.find_one({"strategy_id": record["strategy_id"]}, {"_id": 0})
 
@@ -176,7 +182,9 @@ class AudienceReview:
                     if (review.get("written_strategy") or {}).get("source_revision")!=agreed["revision"]:
                         review["written_strategy"]=await written_strategy(agreed)
                 review["phase"] = "summary"
-            elif operation == "reopen": review["phase"] = "audiences"
+            elif operation == "reopen":
+                review["phase"] = "audiences"
+                if profile.get("workflow_version")==7:review["index"]=0
             elif operation == "adopt":
                 if profile.get("workflow_version")==7:
                     from fundraising_transcript import require_reviewed
