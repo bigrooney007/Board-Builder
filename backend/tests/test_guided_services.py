@@ -161,3 +161,19 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         saved=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});self.assertEqual(saved['document_snapshot'],snapshot);self.assertEqual(saved['status'],'Signed');download=await self.req('GET',base+'/signed/'+prepared['request_id']);self.assertIn('SIGNED ELECTRONICALLY',download.text)
     async def test_paid_recovery_does_not_disclose_other_customer_links(self):
         token,base,row=await self.paid();response=await self.req('POST','/services/recruitment/recover',{'email':row['email']});missing=await self.req('POST','/services/recruitment/recover',{'email':'not-a-customer@example.org'});self.assertEqual(response,missing);self.assertNotIn(token,json.dumps(response))
+
+    async def test_each_service_can_preview_its_operational_and_paid_emails_without_sending(self):
+        for service in PRICES:
+            for template,extra in [('paid_email',{}),('delivery_email',{}),('operational_emails',{'name':'access_recovery'})]:
+                sample=await self.req('POST',f'/admin/services/{service}/email-preview',{'template':template,**extra},admin=True)
+                self.assertTrue(sample['sample']);self.assertIn('Sample',sample['html'])
+                self.assertIn('/services/'+service+'/',sample['html'])
+        self.mail.assert_not_called()
+
+    async def test_new_internal_workspace_does_not_enter_legacy_dashboard_email_sequences(self):
+        token,base,row=await self.paid()
+        member=await self.db.members.find_one({'user_id':row['workspace_user_id']})
+        self.assertTrue(member['lifecycle_optout']);self.assertTrue(member['admin_notified'])
+        from lifecycle_engine import scan_once
+        before=self.mail.call_count;await scan_once(self.db)
+        self.assertEqual(self.mail.call_count,before)

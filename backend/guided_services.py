@@ -236,7 +236,7 @@ async def provision_workspace(db,row):
     name=row["name"].split(" ",1);uid=owner_id(row)
     alias=row["customer_id"]+"@guided-workspaces.nonprofitboardbuilder.invalid"
     entitlements=["recruitment_self_guided"] if row["service"]=="recruitment" else ["reactivation_self_guided"] if row["service"]=="board-recommitment" else []
-    await db.members.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"email":alias,"notification_email":row["email"],"first_name":name[0],"last_name":name[1] if len(name)>1 else "","entitlements":entitlements,"lead_ids":[row["customer_id"]],"guided_service_workspace":row["service"],"guided_customer_id":row["customer_id"],"internal_dashboard_preview":bool(row.get("internal_test")),"created_at":now()}},upsert=True)
+    await db.members.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"email":alias,"notification_email":row["email"],"first_name":name[0],"last_name":name[1] if len(name)>1 else "","entitlements":entitlements,"lead_ids":[row["customer_id"]],"guided_service_workspace":row["service"],"guided_customer_id":row["customer_id"],"lifecycle_optout":True,"admin_notified":True,"internal_dashboard_preview":bool(row.get("internal_test")),"created_at":now()}},upsert=True)
     answers={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row["question_snapshot"]}
     data={"organization_name":row["organization"],"mission":answers.get("mission",""),"present_board":answers.get("current_board",""),"desired_board_members_founder_view":answers.get("desired_board_members",""),"priorities":answers.get("board_type",""),"founder_title":"Organization Leader"}
     await db.recruitment_profiles.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"data":data,"confirmed":True,"branding":row.get("branding",{}),"created_at":now()}},upsert=True)
@@ -531,10 +531,18 @@ def create_guided_services_router(db):
     async def email_preview(service:str,payload:dict,request:Request):
         await authenticate_admin(request,db);check_service(service)
         config,_,_=await settings(db,service,True);key=payload.get("template","first_email")
-        template=config["followups"][int(payload.get("index",0))] if key=="followups" and 0<=int(payload.get("index",0))<5 else config.get(key)
+        if key not in {"first_email","video_email","paid_email","delivery_email","followups","operational_emails"}:raise HTTPException(422,"Choose an email template.")
+        if key=="followups":
+            index=payload.get("index",0)
+            if type(index) is not int or not 0<=index<5:raise HTTPException(422,"Choose one of the five follow-ups.")
+            template=config["followups"][index]
+        elif key=="operational_emails":template=config[key].get(payload.get("name"))
+        else:template=config.get(key)
         if not isinstance(template,dict):raise HTTPException(422,"Choose an email template.")
         sample={"customer_id":"sample","service":service,"name":"Sample Leader","organization":"Sample Nonprofit","answers":{"mission":"Support children in our community."},"question_snapshot":[{"id":"mission","key":"mission"}],"access_token":"sample-secure-link","payment_status":"unpaid","analysis":{"status":"ready"}}
-        message=render(template,context(sample));return {**message,"html":preview_email(message,continuation(sample)),"sample":True}
+        if key in {"paid_email","delivery_email","operational_emails"}:sample["payment_status"]="paid"
+        values={**context(sample),"participant_name":"Sample Board Member","leader_name":"Sample Leader","applicant_name":"Sample Applicant","planning_period":"Next 12 to 24 months","meeting_details":"Your agreed meeting date, time and time zone","response_deadline":"Your agreed response deadline","agreed_purpose":"Clarify the contributions your board members can agree to make.","responsibilities":"Only the responsibilities the person has agreed to accept.","interview_details":"Your confirmed interview arrangements.","video_url":"https://www.youtube.com/watch?v=sample"}
+        message=render(template,values);return {**message,"html":preview_email(message,continuation(sample)),"sample":True}
 
     @router.post("/admin/services/{service}/customers/{ident}/video-preview")
     async def video_preview(service:str,ident:str,payload:dict,request:Request):

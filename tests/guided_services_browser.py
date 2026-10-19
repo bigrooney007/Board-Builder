@@ -39,7 +39,7 @@ async def main():
     response=await context.request.post(BASE+ab+'/tool/workspace/materials/'+doc['material_id']+'/approve',headers=headers,data={});assert response.ok,await response.text()
    page.on('dialog',lambda d:d.accept())
    await page.get_by_role('button',name='LAUNCH BOARD RECRUITMENT CAMPAIGN',exact=True).click();await page.get_by_role('link',name='Open Published Campaign and Application',exact=True).wait_for()
-   await page.get_by_role('button',name='SEND RECRUITMENT MATERIALS',exact=True).click();await page.get_by_role('button',name='Approve and Send Email',exact=True).click()
+   await page.get_by_role('button',name='SEND RECRUITMENT MATERIALS',exact=True).click();await page.get_by_role('button',name='Approve and Send Email',exact=True).click();await expect(page.get_by_test_id('service-email-composer')).to_have_count(0)
    await page.goto(BASE+'/services/recruitment/resources/'+token);await page.get_by_role('heading',name='Your Board Recruitment Resources',exact=True).wait_for();await expect(page.get_by_text('Sample Learning Nonprofit',exact=True).first).to_be_visible()
    assert await page.locator('body').evaluate('e=>e.scrollWidth<=window.innerWidth+2');assert not errors,errors
    await page.screenshot(path=f'test_reports/current-guided-recruitment-{width}.png',full_page=True)
