@@ -156,9 +156,24 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         material=await save_generation(self.db,uid,'board_member_agreement',{'sections':[{'heading':'Agreed Responsibilities','content':'Develop school introductions as agreed.'}]},'Verified organization data')
         path=ab+'/tool/workspace/signatures/prepare';body={'agreement_type':'board_member_agreement','application_id':aid};await self.req('POST',path,body,409,True)
         await self.req('POST',ab+'/tool/workspace/materials/'+material['material_id']+'/approve',{},admin=True);prepared=await self.req('POST',path,body,201,True);again=await self.req('POST',path,body,admin=True);self.assertEqual(prepared['request_id'],again['request_id'])
+        own_prepared=await self.req('POST',base+'/tool/workspace/signatures/prepare',body)
+        self.assertEqual(own_prepared['request_id'],prepared['request_id'])
+        await self.req('POST',base+'/signatures/'+prepared['request_id']+'/send',{'approved':True})
+        sent_count=self.mail.call_count
+        await self.req('POST',base+'/signatures/'+prepared['request_id']+'/send',{'approved':True});self.assertEqual(self.mail.call_count,sent_count)
         sign=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});snapshot=sign['document_snapshot'];await self.req('POST','/public/sign/'+sign['token'],{'agreed':True,'typed_signature':'Sample Candidate','email':'candidate@example.org','date':'2026-10-30'})
         await self.req('PUT',ab+'/tool/workspace/materials/'+material['material_id'],{'display_text':'Changed unsigned master agreement.'},admin=True)
         saved=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});self.assertEqual(saved['document_snapshot'],snapshot);self.assertEqual(saved['status'],'Signed');download=await self.req('GET',base+'/signed/'+prepared['request_id']);self.assertIn('SIGNED ELECTRONICALLY',download.text)
+        await self.req('PUT',base+'/tool/workspace/materials/'+material['material_id'],{'display_text':'Unauthorized change to the approved campaign pack.'},403)
+        candidate_material=await self.req('POST',base+'/tool/workspace/generate',{'type':'conditional_offer','application_id':aid})
+        cid=candidate_material['material_id']
+        await self.req('PUT',base+'/tool/workspace/materials/'+cid,{'display_text':'The organization offers the agreed board appointment, subject to the stated reference checks.'})
+        await self.req('POST',base+'/tool/workspace/materials/'+cid+'/approve',{})
+        self.assertEqual((await self.db.generated_materials.find_one({'material_id':cid}))['status'],'Approved')
+        await self.req('POST',base+'/tool/workspace/signatures/prepare',body,409)
+        await self.req('POST',base+'/tool/workspace/generate',{'type':'board_manual'},403)
+        await self.req('POST',base+'/tool/workspace/generate',{'type':'conditional_offer','application_id':str(uuid.uuid4())},404)
+
     async def test_paid_recovery_does_not_disclose_other_customer_links(self):
         token,base,row=await self.paid();response=await self.req('POST','/services/recruitment/recover',{'email':row['email']});missing=await self.req('POST','/services/recruitment/recover',{'email':'not-a-customer@example.org'});self.assertEqual(response,missing);self.assertNotIn(token,json.dumps(response))
 

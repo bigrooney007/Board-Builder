@@ -23,6 +23,7 @@ from guided_services import admin_record, check_service, context, continuation, 
 from workflow_delivery import deliver_once
 
 RECRUITMENT_MATERIALS = ["organization_overview","board_manual","board_member_agreement","confidentiality_agreement","conflict_of_interest_agreement","board_opportunity","board_recruitment_job_post","linkedin_post","social_posts","recruitment_emails","personal_invitation_email","referral_request_email","general_interview_invitation","recruitment_communications","onboarding_script","onboarding_agenda"]
+APPLICANT_RESOURCES = {'interview_guide','interview_invitation','before_interview_rejection','after_interview_thank_you','candidate_referee_request','reference_request_email','referee_confirmation_email','conditional_offer','unconditional_offer','formal_appointment_letter','onboarding_email','board_member_engagement_guide','board_member_portfolio','board_member_agreement','confidentiality_agreement','conflict_of_interest_agreement'}
 
 async def authorize_delegation(db,request,payload,member):
     service=member.get("guided_service_workspace")
@@ -98,7 +99,7 @@ def allowed_tool(service,method,path,admin):
         if not path.startswith("workspace/"):return False
         short=path.removeprefix("workspace/")
         if method=="GET":return bool(re.fullmatch(r"(?:profile|board-profiles|materials(?:/[\w-]+)?|opportunity|applications(?:/[\w-]+(?:/cv|/onboarding-conclusion)?)?|interview-scheduling|board-profile-form|signatures(?:/[\w-]+/download)?)",short))
-        if not admin:return bool(method=="POST" and re.fullmatch(r"applications/[\w-]+/interview-guide/retry",short) or method=="PATCH" and re.fullmatch(r"applications/[\w-]+",short))
+        if not admin:return bool(method=="POST" and re.fullmatch(r"(?:applications/[\w-]+/interview-guide/retry|generate|materials/[\w-]+/approve|signatures/prepare)",short) or method=="PATCH" and re.fullmatch(r"applications/[\w-]+",short) or method=="PUT" and re.fullmatch(r"(?:applications/[\w-]+/onboarding-conclusion|materials/[\w-]+)",short))
         return bool(method in {"PUT","POST","PATCH"} and re.fullmatch(r"(?:profile|profile/confirm|strategy-intake|board-profiles|generate|materials/[\w-]+(?:/approve|/share)?|interview-scheduling|opportunity/application(?:/generate)?|opportunity/close|opportunity/broadcast/retry|applications/[\w-]+(?:/references|/role-recommendation|/interview-guide/retry|/onboarding-conclusion)?|signatures/prepare|signatures/[\w-]+/send)",short))
     if service=="board-recommitment":
         if not path.startswith("reactivation/"):return False
@@ -137,23 +138,35 @@ def create_guided_workspace_router(db):
             if payload.get("type") not in RECRUITMENT_MATERIALS+['interview_guide','interview_invitation','before_interview_rejection','conditional_offer','unconditional_offer','formal_appointment_letter','onboarding_email','board_member_portfolio','ninety_day_plan','after_interview_thank_you','candidate_referee_request','referee_confirmation_email','reference_call_script','reference_evaluation_form','reference_request_email','board_member_engagement_guide']:raise HTTPException(422,"Choose a recruitment resource supported by this service.")
         else:payload=await request.json() if request.method!="GET" else None
         if path=="workspace/signatures/prepare":
-            from workspace_service import get_current_material
-            material=await get_current_material(db,owner_id(row),payload.get("agreement_type"),payload.get("application_id")) or await get_current_material(db,owner_id(row),payload.get("agreement_type"),"")
-            if not material or material["material"].get("status")!="Approved":raise HTTPException(409,"Approve the exact agreement before preparing a signature request.")
-            existing=await db.signature_requests.find_one({"owner_user_id":owner_id(row),"application_id":payload.get("application_id"),"material_id":material["material"]["material_id"],"agreement_version":material["current"]["version"]},{"_id":0,"token":0})
+            existing=await reviewed_signature(row,payload)
             if existing:return existing
         if request.method=="POST" and re.fullmatch(r"workspace/signatures/[\w-]+/send",path):raise HTTPException(403,"Use the reviewed signature delivery action.")
         response=await delegated_request(request.app,db,row,request.method,path,payload,request.url.query)
         return Response(response.content,response.status_code,headers={"Cache-Control":"no-store",**({"Content-Disposition":response.headers['content-disposition']} if 'content-disposition' in response.headers else {})},media_type=response.headers.get("content-type","application/json"))
 
-    @router.api_route("/services/{service}/customer/{token}/tool/{path:path}",methods=["GET","POST","PATCH"])
+    async def reviewed_signature(row,payload):
+        from workspace_service import get_current_material
+        material=await get_current_material(db,owner_id(row),payload.get("agreement_type"),payload.get("application_id")) or await get_current_material(db,owner_id(row),payload.get("agreement_type"),"")
+        if not material or material["material"].get("status")!="Approved":raise HTTPException(409,"Approve the exact agreement before preparing a signature request.")
+        return await db.signature_requests.find_one({"owner_user_id":owner_id(row),"application_id":payload.get("application_id"),"material_id":material["material"]["material_id"],"agreement_version":material["current"]["version"]},{"_id":0,"token":0})
+
+    @router.api_route("/services/{service}/customer/{token}/tool/{path:path}",methods=["GET","PUT","POST","PATCH"])
     async def customer_tool(service:str,token:str,path:str,request:Request):
         row=await record_by_token(db,service,token,paid=True)
         if not allowed_tool(service,request.method,path,False):raise HTTPException(403,"This action is not available from your customer resources.")
+        payload=await request.json() if request.method!="GET" else None
         if "materials" in path:
-            if path.endswith("/materials"):raise HTTPException(403,"Use your approved resource list.")
-            await material_snapshot(db,row,path.split('/')[-1],approved=True)
-        response=await delegated_request(request.app,db,row,request.method,path,await request.json() if request.method!="GET" else None,request.url.query)
+            match=re.fullmatch(r"workspace/materials/([\w-]+)(?:/approve)?",path)
+            if not match:raise HTTPException(403,"Use your approved resource list.")
+            material,_=await material_snapshot(db,row,match[1],approved=request.method=="GET")
+            if request.method!="GET" and not material.get("application_id"):raise HTTPException(403,"Approved campaign resources remain unchanged. These editing tools are for your applicant-specific documents.")
+        if path=="workspace/generate":
+            if payload.get("type") not in APPLICANT_RESOURCES or not payload.get("application_id"):raise HTTPException(403,"Choose an applicant-specific interview, reference, appointment or onboarding resource.")
+            if not await db.opportunity_applications.find_one({"application_id":payload["application_id"],"owner_user_id":owner_id(row)},{"_id":1}):raise HTTPException(404,"Applicant not found for this organization.")
+        if path=="workspace/signatures/prepare":
+            existing=await reviewed_signature(row,payload)
+            if existing:return existing
+        response=await delegated_request(request.app,db,row,request.method,path,payload,request.url.query)
         return Response(response.content,response.status_code,media_type=response.headers.get("content-type","application/json"),headers={"Cache-Control":"no-store",**({"Content-Disposition":response.headers['content-disposition']} if 'content-disposition' in response.headers else {})})
 
     async def recruitment_actor(request,ident=None,token=None):
@@ -219,8 +232,9 @@ def create_guided_workspace_router(db):
         return result
 
     @router.post("/admin/services/recruitment/customers/{ident}/signatures/{signature_id}/send")
-    async def send_signature(ident:str,signature_id:str,payload:dict,request:Request):
-        row=await admin_record(db,"recruitment",ident,request,paid=True)
+    @router.post("/services/recruitment/customer/{token}/signatures/{signature_id}/send")
+    async def send_signature(signature_id:str,payload:dict,request:Request,ident:str=None,token:str=None):
+        row=await recruitment_actor(request,ident,token)
         item=await db.signature_requests.find_one({"request_id":signature_id,"owner_user_id":owner_id(row)},{"_id":0})
         if not item:raise HTTPException(404,"Agreement not found for this organization.")
         if not payload.get("approved"):raise HTTPException(409,"Review and approve sending this agreement.")
