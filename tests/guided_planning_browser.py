@@ -32,7 +32,8 @@ async def main():
     section_count=len((await (await ctx.request.get(BASE+'/api/guided/strategic-planning/session?session_id='+data['session_id'],headers=headers)).json())['sections'])
     for i in range(section_count):
      await page.get_by_role('checkbox',name='Adopt this idea',exact=True).first.check()
-     if i<section_count-1:await page.get_by_role('button',name='Next Subject',exact=True).click()
+     if i<section_count-1:
+      await page.get_by_role('button',name='Next Subject',exact=True).click();await expect(page.get_by_text(f'Subject {i+2} of {section_count}',exact=True)).to_be_visible()
     await page.get_by_role('button',name='COMPLETE STRATEGIC PLANNING SESSION',exact=True).click();await page.get_by_role('heading',name='Review the Agreed Decisions',exact=True).wait_for();await page.get_by_role('button',name='Confirm Agreed Decisions and Generate Plan',exact=True).click()
     await page.get_by_label('Complete strategic plan',exact=True).wait_for();await page.get_by_role('button',name='Save Plan Draft',exact=True).click();await page.get_by_role('button',name='Approve Plan and Prepare Board Review',exact=True).click();page.on('dialog',lambda d:d.accept());await page.get_by_role('button',name='Release Current Plan for Board Review',exact=True).click()
     data=await (await ctx.request.get(BASE+base,headers=headers)).json()

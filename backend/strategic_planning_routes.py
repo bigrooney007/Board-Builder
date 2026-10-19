@@ -2219,6 +2219,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "decision_revision": saved.get("decision_revision", ""),
                 "participant": {"name": person.get("name", ""), "acknowledged": (person.get("direction_adoption") or {}).get("revision") == saved.get("decision_revision")} if person else None,
                 "plan_status":final.get("final_status","NONE") if saved.get("status")=="COMPLETED" else "NONE",
+                "guided_service":bool(p.get("guided_service_customer_id")), "planning_period":p.get("planning_period", ""), "branding":p.get("branding",{}),
                 "recording_active": bool(saved.get("recording_active")) if p.get("guided_service_customer_id") else False,
                 "plan_text":final.get("final_display_text","") if saved.get("status")=="COMPLETED" and (not p.get("guided_service_customer_id") or final.get("final_status")=="Approved") else ""}
 
