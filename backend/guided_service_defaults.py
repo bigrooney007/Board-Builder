@@ -5,7 +5,7 @@ PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning
 NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning"}
 PRODUCTS = {key: "rooney_guided_" + key.replace("-", "_") + "_" + str(value // 100) for key, value in PRICES.items()}
 # Parts Three and Four activate their public funnels only after their own verification.
-ACTIVE_SERVICES = {"recruitment", "board-recommitment"}
+ACTIVE_SERVICES = {"recruitment", "board-recommitment", "strategic-planning"}
 FLOW_VERSION = "founder-guided-2026"
 
 def question(key, prompt, help="", required=True, kind="textarea", **extra):
@@ -25,6 +25,11 @@ RECOMMITMENT_QUESTIONS = [
     question("why_recommit", "Why do you believe your board members need to recommit to your organization at this time?"),
     question("board_help_accomplish", "What do you want your board members to start doing or contributing after recommitting?"),
     question("board_count", "How many board members are currently serving, and how many would you like to involve in the recommitment process?"),
+]
+PLANNING_ENTRY = [
+    question("vision", "Where do you see your organization in the next 12 to 24 months?", "Imagine that your organization has become successful according to your own expectations. What should it look like, and what should it be accomplishing?"),
+    question("goals", "What goals do you believe your organization needs to achieve to reach that destination?", "Describe the major things your organization must accomplish over the next 12 to 24 months."),
+    question("requirements", "What do you believe your organization will need to achieve these goals?", "Think about the people, funding, programs, partnerships, technology, equipment, properties, infrastructure or other resources that may be necessary."),
 ]
 
 def email(subject, body, cta="CONTINUE WITH {{service_name}}", **extra):
@@ -65,7 +70,21 @@ During our session, we'll prepare the resources you need and begin inviting your
 As responses come in, you'll have the tools to understand each person's position, follow up with them, and move towards a board that is ready to contribute to your organization.
 
 The complete guided Board Recommitment service costs $497.""", "PAY $497 AND START MY BOARD RECOMMITMENT", delay_minutes=60),
-    "strategic-planning": email("Let's Develop Your Organization's Strategic Plan", "Hello {{first_name}},\n\nThank you for sharing what {{organization}} needs. We can work with you and your board to discuss your priorities and adopt a strategic plan.\n\nThe guided Strategic Planning service costs $1,997.", "CONTINUE MY STRATEGIC PLANNING", delay_minutes=60),
+    "strategic-planning": email("Let's Get Your Board Working Together to Build Your Organization", """Hello {{first_name}},
+
+Thank you for sharing your vision for {{organization}} and what you would like your organization to achieve over the next 12 to 24 months.
+
+You have a picture of where you want your organization to go. The next step is to bring your board members into the process so you can begin developing that future together.
+
+I'd like us to meet and prepare your organization for a guided strategic planning process. We'll start by helping you and your board members share your ideas about the organization's future, the goals it should pursue, the programs it should strengthen, and the resources and people it will need.
+
+Then I'll facilitate your board's strategic planning session, where we'll review everyone's contributions, discuss the available ideas, and agree on the direction your organization should take.
+
+We'll use those agreed decisions to develop your organization's strategic plan, which you and your board members can review and adopt.
+
+The goal is to help your organization leave the process with a plan that reflects the thinking and agreement of the people responsible for helping you carry it out.
+
+Our professionally facilitated Strategic Planning service costs $1,997.""", "PAY $1,997 AND START OUR STRATEGIC PLANNING", delay_minutes=60),
 }
 FOLLOWUP_THEMES = {
     "recruitment": [
@@ -82,15 +101,22 @@ FOLLOWUP_THEMES = {
         ("Know what each member is willing to contribute", "Clear commitments give you a practical basis for moving forward. We will help you prepare the forms, communications and follow-up resources."),
         ("Your invitation to begin board recommitment", "If you are ready to clarify your board's involvement, use your saved link to begin the $497 guided recommitment service."),
     ],
-    "strategic-planning": [("Bring your board into planning", "We can help your organization agree on its direction and the priorities your board will adopt.")] * 5,
+    "strategic-planning": [
+        ("Does your board share your vision?", "You have described the future you want for your organization. Bringing your board into the planning process helps you explore that direction together."),
+        ("Involve the people who will help carry out your plan", "A plan is easier to use when the people responsible have helped develop it. Our facilitated process gives each board member space to contribute before you agree on priorities."),
+        ("Agree on priorities before deciding what you need", "Your goals should guide the people, funding and technology you seek. We will help your board connect those needs to its agreed direction."),
+        ("Turn individual ideas into agreed priorities", "Your board members may have different ideas about the future. A facilitated session helps you discuss those ideas and record the decisions your organization actually adopts."),
+        ("Your invitation to begin strategic planning", "If you are ready to bring your board into planning, your answers remain saved. Use your personal link to begin the $1,997 professionally facilitated service."),
+    ],
 }
 
 def defaults(service):
     from strategic_questionnaire import QUESTIONS
-    entry = RECRUITMENT_QUESTIONS if service == "recruitment" else RECOMMITMENT_QUESTIONS if service == "board-recommitment" else [question("mission", "What is your organization's mission?"), question("priorities", "What do you want your organization to accomplish over the next 12 to 24 months?")]
+    entry = RECRUITMENT_QUESTIONS if service == "recruitment" else RECOMMITMENT_QUESTIONS if service == "board-recommitment" else PLANNING_ENTRY
     groups = {"entry": deepcopy(entry)}
     if service == "strategic-planning":
-        groups.update({name: [question(q["key"], q["prompt"], q.get("help", "")) for q in QUESTIONS] for name in ("leader", "board")})
+        from guided_planning import planning_questions
+        groups.update({name: planning_questions(name, QUESTIONS) for name in ("leader", "board")})
     result = {"question_groups": groups, "first_email": deepcopy(FIRST[service]),
         "followups": [email(subject, "Hello {{first_name}},\n\n" + body + "\n\nYour information for {{organization}} remains saved.", after_previous_minutes=4320) for subject, body in FOLLOWUP_THEMES[service]],
         "sequence_paused": False,
@@ -118,4 +144,14 @@ def defaults(service):
         result["delivery_email"]["body"] = "Hello {{first_name}},\n\nYour approved Board Recommitment resources for {{organization}} are ready. Use your secure link to review the board members' responses, retrieve approved conversation guides and portfolios, and continue the process with your organization. Record final arrangements only after the appropriate conversations and organizational decisions."
         result["operational_emails"]["active_confirmation"]["body"] = "Hello {{participant_name}},\n\nThank you for confirming how you will continue supporting {{organization}}.\n\n{{responsibilities}}\n\nYour organization will share your approved portfolio and any further resources separately."
         result["operational_emails"]["active_confirmation"]["cta"] = "VIEW MY RECOMMITMENT FORM"
+        result["landing"].update({"processHeading":"Begin a Guided Recommitment Process", "promise":"Understand who is ready to contribute, what they can commit to, and which conversations your organization needs to have.", "deliverablesHeading":"The Forms, Guidance and Resources to Continue Independently", "finalHeading":"Ready to Clarify Your Board's Commitment?", "steps":[["1","Start for Free","Answer the introductory questions about your board and the contributions your organization needs."],["2","Receive Your Personal Invitation","We will email your next steps. The guided service costs $497, with branding and session booking after payment."],["3","Prepare the Process With Rooney","Clarify your expectations, prepare the communications and invite your board members to respond."],["4","Review Each Person's Decision","Members can recommit, propose another role or explain why they need to step down. Their response does not automatically change their formal role."],["5","Agree on the Way Forward","Use the conversation guidance, approved responsibilities, portfolios and other resources to continue the process with your organization."]], "outcomes":["Personal recommitment invitations and forms","Saved board member responses","Response interpretation and conversation guides","Confirmed outcomes kept separate from initial preferences","Approved responsibilities, portfolios and relevant agreements"]})
+    if service == "strategic-planning":
+        result["landing"] = {"headline":"Get Your Board Members Working Together to Build Your Organization", "description":"Bring your board members together to agree on where your organization should be in the next 12 to 24 months, develop a strategic plan, and begin taking responsibility for moving the organization forward.", "cta":"START MY STRATEGIC PLANNING FOR FREE"}
+        result["landing"].update({"processHeading":"Build Your Plan Through a Facilitated Board Process", "promise":"Bring everyone's original ideas into the discussion and build the plan from the decisions your organization actually adopts.", "deliverablesHeading":"A Strategic Plan Your Board Has Helped Develop", "finalHeading":"Ready to Bring Your Board Into Strategic Planning?", "steps":[["1","Share Your Initial Thinking for Free","Tell us about your vision, goals and the resources your organization may need. Your introductory answers are saved."],["2","Begin the Facilitated Service","Your personal invitation explains the $1,997 service. After payment, provide your branding and book an initial meeting with Rooney."],["3","Invite Independent Contributions","Prepare separate planning forms for the leader and board members. Review each existing program individually."],["4","Discuss and Record Agreed Decisions","Rooney facilitates the board session, moving through each subject and program while recording adopted ideas, agreed responsibilities and outstanding decisions."],["5","Review and Adopt the Plan","Rooney prepares and edits the draft. Each participant reviews the released version, adopts it or requests a change."],["6","Receive Your Approved Plan","After the required approvals, download and share the branded strategic plan. Your organization carries out the agreed work independently."]], "outcomes":["Independent leader and board member contributions","Individual discussion of each program","Recorded adopted decisions and meeting notes","An editable, branded strategic plan","Version-specific board review and adoption","Secure access to the final approved plan"]})
+        result["delivery_email"] = email("Your Approved Strategic Plan", "Hello {{first_name}},\n\nYour approved strategic plan for {{organization}} is ready. Use your secure link to read and download it, and share the approved version with your authorized board members. The plan records the decisions adopted during your facilitated process and the responsibilities that were confirmed.", "OPEN MY STRATEGIC PLAN")
+        result["operational_emails"] = {
+            "planning_invitation": email("Your Invitation to Help Plan {{organization}}'s Future", "Hello {{participant_name}},\n\n{{leader_name}} invites you to contribute to {{organization}}'s strategic planning process.\n\nPlanning period: {{planning_period}}.\nBoard meeting: {{meeting_details}}.\nPlease complete your form by {{response_deadline}}.\n\nShare your own ideas freely. You will not see other people's private responses while completing your form. We will discuss the contributions together during the planning meeting.", "COMPLETE MY PLANNING FORM"),
+            "response_notice": email("A Board Member Has Completed the Strategic Planning Form", "Hello {{first_name}},\n\n{{participant_name}} has submitted their ideas for {{organization}}. You can review their original responses before your upcoming planning meeting through your secure link.", "VIEW RESPONSE"),
+            "review_invitation": email("Please Review Your Organization's Strategic Plan", "Hello {{participant_name}},\n\nRooney has prepared the strategic plan for {{organization}} from the decisions recorded during your planning session. Please read the released review version and either adopt it or request a change. Your decision will be recorded against this specific version. Individual adoption does not replace your organization's formal governance requirements.", "REVIEW AND ADOPT THE PLAN"),
+        }
     return result

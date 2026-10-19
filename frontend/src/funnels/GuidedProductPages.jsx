@@ -109,7 +109,7 @@ const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) thr
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
 export function GuidedLandingPage({ product: explicitProduct, landingOverride=null }) {
- const [product,saved]=useProduct(explicitProduct);const c=landingOverride?{...saved,headline:landingOverride.headline,sub:landingOverride.description,primaryCta:landingOverride.cta,promise:landingOverride.description}:saved;const Icon=c.icon;const nav=useNavigate();
+ const [product,saved]=useProduct(explicitProduct);const c=landingOverride?{...saved,...landingOverride,headline:landingOverride.headline,sub:landingOverride.description,primaryCta:landingOverride.cta,promise:landingOverride.promise||landingOverride.description}:saved;const Icon=c.icon;const nav=useNavigate();
  const startPath=PUBLIC_START_ROUTES[product];
  useLandingPageMeta(`/${product}`);
  useEffect(()=>{if(window.location.hash===`#${product}-lead-form`)nav(startPath,{replace:true})},[product,startPath,nav]);

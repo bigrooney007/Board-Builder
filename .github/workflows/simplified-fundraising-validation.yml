@@ -38,6 +38,7 @@ jobs:
           python tests/validate_guided_service_scope.py
           python -m unittest discover -s backend/tests -p test_guided_services.py -v
           python -m unittest discover -s backend/tests -p test_guided_recommitment.py -v
+          python -m unittest discover -s backend/tests -p test_guided_planning.py -v
   validate:
     runs-on: ubuntu-latest
     services:
@@ -120,6 +121,7 @@ jobs:
           python tests/professional_entry_browser.py
           python tests/guided_services_browser.py
           python tests/guided_recommitment_browser.py
+          python tests/guided_planning_browser.py
       - name: Read-only deployed public availability and payment mode
         if: always()
         run: python tests/customer_launch_readiness.py

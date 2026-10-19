@@ -1,3 +1,4 @@
+import { PlanningFinal } from "@/services/PlanningPublic";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -22,6 +23,7 @@ const PlanView = ({ endpoint, testid }) => {
   }, [endpoint, token]);
   if (error) return <main className="legal-page"><h1>{P.notAvailableHeading}</h1><p data-testid={`${testid}-error`}>{error}</p></main>;
   if (!data) return <main className="legal-page"><p>{strategicPlanningPublicContent.form.loading}</p></main>;
+  if (data.guided_service) return <PlanningFinal data={data} token={token}/>;
   return (
     <main className="legal-page" data-testid={testid} style={{ maxWidth: "780px", margin: "0 auto", padding: "40px 18px" }}>
       <p className="eyebrow">{data.organization_name}</p>

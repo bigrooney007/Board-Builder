@@ -1,3 +1,4 @@
+import { PlanningReview } from "@/services/PlanningPublic";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -33,6 +34,7 @@ export default function StrategicPlanReviewPage() {
 
   if (error && !data) return <main className="legal-page"><h1>{spReviewText.h_foundationalPlanReview}</h1><p data-testid="sp-review-error">{error}</p></main>;
   if (!data) return <main className="legal-page"><p>Loading…</p></main>;
+  if (data.guided_service) return <PlanningReview data={data} token={token}/>;
   if (done) return (
     <main className="legal-page" data-testid="sp-review-thanks">
       <h1>{spReviewText.h_thankYou}</h1>

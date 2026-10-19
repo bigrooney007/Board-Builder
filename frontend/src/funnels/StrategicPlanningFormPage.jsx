@@ -1,3 +1,4 @@
+import { PlanningParticipant } from "@/services/PlanningPublic";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -52,6 +53,7 @@ export default function StrategicPlanningFormPage() {
 
   if (error && !data) return <main className="legal-page"><h1>{F.title}</h1><p data-testid="sp-public-error">{error}</p></main>;
   if (!data) return <main className="legal-page"><p>{F.loading}</p></main>;
+  if (data.guided_service) return <PlanningParticipant data={data} token={token}/>;
   if (done) return (
     <main className="legal-page" data-testid="sp-public-thanks">
       <h1>{F.thanksHeading}</h1>

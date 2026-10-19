@@ -253,6 +253,8 @@ app.include_router(create_guided_services_router(db))
 app.include_router(create_guided_workspace_router(db))
 from guided_recommitment import create_guided_recommitment_router
 app.include_router(create_guided_recommitment_router(db))
+from guided_planning import create_guided_planning_router
+app.include_router(create_guided_planning_router(db))
 from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
 from game_finetune_routes import create_finetune_router

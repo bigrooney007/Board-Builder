@@ -30,7 +30,7 @@ from guided_service_defaults import ACTIVE_SERVICES, FLOW_VERSION, NAMES, PRICES
 from workflow_delivery import deliver_once
 
 logger = logging.getLogger(__name__)
-VARIABLES = {"first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details"}
+VARIABLES = {"first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline"}
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def new_id(): return str(uuid.uuid4())
@@ -68,6 +68,10 @@ def validate_config(service, payload):
     if not isinstance(payload,dict) or set(payload)!=set(expected): raise HTTPException(422,"Reload the settings before saving. Some fields are missing or unsupported.")
     if set(payload["question_groups"])!=set(expected["question_groups"]): raise HTTPException(422,"Keep the service's independent question groups.")
     for rows in payload["question_groups"].values(): validate_questions(rows)
+    if service=="strategic-planning":
+        for group in ("leader","board"):
+            for q in payload["question_groups"][group]:
+                if not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}",str(q.get("section_key", ""))) or not str(q.get("section_title", "")).strip() or type(q.get("per_program")) is not bool:raise HTTPException(422,"Keep stable planning section identifiers, titles and program settings.")
     if not safe_url(payload["booking_url"],calendly=True): raise HTTPException(422,"Use a valid secure Calendly URL.")
     if not isinstance(payload["sequence_paused"],bool): raise HTTPException(422,"Invalid sequence setting.")
     if not isinstance(payload["followups"],list) or len(payload["followups"])!=5: raise HTTPException(422,"Keep the five independently editable follow-up messages.")
@@ -82,7 +86,14 @@ def validate_config(service, payload):
         if type(payload["first_email"].get(key)) is not int or not 0<=payload["first_email"][key]<=525600: raise HTTPException(422,"Choose a valid first-email delay in minutes.")
     for item in payload["followups"]:
         if type(item.get("after_previous_minutes")) is not int or not 1<=item["after_previous_minutes"]<=525600: raise HTTPException(422,"Choose a positive follow-up interval in minutes.")
-    if not isinstance(payload["landing"],dict) or set(payload["landing"])!={"headline","description","cta"} or any(not isinstance(v,str) or len(v)>10000 for v in payload["landing"].values()): raise HTTPException(422,"Invalid landing page wording.")
+    landing=payload["landing"]
+    if not isinstance(landing,dict) or set(landing)!=set(expected["landing"]):raise HTTPException(422,"Keep the editable landing page fields.")
+    for key,value in landing.items():
+        if key=="steps":
+            if not isinstance(value,list) or not 1<=len(value)<=20 or any(not isinstance(step,list) or len(step)!=3 or any(not isinstance(v,str) or len(v)>10000 for v in step) for step in value):raise HTTPException(422,"Keep complete numbered landing-page steps.")
+        elif key=="outcomes":
+            if not isinstance(value,list) or len(value)>30 or any(not isinstance(v,str) or len(v)>10000 for v in value):raise HTTPException(422,"Invalid landing-page outcomes.")
+        elif not isinstance(value,str) or len(value)>10000:raise HTTPException(422,"Invalid landing page wording.")
     if service=="board-recommitment":
         form=payload.get("participant_form")
         if not isinstance(form,dict) or set(form)!=set(expected["participant_form"]):raise HTTPException(422,"Keep the participant form fields and stable decision labels.")
@@ -224,7 +235,7 @@ async def provision_workspace(db,row):
     if row.get("payment_status")!="paid":raise HTTPException(402,"Payment has not been confirmed.")
     name=row["name"].split(" ",1);uid=owner_id(row)
     alias=row["customer_id"]+"@guided-workspaces.nonprofitboardbuilder.invalid"
-    entitlements=["recruitment_self_guided"] if row["service"]=="recruitment" else ["reactivation_self_guided"]
+    entitlements=["recruitment_self_guided"] if row["service"]=="recruitment" else ["reactivation_self_guided"] if row["service"]=="board-recommitment" else []
     await db.members.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"email":alias,"notification_email":row["email"],"first_name":name[0],"last_name":name[1] if len(name)>1 else "","entitlements":entitlements,"lead_ids":[row["customer_id"]],"guided_service_workspace":row["service"],"guided_customer_id":row["customer_id"],"internal_dashboard_preview":bool(row.get("internal_test")),"created_at":now()}},upsert=True)
     answers={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row["question_snapshot"]}
     data={"organization_name":row["organization"],"mission":answers.get("mission",""),"present_board":answers.get("current_board",""),"desired_board_members_founder_view":answers.get("desired_board_members",""),"priorities":answers.get("board_type",""),"founder_title":"Organization Leader"}
@@ -233,6 +244,9 @@ async def provision_workspace(db,row):
         await db.funnel_leads.update_one({"lead_id":row["customer_id"]},{"$setOnInsert":{"lead_id":row["customer_id"],"member_user_id":uid,"offer_source":"recruitment","lead_source":"founder_guided_recruitment","name":row["name"],"email":row["email"],"organization":row["organization"],"answers":answers,"created_at":now()}},upsert=True)
     elif row["service"]=="board-recommitment":
         await db.board_reactivation_intakes.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"session_id":row.get("session_id") or "guided-"+row["customer_id"],"organization_name":row["organization"],"mission":answers.get("mission",""),"why_recommit":answers.get("why_recommit",""),"board_help_accomplish":answers.get("board_help_accomplish",""),"submitted_at":now()}},upsert=True)
+    elif row["service"]=="strategic-planning":
+        from guided_planning import provision
+        await provision(db,row)
 
 async def confirm_payment(db,row,session_id=None):
     if session_id and session_id!=row.get("session_id"):raise HTTPException(403,"This payment belongs to another record.")

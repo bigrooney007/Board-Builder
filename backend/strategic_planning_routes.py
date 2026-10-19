@@ -19,7 +19,8 @@ from typing import Dict, List, Union
 
 import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+import guided_planning
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ai_service import generate_structured, parse_json_response
@@ -199,7 +200,10 @@ class AreaReview(BaseModel):
 class ReviewSubmissionPayload(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="ignore")
     full_name: str = Field(min_length=1)
-    responses: List[AreaReview] = Field(min_length=1)
+    responses: List[AreaReview] = Field(default_factory=list)
+    plan_version: int = 0
+    decision: str = ""
+    requested_changes: str = ""
 
 
 class OwnerAssignment(BaseModel):
@@ -226,7 +230,10 @@ class AreaPlanEdit(BaseModel):
 
 
 def create_strategic_planning_router(db) -> APIRouter:
-    router = APIRouter(prefix="/api")
+    async def protect_guided_versions(request:Request):
+        request.state.planning_db=db
+        await guided_planning.guard_legacy_admin_mutations(request)
+    router = APIRouter(prefix="/api", dependencies=[Depends(protect_guided_versions)])
 
     async def admin(request: Request) -> dict:
         return await authenticate_admin(request, db)
@@ -510,7 +517,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         record = await db.sp_participants.find_one({"form_token": token}, {"_id": 0})
         if record:
             project = await owned_project(record["project_id"])
-            content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
+            content = record.get("form_snapshot") or await approved_form_content(record["project_id"], record.get("form_version") or 0)
             is_lead = record.get("role") == "Lead User"
             live = await db.sp_sessions.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
             group_url = f"/strategic-session/{live['share_token']}?participant={token}" if record.get("status") == "COMPLETED" and live.get("share_token") else ""
@@ -518,7 +525,8 @@ def create_strategic_planning_router(db) -> APIRouter:
                     "planning_meeting": project.get("planning_meeting") or {},
                     "submitted": record["status"] == "COMPLETED" and (not is_lead or content.get("questionnaire_version") == strategic24.VERSION),
                     "is_lead_user": is_lead, "group_session_url": group_url,
-                    "existing_answers": record.get("response", {}) if is_lead else record.get("draft_answers", {}),
+                    "existing_answers": (record.get("draft_answers") or record.get("response", {})) if is_lead else record.get("draft_answers", {}),
+                    "guided_service": bool(project.get("guided_service_customer_id")), "branding": project.get("branding", {}),
                     "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
                     "form": content}
         project = await db.sp_projects.find_one({"generic_form_token": token}, {"_id": 0})
@@ -534,7 +542,11 @@ def create_strategic_planning_router(db) -> APIRouter:
         if not person: raise HTTPException(404, "Use your personal form link")
         if person.get("status") == "COMPLETED": raise HTTPException(409, "Your submitted contribution is already saved")
         body = await request.json(); answers = body.get("answers") or {}
-        clean = {key: str(answers[key])[:12000] for key in strategic24.KEYS if key in answers}
+        if person.get("form_snapshot"):
+            questions = [q for section in person["form_snapshot"]["sections"] for q in section["questions"]]
+            clean = {q["id"]: ([str(x)[:500] for x in answers[q["id"]]][:100] if isinstance(answers[q["id"]], list) else str(answers[q["id"]])[:12000]) for q in questions if q["id"] in answers}
+        else:
+            clean = {key: str(answers[key])[:12000] for key in strategic24.KEYS if key in answers}
         await db.sp_participants.update_one({"participant_id": person["participant_id"], "status": {"$ne": "COMPLETED"}},
             {"$set": {"draft_answers": clean, "draft_saved_at": now_iso()}})
         return {"saved": True}
@@ -560,7 +572,9 @@ def create_strategic_planning_router(db) -> APIRouter:
         if record["status"] == "COMPLETED" and (record.get("role") != "Lead User" or record.get("questionnaire_version") == strategic24.VERSION):
             raise HTTPException(status_code=409, detail="This response has already been submitted")
         project = await owned_project(record["project_id"])
-        content = await approved_form_content(record["project_id"], record.get("form_version") or 0)
+        content = record.get("form_snapshot") or await approved_form_content(record["project_id"], record.get("form_version") or 0)
+        if project.get("guided_service_customer_id") and str(payload.email).lower() != record["email"]:
+            raise HTTPException(403,"Use the personal form associated with your own invitation.")
         questions = [q | {"section": s["title"]} for s in content.get("sections", []) for q in s["questions"]]
         answers = {}
         for question in questions:
@@ -569,6 +583,15 @@ def create_strategic_planning_router(db) -> APIRouter:
                 value = [str(v) for v in value] if isinstance(value, list) else ([str(value)] if value else [])
             else:
                 value = str(value or "").strip()
+            if project.get("guided_service_customer_id") and value:
+                kind=question.get("answer_type")
+                if kind in {"select","multiselect"} and any(x not in question.get("options",[]) for x in (value if isinstance(value,list) else [value])):raise HTTPException(422,"Choose one of the available answers.")
+                if kind=="number":
+                    try:float(value)
+                    except (ValueError,TypeError):raise HTTPException(422,"Enter a number for this question.")
+                if kind=="date":
+                    try:datetime.fromisoformat(value)
+                    except (ValueError,TypeError):raise HTTPException(422,"Enter a valid date for this question.")
             if question["required"] and not value:
                 raise HTTPException(status_code=422, detail=f"Please answer: {question['prompt']}")
             answers[question["id"]] = value
@@ -580,6 +603,11 @@ def create_strategic_planning_router(db) -> APIRouter:
                       "name": payload.full_name, "email": str(payload.email).lower(),
                       "questionnaire_version": content.get("questionnaire_version", "legacy"),
                       "response_questions": [{"id": q["id"], "prompt": q["prompt"], "section": q["section"]} for q in questions]}})
+        if project.get("guided_service_customer_id"):
+            if result.modified_count and record.get("role") != "Lead User":
+                await guided_planning.submitted_notice(db, project, {**record,"name":payload.full_name})
+            live = await db.sp_sessions.find_one({"project_id":project["project_id"]},{"_id":0}) or {}
+            return {"status":"submitted","organization_name":project["organization_name"],"group_session_url":f"/strategic-session/{live['share_token']}?participant={record['form_token']}" if live.get("share_token") else ""}
         if result.modified_count and record.get("role") != "Lead User":
             origin = os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com"
             response_link = f"{origin.rstrip('/')}/strategic-planning-response/{record['participant_id']}"
@@ -626,6 +654,8 @@ def create_strategic_planning_router(db) -> APIRouter:
         if not record:
             raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
         project = await owned_project(record["project_id"])
+        if project.get("guided_service_customer_id"):
+            raise HTTPException(403,"Use your organization's secure resources link to review this response.")
         prompts = {q["id"]: q for q in record.get("response_questions", [])}
         if not prompts:
             form = await db.sp_forms.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
@@ -644,6 +674,8 @@ def create_strategic_planning_router(db) -> APIRouter:
         if not record:
             raise HTTPException(status_code=404, detail="This Strategic Planning response is not available")
         project = await owned_project(record["project_id"])
+        if project.get("guided_service_customer_id"):
+            raise HTTPException(403,"Use your organization's secure resources link to review this response.")
         prompts = {q["id"]: q for q in record.get("response_questions", [])}
         if not prompts:
             form = await db.sp_forms.find_one({"project_id": record["project_id"]}, {"_id": 0}) or {}
@@ -805,6 +837,8 @@ def create_strategic_planning_router(db) -> APIRouter:
             raise HTTPException(status_code=404, detail="This review link is not valid")
         project = await owned_project(record["project_id"])
         plan = await current_plan(record["project_id"])
+        if project.get("guided_service_customer_id"):
+            return guided_planning.review_data(project,record,plan)
         if plan.get("status") not in {"Approved", "Finalized"}:
             raise HTTPException(status_code=409, detail="The Foundational Strategic Plan is not ready for review yet")
         return {"organization_name": project["organization_name"],
@@ -819,6 +853,11 @@ def create_strategic_planning_router(db) -> APIRouter:
         record = await db.sp_participants.find_one({"review_token": token}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="This review link is not valid")
+        project = await owned_project(record["project_id"])
+        if project.get("guided_service_customer_id"):
+            plan = await current_plan(record["project_id"])
+            return await guided_planning.submit_review(db,project,record,plan,payload)
+        if not payload.responses: raise HTTPException(422,"At least one strategic-area review is required")
         if record.get("review_status") == "COMPLETED":
             raise HTTPException(status_code=409, detail="This review has already been submitted")
         plan = await current_plan(record["project_id"])
@@ -1340,7 +1379,7 @@ def create_strategic_planning_router(db) -> APIRouter:
         if not plan:
             raise HTTPException(status_code=404, detail="This link is not valid")
         project = await owned_project(plan["project_id"])
-        return {"title": "Strategic Plan", "organization_name": project["organization_name"],
+        return {"guided_service":bool(project.get("guided_service_customer_id")),"branding":project.get("branding",{}),"planning_period":project.get("planning_period", ""),"title": "Strategic Plan", "organization_name": project["organization_name"],
                 "display_text": plan["final_display_text"], "issued_by": project["founder_name"]}
 
     @router.get("/admin/sp/projects/{project_id}/final-plan/pdf")
@@ -1635,7 +1674,7 @@ def create_strategic_planning_router(db) -> APIRouter:
 
 # Guided $497 Strategic Planning dashboard adapter. Keeps the customer workflow separate from admin routing.
 def create_guided_strategic_planning_router(db) -> APIRouter:
-    router = APIRouter(prefix="/api/guided/strategic-planning")
+    router = APIRouter(prefix="/api/guided/strategic-planning", dependencies=[Depends(guided_planning.bind_request)])
 
     async def owned_project(project_id: str) -> dict:
         project = await db.sp_projects.find_one({"project_id": project_id}, {"_id": 0})
@@ -1706,6 +1745,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "button_label": "OPEN MY AREA DEVELOPMENT PACK", "form_link": link}
 
     async def paid(session_id: str):
+        guided = await guided_planning.paid_engagement(db, session_id)
+        if guided: return guided
         tx=await db.payment_transactions.find_one({"session_id":session_id,"$or":[
             {"payment_status":"paid","purchase_source":{"$in":["strategic_planning_497","strategic_planning_supported_2997"]}},
             {"payment_status":"facilitated","internal_facilitated":True,"purchase_source":"strategic_planning_supported_2997"}]},{"_id":0})
@@ -2015,6 +2056,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "decision":"Select the ideas the Board agrees should influence this section."}
 
     def build_session_sections(form: dict, people: list, saved: dict, answers: dict, project: dict) -> list:
+        if project.get("guided_service_customer_id"):
+            return guided_planning.session_sections(people, saved)
         if (form.get("content") or {}).get("questionnaire_version") == strategic24.VERSION:
             return strategic24.session_sections(people, saved)
         sections=[]
@@ -2076,6 +2119,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "questionnaire_version": (form.get("content") or {}).get("questionnaire_version", "legacy"),
                 "welcome": strategic24.WELCOME, "adopted_areas": saved.get("adopted_areas", []),
                 "decision_revision": saved.get("decision_revision", ""),
+                "participants": [{"participant_id":person["participant_id"],"name":person.get("name", "")} for person in people],
                 "acknowledgements": [{"participant_id": person["participant_id"], "name": person.get("name", ""),
                     "acknowledged": (person.get("direction_adoption") or {}).get("revision") == saved.get("decision_revision") and bool(saved.get("decision_revision"))} for person in people]}
 
@@ -2111,7 +2155,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if p.get("questionnaire_version") == strategic24.VERSION:
             saved = await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
             if saved.get("status") in {"REVIEW","COMPLETED"}: raise HTTPException(409,"Return to discussion before changing the review step")
-            if index >= len(strategic24.QUESTIONS): raise HTTPException(422,"Choose a valid planning question")
+            count = len(strategic24.QUESTIONS)
+            if p.get("guided_service_customer_id"):
+                people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+                count=len(guided_planning.session_sections(people,saved))
+            if index >= count: raise HTTPException(422,"Choose a valid planning question")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"current_section_index":index,"status":"IN PROGRESS","updated_at":now_iso()}},upsert=True)
         return {"current_section_index":index}
 
@@ -2149,6 +2197,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         saved=await db.sp_sessions.find_one({"share_token":token},{"_id":0})
         if not saved:raise HTTPException(404,"This Strategic Planning session link is not valid")
         p=await db.sp_projects.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
+        if p.get("guided_service_customer_id"):
+            person=await db.sp_participants.find_one({"project_id":p["project_id"],"form_token":participant_token,"status":"COMPLETED"},{"_id":0}) if participant_token else None
+            if not person: raise HTTPException(403,"Use your personal meeting link after completing your form.")
         final=await db.sp_plans.find_one({"project_id":saved["project_id"]},{"_id":0,"final_status":1,"final_display_text":1}) or {}
         intake=await db.guided_product_intakes.find_one({"session_id":p.get("guided_session_id"),"product":"strategic-planning"},{"_id":0}) or {}
         form=await db.sp_forms.find_one({"project_id":saved["project_id"]},{"_id":0}) or {}
@@ -2168,7 +2219,8 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                 "decision_revision": saved.get("decision_revision", ""),
                 "participant": {"name": person.get("name", ""), "acknowledged": (person.get("direction_adoption") or {}).get("revision") == saved.get("decision_revision")} if person else None,
                 "plan_status":final.get("final_status","NONE") if saved.get("status")=="COMPLETED" else "NONE",
-                "plan_text":final.get("final_display_text","") if saved.get("status")=="COMPLETED" else ""}
+                "recording_active": bool(saved.get("recording_active")) if p.get("guided_service_customer_id") else False,
+                "plan_text":final.get("final_display_text","") if saved.get("status")=="COMPLETED" and (not p.get("guided_service_customer_id") or final.get("final_status")=="Approved") else ""}
 
     @router.post("/session/complete")
     async def complete_strategic_session(request: Request):
@@ -2242,16 +2294,25 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def save_discussion_idea(request: Request):
         body = await request.json(); p = await ensure_project(body.get("session_id", ""))
         key = body.get("section_key", ""); text = str(body.get("text", "")).strip()[:12000]
-        if key not in strategic24.KEYS or not text: raise HTTPException(422, "Choose a question and enter the agreed wording")
+        new_sections=[]
+        if p.get("guided_service_customer_id"):
+            people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
+            current=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+            new_sections=guided_planning.session_sections(people,current)
+        keys=[x["key"] for x in new_sections] if p.get("guided_service_customer_id") else strategic24.KEYS
+        if key not in keys or not text: raise HTTPException(422, "Choose a question and enter the agreed wording")
         saved = await db.sp_sessions.find_one({"project_id": p["project_id"]}, {"_id": 0}) or {}
         if saved.get("status") in {"REVIEW", "COMPLETED"}: raise HTTPException(409, "Return to the discussion before changing ideas")
         participant_id = str(body.get("participant_id") or "")
         person = await db.sp_participants.find_one({"project_id": p["project_id"], "participant_id": participant_id}, {"_id": 0}) if participant_id else None
-        if key == strategic24.KEYS[-1] and not person: raise HTTPException(422, "Connect this contribution to the person agreeing to it")
+        if key in {strategic24.KEYS[-1], "participation"} and not person: raise HTTPException(422, "Connect this contribution to the person agreeing to it")
         idea = {"idea_id": "discussion:" + secrets.token_hex(16), "participant_id": participant_id,
                 "participant_name": person.get("name", "Board discussion") if person else "Board discussion",
-                "question_id": key, "question": next(q["prompt"] for q in strategic24.QUESTIONS if q["key"] == key),
+                "question_id": key, "question": next(q["title"] for q in new_sections if q["key"]==key) if new_sections else next(q["prompt"] for q in strategic24.QUESTIONS if q["key"] == key),
                 "idea": text, "source_idea_ids": [str(x) for x in body.get("source_idea_ids", [])][:20]}
+        if new_sections:
+            valid={i["idea_id"] for section in new_sections if section["key"]==key for i in section["ideas"]}
+            if set(idea["source_idea_ids"])-valid: raise HTTPException(422,"Choose source ideas from this planning subject.")
         await db.sp_sessions.update_one({"project_id": p["project_id"]}, {"$push": {f"discussion_ideas.{key}": idea},
             "$set": {"project_id": p["project_id"], "updated_at": now_iso()}}, upsert=True)
         return {"idea": idea}
@@ -2436,7 +2497,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         async def run_generation():
             try:
                 people=await db.sp_participants.find({"project_id":p["project_id"]},{"_id":0}).to_list(300)
-                if p.get("questionnaire_version") == strategic24.VERSION:
+                if p.get("guided_service_customer_id"):
+                    generated = await generate_structured("strategic_session_final_plan",
+                        guided_planning.approved_context(p,plan,session,people),
+                        "Write a professional strategic plan from explicitly_adopted_decisions only. Use headings and clear connected paragraphs. Preserve the existing mission. Keep each program in its own named section. Include confirmed goals, objectives, people, funding, partnerships, infrastructure, action priorities and responsibilities where supplied. Use the configured planning period. Notes and transcript provide context, not permission to adopt additional ideas. Mark unresolved decisions clearly. Never invent budgets, programs, dates, owners or consensus. Personal responsibilities without individual acceptance remain proposals. Do not attribute the finished plan as individual quotations.")
+                elif p.get("questionnaire_version") == strategic24.VERSION:
                     generated = await generate_structured("strategic_session_final_plan",
                         strategic24.approved_context(plan.get("areas") or [], p.get("mission", ""), {person["participant_id"]: (person.get("direction_adoption") or {}).get("revision") == session.get("decision_revision") and bool(session.get("decision_revision")) for person in people}),
                         "Generate a practical 24-month plan using ONLY explicitly_adopted_decisions. Never use rejected ideas or infer adoption from a transcript. "
@@ -2462,6 +2527,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                         "Preserve the organization's and contributors' distinctive wording and logic. Do not attribute the final plan to individual contributors, invent consensus, or introduce a second planning process."
                     )
                 display=final_display(generated,p["organization_name"])
+                if p.get("guided_service_customer_id"):
+                    await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"PLAN READY","structured":generated,"display_text":display,"final_status":"Draft","final_display_text":display,"generated_from_session_at":now_iso(),"updated_at":now_iso()}})
+                    return
 
                 known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
                 if not any((x.get("email") or "").lower()==(p.get("founder_email") or "").lower() for x in known):
@@ -2796,6 +2864,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     @router.post("/final-plan/approve")
     async def approve_final_plan(request:Request):
         body=await request.json();p=await ensure_project(body.get("session_id",""));plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
+        if p.get("guided_service_customer_id"):raise HTTPException(409,"Use the service workspace to release a plan version for board review and finalize its recorded approvals.")
         if not plan.get("final_display_text"):raise HTTPException(409,"Generate and review the Strategic Plan Draft first")
         if p.get("questionnaire_version") == strategic24.VERSION:
             token = plan.get("final_share_token") or secrets.token_urlsafe(32)

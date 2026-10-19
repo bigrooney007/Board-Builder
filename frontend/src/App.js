@@ -220,8 +220,8 @@ function CleanRoutes() {
       <Route path="/organize-board-fundraising-game/apply" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
 
       {/* Strategic Planning */}
-      <Route path="/strategic-planning" element={<PublicProductEntry><GuidedLandingPage product="strategic-planning" /></PublicProductEntry>} />
-      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<PublicProductEntry><GuidedStartPage product="strategic-planning" /></PublicProductEntry>} />
+      <Route path="/strategic-planning" element={<PublicProductEntry><ServiceLanding service="strategic-planning" /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<PublicProductEntry><ServiceStart service="strategic-planning" /></PublicProductEntry>} />
       <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
       <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
       <Route path="/strategic-planning/video" element={<PublicProductEntry><GuidedVideoPage product="strategic-planning" /></PublicProductEntry>} />
