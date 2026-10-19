@@ -43,7 +43,10 @@ def check_service(service, active=False):
 async def settings(db, service, draft=False):
     check_service(service)
     saved = await db.guided_service_settings.find_one({"service": service}, {"_id": 0}) or {}
-    return copy.deepcopy(saved.get("draft" if draft else "published") or defaults(service)), saved.get("revision", 0), saved.get("version", "initial")
+    def merge(base, value):
+        if isinstance(base,dict) and isinstance(value,dict):return {key:merge(default,value.get(key,default)) for key,default in base.items()}
+        return copy.deepcopy(value)
+    return merge(defaults(service),saved.get("draft" if draft else "published") or {}), saved.get("revision", 0), saved.get("version", "initial")
 
 def validate_questions(rows):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 100: raise HTTPException(422, "Keep at least one question in this group.")
@@ -80,6 +83,15 @@ def validate_config(service, payload):
     for item in payload["followups"]:
         if type(item.get("after_previous_minutes")) is not int or not 1<=item["after_previous_minutes"]<=525600: raise HTTPException(422,"Choose a positive follow-up interval in minutes.")
     if not isinstance(payload["landing"],dict) or set(payload["landing"])!={"headline","description","cta"} or any(not isinstance(v,str) or len(v)>10000 for v in payload["landing"].values()): raise HTTPException(422,"Invalid landing page wording.")
+    if service=="board-recommitment":
+        form=payload.get("participant_form")
+        if not isinstance(form,dict) or set(form)!=set(expected["participant_form"]):raise HTTPException(422,"Keep the participant form fields and stable decision labels.")
+        if set(form["labels"])!={"active","advisory","step_down"} or any(not isinstance(v,str) or not v.strip() or len(v)>1000 for v in form["labels"].values()):raise HTTPException(422,"Keep all three independent commitment decisions.")
+        for key in ("title","introduction","decision_prompt","decision_help","thank_you"):
+            if not isinstance(form[key],str) or len(form[key])>18000:raise HTTPException(422,"Invalid participant form text.")
+        validate_questions(form["questions"])
+        for q in form["questions"]:
+            if not isinstance(q.get("show_for"),list) or not q["show_for"] or set(q["show_for"])-set(form["labels"]):raise HTTPException(422,"Choose which commitment decisions display each question.")
     return payload
 
 async def record_by_token(db,service,token,paid=False):

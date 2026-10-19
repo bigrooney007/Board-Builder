@@ -25,9 +25,7 @@ from content_templates import (
 
 logger = logging.getLogger(__name__)
 
-RECOMMIT_ACTIVE = "I am ready to recommit, remain an active Board Member and step up in my role."
-RECOMMIT_ADVISORY = "I would like to transition into an Advisory Board role."
-RECOMMIT_STEP_DOWN = "I would like to step down from the Board."
+from recommitment_decisions import RECOMMIT_ACTIVE, RECOMMIT_ADVISORY, RECOMMIT_STEP_DOWN
 RECOMMITMENT_OPTIONS = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY, RECOMMIT_STEP_DOWN]
 
 LEGACY_RECOMMIT_YES = "Yes, I am ready to recommit and continue serving."
@@ -104,6 +102,7 @@ class RecommitmentSubmission(BaseModel):
     advisory_openness: str = ""
     decision_support: str = ""
     anything_else: str = ""
+    guided_answers: dict = {}
 
 
 def origin_of(request: Request) -> str:
@@ -212,7 +211,7 @@ def create_reactivation_router(db) -> APIRouter:
         return member
 
     async def founder_context(user_id: str) -> dict:
-        founder = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1, "email": 1})
+        founder = await db.members.find_one({"user_id": user_id}, {"_id": 0, "first_name": 1, "last_name": 1, "email": 1, "notification_email": 1})
         intake = await db.board_reactivation_intakes.find_one({"user_id": user_id}, {"_id": 0}, sort=[("submitted_at", -1)])
         profile = await db.recruitment_profiles.find_one({"user_id": user_id}, {"_id": 0, "data": 1}) or {}
         profile_data = profile.get("data", {}) or {}
@@ -221,7 +220,7 @@ def create_reactivation_router(db) -> APIRouter:
             organization = profile_data.get("organization_name", "")
         return {
             "founder_name": f"{founder['first_name']} {founder['last_name']}".strip() if founder else "",
-            "founder_email": (founder or {}).get("email", ""),
+            "founder_email": (founder or {}).get("notification_email") or (founder or {}).get("email", ""),
             "founder_title": (
                 (intake or {}).get("founder_title", "")
                 or (intake or {}).get("your_role", "")
@@ -1089,7 +1088,8 @@ def create_reactivation_router(db) -> APIRouter:
     async def public_portfolio(token: str):
         material = await shared_portfolio(token)
         issuer = await portfolio_issuer(material)
-        return {"title": material["title"], "member_name": await portfolio_member_name(material),
+        guided = await db.guided_service_customers.find_one({"workspace_user_id":material["user_id"],"service":"board-recommitment","payment_status":"paid"},{"_id":0,"branding":1})
+        return {"guided_branding":(guided or {}).get("branding"),"title": material["title"], "member_name": await portfolio_member_name(material),
                 "display_text": current_display(material),
                 "assistant_url": f"/portfolio-assistant/{token}" if material.get("type") == PORTFOLIO_TYPE else "",
                 **issuer}
@@ -1099,6 +1099,11 @@ def create_reactivation_router(db) -> APIRouter:
         material = await shared_portfolio(token)
         issuer = await portfolio_issuer(material)
         member_name = await portfolio_member_name(material)
+        guided = await db.guided_service_customers.find_one({"workspace_user_id":material["user_id"],"service":"board-recommitment","payment_status":"paid"},{"_id":0,"branding":1})
+        if guided:
+            from document_renderer import render_document_pdf
+            pdf=render_document_pdf(title=material["title"],org_name=issuer["organization"],body_text=current_display(material),branding=guided.get("branding") or {},prepared_for={"name":member_name})
+            return Response(pdf,media_type="application/pdf",headers={"Content-Disposition":'attachment; filename="Board-Member-Portfolio.pdf"',"Cache-Control":"no-store"})
         return build_portfolio_pdf(material["title"], member_name, issuer, current_display(material))
 
     # ---------------- RECOMMITMENT EXECUTION ASSISTANT ----------------
@@ -1211,7 +1216,9 @@ def create_reactivation_router(db) -> APIRouter:
         if record:
             context = await founder_context(record["user_id"])
             form = await db.reactivation_forms.find_one({"user_id": record["user_id"]}, {"_id": 0, "intro_text": 1, "status": 1})
-            return {
+            from guided_recommitment import guided_context
+            guided = await guided_context(db,record,True)
+            return {**guided,
                 "organization_name": context["organization"],
                 "logo_data_url": context.get("logo_data_url", ""),
                 "founder_name": context["founder_name"],
@@ -1226,7 +1233,9 @@ def create_reactivation_router(db) -> APIRouter:
         if not form:
             raise HTTPException(status_code=404, detail="This form link is not valid")
         context = await founder_context(form["user_id"])
-        return {
+        from guided_recommitment import guided_context
+        guided = await guided_context(db,{"user_id":form["user_id"]})
+        return {**guided,
             "organization_name": context["organization"],
             "logo_data_url": context.get("logo_data_url", ""),
             "founder_name": context["founder_name"],
@@ -1262,22 +1271,26 @@ def create_reactivation_router(db) -> APIRouter:
         allowed_choices = [RECOMMIT_ACTIVE, RECOMMIT_ADVISORY] if variant == "active_advisory" else RECOMMITMENT_OPTIONS
         if payload.recommitment not in allowed_choices:
             raise HTTPException(status_code=422, detail="This choice is not available on this Recommitment Form")
-        if payload.recommitment == RECOMMIT_ACTIVE:
-            required = [payload.why_joined, payload.participation_barriers, payload.ownership_area,
-                        payload.strengths_resources, payload.monthly_availability, payload.experience_improvement]
-            if any(not value.strip() for value in required) or not payload.expertise or not (1 <= len(payload.contribution_interests) <= 3):
-                raise HTTPException(status_code=422, detail="Please answer every required question")
-            if payload.leadership_interest not in {"Yes", "I would like to discuss this"}:
-                raise HTTPException(status_code=422, detail="Please answer every required question")
-            if payload.leadership_interest == "Yes" and not payload.leadership_area.strip():
-                raise HTTPException(status_code=422, detail="Please tell us the area or responsibility you would be interested in leading")
-        elif payload.recommitment == RECOMMIT_ADVISORY:
-            if not payload.decision_reason.strip() or not payload.strengths_resources.strip() or not payload.monthly_availability.strip():
-                raise HTTPException(status_code=422, detail="Please tell us why Advisory Board service fits you, what you can contribute and your realistic availability")
-        elif payload.recommitment == RECOMMIT_STEP_DOWN and not payload.decision_reason.strip():
-            raise HTTPException(status_code=422, detail="Please briefly tell us what has led to your decision to step down")
+        from guided_recommitment import validated_response
+        guided_response = await validated_response(db,record,payload)
+        if guided_response is None:
+            if payload.recommitment == RECOMMIT_ACTIVE:
+                required = [payload.why_joined, payload.participation_barriers, payload.ownership_area,
+                            payload.strengths_resources, payload.monthly_availability, payload.experience_improvement]
+                if any(not value.strip() for value in required) or not payload.expertise or not (1 <= len(payload.contribution_interests) <= 3):
+                    raise HTTPException(status_code=422, detail="Please answer every required question")
+                if payload.leadership_interest not in {"Yes", "I would like to discuss this"}:
+                    raise HTTPException(status_code=422, detail="Please answer every required question")
+                if payload.leadership_interest == "Yes" and not payload.leadership_area.strip():
+                    raise HTTPException(status_code=422, detail="Please tell us the area or responsibility you would be interested in leading")
+            elif payload.recommitment == RECOMMIT_ADVISORY:
+                if not payload.decision_reason.strip() or not payload.strengths_resources.strip() or not payload.monthly_availability.strip():
+                    raise HTTPException(status_code=422, detail="Please tell us why Advisory Board service fits you, what you can contribute and your realistic availability")
+            elif payload.recommitment == RECOMMIT_STEP_DOWN and not payload.decision_reason.strip():
+                raise HTTPException(status_code=422, detail="Please briefly tell us what has led to your decision to step down")
         now = datetime.now(timezone.utc).isoformat()
-        response = payload.model_dump()
+        response = guided_response or payload.model_dump()
+        if guided_response is None:response.pop("guided_answers",None)
         response["email"] = str(payload.email).lower()
         result = await db.reactivation_board_members.update_one(
             {"member_record_id": record["member_record_id"], "status": {"$ne": "COMPLETED"}},
@@ -1287,32 +1300,37 @@ def create_reactivation_router(db) -> APIRouter:
         context = await founder_context(record["user_id"])
         try:
             if result.modified_count and context["founder_email"]:
-                first = payload.full_name.split(" ")[0]
-                founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
-                guided = await db.board_reactivation_intakes.find_one(
-                    {"user_id": record["user_id"], "guided_session_id": {"$exists": True, "$ne": ""}},
-                    {"_id": 0, "guided_session_id": 1}, sort=[("submitted_at", -1)]) or {}
-                if guided.get("guided_session_id"):
-                    view_url = (f"{origin_of(request)}/board-recommitment/dashboard?"
-                                f"session_id={guided['guided_session_id']}&member={record['member_record_id']}#recommitment-responses")
+                from guided_workspace import notify_guided_owner
+                notice = await notify_guided_owner(db,record["user_id"],"guided-recommitment-response-"+record["member_record_id"],"A Board Member Has Completed Their Recommitment Form","A board member has shared their decision. Open your secure resources to review the response.","?participant="+record["member_record_id"],template_key="response_notice",variables={"participant_name":payload.full_name})
+                if notice is not None:
+                    await db.reactivation_board_members.update_one({"member_record_id":record["member_record_id"]},{"$set":{"owner_notification_status":notice["status"]}})
                 else:
-                    view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/3?member={record['member_record_id']}"
-                body = (
-                    f"Hi {founder_first},\n\n"
-                    f"{payload.full_name} has completed their Board Member Profile & Recommitment Form for {context['organization']}.\n\n"
-                    "Their responses are now available in your Board Reactivation workspace and will help you prepare for your conversation with them.\n\n"
-                    f"[VIEW {first.upper()}'S RESPONSE]\n\n"
-                    "Nonprofit Board Builder"
-                )
-                resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
-                await resend.Emails.send_async({
-                    "from": os.environ["NONPROFIT_SENDER"], "to": [context["founder_email"]],
-                    "subject": f"Board Member Recommitment Received | {payload.full_name}",
-                    "html": email_html(body, f"VIEW {first.upper()}'S RESPONSE", view_url),
-                })
-                await db.reactivation_board_members.update_one(
-                    {"member_record_id": record["member_record_id"]},
-                    {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now}})
+                    first = payload.full_name.split(" ")[0]
+                    founder_first = context["founder_name"].split(" ")[0] if context["founder_name"] else "there"
+                    guided = await db.board_reactivation_intakes.find_one(
+                        {"user_id": record["user_id"], "guided_session_id": {"$exists": True, "$ne": ""}},
+                        {"_id": 0, "guided_session_id": 1}, sort=[("submitted_at", -1)]) or {}
+                    if guided.get("guided_session_id"):
+                        view_url = (f"{origin_of(request)}/board-recommitment/dashboard?"
+                                    f"session_id={guided['guided_session_id']}&member={record['member_record_id']}#recommitment-responses")
+                    else:
+                        view_url = f"{origin_of(request)}/app/reactivation/self-guided/module/3?member={record['member_record_id']}"
+                    body = (
+                        f"Hi {founder_first},\n\n"
+                        f"{payload.full_name} has completed their Board Member Profile & Recommitment Form for {context['organization']}.\n\n"
+                        "Their responses are now available in your Board Reactivation workspace and will help you prepare for your conversation with them.\n\n"
+                        f"[VIEW {first.upper()}'S RESPONSE]\n\n"
+                        "Nonprofit Board Builder"
+                    )
+                    resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+                    await resend.Emails.send_async({
+                        "from": os.environ["NONPROFIT_SENDER"], "to": [context["founder_email"]],
+                        "subject": f"Board Member Recommitment Received | {payload.full_name}",
+                        "html": email_html(body, f"VIEW {first.upper()}'S RESPONSE", view_url),
+                    })
+                    await db.reactivation_board_members.update_one(
+                        {"member_record_id": record["member_record_id"]},
+                        {"$set": {"owner_notification_status": "Sent", "owner_notification_sent_at": now}})
         except Exception:
             logger.exception("Founder recommitment notification failed for %s", record["member_record_id"])
             await db.reactivation_board_members.update_one(

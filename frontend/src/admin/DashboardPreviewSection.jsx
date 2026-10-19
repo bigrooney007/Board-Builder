@@ -68,7 +68,7 @@ export const DashboardPreviewSection = () => {
           <h3>{dashboard.name}</h3>
           <p>{dashboard.description}</p>
 
-          {dashboard.key === "recruitment" ? <div style={{display:"grid",gap:8,marginTop:16}}><a className="button" href="/admin/services/recruitment">OPEN CURRENT RECRUITMENT TESTS AND WORKSPACE</a></div> : <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+          {["recruitment","board-recommitment"].includes(dashboard.key) ? <div style={{display:"grid",gap:8,marginTop:16}}><a className="button" href={"/admin/services/"+dashboard.key}>OPEN CURRENT SERVICE TESTS AND WORKSPACE</a></div> : <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
             {["strategic-planning", "board-fundraising-game"].includes(dashboard.key) && <button className="button button-small button-outline" disabled={Boolean(opening)} onClick={() => launch(dashboard.key, "intro")}>TEST CURRENT INTRODUCTORY QUESTIONS</button>}
             <button
               className="button button-small"

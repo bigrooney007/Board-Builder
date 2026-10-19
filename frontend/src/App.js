@@ -17,6 +17,7 @@ import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
 import GuidedServicePage from "@/services/GuidedServicePage";
 import ServiceAdminPage from "@/services/ServiceAdminPage";
+import {ServiceLanding,ServiceStart} from "@/services/ServiceEntries";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import RecruitQuestionsPage from "@/funnels/RecruitQuestionsPage";
@@ -244,8 +245,8 @@ function CleanRoutes() {
       <Route path="/strategic-leadership-assistant/:token" element={<StrategicLeadershipAssistantPage />} />
 
       {/* Board Recommitment */}
-      <Route path="/board-recommitment" element={<PublicProductEntry><GuidedLandingPage product="board-recommitment" /></PublicProductEntry>} />
-      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<PublicProductEntry><GuidedStartPage product="board-recommitment" /></PublicProductEntry>} />
+      <Route path="/board-recommitment" element={<PublicProductEntry><ServiceLanding service="board-recommitment" /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<PublicProductEntry><ServiceStart service="board-recommitment" /></PublicProductEntry>} />
       <Route path="/board-recommitment/video" element={<PublicProductEntry><GuidedVideoPage product="board-recommitment" /></PublicProductEntry>} />
       <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/welcome" element={<GuidedPaidContinue product="board-recommitment" />} />

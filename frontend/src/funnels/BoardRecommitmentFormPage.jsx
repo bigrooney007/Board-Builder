@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2 } from "lucide-react";
 import { FunnelLayout } from "./FunnelLayout";
+import GuidedRecommitmentParticipant from "@/services/GuidedRecommitmentParticipant";
 import { usePageMeta } from "@/seo";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -89,6 +90,7 @@ export default function BoardRecommitmentFormPage() {
     }
   };
 
+  if (context?.guided_form) return <GuidedRecommitmentParticipant context={context} token={token}/>;
   return (
     <FunnelLayout restrained isolated>
       <main data-testid="recommit-page">

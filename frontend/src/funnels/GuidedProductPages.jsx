@@ -108,18 +108,18 @@ const CONFIG=GUIDED_PRODUCT_CONFIG;
 const useProduct=(explicitProduct)=>{const p=explicitProduct; if(!CONFIG[p]) throw new Error("Guided product route is not bound to a valid flow"); const content=useHomepageContent(p,CONFIG[p]); return [p,content]};
 const usePaidFlow=(sessionId,product)=>{const [allowed,setAllowed]=useState(null);useEffect(()=>{if(!sessionId){setAllowed(false);return}axios.get(`${API}/payments/flow-status/${sessionId}`,{params:{flow:product}}).then(r=>setAllowed(r.data.payment_status==="paid")).catch(()=>setAllowed(false))},[sessionId,product]);return allowed};
 
-export function GuidedLandingPage({ product: explicitProduct }) {
- const [product,c]=useProduct(explicitProduct);const Icon=c.icon;const nav=useNavigate();
+export function GuidedLandingPage({ product: explicitProduct, landingOverride=null }) {
+ const [product,saved]=useProduct(explicitProduct);const c=landingOverride?{...saved,headline:landingOverride.headline,sub:landingOverride.description,primaryCta:landingOverride.cta,promise:landingOverride.description}:saved;const Icon=c.icon;const nav=useNavigate();
  const startPath=PUBLIC_START_ROUTES[product];
  useLandingPageMeta(`/${product}`);
  useEffect(()=>{if(window.location.hash===`#${product}-lead-form`)nav(startPath,{replace:true})},[product,startPath,nav]);
  return <BfgShell><main className="guided-page" data-testid={`${product}-landing-page`}>
-  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
+  <section className="guided-hero"><span className="bfg-badge"><Icon size={15}/>{c.eyebrow}</span><h1>{c.headline}</h1><p>{c.sub}</p><Link className="bfg-btn bfg-btn-primary guided-hero-cta" to={startPath}>{c.primaryCta||FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
   <section className="guided-principle"><h2>{c.promise}</h2></section>
   <section className="guided-section"><p className="bfg-eyebrow">THE PROCESS</p><h2>{c.processHeading}</h2><div className="guided-steps">{c.steps.map(([n,t,x])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{x}</p></article>)}</div></section>
   <section className="guided-section guided-soft"><p className="bfg-eyebrow">WHAT YOU GET</p><h2>{c.deliverablesHeading}</h2><div className="guided-outcomes">{c.outcomes.map(x=><div key={x}>✓ {x}</div>)}</div></section>
   <TestimonialCarousel heading="What Nonprofit Leaders We Have Worked With Are Saying" idPrefix={product}/>
-  <section className="guided-final-cta"><h2>{c.finalHeading}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>{FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
+  <section className="guided-final-cta"><h2>{c.finalHeading}</h2><Link className="bfg-btn bfg-btn-primary guided-final-button" to={startPath}>{c.primaryCta||FREE_START_LABEL} <ArrowRight size={17}/></Link></section>
  </main></BfgShell>
 }
 

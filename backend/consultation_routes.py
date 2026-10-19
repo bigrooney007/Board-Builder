@@ -55,6 +55,11 @@ def safe_url(value, *, internal=False, calendly=False):
 async def content(db):
     saved = await db.site_content.find_one({"key": CONTENT_KEY}, {"_id": 0}) or {}
     result = copy.deepcopy(DEFAULTS)
+    personal=(saved.get("content") or {}).get("personal") or {}
+    if not saved.get("board_transformation_copy_applied") and personal.get("gameCta")=="GET MY BOARD MEMBERS FUNDRAISING" and personal.get("gameUrl") in {"/board-fundraising","/board-fundraising-game"}:
+        updates={"content.personal."+key:DEFAULTS["personal"][key] for key in ("gameHeading","gameDescription","gameCta","gameUrl")}
+        await db.site_content.update_one({"key":CONTENT_KEY,"board_transformation_copy_applied":{"$ne":True}},{"$set":{**updates,"board_transformation_copy_applied":True}})
+        saved=await db.site_content.find_one({"key":CONTENT_KEY},{"_id":0}) or saved
     for section in result:
         result[section].update((saved.get("content") or {}).get(section) or {})
     return result

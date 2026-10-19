@@ -41,7 +41,7 @@ test('personal page uses the existing portrait, biography, all testimonials and 
  expect(node.textContent).toContain("I've experienced nonprofit work from almost every side.");
  expect(link('BOOK A SESSION WITH ROONEY').getAttribute('href')).toBe('/consultation');
  expect(link('DEVELOP MY FUNDRAISING STRATEGY').getAttribute('href')).toBe('https://autofundraiser.com/');
- expect(link('GET MY BOARD MEMBERS FUNDRAISING').getAttribute('href')).toBe('/board-fundraising');
+ expect(link('COMPLETE BOARD TRANSFORMATION').getAttribute('href')).toBe('https://nonprofitboardbuilder.com/');
  expect(node.querySelector('[data-testid="rooney-testimonial-count"]').textContent).toContain('1 / 8');
  expect(node.textContent.toLowerCase()).not.toContain('free consultation');
 });

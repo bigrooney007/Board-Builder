@@ -5,7 +5,7 @@ PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning
 NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning"}
 PRODUCTS = {key: "rooney_guided_" + key.replace("-", "_") + "_" + str(value // 100) for key, value in PRICES.items()}
 # Parts Three and Four activate their public funnels only after their own verification.
-ACTIVE_SERVICES = {"recruitment"}
+ACTIVE_SERVICES = {"recruitment", "board-recommitment"}
 FLOW_VERSION = "founder-guided-2026"
 
 def question(key, prompt, help="", required=True, kind="textarea", **extra):
@@ -91,7 +91,7 @@ def defaults(service):
     groups = {"entry": deepcopy(entry)}
     if service == "strategic-planning":
         groups.update({name: [question(q["key"], q["prompt"], q.get("help", "")) for q in QUESTIONS] for name in ("leader", "board")})
-    return {"question_groups": groups, "first_email": deepcopy(FIRST[service]),
+    result = {"question_groups": groups, "first_email": deepcopy(FIRST[service]),
         "followups": [email(subject, "Hello {{first_name}},\n\n" + body + "\n\nYour information for {{organization}} remains saved.", after_previous_minutes=4320) for subject, body in FOLLOWUP_THEMES[service]],
         "sequence_paused": False,
         "video_email": email("I Recorded a Video for You About Your {{service_name}}", "Hello {{first_name}},\n\nI've recorded a short video for you about the information you shared regarding {{organization}}.\n\nYou can watch your video using the link below.\n\n{{continuation_message}}"),
@@ -111,3 +111,11 @@ def defaults(service):
             "portfolio_delivery": email("Your Approved Board Member Portfolio", "Hello {{participant_name}},\n\nYour approved portfolio for {{organization}} sets out the role, responsibilities and next steps you have agreed. Please review it through your secure link and keep a copy for your work with the organization.", "OPEN MY APPROVED PORTFOLIO"),
         },
         "landing": {"headline": "Launch Your Board Recruitment Campaign in 30 Minutes." if service == "recruitment" else "Get Your Board Members to Recommit and Step Up", "description": "Start for free by telling us about your board. During your $497 guided session, Rooney will help you agree on the people to recruit, prepare your materials and launch your campaign when the necessary information and approvals are ready." if service == "recruitment" else "Help your present board members decide how they will contribute to your organization's future, clarify their responsibilities, and begin taking action to support your mission.", "cta": "START BOARD RECRUITMENT FOR FREE" if service == "recruitment" else "START MY BOARD RECOMMITMENT FOR FREE"}}
+
+    if service == "board-recommitment":
+        from guided_recommitment import participant_defaults
+        result["participant_form"] = participant_defaults()
+        result["delivery_email"]["body"] = "Hello {{first_name}},\n\nYour approved Board Recommitment resources for {{organization}} are ready. Use your secure link to review the board members' responses, retrieve approved conversation guides and portfolios, and continue the process with your organization. Record final arrangements only after the appropriate conversations and organizational decisions."
+        result["operational_emails"]["active_confirmation"]["body"] = "Hello {{participant_name}},\n\nThank you for confirming how you will continue supporting {{organization}}.\n\n{{responsibilities}}\n\nYour organization will share your approved portfolio and any further resources separately."
+        result["operational_emails"]["active_confirmation"]["cta"] = "VIEW MY RECOMMITMENT FORM"
+    return result

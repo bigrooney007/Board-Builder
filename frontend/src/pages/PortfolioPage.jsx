@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Bot, Download } from "lucide-react";
 import { usePageMeta } from "@/seo";
+import {Shell,RichContent} from "@/services/shared";
 import { portfolioPageText } from "../content/appContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -27,6 +28,7 @@ export default function PortfolioPage() {
     );
   }
 
+  if (data.guided_branding) return <Shell title={data.title}>{data.guided_branding.logo_data&&<img className="guided-logo" src={data.guided_branding.logo_data} alt={data.organization}/>}<h2>{data.organization}</h2><p>{data.member_name}</p><RichContent text={data.display_text}/><a className="button" href={`${API}/portfolio/${token}/pdf`}>DOWNLOAD MY APPROVED PORTFOLIO</a></Shell>;
   const bodyLines = data.display_text.split("\n");
   return (
     <main style={{ background: "#f2f2f2", minHeight: "100vh", padding: "34px 12px", fontFamily: "Georgia, 'Times New Roman', serif", color: "#000" }} data-testid="portfolio-page">
