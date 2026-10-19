@@ -1,5 +1,5 @@
 """Actual guided Planning pages on desktop/mobile, with controlled external providers."""
-import asyncio,json,os
+import asyncio,json,os,re
 from pathlib import Path
 from playwright.async_api import async_playwright,expect
 BASE='http://127.0.0.1:8765'
@@ -18,6 +18,7 @@ async def main():
     assert len(row['question_snapshot'])==3
     for i in range(3):
      await page.get_by_label('Your answer',exact=True).fill('Expand access to learning through agreed programs and partnerships.');await page.get_by_role('button',name='SAVE MY ANSWERS' if i==2 else 'SAVE AND CONTINUE',exact=True).click()
+     if i<2:await expect(page.get_by_text(f'Question {i+2} of 3',exact=True)).to_be_visible()
     await page.wait_for_url('**/services/strategic-planning/received/*');await page.goto(BASE+'/services/strategic-planning/offer/'+token);await page.get_by_role('button',name='PAY $1,997 AND BEGIN MY GUIDED SERVICE',exact=True).click();await page.get_by_role('button',name='Complete Payment',exact=True).click();await page.wait_for_url('**/services/strategic-planning/setup/*');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY STRATEGIC PLANNING SESSION →',exact=True).wait_for()
     await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);await page.goto(BASE+'/admin/services/strategic-planning');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click();await page.get_by_label('Existing organization mission',exact=True).fill('Help children access learning.');await page.get_by_label('Board planning meeting date',exact=True).fill('2026-11-15');await page.get_by_label('Board planning meeting start time',exact=True).fill('10:00');await page.get_by_label('Individual response deadline',exact=True).fill('2026-11-10');await page.get_by_role('button',name='Add Existing Program',exact=True).click();await page.get_by_label('Program 1 name',exact=True).fill('After-School Education');await page.get_by_role('button',name='Add Existing Program',exact=True).click();await page.get_by_label('Program 2 name',exact=True).fill('Youth Coding');await page.get_by_role('button',name='Save Planning Setup',exact=True).click();await page.get_by_role('button',name='Prepare Lead User Planning Form',exact=True).click();await page.get_by_label('Planning participant full name',exact=True).fill('Sample Planning Board Member');await page.get_by_label('Planning participant email address',exact=True).fill(f'planning-board-{width}@example.org');await page.get_by_role('button',name='Add Planning Participant',exact=True).click();await expect(page.get_by_role('heading',name='Sample Planning Board Member · Board Member',exact=True)).to_be_visible()
     data=await (await ctx.request.get(BASE+base,headers=headers)).json();assert len(data['participants'])==2
@@ -25,6 +26,7 @@ async def main():
      form=await (await ctx.request.get(BASE+'/api/strategic-planning-form/'+person['form_token'])).json();assert person['role']=='Lead User' or not form['existing_answers'];member=await ctx.new_page();await member.goto(BASE+'/strategic-planning-form/'+person['form_token']);questions=[q for s in form['form']['sections'] for q in s['questions']]
      for i,q in enumerate(questions):
       await member.get_by_label('Your answer',exact=True).fill('Support this agreed priority through our existing programs and confirmed contributions.');await member.get_by_role('button',name='SUBMIT MY PLANNING IDEAS' if i==len(questions)-1 else 'SAVE AND CONTINUE',exact=True).click()
+      if i<len(questions)-1:await expect(member.get_by_text(re.compile(rf'Question {i+2} of {len(questions)}$'))).to_be_visible()
      await member.get_by_role('heading',name='Thank You for Sharing Your Ideas',exact=True).wait_for();await member.close()
     await page.get_by_role('button',name='Refresh Planning Workspace',exact=True).click();await page.get_by_role('button',name='Open Live Strategic Planning Controls',exact=True).click();await page.get_by_role('button',name='START STRATEGIC PLANNING SESSION',exact=True).click();await page.get_by_role('heading',name='Vision',exact=True).wait_for()
     section_count=len((await (await ctx.request.get(BASE+'/api/guided/strategic-planning/session?session_id='+data['session_id'],headers=headers)).json())['sections'])

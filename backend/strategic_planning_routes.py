@@ -2145,7 +2145,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
 
     @router.post("/session/transcript")
     async def save_strategic_session_transcript(request: Request):
-        body=await request.json();p=await ensure_project(body.get("session_id",""));transcript=str(body.get("transcript","")).strip()[:60000]
+        body=await request.json();p=await ensure_project(body.get("session_id",""));transcript=guided_planning.transcript_text(p,body.get("transcript", ""))
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"project_id":p["project_id"],"transcript":transcript,"updated_at":now_iso()}},upsert=True)
         return {"saved":True}
 
@@ -2226,6 +2226,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
     async def complete_strategic_session(request: Request):
         body=await request.json();sid=body.get("session_id","");decisions=body.get("decisions") or {};transcript=str(body.get("transcript","")).strip()[:60000]
         p=await ensure_project(sid);_,_,intake=await paid(sid)
+        if p.get("guided_service_customer_id"):transcript=guided_planning.transcript_text(p,body.get("transcript", ""))
         form=await db.sp_forms.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         people=await db.sp_participants.find({"project_id":p["project_id"],"status":"COMPLETED"},{"_id":0}).to_list(300)
         saved=await db.sp_sessions.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
@@ -2483,16 +2484,26 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {}
         if not session or not plan.get("areas"):
             raise HTTPException(409,"Complete the Strategic Planning Session first")
+        generation_query={"project_id":p["project_id"]}
         if plan.get("final_status")=="Generating":
-            return {"status":"Generating"}
+            if not p.get("guided_service_customer_id"):return {"status":"Generating"}
+            started=plan.get("generation_started_at") or plan.get("updated_at") or ""
+            try:
+                if (datetime.now(timezone.utc)-datetime.fromisoformat(started)).total_seconds()<600:return {"status":"Generating"}
+            except ValueError:pass
         if plan.get("final_status") in {"Draft","Approved"} and plan.get("final_display_text"):
             return {"status":plan.get("final_status")}
 
         _,_,intake=await paid(sid)
-        await db.sp_plans.update_one(
-            {"project_id":p["project_id"]},
-            {"$set":{"final_status":"Generating","final_generation_error":"","updated_at":now_iso()}}
-        )
+        if p.get("guided_service_customer_id"):
+            lease=secrets.token_urlsafe(18)
+            query={"project_id":p["project_id"],"final_status":plan.get("final_status", "NONE")}
+            if plan.get("generation_request_id"):query["generation_request_id"]=plan["generation_request_id"]
+            claim=await db.sp_plans.update_one(query,{"$set":{"final_status":"Generating","generation_request_id":lease,"generation_started_at":now_iso(),"final_generation_error":"","updated_at":now_iso()}})
+            if not claim.modified_count:return {"status":"Generating"}
+            generation_query["generation_request_id"]=lease
+        else:
+            await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"final_status":"Generating","final_generation_error":"","updated_at":now_iso()}})
 
         async def run_generation():
             try:
@@ -2528,7 +2539,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
                     )
                 display=final_display(generated,p["organization_name"])
                 if p.get("guided_service_customer_id"):
-                    await db.sp_plans.update_one({"project_id":p["project_id"]},{"$set":{"status":"PLAN READY","structured":generated,"display_text":display,"final_status":"Draft","final_display_text":display,"generated_from_session_at":now_iso(),"updated_at":now_iso()}})
+                    await db.sp_plans.update_one(generation_query,{"$set":{"status":"PLAN READY","structured":generated,"display_text":display,"final_status":"Draft","final_display_text":display,"generated_from_session_at":now_iso(),"updated_at":now_iso()}})
                     return
 
                 known=[{"participant_id":x.get("participant_id",""),"name":x.get("name",""),"email":x.get("email",""),"role":x.get("role","")} for x in people]
@@ -2659,7 +2670,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
             except Exception as exc:
                 logger.exception("Strategic session plan generation failed for %s",p["project_id"])
                 await db.sp_plans.update_one(
-                    {"project_id":p["project_id"]},
+                    generation_query,
                     {"$set":{"final_status":"Failed","final_generation_error":str(exc)[:500],"updated_at":now_iso()}}
                 )
 

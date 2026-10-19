@@ -29,6 +29,8 @@ def planning_questions(group, originals):
         rows.append({"id":q["key"],"key":q["key"],"prompt":prompt,"help":q.get("help", ""),"required":True,"type":"textarea","options":[],"archived":False,"section_key":section,"section_title":TITLES[section],"per_program":section=="programs"})
         if section=="goals":
             rows.append({"id":"planning_objectives","key":"planning_objectives","prompt":"What specific objectives would help your organization achieve these goals?" if group=="leader" else "Which specific objectives would you recommend to help the organization achieve its goals?","help":"Explain the practical results you would like the organization to achieve.","required":True,"type":"textarea","options":[],"archived":False,"section_key":"objectives","section_title":"Objectives","per_program":False})
+        if section=="programs":
+            rows.append({"id":"program_proposals","key":"program_proposals","prompt":"Would you recommend a new program or a change to the programs we offer?","help":"Describe any proposed new program, or a program you believe should change or end. Explain why. If you have no additional suggestion, you can leave this blank.","required":False,"type":"textarea","options":[],"archived":False,"section_key":"program_proposals","section_title":"Proposed Program Changes","per_program":False})
     return rows
 
 async def bind_request(request: Request):
@@ -96,12 +98,22 @@ def session_sections(people,saved):
                 chunks=[x.strip(" \t-*•") for x in re.split(r"\n\s*\n|\n(?=\s*[-*•]\s)",raw) if x.strip()]
                 for index,text in enumerate(chunks):
                     section["ideas"].append({"idea_id":f"{person['participant_id']}:{q['id']}:{index}","participant_id":person["participant_id"],"participant_name":person.get("name", "Board member"),"question_id":q["id"],"question":q["prompt"],"idea":text,"source_response":raw})
+    for extra in saved.get("discussion_sections",[]):
+        if not any(s["key"]==extra["key"] for s in sections):
+            sections.append({**extra,"ideas":[],"selected_idea_ids":[],"decision_mode":"selected_ideas","allow_keep_current_mission":False,"recommendations":[],"is_action_planning":False,"is_role_planning":False,"current_context":""})
     for section in sections:
         section["ideas"].extend(copy.deepcopy((saved.get("discussion_ideas") or {}).get(section["key"],[])))
         valid={x["idea_id"] for x in section["ideas"]}
         section["selected_idea_ids"]=[x for x in (saved.get("decisions") or {}).get(section["key"],[]) if x in valid]
         section["review_notes"]=(saved.get("review_notes") or {}).get(section["key"],{})
     return sections
+
+def transcript_text(project,value):
+    text=str(value or "").strip()
+    if project.get("guided_service_customer_id"):
+        if len(text)>240000:raise HTTPException(422,"Keep the transcript within 240,000 characters. Save a separate copy of any additional notes.")
+        return text
+    return text[:60000]
 
 def approved_context(project,plan,session,people):
     areas=copy.deepcopy(plan.get("areas") or [])
@@ -209,7 +221,7 @@ def create_guided_planning_router(db):
         if group=="board" and email==row["email"]:raise HTTPException(409,"This email belongs to the lead user. Prepare their separate form.")
         config,_,version=await settings(db,"strategic-planning");content=form_content(config,group,p)
         if not p.get("planning_meeting") or not p.get("response_deadline"):raise HTTPException(409,"Save organization setup before preparing personal forms.")
-        person={"participant_id":new_id(),"project_id":p["project_id"],"name":payload.name,"email":email,"role":"Lead User" if group=="leader" else payload.role or "Board Member","expertise":"","status":"NOT SENT","form_token":secrets.token_urlsafe(32),"review_token":secrets.token_urlsafe(32),"review_status":"NOT SENT","form_version":version,"form_snapshot":content,"questionnaire_version":questionnaire.VERSION,"created_at":now()}
+        person={"participant_id":new_id(),"project_id":p["project_id"],"name":payload.name,"email":email,"role":"Lead User" if group=="leader" else "Board Member","board_role":payload.role if group=="board" else "","expertise":"","status":"NOT SENT","form_token":secrets.token_urlsafe(32),"review_token":secrets.token_urlsafe(32),"review_status":"NOT SENT","form_version":version,"form_snapshot":content,"questionnaire_version":questionnaire.VERSION,"created_at":now()}
         if group=="leader":
             first={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row.get("question_snapshot",[])}
             keys={q["id"] for s in content["sections"] for q in s["questions"]}
@@ -281,6 +293,17 @@ def create_guided_planning_router(db):
         if payload.get("active") and payload.get("consent_confirmed") is not True:raise HTTPException(422,"Confirm the participants' consent before starting transcription.")
         await db.sp_sessions.update_one({"project_id":p["project_id"]},{"$set":{"recording_active":bool(payload.get("active")),"recording_consent_confirmed":bool(payload.get("consent_confirmed")),"recording_updated_at":now()}},upsert=True)
         return {"saved":True}
+
+    @router.post(base+"/subjects")
+    async def add_discussion_subject(ident:str,payload:dict,request:Request):
+        row=await admin_record(db,"strategic-planning",ident,request,True)
+        live=await db.sp_sessions.find_one({"project_id":row["customer_id"]},{"_id":0}) or {}
+        if live.get("status") in {"REVIEW","COMPLETED"}:raise HTTPException(409,"Return to the discussion before adding a program.")
+        name=str(payload.get("name", "")).strip()[:300]
+        if not name or payload.get("confirmed") is not True:raise HTTPException(422,"Name and confirm the proposed program to discuss.")
+        section={"key":"program_"+new_id(),"title":name,"subtitle":"Review the proposed program and record only the decisions the group explicitly adopts."}
+        await db.sp_sessions.update_one({"project_id":row["customer_id"]},{"$push":{"discussion_sections":section},"$set":{"project_id":row["customer_id"],"updated_at":now()}},upsert=True)
+        return {"section":section}
 
     async def plan_for(row):return await db.sp_plans.find_one({"project_id":row["customer_id"]},{"_id":0}) or {}
 

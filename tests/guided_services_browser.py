@@ -20,6 +20,7 @@ async def main():
    for i in range(len(details['question_snapshot'])):
     await page.get_by_label('Your answer',exact=True).fill('We help children access learning.' if i<len(details['question_snapshot'])-1 else '1')
     await page.get_by_role('button',name='SAVE MY ANSWERS' if i==len(details['question_snapshot'])-1 else 'SAVE AND CONTINUE',exact=True).click()
+    if i<len(details['question_snapshot'])-1:await expect(page.get_by_text(f"Question {i+2} of {len(details['question_snapshot'])}",exact=True)).to_be_visible()
    await page.wait_for_url('**/services/recruitment/received/*');await expect(page.get_by_role('heading',name="Thank You. We've Received Your Board Recruitment Information.",exact=True)).to_be_visible();assert 'PAY $497' not in await page.locator('body').inner_text()
    await page.goto(BASE+'/services/recruitment/offer/'+token);await page.get_by_role('button',name='PAY $497 AND BEGIN MY GUIDED SERVICE',exact=True).click();await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click()
    await page.wait_for_url('**/services/recruitment/setup/*');await page.get_by_label('Primary organization color',exact=True).fill('#123456');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD RECRUITMENT SESSION →',exact=True).wait_for()

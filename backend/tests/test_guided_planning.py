@@ -114,6 +114,12 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('POST',sp+'/session/decision',{'session_id':sid,'section_key':keys[0],'decision':[idea['idea']['idea_id']]},admin=True)
         await self.req('POST',sp+'/session/transcript',{'session_id':sid,'transcript':'Corrected meeting notes.'},admin=True)
         current=await self.req('GET',sp+'/session?session_id='+sid,admin=True);self.assertEqual(current['transcript'],'Corrected meeting notes.')
+        await self.req('POST',sp+'/session/transcript',{'session_id':sid,'transcript':'a'*80000},admin=True)
+        self.assertEqual(len((await self.req('GET',sp+'/session?session_id='+sid,admin=True))['transcript']),80000)
+        extra=await self.req('POST',base+'/subjects',{'name':'New Community Program','confirmed':True},admin=True)
+        added=await self.req('POST',sp+'/session/idea',{'session_id':sid,'section_key':extra['section']['key'],'text':'Discuss this new program before adopting any commitment.'},admin=True)
+        await self.req('POST',sp+'/session/decision',{'session_id':sid,'section_key':extra['section']['key'],'decision':[added['idea']['idea_id']]},admin=True)
+
 
     async def test_generation_review_changes_version_adoption_final_delivery_and_downloads(self):
         token,public,row,base,lead,board,reviewed=await self.completed_meeting();sid=row['workspace_user_id'];contexts=[]
@@ -149,3 +155,16 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
         msg=await self.req('POST',base+'/delivery-preview',{},admin=True);message={**msg,'approved':True,'request_id':str(uuid.uuid4())}
         await self.req('POST',base+'/deliver',message,admin=True);sent=self.mail.call_count;await self.req('POST',base+'/deliver',message,admin=True);self.assertEqual(self.mail.call_count,sent)
         saved=await self.db.sp_plans.find_one({'project_id':row['customer_id']});self.assertEqual(len(saved['versions']),3)
+
+    async def test_interrupted_generation_can_resume_without_repeating_the_meeting(self):
+        token,public,row,base,lead,board,reviewed=await self.completed_meeting()
+        await self.db.sp_plans.update_one({'project_id':row['customer_id']},{'$set':{'final_status':'Generating','generation_request_id':'interrupted','generation_started_at':(datetime.now(timezone.utc)-timedelta(minutes=11)).isoformat()}})
+        async def generated(*args):return {'sections':[{'heading':'Agreed Direction','content':'The adopted priorities remain saved.'}]}
+        with patch('strategic_planning_routes.generate_structured',side_effect=generated):
+            await self.req('POST','/guided/strategic-planning/session-plan',{'session_id':row['workspace_user_id']},admin=True)
+            for _ in range(100):
+                plan=await self.db.sp_plans.find_one({'project_id':row['customer_id']})
+                if plan['final_status']!='Generating':break
+                await asyncio.sleep(.01)
+        self.assertEqual(plan['final_status'],'Draft');self.assertNotEqual(plan['generation_request_id'],'interrupted')
+        self.assertEqual((await self.db.sp_sessions.find_one({'project_id':row['customer_id']}))['status'],'COMPLETED')

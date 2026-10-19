@@ -117,11 +117,11 @@ jobs:
         if: always() && steps.build.outcome == 'success'
         run: |
           uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
-          python tests/simplified_fundraising_browser.py
-          python tests/professional_entry_browser.py
-          python tests/guided_services_browser.py
-          python tests/guided_recommitment_browser.py
-          python tests/guided_planning_browser.py
+          result=0
+          for check in simplified_fundraising_browser professional_entry_browser guided_services_browser guided_recommitment_browser guided_planning_browser; do
+            python "tests/$check.py" || result=1
+          done
+          exit "$result"
       - name: Read-only deployed public availability and payment mode
         if: always()
         run: |
