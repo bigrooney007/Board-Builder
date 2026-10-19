@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { ArrowRight } from "lucide-react";
@@ -18,7 +19,7 @@ export default function RecruitmentHomePage() {
     if (window.location.hash === "#recruit-intake") navigate(startPath, { replace: true });
   }, [navigate, startPath]);
   const [guided, setGuided] = useState(null);
-  useEffect(() => { import("@/services/shared").then(({api}) => api.get("/services/recruitment/questions").then(r=>setGuided(r.data.landing)).catch(()=>{})); }, []);
+  useEffect(() => { let alive=true; axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services/recruitment/questions`).then(r=>{if(alive)setGuided(r.data.landing)}).catch(()=>{}); return()=>{alive=false}; }, []);
   const savedCopy = useHomepageContent("recruitment", { ...defaultCopy,
     headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",

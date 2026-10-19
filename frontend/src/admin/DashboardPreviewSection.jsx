@@ -7,7 +7,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const client = axios.create({ baseURL: API, withCredentials: true });
 
 const DASHBOARDS = [
-  { key: "recruitment", name: "Board Recruitment", description: "Test the six Recruitment Questions, recommended Board profiles, campaign, applicants, onboarding and final Board Member Portfolio." },
+  { key: "recruitment", name: "Board Recruitment", description: "Test the current admin-published questions, guided $497 payment, branding, booking and Recruitment service workspace." },
   { key: "board-fundraising-game", name: "Board Fundraising Game", description: "Test audience-by-audience questions, personal participation, meeting setup, Board invitations, group adoption and the final approved strategy." },
   { key: "strategic-planning", name: "Strategic Planning", description: "Begin at payment confirmation with the organization answers already saved. Continue through onboarding, the dashboard, Board forms and the planning session." },
   { key: "board-recommitment", name: "Board Recommitment", description: "Begin at payment confirmation with the four answers already saved. Continue through onboarding, the dashboard, responses and Portfolios." },
@@ -68,7 +68,7 @@ export const DashboardPreviewSection = () => {
           <h3>{dashboard.name}</h3>
           <p>{dashboard.description}</p>
 
-          <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+          {dashboard.key === "recruitment" ? <div style={{display:"grid",gap:8,marginTop:16}}><a className="button" href="/admin/services/recruitment">OPEN CURRENT RECRUITMENT TESTS AND WORKSPACE</a></div> : <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
             {["strategic-planning", "board-fundraising-game"].includes(dashboard.key) && <button className="button button-small button-outline" disabled={Boolean(opening)} onClick={() => launch(dashboard.key, "intro")}>TEST CURRENT INTRODUCTORY QUESTIONS</button>}
             <button
               className="button button-small"
@@ -87,7 +87,7 @@ export const DashboardPreviewSection = () => {
             >
               {opening === loadedKey ? "OPENING PRELOADED JOURNEY…" : "OPEN FULLY PRELOADED JOURNEY"}
             </button>
-          </div>
+          </div>}
         </article>;
       })}
     </div>

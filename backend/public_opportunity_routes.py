@@ -137,7 +137,7 @@ def create_public_opportunity_router(db) -> APIRouter:
         try:
             from guided_workspace import notify_guided_owner
             guided_notice = await notify_guided_owner(db, opportunity["user_id"], "guided-application-"+application["application_id"],
-                "You Have a New Board Applicant", f"{snapshot.get('full_name') or 'A candidate'} has applied for your board opportunity. Open the secure application to review their answers, CV and appropriate next steps.", "?applicant="+application["application_id"])
+                "You Have a New Board Applicant", f"{snapshot.get('full_name') or 'A candidate'} has applied for your board opportunity. Open the secure application to review their answers, CV and appropriate next steps.", "?applicant="+application["application_id"],template_key="application_notice",variables={"applicant_name":snapshot.get("full_name") or "A candidate"})
             if guided_notice is not None:
                 await db.opportunity_applications.update_one({"application_id":application["application_id"]},{"$set":{"owner_notification_status":guided_notice["status"]}})
             else:

@@ -11,6 +11,10 @@ async def generation(kind,context,instructions=''):
     if kind in {'recruitment_assessment_profiles','powerhouse_board_blueprint'}:
         return {'priority_roles':[{'role_name':'Education Partnerships Leader','why_this_person_is_important':'Connect the organization with local educators.','how_this_person_can_support':'Develop board-level partnerships using agreed introductions.','what_to_look_for':['Education partnerships experience']} ]}
     if kind=='board_opportunity':return {'headline':'Help Children Access Learning','about_the_organization':'We help children access learning.','who_we_are_looking_for':'Education Partnerships Leader','how_to_apply':'Use the board application.'}
+    if kind=='board_recruitment_job_post':return {'title':'Help Children Access Learning','post_body':'Serve as an Education Partnerships Leader. Apply through [APPLICATION LINK].'}
+    if kind=='social_posts':return {'posts':[{'post_text':'Support children through education partnerships. Apply through [APPLICATION LINK].'} for _ in range(3)]}
+    if kind=='referral_request_email':return {'message':'Please introduce a suitable Education Partnerships Leader. They can apply through [APPLICATION LINK].'}
+    if kind in {'recruitment_emails','general_interview_invitation','personal_invitation_email','candidate_referee_request','reference_request_email','referee_confirmation_email'}:return {'subject':'Your Support for Our Mission','body':'Please help our organization support children through education partnerships. Apply through [APPLICATION LINK] or reply with the information requested.'}
     if kind=='interview_guide':return {'sections':[{'heading':'Explore Their Agreed Contribution','questions':['What motivates your interest in this mission?','Which partnerships could you help develop?','What availability can you realistically offer?']}]}
     return {'sections':[{'heading':kind.replace('_',' ').title(),'content':'Support children through the responsibilities discussed and agreed with the organization. Dates, costs and further commitments require confirmation.'}]}
 def install(app,db):

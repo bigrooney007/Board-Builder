@@ -5,6 +5,38 @@ on:
   pull_request:
     branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations, feature/guided-board-services]
 jobs:
+  guided-services:
+    if: github.ref_name == 'feature/guided-board-services'
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+    env:
+      RECOVERY_ACCEPTANCE: '1'
+      MONGO_URL: mongodb://127.0.0.1:27017
+      JWT_SECRET: isolated-current-workflow-secret-not-for-production
+      STRIPE_SECRET_KEY: sk_test_isolated_provider_disabled
+      STRIPE_WEBHOOK_SECRET: whsec_isolated_fixture
+      CALENDLY_WEBHOOK_SIGNING_KEY: isolated-calendly-fixture-secret
+      RESEND_API_KEY: isolated-provider-disabled
+      NONPROFIT_SENDER: test@example.org
+      PUBLIC_ORIGIN: http://127.0.0.1:8765
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing pinned test dependencies
+        run: |
+          python -c 'from pathlib import Path; names={"fastapi","starlette","pydantic","pydantic_core","httpx","motor","pymongo","bcrypt","PyJWT","uvicorn","email-validator","resend","stripe","reportlab","Pillow","python-multipart","python-docx","pypdf"}; Path("/tmp/current-requirements.txt").write_text("\n".join(x for x in Path("backend/requirements.txt").read_text().splitlines() if x.split("==")[0] in names))'
+          pip install -r /tmp/current-requirements.txt
+      - name: Guided service HTTP acceptance and scope
+        run: |
+          python tests/validate_guided_service_scope.py
+          python -m unittest discover -s backend/tests -p test_guided_services.py -v
   validate:
     runs-on: ubuntu-latest
     services:
@@ -42,7 +74,6 @@ jobs:
           python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
           python -m unittest discover -s backend/tests -p test_fundraising_strategy_writing.py -v
           python -m unittest discover -s backend/tests -p test_consultations.py -v
-          python -m unittest discover -s backend/tests -p test_guided_services.py -v
           if [ "$GITHUB_REF_NAME" = "feature/guided-board-services" ]; then python tests/validate_guided_service_scope.py; fi
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_current_workflows.py -v

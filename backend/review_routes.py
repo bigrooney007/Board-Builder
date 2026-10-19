@@ -127,15 +127,18 @@ def create_review_router(db) -> APIRouter:
         if link:
             await db.board_profile_links.update_one({"token": token}, {"$set": {"status": "Completed", "completed_at": datetime.now(timezone.utc).isoformat()}})
             try:
-                from opportunity_emails import _send, _wrap
-                from html import escape
-                owner = await db.members.find_one({"user_id": user_id}, {"_id": 0, "email": 1}) or {}
-                if owner.get("email"):
-                    dashboard = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/") + "/app/board-recruitment#br-section-portfolios"
-                    body = (f"<p>{escape(data['full_name'])} completed the Board Member Profile Form.</p>"
-                            f"<p>Review their response and recommended contribution in the <a href='{escape(dashboard, quote=True)}'>Board Portfolio section</a>.</p>")
-                    await _send("NONPROFIT_SENDER", owner["email"],
-                                f"Board Member Profile Completed | {data['full_name']}", _wrap("Profile Completed", body))
+                from guided_workspace import notify_guided_owner
+                guided=await notify_guided_owner(db,user_id,"guided-member-profile-completed-"+token,"A Board Member Profile Has Been Completed","A candidate has completed their board member profile. Review their actual skills, interests and capacity before agreeing on their role and responsibilities.","?applicant="+(link.get("application_id") or ""))
+                if guided is None:
+                    from opportunity_emails import _send, _wrap
+                    from html import escape
+                    owner = await db.members.find_one({"user_id": user_id}, {"_id": 0, "email": 1}) or {}
+                    if owner.get("email"):
+                        dashboard = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/") + "/app/board-recruitment#br-section-portfolios"
+                        body = (f"<p>{escape(data['full_name'])} completed the Board Member Profile Form.</p>"
+                                f"<p>Review their response and recommended contribution in the <a href='{escape(dashboard, quote=True)}'>Board Portfolio section</a>.</p>")
+                        await _send("NONPROFIT_SENDER", owner["email"],
+                                    f"Board Member Profile Completed | {data['full_name']}", _wrap("Profile Completed", body))
             except Exception:
                 # The saved response and portfolio eligibility do not depend on notification delivery.
                 pass

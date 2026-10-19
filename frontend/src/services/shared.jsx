@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {useState} from 'react';
 import {Link} from 'react-router-dom';
 import {logoUrl} from '@/professional/content';
 import RichContent from '@/professional/RichContent';
@@ -14,3 +15,5 @@ export function Field({label,value,onChange,large=false,type='text',...props}){r
 export const Button=({children,secondary=false,...p})=><button type="button" className={secondary?'button button-outline':'button'} {...p}>{children}</button>;
 export function EmailComposer({draft,onChange,onSend,busy,onCancel}){return <section className="guided-card" data-testid="service-email-composer"><h2>Review Your Email</h2>{['subject','headline','body','cta','support','signature'].map(k=><Field key={k} label={`Email ${k==='body'?'message':k}`} large={k==='body'} value={draft[k]} onChange={v=>onChange({...draft,[k]:v})}/>)}<div className="guided-preview"><h3>{draft.subject}</h3><RichContent text={[draft.headline,draft.body,draft.support,draft.signature].filter(Boolean).join('\n\n')}/><p>{draft.cta}</p>{draft.recipient&&<p>Recipient: {draft.recipient}</p>}</div><div className="guided-actions"><Button disabled={busy} onClick={onSend}>Approve and Send Email</Button><Button secondary onClick={()=>navigator.clipboard.writeText(draft.body)}>Copy Email</Button><Button secondary onClick={onCancel}>Close</Button></div></section>}
 export const latest=m=>m.versions?.find(v=>v.version===m.current_version)||{};
+
+export function RecoverAccess({service}){const [open,setOpen]=useState(false),[email,setEmail]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);return <section><Button secondary onClick={()=>setOpen(!open)}>Already paid? Retrieve your access link.</Button>{open&&<form onSubmit={async e=>{e.preventDefault();setBusy(true);try{const r=await api.post(`/services/${service}/recover`,{email});setNotice(r.data.message)}catch(e){setNotice(problem(e))}finally{setBusy(false)}}}><Field label="Your purchase email address" type="email" required value={email} onChange={setEmail}/><button className="button" disabled={busy}>EMAIL MY SECURE ACCESS LINK</button>{notice&&<p role="status">{notice}</p>}</form>}</section>}

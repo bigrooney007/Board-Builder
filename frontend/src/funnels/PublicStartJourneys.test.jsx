@@ -30,7 +30,7 @@ jest.mock("react-router-dom", () => ({
   Navigate: ({ to }) => <div data-testid="redirect">{to}</div>,
   useNavigate: () => mockNavigate, useLocation: () => ({ search: mockSearch }),
 }), { virtual: true });
-jest.mock("axios", () => ({ post: jest.fn() }));
+jest.mock("axios", () => ({ post: jest.fn(), get: jest.fn().mockResolvedValue({data:{}}) }));
 jest.mock("@/member/api", () => ({
   memberApi: { post: jest.fn(), put: jest.fn() },
   clearMemberToken: jest.fn(), storeMemberToken: jest.fn(),
@@ -73,6 +73,7 @@ beforeEach(() => {
   jest.clearAllMocks(); localStorage.clear(); sessionStorage.clear();
   mockMember = null; mockSearch = ""; window.scrollTo = jest.fn();
   memberApi.post.mockReset(); memberApi.put.mockReset(); axios.post.mockReset();
+  axios.get.mockResolvedValue({data:{}});
 });
 
 test.each([

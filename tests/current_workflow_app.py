@@ -30,6 +30,7 @@ from strategic_planning_routes import create_strategic_planning_router, create_g
 from admin_dashboard_preview_routes import create_admin_dashboard_preview_router
 from payment_routes import create_payment_router, create_stripe_webhook_router
 from consultation_routes import create_consultation_router
+from review_routes import create_review_router
 from guided_services import create_guided_services_router
 from guided_workspace import create_guided_workspace_router
 from workspace_routes import create_workspace_router
@@ -53,7 +54,7 @@ def build_app(database):
         return await authenticate_admin(request, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
-                    create_payment_router, create_stripe_webhook_router, create_consultation_router, create_guided_services_router, create_guided_workspace_router, create_workspace_router, create_reactivation_router, create_marketing_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
+                    create_payment_router, create_stripe_webhook_router, create_consultation_router, create_review_router, create_guided_services_router, create_guided_workspace_router, create_workspace_router, create_reactivation_router, create_marketing_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
         app.include_router(factory(database))
     return app
 
@@ -73,6 +74,7 @@ async def seed():
     install_consultation_providers()
     from tests.guided_service_fixtures import install
     install(app, db)
+    app.router.routes.sort(key=lambda route: getattr(route, 'path', '') == '/{path:path}')
     from guided_services import indexes
     await indexes(db)
 

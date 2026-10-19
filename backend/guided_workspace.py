@@ -97,7 +97,7 @@ def allowed_tool(service,method,path,admin):
     if service=="recruitment":
         if not path.startswith("workspace/"):return False
         short=path.removeprefix("workspace/")
-        if method=="GET":return bool(re.fullmatch(r"(?:profile|board-profiles|materials(?:/[\w-]+)?|opportunity|applications(?:/[\w-]+(?:/cv)?)?|interview-scheduling|board-profile-form|signatures(?:/[\w-]+/download)?)",short))
+        if method=="GET":return bool(re.fullmatch(r"(?:profile|board-profiles|materials(?:/[\w-]+)?|opportunity|applications(?:/[\w-]+(?:/cv|/onboarding-conclusion)?)?|interview-scheduling|board-profile-form|signatures(?:/[\w-]+/download)?)",short))
         if not admin:return bool(method=="POST" and re.fullmatch(r"applications/[\w-]+/interview-guide/retry",short) or method=="PATCH" and re.fullmatch(r"applications/[\w-]+",short))
         return bool(method in {"PUT","POST","PATCH"} and re.fullmatch(r"(?:profile|profile/confirm|strategy-intake|board-profiles|generate|materials/[\w-]+(?:/approve|/share)?|interview-scheduling|opportunity/application(?:/generate)?|opportunity/close|opportunity/broadcast/retry|applications/[\w-]+(?:/references|/role-recommendation|/interview-guide/retry|/onboarding-conclusion)?|signatures/prepare|signatures/[\w-]+/send)",short))
     if service=="board-recommitment":
@@ -114,10 +114,13 @@ async def material_snapshot(db,row,material_id,approved=False):
     if approved and material.get("status")!="Approved":raise HTTPException(403,"This resource has not been approved for release.")
     return material,current_version(material)
 
-async def notify_guided_owner(db,user_id,event,subject,body,query=""):
+async def notify_guided_owner(db,user_id,event,subject,body,query="",template_key=None,variables=None):
     row=await db.guided_service_customers.find_one({"workspace_user_id":user_id,"payment_status":"paid"},{"_id":0})
     if not row:return None
-    return await deliver_once(db,user_id,event,row["email"],subject,body,continuation(row,True)+query,cta_label="VIEW YOUR RESOURCES")
+    cta="VIEW YOUR RESOURCES"
+    if template_key:
+        config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"][template_key],{**context(row),**(variables or {})});subject=message["subject"];body=email_text(message);cta=message["cta"]
+    return await deliver_once(db,user_id,event,row["email"],subject,body,continuation(row,True)+query,cta_label=cta)
 
 def create_guided_workspace_router(db):
     router=APIRouter(prefix="/api",dependencies=[Depends(no_cache)])
@@ -163,6 +166,22 @@ def create_guided_workspace_router(db):
         values={**context(row),"applicant_name":(application.get("profile_snapshot") or {}).get("full_name") or application["applicant_email"],"interview_details":"\n".join(str(details.get(k,"")) for k in ("scheduling_link","availability","preferred_method","contact_person","instructions") if details.get(k))}
         return application,render(config["operational_emails"]["interview_invite" if action=="invite" else "applicant_reject"],values)
 
+    @router.post("/admin/services/recruitment/customers/{ident}/applicants/{application_id}/profile-form")
+    @router.post("/services/recruitment/customer/{token}/applicants/{application_id}/profile-form")
+    async def applicant_profile(application_id:str,payload:dict,request:Request,ident:str=None,token:str=None):
+        row=await recruitment_actor(request,ident,token)
+        application=await db.opportunity_applications.find_one({"application_id":application_id,"owner_user_id":owner_id(row)},{"_id":0})
+        if not application:raise HTTPException(404,"Applicant not found for this organization.")
+        link=await db.board_profile_links.find_one({"user_id":owner_id(row),"application_id":application_id},{"_id":0})
+        if not link:
+            snapshot=application.get("profile_snapshot") or {}
+            link={"user_id":owner_id(row),"application_id":application_id,"token":secrets.token_urlsafe(32),"prefill":{"full_name":snapshot.get("full_name",""),"email":application["applicant_email"],"professional_title":snapshot.get("profession","")},"status":"Created","created_at":now()}
+            await db.board_profile_links.insert_one(link.copy())
+        url=origin()+"/board-profile/"+link["token"]
+        if payload.get("approved"):
+            return {"url":url,**await deliver_once(db,owner_id(row),"guided-member-profile-"+application_id,application["applicant_email"],"Please Complete Your Board Member Profile","Please share your skills, interests, capacity and the contribution you would like to make. The organization will discuss and confirm responsibilities with you; completing this form does not appoint you to the board.",url,cta_label="COMPLETE MY BOARD MEMBER PROFILE")}
+        return {"url":url,"recipient":application["applicant_email"]}
+
     @router.post("/admin/services/recruitment/customers/{ident}/applicants/{application_id}/preview")
     @router.post("/services/recruitment/customer/{token}/applicants/{application_id}/preview")
     async def applicant_preview(application_id:str,payload:dict,request:Request,ident:str=None,token:str=None):
@@ -176,6 +195,9 @@ def create_guided_workspace_router(db):
     async def applicant_send(application_id:str,payload:dict,request:Request,ident:str=None,token:str=None):
         row=await recruitment_actor(request,ident,token);application,default=await candidate_message(row,application_id,payload.get("action"))
         if not payload.get("approved"):raise HTTPException(409,"Review and approve this communication before sending.")
+        request_id=str(uuid.UUID(payload["request_id"]))
+        previous=await db.workflow_email_deliveries.find_one({"user_id":owner_id(row),"event_key":"guided-candidate-"+application_id+"-"+request_id,"recipient":application["applicant_email"]},{"_id":0})
+        if previous and previous.get("status") in {"sent","captured"}:return {"status":previous["status"],"recipient":application["applicant_email"]}
         if application["status"]!=payload.get("application_status"):raise HTTPException(409,"The applicant's status changed. Review the invitation again.")
         message={k:str(payload.get(k,default[k]))[:20000] for k in default}
         request_id=str(uuid.UUID(payload["request_id"]))
@@ -188,8 +210,8 @@ def create_guided_workspace_router(db):
             status=next((v for v in APPLICATION_STATUSES if v.replace(" ","").lower()==status.replace(" ","").lower()),status)
             await db.opportunity_applications.update_one({"application_id":application_id,"owner_user_id":owner_id(row)},{"$set":{"status":status,"updated_at":now()}})
             if payload["action"]=="invite":
-                await delegated_request(request.app,db,row,"POST","workspace/applications/"+application_id+"/interview-guide/retry",{})
-                await notify_guided_owner(db,owner_id(row),"guided-interview-guide-"+application_id,"Your Applicant Interview Guide","An interview guide is available with the application. Review it before your conversation.","?applicant="+application_id)
+                guide=await delegated_request(request.app,db,row,"POST","workspace/applications/"+application_id+"/interview-guide/retry",{})
+                if (guide.json().get("interview_guide") or {}).get("status")=="Ready":await notify_guided_owner(db,owner_id(row),"guided-interview-guide-"+application_id,"Your Applicant Interview Guide","An interview guide is available with the application. Review it before your conversation.","?applicant="+application_id)
         return result
 
     @router.post("/admin/services/recruitment/customers/{ident}/signatures/{signature_id}/send")
@@ -203,13 +225,31 @@ def create_guided_workspace_router(db):
         if result["status"] in {"sent","captured"}:await db.signature_requests.update_one({"request_id":signature_id,"status":{"$ne":"Signed"}},{"$set":{"status":"Sent","sent_at":now()}})
         return result
 
+    @router.put("/admin/services/{service}/customers/{ident}/organization")
+    async def organization(service:str,ident:str,payload:dict,request:Request):
+        row=await admin_record(db,service,ident,request,paid=True)
+        fields={key:str(payload.get(key,""))[:12000] for key in ("organization_name","mission","website","founder_title","present_board","priorities")}
+        if not fields["organization_name"].strip() or not fields["mission"].strip():raise HTTPException(422,"Confirm the organization's name and mission.")
+        await db.recruitment_profiles.update_one({"user_id":owner_id(row)},{"$set":{"data."+k:v for k,v in fields.items()}})
+        await db.recruitment_profiles.update_one({"user_id":owner_id(row)},{"$set":{"confirmed":True,"updated_at":now()}})
+        await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"organization":fields["organization_name"],"clarified_details":fields,"updated_at":now()}})
+        return {"status":"saved"}
+
     @router.put("/admin/services/recruitment/customers/{ident}/profiles")
     async def profiles(ident:str,payload:Profiles,request:Request):
         row=await admin_record(db,"recruitment",ident,request)
         if await db.opportunities.find_one({"user_id":owner_id(row),"status":{"$in":["Published","Closed"]}}):raise HTTPException(409,"The launched campaign's agreed profiles are preserved.")
         if len(payload.roles)!=payload.count or any(not str(r.get("role_name","")).strip() for r in payload.roles):raise HTTPException(422,"Give each profile a title and match the agreed number of board members.")
-        updates={"recommendations":payload.roles,"recruitment_count":payload.count,"profiles_approved":payload.approved,"profiles_updated_at":now()}
-        await db.guided_service_customers.update_one({"customer_id":ident},{"$set":updates,"$push":{"profile_history":{"roles":payload.roles,"approved":payload.approved,"created_at":now()}}})
+        roles=[]
+        for raw in payload.roles:
+            role={k:str(raw.get(k,""))[:6000] for k in ("role_name","why_this_person_is_important","how_this_person_can_support")}
+            for key in ("what_to_look_for","gap_this_role_fills"):
+                values=raw.get(key) or []
+                role[key]=[str(v)[:1200] for v in (values.splitlines() if isinstance(values,str) else values)][:30]
+            roles.append(role)
+        if row.get("recommendations")==roles and row.get("recruitment_count")==payload.count and row.get("profiles_approved")==payload.approved:return {"status":"approved" if payload.approved else "saved"}
+        updates={"recommendations":roles,"recruitment_count":payload.count,"profiles_approved":payload.approved,"profiles_updated_at":now()}
+        await db.guided_service_customers.update_one({"customer_id":ident},{"$set":updates,"$push":{"profile_history":{"roles":roles,"approved":payload.approved,"created_at":now()}}})
         await db.generated_materials.update_many({"user_id":owner_id(row),"type":{"$in":RECRUITMENT_MATERIALS}},{"$set":{"status":"Needs Review"}})
         if row.get("payment_status")=="paid":await sync_profiles(db,{**row,**updates})
         return {"status":"approved" if payload.approved else "saved"}
