@@ -48,8 +48,12 @@ function structuredData(page) {
     { "@type": "WebSite", "@id": websiteId, name: SITE_NAME, url: SITE_ORIGIN + "/", publisher: { "@id": organizationId } },
     { "@type": page.path === "/" ? "CollectionPage" : "WebPage", "@id": url + "#webpage", url, name: page.title, description: page.description, inLanguage: "en", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId }, primaryImageOfPage: { "@type": "ImageObject", url: imageUrl(page), width: 1200, height: 630 } },
   ];
-  if (page.path === "/" || page.path === "/how-the-fundraising-game-works") {
+  if (page.path === "/board-fundraising-game" || page.path === "/how-the-fundraising-game-works") {
     graph.push({"@type":"Service","name":"The Fundraising Game","serviceType":"Board Fundraising","provider":{"@id":organizationId},"offers":{"@type":"Offer","price":"1497.00","priceCurrency":"USD","url":SITE_ORIGIN+"/how-the-fundraising-game-works"}});
+  }
+  if (page.path === "/meet-rooney") {
+    graph.push({"@type":"Person","@id":url+"#rooney",name:"Rooney Akpesiri",url,worksFor:{"@id":organizationId}});
+    graph.push({"@type":"Service",name:"Professional Consultation with Rooney",provider:{"@id":url+"#rooney"},offers:{"@type":"Offer",price:"197.00",priceCurrency:"USD",url:SITE_ORIGIN+"/consultation"}});
   }
   if (page.path !== "/") {
     graph[2].mainEntity = { "@id": url + "#service" };
@@ -61,13 +65,15 @@ function structuredData(page) {
 
 function fallbackContent(page) {
   if(page.path==="/") {
-    const home=require("../content/fundraisingDefaults.json").home;
-    return `<div class="nBB-home fundraising-public-centered"><header class="nBB-home-nav"><a class="nBB-home-login" href="/">Nonprofit Board Builder</a><a class="nBB-home-login" href="/login">Log In</a><a class="nBB-home-login" href="/blog">Blog</a></header><main id="landing-page-summary"><section class="nBB-home-hero"><p class="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>${escapeHtml(home.title)}</h1><p class="nBB-home-lead">${escapeHtml(home.introduction)}</p><a class="nBB-home-primary" href="/#start">${escapeHtml(home.cta)}</a></section></main></div>`;
+    const home=require("../content/professionalEntry.json").home;
+    const destinations=['/recruit','/board-fundraising','/strategic-planning','/board-recommitment'];
+    const cards=home.products.map((product,i)=>`<article class="nBB-home-card"><div class="nBB-home-card-body"><h2>${escapeHtml(product.title)}</h2><p>${escapeHtml(product.text)}</p><a class="nBB-home-card-button" href="${destinations[i]}">${escapeHtml(product.cta)}</a></div></article>`).join('');
+    return `<div class="nBB-home"><header class="nBB-home-nav"><a href="/">Nonprofit Board Builder</a><a class="nBB-home-login" href="/meet-rooney">MEET ROONEY</a><a href="/blog">Blog</a><a href="/join-a-board">Board Applicant Network</a></header><main id="landing-page-summary"><section class="nBB-home-hero"><p class="nBB-home-eyebrow">${escapeHtml(home.heroEyebrow)}</p><h1>${escapeHtml(home.heroHeadline)}</h1><p class="nBB-home-lead">${escapeHtml(home.heroLead)}</p><a class="nBB-home-primary" href="#choose-path">${escapeHtml(home.heroCta)}</a></section><section id="choose-path" class="nBB-home-paths"><h2>${escapeHtml(home.pathsHeading)}</h2><div class="nBB-home-grid">${cards}</div></section></main></div>`;
   }
   // A useful public page remains available before React loads and when JavaScript is unavailable.
   const paragraphs = page.paragraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("");
   const steps = page.steps.length ? `<h2>How it works</h2><ol>${page.steps.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ol>` : "";
-  const startPath = page.retired ? null : (page.path === "/" ? "/#start" : page.path === "/how-the-fundraising-game-works" ? "/how-the-fundraising-game-works#start" : null);
+  const startPath = page.retired ? null : (page.path === "/" ? "/#start" : ["/board-fundraising-game", "/how-the-fundraising-game-works"].includes(page.path) ? "/how-the-fundraising-game-works#start" : null);
   const startLink = startPath ? `<p><a href="${startPath}">Play The Fundraising Game With Your Board</a></p>` : "";
   const links = pages.filter((item) => !item.retired && item.path !== "/join-a-board" && item.path !== page.path).map((item) => {
     const name = page.path === "/board-fundraising-game" && item.path === "/organize-board-fundraising-game"
@@ -95,7 +101,7 @@ function renderLandingHtml(template, pathname) {
 }
 
 function robotsTxt() {
-  const privatePaths = ["/strategy/","/api/", "/admin", "/app/", "/login", "/forgot-password", "/reset-password/", "/purchase/", "/apply/", "/sign/", "/shared/", "/board-profile/", "/reference-form/", "/referee-form/", "/onboarding-session/", "/game/", "/play/", "/group-game/", "/strategic-planning/dashboard", "/strategic-planning/intake", "/board-recommitment/dashboard", "/board-recommitment/intake"];
+  const privatePaths = ["/consultation", "/strategy/","/api/", "/admin", "/app/", "/login", "/forgot-password", "/reset-password/", "/purchase/", "/apply/", "/sign/", "/shared/", "/board-profile/", "/reference-form/", "/referee-form/", "/onboarding-session/", "/game/", "/play/", "/group-game/", "/strategic-planning/dashboard", "/strategic-planning/intake", "/board-recommitment/dashboard", "/board-recommitment/intake"];
   // The wildcard rules allow Googlebot and OAI-SearchBot to crawl every public landing page.
   return ["User-agent: *", "Allow: /", ...privatePaths.map((path) => `Disallow: ${path}`), "Allow: /api/blog/images/", "Allow: /api/blog/sitemap.xml", "", `Sitemap: ${SITE_ORIGIN}/sitemap.xml`, `Sitemap: ${SITE_ORIGIN}/api/blog/sitemap.xml`, ""].join("\n");
 }

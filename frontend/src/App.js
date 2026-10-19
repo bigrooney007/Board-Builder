@@ -7,7 +7,9 @@ import FundraisingSetup from "@/game/FundraisingSetup";
 import FundraisingWorkspace, { LegacyFundraisingTool } from "@/game/FundraisingWorkspace";
 import FundraisingAdminPage from "@/admin/FundraisingAdminPage";
 import FacilitatorWorkspace from "@/admin/FacilitatorWorkspace";
-import LegacyCustomerRoute from "@/game/LegacyCustomerRoute";
+import MainHomePage from "@/pages/MainHomePage";
+import MeetRooneyPage from "@/professional/MeetRooneyPage";
+import ConsultationPage from "@/professional/ConsultationPage";
 import JoinBoardPage from "@/pages/JoinBoardPage";
 import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
@@ -49,7 +51,7 @@ import StrategicPlanningSessionPage from "@/funnels/StrategicPlanningSessionPage
 import StrategicOrganizationSetupPage from "@/funnels/StrategicOrganizationSetupPage";
 import StrategicPresentationWatchPage from "@/funnels/StrategicPresentationWatchPage";
 
-import { MemberAuthProvider, useMemberAuth } from "@/member/MemberAuthContext";
+import { MemberAuthProvider } from "@/member/MemberAuthContext";
 import { LoginPage, ForgotPasswordPage, ResetPasswordPage } from "@/member/AuthPages";
 import { PurchaseSuccessPage } from "@/member/PurchaseSuccessPage";
 import DashboardReturnPage from "@/member/DashboardReturnPage";
@@ -120,16 +122,31 @@ function GuidedPaidContinue({ product }) {
   return <Navigate to={`/${product}/dashboard${search}${product === "strategic-planning" ? "#sp-meeting" : "#recommitment-forms"}`} replace />;
 }
 
+function PublicProductEntry({children}) {
+  const {search}=useLocation();
+  const session=new URLSearchParams(search).get('session_id');
+  return session?<Navigate to={'/purchase/success?session_id='+encodeURIComponent(session)} replace/>:children;
+}
+function FundraisingAlias(){
+  const {search,hash}=useLocation();
+  return <Navigate to={'/board-fundraising-game'+search+hash} replace/>;
+}
+
 function CleanRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<FundraisingPublicPage />} />
+      <Route path="/" element={<MainHomePage />} />
+      <Route path="/meet-rooney" element={<MeetRooneyPage />} />
+      <Route path="/consultation" element={<ConsultationPage />} />
+      <Route path="/consultation/confirmed" element={<ConsultationPage />} />
+      <Route path="/consultation/resume/:token" element={<ConsultationPage />} />
+      <Route path="/board-fundraising" element={<FundraisingAlias />} />
 
       {/* Board Recruitment */}
-      <Route path="/recruit" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitmentHomePage /></LegacyCustomerRoute>} />
-      <Route path={PUBLIC_START_ROUTES.recruitment} element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitFreePage /></LegacyCustomerRoute>} />
-      <Route path="/recruit/questions" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitQuestionsPage /></LegacyCustomerRoute>} />
-      <Route path="/recruit/walkthrough" element={<LegacyCustomerRoute entitlement="recruitment_self_guided"><RecruitWalkthroughPage /></LegacyCustomerRoute>} />
+      <Route path="/recruit" element={<PublicProductEntry><RecruitmentHomePage /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES.recruitment} element={<PublicProductEntry><RecruitFreePage /></PublicProductEntry>} />
+      <Route path="/recruit/questions" element={<PublicProductEntry><RecruitQuestionsPage /></PublicProductEntry>} />
+      <Route path="/recruit/walkthrough" element={<PublicProductEntry><RecruitWalkthroughPage /></PublicProductEntry>} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />
       <Route path="/recruit/welcome" element={<Navigate to="/app/board-recruitment/setup" replace />} />
       <Route path="/purchase/success" element={<PurchaseSuccessPage />} />
@@ -155,7 +172,7 @@ function CleanRoutes() {
       <Route path="/referee-form/:token" element={<RefereeFormPage />} />
 
       {/* Board Fundraising Game */}
-      <Route path="/board-fundraising-game" element={<Navigate to="/" replace />} />
+      <Route path="/board-fundraising-game" element={<FundraisingPublicPage />} />
       <Route path="/how-the-fundraising-game-works" element={<FundraisingPublicPage how />} />
       <Route path={PUBLIC_START_ROUTES["board-fundraising-game"]} element={<Navigate to="/how-the-fundraising-game-works" replace />} />
       <Route path="/game/demonstration" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
@@ -197,11 +214,11 @@ function CleanRoutes() {
       <Route path="/organize-board-fundraising-game/apply" element={<Navigate to="/how-the-fundraising-game-works" replace />} />
 
       {/* Strategic Planning */}
-      <Route path="/strategic-planning" element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedLandingPage product="strategic-planning" /></LegacyCustomerRoute>} />
-      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedStartPage product="strategic-planning" /></LegacyCustomerRoute>} />
+      <Route path="/strategic-planning" element={<PublicProductEntry><GuidedLandingPage product="strategic-planning" /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES["strategic-planning"]} element={<PublicProductEntry><GuidedStartPage product="strategic-planning" /></PublicProductEntry>} />
       <Route path="/strategic-planning/facilitated-complete" element={<FacilitatedPlanningComplete />} />
       <Route path="/admin/strategic-planning/facilitated" element={<FacilitatedPlanningDashboard />} />
-      <Route path="/strategic-planning/video" element={<LegacyCustomerRoute entitlement="strategic_planning_497"><GuidedVideoPage product="strategic-planning" /></LegacyCustomerRoute>} />
+      <Route path="/strategic-planning/video" element={<PublicProductEntry><GuidedVideoPage product="strategic-planning" /></PublicProductEntry>} />
       <Route path="/strategic-planning/payment-confirmed" element={<GuidedPaidContinue product="strategic-planning" />} />
       <Route path="/strategic-planning/welcome" element={<GuidedPaidContinue product="strategic-planning" />} />
       <Route path="/strategic-planning/intake" element={<GuidedIntakePage product="strategic-planning" />} />
@@ -222,9 +239,9 @@ function CleanRoutes() {
       <Route path="/strategic-leadership-assistant/:token" element={<StrategicLeadershipAssistantPage />} />
 
       {/* Board Recommitment */}
-      <Route path="/board-recommitment" element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedLandingPage product="board-recommitment" /></LegacyCustomerRoute>} />
-      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedStartPage product="board-recommitment" /></LegacyCustomerRoute>} />
-      <Route path="/board-recommitment/video" element={<LegacyCustomerRoute entitlement="reactivation_self_guided"><GuidedVideoPage product="board-recommitment" /></LegacyCustomerRoute>} />
+      <Route path="/board-recommitment" element={<PublicProductEntry><GuidedLandingPage product="board-recommitment" /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES["board-recommitment"]} element={<PublicProductEntry><GuidedStartPage product="board-recommitment" /></PublicProductEntry>} />
+      <Route path="/board-recommitment/video" element={<PublicProductEntry><GuidedVideoPage product="board-recommitment" /></PublicProductEntry>} />
       <Route path="/board-recommitment/payment-confirmed" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/welcome" element={<GuidedPaidContinue product="board-recommitment" />} />
       <Route path="/board-recommitment/intake" element={<GuidedIntakePage product="board-recommitment" />} />

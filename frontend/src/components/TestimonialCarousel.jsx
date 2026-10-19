@@ -3,20 +3,21 @@ import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { initialsFor, testimonials } from "../content/testimonials";
 import { testimonialCarouselText } from "../content/siteContent";
 
-export const TestimonialCarousel = ({ heading, idPrefix = "carousel", priorityNames }) => {
-  const items = priorityNames
+export const TestimonialCarousel = ({ heading, idPrefix = "carousel", priorityNames, items: selectedItems }) => {
+  const items = selectedItems || (priorityNames
     ? [...testimonials].sort((a, b) => {
         const rank = (t) => { const i = priorityNames.indexOf(t.name); return i === -1 ? priorityNames.length : i; };
         return rank(a) - rank(b);
       })
-    : testimonials;
+    : testimonials);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStart = useRef(null);
   const count = items.length;
+  useEffect(() => { setActive(current => Math.min(current, Math.max(0, count - 1))); }, [count]);
 
   useEffect(() => {
-    if (paused) return undefined;
+    if (paused || count < 2) return undefined;
     const timer = window.setInterval(() => setActive((current) => (current + 1) % count), 8000);
     return () => window.clearInterval(timer);
   }, [paused, count]);

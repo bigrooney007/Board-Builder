@@ -1,9 +1,9 @@
 name: Simplified Fundraising Game Validation
 on:
   push:
-    branches: [feature/fundraising-game-simplified]
+    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
   pull_request:
-    branches: [feature/fundraising-game-simplified]
+    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -19,6 +19,8 @@ jobs:
       STRIPE_SECRET_KEY: sk_test_isolated_provider_disabled
       PAID_PROGRAMS_LIVE: false
       STRIPE_MODE: test
+      STRIPE_WEBHOOK_SECRET: whsec_isolated_fixture
+      CALENDLY_WEBHOOK_SIGNING_KEY: isolated-calendly-fixture-secret
       RESEND_API_KEY: isolated-provider-disabled
       NONPROFIT_SENDER: test@example.org
       GAME_EMAIL_SENDER: test@example.org
@@ -38,6 +40,7 @@ jobs:
         run: |
           python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
           python -m unittest discover -s backend/tests -p test_fundraising_strategy_writing.py -v
+          python -m unittest discover -s backend/tests -p test_consultations.py -v
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_current_workflows.py -v
           python -m unittest discover -s backend/tests -p test_finished_customer_content.py -v
@@ -61,7 +64,7 @@ jobs:
           CI: 'true'
         run: |
           mapper='{"^@/(.*)$":"<rootDir>/src/$1","^react-router-dom$":"<rootDir>/node_modules/react-router-dom/dist/index.js","^react-router$":"<rootDir>/node_modules/react-router/dist/development/index.js","^react-router/dom$":"<rootDir>/node_modules/react-router/dist/development/dom-export.js"}'
-          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview|strategyRender|PurchaseSuccessPage)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
+          yarn --cwd frontend test --watchAll=false --runInBand --testPathPattern='(ProfessionalEntry|GuidedUpgrade|PublicStartJourneys|GuidedPrepaymentQuestionsPage|RecruitmentFlow|RecoveredOffers|GamePublicLanding|GameFreeQuestionsPage|AudienceQuestionnaire|AudienceGroupReview|strategyRender|PurchaseSuccessPage)\.test' --setupFiles="$GITHUB_WORKSPACE/tests/recovered_jest_setup.cjs" --moduleNameMapper="$mapper"
       - name: Production build
         id: build
         if: always()
@@ -78,6 +81,7 @@ jobs:
         run: |
           uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
           python tests/simplified_fundraising_browser.py
+          python tests/professional_entry_browser.py
       - name: Read-only deployed public availability and payment mode
         if: always()
         run: python tests/customer_launch_readiness.py

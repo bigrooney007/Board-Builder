@@ -1218,6 +1218,9 @@ def create_stripe_webhook_router(db) -> APIRouter:
             raise HTTPException(status_code=400, detail="Invalid Stripe signature") from exc
         item = event["data"]["object"]
         event_type = event["type"]
+        from consultation_routes import handle_stripe_event
+        if await handle_stripe_event(db, event):
+            return {"status": "ok"}
         now = datetime.now(timezone.utc).isoformat()
         if event_type == "checkout.session.completed":
             customer_details = item.get("customer_details") or {}

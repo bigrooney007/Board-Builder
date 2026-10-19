@@ -16,7 +16,7 @@ export const visitorId=()=>{
  return value;
 };
 export default function FundraisingPublicPage({how=false}){
- useLandingPageMeta(how?'/how-the-fundraising-game-works':'/');
+ useLandingPageMeta(how?'/how-the-fundraising-game-works':'/board-fundraising-game');
  const navigate=useNavigate(),location=useLocation();const {member,loading,refresh}=useMemberAuth();
  const [content,setContent]=useState(defaults),[price,setPrice]=useState(1497),[capture,setCapture]=useState(false);
  const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem('fundraisingLeadDetails')||'{}')}catch{return {}}});

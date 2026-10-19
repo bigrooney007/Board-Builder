@@ -245,6 +245,8 @@ from game_routes import create_game_router
 app.include_router(create_game_router(db))
 from fundraising_launch import create_fundraising_launch_router
 app.include_router(create_fundraising_launch_router(db))
+from consultation_routes import create_consultation_router
+app.include_router(create_consultation_router(db))
 from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
 from game_finetune_routes import create_finetune_router
@@ -374,13 +376,16 @@ async def startup_tasks():
     app.state.checkout_recovery_task = asyncio.create_task(checkout_recovery_loop(db))
     from fundraising_launch import recovery_loop
     app.state.fundraising_launch_recovery_task = asyncio.create_task(recovery_loop(db))
+    from consultation_routes import ensure_consultation_indexes, consultation_recovery_loop
+    await ensure_consultation_indexes(db)
+    app.state.consultation_recovery_task = asyncio.create_task(consultation_recovery_loop(db))
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     if automation_task:
         automation_task.cancel()
-    for name in ("checkout_recovery_task", "fundraising_launch_recovery_task"):
+    for name in ("checkout_recovery_task", "fundraising_launch_recovery_task", "consultation_recovery_task"):
         task = getattr(app.state, name, None)
         if task:
             task.cancel()

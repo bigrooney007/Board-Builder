@@ -16,7 +16,7 @@ for name in ("emergentintegrations", "emergentintegrations.llm"):
     sys.modules.setdefault(name, types.ModuleType(name))
 sys.modules[chat.__name__] = chat
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from auth_service import create_access_token, authenticate_admin
 from member_auth import create_member_token
@@ -28,7 +28,9 @@ from game_meeting_routes import create_game_meeting_router
 from guided_product_routes import create_guided_product_router
 from strategic_planning_routes import create_strategic_planning_router, create_guided_strategic_planning_router
 from admin_dashboard_preview_routes import create_admin_dashboard_preview_router
-from payment_routes import create_payment_router
+from payment_routes import create_payment_router, create_stripe_webhook_router
+from consultation_routes import create_consultation_router
+from marketing_routes import create_marketing_router
 from board_fix_routes import create_board_fix_router
 from public_opportunity_routes import create_public_opportunity_router
 from admin_test_safety import install_email_capture
@@ -47,7 +49,7 @@ def build_app(database):
         return await authenticate_admin(request, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
-                    create_payment_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
+                    create_payment_router, create_stripe_webhook_router, create_consultation_router, create_marketing_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
         app.include_router(factory(database))
     return app
 
@@ -63,6 +65,52 @@ sp.generate_structured = fake_generation
 async def seed():
     for name in await db.list_collection_names(): await db[name].delete_many({})
     await db.users.insert_one({"user_id":"acceptance-admin","email":"admin@example.test","role":"admin"})
+    # Browser acceptance only. These substitutions never exist in the production app.
+    install_consultation_providers()
+
+CONSULTATION_SESSIONS = {}
+CONSULTATION_MESSAGES = []
+def install_consultation_providers():
+    import stripe
+    import resend
+    import payment_routes
+    from types import SimpleNamespace
+    from consultation_routes import SOURCE
+    import uuid
+    def create(**kwargs):
+        assert kwargs['metadata']['offer_source'] == SOURCE, 'A browser test attempted another provider checkout'
+        sid = 'cs_fixture_' + uuid.uuid4().hex
+        CONSULTATION_SESSIONS[sid] = {'id':sid,'metadata':kwargs['metadata'],'client_reference_id':kwargs['client_reference_id'],
+            'amount_subtotal':19700,'amount_total':19700,'currency':'usd','status':'open','payment_status':'unpaid',
+            'payment_intent':'pi_fixture_'+uuid.uuid4().hex,'success_url':kwargs['success_url'],'cancel_url':kwargs['cancel_url'],'livemode':False}
+        return SimpleNamespace(id=sid,url='http://127.0.0.1:8765/__test/consultation-checkout/'+sid)
+    stripe.checkout.Session.create = create
+    stripe.checkout.Session.retrieve = lambda sid: CONSULTATION_SESSIONS[sid]
+    def price(env_key,lookup,name,amount):
+        assert lookup == SOURCE and amount == 19700, 'Unexpected provider price creation'
+        return 'price_fixture_consultation_197'
+    payment_routes.resolve_offer_price_id = price
+    async def mail(params,*args,**kwargs):
+        CONSULTATION_MESSAGES.append(params)
+        return {'id':'fixture-email-'+str(len(CONSULTATION_MESSAGES))}
+    resend.Emails.send_async = mail
+
+@app.get('/__test/consultation-checkout/{session_id}')
+async def consultation_checkout(session_id:str):
+    assert session_id in CONSULTATION_SESSIONS
+    return HTMLResponse('<h1>Controlled Stripe transport fixture: $197</h1><form method="post"><button name="result" value="paid">Complete Payment</button><button name="result" value="cancel">Cancel Payment</button></form>')
+
+@app.post('/__test/consultation-checkout/{session_id}')
+async def consultation_checkout_result(session_id:str,request:Request):
+    values=await request.form();session=CONSULTATION_SESSIONS[session_id]
+    if values.get('result')=='paid':
+        session.update(status='complete',payment_status='paid')
+        return RedirectResponse(session['success_url'].replace('{CHECKOUT_SESSION_ID}',session_id),status_code=303)
+    return RedirectResponse(session['cancel_url'],status_code=303)
+
+@app.get('/__test/consultation-mail')
+async def consultation_mail():
+    return {'messages':CONSULTATION_MESSAGES}
 
 @app.get("/__test/session")
 async def session(variant: str = ""):

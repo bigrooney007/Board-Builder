@@ -1,0 +1,45 @@
+.professional-page{overflow-wrap:anywhere}
+.professional-nav{gap:20px;flex-wrap:wrap;justify-content:space-between}
+.professional-nav nav{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap}
+.professional-nav a{font-size:14px;font-weight:800;color:#1e1b4b;text-decoration:none}
+.professional-width{max-width:1180px;margin:0 auto;padding-left:28px;padding-right:28px}
+.professional-intro{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:60px;align-items:center;padding-top:60px;padding-bottom:80px}
+.professional-intro h1,.consultation-card h1{font-size:clamp(32px,5vw,56px);letter-spacing:-.035em;line-height:1.12}
+.professional-portrait{width:100%;max-width:420px;height:auto;aspect-ratio:42/50;object-fit:cover;border-radius:24px;box-shadow:0 18px 45px #0f172a20;margin:0 auto}
+.professional-section{padding-top:75px;padding-bottom:75px}
+.professional-copy{max-width:800px;margin-left:auto;margin-right:auto;padding-left:28px;padding-right:28px}
+.professional-page h2{font-size:clamp(28px,4vw,40px);line-height:1.2;letter-spacing:-.025em;margin:0 0 28px}
+.professional-page h3{font-size:25px;line-height:1.3}
+.professional-rich p,.professional-page .professional-copy>p{font-size:18px;line-height:1.8;white-space:pre-line;color:#475569;margin:0 0 22px}
+.professional-rich li{font-size:18px;line-height:1.8;margin-bottom:12px}
+.professional-rich a{color:#4338ca;text-decoration:underline}
+.professional-rich ul{list-style-position:inside;padding:0}
+.professional-tint{background:#f1f5f9}
+.professional-navy{background:#0f172a;color:#fff}
+.professional-navy .professional-rich p,.professional-navy .professional-copy>p,.professional-navy a{color:#fff}
+.professional-page .professional-price{font-size:24px;font-weight:800;margin:32px auto 0}
+.professional-product{padding:32px;border:1px solid #e2e8f0;border-radius:22px;display:flex;flex-direction:column;align-items:center}
+.professional-product .nBB-home-primary{margin-top:auto}
+.professional-page button,.professional-page input,.professional-page textarea{font:inherit}
+.professional-page .nBB-home-primary{cursor:pointer;border:0;max-width:100%;white-space:normal;line-height:1.5;min-height:48px}
+.professional-page button:disabled{opacity:.65;cursor:wait}
+.consultation-card{padding-top:60px;padding-bottom:60px;min-height:70vh}
+.professional-form{display:grid;gap:22px;margin-top:32px}
+.professional-form label{font-weight:700;display:grid;gap:9px}
+.professional-form input,.professional-form textarea{width:100%;padding:14px;border:1px solid #94a3b8;border-radius:10px;color:#0f172a;background:#fff;min-height:48px;text-align:center}
+.professional-form textarea{resize:vertical}
+.professional-text-button{display:block;margin:24px auto 0;background:none;border:0;text-decoration:underline;color:#4338ca;cursor:pointer;padding:10px}
+.professional-recovery{padding:28px 0;border-top:1px solid #e2e8f0;margin-top:28px}
+.professional-page .professional-error{color:#b91c1c;border:1px solid #fecaca;border-radius:12px;padding:16px;margin-top:24px}
+.professional-admin .professional-editor{margin:24px 0}
+.professional-admin label{display:block;margin:20px 0;font-weight:700}
+.professional-admin input,.professional-admin textarea{display:block;width:100%;padding:12px;border:1px solid #94a3b8;border-radius:8px;margin-top:8px;font:inherit}
+.professional-admin textarea{resize:vertical}
+.professional-admin .professional-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.professional-admin .professional-preview{border:1px solid #e2e8f0;border-radius:12px;padding:22px;background:white;margin-top:14px}
+.professional-admin .professional-record{border-top:1px solid #cbd5e1;padding:24px 0;overflow-wrap:anywhere}
+.professional-admin .professional-testimonial{padding:18px;border:1px solid #e2e8f0;border-radius:12px;margin:12px 0}
+.professional-admin .professional-testimonial label{display:flex;gap:12px;align-items:center}
+.professional-admin .professional-testimonial input{width:20px;margin:0}
+.professional-admin .professional-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+@media(max-width:760px){.professional-intro{grid-template-columns:1fr;gap:30px;padding-top:24px;padding-bottom:45px}.professional-portrait{max-width:290px}.professional-section{padding-top:48px;padding-bottom:48px}.professional-nav{justify-content:center}.professional-nav nav{gap:14px}.professional-nav a{font-size:12px}.professional-copy,.professional-width{padding-left:20px;padding-right:20px}.professional-product{padding:24px 18px}.professional-rich p{font-size:17px;line-height:1.75}.consultation-card{padding-top:32px}.nBB-home-footer{flex-wrap:wrap}}

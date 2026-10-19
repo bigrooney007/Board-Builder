@@ -1,36 +1,19 @@
 [
   {
     "path": "/",
-    "name": "The Fundraising Game",
-    "title": "The Fundraising Game | Nonprofit Board Builder",
-    "description": "Develop and adopt your fundraising strategy with your board by your next meeting. The Fundraising Game costs $1,497 once per organization.",
-    "headline": "The Fundraising Game",
+    "name": "Nonprofit Board Builder",
+    "title": "Nonprofit Board Builder | Recruitment, Fundraising, Planning & Recommitment",
+    "description": "Strengthen your nonprofit board with recruitment, board fundraising, strategic planning and recommitment tools. Meet Rooney Akpesiri for professional support.",
+    "headline": "Build the Board Your Organization Needs",
     "eyebrow": "NONPROFIT LEADERSHIP",
-    "image": "board-fundraising-activation-v3.png",
+    "image": "nonprofit-board-builder-v1.png",
     "imageLines": [
-      "The Fundraising Game",
-      "Build Your Strategy With Your Board"
+      "Build the Board",
+      "Your Organization Needs"
     ],
-    "imageSub": "Prepare for your next board meeting.",
+    "imageSub": "Recruitment. Fundraising. Planning. Recommitment.",
     "paragraphs": [
-      "Get your board members involved in building and executing your organization's fundraising strategy.",
-      "Imagine walking into your next board meeting, and every board member comes prepared with answers to some very specific fundraising questions.",
-      "Each person has identified who they believe should fund your organization's mission, why those people have a strong reason to give, where to find them, how to attract them, how to raise money from them, what to ask for, how much to ask, and the role they would love to play to support fundraising.",
-      "Now imagine what that board meeting would look like.",
-      "Each board member presents their recommended fundraising audience and explains why they believe that audience should support your mission.",
-      "You all discuss their recommendations, examine the opportunities, and agree on the specific audiences your organization should focus on.",
-      "Maybe you agree on one audience. Maybe two. You might even agree to pursue all the audiences recommended.",
-      "The important thing is that you have collectively agreed on who your organization will raise money from and exactly how you intend to raise that money.",
-      "And before that meeting ends, every board member agrees on the role they will personally play in helping the organization reach those audiences and raise money from them.",
-      "Think about what that would mean for your organization.",
-      "Think about what it would mean for your board.",
-      "Your organization now has a fundraising strategy that identifies who should fund your mission, where to find them, how to attract them, what to ask them for, and how much to ask.",
-      "These are the core elements of a fundraising strategy.",
-      "And because your board members participated in developing and adopting that strategy, they understand how the organization intends to raise money. They also understand where they fit into the process and what they have agreed to do.",
-      "You have a fundraising strategy your board helped build, and board members who are ready to work with you to execute it.",
-      "That's what we want to help you accomplish with The Fundraising Game.",
-      "We've put together the questions, materials, and tools you need to take your board through this process.",
-      "You don't need to hire a professional facilitator. You can lead the process yourself. And if you would prefer to have a professional facilitate your session, we will make a fundraising professional with years of experience available to help."
+      "Choose the support your organization needs, from recruiting board members to fundraising, strategic planning and recommitment."
     ],
     "steps": []
   },
@@ -56,15 +39,14 @@
       "Create the application and recruitment materials, then launch your campaign.",
       "Review applicants and prepare a tailored interview guide for each candidate.",
       "Prepare the onboarding materials and send a conditional or unconditional board offer before the session."
-    ],
-    "retired": true
+    ]
   },
   {
     "path": "/board-fundraising-game",
     "name": "Board Fundraising Activation",
-    "title": "Get Your Board Fundraising | Nonprofit Board Builder",
-    "description": "Activate and equip your board to raise money from your next meeting. Build the fundraising strategy together, with a portfolio and personal assistant for each member.",
-    "headline": "Get Your Board Members Raising Money From Your Next Board Meeting",
+    "title": "The Fundraising Game | Nonprofit Board Builder",
+    "description": "Develop and adopt your fundraising strategy with your board by your next meeting. The Fundraising Game costs $1,497 once per organization.",
+    "headline": "The Fundraising Game",
     "eyebrow": "BOARD FUNDRAISING",
     "image": "board-fundraising-activation-v3.png",
     "imageLines": [
@@ -74,16 +56,26 @@
     ],
     "imageSub": "Build the fundraising strategy together and equip each member to begin.",
     "paragraphs": [
-      "You and your board will decide who your organization's primary funding audience will be, how to find and attract them on a daily basis, and the exact process to raise money from them.",
-      "Getting your board members to raise money starts with working with them to create your organization's fundraising strategy.",
-      "By the end of the meeting, your board members will know the ideal funders you identified together and recognize them within their networks. They can recommend prospects and make introductions, then raise money using the process you all agreed on as a board."
+      "Get your board members involved in building and executing your organization's fundraising strategy.",
+      "Imagine walking into your next board meeting, and every board member comes prepared with answers to some very specific fundraising questions.",
+      "Each person has identified who they believe should fund your organization's mission, why those people have a strong reason to give, where to find them, how to attract them, how to raise money from them, what to ask for, how much to ask, and the role they would love to play to support fundraising.",
+      "Now imagine what that board meeting would look like.",
+      "Each board member presents their recommended fundraising audience and explains why they believe that audience should support your mission.",
+      "You all discuss their recommendations, examine the opportunities, and agree on the specific audiences your organization should focus on.",
+      "Maybe you agree on one audience. Maybe two. You might even agree to pursue all the audiences recommended.",
+      "The important thing is that you have collectively agreed on who your organization will raise money from and exactly how you intend to raise that money.",
+      "And before that meeting ends, every board member agrees on the role they will personally play in helping the organization reach those audiences and raise money from them.",
+      "Think about what that would mean for your organization.",
+      "Think about what it would mean for your board.",
+      "Your organization now has a fundraising strategy that identifies who should fund your mission, where to find them, how to attract them, what to ask them for, and how much to ask.",
+      "These are the core elements of a fundraising strategy.",
+      "And because your board members participated in developing and adopting that strategy, they understand how the organization intends to raise money. They also understand where they fit into the process and what they have agreed to do.",
+      "You have a fundraising strategy your board helped build, and board members who are ready to work with you to execute it.",
+      "That's what we want to help you accomplish with The Fundraising Game.",
+      "We've put together the questions, materials, and tools you need to take your board through this process.",
+      "You don't need to hire a professional facilitator. You can lead the process yourself. And if you would prefer to have a professional facilitate your session, we will make a fundraising professional with years of experience available to help."
     ],
-    "steps": [
-      "Before Your Next Board Meeting: Share your ideas on who the ideal funding audience of your organization is, where to find and attract them daily, the exact process to raise money from them, and what you will ask them to fund and how much. Each board member also shares their own ideas through the Board Fundraising Planning Form and says how they want to be involved.",
-      "During Your Next Board Meeting: Based on everyone's ideas, you and your board agree on your organization's primary funding audience and how you will raise money from them. You also agree on the role each board member will play in raising money and building your organization's fundraising system.",
-      "After Your Next Board Meeting: Each board member receives a copy of the strategy and a Board Fundraising Portfolio showing how they will support your organization to raise money. Their personal AI fundraising assistant understands the strategy and their role. It creates the content or materials they need, so they can begin working with you to raise money without always running back to you."
-    ],
-    "retired": true
+    "steps": []
   },
   {
     "path": "/strategic-planning",
@@ -107,8 +99,7 @@
       "Invite the board to contribute its own thinking.",
       "Discuss the ideas together and select the agreed direction.",
       "Approve the strategic plan and confirm who will lead each responsibility."
-    ],
-    "retired": true
+    ]
   },
   {
     "path": "/board-recommitment",
@@ -133,8 +124,7 @@
       "Invite each member to complete the recommitment form.",
       "Use their responses to guide the individual conversations.",
       "Confirm their contribution and move forward with clarity."
-    ],
-    "retired": true
+    ]
   },
   {
     "path": "/join-a-board",
@@ -296,5 +286,28 @@
       "Play the Group Fundraising Game at your next board meeting.",
       "Download the fundraising strategy you and your board members agreed on."
     ]
+  },
+  {
+    "path": "/meet-rooney",
+    "name": "Meet Rooney Akpesiri",
+    "title": "Meet Rooney Akpesiri | Nonprofit Founder, Strategist & Consultant",
+    "description": "Learn about Rooney Akpesiri's experience in nonprofit leadership, fundraising, board recruitment, and organizational development. Explore his tools and book a professional consultation.",
+    "headline": "I'm Rooney Akpesiri.",
+    "eyebrow": "MEET ROONEY",
+    "image": "nonprofit-board-builder-v1.png",
+    "imageLines": [
+      "Meet Rooney Akpesiri",
+      "Nonprofit Leadership & Professional Support"
+    ],
+    "imageSub": "Professional consultation: $197",
+    "paragraphs": [
+      "I've experienced nonprofit work from almost every side.",
+      "I've served as a nonprofit volunteer, staff member, founder and executive director, board member, coach, and fundraising consultant.",
+      "I've helped organizations raise money, recruit board members, strengthen their leadership, develop fundraising strategies, and plan for their future.",
+      "If you're starting a nonprofit, already leading one, or facing a challenge you want to resolve, you can book a professional consultation with me.",
+      "We'll discuss your organization, what you're trying to accomplish, and the problems you're facing.",
+      "I'll help you identify the areas that need attention, discuss where I believe you should begin, and show you practical approaches, frameworks, and tools you can use to address your priorities."
+    ],
+    "steps": []
   }
 ]

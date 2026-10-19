@@ -1,70 +1,40 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
-import { ArrowRight, Users, Gamepad2, Map, RefreshCw, Handshake, UserRoundPlus } from "lucide-react";
-import { FounderStorySection } from "@/components/FounderStorySection";
+import { ArrowRight, Users, Gamepad2, Map, RefreshCw, UserRoundPlus } from "lucide-react";
+
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
-import { useHomepageContent } from "@/clean/platform";
+import { useProfessionalContent, defaults, logoUrl } from "@/professional/content";
 import { useLandingPageMeta } from "@/seo";
-import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
+
 import "./MainHomePage.css";
 
 const PRODUCT_META = [
-  { icon: Users, to: "/recruit", start: PUBLIC_START_ROUTES.recruitment, image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
-  { icon: Gamepad2, to: "/board-fundraising-game", start: PUBLIC_START_ROUTES["board-fundraising-game"], image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
-  { icon: Map, to: "/strategic-planning", start: PUBLIC_START_ROUTES["strategic-planning"], image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
-  { icon: RefreshCw, to: "/board-recommitment", start: PUBLIC_START_ROUTES["board-recommitment"], image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
-  { icon: Handshake, to: "/organize-board-fundraising-game", image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80", imageAlt: "A nonprofit board meeting with a facilitator" },
+  { icon: Users, to: "/recruit", image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals working together around a table" },
+  { icon: Gamepad2, to: "/board-fundraising", image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80", imageAlt: "A group collaborating together" },
+  { icon: Map, to: "/strategic-planning", image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", imageAlt: "A team planning strategy together" },
+  { icon: RefreshCw, to: "/board-recommitment", image: "https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=1200&q=80", imageAlt: "Professionals recommitting through a handshake" },
 ];
-const PRODUCT_PROMISES = [
-  { title: "Launch Your Board Recruitment Campaign In The Next 30 Minutes", text: "Answer six questions about the board you have and the support you need. Approve the right profiles, review your materials and launch your opportunity to applicants.", cta: "LAUNCH MY RECRUITMENT CAMPAIGN" },
-  { title: "Get Your Board Members Fundraising By Your Next Board Meeting", text: "Bring your board into a practical fundraising process and leave the meeting with a shared strategy and clear ways each person will participate.", cta: "START THE BOARD FUNDRAISING GAME" },
-  { title: "Get Your Board Building Your Organization By Your Next Board Meeting", text: "Create the strategy with your board, adopt it together and give members clear responsibilities they can begin executing after the meeting.", cta: "START STRATEGIC PLANNING" },
-  { title: "Get Your Board Members Recommitted In The Next Seven Days", text: "Give each member a clear opportunity to recommit, agree how they can contribute and move the right people into action.", cta: "RECOMMIT MY BOARD" },
-];
-
-export const MAIN_HOME_DEFAULTS = {
-  heroEyebrow: "NONPROFIT LEADERSHIP SYSTEMS",
-  heroHeadline: "Build The Board And Systems Your Nonprofit Needs To Grow And Raise Money Exponentially.",
-  heroLead: "Your nonprofit cannot grow beyond the people making the decisions and the systems helping them execute. We help you build stronger boards, activate them around fundraising and turn organizational priorities into strategy.",
-  heroCta: FREE_START_LABEL,
-  problemIntro: "You do not need another expensive consultant.",
-  problemHeading: "What you need is the right board members providing you the right kind of support.",
-  problemText: "At Nonprofit Board Builders, our sole purpose is to equip you to build the exact type of board your organization needs so you can work with them to raise money exponentially and scale your organization.",
-  pathsEyebrow: "CHOOSE YOUR PATH",
-  pathsHeading: "What Does Your Organization Need Right Now?",
-  products: [
-    { eyebrow: "BUILD THE RIGHT BOARD", title: "Recruit The Board Members Your Organization Needs", text: "Identify the exact skills, experience and relationships your board needs, then launch a professional recruitment campaign to find and bring the right people onto your board.", cta: "START BOARD RECRUITMENT" },
-    { eyebrow: "GET YOUR BOARD RAISING MONEY", title: "Turn Your Board Into An Active Fundraising Team", text: "Use the Board Fundraising Game to help your board think strategically about fundraising, build the fundraising system together and leave with clear individual roles for execution.", cta: "PLAY THE BOARD FUNDRAISING GAME" },
-    { eyebrow: "ALIGN YOUR ORGANIZATION", title: "Build A Strategic Plan Your Team Can Actually Execute", text: "Bring your people into the planning process, turn their perspectives into clear priorities and move from ideas to an actionable organizational strategy.", cta: "EXPLORE STRATEGIC PLANNING" },
-    { eyebrow: "GET YOUR BOARD TO RECOMMIT", title: "Get Your Present Board Members To Step Up Again", text: "Help your present board members recommit to their responsibilities, clarify how they want to contribute and identify who is genuinely ready to keep building the organization with you.", cta: "EXPLORE BOARD RECOMMITMENT" },
-    { eyebrow: "FACILITATED WITH ROONEY", title: "Let Us Organize And Facilitate Your Board Fundraising Game", text: "Apply to have Rooney organize the process, prepare your board and facilitate the Board Fundraising Game with your organization.", cta: "APPLY FOR THE FACILITATED GAME" },
-  ],
-  testimonialsHeading: "What Nonprofit Leaders We Have Worked With Are Saying",
-  applicantEyebrow: "SERVE ON A NONPROFIT BOARD",
-  applicantTitle: "Join The Board Applicant Network",
-  applicantText: "Create your Board Applicant profile once and make your skills, experience, causes and availability visible for nonprofit board opportunities that match how you want to serve.",
-  applicantCta: "JOIN THE BOARD APPLICANT NETWORK",
-  closingHeading: "Stop Building Around Whoever Happens To Be Available.",
-  closingText: "Build intentionally around what your mission actually needs. If you are looking to serve, join the Board Applicant Network and make yourself available to nonprofits looking for the right Board Members.",
-  closingCta: FREE_START_LABEL,
-  closingApplicantCta: "JOIN THE BOARD APPLICANT NETWORK",
-};
+export const MAIN_HOME_DEFAULTS = defaults.home;
 
 export default function MainHomePage() {
   useLandingPageMeta("/");
   const navigate = useNavigate();
-  const copy = useHomepageContent("main", MAIN_HOME_DEFAULTS);
+  const copy = useProfessionalContent("home");
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
   return (
     <div className="nBB-home">
-      <header className="nBB-home-nav" style={{ justifyContent: "flex-end" }}>
+      <header className="nBB-home-nav" style={{gap:12,flexWrap:'wrap'}}>
+        <Link className="nBB-home-brand" to="/"><img src={logoUrl} alt="Nonprofit Board Builder" style={{width:130,height:68,objectFit:"contain"}}/></Link>
+        <Link className="nBB-home-login" to="/meet-rooney">{copy.meetNav}</Link>
+        <Link className="nBB-home-login" to="/blog">{copy.blogNav}</Link>
+        <Link className="nBB-home-login" to="/join-a-board">{copy.networkNav}</Link>
         {!loading && (member ? (
-          <button type="button" className="nBB-home-login" onClick={handleLogout} data-testid="home-logout-button">LOG OUT</button>
+          <button type="button" className="nBB-home-login" onClick={handleLogout} data-testid="home-logout-button">{copy.logoutNav}</button>
         ) : (
-          <Link to="/login" className="nBB-home-login" data-testid="home-login-button">LOG IN</Link>
+          <Link to="/login" className="nBB-home-login" data-testid="home-login-button">{copy.loginNav}</Link>
         ))}
       </header>
       <main>
@@ -72,7 +42,7 @@ export default function MainHomePage() {
           <p className="nBB-home-eyebrow">{copy.heroEyebrow}</p>
           <h1>{copy.heroHeadline}</h1>
           <p className="nBB-home-lead">{copy.heroLead}</p>
-          <a href="#choose-path" className="nBB-home-primary">{FREE_START_LABEL} <ArrowRight size={18}/></a>
+          <a href="#choose-path" className="nBB-home-primary">{copy.heroCta} <ArrowRight size={18}/></a>
         </section>
 
         <section className="nBB-home-problem">
@@ -87,9 +57,9 @@ export default function MainHomePage() {
             <h2>{copy.pathsHeading}</h2>
           </div>
           <div className="nBB-home-grid">
-            {(copy.products || MAIN_HOME_DEFAULTS.products).map((product, index) => {
+            {(copy.products || MAIN_HOME_DEFAULTS.products).slice(0,4).map((product, index) => {
               const meta = PRODUCT_META[index] || PRODUCT_META[0];
-              const displayed = { ...product, ...(PRODUCT_PROMISES[index] || {}) };
+              const displayed = product;
               const Icon = meta.icon;
               return <article key={meta.to} className="nBB-home-card">
                 <img src={meta.image} alt={meta.imageAlt} loading="lazy" />
@@ -98,7 +68,7 @@ export default function MainHomePage() {
                   <p className="nBB-home-eyebrow">{displayed.eyebrow}</p>
                   <h3>{displayed.title}</h3>
                   <p>{displayed.text}</p>
-                  <Link className="nBB-home-card-button" to={meta.start || meta.to}>{meta.start ? FREE_START_LABEL : displayed.cta} <ArrowRight size={17}/></Link>
+                  <Link className="nBB-home-card-button" to={meta.to}>{displayed.cta} <ArrowRight size={17}/></Link>
                 </div>
               </article>;
             })}
@@ -121,7 +91,7 @@ export default function MainHomePage() {
           </div>
         </section>
 
-        <section className="nBB-home-founder-wrap"><FounderStorySection /></section>
+        <section className="nBB-home-problem nBB-home-rooney"><h2>{copy.rooneyHeading}</h2><p>{copy.rooneyText}</p><Link className="nBB-home-primary" to="/meet-rooney">{copy.rooneyCta} <ArrowRight size={18}/></Link></section>
         <section className="nBB-home-proof"><TestimonialCarousel heading={copy.testimonialsHeading} idPrefix="home" /></section>
         <section className="nBB-home-blog"><BlogSlider /></section>
 
@@ -129,7 +99,7 @@ export default function MainHomePage() {
           <h2>{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
           <div className="nBB-home-closing-actions">
-            <a href="#choose-path" className="nBB-home-primary">{FREE_START_LABEL} <ArrowRight size={18}/></a>
+            <a href="#choose-path" className="nBB-home-primary">{copy.closingCta} <ArrowRight size={18}/></a>
             <Link to="/join-a-board" className="nBB-home-primary nBB-home-secondary-cta" data-testid="home-closing-join-board-network">
               {copy.closingApplicantCta || MAIN_HOME_DEFAULTS.closingApplicantCta} <ArrowRight size={18}/>
             </Link>
