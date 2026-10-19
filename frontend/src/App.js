@@ -15,7 +15,8 @@ import AdminPage from "@/pages/AdminPage";
 import LegalPage from "@/pages/LegalPage";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
-import RecruitFreePage from "@/funnels/RecruitFreePage";
+import GuidedServicePage from "@/services/GuidedServicePage";
+import ServiceAdminPage from "@/services/ServiceAdminPage";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
 import { PUBLIC_START_ROUTES } from "@/funnels/publicStartRoutes";
 import RecruitQuestionsPage from "@/funnels/RecruitQuestionsPage";
@@ -142,9 +143,13 @@ function CleanRoutes() {
       <Route path="/consultation/resume/:token" element={<ConsultationPage />} />
       <Route path="/board-fundraising" element={<FundraisingAlias />} />
 
+      <Route path="/services/:service/start" element={<GuidedServicePage />} />
+      <Route path="/services/:service/:stage/:token" element={<GuidedServicePage />} />
+      <Route path="/admin/services/:service" element={<ServiceAdminPage />} />
+
       {/* Board Recruitment */}
       <Route path="/recruit" element={<PublicProductEntry><RecruitmentHomePage /></PublicProductEntry>} />
-      <Route path={PUBLIC_START_ROUTES.recruitment} element={<PublicProductEntry><RecruitFreePage /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES.recruitment} element={<PublicProductEntry><GuidedServicePage fixedService="recruitment" /></PublicProductEntry>} />
       <Route path="/recruit/questions" element={<PublicProductEntry><RecruitQuestionsPage /></PublicProductEntry>} />
       <Route path="/recruit/walkthrough" element={<PublicProductEntry><RecruitWalkthroughPage /></PublicProductEntry>} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />

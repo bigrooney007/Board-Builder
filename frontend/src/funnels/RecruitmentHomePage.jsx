@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemberAuth } from "@/member/MemberAuthContext";
 import { ArrowRight } from "lucide-react";
@@ -17,10 +17,13 @@ export default function RecruitmentHomePage() {
   useEffect(() => {
     if (window.location.hash === "#recruit-intake") navigate(startPath, { replace: true });
   }, [navigate, startPath]);
-  const copy = useHomepageContent("recruitment", { ...defaultCopy,
+  const [guided, setGuided] = useState(null);
+  useEffect(() => { import("@/services/shared").then(({api}) => api.get("/services/recruitment/questions").then(r=>setGuided(r.data.landing)).catch(()=>{})); }, []);
+  const savedCopy = useHomepageContent("recruitment", { ...defaultCopy,
     headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
     formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL });
+  const copy = guided ? {...savedCopy, headline:guided.headline, subheadline:guided.description, primaryCta:guided.cta} : savedCopy;
   const { member, loading, logout } = useMemberAuth();
   const handleLogout = async () => { await logout(); navigate("/login"); };
 

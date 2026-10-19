@@ -1203,7 +1203,8 @@ def create_workspace_router(db) -> APIRouter:
                     {"user_id": member["user_id"], "type": {"$in": SUPPORT_PREP_TYPES}, "application_id": ""},
                     {"$set": {"status": "Needs Review", "updated_at": now_iso()}},
                 )
-            asyncio.create_task(prepare_support_assets(member["user_id"]))
+            if not member.get("guided_service_workspace"):
+                asyncio.create_task(prepare_support_assets(member["user_id"]))
         return {"scheduling": value}
 
     async def prepare_support_assets(user_id: str) -> None:
@@ -1510,17 +1511,25 @@ def create_workspace_router(db) -> APIRouter:
         opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
         origin = os.environ.get("PUBLIC_ORIGIN") or request.headers.get("origin") or "https://nonprofitboardbuilder.com"
         broadcast_status = "Failed"
+        network_allowed = True
+        if member.get("guided_service_workspace"):
+            network_allowed = bool((await request.json()).get("network_consent"))
         try:
-            outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
-                                                       force_test=bool(member.get("review_mode") or member.get("internal_dashboard_preview") or opportunity.get("internal_preview")))
-            await db.opportunities.update_one({"user_id": user_id}, {"$set": {
-                "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
-                "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated", "updated_at": now_iso()}})
-            broadcast_status = "Initiated"
+            if network_allowed:
+                outcome = await send_opportunity_broadcast(db, opportunity, opportunity["organization_name"], origin,
+                                                           force_test=bool(member.get("review_mode") or member.get("internal_dashboard_preview") or opportunity.get("internal_preview")))
+                await db.opportunities.update_one({"user_id": user_id}, {"$set": {
+                    "broadcast_id": outcome["broadcast_id"], "broadcast_mode": outcome["mode"],
+                    "broadcast_recipients": outcome["recipients"], "broadcast_status": "Initiated", "updated_at": now_iso()}})
+                broadcast_status = "Initiated"
+            else:
+                broadcast_status = "Not requested"
+                await db.opportunities.update_one({"user_id": user_id}, {"$set": {"broadcast_status": broadcast_status}})
         except Exception as exc:
             await db.opportunities.update_one({"user_id": user_id}, {"$set": {"broadcast_status": "Failed", "broadcast_error": str(exc)[:400]}})
         opportunity = await db.opportunities.find_one({"user_id": user_id}, {"_id": 0})
-        asyncio.create_task(send_campaign_launch_email(db, opportunity, member, origin))
+        if not member.get("guided_service_workspace"):
+            asyncio.create_task(send_campaign_launch_email(db, opportunity, member, origin))
         return {"status": "Published", "broadcast_status": broadcast_status, "opportunity": opportunity}
 
     @router.post("/opportunity/close")

@@ -1221,6 +1221,9 @@ def create_stripe_webhook_router(db) -> APIRouter:
         from consultation_routes import handle_stripe_event
         if await handle_stripe_event(db, event):
             return {"status": "ok"}
+        from guided_services import stripe_event
+        if await stripe_event(db, event):
+            return {"status": "ok"}
         now = datetime.now(timezone.utc).isoformat()
         if event_type == "checkout.session.completed":
             customer_details = item.get("customer_details") or {}

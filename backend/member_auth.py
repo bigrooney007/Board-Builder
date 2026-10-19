@@ -140,6 +140,9 @@ async def authenticate_member(request: Request, db) -> dict:
         )
         if not member:
             raise HTTPException(status_code=401, detail="Account not found. Please log in again.")
+        if member.get("guided_service_workspace"):
+            from guided_workspace import authorize_delegation
+            member = await authorize_delegation(db, request, payload, member)
         if request.url.path.startswith(('/api/game/group/','/api/game/meeting/')):
             profile=await db.game_profiles.find_one({'user_id':member['user_id'],'workflow_version':7},{'_id':0,'user_id':1})
             if profile:raise HTTPException(403,'Your facilitator manages the group meeting. You can view submitted ideas and the approved strategy from your resources.')

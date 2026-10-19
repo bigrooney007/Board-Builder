@@ -298,7 +298,7 @@ async def build_org_context(db, user_id: str, member: dict) -> str:
     founder_contact = {
         "name": f"{member.get('first_name', '')} {member.get('last_name', '')}".strip(),
         "title": (profile.get("data", {}) or {}).get("founder_title", "") or "Founder",
-        "email": member.get("email", ""),
+        "email": member.get("notification_email") or member.get("email", ""),
         "phone": (lead or {}).get("phone", ""),
     }
     parts.insert(1, "FOUNDER CONTACT (sign every generated email with these actual details; omit empty items; never placeholders):\n" + json.dumps(founder_contact, indent=1))

@@ -1,5 +1,5 @@
 // Private consultation links must not enter public analytics or session recordings.
-const isConsultation = pathname => /^\/consultation(?:\/|$)/.test(pathname);
+const isConsultation = pathname => /^\/(?:consultation|services)(?:\/|$)/.test(pathname);
 function renderConsultationHtml(template) {
   const scripts = [...template.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>[\s\S]*?<\/script>/gi)]
     .filter(match => /^\/static\//.test(match[1])).map(match => match[0]).join("\n");

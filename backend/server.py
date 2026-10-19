@@ -247,6 +247,10 @@ from fundraising_launch import create_fundraising_launch_router
 app.include_router(create_fundraising_launch_router(db))
 from consultation_routes import create_consultation_router
 app.include_router(create_consultation_router(db))
+from guided_services import create_guided_services_router
+from guided_workspace import create_guided_workspace_router
+app.include_router(create_guided_services_router(db))
+app.include_router(create_guided_workspace_router(db))
 from game_night_routes import create_game_night_router
 app.include_router(create_game_night_router(db))
 from game_finetune_routes import create_finetune_router
@@ -379,13 +383,18 @@ async def startup_tasks():
     from consultation_routes import ensure_consultation_indexes, consultation_recovery_loop
     await ensure_consultation_indexes(db)
     app.state.consultation_recovery_task = asyncio.create_task(consultation_recovery_loop(db))
+    from guided_services import indexes as guided_indexes, service_loop
+    from guided_workspace import work_loop
+    await guided_indexes(db)
+    app.state.guided_service_task = asyncio.create_task(service_loop(db))
+    app.state.guided_work_task = asyncio.create_task(work_loop(db, app))
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     if automation_task:
         automation_task.cancel()
-    for name in ("checkout_recovery_task", "fundraising_launch_recovery_task", "consultation_recovery_task"):
+    for name in ("checkout_recovery_task", "fundraising_launch_recovery_task", "consultation_recovery_task", "guided_service_task", "guided_work_task"):
         task = getattr(app.state, name, None)
         if task:
             task.cancel()

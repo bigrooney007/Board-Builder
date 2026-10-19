@@ -135,29 +135,35 @@ def create_public_opportunity_router(db) -> APIRouter:
         except Exception as exc:
             await db.opportunity_applications.update_one({"application_id": application["application_id"]}, {"$set": {"receipt_email_status": "Failed", "receipt_email_error": str(exc)[:300]}})
         try:
-            owner = await db.members.find_one(
-                {"user_id": opportunity["user_id"]}, {"_id": 0, "email": 1, "first_name": 1, "name": 1}) or {}
-            owner_email = str(owner.get("email") or "").strip().lower()
-            if owner_email:
-                owner_name = owner.get("first_name") or str(owner.get("name") or "").split(" ")[0] or "there"
-                applicant_name = snapshot.get("full_name") or email
-                origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
-                view_url = f"{origin}/app/board-recruitment?application_id={application['application_id']}#br-section-applicants"
-                body = (
-                    f"Hi {owner_name},\n\n"
-                    f"{applicant_name} has completed your Board Member Application Form for {opportunity['organization_name']}.\n\n"
-                    "Open their application to review every response and continue the recruitment process.\n\n"
-                    "Nonprofit Board Builder"
-                )
-                resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
-                result = await resend.Emails.send_async({
-                    "from": os.environ["NONPROFIT_SENDER"], "to": [owner_email],
-                    "subject": f"Board Application Received | {applicant_name}",
-                    "html": email_html(body, f"VIEW {str(applicant_name).split(' ')[0].upper()}'S APPLICATION", view_url),
-                })
-                await db.opportunity_applications.update_one(
-                    {"application_id": application["application_id"]},
-                    {"$set": {"owner_notification_status": "Sent", "owner_notification_email_id": str(getattr(result, "id", ""))}})
+            from guided_workspace import notify_guided_owner
+            guided_notice = await notify_guided_owner(db, opportunity["user_id"], "guided-application-"+application["application_id"],
+                "You Have a New Board Applicant", f"{snapshot.get('full_name') or 'A candidate'} has applied for your board opportunity. Open the secure application to review their answers, CV and appropriate next steps.", "?applicant="+application["application_id"])
+            if guided_notice is not None:
+                await db.opportunity_applications.update_one({"application_id":application["application_id"]},{"$set":{"owner_notification_status":guided_notice["status"]}})
+            else:
+                owner = await db.members.find_one(
+                    {"user_id": opportunity["user_id"]}, {"_id": 0, "email": 1, "first_name": 1, "name": 1}) or {}
+                owner_email = str(owner.get("email") or "").strip().lower()
+                if owner_email:
+                    owner_name = owner.get("first_name") or str(owner.get("name") or "").split(" ")[0] or "there"
+                    applicant_name = snapshot.get("full_name") or email
+                    origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
+                    view_url = f"{origin}/app/board-recruitment?application_id={application['application_id']}#br-section-applicants"
+                    body = (
+                        f"Hi {owner_name},\n\n"
+                        f"{applicant_name} has completed your Board Member Application Form for {opportunity['organization_name']}.\n\n"
+                        "Open their application to review every response and continue the recruitment process.\n\n"
+                        "Nonprofit Board Builder"
+                    )
+                    resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
+                    result = await resend.Emails.send_async({
+                        "from": os.environ["NONPROFIT_SENDER"], "to": [owner_email],
+                        "subject": f"Board Application Received | {applicant_name}",
+                        "html": email_html(body, f"VIEW {str(applicant_name).split(' ')[0].upper()}'S APPLICATION", view_url),
+                    })
+                    await db.opportunity_applications.update_one(
+                        {"application_id": application["application_id"]},
+                        {"$set": {"owner_notification_status": "Sent", "owner_notification_email_id": str(getattr(result, "id", ""))}})
         except Exception as exc:
             logger.exception("Recruitment owner notification failed for %s", application["application_id"])
             await db.opportunity_applications.update_one(
@@ -366,8 +372,16 @@ def create_public_opportunity_router(db) -> APIRouter:
             raise HTTPException(status_code=409, detail="This agreement has already been signed")
         owner = await db.members.find_one({"user_id": record["owner_user_id"]}, {"_id": 0, "email": 1})
         try:
-            await send_signature_confirmations(record["board_member_email"] or payload.email, payload.typed_signature,
-                                               (owner or {}).get("email", ""), record["organization_name"], record["agreement_title"])
+            from guided_workspace import notify_guided_owner
+            from consultation_routes import origin
+            guided_notice = await notify_guided_owner(db, record["owner_user_id"], "guided-signed-"+record["request_id"], "A Board Agreement Has Been Signed", "A board member has signed the agreed document. Its finalized version is available through your secure resources.")
+            if guided_notice is None:
+                await send_signature_confirmations(record["board_member_email"] or payload.email, payload.typed_signature,
+                                                   (owner or {}).get("email", ""), record["organization_name"], record["agreement_title"])
+            else:
+                from workflow_delivery import deliver_once
+                await deliver_once(db,record["owner_user_id"],"guided-signed-participant-"+record["request_id"],record["board_member_email"] or payload.email,"Your Board Agreement Is Signed","Your signature has been recorded. You can retrieve the finalized agreement using this secure link.",origin()+"/sign/"+token)
+
         except Exception:
             pass
         return {"status": "Signed", "message": "Your signature has been recorded. Both you and the organization will receive a confirmation email."}

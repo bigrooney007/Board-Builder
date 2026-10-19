@@ -413,6 +413,9 @@ def create_consultation_router(db):
             return {"status": "ignored"}
         row = await db.consultations.find_one({"consultation_id": consultation_id, "payment_status": "paid", "email": str(data.get("email", "")).lower()}, {"_id": 0})
         if not row:
+            from guided_services import calendly_event
+            if await calendly_event(db, event):
+                return {"status": "ok"}
             return {"status": "ignored"}
         timestamp = event.get("created_at") or data.get("updated_at") or data.get("created_at")
         if not timestamp:

@@ -1,9 +1,9 @@
 name: Simplified Fundraising Game Validation
 on:
   push:
-    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
+    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations, feature/guided-board-services]
   pull_request:
-    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
+    branches: [feature/fundraising-game-simplified, feature/nbb-main-consultations, feature/guided-board-services]
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -42,6 +42,8 @@ jobs:
           python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
           python -m unittest discover -s backend/tests -p test_fundraising_strategy_writing.py -v
           python -m unittest discover -s backend/tests -p test_consultations.py -v
+          python -m unittest discover -s backend/tests -p test_guided_services.py -v
+          if [ "$GITHUB_REF_NAME" = "feature/guided-board-services" ]; then python tests/validate_guided_service_scope.py; fi
           python -m compileall -q backend
           python -m unittest discover -s backend/tests -p test_current_workflows.py -v
           python -m unittest discover -s backend/tests -p test_finished_customer_content.py -v
@@ -84,6 +86,7 @@ jobs:
           uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
           python tests/simplified_fundraising_browser.py
           python tests/professional_entry_browser.py
+          python tests/guided_services_browser.py
       - name: Read-only deployed public availability and payment mode
         if: always()
         run: python tests/customer_launch_readiness.py
