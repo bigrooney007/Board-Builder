@@ -25,6 +25,7 @@ The existing recruitment, strategic planning and recommitment public landing/int
 - **Consultation Customers**: separately paginated records, discussion topic, organization/contact details, payment references/status, observed booking status, private before/after notes, email delivery status and secure-link resend.
 
 The existing Fundraising Game homepage editor is labelled **Fundraising Page Editor** to distinguish it from the main directory editor. No Fundraising Game editing controls were removed.
+The historical administration's main-homepage editor reads and writes the same new directory content, so it cannot silently save text to an unused page.
 
 ## Payments, email and booking
 
@@ -40,13 +41,13 @@ The booking destination initially reuses the existing project URL, `https://cale
 
 Optional signed Calendly notifications use `/api/consultations/calendly-webhook` and `CALENDLY_WEBHOOK_SIGNING_KEY`, subscribing to `invitee.created` and `invitee.canceled`. They correlate the paid record using `tracking.utm_content` and invitee email. Without this integration, booking status remains unconfirmed; no meeting details are invented. Configuring a signing key alone does not create the provider webhook subscription. A normal Calendly URL can still be visited outside this application; the website booking journey requires payment.
 
-Private consultation pages/APIs are noindex, no-store and use a no-referrer policy. Admin content and customer records require existing administrator authentication. Public responses omit booking destinations, Stripe references, private notes and email delivery records.
+Private consultation pages/APIs are noindex, no-store and use a no-referrer policy. Their initial HTML excludes public analytics and session-recording scripts while retaining the application's local bundles and styles. Consultation buttons load this private document directly. Previously verified paid entitlements can resume even during a Stripe outage. Admin content and customer records require existing administrator authentication. Public responses omit booking destinations, Stripe references, private notes and email delivery records.
 
 ## Verification and release status
 
-Initial local production build, eight public-page SEO checks, redirect checks and 45 React tests pass. Python compilation passes. Three offline consultation configuration checks pass. Full Mongo-backed acceptance and Chromium desktop/tablet/mobile workflows run in the branch's GitHub Actions validation, using disposable data and simulated external transports; their final results must be recorded before handoff.
+Initial local production build, eight public-page SEO checks, redirect checks and 45 React tests pass. The historical-editor adapter has an additional passing regression test. Python compilation and private-page privacy checks pass. The initial GitHub Actions run passed 100 backend tests, including 17 consultation checks, and all 14 existing Fundraising Game desktop/mobile checks. The new-page browser run identified an admin field label requiring an explicit accessible name; this was corrected. The expanded final run includes paid-resume provider-outage coverage and Chromium desktop/tablet/mobile workflows; its final results must be recorded before handoff.
 
-The legacy `test_blog_workstation.py` suite contains expectations for generating five blog categories, whereas the starting release already restricts new generation to Board Fundraising. Its failures are unrelated to Part One. Blog implementation is unchanged; current public blog/RSS access is checked separately.
+The legacy `test_blog_workstation.py` suite contains expectations for generating five blog categories, whereas the starting release already restricts new generation to Board Fundraising. Its eight failures were reproduced on an untouched checkout of `549b3d2` and are unrelated to Part One. Blog implementation is unchanged; current public blog/RSS access is checked separately. The historic recovered-release workflow freezes the homepage and routes against `a33a640`, which conflicts with this explicitly authorized Part One. This branch instead uses the full Fundraising Game regression workflow plus `validate_part_one_scope.py`, which protects the actual starting release's product code, prices, questions, meeting tools, testimonials, blogs and existing route registrations.
 
 Production integration settings are not available in the development environment. Real Stripe account permissions, deployed webhook subscriptions, real email inbox receipt and the Calendly event configuration are not verified by simulations. Deployment requires the existing Emergent environment and established synchronization/deployment process. No production deployment or synchronization is performed by the implementation tests.
 

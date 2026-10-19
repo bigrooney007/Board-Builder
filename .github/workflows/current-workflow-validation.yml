@@ -1,9 +1,9 @@
 name: Current Customer Workflow Validation
 on:
   push:
-    branches-ignore: [feature/fundraising-game-simplified]
+    branches-ignore: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
   pull_request:
-    branches-ignore: [feature/fundraising-game-simplified]
+    branches-ignore: [feature/fundraising-game-simplified, feature/nbb-main-consultations]
 jobs:
   validate:
     runs-on: ubuntu-latest

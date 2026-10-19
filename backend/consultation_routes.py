@@ -334,6 +334,11 @@ def create_consultation_router(db):
     @router.post("/consultations/{token}/confirm")
     async def confirm(token: str, payload: Confirm):
         row = await token_record(db, token)
+        if payload.session_id and payload.session_id != row.get("session_id"):
+            raise HTTPException(403, "This payment does not belong to your consultation.")
+        # A previously verified entitlement remains usable during a provider outage.
+        if row["payment_status"] == "paid":
+            return public_record(row)
         if row.get("session_id"):
             row = await verify_payment(db, row, payload.session_id or None)
         elif payload.session_id:

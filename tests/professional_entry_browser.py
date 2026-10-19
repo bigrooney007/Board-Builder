@@ -67,6 +67,7 @@ async def main():
             await expect(page.get_by_test_id("rooney-testimonial-count")).to_have_text("1 / 8")
             await page.get_by_role("button", name="Next testimonial", exact=True).click()
             await expect(page.get_by_test_id("rooney-testimonial-count")).to_have_text("2 / 8")
+            await page.wait_for_timeout(450)
             assert "free consultation" not in (await page.locator("body").inner_text()).lower()
             assert await page.locator("body").evaluate("e=>e.scrollWidth<=window.innerWidth+2")
             await page.screenshot(path=f"test_reports/current-part-one-rooney-{width}.png", full_page=True)
@@ -84,16 +85,23 @@ async def main():
             await page.get_by_role("heading", name="My Four Services " + str(width), exact=True).wait_for()
             await page.goto(BASE + "/admin?tab=professional")
             await page.get_by_label("Main headline", exact=True).fill("My Personal Introduction " + str(width))
+            await page.get_by_role("button", name="Move Down", exact=True).first.click()
             await page.get_by_role("button", name="Save Personal Page", exact=True).click()
             await page.get_by_role("status").filter(has_text="Your changes are saved").wait_for()
             await page.goto(BASE + "/meet-rooney")
             await page.get_by_role("heading", name="My Personal Introduction " + str(width), exact=True).wait_for()
             await page.reload()
             await page.get_by_role("heading", name="My Personal Introduction " + str(width), exact=True).wait_for()
+            await expect(page.get_by_test_id("rooney-testimonial-name-1")).to_have_text("Tony Barnes")
             results.append({"width": width, "case": "admin_directory_and_personal_edit_persistence_after_refresh", "passed": True})
 
             await page.get_by_role("link", name="BOOK A SESSION WITH ROONEY · $197", exact=True).first.click()
             await page.wait_for_url(BASE + "/consultation")
+            private_response = await context.request.get(BASE + "/consultation")
+            assert private_response.headers["cache-control"] == "no-store"
+            private_html = await private_response.text()
+            assert "posthog.init" not in private_html and "emergent-main.js" not in private_html
+            assert 'content="no-referrer"' in private_html
             await fill_consultation(page, f"consultation-{width}@example.org")
             await page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT · $197", exact=True).click()
             await page.wait_for_url("**/__test/consultation-checkout/*")

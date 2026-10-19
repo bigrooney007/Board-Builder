@@ -38,6 +38,7 @@ jobs:
           pip install -r /tmp/current-requirements.txt playwright
       - name: Current workflow integration and original regressions
         run: |
+          if [ "$GITHUB_REF_NAME" = "feature/nbb-main-consultations" ]; then python tests/validate_part_one_scope.py; fi
           python -m unittest discover -s backend/tests -p test_simplified_fundraising.py -v
           python -m unittest discover -s backend/tests -p test_fundraising_strategy_writing.py -v
           python -m unittest discover -s backend/tests -p test_consultations.py -v
@@ -74,6 +75,7 @@ jobs:
           yarn --cwd frontend build
           node frontend/scripts/verify-landing-seo.cjs
           node tests/fundraising_redirects.cjs
+          node tests/consultation_privacy.cjs
       - run: python -m playwright install --with-deps chromium
         if: always() && steps.build.outcome == 'success'
       - name: Current desktop and mobile workflows

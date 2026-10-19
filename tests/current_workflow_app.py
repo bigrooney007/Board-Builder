@@ -131,4 +131,6 @@ async def member(user_id:str):
 @app.get("/{path:path}")
 async def frontend(path:str):
     build=ROOT / "frontend/build";candidate=(build/path).resolve()
+    if path=='consultation' or path.startswith('consultation/'):
+        return FileResponse(build/'consultation/index.html',headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Robots-Tag':'noindex, nofollow'})
     return FileResponse(candidate if candidate.is_relative_to(build.resolve()) and candidate.is_file() else build/"index.html")

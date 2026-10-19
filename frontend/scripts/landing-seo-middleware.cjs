@@ -10,10 +10,13 @@ module.exports = function landingSeoMiddleware(server) {
     });
   });
   const blogHandler = require("./blog-seo-handler.cjs")(readTemplate);
+  const consultation = require("./consultation-page.cjs");
+  const consultationHandler = consultation.handler(readTemplate);
   return { name: "landing-page-seo", middleware(req, res, next) {
     if (require("./fundraising-redirects.cjs")(req,res)) return;
     if (!["GET", "HEAD"].includes(req.method)) return next();
     const pathname = new URL(req.url, "http://localhost").pathname;
+    if (consultation.isConsultation(pathname)) return consultationHandler(req,res,next);
     if (pathname === "/robots.txt") return res.type("text/plain").send(robotsTxt());
     if (pathname === "/sitemap.xml") return res.type("application/xml").send(sitemapXml());
     if (!pageForPath(pathname)) return blogHandler(req, res, next);

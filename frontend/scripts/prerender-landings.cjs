@@ -5,6 +5,8 @@ const { articles, articlePath } = require("../src/content/fundraisingArticles");
 const renderFundraisingArticle = require("./fundraising-article-renderer.cjs");
 const build = path.resolve(__dirname, "../build");
 const template = fs.readFileSync(path.join(build, "index.html"), "utf8");
+fs.mkdirSync(path.join(build,"consultation"),{recursive:true});
+fs.writeFileSync(path.join(build,"consultation/index.html"),require("./consultation-page.cjs").renderConsultationHtml(template));
 for (const page of pages) {
   const target = path.join(build, page.path.slice(1), "index.html");
   fs.mkdirSync(path.dirname(target), { recursive: true });

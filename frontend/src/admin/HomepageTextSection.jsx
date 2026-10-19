@@ -123,7 +123,9 @@ export function HomepageTextSection() {
     setLoadedKey("");
     setMessage("");
     try {
-      const stored = (await axios.get(`${API}/platform/homepages/${key}`)).data.content || {};
+      const stored = key === "main"
+        ? (await client.get('/admin/professional/content')).data.content.home
+        : (await axios.get(`${API}/platform/homepages/${key}`)).data.content || {};
       let defaults = LOCAL_DEFAULTS[key] || {};
       if (key === "board-fundraising-game") {
         defaults = (await axios.get(`${API}/game/content`)).data.content || {};
@@ -147,7 +149,8 @@ export function HomepageTextSection() {
     setSaving(true);
     setMessage("");
     try {
-      await client.put(`/admin/platform/homepages/${pageKey}`, { content });
+      if (pageKey === "main") await client.put('/admin/professional/content/home', content);
+      else await client.put(`/admin/platform/homepages/${pageKey}`, { content });
       setMessage("Home page text saved.");
     } catch (error) {
       setMessage(error.response?.data?.detail || "Could not save this home page.");

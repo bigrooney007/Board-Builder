@@ -181,6 +181,16 @@ class ConsultationHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.webhook(row, valid=False)).status_code, 400)
         self.assertEqual((await self.db.consultations.find_one({"access_token": token}))["payment_status"], "pending")
 
+    async def test_verified_paid_entitlement_survives_stripe_outage_when_resuming(self):
+        import stripe
+        token, row = await self.checkout(paid=True)
+        await self.confirm(token)
+        with patch("stripe.checkout.Session.retrieve", side_effect=stripe.APIConnectionError("Simulated provider outage")):
+            self.assertEqual((await self.confirm(token)).json()["payment_status"], "paid")
+            self.assertEqual((await self.client.get(f"/api/consultations/{token}/book")).status_code, 303)
+            self.assertEqual((await self.confirm(token, "cs_someone_else")).status_code, 403)
+        self.email.assert_awaited_once()
+
     async def test_failed_and_expired_sessions_never_grant_paid_access_and_expiry_can_retry(self):
         token, row = await self.checkout()
         await self.webhook(row, "checkout.session.async_payment_failed")

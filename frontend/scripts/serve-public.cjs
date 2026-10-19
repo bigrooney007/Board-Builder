@@ -6,8 +6,11 @@ const path = require("node:path");
 const build = path.resolve(__dirname, "../build");
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf", ".txt": "text/plain", ".xml": "application/xml", ".mp4": "video/mp4" };
 const blog = require("./blog-seo-handler.cjs")(() => fs.readFile(path.join(build, "index.html"), "utf8"));
+const consultation = require("./consultation-page.cjs");
+const consultationHandler = consultation.handler(() => fs.readFile(path.join(build,"index.html"),"utf8"));
 http.createServer((req, res) => {
   if(require("./fundraising-redirects.cjs")(req,res))return;
+  if(consultation.isConsultation(new URL(req.url,"http://localhost").pathname))return consultationHandler(req,res,()=>{res.writeHead(500);res.end("Unable to load this page.")});
   blog(req, res, async (error) => {
     try {
       if (error) throw error;

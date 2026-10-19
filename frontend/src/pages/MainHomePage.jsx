@@ -25,7 +25,7 @@ export default function MainHomePage() {
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
   return (
-    <div className="nBB-home">
+    <div className="nBB-home nBB-main-directory">
       <header className="nBB-home-nav" style={{gap:12,flexWrap:'wrap'}}>
         <Link className="nBB-home-brand" to="/"><img src={logoUrl} alt="Nonprofit Board Builder" style={{width:130,height:68,objectFit:"contain"}}/></Link>
         <Link className="nBB-home-login" to="/meet-rooney">{copy.meetNav}</Link>

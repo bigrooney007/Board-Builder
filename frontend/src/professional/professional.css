@@ -1,4 +1,5 @@
 .professional-page{overflow-wrap:anywhere}
+.nBB-main-directory .nBB-home-card[data-testid="home-board-applicant-network"]{grid-column:1/-1;width:100%;max-width:680px;justify-self:center}
 .professional-nav{gap:20px;flex-wrap:wrap;justify-content:space-between}
 .professional-nav nav{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap}
 .professional-nav a{font-size:14px;font-weight:800;color:#1e1b4b;text-decoration:none}
@@ -42,4 +43,4 @@
 .professional-admin .professional-testimonial label{display:flex;gap:12px;align-items:center}
 .professional-admin .professional-testimonial input{width:20px;margin:0}
 .professional-admin .professional-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-@media(max-width:760px){.professional-intro{grid-template-columns:1fr;gap:30px;padding-top:24px;padding-bottom:45px}.professional-portrait{max-width:290px}.professional-section{padding-top:48px;padding-bottom:48px}.professional-nav{justify-content:center}.professional-nav nav{gap:14px}.professional-nav a{font-size:12px}.professional-copy,.professional-width{padding-left:20px;padding-right:20px}.professional-product{padding:24px 18px}.professional-rich p{font-size:17px;line-height:1.75}.consultation-card{padding-top:32px}.nBB-home-footer{flex-wrap:wrap}}
+@media(max-width:760px){.professional-intro{grid-template-columns:1fr;gap:30px;padding-top:24px;padding-bottom:45px}.professional-portrait{max-width:290px}.professional-section{padding-top:48px;padding-bottom:48px}.professional-nav{justify-content:center}.professional-nav nav{gap:14px}.professional-nav a{font-size:12px}.professional-copy,.professional-width{padding-left:20px;padding-right:20px}.professional-product{padding:24px 18px}.professional-rich p{font-size:17px;line-height:1.75}.consultation-card{padding-top:32px}.professional-page .nBB-home-footer,.nBB-main-directory .nBB-home-footer{flex-wrap:wrap}}

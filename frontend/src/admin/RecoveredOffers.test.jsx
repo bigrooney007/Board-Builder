@@ -7,7 +7,8 @@ import { useHomepageContent } from "@/clean/platform";
 global.IS_REACT_ACT_ENVIRONMENT = true;
 jest.mock("axios", () => {
   const put = jest.fn();
-  return { get: jest.fn(), create: () => ({ put }), put };
+  const get = jest.fn();
+  return { get, create: () => ({ get, put }), put };
 });
 jest.mock("@/pages/MainHomePage", () => ({ MAIN_HOME_DEFAULTS: { headline: "Main" } }));
 jest.mock("@/game/FacilitatedGamePage", () => ({ FACILITATED_GAME_HOME_DEFAULTS: { headline: "Facilitated" } }));
@@ -67,4 +68,14 @@ test("saved fundraising text wins even when its content version is older", async
   }
   await act(async () => root.render(<PublicText />));
   expect(node.querySelector("h1").textContent).toBe("The administrator's own words");
+});
+
+test("the historical main homepage editor reads and saves the current directory content", async () => {
+  axios.get.mockResolvedValue({ data: { content: { home: { headline: "My directory introduction" } } } });
+  await act(async () => root.render(<HomepageTextSection />));
+  await choose("main");
+  expect(axios.get).toHaveBeenCalledWith("/admin/professional/content");
+  expect([...node.querySelectorAll("input,textarea")].some(input => input.value === "My directory introduction")).toBe(true);
+  await act(async () => saveButton().click());
+  expect(axios.put).toHaveBeenCalledWith("/admin/professional/content/home", { headline: "My directory introduction" });
 });
