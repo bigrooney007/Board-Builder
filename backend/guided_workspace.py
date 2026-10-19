@@ -118,6 +118,9 @@ async def notify_guided_owner(db,user_id,event,subject,body,query="",template_ke
     row=await db.guided_service_customers.find_one({"workspace_user_id":user_id,"payment_status":"paid"},{"_id":0})
     if not row:return None
     cta="VIEW YOUR RESOURCES"
+    if not template_key:
+        prefixes={"guided-signed-":"signature_completed","guided-member-profile-completed":"profile_response_notice","guided-interview-guide":"interview_guide_ready","guided-campaign-launched":"campaign_launched","guided-approved-conversation":"conversation_guide_approved"}
+        template_key=next((value for prefix,value in prefixes.items() if event.startswith(prefix)),None)
     if template_key:
         config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"][template_key],{**context(row),**(variables or {})});subject=message["subject"];body=email_text(message);cta=message["cta"]
     return await deliver_once(db,user_id,event,row["email"],subject,body,continuation(row,True)+query,cta_label=cta)
@@ -179,7 +182,8 @@ def create_guided_workspace_router(db):
             await db.board_profile_links.insert_one(link.copy())
         url=origin()+"/board-profile/"+link["token"]
         if payload.get("approved"):
-            return {"url":url,**await deliver_once(db,owner_id(row),"guided-member-profile-"+application_id,application["applicant_email"],"Please Complete Your Board Member Profile","Please share your skills, interests, capacity and the contribution you would like to make. The organization will discuss and confirm responsibilities with you; completing this form does not appoint you to the board.",url,cta_label="COMPLETE MY BOARD MEMBER PROFILE")}
+            config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"]["board_profile_invitation"],context(row))
+            return {"url":url,**await deliver_once(db,owner_id(row),"guided-member-profile-"+application_id,application["applicant_email"],message["subject"],email_text(message),url,cta_label=message["cta"])}
         return {"url":url,"recipient":application["applicant_email"]}
 
     @router.post("/admin/services/recruitment/customers/{ident}/applicants/{application_id}/preview")
@@ -221,7 +225,8 @@ def create_guided_workspace_router(db):
         if not item:raise HTTPException(404,"Agreement not found for this organization.")
         if not payload.get("approved"):raise HTTPException(409,"Review and approve sending this agreement.")
         if item.get("status")=="Signed":return {"status":"already_signed"}
-        result=await deliver_once(db,owner_id(row),"guided-signature-invitation-"+signature_id,item["board_member_email"],"Please Review and Sign Your Board Agreement","Please review the agreed document and sign if it correctly records your agreement. A finalized copy will remain available after signing.",origin()+"/sign/"+item["token"],cta_label="REVIEW MY AGREEMENT")
+        config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"]["signature_invitation"],context(row))
+        result=await deliver_once(db,owner_id(row),"guided-signature-invitation-"+signature_id,item["board_member_email"],message["subject"],email_text(message),origin()+"/sign/"+item["token"],cta_label=message["cta"])
         if result["status"] in {"sent","captured"}:await db.signature_requests.update_one({"request_id":signature_id,"status":{"$ne":"Signed"}},{"$set":{"status":"Sent","sent_at":now()}})
         return result
 
@@ -316,7 +321,10 @@ def create_guided_workspace_router(db):
             from docx import Document
             from docx.shared import Inches,RGBColor
             doc=Document()
-            if branding.get("logo_data"):doc.add_picture(io.BytesIO(base64.b64decode(branding["logo_data"].split(',')[1])),width=Inches(1))
+            if branding.get("logo_data"):
+                from PIL import Image
+                logo=Image.open(io.BytesIO(base64.b64decode(branding["logo_data"].split(",")[1])));buffered=io.BytesIO();logo.convert("RGBA").save(buffered,format="PNG");buffered.seek(0)
+                doc.add_picture(buffered,width=Inches(1))
             heading=doc.add_heading(title,0)
             for run in heading.runs:run.font.color.rgb=RGBColor.from_string(branding.get("primary_color","#334155").lstrip('#'))
             doc.add_paragraph(row["organization"])

@@ -220,7 +220,8 @@ def create_guided_recommitment_router(db):
             item={**query,'request_id':str(uuid.uuid4()),'token':secrets.token_urlsafe(40),'agreement_type':material['type'],'agreement_title':material['title'],'document_snapshot':version['display_text'],'organization_name':row['organization'],'board_member_name':record['name'],'board_member_email':record['email'],'status':'Ready for Signature','created_at':now(),'updated_at':now()}
             await db.signature_requests.insert_one(item.copy())
         if payload.get('approved'):
-            result=await deliver_once(db,owner_id(row),'guided-signature-invitation-'+item['request_id'],record['email'],'Please Review and Sign Your Board Agreement','Please review the document reflecting your agreed role and responsibilities. Sign if it correctly records your agreement.',origin()+'/sign/'+item['token'],cta_label='REVIEW MY AGREEMENT')
+            config,_,_=await settings(db,SERVICE);message=render(config['operational_emails']['signature_invitation'],context(row))
+            result=await deliver_once(db,owner_id(row),'guided-signature-invitation-'+item['request_id'],record['email'],message['subject'],email_text(message),origin()+'/sign/'+item['token'],cta_label=message['cta'])
             return {'request_id':item['request_id'],**result}
         return {'request_id':item['request_id'],'preview_url':origin()+'/sign/'+item['token']}
     return router

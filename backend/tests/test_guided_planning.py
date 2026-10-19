@@ -30,7 +30,10 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def prepared(self):
         token,public,row=await self.paid('strategic-planning')
-        await self.req('PUT',public+'/branding',{'primary_color':'#123456','secondary_color':'#abcdef'})
+        import base64,io
+        from PIL import Image
+        logo=io.BytesIO();Image.new('RGB',(12,12),'#123456').save(logo,format='WEBP')
+        await self.req('PUT',public+'/branding',{'primary_color':'#123456','secondary_color':'#abcdef','logo_data':'data:image/webp;base64,'+base64.b64encode(logo.getvalue()).decode()})
         base='/admin/services/strategic-planning/customers/'+row['customer_id']+'/planning'
         await self.req('PUT',base+'/setup',{'mission':'Help children access learning.','planning_period':'2027 to 2028','planning_meeting':{'meeting_date':'2026-11-15','start_time':'10:00','timezone_name':'Europe/London'},'response_deadline':'2026-11-10','programs':[{'id':'school','name':'After-School Education'},{'id':'coding','name':'Youth Coding'}]},admin=True)
         lead=await self.req('POST',base+'/leader-form',{},admin=True)

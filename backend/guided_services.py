@@ -358,7 +358,8 @@ def create_guided_services_router(db):
         email=str(payload.get("email","")).strip().lower()
         rows=await db.guided_service_customers.find({"service":service,"email":email,"payment_status":"paid","internal_test":{"$ne":True}},{"_id":0}).limit(5).to_list(5)
         for row in rows:
-            await send_message(db,row,"guided-access-recovery-"+str(int(time.time())//600),{"subject":"Your "+NAMES[service]+" Access Link","headline":"","body":"Your paid service remains available. Use this secure link to return to your organization branding and booking. Your approved resources are also available below.","cta":"CONTINUE MY PAID SERVICE","support":"","signature":"Nonprofit Board Builder"},secondary=[{"label":"OPEN MY APPROVED RESOURCES","url":continuation(row,True)}])
+            config,_,_=await settings(db,service)
+            await send_message(db,row,"guided-access-recovery-"+str(int(time.time())//600),render(config["operational_emails"]["access_recovery"],context(row)),secondary=[{"label":"OPEN MY APPROVED RESOURCES","url":continuation(row,True)}])
         return {"message":"If a paid service is associated with that address, we will email your secure access link."}
 
     @router.post("/services/{service}/start")

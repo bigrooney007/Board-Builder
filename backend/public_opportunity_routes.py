@@ -380,7 +380,11 @@ def create_public_opportunity_router(db) -> APIRouter:
                                                    (owner or {}).get("email", ""), record["organization_name"], record["agreement_title"])
             else:
                 from workflow_delivery import deliver_once
-                await deliver_once(db,record["owner_user_id"],"guided-signed-participant-"+record["request_id"],record["board_member_email"] or payload.email,"Your Board Agreement Is Signed","Your signature has been recorded. You can retrieve the finalized agreement using this secure link.",origin()+"/sign/"+token)
+                from guided_services import settings,render,context,email_text
+                guided_row=await db.guided_service_customers.find_one({"workspace_user_id":record["owner_user_id"]},{"_id":0})
+                config,_,_=await settings(db,guided_row["service"])
+                message=render(config["operational_emails"]["signed_copy"],{**context(guided_row),"participant_name":payload.typed_signature})
+                await deliver_once(db,record["owner_user_id"],"guided-signed-participant-"+record["request_id"],record["board_member_email"] or payload.email,message["subject"],email_text(message),origin()+"/sign/"+token,cta_label=message["cta"])
 
         except Exception:
             pass

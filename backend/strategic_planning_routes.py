@@ -525,7 +525,7 @@ def create_strategic_planning_router(db) -> APIRouter:
                     "planning_meeting": project.get("planning_meeting") or {},
                     "submitted": record["status"] == "COMPLETED" and (not is_lead or content.get("questionnaire_version") == strategic24.VERSION),
                     "is_lead_user": is_lead, "group_session_url": group_url,
-                    "existing_answers": (record.get("draft_answers") or record.get("response", {})) if is_lead else record.get("draft_answers", {}),
+                    "existing_answers": ((record.get("draft_answers") or record.get("response", {})) if is_lead else record.get("draft_answers", {})) if project.get("guided_service_customer_id") else (record.get("response", {}) if is_lead else record.get("draft_answers", {})),
                     "guided_service": bool(project.get("guided_service_customer_id")), "branding": project.get("branding", {}),
                     "prefill": {"full_name": record.get("name", ""), "email": record.get("email", "")},
                     "form": content}

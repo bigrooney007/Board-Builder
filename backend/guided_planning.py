@@ -352,7 +352,10 @@ def create_guided_planning_router(db):
             from docx import Document
             from docx.shared import Inches, RGBColor
             doc=Document()
-            if branding.get("logo_data"):doc.add_picture(io.BytesIO(base64.b64decode(branding["logo_data"].split(",")[1])),width=Inches(1))
+            if branding.get("logo_data"):
+                from PIL import Image
+                logo=Image.open(io.BytesIO(base64.b64decode(branding["logo_data"].split(",")[1])));buffered=io.BytesIO();logo.convert("RGBA").save(buffered,format="PNG");buffered.seek(0)
+                doc.add_picture(buffered,width=Inches(1))
             h=doc.add_heading(org+" Strategic Plan",0)
             for run in h.runs:run.font.color.rgb=RGBColor.from_string(branding.get("primary_color","#334155").lstrip("#"))
             doc.add_paragraph(project.get("planning_period", ""))
