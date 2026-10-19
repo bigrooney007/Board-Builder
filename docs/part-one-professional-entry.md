@@ -43,12 +43,75 @@ Optional signed Calendly notifications use `/api/consultations/calendly-webhook`
 
 Private consultation pages/APIs are noindex, no-store and use a no-referrer policy. Their initial HTML excludes public analytics and session-recording scripts while retaining the application's local bundles and styles. Consultation buttons load this private document directly. Previously verified paid entitlements can resume even during a Stripe outage. Admin content and customer records require existing administrator authentication. Public responses omit booking destinations, Stripe references, private notes and email delivery records.
 
-## Verification and release status
+## Verified results
 
-Initial local production build, eight public-page SEO checks, redirect checks and 45 React tests pass. The historical-editor adapter has an additional passing regression test. Python compilation and private-page privacy checks pass. The initial GitHub Actions run passed 100 backend tests, including 17 consultation checks, and all 14 existing Fundraising Game desktop/mobile checks. The new-page browser run identified an admin field label requiring an explicit accessible name; this was corrected. The expanded final run includes paid-resume provider-outage coverage and Chromium desktop/tablet/mobile workflows; its final results must be recorded before handoff.
+Application code verified at `605b06f59e4cbe1dd8d40e86e8c47dd2995ee576`:
+https://github.com/bigrooney007/Board-Builder/actions/runs/39266958145
 
-The legacy `test_blog_workstation.py` suite contains expectations for generating five blog categories, whereas the starting release already restricts new generation to Board Fundraising. Its eight failures were reproduced on an untouched checkout of `549b3d2` and are unrelated to Part One. Blog implementation is unchanged; current public blog/RSS access is checked separately. The historic recovered-release workflow freezes the homepage and routes against `a33a640`, which conflicts with this explicitly authorized Part One. This branch instead uses the full Fundraising Game regression workflow plus `validate_part_one_scope.py`, which protects the actual starting release's product code, prices, questions, meeting tools, testimonials, blogs and existing route registrations.
+- **101 backend tests passed**, including 18 consultation configuration/HTTP/security/delivery cases and 83 existing-product regressions. The HTTP cases use real FastAPI handlers and disposable Mongo. Stripe and Resend transport are simulated; no real charges or email sends occur.
+- **46 React tests passed**, including directory/personal/consultation rendering, safe formatting, unpaid/failed confirmation and the historical main-editor adapter.
+- **35 browser acceptance cases passed**: 14 unchanged Fundraising Game desktop/mobile checks and 21 Part One desktop/tablet/mobile checks at 1440, 768 and 390 pixels. These cover four-service links, original intake access, friendly game alias, portrait and testimonial carousel, admin editing/persistence/testimonial ordering, controlled $197 checkout, confirmation email generation, paid recovery, Calendly handoff, cancelled-payment denial, private notes and resend.
+- Production build passed locally and in GitHub Actions. Dependencies installed from the unchanged frozen Yarn lockfile.
+- Eight public-page initial-HTML/SEO/social-image checks, sitemap/robots checks, route redirects, private consultation analytics/referrer/cache protection, Python compilation and the Part One scope guard passed.
+- Desktop and mobile screenshots were inspected, including the personal page, directory and paid confirmation page. No horizontal overflow was detected in the tested customer layouts.
+- Read-only production checks returned HTTP 200 for the existing homepage, four original product URLs, API health and payment config. The existing payment config reports live mode. This does not establish that Part One is deployed or verify private Stripe credentials.
+- The connected Calendly account confirmed `https://calendly.com/boardbuilder/recruitboard` is active, has a 30-minute event, contains no free-consultation advertisement and imposes no additional Calendly payment. Fifteen bookable times were returned for October 20–26, 2026. No meeting was booked or changed. Its existing event name is **Build A Strong Fundraising Board**; the owner can choose another consultation destination independently in the new admin settings.
 
-Production integration settings are not available in the development environment. Real Stripe account permissions, deployed webhook subscriptions, real email inbox receipt and the Calendly event configuration are not verified by simulations. Deployment requires the existing Emergent environment and established synchronization/deployment process. No production deployment or synchronization is performed by the implementation tests.
+The final handoff commit changes this document only; its application code matches the verified commit above. GitHub's existing Fundraising Game branch remains at `549b3d2db5b6fdf96ae9a396d4e141df3fd77622`. No production branch was merged, reset or force-pushed.
+
+## Known limits and production handoff
+
+The legacy `test_blog_workstation.py` suite contains expectations for generating five blog categories, whereas the starting release already restricts new generation to Board Fundraising. Its eight failures were reproduced on an untouched checkout of `549b3d2` and are unrelated to Part One. Blog implementation is unchanged; current public blog/RSS access was checked separately. The historic recovered-release workflow freezes the homepage and routes against `a33a640`, which conflicts with this explicitly authorized Part One. This branch instead uses the full Fundraising Game regression workflow plus `validate_part_one_scope.py`, which protects the actual starting release's product code, prices, questions, meeting tools, testimonials, blogs and existing route registrations.
+
+Real consultation transactions, private production Stripe credentials/webhook configuration, actual email inbox receipt, and the Calendly webhook subscription/signing key remain **unverified**. The application reuses the existing Stripe/Resend services. Live credentials and Emergent deployment controls are not available in the development environment, so no new-production launch or provider delivery is claimed. Calendly URL/activity/availability was verified separately through its connected account.
+
+The core consultation booking journey does not require a new preview feature flag. Customers pay through the dedicated server-side Stripe product and then book using their paid entitlement. Automatic confirmed/cancelled booking status requires the optional signed Calendly webhook subscription; without it the record honestly shows the booking link was opened. This does not prevent choosing a meeting time.
+
+**Committed to GitHub:** yes. **Synchronized to Emergent:** no. **Part One deployed to production:** no.
+
+The owner must synchronize the exact final commit on `feature/nbb-main-consultations` into the existing Emergent project and use the established deployment controls. Do not ask Emergent to recreate or modify the implementation. After deployment, real-provider acceptance must verify the consultation payment, confirmation inbox receipt and booking on the deployed host before calling the live integration fully verified.
 
 Stop after Part One. No AutoFundraiser application files or Parts Two, Three or Four are included.
+
+## Changed files
+
+`A` means added, `M` means modified, compared with the actual starting release.
+
+```text
+M	.github/workflows/current-workflow-validation.yml
+M	.github/workflows/simplified-fundraising-validation.yml
+A	backend/consultation_routes.py
+M	backend/payment_routes.py
+M	backend/server.py
+A	backend/tests/test_consultations.py
+M	backend/workflow_delivery.py
+A	docs/part-one-professional-entry.md
+A	frontend/scripts/consultation-page.cjs
+M	frontend/scripts/fundraising-redirects.cjs
+M	frontend/scripts/landing-seo-middleware.cjs
+M	frontend/scripts/prerender-landings.cjs
+M	frontend/scripts/serve-public.cjs
+M	frontend/src/App.js
+M	frontend/src/admin/FundraisingAdminPage.jsx
+M	frontend/src/admin/HomepageTextSection.jsx
+A	frontend/src/admin/ProfessionalAdminSection.jsx
+M	frontend/src/admin/RecoveredOffers.test.jsx
+M	frontend/src/components/TestimonialCarousel.jsx
+M	frontend/src/content/landingSeo.json
+A	frontend/src/content/professionalEntry.json
+M	frontend/src/game/FundraisingPublicPages.jsx
+M	frontend/src/pages/MainHomePage.jsx
+A	frontend/src/professional/ConsultationPage.jsx
+A	frontend/src/professional/MeetRooneyPage.jsx
+A	frontend/src/professional/ProfessionalEntry.test.jsx
+A	frontend/src/professional/RichContent.jsx
+A	frontend/src/professional/content.js
+A	frontend/src/professional/professional.css
+M	frontend/src/seo/landingMetadata.js
+A	tests/consultation_privacy.cjs
+M	tests/current_workflow_app.py
+M	tests/fundraising_redirects.cjs
+A	tests/professional_entry_browser.py
+M	tests/simplified_fundraising_browser.py
+A	tests/validate_part_one_scope.py
+```
