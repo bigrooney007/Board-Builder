@@ -29,7 +29,7 @@ async def main():
    await page.get_by_label('Role or profile',exact=True).wait_for();await page.get_by_role('button',name='Approve Agreed Board Member Profiles',exact=True).click()
    await page.get_by_label('Available interview dates and times',exact=True).fill('October 30, 2026 at 10:00 UTC');await page.get_by_role('button',name='Save Interview Arrangements',exact=True).click();await page.get_by_role('button',name='GENERATE RECRUITMENT MATERIALS',exact=True).click()
    assert (await context.request.post(BASE+'/__test/guided-work/'+ident)).ok
-   await page.get_by_role('button',name='Refresh Generated Resources',exact=True).click();await page.get_by_text('Board Manual · Generated',exact=True).wait_for()
+   await page.get_by_role('button',name='Refresh Generated Resources',exact=True).click();await page.get_by_text('Board Member Manual · Generated',exact=True).wait_for()
    docs=await (await context.request.get(BASE+ab+'/tool/workspace/materials',headers=headers)).json()
    for doc in docs['materials']:
     response=await context.request.post(BASE+ab+'/tool/workspace/materials/'+doc['material_id']+'/approve',headers=headers,data={});assert response.ok,await response.text()

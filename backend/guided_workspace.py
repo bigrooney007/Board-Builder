@@ -245,6 +245,7 @@ def create_guided_workspace_router(db):
             role={k:str(raw.get(k,""))[:6000] for k in ("role_name","why_this_person_is_important","how_this_person_can_support")}
             for key in ("what_to_look_for","gap_this_role_fills"):
                 values=raw.get(key) or []
+                if not isinstance(values,(str,list)):raise HTTPException(422,"Use text or a list of criteria for each profile.")
                 role[key]=[str(v)[:1200] for v in (values.splitlines() if isinstance(values,str) else values)][:30]
             roles.append(role)
         if row.get("recommendations")==roles and row.get("recruitment_count")==payload.count and row.get("profiles_approved")==payload.approved:return {"status":"approved" if payload.approved else "saved"}

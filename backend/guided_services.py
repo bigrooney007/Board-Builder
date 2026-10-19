@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -358,6 +359,16 @@ def create_guided_services_router(db):
         for key,value in merged.items():
             if not isinstance(value,(str,int,float,list)) or len(str(value))>18000:raise HTTPException(422,"An answer is too long or has an unsupported format.")
             q=known[key]
+            if value not in ("",[]):
+                if q["type"]=="number":
+                    try:
+                        if isinstance(value,(bool,list)) or not math.isfinite(float(value)):raise ValueError()
+                    except (ValueError,TypeError):raise HTTPException(422,"Enter a valid number for this question.")
+                elif q["type"]=="date":
+                    try:datetime.strptime(str(value),"%Y-%m-%d")
+                    except ValueError:raise HTTPException(422,"Enter a valid date for this question.")
+                elif q["type"]=="multiselect" and not isinstance(value,list):raise HTTPException(422,"Choose the available answers for this question.")
+                elif q["type"]!="multiselect" and not isinstance(value,str):raise HTTPException(422,"Enter a text answer for this question.")
             if q["type"] in {"select","multiselect"}:
                 values=value if isinstance(value,list) else [value]
                 if any(item not in q["options"] for item in values):raise HTTPException(422,"Choose one of the configured options.")

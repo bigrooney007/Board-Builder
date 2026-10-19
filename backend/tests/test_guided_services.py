@@ -138,3 +138,26 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         draft=await self.req('POST',base+'/applicants/'+aid+'/preview',{'action':'invite'});self.assertIn('October 30',draft['body']);await self.req('POST',base+'/applicants/'+aid+'/send',{**draft,'request_id':str(uuid.uuid4()),'approved':True})
         saved=await self.db.opportunity_applications.find_one({'application_id':aid});self.assertEqual(saved['status'],'Interview Invited');self.assertEqual(saved['interview_guide']['status'],'Ready')
         await self.req('POST',ab+'/deliver',{'approved':True,'request_id':str(uuid.uuid4())},admin=True)
+    async def test_verified_stripe_webhook_and_signed_calendly_status(self):
+        token,base,row=await self.lead();await self.req('POST',base+'/checkout');row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});self.sessions[row['session_id']].update(payment_status='paid',status='complete')
+        event={'id':'evt_guided','type':'checkout.session.completed','data':{'object':self.sessions[row['session_id']]}};raw=json.dumps(event).encode();stamp=str(int(time.time()));sig=hmac.new(os.environ['STRIPE_WEBHOOK_SECRET'].encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
+        bad=await self.client.post('/api/stripe/webhook',content=raw,headers={'Stripe-Signature':'t='+stamp+',v1=invalid'});self.assertEqual(bad.status_code,400)
+        good=await self.client.post('/api/stripe/webhook',content=raw,headers={'Stripe-Signature':'t='+stamp+',v1='+sig});self.assertEqual(good.status_code,200,good.text)
+        await self.req('PUT',base+'/branding',{'primary_color':'#123456'})
+        event={'event':'invitee.created','created_at':'2026-10-30T10:00:00Z','payload':{'email':row['email'],'tracking':{'utm_content':row['customer_id']},'uri':'https://api.calendly.com/invitees/fixture','event':'https://api.calendly.com/events/fixture','scheduled_event':{'start_time':'2026-11-01T10:00:00Z'}}};raw=json.dumps(event).encode();sig=hmac.new(os.environ['CALENDLY_WEBHOOK_SIGNING_KEY'].encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
+        r=await self.client.post('/api/consultations/calendly-webhook',content=raw,headers={'Calendly-Webhook-Signature':'t='+stamp+',v1='+sig});self.assertEqual(r.status_code,200,r.text);saved=await self.req('GET',base);self.assertEqual(saved['booking_status'],'booked')
+    async def test_board_profile_signature_snapshot_and_secure_signed_download(self):
+        from workspace_service import save_generation
+        token,base,row=await self.paid();uid=row['workspace_user_id'];ab='/admin/services/recruitment/customers/'+row['customer_id'];aid=str(uuid.uuid4())
+        await self.db.opportunity_applications.insert_one({'application_id':aid,'owner_user_id':uid,'applicant_email':'candidate@example.org','profile_snapshot':{'full_name':'Sample Candidate','email':'candidate@example.org'},'answers':{},'status':'Moving Forward','created_at':gs.now()})
+        profile=await self.req('POST',ab+'/applicants/'+aid+'/profile-form',{},admin=True);form_token=profile['url'].rsplit('/',1)[1]
+        await self.req('POST','/board-profile/'+form_token,{'full_name':'Sample Candidate','email':'candidate@example.org','expertise':['Education'],'contribution_areas':['Partnerships'],'monthly_hours':'2'},201)
+        await self.req('PATCH',ab+'/tool/workspace/applications/'+aid,{'status':'Selected','board_role':'Education Partnerships Leader','portfolio_role_approved':True},admin=True)
+        material=await save_generation(self.db,uid,'board_member_agreement',{'sections':[{'heading':'Agreed Responsibilities','content':'Develop school introductions as agreed.'}]},'Verified organization data')
+        path=ab+'/tool/workspace/signatures/prepare';body={'agreement_type':'board_member_agreement','application_id':aid};await self.req('POST',path,body,409,True)
+        await self.req('POST',ab+'/tool/workspace/materials/'+material['material_id']+'/approve',{},admin=True);prepared=await self.req('POST',path,body,admin=True);again=await self.req('POST',path,body,admin=True);self.assertEqual(prepared['request_id'],again['request_id'])
+        sign=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});snapshot=sign['document_snapshot'];await self.req('POST','/public/sign/'+sign['token'],{'agreed':True,'typed_signature':'Sample Candidate','email':'candidate@example.org','date':'2026-10-30'})
+        await self.req('PUT',ab+'/tool/workspace/materials/'+material['material_id'],{'display_text':'Changed unsigned master agreement.'},admin=True)
+        saved=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});self.assertEqual(saved['document_snapshot'],snapshot);self.assertEqual(saved['status'],'Signed');download=await self.req('GET',base+'/signed/'+prepared['request_id']);self.assertIn('SIGNED ELECTRONICALLY',download.text)
+    async def test_paid_recovery_does_not_disclose_other_customer_links(self):
+        token,base,row=await self.paid();response=await self.req('POST','/services/recruitment/recover',{'email':row['email']});missing=await self.req('POST','/services/recruitment/recover',{'email':'not-a-customer@example.org'});self.assertEqual(response,missing);self.assertNotIn(token,json.dumps(response))
