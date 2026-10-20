@@ -110,6 +110,8 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         result=await self.client.get(operator,headers=headers);self.assertEqual(result.status_code,200,result.text)
         state=await self.client.get('/api/game/launch/state',headers=headers);self.assertEqual(state.status_code,200,state.text)
         self.assertTrue(state.json()['self_facilitated']);self.assertEqual(state.json()['profile']['goal'],before['goal'])
+        from fundraising_strategy_writing import document_sections
+        sections=document_sections({'audiences':[],'commitments':[]},state.json()['profile']);self.assertTrue(any('2027-12-31' in s['text'] for s in sections))
         started=await self.client.post('/api/game/self-play',headers=headers);self.assertEqual(started.status_code,201,started.text)
         self.assertTrue(started.json()['token'])
         self.assertEqual(await self.db.game_profiles.count_documents({'user_id':row['workspace_user_id']}),1)
@@ -179,6 +181,9 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         pdf=await self.req('GET','/board-portfolio/'+portfolio['token']+'/document.pdf');self.assertTrue(pdf.content.startswith(b'%PDF-'))
         for _ in range(2):await self.req('POST',base+'/portfolios/'+portfolio['portfolio_id']+'/send',{'origin_url':'https://nonprofitboardbuilder.com','resend':False},admin=True)
         sent=await self.db.workflow_email_deliveries.count_documents({'user_id':uid,'event_key':{'$regex':'^portfolio:'}});self.assertEqual(sent,1)
+        await self.req('POST',base+'/launch/portfolios/'+portfolio['portfolio_id']+'/reopen',{'confirmed':True},admin=True)
+        pdf=await self.req('GET',base+'/launch/portfolios/'+portfolio['portfolio_id']+'/history/'+str(portfolio['version'])+'/document.pdf',admin=True);self.assertTrue(pdf.content.startswith(b'%PDF-'))
+        await self.req('GET','/board-portfolio/'+portfolio['token']+'/document.pdf',status=404)
 
     async def test_planning_portfolios_keep_existing_template_and_require_fresh_approval_after_edit(self):
         token,public,row=await self.paid_option('strategic-planning','rooney-facilitated');ident=row['customer_id']
@@ -200,3 +205,17 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('GET',public_path,status=404);await self.req('GET',path+'/download',status=403,admin=True)
         await self.req('POST',path+'/approve',{'version':port['version'],'confirmed':True},409,True)
         await self.req('POST',path+'/approve',{'version':edited['portfolio']['version'],'confirmed':True},admin=True)
+
+    async def test_cancelled_checkout_can_safely_change_package_without_two_open_sessions(self):
+        from unittest.mock import patch
+        def expire(sid,**kwargs):self.sessions[sid].update(status='expired');return self.sessions[sid]
+        patch('stripe.checkout.Session.expire',side_effect=expire).start()
+        token,base,row=await self.lead('strategic-planning')
+        await self.req('POST',base+'/checkout?package=self-facilitated')
+        await self.req('POST',base+'/checkout?package=rooney-facilitated',status=409)
+        self.assertEqual(len(self.created),1)
+        await self.req('POST',base+'/cancel-checkout',{})
+        await self.req('POST',base+'/checkout?package=rooney-facilitated')
+        self.assertEqual(len(self.created),2)
+        self.assertEqual(self.created[-1]['metadata']['guided_package'],'rooney-facilitated')
+        self.assertEqual(sum(s['status']=='open' for s in self.sessions.values()),1)

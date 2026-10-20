@@ -33,6 +33,9 @@ def install(app,db):
         sid='cs_test_guided_'+uuid.uuid4().hex
         SESSIONS[sid]={'id':sid,'metadata':kw['metadata'],'client_reference_id':kw['client_reference_id'],'amount_subtotal':chosen['amount'],'amount_total':chosen['amount'],'currency':'usd','status':'open','payment_status':'unpaid','success_url':kw['success_url'],'cancel_url':kw['cancel_url'],'payment_intent':'pi_test_'+uuid.uuid4().hex,'livemode':False}
         return SimpleNamespace(id=sid,url='http://127.0.0.1:8765/__test/guided-checkout/'+sid)
+    def expire(sid,**kw):
+        SESSIONS[sid]['status']='expired';return SESSIONS[sid]
+    stripe.checkout.Session.expire=expire
     payment_routes.resolve_offer_price_id=price;stripe.checkout.Session.create=create;stripe.checkout.Session.retrieve=lambda sid:SESSIONS[sid] if sid in SESSIONS else previous_retrieve(sid)
     old_mail=resend.Emails.send_async
     async def mail(params,*args,**kwargs):

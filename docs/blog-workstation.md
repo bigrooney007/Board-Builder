@@ -1,3 +1,7 @@
+# Current automatic publishing
+
+The current release reinstates all five weekday pathways and publishes generated articles automatically after validation. See [the current operating guide](two-option-services-handoff.md#automatic-blog-generation-and-publication) for the schedule, editing controls and retry behavior. Earlier draft-first descriptions below are historical. Existing drafts and article URLs are preserved.
+
 # Blog generator in the original admin
 
 Open `/admin?tab=blog`, or choose **Blog Post Generator** in `/admin`.

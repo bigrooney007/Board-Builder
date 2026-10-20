@@ -125,6 +125,14 @@ def document_sections(agreed,profile):
     rows=agreed.get("written_audiences") or [fallback_audience(p) for p in agreed["audiences"]]
     label="audience" if len(rows)==1 else "audiences"
     sections=[{"key":"executive_summary","title":"Executive Summary","text":f"Our organization will pursue {len(rows)} approved funding {label} toward {goal_text}. This strategy sets out the funding audiences, fundraising approaches and responsibilities agreed by our board."}]
+    if profile.get("guided_service_customer_id"):
+        context=[]
+        if isinstance(goal,(int,float)):context.append("Our fundraising goal is "+goal_text+".")
+        deadline=(profile.get("goal") or {}).get("deadline")
+        if deadline:context.append("We need to raise this funding by "+str(deadline)+".")
+        consequences=(profile.get("organization") or {}).get("funding_consequences")
+        if consequences:context.append("If the funding is not secured: "+str(consequences))
+        if context:sections.append({"key":"fundraising_context","title":"Our Fundraising Goal and Deadline","text":"\n\n".join(context)})
     mission=(profile.get("organization") or {}).get("mission")
     if mission:sections.append({"key":"organization_mission","title":"Our Organization's Mission","text":mission})
     for index,row in enumerate(rows,1):

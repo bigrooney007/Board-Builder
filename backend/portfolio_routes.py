@@ -524,7 +524,7 @@ def create_portfolio_router(db) -> APIRouter:
                 "user_id": member["user_id"],
                 "board_member_id": record["member_id"],
                 "completed": True,
-            }, {"_id": 0, "response_id": 1})
+            }, {"_id": 0, "response_id": 1, "completed": 1})
             response_count = await db.game_section_responses.count_documents({
                 "user_id": member["user_id"],
                 "board_member_id": record["member_id"],
@@ -544,6 +544,9 @@ def create_portfolio_router(db) -> APIRouter:
                         draft=await build_draft(member["user_id"],record,strategy,commitments)
                         for key in ("portfolio_id","token","created_at"):draft[key]=full[key]
                         draft["version"]=full.get("version",1)+1
+                        draft["approved_history"]=full.get("approved_history",[])
+                        if full.get("leader_approved_text") and not any(v.get("version")==full.get("leader_approved_version") for v in draft["approved_history"]):
+                            draft["approved_history"].append({"version":full.get("leader_approved_version",full.get("version",1)),"text":full["leader_approved_text"],"agreed_role":full.get("agreed_role",""),"approved_at":full.get("leader_approved_at","")})
                         await db.board_portfolios.replace_one({"portfolio_id":full["portfolio_id"]},draft)
                 continue
             draft = await build_draft(member["user_id"], record, strategy, commitments)

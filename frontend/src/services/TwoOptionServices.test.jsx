@@ -3,6 +3,9 @@ import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router-dom';
 import GuidedServicePage from './GuidedServicePage';
 import DashboardHandover from './DashboardHandover';
+import ServiceOperatorPage from './ServiceOperatorPage';
+jest.mock('./PlanningWorkspace',()=>()=> <p>Prepared planning workspace</p>);
+jest.mock('@/member/MemberAuthContext',()=>({useMemberAuth:()=>({refresh:jest.fn()})}));
 import {api} from './shared';
 jest.mock('@/game/SpeakButton',()=>()=>null);
 jest.mock('./ServiceResources',()=>()=>null);
@@ -24,4 +27,12 @@ test('self-facilitation handover requires explicit preparation confirmation',asy
  await act(async()=>root.render(<DashboardHandover service="board-fundraising" record={{customer_id:'c',purchased_package:'self-facilitated',operator_status:'rooney_preparing'}} run={fn=>fn()}/>));
  const button=[...node.querySelectorAll('button')].find(b=>b.textContent==='HAND OVER DASHBOARD TO ORGANIZATION');expect(button.disabled).toBe(true);
  await act(async()=>node.querySelector('input[type="checkbox"]').click());expect(button.disabled).toBe(false);
+});
+
+test('accepting a planning handover waits for the dashboard record before rendering it',async()=>{
+ jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path.includes('/handover/')?{organization:'Our Prepared Nonprofit',copy:{handover_heading:'Ready',handover_description:'Continue your existing project.',handover_cta:'ACCEPT MY DASHBOARD'}}:{customer:{customer_id:'prepared',organization:'Our Prepared Nonprofit'},copy:{dashboard_heading:'Our Planning Dashboard'}}}));
+ jest.spyOn(api,'post').mockResolvedValue({data:{url:'/services/strategic-planning/dashboard/prepared'}});
+ await act(async()=>root.render(<MemoryRouter initialEntries={['/services/strategic-planning/handover/invitation']}><Routes><Route path="/services/:service/handover/:token" element={<ServiceOperatorPage handover/>}/><Route path="/services/:service/dashboard/:ident" element={<ServiceOperatorPage/>}/></Routes></MemoryRouter>));
+ await act(async()=>[...node.querySelectorAll('button')].find(b=>b.textContent==='ACCEPT MY DASHBOARD').click());
+ expect(node.textContent).toContain('Prepared planning workspace');expect(node.textContent).toContain('Our Prepared Nonprofit');expect(node.textContent).toContain('ORGANIZATION IN CONTROL');
 });

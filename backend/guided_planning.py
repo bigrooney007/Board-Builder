@@ -367,7 +367,7 @@ def create_guided_planning_router(db):
         row=await admin_record(db,"strategic-planning",ident,request,True);plan=await plan_for(row)
         if not payload.approved or plan.get("final_status")!="Approved":raise HTTPException(409,"Finalize the plan and approve its delivery email.")
         result=await send_message(db,row,"planning-final-delivery-"+str(plan["plan_version"]),payload.model_dump(),continuation(row,True))
-        if result["status"] in {"sent","captured"}:await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"resource_delivery_at":now(),"operator_status":"completed"}})
+        if result["status"] in {"sent","captured"}:await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"resource_delivery_at":now()}})
         return result
 
     def document(project,text,format):

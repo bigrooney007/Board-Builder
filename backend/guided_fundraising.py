@@ -49,7 +49,7 @@ def create_guided_fundraising_router(db):
         row=await admin_record(db,'board-fundraising',ident,request,True)
         # Only reuse Game actions; their original ownership and approval checks run.
         import re
-        if not re.fullmatch(r'game/[a-zA-Z0-9_/-]{1,250}',path) or '..' in path:raise HTTPException(403,'This tool is outside Board Fundraising.')
+        if not re.fullmatch(r'game/[a-zA-Z0-9_./-]{1,250}',path) or '..' in path:raise HTTPException(403,'This tool is outside Board Fundraising.')
         response=await delegated_request(request.app,db,row,request.method,path,await request.json() if request.method!='GET' else None,request.url.query)
         return Response(response.content,response.status_code,media_type=response.headers.get('content-type','application/json'),headers={'Cache-Control':'no-store',**({'Content-Disposition':response.headers['content-disposition']} if 'content-disposition' in response.headers else {})})
 

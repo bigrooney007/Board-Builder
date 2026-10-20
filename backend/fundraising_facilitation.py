@@ -110,7 +110,7 @@ def create_facilitation_router(db):
             await touch(db,row['user_id'],'complete','/game/dashboard')
         row=await strategy_for(ident)
         delivery=await deliver_approved(db,row)
-        if delivery['status'] in ('sent','captured'):await db.guided_service_customers.update_one({'workspace_user_id':row['user_id'],'service':'board-fundraising'},{'$set':{'operator_status':'completed','resource_delivery_at':now()}})
+        if delivery['status'] in ('sent','captured'):await db.guided_service_customers.update_one({'workspace_user_id':row['user_id'],'service':'board-fundraising'},{'$set':{'resource_delivery_at':now()}})
         return {'approved':True,'delivery':delivery}
 
     @router.post('/game/launch/plan-upload')

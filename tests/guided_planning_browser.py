@@ -58,6 +58,7 @@ async def main():
     await page.goto(BASE+'/services/strategic-planning/resources/'+token);await page.get_by_role('heading',name='Your Approved Strategic Plan',exact=True).wait_for();assert await page.locator('body').evaluate('e=>e.scrollWidth<=innerWidth+2');assert not errors,errors;await page.screenshot(path=f'test_reports/current-guided-planning-{package}-{width}.png',full_page=True)
     results.append({'width':width,'package':package,'case':'free_payment_branding_independent_forms_programs_operator_session_adoption_review_delivery_downloads','passed':True})
    except Exception:
+    print("Planning browser failure:",package,width,page.url,"errors:",errors,"page:",(await page.locator("body").inner_text())[:4000])
     await page.screenshot(path=f'test_reports/current-guided-planning-failure-{package}-{width}.png',full_page=True);Path(f'test_reports/current-guided-planning-failure-{package}-{width}.html').write_text(await page.content());raise
    finally:await ctx.close()
   await browser.close()

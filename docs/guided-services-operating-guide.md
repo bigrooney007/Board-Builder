@@ -1,8 +1,8 @@
 # Nonprofit Board Builder: customer journeys and operating guide
 
-This release implements the four instructions as one service platform. It preserves the existing Fundraising Game and its $1,497 configuration, existing customer journeys and entitlements, blogs, RSS, applicant network and historical administration. AutoFundraiser is an external link only.
+The current package, handover and automatic-publishing instructions are documented in [two-option-services-handoff.md](two-option-services-handoff.md). They supersede the single-price descriptions below while preserving existing purchases and product engines. AutoFundraiser is an external link only.
 
-The main website is a four-service directory. Recruitment and Recommitment each cost $497. Facilitated Strategic Planning costs $1,997. A separate professional consultation with Rooney costs $197. These purchases do not unlock each other.
+The main website is a four-service directory. Recruitment and Recommitment each cost $497. Fundraising now offers $497 preparation/self-facilitation or $1,497 Rooney facilitation. Planning offers $497 preparation/self-facilitation or $1,997 Rooney facilitation. A separate professional consultation with Rooney costs $197. These purchases do not unlock each other.
 
 ## 1. Professional consultation with Rooney
 

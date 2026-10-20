@@ -269,4 +269,7 @@ Both options begin with preparation. The difference is whether you run the plann
         result["operational_emails"]["fundraising_portfolio_delivery"] = email("Your Approved Board Fundraising Portfolio", "Hello {{participant_name}},\n\nYour organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board's adopted approaches. Use your personal link to read and download it.", "VIEW MY APPROVED PORTFOLIO")
     result["customer_copy"]["self_cta"]="PAY $497 AND PREPARE MY PROCESS"
     result["customer_copy"]["professional_cta"]="PAY $"+format(PRICES[service]//100,",")+" AND HAVE ROONEY FACILITATE" if service in PACKAGES else "PAY $"+str(PRICES[service]//100)+" AND BEGIN MY GUIDED SERVICE"
+    if service == "strategic-planning":
+        result["operational_emails"]["portfolio_delivery"]=email("Your Approved Board Leadership Portfolio", "Hello {{participant_name}},\n\nYour approved portfolio for {{organization}} records the responsibilities you agreed to undertake in your organization's strategic plan. Open your personal link to read and download it.", "OPEN MY APPROVED PORTFOLIO")
+        result["operational_emails"]["review_invitation"]["body"]=result["operational_emails"]["review_invitation"]["body"].replace("Rooney has prepared the strategic plan", "The strategic plan has been prepared")
     return result

@@ -86,13 +86,27 @@ def create_handover_router(db):
         row = await invitation(service, token)
         if payload.get("confirmed") is not True:
             raise HTTPException(422, "Confirm that you are accepting control of your organization's prepared dashboard.")
-        version = row.get("operator_session_version") or secrets.token_urlsafe(24)
+        version = row.get("operator_session_version") or digest(token+row["customer_id"])
         await db.guided_service_customers.update_one({"customer_id": row["customer_id"], "handover.token_hash": digest(token)}, {"$set": {"operator_status": "organization_operating", "handover.accepted_at": now(), "operator_session_version": version}})
         claim = {"sub": row["customer_id"], "service": service, "version": version, "aud": "guided-service-operator", "iat": stamp(), "exp": stamp()+timedelta(hours=8)}
         jwt_token = jwt.encode(claim, os.environ["JWT_SECRET"], algorithm="HS256")
         response = JSONResponse({"url": f"/services/{service}/dashboard/"+row["customer_id"]})
         response.set_cookie(COOKIE, jwt_token, httponly=True, secure=True, samesite="lax", path="/api", max_age=8*3600)
         return response
+
+    @router.post("/admin/services/{service}/customers/{ident}/complete-service")
+    async def complete(service:str,ident:str,payload:dict,request:Request):
+        row=await admin_record(db,service,ident,request,True)
+        if service not in PACKAGES or payload.get("delivery_confirmed") is not True or not row.get("resource_delivery_at"):
+            raise HTTPException(409,"Deliver the approved strategy or plan and confirm all agreed resources have been provided before completing the service.")
+        if service=="board-fundraising":
+            pending=await db.board_portfolios.count_documents({"user_id":row["workspace_user_id"],"workflow_version":7,"leader_approved_at":{"$in":["",None]}})
+        else:
+            plan=await db.sp_plans.find_one({"project_id":ident},{"_id":0}) or {}
+            pending=sum(not p.get("approved_at") or p.get("approved_version")!=p.get("version") for p in plan.get("leadership_portfolios",[]))
+        if pending:raise HTTPException(409,"Review and approve the outstanding portfolios before completing the service.")
+        await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"operator_status":"completed","completed_at":row.get("completed_at") or now(),"resource_delivery_confirmed_by_admin":True}})
+        return {"operator_status":"completed"}
 
     @router.post("/admin/services/{service}/customers/{ident}/revoke-handover")
     async def revoke(service: str, ident: str, request: Request):

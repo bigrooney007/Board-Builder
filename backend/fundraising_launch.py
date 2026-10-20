@@ -410,9 +410,22 @@ def create_fundraising_launch_router(db):
     async def reopen_portfolio(portfolio_id:str,payload:dict,request:Request):
         member=await owner(request)
         if payload.get('confirmed') is not True:raise HTTPException(422,'Confirm that you want to revise the portfolio')
-        result=await db.board_portfolios.update_one({'user_id':member['user_id'],'portfolio_id':portfolio_id,'workflow_version':7},{'$set':{'leader_approved_at':'','status':'draft'},'$inc':{'version':1}})
+        row=await db.board_portfolios.find_one({'user_id':member['user_id'],'portfolio_id':portfolio_id,'workflow_version':7},{'_id':0})
+        history=(row or {}).get('approved_history',[])
+        if row and row.get('leader_approved_text') and not any(v.get('version')==row.get('leader_approved_version') for v in history):history.append({'version':row.get('leader_approved_version',row['version']),'text':row['leader_approved_text'],'agreed_role':row.get('agreed_role',''),'approved_at':row.get('leader_approved_at','')})
+        result=await db.board_portfolios.update_one({'user_id':member['user_id'],'portfolio_id':portfolio_id,'workflow_version':7},{'$set':{'leader_approved_at':'','status':'draft','approved_history':history},'$inc':{'version':1}})
         if not result.matched_count:raise HTTPException(404,'Portfolio not found')
         return {'reopened':True}
+
+    @router.get('/game/launch/portfolios/{portfolio_id}/history/{version}/document.pdf')
+    async def historical_portfolio(portfolio_id:str,version:int,request:Request):
+        member=await owner(request)
+        row=await db.board_portfolios.find_one({'user_id':member['user_id'],'portfolio_id':portfolio_id,'workflow_version':7},{'_id':0}) or {}
+        snapshot=next((v for v in row.get('approved_history',[]) if v.get('version')==version),None)
+        if not snapshot:raise HTTPException(404,'This approved portfolio version was not found')
+        p=await profile(member)
+        pdf=render_document_pdf(title='Board Fundraising Portfolio',org_name=(p.get('organization') or {}).get('name',''),body_text=snapshot['text'],branding=p.get('branding') or {},prepared_for=row['member_name'])
+        return Response(pdf,media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="approved-portfolio-version-'+str(version)+'.pdf"','Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'})
 
     @router.get('/board-portfolio/{token}/document.pdf')
     async def portfolio_document(token:str):

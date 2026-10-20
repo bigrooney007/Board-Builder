@@ -1,6 +1,6 @@
 # Consistent public entry and admin editing
 
-This change updates the current guided services. It does not change checkout prices, product entitlements, email automation, or the Fundraising Game's questions and meeting engines.
+These entry, branding and editor corrections remain in the current release. The subsequent [two-option service update](two-option-services-handoff.md) adds Fundraising's free intake, separate package purchases and dashboard handover while retaining the existing Game questions and meeting engine.
 
 ## Customer entry
 
