@@ -73,7 +73,7 @@ function HomepageField({ row, onChange }) {
   if (typeof value === "boolean") {
     return (
       <label className="terms-check" style={{ margin: "12px 0" }}>
-        <input type="checkbox" checked={value} onChange={(event) => onChange(path, event.target.checked)} />
+        <input aria-label={label} type="checkbox" checked={value} onChange={(event) => onChange(path, event.target.checked)} />
         <span>{label}</span>
       </label>
     );
@@ -83,7 +83,7 @@ function HomepageField({ row, onChange }) {
     return (
       <label className="admin-notes">
         <strong>{label}</strong>
-        <input type="number" value={value} onChange={(event) => onChange(path, Number(event.target.value))} />
+        <input aria-label={label} type="number" value={value} onChange={(event) => onChange(path, Number(event.target.value))} />
       </label>
     );
   }
@@ -96,12 +96,13 @@ function HomepageField({ row, onChange }) {
       <strong>{label}</strong>
       {long ? (
         <textarea
+          aria-label={label}
           rows={Math.min(8, Math.max(2, Math.ceil(Math.max(text.length, 80) / 90)))}
           value={text}
           onChange={(event) => onChange(path, event.target.value)}
         />
       ) : (
-        <input value={text} onChange={(event) => onChange(path, event.target.value)} />
+        <input aria-label={label} value={text} onChange={(event) => onChange(path, event.target.value)} />
       )}
     </label>
   );

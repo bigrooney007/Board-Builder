@@ -75,6 +75,13 @@ async def main():
      assert await page.locator('body').evaluate('element=>element.scrollWidth<=innerWidth+2')
      assert not errors,errors
      results.append({'service':service,'width':width,'case':'editable_landing_contact_popup_count_subtitle_saved_answers_no_login','passed':True})
+    except Exception:
+     print('Service entry browser failure:',service,width,page.url)
+     print('Visible editor labels:',await page.locator('input,textarea,select').evaluate_all("elements=>elements.map(element=>({label:element.getAttribute('aria-label'),parent:element.parentElement.textContent.slice(0,100)}))"))
+     print('Page messages:',await page.locator('[role=alert],.admin-message').all_text_contents())
+     await page.screenshot(path=f'test_reports/current-entry-failure-{service}-{width}.png',full_page=True)
+     Path(f'test_reports/current-entry-failure-{service}-{width}.html').write_text(await page.content())
+     raise
     finally:
      current=await (await context.request.get(BASE+api+'/settings',headers=headers)).json()
      draft=await (await context.request.put(BASE+api+'/draft',headers=headers,data={'config':original,'revision':current['revision']})).json()
