@@ -132,7 +132,7 @@ export function HomepageTextSection({pageKeys=null,landingOnly=false}) {
       const service=key==='recruitment'?'recruitment':['strategic-planning','board-recommitment'].includes(key)?key:null;
       if(service){
         const guided=(await client.get(`/services/${service}/questions`)).data.landing;
-        defaults={...defaults,testimonialsHeading:'What Nonprofit Leaders We Have Worked With Are Saying',...serviceLandingCopy(service,guided)};
+        defaults={...defaults,...(service!=='recruitment'?{processEyebrow:'THE PROCESS',outcomesEyebrow:'WHAT YOU GET'}:{}),testimonialsHeading:'What Nonprofit Leaders We Have Worked With Are Saying',...serviceLandingCopy(service,guided)};
       }
       if (key === "board-fundraising-game") {
         defaults = (await axios.get(`${API}/game/content`)).data.content || {};
@@ -165,7 +165,7 @@ export function HomepageTextSection({pageKeys=null,landingOnly=false}) {
     setSaving(false);
   };
 
-  const displayedKeys=pageKey==='recruitment'?['headline','subheadline','primaryCta','introHeading','introParagraphs','processEyebrow','processHeading','processText','stages','outcomesEyebrow','outcomesHeading','outcomes','testimonialsHeading','faqHeading','faqs','closingHeading','closingText','footer','privacy','terms']:['eyebrow','headline','sub','primaryCta','promise','processHeading','steps','deliverablesHeading','outcomes','testimonialsHeading','finalHeading'];
+  const displayedKeys=pageKey==='recruitment'?['headline','subheadline','primaryCta','introHeading','introParagraphs','processEyebrow','processHeading','processText','stages','outcomesEyebrow','outcomesHeading','outcomes','testimonialsHeading','faqHeading','faqs','closingHeading','closingText','footer','privacy','terms']:['eyebrow','headline','sub','primaryCta','promise','processEyebrow','outcomesEyebrow','processHeading','steps','deliverablesHeading','outcomes','testimonialsHeading','finalHeading'];
   const fields = flattenContent(landingOnly?Object.fromEntries(Object.entries(content).filter(([key])=>displayedKeys.includes(key))):content);
 
   return (

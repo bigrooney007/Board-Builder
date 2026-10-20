@@ -25,6 +25,7 @@ async def main():
      await page.get_by_role('button',name='Landing Page Editor',exact=True).click()
      headline=f'Our {service.replace("-"," ").title()} Process {width}'
      await page.get_by_label('Headline',exact=True).fill(headline)
+     await page.get_by_label('Process Eyebrow',exact=True).fill('YOUR GUIDED PROCESS')
      await page.get_by_role('button',name='SAVE HOME PAGE TEXT',exact=True).click()
      await page.get_by_text('Home page text saved.',exact=True).wait_for()
      await page.reload();await page.get_by_role('button',name='Landing Page Editor',exact=True).click()
@@ -40,6 +41,7 @@ async def main():
      await expect(page.get_by_label('Number of questions to show',exact=True)).to_have_value('2')
      await expect(page.get_by_label('Question 1 subtitle',exact=True)).to_have_value(subtitle)
      await page.goto(BASE+path);await expect(page.locator('h1')).to_have_text(headline)
+     await expect(page.get_by_text('YOUR GUIDED PROCESS',exact=True)).to_be_visible()
      assert await page.locator('a[href^="/login"],a[href^="/register"]').count()==0
      logo=page.locator('header img[alt="Nonprofit Board Builder"]');await expect(logo).to_have_attribute('src','/nonprofit-board-builder-logo.jpg')
      await expect(logo).to_have_js_property('naturalWidth',1280)
