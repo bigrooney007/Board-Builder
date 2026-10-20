@@ -235,8 +235,9 @@ async def provision_workspace(db,row):
     if row.get("payment_status")!="paid":raise HTTPException(402,"Payment has not been confirmed.")
     name=row["name"].split(" ",1);uid=owner_id(row)
     alias=row["customer_id"]+"@guided-workspaces.nonprofitboardbuilder.invalid"
-    entitlements=["recruitment_self_guided"] if row["service"]=="recruitment" else ["reactivation_self_guided"] if row["service"]=="board-recommitment" else []
+    entitlements=["recruitment_self_guided","recruitment_selection_onboarding"] if row["service"]=="recruitment" else ["reactivation_self_guided"] if row["service"]=="board-recommitment" else []
     await db.members.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"email":alias,"notification_email":row["email"],"first_name":name[0],"last_name":name[1] if len(name)>1 else "","entitlements":entitlements,"lead_ids":[row["customer_id"]],"guided_service_workspace":row["service"],"guided_customer_id":row["customer_id"],"lifecycle_optout":True,"admin_notified":True,"internal_dashboard_preview":bool(row.get("internal_test")),"created_at":now()}},upsert=True)
+    if row["service"]=="recruitment":await db.members.update_one({"user_id":uid,"guided_service_workspace":"recruitment"},{"$addToSet":{"entitlements":"recruitment_selection_onboarding"}})
     answers={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row["question_snapshot"]}
     data={"organization_name":row["organization"],"mission":answers.get("mission",""),"present_board":answers.get("current_board",""),"desired_board_members_founder_view":answers.get("desired_board_members",""),"priorities":answers.get("board_type",""),"founder_title":"Organization Leader"}
     await db.recruitment_profiles.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"data":data,"confirmed":True,"branding":row.get("branding",{}),"created_at":now()}},upsert=True)

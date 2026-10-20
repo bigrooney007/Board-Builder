@@ -165,12 +165,17 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('PUT',ab+'/tool/workspace/materials/'+material['material_id'],{'display_text':'Changed unsigned master agreement.'},admin=True)
         saved=await self.db.signature_requests.find_one({'request_id':prepared['request_id']});self.assertEqual(saved['document_snapshot'],snapshot);self.assertEqual(saved['status'],'Signed');download=await self.req('GET',base+'/signed/'+prepared['request_id']);self.assertIn('SIGNED ELECTRONICALLY',download.text)
         await self.req('PUT',base+'/tool/workspace/materials/'+material['material_id'],{'display_text':'Unauthorized change to the approved campaign pack.'},403)
+        await self.req('POST',base+'/tool/workspace/signatures/prepare',body,409)
+        for kind in ('organization_overview','board_manual','board_member_agreement','confidentiality_agreement','conflict_of_interest_agreement'):
+            item=await self.db.generated_materials.find_one({'user_id':uid,'type':kind,'application_id':''},{'_id':0})
+            if not item:item=await save_generation(self.db,uid,kind,{'sections':[{'heading':'Agreed Organization Information','content':'Our organization helps children access learning.'}]},'Synthetic organization data')
+            await self.req('POST',ab+'/tool/workspace/materials/'+item['material_id']+'/approve',{},admin=True)
+        await self.req('PUT',base+'/tool/workspace/onboarding-session',{'date':'2026-11-01','time':'10:00','timezone':'Europe/London','format':'Virtual','link':'https://example.org/meeting'})
         candidate_material=await self.req('POST',base+'/tool/workspace/generate',{'type':'conditional_offer','application_id':aid})
         cid=candidate_material['material_id']
         await self.req('PUT',base+'/tool/workspace/materials/'+cid,{'display_text':'The organization offers the agreed board appointment, subject to the stated reference checks.'})
         await self.req('POST',base+'/tool/workspace/materials/'+cid+'/approve',{})
         self.assertEqual((await self.db.generated_materials.find_one({'material_id':cid}))['status'],'Approved')
-        await self.req('POST',base+'/tool/workspace/signatures/prepare',body,409)
         await self.req('POST',base+'/tool/workspace/generate',{'type':'board_manual'},403)
         await self.req('POST',base+'/tool/workspace/generate',{'type':'conditional_offer','application_id':str(uuid.uuid4())},404)
 

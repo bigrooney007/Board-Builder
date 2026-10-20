@@ -98,9 +98,9 @@ def allowed_tool(service,method,path,admin):
     if service=="recruitment":
         if not path.startswith("workspace/"):return False
         short=path.removeprefix("workspace/")
-        if method=="GET":return bool(re.fullmatch(r"(?:profile|board-profiles|materials(?:/[\w-]+)?|opportunity|applications(?:/[\w-]+(?:/cv|/onboarding-conclusion)?)?|interview-scheduling|board-profile-form|signatures(?:/[\w-]+/download)?)",short))
-        if not admin:return bool(method=="POST" and re.fullmatch(r"(?:applications/[\w-]+/interview-guide/retry|generate|materials/[\w-]+/approve|signatures/prepare)",short) or method=="PATCH" and re.fullmatch(r"applications/[\w-]+",short) or method=="PUT" and re.fullmatch(r"(?:applications/[\w-]+/onboarding-conclusion|materials/[\w-]+)",short))
-        return bool(method in {"PUT","POST","PATCH"} and re.fullmatch(r"(?:profile|profile/confirm|strategy-intake|board-profiles|generate|materials/[\w-]+(?:/approve|/share)?|interview-scheduling|opportunity/application(?:/generate)?|opportunity/close|opportunity/broadcast/retry|applications/[\w-]+(?:/references|/role-recommendation|/interview-guide/retry|/onboarding-conclusion)?|signatures/prepare|signatures/[\w-]+/send)",short))
+        if method=="GET":return bool(re.fullmatch(r"(?:profile|board-profiles|materials(?:/[\w-]+)?|opportunity|applications(?:/[\w-]+(?:/cv|/onboarding-conclusion)?)?|interview-scheduling|onboarding-session|board-profile-form|signatures(?:/[\w-]+/download)?)",short))
+        if not admin:return bool(method=="POST" and re.fullmatch(r"(?:applications/[\w-]+/interview-guide/retry|generate|materials/[\w-]+/approve|signatures/prepare)",short) or method=="PATCH" and re.fullmatch(r"applications/[\w-]+",short) or method=="PUT" and re.fullmatch(r"(?:applications/[\w-]+/onboarding-conclusion|materials/[\w-]+|onboarding-session)",short))
+        return bool(method in {"PUT","POST","PATCH"} and re.fullmatch(r"(?:profile|profile/confirm|strategy-intake|board-profiles|generate|materials/[\w-]+(?:/approve|/share)?|interview-scheduling|onboarding-session|opportunity/application(?:/generate)?|opportunity/close|opportunity/broadcast/retry|applications/[\w-]+(?:/references|/role-recommendation|/interview-guide/retry|/onboarding-conclusion)?|signatures/prepare|signatures/[\w-]+/send)",short))
     if service=="board-recommitment":
         if not path.startswith("reactivation/"):return False
         short=path.removeprefix("reactivation/")

@@ -36,6 +36,7 @@ from guided_workspace import create_guided_workspace_router
 from guided_recommitment import create_guided_recommitment_router
 from guided_planning import create_guided_planning_router
 from workspace_routes import create_workspace_router
+from refinement_routes import create_refinement_router
 from reactivation_routes import create_reactivation_router
 from marketing_routes import create_marketing_router
 from board_fix_routes import create_board_fix_router
@@ -56,7 +57,7 @@ def build_app(database):
         return await authenticate_admin(request, database)
     for factory in (create_clean_platform_router, create_game_router, create_game_night_router, create_group_game_router, create_game_meeting_router,
                     create_guided_product_router, create_strategic_planning_router, create_guided_strategic_planning_router, create_admin_dashboard_preview_router,
-                    create_payment_router, create_stripe_webhook_router, create_consultation_router, create_review_router, create_guided_services_router, create_guided_workspace_router, create_guided_recommitment_router, create_guided_planning_router, create_workspace_router, create_reactivation_router, create_marketing_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
+                    create_payment_router, create_stripe_webhook_router, create_consultation_router, create_review_router, create_guided_services_router, create_guided_workspace_router, create_guided_recommitment_router, create_guided_planning_router, create_workspace_router, create_refinement_router, create_reactivation_router, create_marketing_router, create_member_router, create_board_fix_router, create_public_opportunity_router, create_fundraising_launch_router, create_portfolio_router, create_strategy_router):
         app.include_router(factory(database))
     return app
 
