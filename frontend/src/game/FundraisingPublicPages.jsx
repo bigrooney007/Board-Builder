@@ -1,3 +1,4 @@
+import {SiteBrand} from "@/components/SiteBrand";
 import WrittenOfferContent from "./WrittenOfferContent";
 import defaults from "@/content/fundraisingDefaults.json";
 import { useEffect, useState } from "react";
@@ -17,7 +18,7 @@ export const visitorId=()=>{
 };
 export default function FundraisingPublicPage({how=false}){
  useLandingPageMeta(how?'/how-the-fundraising-game-works':'/board-fundraising-game');
- const navigate=useNavigate(),location=useLocation();const {member,loading,refresh}=useMemberAuth();
+ const navigate=useNavigate(),location=useLocation();const {member,refresh}=useMemberAuth();
  const [content,setContent]=useState(defaults),[price,setPrice]=useState(1497),[capture,setCapture]=useState(false);
  const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem('fundraisingLeadDetails')||'{}')}catch{return {}}});
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -31,7 +32,7 @@ export default function FundraisingPublicPage({how=false}){
  const c=content[how?'how':'home'],action=()=>how?checkout(token):setCapture(true);
  const cta=(label=c.cta)=><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?'Opening…':label}</button>;
  return <div className="nBB-home fundraising-public-centered" data-testid={how?'fundraising-how-page':'fundraising-home-page'}>
- <header className="nBB-home-nav"><Link className="nBB-home-login" to="/">Nonprofit Board Builder</Link>{!loading&&<Link className="nBB-home-login" to={member&&!member.internal_dashboard_preview?'/game/dashboard':'/login'}>{member&&!member.internal_dashboard_preview?'My Resources':'Log In'}</Link>}<Link className="nBB-home-login" to="/blog">Blog</Link></header>
+ <header className="nBB-home-nav"><SiteBrand/><Link className="nBB-home-login" to="/blog">Blog</Link></header>
  <main><section className="nBB-home-hero"><p className="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>{c.title}</h1>{c.introduction&&<p className="nBB-home-lead">{c.introduction}</p>}{cta()}{how&&<p className="fundraising-price">One-time payment: ${price.toLocaleString('en-US')} per organization.</p>}</section>
  {how?<>{(c.sections||[]).filter(s=>s.heading.trim()||s.body.trim()||s.cta.trim()).map((section,i)=><section className={`fundraising-offer-section ${i%2?'fundraising-section-light':'fundraising-section-navy'}`} key={section.id} data-section={section.id}><div className="fundraising-copy"><h2>{section.heading}</h2><WrittenOfferContent text={section.body}/>{section.cta&&<div className="fundraising-section-action">{cta(section.cta)}</div>}</div></section>)}{c.guarantee&&<p className="fundraising-guarantee">{c.guarantee}</p>}</>:<>
  {(c.explanation_heading||c.paragraphs?.some(p=>p.trim()))&&<section className="fundraising-offer-section fundraising-section-navy" data-testid="fundraising-explanation"><div className="fundraising-copy">{c.explanation_heading&&<h2>{c.explanation_heading}</h2>}{c.paragraphs.filter(p=>p.trim()).map((p,i)=><p key={i}>{p}</p>)}<div data-testid="fundraising-cta-after-explanation">{cta()}</div></div></section>}

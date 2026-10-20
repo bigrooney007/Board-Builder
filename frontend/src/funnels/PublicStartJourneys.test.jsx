@@ -30,7 +30,7 @@ jest.mock("react-router-dom", () => ({
   Navigate: ({ to }) => <div data-testid="redirect">{to}</div>,
   useNavigate: () => mockNavigate, useLocation: () => ({ search: mockSearch }),
 }), { virtual: true });
-jest.mock("axios", () => ({ post: jest.fn(), get: jest.fn().mockResolvedValue({data:{}}) }));
+jest.mock("axios", () => ({ post: jest.fn(), get: jest.fn().mockResolvedValue({data:{}}), create:()=>({post:jest.fn(),defaults:{baseURL:"http://localhost/api"}}) }));
 jest.mock("@/member/api", () => ({
   memberApi: { post: jest.fn(), put: jest.fn() },
   clearMemberToken: jest.fn(), storeMemberToken: jest.fn(),
@@ -70,6 +70,8 @@ async function submit(node) {
   await act(async () => node.querySelector("form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
 }
 beforeEach(() => {
+  HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
+  global.crypto={randomUUID:()=> '00000000-0000-4000-8000-000000000001'};
   jest.clearAllMocks(); localStorage.clear(); sessionStorage.clear();
   mockMember = null; mockSearch = ""; window.scrollTo = jest.fn();
   memberApi.post.mockReset(); memberApi.put.mockReset(); axios.post.mockReset();
@@ -87,7 +89,14 @@ test.each([
     expect(node.querySelector("form, input, textarea, select")).toBeNull();
     const links = [...node.querySelectorAll(".bfg-btn-primary")];
     expect(links.length).toBeGreaterThanOrEqual(2);
-    expect(links.every(link => link.getAttribute("href") === path)).toBe(true);
+    if(_name==='fundraising')expect(links.every(link=>link.getAttribute('href')===path)).toBe(true);
+    else {
+      await act(async()=>links[0].click());
+      expect(node.querySelector('dialog[open]')).toBeTruthy();
+      expect([...node.querySelectorAll('dialog input')].map(input=>input.type)).toEqual(['text','email','text']);
+      expect(node.querySelector('input[type="password"]')).toBeNull();
+      expect(node.querySelector('a[href="/login"]')).toBeNull();
+    }
     expect(memberApi.post).not.toHaveBeenCalled(); expect(axios.post).not.toHaveBeenCalled();
   } finally { await cleanup(); }
 });

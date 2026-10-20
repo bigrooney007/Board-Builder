@@ -7,6 +7,7 @@ import { FACILITATED_GAME_HOME_DEFAULTS } from "@/game/FacilitatedGamePage";
 import { recruitmentHomeContent } from "@/content/siteContent";
 import { GUIDED_PRODUCT_CONFIG } from "@/funnels/GuidedProductPages";
 import { FREE_START_LABEL } from "@/funnels/publicStartRoutes";
+import { serviceLandingCopy } from "@/services/landingContent";
 import { OFFER_PAGE_KEYS, OFFER_TEXT_DEFAULTS } from "@/content/offerTextDefaults";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -108,8 +109,9 @@ function HomepageField({ row, onChange }) {
 
 const EDITABLE_PAGES = [...HOMEPAGE_KEYS, ...OFFER_PAGE_KEYS];
 
-export function HomepageTextSection() {
-  const [pageKey, setPageKey] = useState(EDITABLE_PAGES[0][0]);
+export function HomepageTextSection({pageKeys=null,landingOnly=false}) {
+  const choices=pageKeys?EDITABLE_PAGES.filter(([key])=>pageKeys.includes(key)):EDITABLE_PAGES;
+  const [pageKey, setPageKey] = useState(choices[0][0]);
   const [content, setContent] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -127,6 +129,11 @@ export function HomepageTextSection() {
         ? (await client.get('/admin/professional/content')).data.content.home
         : (await axios.get(`${API}/platform/homepages/${key}`)).data.content || {};
       let defaults = LOCAL_DEFAULTS[key] || {};
+      const service=key==='recruitment'?'recruitment':['strategic-planning','board-recommitment'].includes(key)?key:null;
+      if(service){
+        const guided=(await client.get(`/services/${service}/questions`)).data.landing;
+        defaults={...defaults,testimonialsHeading:'What Nonprofit Leaders We Have Worked With Are Saying',...serviceLandingCopy(service,guided)};
+      }
       if (key === "board-fundraising-game") {
         defaults = (await axios.get(`${API}/game/content`)).data.content || {};
       }
@@ -158,21 +165,22 @@ export function HomepageTextSection() {
     setSaving(false);
   };
 
-  const fields = flattenContent(content);
+  const displayedKeys=pageKey==='recruitment'?['headline','subheadline','primaryCta','introHeading','introParagraphs','processEyebrow','processHeading','processText','stages','outcomesEyebrow','outcomesHeading','outcomes','testimonialsHeading','faqHeading','faqs','closingHeading','closingText','footer','privacy','terms']:['eyebrow','headline','sub','primaryCta','promise','processHeading','steps','deliverablesHeading','outcomes','testimonialsHeading','finalHeading'];
+  const fields = flattenContent(landingOnly?Object.fromEntries(Object.entries(content).filter(([key])=>displayedKeys.includes(key))):content);
 
   return (
     <section data-testid="clean-homepage-editor">
       <div className="admin-funnel-numbers-head">
         <div>
-          <h2>Landing Page &amp; Payment Page Text</h2>
-          <p>Edit the words on the existing public landing pages or the four payment pages. This does not change their design, routes, or checkout connections.</p>
+          <h2>{landingOnly?"Landing Page Editor":"Landing Page & Payment Page Text"}</h2>
+          <p>{landingOnly?"Edit every displayed heading, paragraph, button, process step and testimonial heading. Save here to update this offer page.":"Edit the words on the existing public landing pages or the four payment pages. This does not change their design, routes, or checkout connections."}</p>
         </div>
       </div>
       <div className="admin-filters">
         <label>
           Home Page
           <select value={pageKey} disabled={saving} onChange={(event) => setPageKey(event.target.value)}>
-            {EDITABLE_PAGES.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+            {choices.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
           </select>
         </label>
         <button className="button button-back button-small" disabled={saving || loading} onClick={() => load(pageKey)}><RefreshCw size={15} /> Reload Saved Text</button>

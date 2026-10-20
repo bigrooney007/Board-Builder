@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { legalPageText } from "../content/siteContent";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
 
 const privacySections = [
   ["Information We Collect", "We store information submitted through the nonprofit board assessment and Board Applicant Network, including contact information, organization or professional details, board preferences and uploaded résumés or CVs."],

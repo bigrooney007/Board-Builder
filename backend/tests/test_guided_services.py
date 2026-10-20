@@ -62,6 +62,21 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         current=await self.req('GET','/services/recruitment/questions');self.assertEqual(len(current['questions']),1);self.assertEqual(current['questions'][0]['prompt'],'Updated question')
         original=await self.req('GET',base);self.assertEqual(len(original['question_snapshot']),7);self.assertEqual(original['answers'],row['answers'])
         other=await self.req('GET','/admin/services/board-recommitment/settings',admin=True);self.assertNotEqual(other['config']['question_groups']['entry'][0]['prompt'],'Updated question')
+    async def test_all_service_question_counts_subtitles_and_historic_answers(self):
+        for service in PRICES:
+            token,base,original=await self.lead(service)
+            settings=await self.req('GET',f'/admin/services/{service}/settings',admin=True);config=settings['config']
+            for index,question in enumerate(config['question_groups']['entry']):
+                question['archived']=index>=2
+                if index==0:question['help']='Explain your answer in your own words.'
+            saved=await self.req('PUT',f'/admin/services/{service}/draft',{'config':config,'revision':settings['revision']},admin=True)
+            await self.req('POST',f'/admin/services/{service}/publish',{'revision':saved['revision']},admin=True)
+            current=await self.req('GET',f'/services/{service}/questions');self.assertEqual(len(current['questions']),2)
+            self.assertEqual(current['questions'][0]['help'],'Explain your answer in your own words.')
+            newer=await self.req('POST',f'/services/{service}/start',{'request_id':str(uuid.uuid4()),'name':'Another Leader','email':'another@example.org','organization':'Another Nonprofit'})
+            self.assertEqual(len(newer['record']['question_snapshot']),2)
+            historic=await self.req('GET',base);self.assertEqual(historic['question_snapshot'],original['question_snapshot']);self.assertEqual(historic['answers'],original['answers'])
+
     async def test_one_hour_initial_delivery_and_five_spaced_followups_idempotent(self):
         token,base,row=await self.lead();stamp=datetime.fromisoformat(row['submitted_at']);await gs.automation_tick(self.db,stamp+timedelta(minutes=59));self.mail.assert_not_called()
         await gs.automation_tick(self.db,stamp+timedelta(minutes=60));await gs.automation_tick(self.db,stamp+timedelta(minutes=60));self.assertEqual(self.mail.call_count,1)

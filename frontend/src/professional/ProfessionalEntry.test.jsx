@@ -33,6 +33,7 @@ test('directory has the four exact service promises and landing-page destination
  expect(link('MEET ROONEY').getAttribute('href')).toBe('/meet-rooney');
  expect(node.querySelector('[data-testid="home-join-board-network-button"]').getAttribute('href')).toBe('/join-a-board');
  expect(link('Existing Blog').getAttribute('href')).toBe('/blog');
+ expect(node.querySelector('a[href="/login"]')).toBeNull();
 });
 
 test('personal page uses the existing portrait, biography, all testimonials and separate paid/product paths',async()=>{
@@ -74,11 +75,11 @@ test('server-confirmed paid consultation can resume booking without another chec
  expect(button('CONTINUE TO SECURE PAYMENT')).toBeUndefined();
  expect(api.post).toHaveBeenCalledTimes(1);
 });
-test('confirmation failure shows recovery and retry without falsely confirming payment',async()=>{
+test('confirmation failure shows retry without a public access prompt without falsely confirming payment',async()=>{
  api.post.mockRejectedValue({response:{data:{detail:'Payment confirmation is temporarily unavailable.'}}});
  await resume();
  expect(node.querySelector('[role="alert"]').textContent).toBe('Payment confirmation is temporarily unavailable.');
  expect(button(defaults.consultation.retryCta)).toBeDefined();
- expect(button(defaults.consultation.recoveryLinkLabel)).toBeDefined();
+ expect(button(defaults.consultation.recoveryLinkLabel)).toBeUndefined();
  expect(button('CHOOSE MY MEETING TIME')).toBeUndefined();
 });

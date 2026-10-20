@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { confirmationScreenText } from "../content/siteContent";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
 
 export const ConfirmationScreen = ({ confirmation, onHome }) => (
   <main className="confirmation-page" data-testid="confirmation-screen">

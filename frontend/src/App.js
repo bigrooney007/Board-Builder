@@ -150,7 +150,7 @@ function CleanRoutes() {
 
       {/* Board Recruitment */}
       <Route path="/recruit" element={<PublicProductEntry><RecruitmentHomePage /></PublicProductEntry>} />
-      <Route path={PUBLIC_START_ROUTES.recruitment} element={<PublicProductEntry><GuidedServicePage fixedService="recruitment" /></PublicProductEntry>} />
+      <Route path={PUBLIC_START_ROUTES.recruitment} element={<PublicProductEntry><ServiceStart service="recruitment" /></PublicProductEntry>} />
       <Route path="/recruit/questions" element={<PublicProductEntry><RecruitQuestionsPage /></PublicProductEntry>} />
       <Route path="/recruit/walkthrough" element={<PublicProductEntry><RecruitWalkthroughPage /></PublicProductEntry>} />
       <Route path="/recruit/amplify" element={<RecruitAmplifyPage />} />

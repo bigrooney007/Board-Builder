@@ -12,9 +12,9 @@ async def main():
    context=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844})
    auth=(await (await context.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth}
    page=await context.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
-   await page.goto(BASE+'/recruit');await page.locator('a[href="/recruit/start"]').first.click()
+   await page.goto(BASE+'/recruit');await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
    await page.get_by_label('Full name',exact=True).fill('Sample Guided Leader');await page.get_by_label('Email address',exact=True).fill(f'guided-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Learning Nonprofit')
-   await page.get_by_role('button',name='START FOR FREE',exact=True).click();await page.wait_for_url('**/services/recruitment/start?lead=*')
+   await page.get_by_role('button',name='CONTINUE',exact=True).click();await page.wait_for_url('**/services/recruitment/start?lead=*')
    token=page.url.split('lead=')[1];base='/api/services/recruitment/customer/'+token
    details=await (await context.request.get(BASE+base)).json();ident=details['customer_id'];ab='/api/admin/services/recruitment/customers/'+ident
    for i in range(len(details['question_snapshot'])):

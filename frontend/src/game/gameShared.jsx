@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
-import { useMemberAuth } from "@/member/MemberAuthContext";
+import { Link } from "react-router-dom";
+import { SiteBrand } from "@/components/SiteBrand";
 import TrackedYouTubeVideo from "@/clean/TrackedYouTubeVideo";
 import "./game.css";
 
@@ -47,17 +47,11 @@ export const GameProgress = ({ steps, current }) => (
 );
 
 export const BfgShell = ({ children, nav, shellClass = "" }) => {
-  const navigate = useNavigate();
-  const { member, loading, logout } = useMemberAuth();
-  const defaultAuthNav = loading ? null : member ? (
-    <button className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={async () => { await logout(); navigate("/login"); }} data-testid="bfg-default-logout-btn">Log Out</button>
-  ) : (
-    <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login" data-testid="bfg-default-login-btn">Log In</Link>
-  );
   return (
     <div className={`bfg ${shellClass}`.trim()}>
-      <header className="bfg-nav" style={{ justifyContent: "flex-end" }}>
-        <div className="bfg-nav-actions">{nav ?? defaultAuthNav}</div>
+      <header className="bfg-nav">
+        <SiteBrand/>
+        <nav className="bfg-nav-actions" aria-label="Website navigation">{nav ?? <><Link to="/meet-rooney">Meet Rooney</Link><Link to="/blog">Blog</Link></>}</nav>
       </header>
       {children}
       <footer className="bfg-footer">

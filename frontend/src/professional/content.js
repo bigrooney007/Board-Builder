@@ -10,4 +10,6 @@ export function useProfessionalContent(section){
   return {...defaults[section],...saved};
 }
 
-export const logoUrl='https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png';
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
+
+export {logoUrl};

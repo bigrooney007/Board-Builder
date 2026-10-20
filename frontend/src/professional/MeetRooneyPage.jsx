@@ -1,8 +1,9 @@
+import {SiteBrand} from "@/components/SiteBrand";
 import {Link} from 'react-router-dom';
 import {TestimonialCarousel} from '@/components/TestimonialCarousel';
 import {testimonials} from '@/content/testimonials';
 import {useLandingPageMeta} from '@/seo';
-import {useProfessionalContent,logoUrl} from './content';
+import {useProfessionalContent} from './content';
 import RichContent from './RichContent';
 import '@/pages/MainHomePage.css';
 import './professional.css';
@@ -12,7 +13,7 @@ export default function MeetRooneyPage(){
  const c=useProfessionalContent('personal');
  const selected=c.testimonialIds.map(i=>testimonials[i]).filter(Boolean);
  return <div className="nBB-home professional-page" data-testid="meet-rooney-page">
-  <header className="nBB-home-nav professional-nav"><Link className="nBB-home-brand" to="/"><img src={logoUrl} alt="Nonprofit Board Builder" style={{width:130,height:68,objectFit:"contain"}}/></Link><nav><Link to="/">{c.homeNav}</Link><Link to="/blog">{c.blogNav}</Link><Link to="/join-a-board">{c.networkNav}</Link></nav></header>
+  <header className="nBB-home-nav professional-nav"><SiteBrand/><nav><Link to="/">{c.homeNav}</Link><Link to="/blog">{c.blogNav}</Link><Link to="/join-a-board">{c.networkNav}</Link></nav></header>
   <main>
    <section className="professional-intro professional-width"><img className="professional-portrait" src={c.portrait} alt={c.portraitAlt} width="420" height="500" fetchPriority="high"/><div><h1>{c.headline}</h1><RichContent text={c.introduction}/><RichContent text={c.experience}/><a className="nBB-home-primary" href="/consultation">{c.consultationCta} · $197</a></div></section>
    <section className="professional-section professional-tint"><div className="professional-copy"><h2>{c.philosophyHeading}</h2><RichContent text={c.philosophy}/></div></section>

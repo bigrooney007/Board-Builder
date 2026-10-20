@@ -1,10 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useMemberAuth } from "@/member/MemberAuthContext";
+import {SiteBrand} from "@/components/SiteBrand";
+import { Link } from "react-router-dom";
 import { ArrowRight, Users, Gamepad2, Map, RefreshCw, UserRoundPlus } from "lucide-react";
 
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { BlogSlider } from "@/pages/BlogPages";
-import { useProfessionalContent, defaults, logoUrl } from "@/professional/content";
+import { useProfessionalContent, defaults } from "@/professional/content";
 import { useLandingPageMeta } from "@/seo";
 
 import "./MainHomePage.css";
@@ -19,23 +19,16 @@ export const MAIN_HOME_DEFAULTS = defaults.home;
 
 export default function MainHomePage() {
   useLandingPageMeta("/");
-  const navigate = useNavigate();
   const copy = useProfessionalContent("home");
-  const { member, loading, logout } = useMemberAuth();
-  const handleLogout = async () => { await logout(); navigate("/login"); };
 
   return (
     <div className="nBB-home nBB-main-directory">
       <header className="nBB-home-nav" style={{gap:12,flexWrap:'wrap'}}>
-        <Link className="nBB-home-brand" to="/"><img src={logoUrl} alt="Nonprofit Board Builder" style={{width:130,height:68,objectFit:"contain"}}/></Link>
+        <SiteBrand/>
         <Link className="nBB-home-login" to="/meet-rooney">{copy.meetNav}</Link>
         <Link className="nBB-home-login" to="/blog">{copy.blogNav}</Link>
         <Link className="nBB-home-login" to="/join-a-board">{copy.networkNav}</Link>
-        {!loading && (member ? (
-          <button type="button" className="nBB-home-login" onClick={handleLogout} data-testid="home-logout-button">{copy.logoutNav}</button>
-        ) : (
-          <Link to="/login" className="nBB-home-login" data-testid="home-login-button">{copy.loginNav}</Link>
-        ))}
+
       </header>
       <main>
         <section className="nBB-home-hero">

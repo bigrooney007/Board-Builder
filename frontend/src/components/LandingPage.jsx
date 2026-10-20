@@ -6,7 +6,7 @@ import { FounderStorySection } from "@/components/FounderStorySection";
 import { BlogSlider } from "@/pages/BlogPages";
 import { SITE_CONTENT, landingPageText } from "@/content/siteContent";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const home = SITE_CONTENT.home;
@@ -51,7 +51,6 @@ export const LandingPage = ({ onJoin }) => (
         <a href="#my-story" data-testid="my-story-link">{home.nav.myStory}</a>
         <button onClick={onJoin} className="nav-text-button" data-testid="join-board-nav-link">{home.nav.joinABoard}</button>
       </div>
-      <div className="nav-offer-buttons" data-testid="navigation-offer-choices"><a href="/login" data-testid="nav-login-link">{home.nav.logIn}</a></div>
     </nav>
 
     <section id="top" className="hero-banner" data-testid="hero-section">

@@ -44,8 +44,9 @@ async def main():
             for path, testid, startpath in (("/recruit", "recruitment-landing-page", "/recruit/start"), ("/strategic-planning", "strategic-planning-landing-page", "/strategic-planning/start"), ("/board-recommitment", "board-recommitment-landing-page", "/board-recommitment/start")):
                 await page.goto(BASE + path)
                 await page.get_by_test_id(testid).wait_for()
-                await page.locator(f'a[href="{startpath}"]').first.click()
-                await page.wait_for_url(BASE + startpath)
+                await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
+                await page.get_by_role('dialog').wait_for()
+                assert page.url == BASE + path
                 await expect(page.locator("form").first).to_be_visible()
             await page.goto(BASE + "/board-fundraising?entry=directory")
             await page.wait_for_url(BASE + "/board-fundraising-game?entry=directory")

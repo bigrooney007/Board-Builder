@@ -12,8 +12,8 @@ async def main():
    ctx=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844});auth=(await (await ctx.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth}
    page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    try:
-    await page.goto(BASE+'/strategic-planning');await page.locator('a[href="/strategic-planning/start"]').first.click()
-    await page.get_by_label('Full name',exact=True).fill('Sample Planning Leader');await page.get_by_label('Email address',exact=True).fill(f'planning-leader-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Planning Organization');await page.get_by_role('button',name='START FOR FREE',exact=True).click();await page.wait_for_url('**/services/strategic-planning/start?lead=*');token=page.url.split('lead=')[1];public='/api/services/strategic-planning/customer/'+token
+    await page.goto(BASE+'/strategic-planning');await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
+    await page.get_by_label('Full name',exact=True).fill('Sample Planning Leader');await page.get_by_label('Email address',exact=True).fill(f'planning-leader-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Planning Organization');await page.get_by_role('button',name='CONTINUE',exact=True).click();await page.wait_for_url('**/services/strategic-planning/start?lead=*');token=page.url.split('lead=')[1];public='/api/services/strategic-planning/customer/'+token
     row=await (await ctx.request.get(BASE+public)).json();ident=row['customer_id'];base='/api/admin/services/strategic-planning/customers/'+ident+'/planning'
     assert len(row['question_snapshot'])==3
     for i in range(3):

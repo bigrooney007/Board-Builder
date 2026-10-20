@@ -7,7 +7,7 @@ import { joinBoardText } from "../content/appContent";
 import { joinBoardPageText } from "../content/siteContent";
 import { useLandingPageMeta } from "@/seo";
 
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
 const steps = [[UserRound, "Create Your Professional Profile", "Tell us about your career, skills, experience and the professional relationships you can bring to a nonprofit board."], [Target, "Tell Us Where You Want to Make an Impact", "Choose the causes, communities and types of nonprofit organizations you would like to support."], [HeartHandshake, "Tell Us How You Want to Serve", "Share the board roles, fundraising activities, time commitment and working arrangements that fit you."], [Mail, "Receive Matching Board Opportunities", "Receive real-time email updates when nonprofits using our platform launch new board opportunities."]];
 const professions = ["Fundraising", "Finance and accounting", "Law and governance", "Marketing and communications", "Corporate partnerships", "Human resources", "Technology", "Healthcare", "Education", "Community development", "Program development", "Strategic planning", "Operations", "Government and public affairs", "Volunteer leadership", "Lived experience connected to nonprofit missions"];
 

@@ -8,7 +8,7 @@ import { StepFour } from "@/components/form/StepFour";
 import { assessmentFormText } from "../content/siteContent";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const logoUrl = "https://customer-assets-jt897jd0.emergentagent.net/job_board-assessment/artifacts/2qaqmobl_Minimalist%20nonprofit%20logo%20design.png";
+import {SITE_LOGO_URL as logoUrl} from "@/content/branding";
 
 const initialData = {
   name: "", email: "", phone: "", organization_name: "", website: "", mission: "", city: "", state_region: "", country: "", annual_budget: "", most_important_board_result: "",

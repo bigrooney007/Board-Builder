@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import { useMemberAuth } from "@/member/MemberAuthContext";
+import { useServiceContact } from "@/services/ServiceContactDialog";
+import { serviceLandingCopy } from "@/services/landingContent";
+import { SiteBrand } from "@/components/SiteBrand";
 import { ArrowRight } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 import { recruitmentHomeContent as defaultCopy } from "@/content/siteContent";
@@ -11,7 +13,7 @@ import { FREE_START_LABEL, PUBLIC_START_ROUTES } from "./publicStartRoutes";
 import "../game/game.css";
 import "./recruitment-home.css";
 
-export default function RecruitmentHomePage() {
+export default function RecruitmentHomePage({startOpen=false}) {
   useLandingPageMeta("/recruit");
   const navigate = useNavigate();
   const startPath = PUBLIC_START_ROUTES.recruitment;
@@ -20,35 +22,24 @@ export default function RecruitmentHomePage() {
   }, [navigate, startPath]);
   const [guided, setGuided] = useState(null);
   useEffect(() => { let alive=true; axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/services/recruitment/questions`).then(r=>{if(alive)setGuided(r.data.landing)}).catch(()=>{}); return()=>{alive=false}; }, []);
-  const savedCopy = useHomepageContent("recruitment", { ...defaultCopy,
+  const copy = useHomepageContent("recruitment", { ...defaultCopy,
     headline: "Launch Your Board Recruitment Campaign In The Next 30 Minutes",
     subheadline: "Tell us about the board you have and the support you need. Approve your profiles and launch a professional recruitment campaign built for your organization.",
-    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL });
-  const copy = guided ? {...savedCopy, headline:guided.headline, subheadline:guided.description, primaryCta:guided.cta} : savedCopy;
-  const { member, loading, logout } = useMemberAuth();
-  const handleLogout = async () => { await logout(); navigate("/login"); };
+    formHeading: "Start Your Board Recruitment Campaign", primaryCta: FREE_START_LABEL, ...serviceLandingCopy("recruitment",guided||{}) });
+  const {openContact,contactDialog}=useServiceContact("recruitment",startOpen);
 
   return (
     <div className="bfg recruit-home-shell">
-      <header className="bfg-nav" style={{ justifyContent: "flex-end" }}>
-        <nav className="bfg-nav-actions" aria-label="Lead user account">
-          {!loading && (
-            member ? (
-              <button type="button" className="bfg-btn bfg-btn-ghost bfg-btn-sm" onClick={handleLogout} data-testid="recruit-home-logout">Log Out</button>
-            ) : (
-              <Link className="bfg-btn bfg-btn-ghost bfg-btn-sm" to="/login" data-testid="recruit-home-login">{copy.login}</Link>
-            )
-          )}
-        </nav>
-      </header>
+      <header className="bfg-nav"><SiteBrand/><nav className="bfg-nav-actions" aria-label="Website navigation"><Link to="/meet-rooney">Meet Rooney</Link><Link to="/blog">Blog</Link></nav></header>
+      {contactDialog}
       <main className="recruit-home" data-testid="recruitment-landing-page">
         <section className="recruit-hero" aria-labelledby="recruit-headline">
           <div className="recruit-hero-copy">
             <h1 id="recruit-headline" data-testid="recruitment-headline">{copy.headline}</h1>
             <p className="recruit-hero-sub">{copy.subheadline}</p>
-            <Link to={startPath} className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
+            <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
               {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
-            </Link>
+            </button>
           </div>
         </section>
 
@@ -71,9 +62,9 @@ export default function RecruitmentHomePage() {
               </li>
             ))}
           </ol>
-          <Link to={startPath} className="bfg-btn bfg-btn-primary recruit-section-cta">
+          <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary recruit-section-cta">
             {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
-          </Link>
+          </button>
         </section>
 
         <section className="recruit-outcomes-band" aria-labelledby="recruit-outcomes-heading">
@@ -100,7 +91,7 @@ export default function RecruitmentHomePage() {
         <section className="recruit-closing" aria-labelledby="recruit-closing-heading">
           <h2 id="recruit-closing-heading">{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
-          <Link to={startPath} className="bfg-btn bfg-btn-primary">{copy.primaryCta}<ArrowRight size={18} aria-hidden="true" /></Link>
+          <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary">{copy.primaryCta}<ArrowRight size={18} aria-hidden="true" /></button>
         </section>
       </main>
       <footer className="bfg-footer recruit-footer">
