@@ -59,7 +59,15 @@ class RecommitmentHTTP(unittest.IsolatedAsyncioTestCase):
   await self.req('PUT',ab+'/participants/'+pid+'/decision',{'outcome':'Continuing as an Active Board Member','role':'Partnerships Board Member','conclusion':'Two school introductions, after confirming availability.','confirmed':False},422,True)
   await self.req('PUT',ab+'/participants/'+pid+'/decision',{'outcome':'Continuing as an Active Board Member','role':'Partnerships Board Member','conclusion':'Two school introductions, after confirming availability.','confirmed':True},admin=True)
   await self.req('POST',ab+'/tool/reactivation/board-members/'+pid+'/portfolio',{},admin=True);portfolio=await self.db.generated_materials.find_one({'user_id':row['workspace_user_id'],'application_id':pid,'type':'reactivation_board_member_portfolio'});self.assertIsNotNone(portfolio)
-  await self.req('POST',ab+'/tool/reactivation/materials/'+portfolio['material_id']+'/approve-portfolio',{},admin=True);draft=await self.req('POST',ab+'/participants/'+pid+'/message-preview',{'kind':'portfolio_delivery'},admin=True);self.assertIn('/portfolio/',draft['link'])
+  approved=await self.req('POST',ab+'/tool/reactivation/materials/'+portfolio['material_id']+'/approve-portfolio',{},admin=True)
+  download=await self.req('GET','/portfolio/'+approved['share_token']+'/pdf')
+  self.assertEqual(download.headers['content-type'],'application/pdf');self.assertEqual(download.headers['cache-control'],'no-store');self.assertTrue(download.content.startswith(b'%PDF-'))
+  from io import BytesIO
+  from pypdf import PdfReader
+  text='\n'.join(page.extract_text() or '' for page in PdfReader(BytesIO(download.content)).pages)
+  self.assertIn('Sample Learning Nonprofit',text);self.assertIn('Sample Board Member',text)
+  await self.req('GET','/portfolio/not-a-valid-portfolio-token/pdf',status=404)
+  draft=await self.req('POST',ab+'/participants/'+pid+'/message-preview',{'kind':'portfolio_delivery'},admin=True);self.assertIn('/portfolio/',draft['link'])
   await self.req('POST',ab+'/participants/'+pid+'/message-send',{**draft,'request_id':str(uuid.uuid4()),'approved':True},admin=True);await self.req('POST',ab+'/deliver',{'approved':True,'request_id':str(uuid.uuid4())},admin=True)
  async def test_confirmation_communications_require_actual_confirmed_decision(self):
   token,base,row,ab=await self.setup_service();pid=await self.add_person(ab);await self.submit_person(row,pid,'step_down')

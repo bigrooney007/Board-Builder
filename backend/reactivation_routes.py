@@ -1101,6 +1101,7 @@ def create_reactivation_router(db) -> APIRouter:
         member_name = await portfolio_member_name(material)
         guided = await db.guided_service_customers.find_one({"workspace_user_id":material["user_id"],"service":"board-recommitment","payment_status":"paid"},{"_id":0,"branding":1})
         if guided:
+            from fastapi.responses import Response
             from document_renderer import render_document_pdf
             pdf=render_document_pdf(title=material["title"],org_name=issuer["organization"],body_text=current_display(material),branding=guided.get("branding") or {},prepared_for={"name":member_name})
             return Response(pdf,media_type="application/pdf",headers={"Content-Disposition":'attachment; filename="Board-Member-Portfolio.pdf"',"Cache-Control":"no-store"})
