@@ -13,7 +13,8 @@ class PlanningConfiguration(unittest.TestCase):
         self.assertEqual([q['key'] for q in c['question_groups']['entry']],['vision','goals','requirements'])
         self.assertEqual(len(c['followups']),5);self.assertEqual(len(set(t['subject'] for t in c['followups'])),5)
         self.assertNotEqual(c['question_groups']['leader'][0]['prompt'],c['question_groups']['board'][0]['prompt'])
-        self.assertEqual(PRICES['strategic-planning'],199700)
+        self.assertEqual(PRICES['strategic-planning'],49700)
+        self.assertEqual(__import__('guided_service_defaults').package('strategic-planning','rooney-facilitated')['amount'],199700)
     def test_programs_keep_distinct_stable_ids_and_adopt_only_selected(self):
         c=defaults('strategic-planning');p={'mission':'Our actual mission','programs':[{'id':'school','name':'After-School Education'},{'id':'coding','name':'Youth Coding'}]}
         f=gp.form_content(c,'board',p);programs=[s for s in f['sections'] if s['program_id']]
