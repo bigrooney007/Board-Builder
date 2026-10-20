@@ -157,6 +157,16 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             preview=await self.req('POST','/admin/services/'+service+'/customers/'+row['customer_id']+'/video-preview',{'video_url':'https://youtu.be/personal'},admin=True)
             self.assertIn('/offer/',preview['html']);self.assertIn('text-align:left',preview['html'])
 
+    async def test_old_pricing_promotions_stop_without_stopping_paid_customer_delivery_retries(self):
+        from unittest.mock import AsyncMock,patch
+        import fundraising_launch as launch
+        await self.db.funnel_leads.insert_one({'lead_id':'old-unpaid','result_token':'old-token','lead_source':launch.SOURCE,'email':'old@example.org','marketing_consent':True,'created_at':(datetime.now(timezone.utc)-timedelta(days=30)).isoformat()})
+        await self.db.workflow_email_deliveries.insert_one({'user_id':'legacy-paid','event_key':'meeting-strategy-ready:approved','recipient':'paid@example.org','subject':'Your approved strategy','text':'Your approved strategy is ready.','link':'https://nonprofitboardbuilder.com/strategy/private','status':'failed'})
+        with patch.object(launch,'deliver_once',new=AsyncMock(return_value={'status':'sent'})) as send:
+            await launch.send_due(self.db,include_promotions=False)
+            self.assertEqual(send.await_count,1)
+            self.assertEqual(send.await_args.args[1:4],('legacy-paid','meeting-strategy-ready:approved','paid@example.org'))
+
     async def test_handover_preserves_fundraising_project_and_leader_can_run_real_tools(self):
         token,base,row=await self.paid_option('board-fundraising')
         operator='/api/services/board-fundraising/operator/'+row['customer_id']

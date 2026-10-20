@@ -117,11 +117,11 @@ async def event(db, visitor, kind, lead_id=''):
     key=digest(f'{visitor}:{kind}:{lead_id}:{datetime.now(timezone.utc).date().isoformat()}')
     await db.funnel_events.update_one({'event_id':key},{'$setOnInsert':{'event_id':key,'source':SOURCE,'visitor_id':visitor,'kind':kind,'lead_id':lead_id,'created_at':now()},'$inc':{'views':1},'$set':{'last_seen_at':now()}},upsert=True)
 
-async def send_due(db):
+async def send_due(db, *, include_promotions=True):
     """Product follow-up through existing Resend, with durable keys and paid/opt-out stops."""
     templates=(await content(db))['followups']
     threshold=(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()
-    leads=await db.funnel_leads.find({'lead_source':SOURCE,'internal_preview':{'$ne':True},'$or':[{'marketing_consent':True},{'followup_enrolled':True}],'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000)
+    leads=await db.funnel_leads.find({'lead_source':SOURCE,'internal_preview':{'$ne':True},'$or':[{'marketing_consent':True},{'followup_enrolled':True}],'unsubscribed':{'$ne':True},'paid_at':{'$exists':False},'created_at':{'$lte':threshold}},{'_id':0}).to_list(1000) if include_promotions else []
     for lead in leads:
         created=datetime.fromisoformat(lead['created_at'])
         sequence_owner='launch-sequence:'+digest(lead['email'].lower())
@@ -185,7 +185,9 @@ async def send_due(db):
 
 async def recovery_loop(db):
     while True:
-        try: await send_due(db)
+        # Current $497 service promotions use guided_services.service_loop.
+        # Keep this worker for earlier paid customers and transactional retries.
+        try: await send_due(db,include_promotions=False)
         except Exception: logger.exception('Fundraising follow-up processing failed')
         await asyncio.sleep(300)
 
