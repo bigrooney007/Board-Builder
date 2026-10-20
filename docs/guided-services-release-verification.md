@@ -1,3 +1,5 @@
+> Current offer and operational instructions: [Activation services handoff](two-option-services-handoff.md). The latest instruction replaces the earlier public two-tier pricing with one $497 activation-and-platform offer for each of the four pathways. Historical prices in this document describe earlier releases.
+
 # Four-part release: verification, public URLs and synchronization
 
 Read the accompanying [operating guide](guided-services-operating-guide.md) for all seven customer journeys, service-by-service promotional messages and the real admin navigation.

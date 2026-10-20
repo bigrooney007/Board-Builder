@@ -1,9 +1,11 @@
 """Independent defaults for Rooney's guided services, using stable question keys."""
 from copy import deepcopy
 
-PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 199700, "board-fundraising": 149700}
+PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 49700, "board-fundraising": 49700}
 NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning", "board-fundraising": "Board Fundraising"}
-PRODUCTS = {key: "rooney_guided_" + key.replace("-", "_") + "_" + str(value // 100) for key, value in PRICES.items()}
+# Retain the original identifiers to verify historical payments. New Fundraising
+# and Planning purchases use their existing $497 preparation products below.
+PRODUCTS = {key: "rooney_guided_" + key.replace("-", "_") + "_" + str(value) for key, value in {"recruitment":497,"board-recommitment":497,"strategic-planning":1997,"board-fundraising":1497}.items()}
 # Parts Three and Four activate their public funnels only after their own verification.
 ACTIVE_SERVICES = set(NAMES)
 FLOW_VERSION = "founder-guided-2026"
@@ -12,12 +14,12 @@ FLOW_VERSION = "founder-guided-2026"
 # purchases have their own SKU and operator entitlement.
 PACKAGES = {service: {
     "self-facilitated": {"amount": 49700, "product": "rooney_guided_" + service.replace("-", "_") + "_self_497", "name": "Guided Setup and Self-Facilitation"},
-    "rooney-facilitated": {"amount": PRICES[service], "product": PRODUCTS[service], "name": "Rooney-Facilitated " + NAMES[service]},
+    "rooney-facilitated": {"amount": {"board-fundraising":149700,"strategic-planning":199700}[service], "product": PRODUCTS[service], "name": "Rooney-Facilitated " + NAMES[service]},
 } for service in ("board-fundraising", "strategic-planning")}
 
 
 def package(service, key=None):
-    key = key or "rooney-facilitated"
+    key = key or "self-facilitated"
     if service in PACKAGES:
         if key not in PACKAGES[service]:
             raise ValueError("Choose a valid service option.")
@@ -58,7 +60,7 @@ FUNDRAISING_ENTRY = [
 ]
 
 def email(subject, body, cta="CONTINUE WITH {{service_name}}", **extra):
-    return {"subject": subject, "headline": "", "body": body, "cta": cta, "support": "", "signature": "Rooney Akpesiri\nNonprofit Board Builder", "enabled": True, **extra}
+    return {"subject": subject, "headline": "", "body": body, "cta": cta, "support": "", "signature": "Rooney A.\nThe Nonprofit Board Builder", "enabled": True, **extra}
 
 FIRST = {
     "recruitment": email("Let's Get Your Board Recruitment Campaign Launched", """Hello {{first_name}},
@@ -272,4 +274,59 @@ Both options begin with preparation. The difference is whether you run the plann
     if service == "strategic-planning":
         result["operational_emails"]["portfolio_delivery"]=email("Your Approved Board Leadership Portfolio", "Hello {{participant_name}},\n\nYour approved portfolio for {{organization}} records the responsibilities you agreed to undertake in your organization's strategic plan. Open your personal link to read and download it.", "OPEN MY APPROVED PORTFOLIO")
         result["operational_emails"]["review_invitation"]["body"]=result["operational_emails"]["review_invitation"]["body"].replace("Rooney has prepared the strategic plan", "The strategic plan has been prepared")
+    return result
+
+
+# Current offer: one activation call and the platform for independent execution.
+# The previous package definitions remain above only for historical verification.
+_previous_offer_defaults = defaults
+ACTIVATION_OFFER_VERSION = "activation-platform-497-2026"
+ACTIVATION_START = {
+    "recruitment": "During our first call, we will review the board member profiles your organization needs, agree on the people to recruit, and begin preparing and launching your recruitment campaign. Your dashboard keeps your approved materials, application links, applicants, interview tools and onboarding resources together.",
+    "board-recommitment": "During our first call, we will clarify what your board needs to contribute, prepare your recommitment communication and form, and begin inviting members to respond. Your dashboard keeps invitations, responses, conversation guides, agreed decisions and member resources together.",
+    "strategic-planning": "During our first call, we will prepare your planning project, review the planning forms and begin inviting your board members to contribute. Your dashboard gives you the forms, responses, facilitation tools, board review and plan editor you need to lead the process and complete your strategic plan.",
+    "board-fundraising": "During our first call, we will begin your fundraising preparation, guide you through the audience questions and help you invite your board members. Your dashboard gives you the submitted ideas, Group Game, facilitation guidance, strategy editor and member resources you need to lead your board's discussion and complete the agreed strategy.",
+}
+
+
+def defaults(service):
+    result = _previous_offer_defaults(service)
+    start = ACTIVATION_START[service]
+    result["first_email"] = email("Let's Begin Your " + NAMES[service],
+        "Hello {{first_name}},\n\nThank you for telling us about {{organization}}. {{submission_update}}\n\n"
+        + ("{{recommendation_update}}\n\n" if service == "recruitment" else "")
+        + "You can carry out this process yourself with the right tools and structure. Our activation call and platform access cost $497, as a one-time payment.\n\n"
+        + start + "\n\nWe will begin the work with you on that first call, show you how to use the tools, and give you secure access to your prepared dashboard so you can continue independently.\n\nAfter payment, save your organization's branding and choose your activation call time.",
+        "PAY $497 AND ACTIVATE MY " + NAMES[service].upper(), delay_minutes=60, incomplete_cta="CONTINUE MY " + NAMES[service].upper())
+    fundraising_themes=["Your board members can contribute ideas and relationships you cannot supply alone.","A fundraising approach is easier to discuss when every member has first shared their own ideas.","The Group Game gives your board a structure for comparing funding audiences and agreeing on an approach.","Your strategy should include the participation people have actually agreed to undertake.","Your saved information is ready whenever you want to begin involving your board in fundraising."]
+    for index,item in enumerate(result["followups"]):
+        theme=fundraising_themes[index] if service=="board-fundraising" else FOLLOWUP_THEMES[service][index][1]
+        item["body"] = "Hello {{first_name}},\n\n" + theme + "\n\nYour information for {{organization}} is saved. For $497, we will begin your " + NAMES[service].lower() + " with you during an activation call and give you the tools, structure and prepared dashboard to continue independently. Choose your call time when it is convenient for you."
+        item["cta"] = "PAY $497 AND ACTIVATE MY " + NAMES[service].upper()
+        item.pop("self_cta", None)
+    result["paid_email"] = email("Your {{service_name}} Payment Is Confirmed", "Hello {{first_name}},\n\nYour payment for {{organization}} is confirmed. Save your organization's branding and book your activation call through your secure link.\n\nWe will begin the work together during that call and prepare your dashboard with the tools and resources you need to continue independently. You will receive a secure dashboard invitation when it is ready.", "CONTINUE TO BRANDING AND BOOKING")
+    result["handover_email"] = email("Your {{service_name}} Dashboard Is Ready", "Hello {{first_name}},\n\nYour {{service_name}} dashboard for {{organization}} is ready. It contains the project we began together and the tools and resources you need to continue independently. Use your personal invitation to accept access.\n\nThis invitation expires after 48 hours. Rooney can issue another if needed, without another purchase.", "OPEN MY DASHBOARD")
+    result["customer_copy"].update({
+        "offer_heading": "Begin Your " + NAMES[service],
+        "offer_intro": "Your answers are saved. Begin with an activation call and the platform you need to carry out the work independently.",
+        "activation_heading": "Your Activation Call and Platform Access",
+        "activation_description": start + " We will begin the work together and show you how to use your prepared dashboard, so you can continue independently.",
+        "activation_cta": "ACTIVATE MY " + NAMES[service].upper(),
+        "branding_intro": "Your payment is confirmed. Save your organization's branding, then choose your activation call time.",
+        "booking_heading": "Your " + NAMES[service] + " Activation Call Is Ready to Book.",
+        "booking_description": "Meet with Rooney to begin the work and prepare your dashboard with the tools and structure you need to continue independently.",
+        "booking_cta": "BOOK MY " + NAMES[service].upper() + " ACTIVATION CALL",
+        "handover_heading": "Your Prepared Dashboard Is Ready",
+        "handover_description": "Open the project we began together. Your saved information, resources and tools remain available so you can carry out the work independently.",
+        "handover_cta": "OPEN MY DASHBOARD",
+        "contact_heading": "Let's Get Started",
+        "contact_cta": "CONTINUE",
+        "contact_email_notice": "Look out for my email in your inbox in one hour. Rooney A. The Nonprofit Board Builder.",
+        "received_body": "Thank you for sharing your answers. Look out for my email in your inbox one hour after you entered your details. It will explain how to begin your activation call and platform access. Rooney A. The Nonprofit Board Builder.",
+    })
+    result["landing"]["promise"] = "Begin the work during your activation call, then use your prepared dashboard, tools and resources to continue independently."
+    if service in {"strategic-planning", "board-recommitment"}:
+        result["landing"]["steps"] = [["1", "Tell Us What Your Organization Needs", "Start with the introductory questions. Your answers are saved."], ["2", "Receive Your Personal Invitation", "Your email explains the activation call and platform access. After payment, save your branding and book your call."], ["3", "Begin the Work Together", start], ["4", "Continue Through Your Dashboard", "Invite contributions, review responses, use the practical tools and complete your organization's approved resources independently."]]
+    for key in ("self_heading","self_description","self_cta","professional_heading","professional_description","professional_cta"):
+        result["customer_copy"].pop(key,None)
     return result

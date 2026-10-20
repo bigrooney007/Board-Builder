@@ -62,7 +62,7 @@ export default function RecruitWalkthroughPage() {
   };
 
   const payButton = (id) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" disabled={busy || !assessment}
-    onClick={buy} data-testid={id}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BUILD MY BOARD RECRUITMENT CAMPAIGN — $497"}</button>;
+    onClick={buy} data-testid={id}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BUILD MY BOARD RECRUITMENT CAMPAIGN"}</button>;
 
   return <BfgShell><main className="guided-flow" data-testid="recruit-walkthrough-page">
     {!assessment ? <p className="guided-loading">Opening your recruitment campaign…</p> : <section className="guided-recruit-upgrade">
@@ -76,7 +76,7 @@ export default function RecruitWalkthroughPage() {
         intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
         selfGuided={{ title: copy.selfGuidedTitle, description: copy.selfGuidedDescription,
           features: copy.selfGuidedFeatures,
-          button: "START MY CAMPAIGN — $497" }}
+          button: "START MY CAMPAIGN" }}
         supported={{ title: copy.supportedTitle, description: copy.supportedDescription,
           features: copy.supportedFeatures,
           price: "$2,997", button: "WORK WITH ROONEY — $2,997" }} />

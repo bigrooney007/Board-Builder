@@ -59,13 +59,13 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('POST',session+'/session/adopt',{**body,'confirmed':True,'revision':reviewed['decision_revision']},admin=True)
         return token,public,row,base,lead,board,reviewed
 
-    async def test_one_hour_invitation_1997_product_paid_branding_and_booking(self):
+    async def test_one_hour_invitation_497_activation_product_paid_branding_and_booking(self):
         token,public,row=await self.lead('strategic-planning')
         at=datetime.fromisoformat(row['submitted_at']);await gs.automation_tick(self.db,at+timedelta(minutes=59));self.mail.assert_not_called()
         await gs.automation_tick(self.db,at+timedelta(hours=1));self.assertEqual(self.mail.call_count,1)
-        self.assertIn('$1,997',self.mail.call_args.args[0]['html'])
+        self.assertIn('$497',self.mail.call_args.args[0]['html']);self.assertNotIn('$1,997',self.mail.call_args.args[0]['html'])
         await self.req('POST',public+'/checkout');r=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
-        self.assertEqual(self.created[0]['metadata']['offer_source'],PRODUCTS['strategic-planning'])
+        self.assertEqual(self.created[0]['metadata']['offer_source'],__import__('guided_service_defaults').package('strategic-planning')['product'])
         self.sessions[r['session_id']].update(payment_status='paid',status='complete');await self.req('POST',public+'/confirm',{})
         await self.req('GET',public+'/book',status=409);await self.req('PUT',public+'/branding',{'primary_color':'#123456'});await self.req('GET',public+'/book',status=303)
         previous=self.mail.call_count;await gs.automation_tick(self.db,at+timedelta(days=40));self.assertEqual(previous,self.mail.call_count)

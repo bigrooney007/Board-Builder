@@ -1,101 +1,71 @@
-# Guided services, dashboard handover and automatic publishing
+# Current activation services: operating and release guide
 
-This guide supersedes earlier single-price Fundraising and Planning descriptions. Work continues on `feature/guided-board-services`, from `2670a558e861d17abc40e4d166fa2a0d8f54eb16`. It reuses the current Game, Planning engine, private customer records, Stripe dispatcher, delivery outbox and blog scheduler. AutoFundraiser is unchanged.
+Updated 20 October 2026. The latest instructions replace the earlier two-option offers. All four current pathways sell one $497 activation call and platform-access service. Additional execution assistance is discussed and paid separately during the call; it is not advertised as another online package. Historical purchases and their original entitlements remain valid.
 
-## The customer journeys
+## What the customer does
 
-### Board Recruitment: $497
+1. Choose a service from https://nonprofitboardbuilder.com/ or its independent landing page.
+2. Click Start for Free. A compact popup collects name, email and organization, without a password or signup screen. Its editable reminder says to look for Rooney's email in one hour.
+3. Answer the current admin-published introductory questions one at a time. Questions retain their subtitles, stable identifiers and saved answers. Admins can change their count without changing code.
+4. The first email is scheduled for one hour after contact details are saved. The server checks due work every 30 seconds; transport and inbox delivery can add latency. The visitor does not need to keep the website open. If the questions are unfinished, the email returns to the saved questions. Completed submissions receive their own offer link.
+5. The email explains the single $497 activation-and-platform offer. Five independently editable follow-ups return unpaid prospects to that same offer. Payment, unsubscribe, suppression or a manual stop prevents further sales messages. Rooney can independently send a reviewed YouTube video email.
+6. Pay through the correct service's Stripe checkout. Successful payment is verified server-side against the service, customer, amount and session. An opened success URL is not proof of payment.
+7. Save organization branding, then choose a convenient activation-call time through that service's admin-configured Calendly link. A paid customer can return without another purchase.
+8. During the first call, Rooney begins the work and prepares the existing project. From the customer record he confirms preparation and sends the secure dashboard invitation.
+9. The organization opens its own prepared dashboard and continues the work. The same original responses, invitations and documents remain saved. Rooney can continue operating the same project through the admin when separately engaged.
 
-Promote **https://nonprofitboardbuilder.com/recruit**. Start for Free opens a compact name, email and organization dialog, then the published recruitment questions. Questions appear individually with their editable subtitles and current count. The completed submission ends at a thank-you page. Private AI board-profile recommendations appear in Rooney's service workspace, not in the unpaid response.
+## The four independent pathways
 
-Approximately one hour later, the configured email invites that customer to the $497 guided service. After verified payment, they provide branding and book through Recruitment's own Calendly setting. In the meeting, Rooney reviews and approves the board profiles, confirms interview arrangements, generates and approves the current recruitment materials, and explicitly launches the campaign. Existing public opportunities, applications/CVs, notifications, interview decisions, references, appointment documents, agreements and signing remain in the original tools. The customer receives a secure resources link and can continue the agreed process independently.
+| Pathway | Public URL | What begins on the activation call | What the customer's dashboard supports |
+| --- | --- | --- | --- |
+| Recruitment | https://nonprofitboardbuilder.com/recruit | Review desired board member profiles, agree recruitment requirements, prepare materials and begin the campaign launch. | Profiles, campaign materials and approvals, actual marketplace/application links, applicants and CVs, interviews, reference and appointment resources, agreements, onboarding and approved downloads. Campaign publication requires confirmation. |
+| Board Fundraising | https://nonprofitboardbuilder.com/board-fundraising | Prepare the existing Game project, guide the leader through the audience questions and begin board invitations. | Saved individual ideas, invitations, Group Game, explicit audience decisions, consent-based participation, microphone/transcript tools, strategy editing/approval/delivery and supported portfolios. The existing audience questions and Game engine are reused. |
+| Strategic Planning | https://nonprofitboardbuilder.com/strategic-planning | Set the planning period, current mission, programs, meeting and response deadline; prepare leader and board forms and begin invitations. | Independent forms and responses, separate program discussions, adopted decisions, existing live planning session, transcript or typed notes, final-plan editing, version-specific board review/adoption, final delivery and supported leadership portfolios. |
+| Recommitment | https://nonprofitboardbuilder.com/board-recommitment | Clarify expected contributions, prepare the communication and form and begin board invitations. | Invitations, active/advisory/step-down responses, interpretation, editable conversation guides, confirmed decisions, relevant communications, approved portfolios, agreements and delivery. An initial preference does not automatically change a formal board role. |
 
-The live opportunity directory is **https://nonprofitboardbuilder.com/board-opportunities**. A campaign appears there only after successful publication. Joining the applicant network remains **https://nonprofitboardbuilder.com/join-a-board**. External distribution is reported only when the existing permitted integration succeeds.
+The public marketplace is https://nonprofitboardbuilder.com/board-opportunities. Prospective applicants join through https://nonprofitboardbuilder.com/join-a-board. External social publication is reported only when a real permitted integration completes it; ready-to-share links and messages remain available.
 
-### Board Recommitment: $497
+The main directory, Meet Rooney, product landing pages and explanation pages display no dollar amounts. The $497 amount remains clear in the offer emails and actual Stripe checkout. Promotional content is filtered for public presentation without deleting saved admin copy or removing financial figures from private organizational strategies and plans. The separate personal consultation retains its existing $197 backend price and payment entitlement; its public page also has no displayed amount.
 
-Promote **https://nonprofitboardbuilder.com/board-recommitment**. The same contact dialog leads to the current short questions, followed by a thank-you page. The automatic invitation leads to that customer's own $497 checkout, branding and Recommitment booking setting.
+## Emails and saved access
 
-Rooney prepares the organization and invitations in the existing service workspace. Each board member receives an individual form and can recommit, propose another role or step down. Original decisions and explanations remain separate from human-confirmed arrangements. The authorized leader receives response notifications. Existing interpretation, conversation-guide, portfolio, agreement and signature capabilities are reused. Approved resources remain available through secure customer links.
+Customer messages use **Rooney A. The Nonprofit Board Builder <rooney@nonprofitboardbuilder.com>**, with replies to **rooney@nonprofitboardbuilder.com**. Message text and previews are left-aligned. Website page layouts retain their centered presentation.
 
-### Board Fundraising: $497 or $1,497
+Each service keeps its own editable first invitation, sending delay, five follow-ups, video template, paid confirmation, invitation/response templates, handover and final delivery emails. Secure customer-specific button links are generated by the application. A paid video continuation does not request a second payment.
 
-Promote **https://nonprofitboardbuilder.com/board-fundraising**. The existing **/board-fundraising-game** route and How It Works page remain available. The primary action starts the free intake rather than demanding immediate payment.
+Dashboard invitations expire after 48 hours and exchange their capability for an eight-hour HttpOnly secure session. Accepting an invitation resumes the same prepared project. Access is checked against the exact service and organization. Admins can revoke/reissue access. The existing recovery endpoint emails renewed dashboard access to the paid customer's address without another charge; it does not reveal whether an address exists. Previously approved resource links remain available separately. Private customer/participant pages are not indexed.
 
-1. The contact dialog asks for name, email and organization.
-2. Six introductory questions collect mission, board size, custom fundraising goal, funding deadline, consequences of missing the goal, and the next board meeting's date, time and time zone. The full audience questionnaire is not asked here.
-3. Submission saves a private lead and ends at the confirmation page.
-4. The automatic first email, normally 60 minutes later, explains both options. Its two links belong to that particular customer. Subsequent unpaid follow-ups offer the same service and stop after either package is paid for.
-5. **$497** buys preparation and self-facilitation. **$1,497** buys Rooney's facilitation and professional completion. The server uses separate Stripe identifiers and validates the selected amount and metadata. A success URL is not payment proof.
-6. After payment, the customer supplies branding and opens the Fundraising preparation Calendly link. Mission, goal, deadline and meeting information are retained in the existing Game project.
-7. Rooney opens that customer's existing Fundraising workspace, guides the leader through the current audience-by-audience Game, and invites board members. Their individual questionnaire and original responses remain unchanged. Submission emails open the correct organization's response resources.
-8. For **$497**, Rooney confirms that preparation is complete and emails a dashboard handover invitation. The leader accepts it and operates the same prepared project. For **$1,497**, Rooney retains the facilitator role.
-9. The operator runs the existing synchronized Group Game, discusses each audience, records the group's decisions and agreed participation, and uses the existing microphone/transcript controls with permission. Individual participants acknowledge their own adoption.
-10. After the meeting, the operator reviews and edits the current audience-first strategy, saves it, approves it and triggers its email. Its PDF uses the current renderer, separates audiences onto their own pages, includes organization branding and retains only the agreed information. The new intake's goal, deadline and consequences are included. Unknown budgets, dates and commitments are not invented.
-11. The operator can confirm each person's agreed role and use the existing current portfolio builder. Portfolios can be edited, approved, downloaded and emailed. Revisions require fresh approval; previous approved versions are retained.
+## How to run Nonprofit Board Builder from the admin dashboard
 
-### Strategic Planning: $497 or $1,997
+Open https://nonprofitboardbuilder.com/admin and authenticate as the administrator.
 
-Promote **https://nonprofitboardbuilder.com/strategic-planning**. The short, independently editable entry retains the vision, goals and required-resources defaults. Contact details are collected once. Submission ends at a thank-you page, followed by the independently editable two-option email.
+- **Main homepage and Meet Rooney:** the existing homepage/personal-page editors. Consultation settings, independent payments, Calendly URL, notes and resend actions remain in Meet Rooney & Consultations.
+- **Recruitment:** `/admin/services/recruitment`.
+- **Recommitment:** `/admin/services/board-recommitment`.
+- **Fundraising:** `/admin/services/board-fundraising`; its prepared Game workstation remains linked from each paid record.
+- **Planning:** `/admin/services/strategic-planning`.
+- **Questions:** choose Entry Questions (Free Entry Questions in Planning), adjust wording/subtitle/count/order/required/format, then Save and Publish Settings. Planning's leader and board questions remain independently configurable and program-specific. Historic answers keep their original question version.
+- **Public pages:** Landing Page Editor opens the existing page editor. Fundraising retains its homepage and How It Works section editor. Saved copy wins over defaults. Removing an empty editable section collapses it rather than leaving a blank content block.
+- **Customer Page Text:** edit confirmations, contact-popup wording/inbox reminder, activation explanation, button labels, branding, booking and dashboard/handover copy.
+- **Emails:** First Response Email, Five-Email Follow-up Sequence, Personalized Video Follow-ups, Payment and Booking, and Invitation and Response Emails. Edit subjects, complete bodies, buttons, signatures and timing. Preview before publishing.
+- **Customers:** open Customer Submissions, then Open Service Workspace. Original answers, payment/booking, branding and the service tools belong to that one record. Customer-specific support links open the matching record directly.
+- **Activation call:** prepare the project using its existing tools. In Dashboard Ownership and Handover, confirm that preparation and the operating explanation are complete, then HAND OVER DASHBOARD TO ORGANIZATION. Review the actual email status and copy the private invitation if needed.
+- **Resources:** use existing generation, editing, approval and delivery controls. Editing requires fresh approval; signed documents and previous approved portfolio versions are retained. Marking a service complete requires actual final delivery and confirmation that agreed resources are approved.
+- **Journey checks:** Start Current Customer Journey Test uses the actual current questions/templates and the same service tools, with controlled payment/email actions confined to that authenticated administrator's synthetic record.
+- **Blog:** open Blog in the main admin. Retain the article and cover editors and existing RSS/article URLs.
 
-After verified **$497 self-facilitation** or **$1,997 Rooney facilitation** payment, the customer supplies branding and books the preparation meeting. Rooney sets up the planning period, current mission, individual programs, response deadline and board meeting. The leader and board members receive their own independently configured forms. Board members do not receive the leader's private answers as prefills. Each program retains its own identifier and discussion.
+## Automatic five-pathway blog publication
 
-For $497, Rooney hands over the existing project after preparation. The leader can manage invitations, view responses, facilitate the current Planning session, use transcription or typed notes, record adopted decisions, generate and edit the plan, release the approved review version, record board adoption/change requests, finalize and deliver it. For $1,997, Rooney operates these same tools from the admin. The transcript supports recorded decisions; it does not silently adopt suggestions. Editing a released plan requires new version-specific review. Leadership portfolios use the existing template and confirmed participant responsibilities, with editing, approval, branded download and delivery controls.
+The existing worker rotates Recruitment on Monday, Fundraising on Tuesday, Planning on Wednesday, Recommitment on Thursday and Board Applicant Network on Friday. It preserves configured time and timezone; the default is 08:00 America/New_York. Successful generation and validation publish immediately. No manual approval is required for new automatic articles. Published or manually edited historic articles are not overwritten. Reservations, bounded retries and a unique category/date prevent duplicate publication; errors remain visible to the administrator. An explicit administrator pause is respected. New articles do not advertise prices.
 
-### Meet Rooney: $197 consultation
+## Reused services and preserved functionality
 
-Promote **https://nonprofitboardbuilder.com/meet-rooney** for Rooney's biography, photograph, testimonials and independent product links. **https://nonprofitboardbuilder.com/consultation** collects the short consultation information and opens its separate $197 Stripe checkout. Only verified payment unlocks the configured Calendly step. A private payment email resumes booking without another charge. Consultation records and private notes remain separate from product customers.
+The implementation uses the existing Stripe price resolver and webhook path, Resend transactional provider, Calendly configuration, versioned service settings/outbox, recruitment/material/applicant/signature tools, original Game and synchronized Group Game, current fundraising strategy renderer, existing Planning session and questionnaire engine, and original recommitment interpretation/portfolio tools. Tenant-scoped adapters supply the customer dashboard access; they do not create duplicate projects.
 
-**Complete Board Transformation** points to **https://nonprofitboardbuilder.com/**. AutoFundraiser remains an external link to **https://autofundraiser.com/**.
+The blue logo, original homepage directory, testimonials, blogs/RSS, marketplace, legacy product routes and purchases are preserved. AutoFundraiser remains an external link only. No production database, environment settings, campaigns, customer charges, Emergent workspace or deployment is changed by this release preparation.
 
-## Exact admin locations
+## Verification and limits
 
-Open **/admin**. Its service navigation links to:
+Local configuration validation, scope checks, compilation, frontend tests and production build have been run. The final GitHub Actions report records the complete disposable-Mongo HTTP tests, Chromium desktop/mobile customer journeys, screenshot gallery, PDF checks and read-only public availability. External Stripe, email and AI transports are controlled in automated acceptance tests; that proves application behavior, not a real charge, Gmail receipt, real microphone capture, production model quality or Calendly reservation. Those must not be claimed as verified without actual provider evidence.
 
-- **Board Recruitment:** `/admin/services/recruitment`.
-- **Board Recommitment:** `/admin/services/board-recommitment`.
-- **Board Fundraising:** `/admin/services/board-fundraising`.
-- **Strategic Planning:** `/admin/services/strategic-planning`.
-- **Meet Rooney & Consultations:** the existing section on the main admin page.
-
-In each service, **Customer Submissions → Open Service Workspace** opens the original answers, payment and booking state, selected package, delivery history and relevant tools. Recruitment and Recommitment retain their established workspace controls. Fundraising's **Open Fundraising Preparation and Facilitation** opens its existing Game workspace; Planning's controls remain embedded in its service record.
-
-For the $497 Fundraising/Planning package, the selected customer has **Dashboard Ownership and Handover**. Confirm preparation, then click **HAND OVER DASHBOARD TO ORGANIZATION**. The invitation is emailed and can be copied during the meeting. Its link expires in 48 hours and exchanges explicitly for an eight-hour HttpOnly operator session. Sessions and invitations can be revoked. Authorization checks the service, paid package, exact customer, current ownership and session version. No empty replacement project or customer signup is created. Professional packages cannot use this control.
-
-**Entry Questions / Free Entry Questions** controls count, wording, subtitles, order, required settings and formats. Planning also has separate **Lead User Planning Questions** and **Board Member Planning Questions**. Stable question/program identifiers and saved snapshots preserve historic answers.
-
-**Landing Page Editor** edits the actual displayed page copy. Fundraising links to its existing full homepage/How It Works/Game instruction editors. **Customer Page Text** edits the confirmation, offer, package explanations, action labels and booking/handover copy. **First Response Email**, **Five-Email Follow-up Sequence**, **Personalized Video Follow-ups**, **Payment and Booking**, and **Invitation and Response Emails** retain independent service settings. The handover email is under Payment and Booking. Save drafts, preview, then publish settings. Changing visible wording cannot change a Stripe amount.
-
-Each customer record provides the manually reviewed **Personalized Video Follow-up** composer. Paid customers receive a continuation link, not another purchase request. Sending a video does not restart the automatic sequence. All five unpaid follow-ups stop after payment, unsubscribe, suppression or a manual stop. Delivery retries reuse their event keys.
-
-## Automatic blog generation and publication
-
-**Admin → Blog Generator → Automatic generation and publishing** controls the existing scheduler's time, time zone and pause setting. This release reinstates automatic publishing by default. A new explicit pause saved in this version is respected.
-
-| Day | Pathway | Article button destination |
-| --- | --- | --- |
-| Monday | Board Recruitment | `/recruit` |
-| Tuesday | Board Fundraising | `/board-fundraising-game` |
-| Wednesday | Strategic Planning | `/strategic-planning` |
-| Thursday | Board Recommitment | `/board-recommitment` |
-| Friday | Board Applicant Network | `/join-a-board` |
-
-The existing background worker checks the schedule every five minutes. The default is 08:00 America/New_York, unless the saved schedule specifies another time. It generates the day's pathway once, validates the article and its cover, and publishes immediately. Failed automatic generations have bounded retries; invalid or failed content is not published. Published and administrator-edited articles are not regenerated by the scheduler.
-
-The five topic libraries, article/graphic editor, stable URLs, archived posts, two fundraising guides, public blog, sitemap, RSS and social-discovery endpoints remain. Open an article and use **Edit Article and Graphic → Save Article and Graphic** whenever you want to change it. Manual generation/regeneration also publishes after generation checks. Historical pending drafts still support review and manual publication.
-
-Public blog: **https://nonprofitboardbuilder.com/blog**. RSS: **https://nonprofitboardbuilder.com/api/blog/feed.xml**. Automatic website publication does not mean an external social network has published a post.
-
-## Templates and compatibility
-
-- Fundraising's authoritative output remains `fundraising_strategy_writing.document_sections`, selected by `fundraising_audiences.document_sections` for v7, then rendered by `strategy_pdf` through `document_renderer`. It retains the latest audience-first headings and page breaks.
-- Fundraising portfolios reuse `fundraising_launch.build_portfolio_draft` and its current role-specific practical resources.
-- Planning continues to use its original meeting/decision engine and the guided versioned plan editor. Leadership portfolios reuse the existing `/guided/strategic-planning/portfolios` template, with approval and branded delivery added around it.
-- Recruitment still uses the existing `ai_service` generation definitions/finished-content formatter, approved-profile adapter, and current appointment-letter, agreement, board-manual and portfolio types. No older generator is substituted.
-- Existing paid customers, saved invitations, sessions, source responses, transcripts and documents are not migrated into a new purchase or package. Existing prices and checkout routes remain available for their historical flows. AutoFundraiser is not modified.
-
-## Evidence and release status
-
-The release workflow runs Mongo-backed HTTP acceptance with controlled Stripe, email and AI transports; the production frontend build; current desktop/mobile browser journeys; access and delivery checks; and read-only public availability audits. Its artifact includes `current-screenshots.html`, original PNG screenshots, compact review sheets, downloaded document examples and per-suite JSON results. All pictured organizations and participants are synthetic.
-
-The final handoff supplies the verified Actions run and final GitHub SHA. A GitHub commit, an Emergent sync and a production deployment are separate states. The owner initiates the sync and deployment. Controlled-provider tests do not establish actual Gmail receipt, live Stripe/webhook credentials, the production AI key or Calendly reservation confirmation. Those must not be described as verified without production evidence.
+The GitHub commit, Emergent synchronization and production deployment are separate states. The release report identifies the tested commit and supplies a sync-only instruction. The owner initiates synchronization and deployment.

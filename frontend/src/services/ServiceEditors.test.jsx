@@ -33,3 +33,10 @@ test('reducing the question count archives later questions and retains their sta
  await act(async()=>[...node.querySelectorAll('button')].find(button=>button.textContent==='Apply Question Count').click());
  expect(change.mock.calls[0][0].map(q=>[q.id,q.archived])).toEqual([['mission',false],['needs',true],['count',true]]);
 });
+
+
+test('a customer-specific administrator link opens the correct saved service record',async()=>{
+ jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path==='/auth/me'?{user_id:'sample-admin'}:path.endsWith('/settings')?{config:{question_groups:{entry:rows}},revision:0,active:true,price:49700}:path.endsWith('/customers/requested')?{customer:{customer_id:'requested',organization:'Requested Organization',name:'Sample Leader',email:'leader@example.org',payment_status:'unpaid',question_snapshot:[],answers:{}},deliveries:[],continuation_url:'/saved-next-step',resources_url:'/saved-resources'}:{customers:[],total:0}}));
+ await act(async()=>root.render(<MemoryRouter initialEntries={['/admin/services/recruitment?customer=requested']}><Routes><Route path="/admin/services/:service" element={<ServiceAdminPage/>}/></Routes></MemoryRouter>));
+ expect(api.get).toHaveBeenCalledWith('/admin/services/recruitment/customers/requested');expect(node.querySelector('[data-testid="guided-customer-workspace"]').textContent).toContain('Requested Organization');
+});

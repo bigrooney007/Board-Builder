@@ -101,7 +101,7 @@ def create_guided_recommitment_router(db):
     async def workspace(request:Request,ident:str=None,token:str=None):
         row=await actor(request,ident,token);people=await db.reactivation_board_members.find({'user_id':owner_id(row)},{'_id':0}).sort('created_at',1).to_list(500)
         for person in people:
-            if token:
+            if token or '/operator/' in request.url.path:
                 person.pop('private_notes',None);person.pop('call_notes',None)
             person['form_url']=origin()+'/board-recommitment/'+person.pop('form_token')
             person['decision_status']='Decision confirmed' if person.get('decision_confirmed') else 'Follow-up conversation needed' if person.get('follow_up_needed') else 'Responded' if person.get('status')=='COMPLETED' else 'Awaiting response' if person.get('status')=='SENT' else 'Not yet invited'
@@ -224,4 +224,6 @@ def create_guided_recommitment_router(db):
             result=await deliver_once(db,owner_id(row),'guided-signature-invitation-'+item['request_id'],record['email'],message['subject'],email_text(message),origin()+'/sign/'+item['token'],cta_label=message['cta'])
             return {'request_id':item['request_id'],**result}
         return {'request_id':item['request_id'],'preview_url':origin()+'/sign/'+item['token']}
+    from service_handover import register_operator_routes
+    register_operator_routes(router,'/admin/services/board-recommitment/customers/{ident}','/services/board-recommitment/operator/{ident}')
     return router

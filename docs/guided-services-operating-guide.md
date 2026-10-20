@@ -1,3 +1,5 @@
+> Current offer and operational instructions: [Activation services handoff](two-option-services-handoff.md). The latest instruction replaces the earlier public two-tier pricing with one $497 activation-and-platform offer for each of the four pathways. Historical prices in this document describe earlier releases.
+
 # Nonprofit Board Builder: customer journeys and operating guide
 
 The current package, handover and automatic-publishing instructions are documented in [two-option-services-handoff.md](two-option-services-handoff.md). They supersede the single-price descriptions below while preserving existing purchases and product engines. AutoFundraiser is an external link only.

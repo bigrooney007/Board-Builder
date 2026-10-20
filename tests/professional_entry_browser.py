@@ -96,7 +96,7 @@ async def main():
             await expect(page.get_by_test_id("rooney-testimonial-name-1")).to_have_text("Tony Barnes")
             results.append({"width": width, "case": "admin_directory_and_personal_edit_persistence_after_refresh", "passed": True})
 
-            await page.get_by_role("link", name="BOOK A SESSION WITH ROONEY · $197", exact=True).first.click()
+            await page.get_by_role("link", name="BOOK A SESSION WITH ROONEY", exact=True).first.click()
             await page.wait_for_url(BASE + "/consultation")
             private_response = await context.request.get(BASE + "/consultation")
             assert private_response.headers["cache-control"] == "no-store"
@@ -104,7 +104,7 @@ async def main():
             assert "posthog.init" not in private_html and "emergent-main.js" not in private_html
             assert 'content="no-referrer"' in private_html
             await fill_consultation(page, f"consultation-{width}@example.org")
-            await page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT · $197", exact=True).click()
+            await page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT", exact=True).click()
             await page.wait_for_url("**/__test/consultation-checkout/*")
             await page.get_by_role("button", name="Complete Payment", exact=True).click()
             await page.wait_for_url("**/consultation/confirmed?*")
@@ -125,12 +125,12 @@ async def main():
             assert token not in page.url
             await page.goto(BASE + "/consultation/resume/" + token)
             await page.get_by_role("heading", name="Your Consultation Payment Is Confirmed.", exact=True).wait_for()
-            await expect(page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT · $197", exact=True)).to_have_count(0)
+            await expect(page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT", exact=True)).to_have_count(0)
             results.append({"width": width, "case": "controlled_197_payment_email_paid_resume_and_calendly_handoff", "passed": True})
 
             await page.goto(BASE + "/consultation")
             await fill_consultation(page, f"cancelled-{width}@example.org")
-            await page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT · $197", exact=True).click()
+            await page.get_by_role("button", name="CONTINUE TO SECURE PAYMENT", exact=True).click()
             await page.wait_for_url("**/__test/consultation-checkout/*")
             await page.get_by_role("button", name="Cancel Payment", exact=True).click()
             await page.wait_for_url("**/consultation/resume/*?checkout=cancelled")

@@ -53,3 +53,5 @@
 .fundraising-simplified select { text-align: center; text-align-last: center; }
 .fundraising-simplified .bfg-bm-top,.fundraising-simplified .bfg-bm-actions { justify-content: center; gap: 16px; flex-wrap: wrap; }
 .fundraising-simplified a.bfg-btn-primary { color: #fff; }
+
+.fundraising-admin .service-email-preview, .fundraising-admin .service-email-preview * { text-align: left !important; }

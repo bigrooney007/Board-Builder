@@ -1,3 +1,5 @@
+> Current offer and operational instructions: [Activation services handoff](two-option-services-handoff.md). The latest instruction replaces the earlier public two-tier pricing with one $497 activation-and-platform offer for each of the four pathways. Historical prices in this document describe earlier releases.
+
 # Current automatic publishing
 
 The current release reinstates all five weekday pathways and publishes generated articles automatically after validation. See [the current operating guide](two-option-services-handoff.md#automatic-blog-generation-and-publication) for the schedule, editing controls and retry behavior. Earlier draft-first descriptions below are historical. Existing drafts and article URLs are preserved.

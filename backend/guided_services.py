@@ -26,11 +26,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from auth_service import authenticate_admin
 from consultation_routes import no_cache, origin, safe_url
-from guided_service_defaults import ACTIVE_SERVICES, FLOW_VERSION, NAMES, PRICES, PRODUCTS, PACKAGES, package, defaults
+from guided_service_defaults import ACTIVE_SERVICES, FLOW_VERSION, NAMES, PRICES, PRODUCTS, PACKAGES, ACTIVATION_OFFER_VERSION, _previous_offer_defaults, package, defaults
 from workflow_delivery import deliver_once
 
 logger = logging.getLogger(__name__)
-VARIABLES = {"first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline", "fundraising_goal", "fundraising_deadline"}
+VARIABLES = {"submission_update","first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline", "fundraising_goal", "fundraising_deadline"}
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def new_id(): return str(uuid.uuid4())
@@ -47,12 +47,27 @@ async def settings(db, service, draft=False):
         if isinstance(base,dict) and isinstance(value,dict):return {key:merge(default,value.get(key,default)) for key,default in base.items()}
         return copy.deepcopy(value)
     value=copy.deepcopy(saved.get("draft" if draft else "published") or {})
+    # Retain stored edits and history. Only replace retired offer wording when
+    # reading it into the current funnel; customer records keep their purchases.
+    current=defaults(service);previous=_previous_offer_defaults(service)
+    from guided_service_defaults import FIRST
+    for key in ("first_email","paid_email"):
+        stored=value.get(key)
+        if stored and (stored.get("body")==previous.get(key,{}).get("body") or stored.get("body")==FIRST.get(service,{}).get("body") or re.search(r"\$(?:1,?497|1,?997)\b",stored.get("body",""))):
+            value[key]={**stored,**{k:current[key][k] for k in ("body","cta")}}
+    for index,item in enumerate(value.get("followups",[])):
+        if index<5 and (item.get("body")==previous["followups"][index]["body"] or re.search(r"\$(?:1,?497|1,?997)\b",item.get("body",""))):
+            item.update({k:current["followups"][index][k] for k in ("body","cta")})
     if service=="strategic-planning" and value.get("first_email",{}).get("subject")=="Let's Get Your Board Working Together to Build Your Organization" and "Our professionally facilitated Strategic Planning service costs $1,997." in value.get("first_email",{}).get("body",""):
         # Preserve custom edits; migrate only the exact earlier default template.
         from guided_service_defaults import FIRST
         if value["first_email"].get("body")==FIRST[service]["body"]:
             value["first_email"]={**defaults(service)["first_email"],"delay_minutes":value["first_email"].get("delay_minutes",60),"enabled":value["first_email"].get("enabled",True)}
-    return merge(defaults(service),value), saved.get("revision", 0), saved.get("version", "initial")
+    config=merge(defaults(service),value)
+    templates=[config['first_email'],config['paid_email'],config['video_email'],config['delivery_email'],config['handover_email'],*config['followups'],*config['operational_emails'].values()]
+    for item in templates:
+        if item.get('signature')=='Rooney Akpesiri\nNonprofit Board Builder':item['signature']='Rooney A.\nThe Nonprofit Board Builder'
+    return config, saved.get("revision", 0), saved.get("version", "initial")
 
 def validate_questions(rows):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 100: raise HTTPException(422, "Keep at least one question in this group.")
@@ -77,6 +92,7 @@ def validate_config(service, payload):
     if service=="strategic-planning":
         for group in ("leader","board"):
             for q in payload["question_groups"][group]:
+                if q.get("type")=="meeting":raise HTTPException(422,"Use a supported individual answer format in the detailed planning forms.")
                 if not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}",str(q.get("section_key", ""))) or not str(q.get("section_title", "")).strip() or type(q.get("per_program")) is not bool:raise HTTPException(422,"Keep stable planning section identifiers, titles and program settings.")
     if not safe_url(payload["booking_url"],calendly=True): raise HTTPException(422,"Use a valid secure Calendly URL.")
     if not isinstance(payload["sequence_paused"],bool): raise HTTPException(422,"Invalid sequence setting.")
@@ -90,6 +106,7 @@ def validate_config(service, payload):
         if not isinstance(template.get("enabled"),bool): raise HTTPException(422,"Invalid email enabled setting.")
     for key in ("delay_minutes",):
         if type(payload["first_email"].get(key)) is not int or not 0<=payload["first_email"][key]<=525600: raise HTTPException(422,"Choose a valid first-email delay in minutes.")
+    if not isinstance(payload["first_email"].get("incomplete_cta"),str) or not 1<=len(payload["first_email"]["incomplete_cta"].strip())<=300:raise HTTPException(422,"Keep the continuation button for unfinished introductory questions.")
     for item in payload["followups"]:
         if type(item.get("after_previous_minutes")) is not int or not 1<=item["after_previous_minutes"]<=525600: raise HTTPException(422,"Choose a positive follow-up interval in minutes.")
     landing=payload["landing"]
@@ -110,7 +127,6 @@ def validate_config(service, payload):
         for q in form["questions"]:
             if not isinstance(q.get("show_for"),list) or not q["show_for"] or set(q["show_for"])-set(form["labels"]):raise HTTPException(422,"Choose which commitment decisions display each question.")
     if not isinstance(payload["customer_copy"],dict) or set(payload["customer_copy"])!=set(expected["customer_copy"]) or any(not isinstance(v,str) or len(v)>18000 for v in payload["customer_copy"].values()):raise HTTPException(422,"Keep the customer page text fields.")
-    if service in PACKAGES and not str(payload["first_email"].get("self_cta", "")).strip():raise HTTPException(422,"Keep the self-facilitation button label.")
     return payload
 
 async def record_by_token(db,service,token,paid=False):
@@ -135,31 +151,39 @@ async def admin_record(db,service,ident,request,paid=False):
     return row
 
 def continuation(row,resources=False):
+    if not resources and row.get("payment_status")!="paid" and not row.get("submitted_at"):
+        return f"{origin()}/services/{row['service']}/start?lead={row['access_token']}"
     stage="resources" if resources else "setup" if row.get("payment_status")=="paid" else "offer"
     return f"{origin()}/services/{row['service']}/{stage}/{row['access_token']}"
 
 def offer_links(row, config=None):
-    if row["service"] not in PACKAGES or row.get("payment_status")=="paid":return []
-    label=(config or {}).get("first_email",{}).get("self_cta","PAY $497 AND PREPARE MY " + NAMES[row["service"]].upper())
-    return [{"label":label,"url":continuation(row)+"?package=self-facilitated"}]
+    # Each pathway now sells one activation-and-platform option. Historical
+    # professional packages are verified on old payments, never advertised.
+    return []
+
+def record_package(row):
+    key=row.get("purchased_package") or row.get("checkout_package")
+    if not key and row["service"] in PACKAGES and (row.get("session_id") or row.get("payment_status")=="paid"):
+        key="rooney-facilitated"
+    return package(row["service"],key)
 
 def context(row,video_url=""):
     answers=row.get("answers") or {};mapping={q["key"]:answers.get(q["id"],"") for q in row.get("question_snapshot",[])}
     ready=(row.get("analysis") or {}).get("status")=="ready"
-    return {"first_name":row.get("name","there").split()[0],"name":row.get("name",""),"organization":row.get("organization",""),"service_name":NAMES[row["service"]],"price":str(package(row["service"],row.get("purchased_package") or row.get("checkout_package"))["amount"]//100),
-        "mission":str(mapping.get("mission","")),"fundraising_goal":str(mapping.get("fundraising_goal","your fundraising goal")),"fundraising_deadline":str(mapping.get("fundraising_deadline","your funding deadline")),"organization_context":"\n".join(str(v) for v in mapping.values())[:2000],
+    return {"first_name":row.get("name","there").split()[0],"name":row.get("name",""),"organization":row.get("organization",""),"service_name":NAMES[row["service"]],"price":str(record_package(row)["amount"]//100),
+        "submission_update":"Your completed answers are saved." if row.get("submitted_at") else "Your details are saved. If you have not finished the introductory questions, use your personal link to continue from your saved answers before activating the service.","mission":str(mapping.get("mission","")),"fundraising_goal":str(mapping.get("fundraising_goal","your fundraising goal")),"fundraising_deadline":str(mapping.get("fundraising_deadline","your funding deadline")),"organization_context":"\n".join(str(v) for v in mapping.values())[:2000],
         "recommendation_update":"Based on your answers, we've prepared initial board member recommendations for us to review together. These are desired profiles, rather than candidates who have been found." if ready else "Your answers are saved. We will use the priorities you described to work through the board members your organization needs during your guided session.",
         "continuation_message":"Your payment is already confirmed. Use your continuation link to return to the next step of your service." if row.get("payment_status")=="paid" else f"When you are ready to begin the guided {NAMES[row['service']]} service, use your personal continuation link below.",
         "continuation_url":continuation(row),"payment_url":continuation(row),"video_url":video_url}
 
 def render(template,values):
-    return {key:re.sub(r"{{\s*([a-z_]+)\s*}}",lambda match:values.get(match[1],""),str(template.get(key,""))) for key in ("subject","headline","body","cta","support","signature","self_cta")}
+    return {key:re.sub(r"{{\s*([a-z_]+)\s*}}",lambda match:values.get(match[1],""),str(template.get(key,""))) for key in ("subject","headline","body","cta","support","signature","self_cta","incomplete_cta")}
 
 def email_text(message): return "\n\n".join(message[k] for k in ("headline","body","support","signature") if message.get(k))
 
 def preview_email(message,link,secondary=None):
     extra=''.join(f'<p><a href="{escape(x["url"],quote=True)}">{escape(x["label"])}</a></p>' for x in secondary or [])
-    return '<div style="max-width:640px;margin:auto;font-family:Arial;line-height:1.7;text-align:center">'+escape(email_text(message)).replace('\n','<br>')+extra+f'<p><a href="{escape(link,quote=True)}">{escape(message["cta"])}</a></p></div>'
+    return '<div style="max-width:640px;margin:auto;font-family:Arial;line-height:1.7;text-align:left">'+escape(email_text(message)).replace('\n','<br>')+extra+f'<p><a href="{escape(link,quote=True)}">{escape(message["cta"])}</a></p></div>'
 
 async def suppressed(db,row):
     if row.get("unsubscribed") or row.get("suppressed") or row.get("sequence_stopped"): return True
@@ -197,7 +221,7 @@ async def prepare_recommendations(db,row):
 
 async def automation_tick(db,at=None,only_id=None):
     at=at or datetime.now(timezone.utc)
-    query={"service":{"$in":list(ACTIVE_SERVICES)},"submitted_at":{"$exists":True}}
+    query={"service":{"$in":list(ACTIVE_SERVICES)},"$or":[{"submitted_at":{"$exists":True}},{"offer_version":ACTIVATION_OFFER_VERSION}]}
     if only_id:query["customer_id"]=only_id
     rows=await db.guided_service_customers.find(query, {"_id":0}).sort("automation_checked_at",1).limit(200).to_list(200)
     for row in rows:
@@ -214,9 +238,13 @@ async def automation_tick(db,at=None,only_id=None):
         if config["sequence_paused"] or row.get("sequence_paused") or await suppressed(db,row):continue
         first=row.get("first_email_sent_at")
         if not first:
-            due=datetime.fromisoformat(row["submitted_at"])+timedelta(minutes=config["first_email"]["delay_minutes"])
+            anchor=row.get("created_at") if row.get("offer_version")==ACTIVATION_OFFER_VERSION else row.get("submitted_at")
+            due=datetime.fromisoformat(anchor)+timedelta(minutes=config["first_email"]["delay_minutes"])
+            await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"first_email_due_at":due.isoformat()}})
             if at<due or not config["first_email"]["enabled"]:continue
-            result=await send_message(db,row,"guided-first-invitation",render(config["first_email"],context(row)),promotional=True,secondary=offer_links(row,config))
+            message=render(config["first_email"],context(row))
+            if not row.get("submitted_at"):message["cta"]=message["incomplete_cta"]
+            result=await send_message(db,row,"guided-first-invitation",message,promotional=True)
             if result["status"] in {"sent","captured"}:
                 await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"first_email_sent_at":{"$exists":False}},{"$set":{"first_email_sent_at":at.isoformat(),"followup_previous_at":at.isoformat(),"followup_index":0}})
         else:
@@ -247,7 +275,7 @@ async def service_loop(db):
     while True:
         try:await automation_tick(db)
         except Exception:logger.exception("Guided service automation will retry")
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
 async def provision_workspace(db,row):
     if row.get("payment_status")!="paid":raise HTTPException(402,"Payment has not been confirmed.")
@@ -276,10 +304,10 @@ async def confirm_payment(db,row,session_id=None):
     if not row.get("session_id"):return row
     try:session=await asyncio.to_thread(stripe.checkout.Session.retrieve,row["session_id"])
     except stripe.StripeError as exc:raise HTTPException(503,"Payment confirmation is temporarily unavailable. Your saved information is safe.") from exc
-    meta=session.get("metadata") or {};service=row["service"];selected=package(service,row.get("checkout_package"))
+    meta=session.get("metadata") or {};service=row["service"];selected=record_package(row)
     if meta.get("guided_customer_id")!=row["customer_id"] or meta.get("offer_source")!=selected["product"] or (service in PACKAGES and (meta.get("guided_package") or "rooney-facilitated")!=(row.get("checkout_package") or "rooney-facilitated")) or session.get("client_reference_id")!=row["customer_id"] or session.get("amount_subtotal")!=selected["amount"] or session.get("currency")!="usd" or (session.get("amount_total") or 0)<selected["amount"]:raise HTTPException(409,"The Stripe payment could not be matched to this service.")
     if session.get("payment_status")=="paid":
-        await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"payment_status":{"$ne":"paid"}},{"$set":{"payment_status":"paid","paid_at":now(),"amount_paid":session["amount_total"],"purchased_package":selected["key"],"operator_status":"rooney_preparing" if selected["key"]=="self-facilitated" else "rooney_facilitating","stripe_payment_intent":session.get("payment_intent"),"stripe_livemode":bool(session.get("livemode")),"sequence_stopped":True,"updated_at":now()}})
+        await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"payment_status":{"$ne":"paid"}},{"$set":{"payment_status":"paid","paid_at":now(),"amount_paid":session["amount_total"],"purchased_package":selected["key"],"operator_status":"rooney_facilitating" if selected["key"]=="rooney-facilitated" else "rooney_preparing","stripe_payment_intent":session.get("payment_intent"),"stripe_livemode":bool(session.get("livemode")),"sequence_stopped":True,"updated_at":now()}})
         row=await db.guided_service_customers.find_one({"customer_id":row["customer_id"]},{"_id":0})
         await provision_workspace(db,row)
         config,_,_=await settings(db,service)
@@ -315,7 +343,7 @@ async def calendly_event(db,event):
 
 def public_record(row):
     keys=("customer_id","service","name","organization","answers","question_snapshot","question_version","submitted_at","payment_status","booking_status","branding","branding_saved_at","resource_delivery_at","internal_test","purchased_package","checkout_package","operator_status")
-    return {**{key:row.get(key) for key in keys},"amount":package(row["service"],row.get("purchased_package") or row.get("checkout_package"))["amount"],"packages":PACKAGES.get(row["service"],{}),"currency":"usd","service_name":NAMES[row["service"]]}
+    return {**{key:row.get(key) for key in keys},"amount":record_package(row)["amount"],"packages":{},"currency":"usd","service_name":NAMES[row["service"]]}
 
 class Start(BaseModel):
     model_config=ConfigDict(str_strip_whitespace=True)
@@ -372,7 +400,7 @@ def create_guided_services_router(db):
     @router.get("/services/{service}/questions")
     async def entry_questions(service:str):
         check_service(service,active=True);config,_,version=await settings(db,service)
-        return {"service":service,"name":NAMES[service],"questions":[q for q in config["question_groups"]["entry"] if not q["archived"]],"version":version,"landing":config["landing"]}
+        return {"service":service,"name":NAMES[service],"questions":[q for q in config["question_groups"]["entry"] if not q["archived"]],"version":version,"landing":config["landing"],"contact":{key:config["customer_copy"][key] for key in ("contact_heading","contact_cta","contact_email_notice")}}
 
     @router.post("/services/{service}/recover")
     async def recover(service:str,payload:dict,request:Request):
@@ -381,7 +409,16 @@ def create_guided_services_router(db):
         rows=await db.guided_service_customers.find({"service":service,"email":email,"payment_status":"paid","internal_test":{"$ne":True}},{"_id":0}).limit(5).to_list(5)
         for row in rows:
             config,_,_=await settings(db,service)
-            await send_message(db,row,"guided-access-recovery-"+str(int(time.time())//600),render(config["operational_emails"]["access_recovery"],context(row)),secondary=[{"label":"OPEN MY APPROVED RESOURCES","url":continuation(row,True)}])
+            links=[{"label":"OPEN MY APPROVED RESOURCES","url":continuation(row,True)}]
+            handover=row.get("handover") or {}
+            if handover and row.get("purchased_package") in {"guided","self-facilitated"}:
+                token=handover.get("token")
+                if not token or handover.get("expires_at","")<=now():
+                    token=secrets.token_urlsafe(32)
+                    handover={"token":token,"token_hash":digest(token),"expires_at":(datetime.now(timezone.utc)+timedelta(hours=48)).isoformat(),"created_at":now()}
+                    await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"handover":handover}})
+                links.insert(0,{"label":"OPEN MY DASHBOARD","url":origin()+f"/services/{service}/handover/"+token})
+            await send_message(db,row,"guided-access-recovery-"+str(int(time.time())//600),render(config["operational_emails"]["access_recovery"],context(row)),secondary=links)
         return {"message":"If a paid service is associated with that address, we will email your secure access link."}
 
     @router.post("/services/{service}/start")
@@ -389,7 +426,7 @@ def create_guided_services_router(db):
         check_service(service,active=True);config,_,version=await settings(db,service)
         if not await db.guided_service_customers.find_one({"request_id":str(payload.request_id)}):await rate_limit(db,request,"start:"+service)
         token=secrets.token_urlsafe(32);ident=new_id();timestamp=now()
-        row={"service":service,"customer_id":ident,"request_id":str(payload.request_id),"name":payload.name,"email":str(payload.email).lower(),"organization":payload.organization,"access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"guided-service-"+ident,"flow_version":FLOW_VERSION,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","created_at":timestamp,"updated_at":timestamp}
+        row={"service":service,"customer_id":ident,"request_id":str(payload.request_id),"name":payload.name,"email":str(payload.email).lower(),"organization":payload.organization,"access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"guided-service-"+ident,"flow_version":FLOW_VERSION,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","created_at":timestamp,"updated_at":timestamp,"offer_version":ACTIVATION_OFFER_VERSION,"first_email_due_at":(datetime.fromisoformat(timestamp)+timedelta(minutes=config["first_email"]["delay_minutes"])).isoformat()}
         await db.guided_service_customers.update_one({"request_id":row["request_id"]},{"$setOnInsert":row},upsert=True)
         saved=await db.guided_service_customers.find_one({"request_id":row["request_id"]},{"_id":0})
         if saved["service"]!=service or saved["email"]!=row["email"] or saved["name"]!=row["name"] or saved["organization"]!=row["organization"]:raise HTTPException(409,"This request was already saved with different contact details. Start a new request.")
@@ -441,6 +478,7 @@ def create_guided_services_router(db):
         row=await record_by_token(db,service,token)
         try:selected=package(service,request.query_params.get("package"))
         except ValueError as exc:raise HTTPException(422,str(exc))
+        if service in PACKAGES and selected["key"]!="self-facilitated":raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
         if row.get("internal_test"):raise HTTPException(409,"Use the authenticated sample payment action in the admin. This sample cannot create a real charge.")
         if not row.get("submitted_at"):raise HTTPException(409,"Complete your free submission first.")
         if row.get("payment_status")=="paid":return {"resume_url":continuation(row)}
@@ -448,7 +486,7 @@ def create_guided_services_router(db):
             row=await confirm_payment(db,row)
             if row.get("payment_status")=="paid":return {"resume_url":continuation(row)}
             if row.get("checkout_status")=="open":
-                if (row.get("checkout_package") or "rooney-facilitated")!=selected["key"]:raise HTTPException(409,"A checkout is already open for your other option. Cancel that checkout before changing the service level.")
+                if record_package(row)["key"]!=selected["key"]:raise HTTPException(409,"An earlier checkout is still open. Cancel it before starting the current activation offer.")
                 return {"checkout_url":row["checkout_url"]}
             if row.get("checkout_status")!="expired":raise HTTPException(409,"Your existing payment is processing. Check it before starting another charge.")
         claim=await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"$or":[{"checkout_lock":{"$exists":False}},{"checkout_lock":{"$lt":time.time()-120}}]},{"$set":{"checkout_lock":time.time()}})
@@ -458,12 +496,12 @@ def create_guided_services_router(db):
             from payment_routes import resolve_offer_price_id
             stripe.api_key=os.environ["STRIPE_SECRET_KEY"]
             price=await asyncio.to_thread(resolve_offer_price_id,"STRIPE_"+selected["product"].upper()+"_PRICE_ID",selected["product"],selected["name"],selected["amount"])
-            kwargs={"line_items":[{"price":price,"quantity":1}],"mode":"payment","customer_email":row["email"],"client_reference_id":row["customer_id"],"metadata":{"offer_source":selected["product"],"guided_customer_id":row["customer_id"],"guided_service":service,"guided_package":selected["key"]},"success_url":continuation({**row,"payment_status":"paid"})+"?session_id={CHECKOUT_SESSION_ID}","cancel_url":continuation(row)+"?checkout=cancelled","idempotency_key":f"guided:{row['customer_id']}:{attempt}"}
+            kwargs={"line_items":[{"price":price,"quantity":1}],"mode":"payment","customer_email":row["email"],"client_reference_id":row["customer_id"],"metadata":{"offer_source":selected["product"],"guided_customer_id":row["customer_id"],"guided_service":service,"guided_package":selected["key"],"guided_offer_version":ACTIVATION_OFFER_VERSION},"success_url":continuation({**row,"payment_status":"paid"})+"?session_id={CHECKOUT_SESSION_ID}","cancel_url":continuation(row)+"?checkout=cancelled","idempotency_key":f"guided:{row['customer_id']}:{attempt}"}
             try:session=await asyncio.to_thread(stripe.checkout.Session.create,**kwargs,managed_payments={"enabled":True})
             except stripe.InvalidRequestError as exc:
                 if "managed payments" not in str(exc).lower() and "ineligible" not in str(exc).lower():raise
                 session=await asyncio.to_thread(stripe.checkout.Session.create,**{**kwargs,"idempotency_key":kwargs["idempotency_key"]+":standard"},automatic_tax={"enabled":True},billing_address_collection="required")
-            await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"session_id":session.id,"checkout_url":session.url,"checkout_attempt":attempt,"checkout_package":selected["key"],"payment_status":"pending","checkout_status":"open","updated_at":now()},"$addToSet":{"checkout_history":session.id},"$unset":{"checkout_lock":""}})
+            await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"session_id":session.id,"checkout_url":session.url,"checkout_attempt":attempt,"checkout_package":selected["key"],"offer_version":ACTIVATION_OFFER_VERSION,"payment_status":"pending","checkout_status":"open","updated_at":now()},"$addToSet":{"checkout_history":session.id},"$unset":{"checkout_lock":""}})
             return {"checkout_url":session.url}
         except (stripe.StripeError,KeyError) as exc:
             await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$unset":{"checkout_lock":""}})
@@ -525,7 +563,7 @@ def create_guided_services_router(db):
     @router.get("/admin/services/{service}/settings")
     async def admin_settings(service:str,request:Request):
         await authenticate_admin(request,db);config,revision,version=await settings(db,service,True)
-        return {"config":config,"revision":revision,"version":version,"price":PRICES[service],"active":service in ACTIVE_SERVICES,"name":NAMES[service],"packages":PACKAGES.get(service,{})}
+        return {"config":config,"revision":revision,"version":version,"price":PRICES[service],"active":service in ACTIVE_SERVICES,"name":NAMES[service],"packages":{},"offer_version":ACTIVATION_OFFER_VERSION}
 
     @router.put("/admin/services/{service}/draft")
     async def save_draft(service:str,payload:ConfigSave,request:Request):
@@ -587,7 +625,7 @@ def create_guided_services_router(db):
         elif key=="operational_emails":template=config[key].get(payload.get("name"))
         else:template=config.get(key)
         if not isinstance(template,dict):raise HTTPException(422,"Choose an email template.")
-        sample={"customer_id":"sample","service":service,"name":"Sample Leader","organization":"Sample Nonprofit","answers":{"mission":"Support children in our community."},"question_snapshot":[{"id":"mission","key":"mission"}],"access_token":"sample-secure-link","payment_status":"unpaid","analysis":{"status":"ready"}}
+        sample={"customer_id":"sample","service":service,"name":"Sample Leader","organization":"Sample Nonprofit","answers":{"mission":"Support children in our community."},"question_snapshot":[{"id":"mission","key":"mission"}],"access_token":"sample-secure-link","payment_status":"unpaid","submitted_at":now(),"analysis":{"status":"ready"}}
         if key in {"paid_email","delivery_email","operational_emails"}:sample["payment_status"]="paid"
         values={**context(sample),"participant_name":"Sample Board Member","leader_name":"Sample Leader","applicant_name":"Sample Applicant","planning_period":"Next 12 to 24 months","meeting_details":"Your agreed meeting date, time and time zone","response_deadline":"Your agreed response deadline","agreed_purpose":"Clarify the contributions your board members can agree to make.","responsibilities":"Only the responsibilities the person has agreed to accept.","interview_details":"Your confirmed interview arrangements.","video_url":"https://www.youtube.com/watch?v=sample"}
         message=render(template,values);return {**message,"html":preview_email(message,continuation(sample),offer_links(sample,config)),"sample":True}
@@ -616,7 +654,7 @@ def create_guided_services_router(db):
     async def test_start(service:str,request:Request):
         actor=await authenticate_admin(request,db);check_service(service,True);config,_,version=await settings(db,service)
         ident=new_id();token=secrets.token_urlsafe(32)
-        row={"customer_id":ident,"request_id":new_id(),"service":service,"flow_version":FLOW_VERSION,"name":"Sample Nonprofit Leader","email":"sample-leader@nonprofitboardbuilder.internal","organization":"Sample Community Organization","access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"admin-dashboard-preview-guided-"+ident,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","internal_test":True,"test_owner":actor["user_id"],"created_at":now(),"updated_at":now()}
+        row={"customer_id":ident,"request_id":new_id(),"service":service,"flow_version":FLOW_VERSION,"name":"Sample Nonprofit Leader","email":"sample-leader@nonprofitboardbuilder.internal","organization":"Sample Community Organization","access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"admin-dashboard-preview-guided-"+ident,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","internal_test":True,"test_owner":actor["user_id"],"created_at":now(),"updated_at":now(),"offer_version":ACTIVATION_OFFER_VERSION}
         await db.guided_service_customers.insert_one(row.copy())
         return {"customer_id":ident,"url":f"/services/{service}/start?lead={token}","internal_test":True}
 
@@ -626,11 +664,11 @@ def create_guided_services_router(db):
         if not row.get("internal_test") or row.get("test_owner")!=actor["user_id"]:raise HTTPException(403,"Only your own isolated sample can be advanced without a Stripe payment.")
         if payload.get("action")=="pay":
             if not row.get("submitted_at"):raise HTTPException(409,"Complete the actual free questions first.")
-            await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"payment_status":"paid","paid_at":now(),"sequence_stopped":True,"amount_paid":package(service,payload.get("package"))["amount"],"purchased_package":package(service,payload.get("package"))["key"],"operator_status":"rooney_preparing" if payload.get("package")=="self-facilitated" else "rooney_facilitating","test_payment":True}})
+            await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"payment_status":"paid","paid_at":now(),"sequence_stopped":True,"amount_paid":package(service,payload.get("package"))["amount"],"purchased_package":package(service,payload.get("package"))["key"],"operator_status":"rooney_preparing","offer_version":ACTIVATION_OFFER_VERSION,"test_payment":True}})
             row={**row,"payment_status":"paid"};await provision_workspace(db,row)
         elif payload.get("action")=="run-email":
             if not row.get("submitted_at"):raise HTTPException(409,"Complete the actual free questions first.")
-            await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"submitted_at":(datetime.now(timezone.utc)-timedelta(days=20)).isoformat()}})
+            await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"submitted_at":(datetime.now(timezone.utc)-timedelta(days=20)).isoformat(),"created_at":(datetime.now(timezone.utc)-timedelta(days=20)).isoformat()}})
             await automation_tick(db,only_id=ident)
         else:raise HTTPException(422,"Choose a supported sample action.")
         return {"url":continuation(row),"internal_test":True}

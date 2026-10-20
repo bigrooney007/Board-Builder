@@ -370,4 +370,7 @@ def create_guided_workspace_router(db):
         if result["status"] in {"sent","captured"}:await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"resource_delivery_at":now()}})
         return result
 
+    from service_handover import register_operator_routes
+    register_operator_routes(router,"/admin/services/{service}/customers/{ident}","/services/{service}/operator/{ident}")
+    register_operator_routes(router,"/admin/services/recruitment/customers/{ident}","/services/recruitment/operator/{ident}")
     return router

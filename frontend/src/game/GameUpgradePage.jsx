@@ -55,7 +55,7 @@ export default function GameUpgradePage() {
   };
 
   const payButton = (testId) => <button type="button" className="bfg-btn bfg-btn-primary guided-action" onClick={upgrade} disabled={busy}
-    data-testid={testId}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME — $497"}</button>;
+    data-testid={testId}>{busy === "self-guided" ? "OPENING SECURE CHECKOUT…" : "BRING MY BOARD INTO THE GAME "}</button>;
 
   return <BfgShell><main className="guided-flow" data-testid="bfg-upgrade-page">
     {!game ? <p className="guided-loading">Opening your Board Fundraising Game…</p> : <section className="guided-upgrade">
@@ -69,7 +69,7 @@ export default function GameUpgradePage() {
         intro={copy.cardIntro} offerEyebrow={copy.offerEyebrow} offerHeading={copy.offerHeading}
         selfGuided={{ title: copy.selfGuidedTitle, description: copy.selfGuidedDescription,
           features: copy.selfGuidedFeatures,
-          button: "START THE SELF-GUIDED GAME — $497" }}
+          button: "START THE SELF-GUIDED GAME " }}
         supported={{ title: copy.supportedTitle, description: copy.supportedDescription,
           features: copy.supportedFeatures,
           price: "$2,997", button: "WORK WITH ROONEY — $2,997" }} />

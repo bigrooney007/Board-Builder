@@ -1,3 +1,4 @@
+import {publicContent} from '@/content/publicPresentation';
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { articleForPath } from "@/content/fundraisingArticles";
@@ -138,7 +139,7 @@ export const useHomepageContent = (pageKey, defaults = {}) => {
       .catch(() => {});
     return () => { live = false; };
   }, [pageKey]);
-  return useMemo(() => ({ ...defaults, ...remote }), [defaults, remote]);
+  return useMemo(() => publicContent({ ...defaults, ...remote }), [defaults, remote]);
 };
 
 let videosCache = null;

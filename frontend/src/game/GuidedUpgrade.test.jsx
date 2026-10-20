@@ -23,23 +23,23 @@ async function render(Page) {
   return { node, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
 
-test("fundraising payment page presents the goal, written roadmap and unchanged checkout prices", async () => {
+test("fundraising payment page presents the goal, written roadmap and one activation option without a public price", async () => {
   memberApi.get.mockResolvedValue({ data: { complete: true, unlocked: false, goal_amount: 250000 } });
   const { node, cleanup } = await render(GameUpgradePage);
   try {
     expect(node.textContent).toContain("$250,000");
     expect(node.querySelector('[data-testid="bfg-upgrade-video"]')).toBeNull();
     expect(node.querySelector('[data-testid="offer-text-roadmap"]')).toBeTruthy();
-    expect(node.querySelector('[data-testid="board-fundraising-game-supported-buy"]')).toBeTruthy();
-    expect(node.textContent).toContain("$2,997");
-    expect(node.querySelector('[data-testid="bfg-invite-board-cta"]').textContent).toContain("$497");
+    expect(node.querySelector('[data-testid="board-fundraising-game-supported-buy"]')).toBeNull();
+    expect(node.textContent).not.toContain("$2,997");
+    expect(node.querySelector('[data-testid="bfg-invite-board-cta"]').textContent).not.toContain("$497");
     expect(node.textContent).toContain("Set up the board meeting");
     expect(node.textContent).not.toContain("donors and resources you already have");
     expect(node.textContent).not.toContain("Watch Product Demonstration");
   } finally { await cleanup(); }
 });
 
-test("recruitment payment page presents its written roadmap and two clear checkout actions", async () => {
+test("recruitment payment page presents its written roadmap and one service option", async () => {
   axios.get.mockResolvedValue({ data: { token: "lead-token", lead_id: "lead-1", organization: "Bright Path",
     answers: { mission: "a", current_board: "b", desired_board_members: "c", board_type: "d", support_needs: "e", why_join: "f" } } });
   const { node, cleanup } = await render(RecruitWalkthroughPage);
@@ -47,9 +47,9 @@ test("recruitment payment page presents its written roadmap and two clear checko
     expect(node.querySelector('[data-testid="offer-text-roadmap"]')).toBeTruthy();
     expect(node.querySelector("iframe")).toBeNull();
     expect(node.querySelectorAll('[data-testid^="recruit-checkout-button"]')).toHaveLength(2);
-    expect(node.textContent).toContain("$497");
-    expect(node.querySelector('[data-testid="recruitment-supported-buy"]')).toBeTruthy();
-    expect(node.textContent).toContain("$2,997");
+    expect(node.textContent).not.toContain("$497");
+    expect(node.querySelector('[data-testid="recruitment-supported-buy"]')).toBeNull();
+    expect(node.textContent).not.toContain("$2,997");
     expect(node.textContent).toContain("existing dashboard");
   } finally { await cleanup(); }
 });

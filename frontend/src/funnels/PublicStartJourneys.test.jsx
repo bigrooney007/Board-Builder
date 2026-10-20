@@ -1,3 +1,4 @@
+import {api as serviceApi} from '@/services/shared';
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import axios from "axios";
@@ -30,7 +31,7 @@ jest.mock("react-router-dom", () => ({
   Navigate: ({ to }) => <div data-testid="redirect">{to}</div>,
   useNavigate: () => mockNavigate, useLocation: () => ({ search: mockSearch }),
 }), { virtual: true });
-jest.mock("axios", () => ({ post: jest.fn(), get: jest.fn().mockResolvedValue({data:{}}), create:()=>({post:jest.fn(),defaults:{baseURL:"http://localhost/api"}}) }));
+jest.mock("axios", () => ({ post: jest.fn(), get: jest.fn().mockResolvedValue({data:{}}), create:()=>({get:jest.fn().mockResolvedValue({data:{}}),post:jest.fn(),defaults:{baseURL:"http://localhost/api"}}) }));
 jest.mock("@/member/api", () => ({
   memberApi: { post: jest.fn(), put: jest.fn() },
   clearMemberToken: jest.fn(), storeMemberToken: jest.fn(),
@@ -75,7 +76,7 @@ beforeEach(() => {
   jest.clearAllMocks(); localStorage.clear(); sessionStorage.clear();
   mockMember = null; mockSearch = ""; window.scrollTo = jest.fn();
   memberApi.post.mockReset(); memberApi.put.mockReset(); axios.post.mockReset();
-  axios.get.mockResolvedValue({data:{}});
+  axios.get.mockResolvedValue({data:{}});serviceApi.get.mockResolvedValue({data:{}});
 });
 
 test.each([

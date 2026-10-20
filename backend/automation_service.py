@@ -141,7 +141,7 @@ def sales_email_html(template: Dict[str, Any]) -> str:
     <div style="max-width:600px;margin:0 auto;background:#ffffff;color:#000000;font-family:Arial,sans-serif;font-size:18px;line-height:1.55;padding:32px;">
       <h1 style="margin:0 0 22px;color:#000000;font-size:29px;line-height:1.2;">{template['heading']}</h1>
       {paragraphs}
-      <div style="margin:26px 0;padding:28px;background:#000000;color:#ffffff;text-align:center;font-size:22px;line-height:1.5;font-weight:700;">
+      <div style="margin:26px 0;padding:28px;background:#000000;color:#ffffff;text-align:left;font-size:22px;line-height:1.5;font-weight:700;">
         I AM READY — YOUR FULL NAME — ORGANIZATION NAME<br>
         +1 719-428-5598
       </div>

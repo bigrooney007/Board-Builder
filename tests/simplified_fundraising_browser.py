@@ -60,7 +60,7 @@ async def main():
             await page.goto(BASE+'/how-the-fundraising-game-works')
             await page.get_by_test_id('fundraising-how-page').wait_for()
             await page.get_by_role('heading',name='Get Your Board Members Fundraising By Your Next Board Meeting.',exact=True).wait_for()
-            await expect(page.get_by_text('What You\'re Getting for $1,497',exact=True)).to_be_visible()
+            await expect(page.get_by_text('What You\'re Getting',exact=True)).to_be_visible()
             assert await page.locator('.fundraising-offer-section p,.fundraising-offer-section li').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             await page.screenshot(path=f'test_reports/current-simplified-how-{width}.png',full_page=True)

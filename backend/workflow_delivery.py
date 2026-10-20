@@ -9,6 +9,7 @@ import html
 import os
 from datetime import datetime, timezone, timedelta
 import resend
+from email_identity import SENDER, REPLY_TO
 
 
 def now():
@@ -44,8 +45,8 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *
             footer = ("<p><a href='" + html.escape(unsubscribe_url, quote=True) + "'>Unsubscribe from these follow-up emails</a></p>") if unsubscribe_url else ""
             headers = {"List-Unsubscribe": "<" + unsubscribe_url + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"} if unsubscribe_url else {}
             extra=''.join("<p><a href='"+html.escape(item['url'],quote=True)+"'>"+html.escape(item['label'])+"</a></p>" for item in secondary_links if str(item.get('url','')).startswith('https://'))
-            response = await resend.Emails.send_async({"headers": headers,"from": os.environ["NONPROFIT_SENDER"], "to": [recipient], "subject": subject,
-                "html": "<div style='max-width:640px;margin:auto;font-family:Arial;line-height:1.6;text-align:center'><p>" + html.escape(text).replace("\n", "<br>") + "</p><p><a href='" + html.escape(link, quote=True) + "'>"+html.escape(cta_label)+"</a></p>"+extra+"<p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p>" + footer + "</div>"},
+            response = await resend.Emails.send_async({"headers": headers,"from": SENDER, "reply_to": REPLY_TO, "to": [recipient], "subject": subject,
+                "html": "<div style='max-width:640px;margin:auto;font-family:Arial;line-height:1.6;text-align:left'><p>" + html.escape(text).replace("\n", "<br>") + "</p><p><a href='" + html.escape(link, quote=True) + "'>"+html.escape(cta_label)+"</a></p>"+extra+"<p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p>" + footer + "</div>"},
                 {"idempotency_key": key})
             provider_id = response.get("id", "") if isinstance(response, dict) else getattr(response, "id", "")
             if not provider_id: raise ValueError("The email provider did not confirm acceptance")

@@ -21,7 +21,7 @@ async def main():
  results=[]
  async with async_playwright() as p:
   browser=await p.chromium.launch()
-  for width,choice in ((1440,'self-facilitated'),(390,'self-facilitated'),(1440,'rooney-facilitated'),(390,'rooney-facilitated')):
+  for width,choice in ((1440,'self-facilitated'),(390,'self-facilitated')):
    ctx=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844},accept_downloads=True);page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    auth=(await (await ctx.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth}
    try:
@@ -38,9 +38,9 @@ async def main():
     await page.get_by_role('button',name='SUBMIT MY BOARD FUNDRAISING INFORMATION',exact=True).click();await page.wait_for_url('**/services/board-fundraising/received/*')
     await page.screenshot(path=f'test_reports/current-flow-fundraising-received-{choice}-{width}.png',full_page=True)
     await page.goto(BASE+'/services/board-fundraising/offer/'+token);price='497' if choice=='self-facilitated' else '1,497'
-    button=page.get_by_role('button',name=f'PAY ${price} AND '+('PREPARE MY PROCESS' if choice=='self-facilitated' else 'HAVE ROONEY FACILITATE'),exact=True);await button.wait_for();await page.screenshot(path=f'test_reports/current-flow-fundraising-offers-{choice}-{width}.png',full_page=True);await button.click()
+    button=page.get_by_role('button',name='ACTIVATE MY BOARD FUNDRAISING',exact=True);await button.wait_for();await page.screenshot(path=f'test_reports/current-flow-fundraising-offers-{choice}-{width}.png',full_page=True);await button.click()
     await page.get_by_role('heading',name='Controlled Stripe checkout: $'+price.replace(',',''),exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click();await page.wait_for_url('**/services/board-fundraising/setup/*')
-    await page.get_by_label('Primary organization color',exact=True).fill('#4438cc');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD FUNDRAISING PREPARATION SESSION →',exact=True).wait_for()
+    await page.get_by_label('Primary organization color',exact=True).fill('#4438cc');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD FUNDRAISING ACTIVATION CALL →',exact=True).wait_for()
     await page.screenshot(path=f'test_reports/current-flow-fundraising-branding-booking-{choice}-{width}.png',full_page=True)
     await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);data=await (await ctx.request.get(BASE+'/api/admin/services/board-fundraising/customers/'+ident,headers=headers)).json();uid=data['customer']['workspace_user_id']
     await page.goto(BASE+'/admin/services/board-fundraising');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click();await page.get_by_test_id('dashboard-handover').wait_for();await page.screenshot(path=f'test_reports/current-workstation-fundraising-admin-{choice}-{width}.png',full_page=True)
@@ -53,7 +53,7 @@ async def main():
     if choice=='self-facilitated':
      hand=await ctx.request.post(BASE+'/api/admin/services/board-fundraising/customers/'+ident+'/handover',headers=headers,data={'prepared_confirmed':True});assert hand.ok,await hand.text();hand=await hand.json()
      owner=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844},accept_downloads=True);await page.close();await ctx.close();ctx=owner;page=await ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)));member_headers={}
-     await page.goto(BASE+hand['url'].split('8765')[-1]);await page.get_by_role('button',name='ACCEPT MY DASHBOARD',exact=True).click();await page.wait_for_url('**/services/board-fundraising/dashboard/*');await page.get_by_test_id('fundraising-workspace').wait_for();await expect(page.get_by_text('SELF-FACILITATED: ORGANIZATION IN CONTROL',exact=True)).to_be_visible()
+     await page.goto(BASE+hand['url'].split('8765')[-1]);await page.get_by_role('button',name='OPEN MY DASHBOARD',exact=True).click();await page.wait_for_url('**/services/board-fundraising/dashboard/*');await page.get_by_test_id('fundraising-workspace').wait_for();await expect(page.get_by_text('SELF-FACILITATED: ORGANIZATION IN CONTROL',exact=True)).to_be_visible()
     await page.screenshot(path=f'test_reports/current-workstation-fundraising-operator-{choice}-{width}.png',full_page=True)
     await page.get_by_role('button',name='Start The Group Game',exact=True).click();review=page.get_by_test_id('bfg-audience-group-review');await review.wait_for();microphone=page.get_by_role('dialog',name='Enable your meeting microphone');await microphone.get_by_role('button',name='Continue Without Microphone',exact=True).click()
     await review.get_by_role('button',name='START GROUP REVIEW',exact=True).click();state=await (await ctx.request.get(BASE+'/api/game/group/session',headers=member_headers)).json();group_token=state['session']['token']

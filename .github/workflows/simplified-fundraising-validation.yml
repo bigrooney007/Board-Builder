@@ -119,6 +119,17 @@ jobs:
         if: always() && steps.build.outcome == 'success'
         run: |
           uvicorn tests.current_workflow_app:app --host 127.0.0.1 --port 8765 > /tmp/current-server.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:8765/__test/session',timeout=2) as response:
+                      if response.status==200:break
+              except OSError:
+                  time.sleep(0.5)
+          else:
+              raise SystemExit('The isolated browser server did not become ready.')
+          PY
           result=0
           python tests/service_entry_browser.py || result=1
           for check in simplified_fundraising_browser professional_entry_browser guided_services_browser guided_recommitment_browser guided_planning_browser two_option_services_browser release_gallery_browser; do
