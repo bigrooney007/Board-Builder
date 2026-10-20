@@ -20,18 +20,18 @@ async def generation(kind,context,instructions=''):
 def install(app,db):
     import ai_service,workspace_routes,reactivation_routes,payment_routes,resend,stripe
     from consultation_routes import SOURCE
-    from guided_service_defaults import PRODUCTS,PRICES
+    from guided_service_defaults import PRODUCTS,PRICES,PACKAGES,package
     ai_service.generate_structured=generation;workspace_routes.generate_structured=generation;reactivation_routes.generate_structured=generation
     previous_create=stripe.checkout.Session.create;previous_price=payment_routes.resolve_offer_price_id;previous_retrieve=stripe.checkout.Session.retrieve
     def price(env_key,lookup,name,amount):
         if lookup==SOURCE:return previous_price(env_key,lookup,name,amount)
-        service=next(k for k,v in PRODUCTS.items() if v==lookup);assert amount==PRICES[service]
+        service=next((k for k,v in PRODUCTS.items() if v==lookup),None) or next(k for k,choices in PACKAGES.items() if any(v['product']==lookup for v in choices.values()));assert any(v['amount']==amount for v in PACKAGES.get(service,{'guided':{'amount':PRICES[service]}}).values())
         return 'price_fixture_'+service
     def create(**kw):
         if kw['metadata']['offer_source']==SOURCE:return previous_create(**kw)
-        service=kw['metadata']['guided_service'];assert kw['metadata']['offer_source']==PRODUCTS[service]
+        service=kw['metadata']['guided_service'];chosen=package(service,kw['metadata'].get('guided_package'));assert kw['metadata']['offer_source']==chosen['product']
         sid='cs_test_guided_'+uuid.uuid4().hex
-        SESSIONS[sid]={'id':sid,'metadata':kw['metadata'],'client_reference_id':kw['client_reference_id'],'amount_subtotal':PRICES[service],'amount_total':PRICES[service],'currency':'usd','status':'open','payment_status':'unpaid','success_url':kw['success_url'],'cancel_url':kw['cancel_url'],'payment_intent':'pi_test_'+uuid.uuid4().hex,'livemode':False}
+        SESSIONS[sid]={'id':sid,'metadata':kw['metadata'],'client_reference_id':kw['client_reference_id'],'amount_subtotal':chosen['amount'],'amount_total':chosen['amount'],'currency':'usd','status':'open','payment_status':'unpaid','success_url':kw['success_url'],'cancel_url':kw['cancel_url'],'payment_intent':'pi_test_'+uuid.uuid4().hex,'livemode':False}
         return SimpleNamespace(id=sid,url='http://127.0.0.1:8765/__test/guided-checkout/'+sid)
     payment_routes.resolve_offer_price_id=price;stripe.checkout.Session.create=create;stripe.checkout.Session.retrieve=lambda sid:SESSIONS[sid] if sid in SESSIONS else previous_retrieve(sid)
     old_mail=resend.Emails.send_async

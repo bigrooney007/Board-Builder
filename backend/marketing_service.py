@@ -512,10 +512,9 @@ async def marketing_loop(db) -> None:
     while True:
         try:
             await run_blog_schedule(db)
-            # The public business now has one offer. The consent-based five-email
-            # launch sequence is processed by fundraising_launch.recovery_loop.
-            # Keep legacy marketing records/functions for audit and manual review;
-            # do not schedule advertisements for the retired products.
+            # Five service pathways publish on the existing weekday rotation.
+            # Customer-specific guided follow-ups run in guided_services.service_loop;
+            # historical Fundraising leads retain their original recovery worker.
             from activation_delivery import run_activation_delivery_checks
             await run_activation_delivery_checks(db)
         except Exception as exc:

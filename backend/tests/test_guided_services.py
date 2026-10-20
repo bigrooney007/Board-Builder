@@ -40,7 +40,7 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         patch('payment_routes.resolve_offer_price_id',return_value='price_guided_497').start()
         def create(**kw):
             self.created.append(kw);sid='cs_test_'+uuid.uuid4().hex;service=kw['metadata']['guided_service']
-            self.sessions[sid]={'id':sid,'metadata':kw['metadata'],'client_reference_id':kw['client_reference_id'],'amount_subtotal':PRICES[service],'amount_total':PRICES[service],'currency':'usd','payment_status':'unpaid','status':'open','livemode':False}
+            self.sessions[sid]={'id':sid,'metadata':kw['metadata'],'client_reference_id':kw['client_reference_id'],'amount_subtotal':__import__('guided_service_defaults').package(service,kw['metadata'].get('guided_package'))['amount'],'amount_total':__import__('guided_service_defaults').package(service,kw['metadata'].get('guided_package'))['amount'],'currency':'usd','payment_status':'unpaid','status':'open','livemode':False}
             return SimpleNamespace(id=sid,url='https://checkout.stripe.com/c/pay/'+sid)
         patch('stripe.checkout.Session.create',side_effect=create).start();patch('stripe.checkout.Session.retrieve',side_effect=lambda sid:self.sessions[sid]).start()
     async def asyncTearDown(self):patch.stopall();await self.client.aclose();self.mongo.close()
@@ -48,7 +48,7 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         r=await self.client.request(method,'/api'+path,json=body,headers=self.headers if admin else {});self.assertEqual(r.status_code,status,r.text[:1200]);return r.json() if 'json' in r.headers.get('content-type','') else r
     async def lead(self,service='recruitment',submitted=True,**extra):
         r=await self.req('POST',f'/services/{service}/start',{'request_id':str(uuid.uuid4()),'name':'Sample Leader','email':'leader@example.org','organization':'Sample Learning Nonprofit',**extra});token=r['token'];base=f'/services/{service}/customer/{token}'
-        if submitted:await self.req('PUT',base+'/answers',{'answers':{q['id']:'We help children access learning.' for q in r['record']['question_snapshot']},'submit':True})
+        if submitted:await self.req('PUT',base+'/answers',{'answers':{q['id']:({'date':'2026-12-01','time':'16:00','timezone':'Europe/London'} if q['type']=='meeting' else '3' if q['key']=='board_size' else '100000' if q['type']=='number' else '2027-12-31' if q['type']=='date' else 'We help children access learning.') for q in r['record']['question_snapshot']},'submit':True})
         row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});return token,base,row
     async def paid(self,service='recruitment'):
         token,base,row=await self.lead(service);await self.req('POST',base+'/checkout');row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});self.sessions[row['session_id']].update(payment_status='paid',status='complete');await self.req('POST',base+'/confirm',{});row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});return token,base,row

@@ -1,12 +1,28 @@
 """Independent defaults for Rooney's guided services, using stable question keys."""
 from copy import deepcopy
 
-PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 199700}
-NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning"}
+PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 199700, "board-fundraising": 149700}
+NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning", "board-fundraising": "Board Fundraising"}
 PRODUCTS = {key: "rooney_guided_" + key.replace("-", "_") + "_" + str(value // 100) for key, value in PRICES.items()}
 # Parts Three and Four activate their public funnels only after their own verification.
-ACTIVE_SERVICES = {"recruitment", "board-recommitment", "strategic-planning"}
+ACTIVE_SERVICES = set(NAMES)
 FLOW_VERSION = "founder-guided-2026"
+
+# Existing professional purchase identifiers stay valid; new self-facilitation
+# purchases have their own SKU and operator entitlement.
+PACKAGES = {service: {
+    "self-facilitated": {"amount": 49700, "product": "rooney_guided_" + service.replace("-", "_") + "_self_497", "name": "Guided Setup and Self-Facilitation"},
+    "rooney-facilitated": {"amount": PRICES[service], "product": PRODUCTS[service], "name": "Rooney-Facilitated " + NAMES[service]},
+} for service in ("board-fundraising", "strategic-planning")}
+
+
+def package(service, key=None):
+    key = key or "rooney-facilitated"
+    if service in PACKAGES:
+        if key not in PACKAGES[service]:
+            raise ValueError("Choose a valid service option.")
+        return {"key": key, **PACKAGES[service][key]}
+    return {"key": "guided", "amount": PRICES[service], "product": PRODUCTS[service], "name": "Guided " + NAMES[service]}
 
 def question(key, prompt, help="", required=True, kind="textarea", **extra):
     return {"id": key, "key": key, "prompt": prompt, "help": help, "required": required, "type": kind, "options": [], "archived": False, **extra}
@@ -30,6 +46,15 @@ PLANNING_ENTRY = [
     question("vision", "Where do you see your organization in the next 12 to 24 months?", "Imagine that your organization has become successful according to your own expectations. What should it look like, and what should it be accomplishing?"),
     question("goals", "What goals do you believe your organization needs to achieve to reach that destination?", "Describe the major things your organization must accomplish over the next 12 to 24 months."),
     question("requirements", "What do you believe your organization will need to achieve these goals?", "Think about the people, funding, programs, partnerships, technology, equipment, properties, infrastructure or other resources that may be necessary."),
+]
+
+FUNDRAISING_ENTRY = [
+    question("mission", "What is your organization's mission?", "Use your existing mission statement."),
+    question("board_size", "How many board members does your organization currently have?", "Enter the number of people currently serving on your board.", kind="number"),
+    question("fundraising_goal", "How much money is your organization looking to raise?", "Enter your fundraising goal in US dollars.", kind="number"),
+    question("fundraising_deadline", "When does your organization need to raise this money?", "Choose the date by which your organization needs the funding.", kind="date"),
+    question("funding_consequences", "What will happen if your organization doesn't raise the money it needs?", "Explain what this would mean for your organization, its programs or the people you serve."),
+    question("next_board_meeting", "When is your organization's next board meeting?", "Enter the meeting date, start time and time zone.", kind="meeting"),
 ]
 
 def email(subject, body, cta="CONTINUE WITH {{service_name}}", **extra):
@@ -112,7 +137,7 @@ FOLLOWUP_THEMES = {
 
 def defaults(service):
     from strategic_questionnaire import QUESTIONS
-    entry = RECRUITMENT_QUESTIONS if service == "recruitment" else RECOMMITMENT_QUESTIONS if service == "board-recommitment" else PLANNING_ENTRY
+    entry = RECRUITMENT_QUESTIONS if service == "recruitment" else RECOMMITMENT_QUESTIONS if service == "board-recommitment" else FUNDRAISING_ENTRY if service == "board-fundraising" else PLANNING_ENTRY
     groups = {"entry": deepcopy(entry)}
     if service == "strategic-planning":
         from guided_planning import planning_questions
@@ -165,4 +190,83 @@ def defaults(service):
         "campaign_launched":email("Your Board Recruitment Campaign Is Published", "Hello {{first_name}},\n\nYour approved opportunity for {{organization}} is published on Nonprofit Board Builder and its application form is ready. Open your resources to copy your campaign link and promotional materials. The actual applicant-network delivery status is shown with your campaign. Share through your own channels to publish elsewhere.", "OPEN MY RECRUITMENT CAMPAIGN"),
         "conversation_guide_approved":email("Your Approved Conversation Guide", "Hello {{first_name}},\n\nYour approved conversation guide for {{organization}} is saved with your resources. Use it to explore the board member's stated views respectfully and record what you agree together.", "OPEN APPROVED CONVERSATION GUIDE"),
     })
+    return result
+
+
+# Extend the existing independent configuration, retaining every admin edit.
+_original_defaults = defaults
+
+def defaults(service):
+    if service == "board-fundraising":
+        result = _original_defaults("recruitment")
+        result["question_groups"] = {"entry": deepcopy(FUNDRAISING_ENTRY)}
+        result["landing"] = {"headline": "Get Your Board Members Fundraising by Your Next Board Meeting", "description": "Bring your board together to develop a fundraising approach they understand and can help carry out.", "cta": "START MY BOARD FUNDRAISING FOR FREE"}
+        result["first_email"] = email("Let's Get Your Board Members Raising Money Together", """Hello {{first_name}},
+
+Thank you for telling us about {{organization}}, your fundraising goal and the board members you want to involve. Your goal is {{fundraising_goal}}, with funding needed by {{fundraising_deadline}}.
+
+We'll begin with a preparation meeting. We'll guide you through the existing fundraising questions: who should fund your mission and why, where to find them, how to attract their interest, how to develop relationships and raise money, and what to ask for. We'll also help you invite your board members to contribute their own ideas.
+
+You can choose how much help you want.
+
+Guided setup and self-facilitation: $497. We'll prepare the process with you, invite your board members, and show you how to facilitate the Group Game. After setup, we'll hand over your prepared dashboard so you can run the meeting, record agreed decisions and use the platform to develop your fundraising strategy and member resources.
+
+Rooney-facilitated Board Fundraising: $1,497. Rooney will prepare the process, facilitate your board's Group Game, help the group agree on its funding audiences and participation, and professionally review and complete the strategy and relevant board member portfolios.
+
+Both options begin with preparation. The difference is who runs the board meeting and professionally completes the final materials.""", "PAY $1,497 AND HAVE ROONEY FACILITATE", delay_minutes=60)
+        result["followups"] = [email(subject, "Hello {{first_name}},\n\n" + body + "\n\nYour information for {{organization}} remains saved. Choose guided setup at $497 or Rooney's full facilitation at $1,497 through your personal link.", after_previous_minutes=4320) for subject,body in [
+            ("Bring your board into the fundraising discussion", "Your board members can contribute ideas and relationships you cannot supply alone. We can help you prepare the process and agree on a shared approach."),
+            ("A fundraising approach your board helped develop", "The Group Game gives every member space to suggest funding audiences and discuss practical ways to reach them."),
+            ("Choose how much facilitation you need", "We can prepare you to run the meeting yourself, or Rooney can facilitate it and professionally complete the final materials."),
+            ("Agree on how each member can participate", "Use your meeting to record responsibilities people have actually accepted, alongside the funding audiences your board adopts."),
+            ("Your invitation to start board fundraising", "Your saved answers are ready for the next step whenever you want to begin.")]]
+        result["operational_emails"]["response_notice"] = email("A Board Member Has Shared Their Fundraising Ideas", "Hello {{first_name}},\n\n{{participant_name}} has completed their fundraising responses for {{organization}}. Use your secure link to read their original ideas before your board meeting.", "VIEW FUNDRAISING IDEAS")
+    else:
+        result = _original_defaults(service)
+    if service == "strategic-planning":
+        result["first_email"] = email("Let's Build Your Organization's Strategic Plan Together", """Hello {{first_name}},
+
+Thank you for sharing your vision for {{organization}} and what you want to achieve over the next 12 to 24 months. Your board members have an important role in helping your organization reach that future.
+
+We'll begin with a preparation meeting, set up your planning forms and help invite your board members to share their original ideas.
+
+Guided setup and self-facilitation: $497. We'll prepare your project, walk you through the forms, invitations and meeting tools, and show you how to facilitate the board session. We'll hand over your prepared dashboard so you can discuss everyone's ideas, record adopted decisions, develop and edit the plan, arrange board review and generate the supported member resources.
+
+Rooney-facilitated Strategic Planning: $1,997. Rooney will prepare the process and facilitate your board's planning session, helping the group agree on its goals, program priorities and responsibilities. He'll use those decisions and the relevant meeting transcript to prepare and edit your strategic plan, guide board review, and professionally complete the relevant leadership portfolios.
+
+Both options begin with preparation. The difference is whether you run the planning process or Rooney facilitates it and professionally completes the final materials.""", "PAY $1,997 AND HAVE ROONEY FACILITATE", delay_minutes=60)
+    if service in PACKAGES:
+        result["first_email"]["self_cta"] = "PAY $497 AND PREPARE MY " + NAMES[service].upper()
+        result["handover_email"] = email("Your {{service_name}} Dashboard Is Ready", "Hello {{first_name}},\n\nYour {{service_name}} project for {{organization}} has been prepared. Use your personal invitation to accept control of the existing dashboard. Your answers, invitations and resources are already there. You can run your meeting and continue the process independently.\n\nThis invitation expires after 48 hours. If it expires, Rooney can issue another without charging you again.", "ACCEPT MY DASHBOARD")
+    result["customer_copy"] = {
+        "received_heading": "Thank You. We've Received Your " + NAMES[service] + " Information.",
+        "received_body": "We'll review what you've shared about your organization and email the next steps. Please look out for an email from Nonprofit Board Builder.",
+        "offer_heading": "Let's Begin Your " + NAMES[service],
+        "offer_intro": "Your information is saved. Choose how you would like to proceed. Both options begin with a preparation meeting." if service in PACKAGES else "Your information is saved. After payment, provide your branding and book your guided session with Rooney.",
+        "self_heading": "Guided Setup and Self-Facilitation",
+        "self_description": "We will prepare your project with you, invite your board members and show you how to run the process. We will then hand over your prepared dashboard, including its saved responses, meeting tools and documents.",
+        "professional_heading": "Let Rooney Facilitate the Process",
+        "professional_description": "Rooney prepares your project, facilitates the board meeting, and professionally reviews and completes your agreed strategy or plan and relevant board member materials.",
+        "branding_intro": "Your payment is confirmed. Save your organization's branding before choosing your preparation meeting time.",
+        "booking_heading": "Your " + NAMES[service] + " Process Is Ready to Begin.",
+        "booking_description": "The next step is to meet with Rooney, review your organization's situation and prepare the process together.",
+        "booking_cta": "BOOK MY " + NAMES[service].upper() + (" PREPARATION SESSION" if service in PACKAGES else " SESSION"),
+        "question_submit": "SUBMIT MY BOARD FUNDRAISING INFORMATION" if service == "board-fundraising" else "SAVE MY ANSWERS",
+        "dashboard_heading": "Your " + NAMES[service] + " Dashboard",
+        "handover_heading": "Your Prepared Dashboard Is Ready",
+        "handover_description": "Accept your personal invitation to continue with the project Rooney prepared with you. Your saved information and invitations will remain available.",
+        "handover_cta": "ACCEPT MY DASHBOARD",
+    }
+    if service == "strategic-planning":
+        result["customer_copy"]["planning_form_intro"]="Share your own ideas about your organization's future. Your contributions will be discussed together during your board planning meeting. You can return through your personal link to finish your answers."
+    if service == "recruitment":
+        result["customer_copy"]["professional_description"] = "After your $497 payment, provide your organization's branding and book your recruitment session. Together, you and Rooney will review the recommended board member profiles, agree on the people to recruit, prepare and approve your campaign materials, and publish the opportunity when the required information is ready. You retain the campaign link, applications, interview resources and onboarding materials to continue independently."
+    elif service == "board-recommitment":
+        result["customer_copy"]["professional_description"] = "After your $497 payment, provide your organization's branding and book your recommitment session. Together, you and Rooney will clarify what your board needs to contribute, prepare your communications and forms, and invite members to respond. You receive notifications, conversation guidance and the resources to record agreed decisions and prepare portfolios. Each person's formal role changes only through your organization's appropriate decisions."
+    if service == "board-fundraising":
+        result["operational_emails"]["fundraising_invitation"] = email("You're Invited to Share Your Fundraising Ideas", "Hello {{participant_name}},\n\n{{leader_name}} invites you to help {{organization}} work towards its fundraising goal of {{fundraising_goal}} by {{fundraising_deadline}}.\n\nShare your own ideas freely about who would fund the mission and how your organization could reach them. Your responses will be discussed at your next board meeting.\n\n{{meeting_details}}\n\nUse your personal link to play the individual Game. You do not need to purchase anything.", "PLAY MY FUNDRAISING GAME")
+        result["operational_emails"]["strategy_ready"] = email("Your Board's Fundraising Strategy Is Ready", "Hello {{first_name}},\n\nYour board's adopted fundraising strategy has been reviewed and is ready to use. Open your strategy to read, download and share it with your board. Your strategy records the funding audiences and responsibilities agreed during the meeting.\n\nYou can also book a conversation with Rooney about the strategy and its execution.", "VIEW MY APPROVED STRATEGY")
+        result["operational_emails"]["fundraising_portfolio_delivery"] = email("Your Approved Board Fundraising Portfolio", "Hello {{participant_name}},\n\nYour organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board's adopted approaches. Use your personal link to read and download it.", "VIEW MY APPROVED PORTFOLIO")
+    result["customer_copy"]["self_cta"]="PAY $497 AND PREPARE MY PROCESS"
+    result["customer_copy"]["professional_cta"]="PAY $"+format(PRICES[service]//100,",")+" AND HAVE ROONEY FACILITATE" if service in PACKAGES else "PAY $"+str(PRICES[service]//100)+" AND BEGIN MY GUIDED SERVICE"
     return result

@@ -16,6 +16,7 @@ import LegalPage from "@/pages/LegalPage";
 import { BlogPage, BlogPostPage } from "@/pages/BlogPages";
 
 import GuidedServicePage from "@/services/GuidedServicePage";
+import ServiceOperatorPage from "@/services/ServiceOperatorPage";
 import ServiceAdminPage from "@/services/ServiceAdminPage";
 import {ServiceLanding,ServiceStart} from "@/services/ServiceEntries";
 import RecruitmentHomePage from "@/funnels/RecruitmentHomePage";
@@ -144,6 +145,8 @@ function CleanRoutes() {
       <Route path="/consultation/resume/:token" element={<ConsultationPage />} />
       <Route path="/board-fundraising" element={<FundraisingAlias />} />
 
+      <Route path="/services/:service/handover/:token" element={<ServiceOperatorPage handover />} />
+      <Route path="/services/:service/dashboard/:ident" element={<ServiceOperatorPage />} />
       <Route path="/services/:service/start" element={<GuidedServicePage />} />
       <Route path="/services/:service/:stage/:token" element={<GuidedServicePage />} />
       <Route path="/admin/services/:service" element={<ServiceAdminPage />} />

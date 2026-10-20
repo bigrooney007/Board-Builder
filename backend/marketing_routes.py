@@ -25,8 +25,8 @@ class BlogGenerate(BaseModel):
     @field_validator("category")
     @classmethod
     def valid_category(cls, value):
-        if value != "fundraising_activation":
-            raise ValueError("Choose Board Fundraising for new content.")
+        if value not in BLOG_CATEGORIES:
+            raise ValueError("Choose one of the five board-service article pathways.")
         return value
 
     @field_validator("scheduled_date", mode="before")
@@ -162,8 +162,6 @@ def create_marketing_router(db) -> APIRouter:
     @router.post("/blog/generate", status_code=202)
     async def generate_post(payload: BlogGenerate, request: Request, background_tasks: BackgroundTasks):
         await authenticate_admin(request, db)
-        if payload.publish_now:
-            raise HTTPException(status_code=400, detail="Generate the draft, then use Publish after reviewing it.")
         settings = await blog_settings(db)
         scheduled_date = str(payload.scheduled_date or datetime.now(ZoneInfo(settings["timezone"])).date())
         try:
@@ -171,7 +169,7 @@ def create_marketing_router(db) -> APIRouter:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         if created:
-            background_tasks.add_task(generate_reserved_blog_post, db, post)
+            background_tasks.add_task(generate_reserved_blog_post, db, post, True)
         return {"status": post["publication_status"], "reused": not created, "post": present_post(post)}
 
     @router.get("/admin/blog/topics")
@@ -181,19 +179,18 @@ def create_marketing_router(db) -> APIRouter:
         today = datetime.now(ZoneInfo(settings["timezone"])).date()
         schedule = []
         for key, config in BLOG_CATEGORIES.items():
-            if key != "fundraising_activation":continue
             next_topic = await next_topic_for(db, key)
             usage = await topic_usage(db, key)
-            schedule.append({"category_key": key, "category": config["name"], "publish_day": "Weekdays",
+            schedule.append({"category_key": key, "category": config["name"], "publish_day": config["publish_day"],
                 "cta_url": config["cta_url"], "audience": config["audience"], "mechanism": config["mechanism"],
-                "scheduled_date": str(today + timedelta(days=0 if today.weekday()<5 else 7-today.weekday())),
+                "scheduled_date": str(today + timedelta(days=(config["day"]-today.weekday()) % 7)),
                 "next_topic_id": next_topic["topic_id"], "topics": [{**angle, "drafts_and_posts": usage[angle["topic_id"]]} for angle in config["angles"]]})
         return {"schedule": schedule, "settings": settings}
 
     @router.put("/admin/blog/settings")
     async def save_settings(payload: BlogSettings, request: Request):
         await authenticate_admin(request, db)
-        await db.marketing_settings.update_one({"key": "blog_weekday_drafts"}, {"$set": payload.model_dump()}, upsert=True)
+        await db.marketing_settings.update_one({"key": "blog_weekday_drafts"}, {"$set": {**payload.model_dump(), "automation_version": 2}}, upsert=True)
         return {"settings": await blog_settings(db)}
 
     @router.get("/admin/blog/posts")
@@ -274,7 +271,7 @@ def create_marketing_router(db) -> APIRouter:
         claimed = await claim_regeneration(db, await find_post(blog_post_id))
         if not claimed:
             raise HTTPException(status_code=409, detail="This article is already generating or published.")
-        background_tasks.add_task(generate_reserved_blog_post, db, claimed)
+        background_tasks.add_task(generate_reserved_blog_post, db, claimed, True)
         return {"status": "Generating", "post": present_post(claimed)}
 
     @router.post("/nurture/test-send")

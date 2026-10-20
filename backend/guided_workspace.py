@@ -28,11 +28,11 @@ APPLICANT_RESOURCES = {'interview_guide','interview_invitation','before_intervie
 async def authorize_delegation(db,request,payload,member):
     service=member.get("guided_service_workspace")
     if not service:return member
-    prefix="/api/workspace/" if service=="recruitment" else "/api/reactivation/"
+    prefix="/api/workspace/" if service=="recruitment" else "/api/game/" if service=="board-fundraising" else "/api/reactivation/"
     if payload.get("guided_service")!=service or not request.url.path.startswith(prefix):raise HTTPException(403,"This service access is limited to its own workspace tools.")
     row=await db.guided_service_customers.find_one({"customer_id":member.get("guided_customer_id"),"service":service,"workspace_user_id":member["user_id"],"payment_status":"paid"},{"_id":0,"customer_id":1})
     if not row:raise HTTPException(403,"A verified paid engagement is required for this workspace.")
-    return {**member,"email":member["notification_email"],"guided_facilitator":True}
+    return {**member,"email":member["notification_email"],"guided_facilitator":True,"fundraising_facilitator":service=="board-fundraising"}
 
 async def delegated_request(app,db,row,method,path,payload=None,query=""):
     await provision_workspace(db,row)

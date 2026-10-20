@@ -15,6 +15,7 @@ async def main():
    await page.goto(BASE+'/recruit');await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
    await page.get_by_label('Full name',exact=True).fill('Sample Guided Leader');await page.get_by_label('Email address',exact=True).fill(f'guided-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Learning Nonprofit')
    await page.get_by_role('button',name='CONTINUE',exact=True).click();await page.wait_for_url('**/services/recruitment/start?lead=*')
+   await page.screenshot(path=f'test_reports/current-flow-recruitment-questions-{width}.png',full_page=True)
    token=page.url.split('lead=')[1];base='/api/services/recruitment/customer/'+token
    details=await (await context.request.get(BASE+base)).json();ident=details['customer_id'];ab='/api/admin/services/recruitment/customers/'+ident
    for i in range(len(details['question_snapshot'])):
@@ -22,18 +23,19 @@ async def main():
     await page.get_by_role('button',name='SAVE MY ANSWERS' if i==len(details['question_snapshot'])-1 else 'SAVE AND CONTINUE',exact=True).click()
     if i<len(details['question_snapshot'])-1:await expect(page.get_by_text(f"Question {i+2} of {len(details['question_snapshot'])}",exact=True)).to_be_visible()
    await page.wait_for_url('**/services/recruitment/received/*');await expect(page.get_by_role('heading',name="Thank You. We've Received Your Board Recruitment Information.",exact=True)).to_be_visible();assert 'PAY $497' not in await page.locator('body').inner_text()
-   await page.goto(BASE+'/services/recruitment/offer/'+token);await page.get_by_role('button',name='PAY $497 AND BEGIN MY GUIDED SERVICE',exact=True).click();await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click()
-   await page.wait_for_url('**/services/recruitment/setup/*');await page.get_by_label('Primary organization color',exact=True).fill('#123456');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD RECRUITMENT SESSION →',exact=True).wait_for()
+   await page.screenshot(path=f'test_reports/current-flow-recruitment-received-{width}.png',full_page=True)
+   await page.goto(BASE+'/services/recruitment/offer/'+token);await page.get_by_role('button',name='PAY $497 AND BEGIN MY GUIDED SERVICE',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-offer-{width}.png',full_page=True);await page.get_by_role('button',name='PAY $497 AND BEGIN MY GUIDED SERVICE',exact=True).click();await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click()
+   await page.wait_for_url('**/services/recruitment/setup/*');await page.get_by_label('Primary organization color',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-branding-{width}.png',full_page=True);await page.get_by_label('Primary organization color',exact=True).fill('#123456');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD RECRUITMENT SESSION →',exact=True).wait_for()
    await context.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}])
    assert (await context.request.post(BASE+'/__test/guided-work/'+ident)).ok
    await page.goto(BASE+'/admin/services/recruitment');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click()
-   await page.get_by_label('Role or profile',exact=True).wait_for();await page.get_by_role('button',name='Approve Agreed Board Member Profiles',exact=True).click()
+   await page.get_by_label('Role or profile',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-workstation-recruitment-{width}.png',full_page=True);await page.get_by_role('button',name='Approve Agreed Board Member Profiles',exact=True).click()
    await page.get_by_label('Available interview dates and times',exact=True).fill('October 30, 2026 at 10:00 UTC');await page.get_by_role('button',name='Save Interview Arrangements',exact=True).click();
    async with page.expect_response(lambda r: r.url.endswith('/generate-materials') and r.request.method=='POST') as queued:
     await page.get_by_role('button',name='GENERATE RECRUITMENT MATERIALS',exact=True).click()
    assert (await queued.value).ok
    assert (await context.request.post(BASE+'/__test/guided-work/'+ident)).ok
-   await page.get_by_role('button',name='Refresh Generated Resources',exact=True).click();await page.get_by_text('Board Member Manual · Generated',exact=True).wait_for()
+   await page.get_by_role('button',name='Refresh Generated Resources',exact=True).click();await page.get_by_text('Board Member Manual · Generated',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-materials-{width}.png',full_page=True)
    docs=await (await context.request.get(BASE+ab+'/tool/workspace/materials',headers=headers)).json()
    for doc in docs['materials']:
     response=await context.request.post(BASE+ab+'/tool/workspace/materials/'+doc['material_id']+'/approve',headers=headers,data={});assert response.ok,await response.text()

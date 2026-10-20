@@ -54,7 +54,11 @@ async def paid_engagement(db, sid):
     if row.get("payment_status")!="paid":raise HTTPException(402,"This planning service has not been paid for.")
     request=_request.get()
     if request is None:raise HTTPException(401,"Administrator login required to facilitate this planning session.")
-    await authenticate_admin(request,db)
+    try:await authenticate_admin(request,db)
+    except HTTPException as exc:
+        if exc.status_code not in (401,403):raise
+        from service_handover import operator_for_workspace
+        await operator_for_workspace(db,request,sid,"strategic-planning")
     return ({"payment_status":"paid","internal_preview":bool(row.get("internal_test"))},
             {"name":row["name"],"email":row["email"],"organization":row["organization"]},
             {"answers":row.get("answers",{})})
@@ -81,7 +85,7 @@ def form_content(config,group,project):
             if item is None:
                 item={"key":sid,"title":heading,"subtitle":q.get("help", ""),"questions":[],"program_id":program["id"] if program else ""};sections.append(item)
             item["questions"].append({**copy.deepcopy(q),"id":q["id"]+("__"+program["id"] if program else ""),"type":"multi" if q["type"]=="multiselect" else "short" if q["type"]=="text" else "long" if q["type"]=="textarea" else q["type"],"answer_type":q["type"],"program_id":program["id"] if program else ""})
-    return {"questionnaire_version":questionnaire.VERSION,"guided_service":True,"introduction":"Share your own ideas about your organization's future. Your contributions will be discussed together during your facilitated board planning meeting. You can return through your personal link to finish your answers.","sections":sections,"mission":project.get("mission", ""),"planning_period":project.get("planning_period", "")}
+    return {"questionnaire_version":questionnaire.VERSION,"guided_service":True,"introduction":config["customer_copy"]["planning_form_intro"],"sections":sections,"mission":project.get("mission", ""),"planning_period":project.get("planning_period", "")}
 
 def session_sections(people,saved):
     sections=[]
@@ -363,7 +367,7 @@ def create_guided_planning_router(db):
         row=await admin_record(db,"strategic-planning",ident,request,True);plan=await plan_for(row)
         if not payload.approved or plan.get("final_status")!="Approved":raise HTTPException(409,"Finalize the plan and approve its delivery email.")
         result=await send_message(db,row,"planning-final-delivery-"+str(plan["plan_version"]),payload.model_dump(),continuation(row,True))
-        if result["status"] in {"sent","captured"}:await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"resource_delivery_at":now()}})
+        if result["status"] in {"sent","captured"}:await db.guided_service_customers.update_one({"customer_id":ident},{"$set":{"resource_delivery_at":now(),"operator_status":"completed"}})
         return result
 
     def document(project,text,format):
@@ -410,4 +414,9 @@ def create_guided_planning_router(db):
         if not p:raise HTTPException(404,"Plan not found.")
         return document(p,plan["final_display_text"],format)
 
+    from planning_portfolio_tools import register
+    register(router,db,base)
+    for route in list(router.routes):
+        if route.path.startswith("/api"+base):
+            router.add_api_route(route.path.replace("/api"+base,"/services/strategic-planning/operator/{ident}/planning"),route.endpoint,methods=list(route.methods))
     return router

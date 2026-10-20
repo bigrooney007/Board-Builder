@@ -1,4 +1,4 @@
-"""Draft-first blog generation. Reuses the existing blog_posts collection."""
+"""Five-pathway automatic publishing using the existing articles and scheduler."""
 import asyncio
 from datetime import datetime, timedelta
 import json
@@ -62,8 +62,8 @@ async def next_topic_for(db, category_key):
 
 
 async def reserve_blog_post(db, category_key, scheduled_date, topic_id=""):
-    if category_key != "fundraising_activation":
-        raise ValueError("New articles focus on board fundraising.")
+    if category_key not in BLOG_CATEGORIES:
+        raise ValueError("Choose one of the five board-service article pathways.")
     config = BLOG_CATEGORIES[category_key]
     choice = next((a for a in config["angles"] if a["topic_id"] == topic_id), None) if topic_id else await next_topic_for(db, category_key)
     if not choice:
@@ -151,6 +151,8 @@ async def generate_reserved_blog_post(db, post, publish_now=False):
                        "publication_status": "Published" if publish_now else "Pending Review", "generation_status": "Generated",
                        "validation_status": "Passed", "error": "", "updated_at": now_tz().isoformat()})
         if publish_now:
+            from blog_media import cover_png
+            await asyncio.to_thread(cover_png, {**post,**update})
             update["published_at"] = now_tz().isoformat()
         await db.blog_posts.update_one(query, {"$set": update})
         return {"status": update["publication_status"], "post": {**post, **update}}
@@ -198,22 +200,40 @@ async def regenerate_blog_post(db, post):
 
 async def blog_settings(db):
     saved = await db.marketing_settings.find_one({"key": "blog_weekday_drafts"}, {"_id": 0}) or {}
-    return {"enabled": saved.get("enabled", os.environ.get("BLOG_AUTOMATION_ENABLED", "false").lower() == "true"),
+    # This release reinstates the owner's five-pathway auto-publication instruction.
+    # Once saved in this version, an explicit admin pause remains authoritative.
+    return {"enabled": saved.get("enabled", True) if saved.get("automation_version") == 2 else True,
             "time": saved.get("time", os.environ.get("BLOG_PUBLISH_TIME", "08:00")),
-            "timezone": saved.get("timezone", os.environ.get("BLOG_TIMEZONE", "America/New_York"))}
+            "timezone": saved.get("timezone", os.environ.get("BLOG_TIMEZONE", "America/New_York")),
+            "auto_publish": True, "automation_version": 2}
 
 
 async def run_blog_schedule(db):
     settings = await blog_settings(db)
     if not settings["enabled"]:
         return
-    now = datetime.now(ZoneInfo(settings["timezone"]))
-    if now.strftime("%H:%M") < settings["time"]:
+    instant = datetime.now(ZoneInfo(settings["timezone"]))
+    if instant.strftime("%H:%M") < settings["time"]:
         return
-    category = "fundraising_activation" if now.weekday()<5 else None
-    if category:
-        # Automatic jobs prepare drafts. Publishing remains the administrator's action.
-        await create_scheduled_blog_post(db, category, now.strftime("%Y-%m-%d"), publish_now=False)
+    category = next((key for key, config in BLOG_CATEGORIES.items() if config["day"] == instant.weekday()), None)
+    if not category:
+        return
+    day = instant.strftime("%Y-%m-%d")
+    post, created = await reserve_blog_post(db, category, day)
+    if created:
+        await db.blog_posts.update_one({"blog_post_id": post["blog_post_id"]}, {"$set": {"automatic_publication": True, "automatic_attempts": 1}})
+        return await generate_reserved_blog_post(db, post, publish_now=True)
+    # Never overwrite published or administrator-edited content. A crashed or failed
+    # provider call can be retried, with a lease and a bounded number of attempts.
+    if not post.get("automatic_publication") or post.get("edited_at") or post.get("publication_status") == "Published" or generation_is_active(post) or post.get("automatic_attempts", 1) >= 3:
+        return
+    last = post.get("updated_at") or post.get("created_at")
+    if last and (instant - datetime.fromisoformat(last)).total_seconds() < 300:
+        return
+    claimed = await claim_regeneration(db, post)
+    if claimed:
+        await db.blog_posts.update_one({"blog_post_id": post["blog_post_id"], "generation_token": claimed["generation_token"]}, {"$set": {"automatic_attempts": post.get("automatic_attempts", 1) + 1}})
+        return await generate_reserved_blog_post(db, claimed, publish_now=True)
 
 
 async def generate_linkedin_snippet(db, post):

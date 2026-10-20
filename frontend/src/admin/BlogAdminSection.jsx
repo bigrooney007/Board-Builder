@@ -77,7 +77,7 @@ export default function BlogAdminSection({ client }) {
   const generate = () => run(async () => {
     const response = await client.post("/blog/generate", { category, topic_id: topicId, scheduled_date: date });
     setEdit(null); replacePost(response.data.post);
-    setMessage(response.data.reused ? "Opened the existing article for this topic and date." : "Your draft is generating. You can return here in a few minutes.");
+    setMessage(response.data.reused ? "Opened the existing article for this topic and date." : "Your article is generating and will be published when its content passes validation.");
     await loadSchedule();
   });
   const action = (name) => run(async () => {
@@ -92,7 +92,7 @@ export default function BlogAdminSection({ client }) {
   const selectPost = (item) => { setPost(item); setEdit(null); setError(""); setMessage(""); };
 
   return <section className="blog-workstation" data-testid="admin-blog-section">
-    <div className="blog-workstation-heading"><div><h2>Blog Post Generator</h2><p>Choose the reader's problem. Generate an article with its cover graphic, review it, and publish.</p></div><a className="button button-back button-small" href="/blog" target="_blank" rel="noreferrer">Open Blog</a></div>
+    <div className="blog-workstation-heading"><div><h2>Blog Post Generator</h2><p>All five pathways generate and publish automatically. Open any article here when you want to edit it.</p></div><a className="button button-back button-small" href="/blog" target="_blank" rel="noreferrer">Open Blog</a></div>
     <FundraisingGuideAdmin client={client} />
     {error && <p className="submit-error" role="alert">{error}</p>}
     {message && <p className="admin-message" role="status">{message}</p>}
@@ -110,17 +110,17 @@ export default function BlogAdminSection({ client }) {
         <button className="button" disabled={busy || !date || !topicId || dirty} onClick={generate}>Generate Blog Post + Graphic</button>
       </div><p className="workspace-note">One article per topic and date. Reopening it uses your saved draft.</p>
     </div>}
-    {settings && <details className="blog-schedule-settings"><summary>Automatic weekday drafts</summary>
-      <p>Prepare the day's topic automatically, Monday through Friday. Drafts wait here for you to review and publish.</p>
-      <label className="blog-setting-check"><input type="checkbox" checked={settings.enabled} onChange={(event) => setSettings({ ...settings, enabled: event.target.checked })}/> Generate weekday drafts automatically</label>
+    {settings && <details className="blog-schedule-settings"><summary>Automatic generation and publishing</summary>
+      <p>Publish the day's pathway automatically: Recruitment on Monday, Fundraising on Tuesday, Planning on Wednesday, Recommitment on Thursday, and the Board Applicant Network on Friday. You can edit published articles whenever you wish.</p>
+      <label className="blog-setting-check"><input type="checkbox" checked={settings.enabled} onChange={(event) => setSettings({ ...settings, enabled: event.target.checked })}/> Generate and publish weekday articles automatically</label>
       <div className="blog-generator-actions"><label>Generation time<input type="time" value={settings.time} onChange={(event) => setSettings({ ...settings, time: event.target.value })}/></label>
         <label>Timezone<input value={settings.timezone} placeholder="Europe/London" onChange={(event) => setSettings({ ...settings, timezone: event.target.value })}/></label>
-        <button className="button button-small" disabled={busy} onClick={() => run(async () => { const response = await client.put("/admin/blog/settings", settings); setSettings(response.data.settings); setMessage("Weekday draft settings saved."); })}>Save Schedule</button>
+        <button className="button button-small" disabled={busy} onClick={() => run(async () => { const response = await client.put("/admin/blog/settings", settings); setSettings(response.data.settings); setMessage("Automatic publishing settings saved."); })}>Save Schedule</button>
       </div>
     </details>}
     <div className="blog-workstation-columns">
       <aside className="blog-post-list"><div className="blog-workstation-heading"><h3>Your Articles</h3><button className="button button-back button-small" disabled={busy} onClick={() => run(() => loadPosts())}>Refresh</button></div>
-        {!posts.length && <p>Your generated drafts will appear here.</p>}
+        {!posts.length && <p>Your automatically published articles will appear here.</p>}
         {posts.map((item) => <button key={item.blog_post_id} disabled={dirty} className={post?.blog_post_id === item.blog_post_id ? "active" : ""} onClick={() => selectPost(item)}>
           <small>{item.category} · {item.scheduled_date}</small><strong>{item.title || item.topic_title || "Generating article"}</strong><span>{item.publication_status === "Rejected" ? "Archived" : item.publication_status}</span>
         </button>)}

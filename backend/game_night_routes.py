@@ -418,6 +418,16 @@ def create_game_night_router(db) -> APIRouter:
                 f"text-decoration:none;font-weight:bold;display:inline-block;'>{html.escape(label)}</a></p>")
 
     async def send_invitation(member: dict, record: dict, profile: dict, night: dict, origin: str):
+        guided=await db.guided_service_customers.find_one({"workspace_user_id":member["user_id"],"service":"board-fundraising","payment_status":"paid"},{"_id":0})
+        if guided:
+            from guided_services import settings,context,render,email_text
+            from workflow_delivery import deliver_once
+            config,_,_=await settings(db,"board-fundraising")
+            details="Board meeting: "+str(night.get("meeting_date",""))+" at "+str(night.get("start_time",""))+" ("+str(night.get("timezone",""))+")."
+            message=render(config["operational_emails"]["fundraising_invitation"],{**context(guided),"participant_name":record["full_name"],"leader_name":guided["name"],"meeting_details":details})
+            result=await deliver_once(db,member["user_id"],"guided-fundraising-invite:"+record["member_id"]+":"+(record.get("invited_at") or "initial"),record["email"],message["subject"],email_text(message),origin.rstrip("/")+"/play/"+record["token"],cta_label=message["cta"])
+            if result["status"] not in {"sent","captured"}:raise HTTPException(502,"The invitation is saved but its email needs a retry.")
+            return
         organization = (profile.get("organization") or {}).get("name", "your organization")
         primary = profile.get("primary_user") or {}
         primary_name = primary.get("full_name") or f"{member.get('first_name', '')} {member.get('last_name', '')}".strip()
@@ -863,9 +873,16 @@ def create_game_night_router(db) -> APIRouter:
                 owner = await db.members.find_one({"user_id": record["user_id"]}, {"_id": 0}) or {}
                 from workflow_delivery import deliver_once
                 origin = (os.environ.get("PUBLIC_ORIGIN") or "https://nonprofitboardbuilder.com").rstrip("/")
-                await deliver_once(db, record["user_id"], "fundraising-response:" + record["member_id"], owner.get("email", ""),
-                    "A Board Member Has Shared Their Fundraising Ideas", "A participant has completed their fundraising ideas. Review their original contribution before your meeting.",
-                    origin + "/game/dashboard?response=" + record["member_id"] + "#bfg-board-members-section")
+                guided=await db.guided_service_customers.find_one({"workspace_user_id":record["user_id"],"service":"board-fundraising","payment_status":"paid"},{"_id":0})
+                if guided:
+                    from guided_services import settings,render,context,send_message,continuation
+                    config,_,_=await settings(db,"board-fundraising")
+                    message=render(config["operational_emails"]["response_notice"],{**context(guided),"participant_name":record["full_name"]})
+                    await send_message(db,guided,"fundraising-response:"+record["member_id"],message,continuation(guided,True))
+                else:
+                    await deliver_once(db, record["user_id"], "fundraising-response:" + record["member_id"], owner.get("email", ""),
+                        "A Board Member Has Shared Their Fundraising Ideas", "A participant has completed their fundraising ideas. Review their original contribution before your meeting.",
+                        origin + "/game/dashboard?response=" + record["member_id"] + "#bfg-board-members-section")
             return {"status": "completed"}
         audiences = clean_audience_payload(payload)
         missing = []

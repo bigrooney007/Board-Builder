@@ -114,7 +114,14 @@ async def authenticate_member(request: Request, db) -> dict:
         if request.method not in ('GET','HEAD','OPTIONS'):
             await db.admin_access_audit.insert_one({'actor':actor['user_id'],'action':request.method+' '+request.url.path,'target':target,'created_at':datetime.now(timezone.utc).isoformat()})
         bind_test_scope(db,member)
-        return {**member,'fundraising_facilitator':True,'facilitator_admin_id':actor['user_id']}
+        return {**member,'email':member.get('notification_email') or member['email'],'fundraising_facilitator':True,'facilitator_admin_id':actor['user_id']}
+    if request.cookies.get("guided_operator_session") and request.url.path.startswith(("/api/game/", "/api/members/me", "/api/admin/fundraising/strategies/")):
+        from service_handover import operator_record
+        row=await operator_record(db,request,"board-fundraising")
+        member=await db.members.find_one({"user_id":row["workspace_user_id"]},{"_id":0,"password_hash":0})
+        if not member:raise HTTPException(403,"The prepared project is unavailable.")
+        bind_test_scope(db,member)
+        return {**member,"email":row["email"],"fundraising_facilitator":True,"self_facilitated":True}
     preview = await admin_preview_member(request, db)
     if preview:
         return preview
@@ -145,7 +152,7 @@ async def authenticate_member(request: Request, db) -> dict:
             member = await authorize_delegation(db, request, payload, member)
         if request.url.path.startswith(('/api/game/group/','/api/game/meeting/')):
             profile=await db.game_profiles.find_one({'user_id':member['user_id'],'workflow_version':7},{'_id':0,'user_id':1})
-            if profile:raise HTTPException(403,'Your facilitator manages the group meeting. You can view submitted ideas and the approved strategy from your resources.')
+            if profile and not member.get("fundraising_facilitator"):raise HTTPException(403,'Your facilitator manages the group meeting. You can view submitted ideas and the approved strategy from your resources.')
         bind_test_scope(db, member)
         prevent_test_checkout(request, member)
         return member

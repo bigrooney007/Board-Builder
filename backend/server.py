@@ -250,6 +250,10 @@ app.include_router(create_consultation_router(db))
 from guided_services import create_guided_services_router
 from guided_workspace import create_guided_workspace_router
 app.include_router(create_guided_services_router(db))
+from service_handover import create_handover_router
+from guided_fundraising import create_guided_fundraising_router
+app.include_router(create_handover_router(db))
+app.include_router(create_guided_fundraising_router(db))
 app.include_router(create_guided_workspace_router(db))
 from guided_recommitment import create_guided_recommitment_router
 app.include_router(create_guided_recommitment_router(db))

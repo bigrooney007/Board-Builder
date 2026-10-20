@@ -30,39 +30,44 @@ async def main():
             await page.get_by_test_id('fundraising-home-page').wait_for()
             await page.get_by_role('heading',name='The Fundraising Game',exact=True).wait_for()
             assert await page.get_by_text('Imagine walking into your next board meeting',exact=False).count()==1
-            await expect(page.get_by_role('button',name='Play The Fundraising Game With Your Board',exact=True)).to_have_count(4)
+            await expect(page.get_by_role('button',name='START MY BOARD FUNDRAISING FOR FREE',exact=True)).to_have_count(4)
             for slot in ('fundraising-cta-after-explanation','fundraising-cta-after-biography'):
                 await page.get_by_test_id(slot).get_by_role('button').click()
                 await page.get_by_role('dialog').wait_for()
                 await expect(page.get_by_role('dialog').get_by_role('checkbox')).to_have_count(0)
-                await page.get_by_role('button',name='Close',exact=True).click()
+                await page.get_by_role('button',name='Close contact form',exact=True).click()
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             assert await page.locator('.fundraising-offer-section p').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
             await page.screenshot(path=f'test_reports/current-simplified-home-{width}.png',full_page=True)
             results.append({'width':width,'case':'supplied_homepage_and_layout','passed':True})
-            await page.get_by_role('button',name='Play The Fundraising Game With Your Board',exact=True).first.click()
+            await page.get_by_role('button',name='START MY BOARD FUNDRAISING FOR FREE',exact=True).first.click()
             await page.get_by_label('Full name',exact=True).fill('Sample Leader')
             await page.get_by_label('Email address',exact=True).fill('leader@example.org')
             await page.get_by_label('Organization name',exact=True).fill('BrightPath Youth Alliance')
-            async with page.expect_response(lambda r:'/api/fundraising/leads' in r.url and r.request.method=='POST') as captured:
-                await page.get_by_role('button',name='See How The Board Fundraising Game Works',exact=True).click()
-            saved=await captured.value;assert saved.ok,await saved.text()
-            await page.wait_for_url('**/how-the-fundraising-game-works?lead=*')
+            await page.get_by_role('button',name='CONTINUE',exact=True).click()
+            await page.wait_for_url('**/services/board-fundraising/start?lead=*')
+            token=page.url.split('lead=')[1]
+            fields=("We help young people enter employment.","3","100000","2027-12-31","Fewer young people can receive mentoring.")
+            for index,value in enumerate(fields):
+                await page.get_by_label('Your answer',exact=True).fill(value)
+                await page.get_by_role('button',name='SAVE AND CONTINUE',exact=True).click()
+                await expect(page.get_by_text(f'Question {index+2} of 6',exact=True)).to_be_visible()
+            await page.get_by_label('Meeting date',exact=True).fill('2026-12-01')
+            await page.get_by_label('Meeting start time',exact=True).fill('16:00')
+            await page.get_by_label('Meeting time zone',exact=True).fill('Europe/London')
+            await page.get_by_role('button',name='SUBMIT MY BOARD FUNDRAISING INFORMATION',exact=True).click()
+            await page.wait_for_url('**/services/board-fundraising/received/*')
+            await page.goto(BASE+'/how-the-fundraising-game-works')
             await page.get_by_test_id('fundraising-how-page').wait_for()
             await page.get_by_role('heading',name='Get Your Board Members Fundraising By Your Next Board Meeting.',exact=True).wait_for()
             await expect(page.get_by_text('What You\'re Getting for $1,497',exact=True)).to_be_visible()
-            assert await page.get_by_test_id('fundraising-how-page').get_by_text('portfolio',exact=False).count()==0
             assert await page.locator('.fundraising-offer-section p,.fundraising-offer-section li').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             await page.screenshot(path=f'test_reports/current-simplified-how-{width}.png',full_page=True)
-            async def paid_adapter(route):
-                # Only this browser fixture substitutes Stripe. The HTTP suite
-                # verifies the real checkout arguments and paid-claim handlers.
-                await page.evaluate('(token)=>localStorage.setItem("memberToken",token)',test['token'])
-                await route.fulfill(status=200,json={'checkout_url':BASE+'/game/setup','simulated':True})
-            await page.route('**/api/payments/game-checkout',paid_adapter)
-            await page.get_by_role('button',name='Start The Fundraising Game',exact=True).first.click()
-            await page.wait_for_url('**/game/setup')
+            # Preserve complete browser regression of the earlier purchased Game.
+            # The new four checkouts and handover are exercised in their own suite.
+            await page.evaluate('(token)=>localStorage.setItem("memberToken",token)',test['token'])
+            await page.goto(BASE+'/game/setup')
             await page.get_by_label('How much do you want to raise?',exact=True).fill('100000')
             await page.get_by_label('When do you need to raise the money?',exact=True).fill('2027-12-31')
             await page.get_by_label('How many board members do you have?',exact=True).fill('3')

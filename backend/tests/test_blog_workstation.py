@@ -106,10 +106,14 @@ class BlogWorkstation(unittest.IsolatedAsyncioTestCase):
         self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test', headers={'x-test-admin': 'yes'})
     async def asyncTearDown(self):
         await self.client.aclose(); self.writer_patch.stop(); self.env_patch.stop()
-    async def generate(self, category='recruitment', day='2026-09-28'):
+    async def generate(self, category='recruitment', day='2026-09-28', draft=True):
         response = await self.client.post('/api/blog/generate', json={'category': category, 'scheduled_date': day})
         self.assertEqual(response.status_code, 202, response.text)
-        return await self.db.blog_posts.find_one({'blog_post_id': response.json()['post']['blog_post_id']})
+        post=await self.db.blog_posts.find_one({'blog_post_id': response.json()['post']['blog_post_id']})
+        if draft and post['publication_status']=='Published': # Historical reviewable drafts remain supported alongside automatic publication.
+            await self.db.blog_posts.update_one({'blog_post_id':post['blog_post_id']},{'$set':{'publication_status':'Pending Review'}})
+            post['publication_status']='Pending Review'
+        return post
 
     async def test_five_topics_days_destinations_and_briefs(self):
         response = await self.client.get('/api/admin/blog/topics')
@@ -167,7 +171,7 @@ class BlogWorkstation(unittest.IsolatedAsyncioTestCase):
         self.client.headers['x-test-admin'] = 'yes'
         for payload in [{'category': 'weekly'}, {'category': 'recruitment', 'scheduled_date': 'bad-date'}]:
             self.assertEqual((await self.client.post('/api/blog/generate', json=payload)).status_code, 422)
-        self.assertEqual((await self.client.post('/api/blog/generate', json={'category': 'recruitment', 'publish_now': True})).status_code, 400)
+        self.assertEqual((await self.client.post('/api/blog/generate', json={'category': 'recruitment', 'publish_now': True})).status_code, 202)
         self.assertEqual((await self.client.post('/api/blog/generate', json={'category': 'recruitment', 'topic_id': 'unknown'})).status_code, 400)
 
     async def test_edit_updates_cover_preserves_published_url_and_retries_stale_generation(self):
@@ -191,7 +195,8 @@ class BlogWorkstation(unittest.IsolatedAsyncioTestCase):
         await service.generate_reserved_blog_post(self.db, retry)
         self.assertEqual((await self.db.blog_posts.find_one({'blog_post_id': interrupted['blog_post_id']}))['publication_status'], 'Pending Review')
 
-    async def test_automatic_weekdays_prepare_one_draft_without_publishing(self):
+    async def test_automatic_weekdays_publish_each_path_once_and_allow_explicit_pause(self):
+        await self.client.put('/api/admin/blog/settings',json={'enabled':False,'time':'08:00','timezone':'Europe/London'})
         await service.run_blog_schedule(self.db)
         self.assertEqual(self.writer.await_count, 0)
         response = await self.client.put('/api/admin/blog/settings', json={'enabled': True, 'time': '08:00', 'timezone': 'Europe/London'})
@@ -203,12 +208,25 @@ class BlogWorkstation(unittest.IsolatedAsyncioTestCase):
                 await service.run_blog_schedule(self.db); await service.run_blog_schedule(self.db)
             self.assertTrue(any(p['category_key'] == category for p in self.db.blog_posts.rows))
         self.assertEqual(self.writer.await_count, 5)
-        self.assertTrue(all(p['publication_status'] == 'Pending Review' for p in self.db.blog_posts.rows))
+        self.assertTrue(all(p['publication_status'] == 'Published' for p in self.db.blog_posts.rows))
         with patch.object(service, 'datetime') as clock:
             clock.now.return_value = datetime(2026, 10, 4, 9, tzinfo=ZoneInfo('Europe/London'))
             await service.run_blog_schedule(self.db)
         self.assertEqual(self.writer.await_count, 5)
         self.assertEqual((await self.client.put('/api/admin/blog/settings', json={'enabled': True, 'time': '26:00', 'timezone': 'Invalid'})).status_code, 422)
+
+    async def test_automatic_publication_is_default_and_admin_edits_are_not_regenerated(self):
+        await self.db.marketing_settings.update_one({'key':'blog_weekday_drafts'},{'$set':{'enabled':False}},upsert=True)
+        self.assertTrue((await service.blog_settings(self.db))['enabled'])
+        post=await self.generate('board_applicant_network',draft=False)
+        self.assertEqual(post['publication_status'],'Published')
+        self.assertEqual((await self.client.get('/api/blog/posts/'+post['slug'])).status_code,200)
+        saved=await self.client.patch('/api/admin/blog/posts/'+post['blog_post_id'],json={**{k:post[k] for k in ['title','excerpt','body','graphic_headline','graphic_subtitle']},'title':'My own approved article title'})
+        self.assertEqual(saved.status_code,200,saved.text)
+        self.assertEqual(saved.json()['post']['publication_status'],'Published')
+        self.assertEqual(saved.json()['post']['slug'],post['slug'])
+        self.assertEqual((await self.client.post('/api/admin/blog/posts/'+post['blog_post_id']+'/regenerate')).status_code,409)
+        self.assertIn('My own approved article title',(await self.client.get('/api/blog/posts/'+post['slug'])).text)
 
     async def test_failed_generation_is_bounded_and_legacy_posts_keep_content(self):
         self.writer.side_effect = None; self.writer.return_value = {'body': 'incomplete'}

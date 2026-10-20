@@ -359,7 +359,10 @@ def create_portfolio_router(db) -> APIRouter:
 
     async def build_draft(user_id: str, record: dict, strategy: dict, commitments: list) -> dict:
         if strategy.get("schema_version")==7:
-            raise HTTPException(410,"The Fundraising Game ends with your adopted strategy. Historical portfolio records remain available through their existing links.")
+            guided=await db.guided_service_customers.find_one({"workspace_user_id":user_id,"service":"board-fundraising","payment_status":"paid"},{"_id":0})
+            if not guided:raise HTTPException(410,"The Fundraising Game ends with your adopted strategy. Historical portfolio records remain available through their existing links.")
+            from fundraising_launch import build_portfolio_draft
+            return await build_portfolio_draft(db,user_id,record,strategy)
         member_id = record["member_id"]
         audiences = strategy_audiences(strategy)
         system_response = await db.game_section_responses.find_one(
@@ -495,7 +498,9 @@ def create_portfolio_router(db) -> APIRouter:
     async def prepare_portfolios(request: Request):
         member = await game_member(request)
         strategy = await adopted_strategy(member["user_id"])
-        if strategy.get("schema_version")==7:raise HTTPException(410,"The Fundraising Game ends with your adopted strategy.")
+        if strategy.get("schema_version")==7:
+            guided=await db.guided_service_customers.find_one({"workspace_user_id":member["user_id"],"service":"board-fundraising","payment_status":"paid"},{"_id":0})
+            if not guided:raise HTTPException(410,"The Fundraising Game ends with your adopted strategy.")
         review_id = strategy.get("meeting_review_id", "")
         commitments = await db.meeting_execution_commitments.find(
             {"review_id": review_id, "review_status": {"$in": ["keep", "edited"]}}, {"_id": 0}).to_list(500) if review_id else []
@@ -708,7 +713,13 @@ def create_portfolio_router(db) -> APIRouter:
                 raise HTTPException(409,"Approve the current portfolio before sending")
             from workflow_delivery import deliver_once
             event_key=f"portfolio:{portfolio_id}:{portfolio['version']}"+(":resend:"+portfolio["sent_at"] if payload.resend and portfolio.get("sent_at") else "")
-            delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
+            guided=await db.guided_service_customers.find_one({"workspace_user_id":member["user_id"],"service":"board-fundraising","payment_status":"paid"},{"_id":0})
+            if guided:
+                from guided_services import settings,render,context,email_text
+                config,_,_=await settings(db,"board-fundraising");message=render(config["operational_emails"]["fundraising_portfolio_delivery"],{**context(guided),"participant_name":portfolio["member_name"]})
+                delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],message["subject"],email_text(message),payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'],cta_label=message['cta'])
+            else:
+                delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
             if delivery['status'] not in ('sent','captured'): raise HTTPException(502,"The portfolio is approved but its email needs a retry")
         else:
             await send_portfolio_email(member, portfolio, profile, payload.origin_url)

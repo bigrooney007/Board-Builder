@@ -1,3 +1,4 @@
+import {useServiceContact} from "@/services/ServiceContactDialog";
 import {SiteBrand} from "@/components/SiteBrand";
 import WrittenOfferContent from "./WrittenOfferContent";
 import defaults from "@/content/fundraisingDefaults.json";
@@ -18,8 +19,8 @@ export const visitorId=()=>{
 };
 export default function FundraisingPublicPage({how=false}){
  useLandingPageMeta(how?'/how-the-fundraising-game-works':'/board-fundraising-game');
- const navigate=useNavigate(),location=useLocation();const {member,refresh}=useMemberAuth();
- const [content,setContent]=useState(defaults),[price,setPrice]=useState(1497),[capture,setCapture]=useState(false);
+ const navigate=useNavigate(),location=useLocation();const {openContact,contactDialog}=useServiceContact('board-fundraising');const {member,refresh}=useMemberAuth();
+ const [content,setContent]=useState({...defaults,home:{...defaults.home,cta:'START MY BOARD FUNDRAISING FOR FREE'},how:{...defaults.how,cta:'START MY BOARD FUNDRAISING FOR FREE',sections:defaults.how.sections.map(s=>({...s,cta:s.cta?'START MY BOARD FUNDRAISING FOR FREE':''}))}}),[price,setPrice]=useState(1497),[capture,setCapture]=useState(false);
  const [lead,setLead]=useState(()=>{try{return JSON.parse(localStorage.getItem('fundraisingLeadDetails')||'{}')}catch{return {}}});
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const token=new URLSearchParams(location.search).get('lead')||localStorage.getItem('fundraisingLeadToken')||'';
@@ -29,7 +30,7 @@ export default function FundraisingPublicPage({how=false}){
  useEffect(()=>{if(!capture)return;const close=e=>{if(e.key==='Escape')setCapture(false)};document.addEventListener('keydown',close);return()=>document.removeEventListener('keydown',close)},[capture]);
  const checkout=async saved=>{if(!saved){setCapture(true);return}setBusy(true);setError('');try{const r=await memberApi.post('/payments/game-checkout',{origin_url:window.location.origin,result_token:saved,cancel_path:'/how-the-fundraising-game-works'});window.location.assign(r.data.checkout_url)}catch(e){setError(typeof e.response?.data?.detail==='string'?e.response.data.detail:'Secure checkout could not open. Please try again.');setBusy(false)}};
  const submit=async e=>{e.preventDefault();setBusy(true);setError('');try{const r=await memberApi.post('/fundraising/leads',{name:lead.name||'',email:lead.email||'',organization:lead.organization||'',visitor_id:visitorId(),resume_token:token});localStorage.setItem('fundraisingLeadToken',r.data.token);localStorage.setItem('fundraisingLeadDetails',JSON.stringify(lead));setCapture(false);if(how)await checkout(r.data.token);else navigate(r.data.next)}catch(e){setError(typeof e.response?.data?.detail==='string'?e.response.data.detail:'We could not save your details. Please try again.')}setBusy(false)};
- const c=content[how?'how':'home'],action=()=>how?checkout(token):setCapture(true);
+ const c=content[how?'how':'home'],action=openContact;
  const cta=(label=c.cta)=><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?'Opening…':label}</button>;
  return <div className="nBB-home fundraising-public-centered" data-testid={how?'fundraising-how-page':'fundraising-home-page'}>
  <header className="nBB-home-nav"><SiteBrand/><Link className="nBB-home-login" to="/blog">Blog</Link></header>
@@ -40,6 +41,7 @@ export default function FundraisingPublicPage({how=false}){
  <section className="nBB-home-proof"><TestimonialCarousel heading={c.testimonials_heading} idPrefix="fundraising-launch"/></section>
  {!how&&<section className="nBB-home-closing"><h2>{c.closing_heading}</h2>{cta()}</section>}{error&&<p role="alert" className="submit-error fundraising-copy">{error}</p>}</main>
  <footer className="bfg-footer"><p>© {new Date().getFullYear()} Nonprofit Board Builders, LLC.</p><Link to="/privacy-policy">Privacy Policy</Link><Link to="/terms">Terms</Link></footer>
+ {contactDialog}
  {capture&&<div className="fundraising-capture" role="dialog" aria-modal="true" aria-labelledby="capture-heading"><form onSubmit={submit} className="bfg-panel fundraising-capture-card"><h2 id="capture-heading">See How The Board Fundraising Game Works</h2>{[['name','Full name'],['email','Email address'],['organization','Organization name']].map(([key,label],i)=><label className="bfg-field" key={key}>{label}<input autoFocus={i===0} type={key==='email'?'email':'text'} required autoComplete={key==='organization'?'organization':key} value={lead[key]||''} onChange={e=>setLead({...lead,[key]:e.target.value})}/></label>)}{error&&<p role="alert">{error}</p>}<button className="bfg-btn bfg-btn-primary" disabled={busy}>{busy?'Opening…':'See How The Board Fundraising Game Works'}</button><button type="button" className="bfg-btn bfg-btn-ghost" onClick={()=>setCapture(false)}>Close</button></form></div>}
  </div>;
 }

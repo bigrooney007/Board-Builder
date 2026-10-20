@@ -61,7 +61,13 @@ async def content(db):
             if isinstance(value,dict):return {k:price(v) for k,v in value.items()}
             return value
         override=price(override)
-    return merge(DEFAULT,override)
+    result=merge(DEFAULT,override)
+    for page in ('home','how'):
+        if result[page]['cta']==DEFAULT[page]['cta']:result[page]['cta']='START MY BOARD FUNDRAISING FOR FREE'
+    original_sections={s['id']:s for s in DEFAULT['how']['sections']}
+    for section in result['how']['sections']:
+        if section['cta'] and section['cta']==original_sections.get(section['id'],{}).get('cta'):section['cta']='START MY BOARD FUNDRAISING FOR FREE'
+    return result
 
 class Lead(BaseModel):
     name: str = Field(min_length=2, max_length=200)
@@ -276,7 +282,9 @@ def create_fundraising_launch_router(db):
         draft=await db.game_setup_drafts.find_one({'user_id':member['user_id']},{'_id':0}) or {}
         meeting=await db.group_game_sessions.find_one({'user_id':member['user_id'],'status':{'$ne':'archived'}},{'_id':0}) or {}
         settings=(await content(db))['settings']
-        return {'draft':draft,'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'meeting_url':('/group-game/'+meeting['token']) if meeting.get('token') else '', 'booking_url':settings['booking_url'],'facilitator':bool(member.get('fundraising_facilitator')),'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
+        guided=await db.guided_service_customers.find_one({'workspace_user_id':member['user_id'],'service':'board-fundraising','payment_status':'paid'},{'_id':0,'customer_id':1,'operator_status':1,'purchased_package':1})
+        strategy_draft=await db.game_strategies.find_one({'user_id':member['user_id'],'status':'final_draft'},{'_id':0,'strategy_id':1}) if guided and member.get('fundraising_facilitator') else None
+        return {'guided_customer':guided,'self_facilitated':bool(member.get('self_facilitated')),'strategy_draft':strategy_draft,'draft':draft,'profile':p,'leader':leader,'response':response,'night':night,'people':people,'strategy':strategy,'meeting_url':('/group-game/'+meeting['token']) if meeting.get('token') else '', 'booking_url':settings['booking_url'],'facilitator':bool(member.get('fundraising_facilitator')),'configuration_version':7,'internal_test':bool(member.get('internal_dashboard_preview'))}
 
     @router.put('/game/launch/draft')
     async def setup_draft(payload:dict,request:Request):

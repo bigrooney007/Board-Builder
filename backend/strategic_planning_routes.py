@@ -19,7 +19,7 @@ from typing import Dict, List, Union
 
 import resend
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 import guided_planning
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -2928,6 +2928,9 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if plan.get("final_status")!="Approved" or not plan.get("final_display_text") or not plan.get("final_share_token"):raise HTTPException(409,"Review, edit and approve the Final Strategic Plan first")
         delegates=(plan.get("active_delegation") or {}).get("delegates") or []
         if not delegates:raise HTTPException(409,"Confirm at least one responsibility agreed during the Strategic Planning Session before creating execution portfolios")
+        if p.get("guided_service_customer_id"):
+            from planning_portfolio_tools import trusted_adapter
+            if not trusted_adapter.get():raise HTTPException(409,"Prepare and approve portfolios through this organization's service workspace.")
         access=await ensure_execution_access(p);existing={x.get("delegation_id"):x for x in (plan.get("leadership_portfolios") or [])};rows=[]
         for delegate in delegates:
             delegation_id=delegate.get("delegation_id") or str(uuid.uuid4());previous=existing.get(delegation_id) or {};areas=delegate.get("areas") or [];responsibility="\n".join(f"- {x}" for x in delegate.get("responsibilities") or [])
@@ -2950,6 +2953,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         plan=await db.sp_plans.find_one({"project_id":p["project_id"]},{"_id":0}) or {};rows=plan.get("leadership_portfolios") or []
         row=next((x for x in rows if x.get("token")==token),None)
         if not row:raise HTTPException(404,"This delegation is not available")
+        if p.get("guided_service_customer_id") and (not row.get("approved_at") or row.get("approved_version")!=row.get("version")):raise HTTPException(409,"Approve this portfolio before sending it.")
         if not row.get("email"):raise HTTPException(422,"Add this person's email address before sending their delegation")
         origin=origin_of(request);experience_link=f"{origin}/strategic-leadership-portfolio/{token}";assistant_link=f"{origin}/strategic-leadership-assistant/{token}"
         first=(row.get("name") or "Board Member").split()[0]
@@ -3011,6 +3015,7 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
         if not row: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
         project=await owned_project(plan["project_id"])
+        if project.get("guided_service_customer_id") and (not row.get("approved_at") or row.get("approved_version")!=row.get("version")):raise HTTPException(404,"This approved portfolio is not available.")
         return {"title":"Board Member Leadership Portfolio","organization_name":project["organization_name"],"member_name":row.get("name",""),"areas":row.get("areas",[]),
                 "display_text":row.get("text",""),"strategic_plan_text":plan.get("final_display_text",""),
                 "strategic_plan_url":f"/strategic-plan/{plan.get('final_share_token')}" if plan.get("final_share_token") else "",
@@ -3022,6 +3027,11 @@ def create_guided_strategic_planning_router(db) -> APIRouter:
         if not plan: raise HTTPException(404,"This Board Member Leadership Portfolio is not available")
         row=next((x for x in plan.get("leadership_portfolios",[]) if x.get("token")==token),None)
         project=await owned_project(plan["project_id"])
+        if project.get("guided_service_customer_id"):
+            if not row or not row.get("approved_at") or row.get("approved_version")!=row.get("version"):raise HTTPException(404,"This approved portfolio is not available.")
+            from document_renderer import render_document_pdf
+            pdf=render_document_pdf(title="Board Member Leadership Portfolio",org_name=project["organization_name"],body_text=row["approved_text"],branding=project.get("branding") or {},prepared_for=row["name"])
+            return Response(pdf,media_type="application/pdf",headers={"Content-Disposition":"attachment; filename=leadership-portfolio.pdf","Cache-Control":"no-store","X-Robots-Tag":"noindex, nofollow"})
         return build_portfolio_pdf("BOARD MEMBER LEADERSHIP PORTFOLIO",row.get("name",""),{"organization_name":project["organization_name"],"issued_by":project.get("founder_name","")},row.get("text",""))
 
     @router.get("/leadership-assistant/{token}")

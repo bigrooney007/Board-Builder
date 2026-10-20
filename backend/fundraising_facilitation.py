@@ -44,7 +44,12 @@ async def deliver_approved(db,strategy):
     from fundraising_launch import content,origin
     owner=await db.members.find_one({'user_id':strategy['user_id']},{'_id':0}) or {}
     booking=(await content(db))['settings']['booking_url']
-    return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],owner.get('email',''),
+    guided=await db.guided_service_customers.find_one({'workspace_user_id':strategy['user_id'],'service':'board-fundraising','payment_status':'paid'},{'_id':0})
+    if guided:
+        from guided_services import settings,render,context,email_text
+        config,_,_=await settings(db,'board-fundraising');message=render(config['operational_emails']['strategy_ready'],context(guided))
+        return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],guided['email'],message['subject'],email_text(message),origin()+'/strategy/'+strategy['share_token'],cta_label=message['cta'],secondary_links=[{'label':'Book a Conversation About Your Strategy','url':config['booking_url']}])
+    return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],owner.get('notification_email') or owner.get('email',''),
         "Your Board's Fundraising Strategy Is Ready",
         "Your board's adopted fundraising strategy has been reviewed and is ready to use. Open your strategy to read, download and share it with your board. You can also book a conversation with Rooney to discuss the strategy and its execution.",
         origin()+'/strategy/'+strategy['share_token'],secondary_links=[{'label':'Book a Conversation About Your Strategy','url':booking}])
@@ -54,7 +59,14 @@ def create_facilitation_router(db):
     router=APIRouter(prefix='/api')
 
     async def admin(request,action,target):
-        actor=await authenticate_admin(request,db)
+        try:actor=await authenticate_admin(request,db)
+        except HTTPException as exc:
+            if exc.status_code not in (401,403):raise
+            from service_handover import operator_record
+            customer=await operator_record(db,request,'board-fundraising')
+            strategy=await db.game_strategies.find_one({'strategy_id':target,'user_id':customer['workspace_user_id']},{'_id':0})
+            if not strategy:raise HTTPException(403,'This strategy belongs to another organization.')
+            actor={'user_id':customer['workspace_user_id']}
         await db.admin_access_audit.insert_one({'actor':actor['user_id'],'action':action,'target':target,'created_at':now()})
         return actor
 
@@ -97,7 +109,9 @@ def create_facilitation_router(db):
             from fundraising_launch import touch
             await touch(db,row['user_id'],'complete','/game/dashboard')
         row=await strategy_for(ident)
-        return {'approved':True,'delivery':await deliver_approved(db,row)}
+        delivery=await deliver_approved(db,row)
+        if delivery['status'] in ('sent','captured'):await db.guided_service_customers.update_one({'workspace_user_id':row['user_id'],'service':'board-fundraising'},{'$set':{'operator_status':'completed','resource_delivery_at':now()}})
+        return {'approved':True,'delivery':delivery}
 
     @router.post('/game/launch/plan-upload')
     async def upload_plan(request:Request,file:UploadFile=File(...)):
