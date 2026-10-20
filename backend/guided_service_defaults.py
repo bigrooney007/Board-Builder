@@ -292,7 +292,7 @@ ACTIVATION_START = {
 def defaults(service):
     result = _previous_offer_defaults(service)
     start = ACTIVATION_START[service]
-    result["first_email"] = email("Let's Begin Your " + NAMES[service],
+    result["first_email"] = email(result["first_email"]["subject"],
         "Hello {{first_name}},\n\nThank you for telling us about {{organization}}. {{submission_update}}\n\n"
         + ("{{recommendation_update}}\n\n" if service == "recruitment" else "")
         + "You can carry out this process yourself with the right tools and structure. Our activation call and platform access cost $497, as a one-time payment.\n\n"

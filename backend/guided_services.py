@@ -51,7 +51,7 @@ async def settings(db, service, draft=False):
     # reading it into the current funnel; customer records keep their purchases.
     current=defaults(service);previous=_previous_offer_defaults(service)
     from guided_service_defaults import FIRST
-    for key in ("first_email","paid_email"):
+    for key in ("first_email","paid_email","video_email"):
         stored=value.get(key)
         if stored and (stored.get("body")==previous.get(key,{}).get("body") or stored.get("body")==FIRST.get(service,{}).get("body") or re.search(r"\$(?:1,?497|1,?997)\b",stored.get("body",""))):
             value[key]={**stored,**{k:current[key][k] for k in ("body","cta")}}

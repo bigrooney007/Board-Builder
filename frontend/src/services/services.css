@@ -20,3 +20,5 @@
 .service-offer-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;max-width:1120px;margin:28px auto}.service-offer-options .guided-card{margin:0}.service-offer-price{font-size:36px!important;font-weight:800;color:#000}.guided-handover-link{width:100%;overflow-wrap:anywhere}.guided-service:has(.service-offer-options) .consultation-card{max-width:1120px}.service-operator-label{font-weight:800;text-align:center;padding:18px;background:#eef2ff;color:#000;border-radius:12px}@media(max-width:760px){.service-offer-options{grid-template-columns:1fr}}
 
 .guided-service .service-email-preview, .guided-service .service-email-preview * { text-align: left !important; }
+
+.guided-service .service-email-editor textarea, .guided-service .service-email-editor input, .guided-service [data-testid="service-email-composer"] textarea, .guided-service [data-testid="service-email-composer"] input { text-align: left !important; }
