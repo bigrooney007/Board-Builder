@@ -48,7 +48,7 @@ def register_routes(router, db):
         first=await file.read(131072)
         if not (first.startswith(b'\x1aE\xdf\xa3') or first[4:8]==b'ftyp'):raise HTTPException(422,'This file is not a supported video recording.')
         bucket=AsyncIOMotorGridFSBucket(db,bucket_name='owner_video_staging')
-        stream=await bucket.open_upload_stream('recording-'+secrets.token_hex(16),metadata={'customer_id':ident,'service':service,'content_type':content_type,'created_at':now()})
+        stream=bucket.open_upload_stream('recording-'+secrets.token_hex(16),metadata={'customer_id':ident,'service':service,'content_type':content_type,'created_at':now()})
         size=0
         try:
             chunk=first
@@ -79,7 +79,7 @@ def register_routes(router, db):
                     chunk=await stream.read(131072)
                     if not chunk:break
                     yield chunk
-            finally:await stream.close()
+            finally:stream.close()
         return StreamingResponse(chunks(),media_type=video['content_type'],headers={'Cache-Control':'no-store','Content-Disposition':'inline; filename="private-recording.webm"','X-Content-Type-Options':'nosniff'})
 
     @router.post('/admin/services/{service}/customers/{ident}/video-assignment/submit')

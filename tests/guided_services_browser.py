@@ -20,7 +20,7 @@ async def main():
    token=page.url.split('lead=')[1];base='/api/services/recruitment/customer/'+token
    details=await (await context.request.get(BASE+base)).json();ident=details['customer_id'];ab='/api/admin/services/recruitment/customers/'+ident
    for i in range(len(details['question_snapshot'])):
-    await page.get_by_label('Your answer',exact=True).fill('We help children access learning.' if i<len(details['question_snapshot'])-1 else '1')
+    await page.get_by_label('Your answer',exact=True).fill('1' if details['question_snapshot'][i]['key']=='desired_count' else 'Build education partnerships and reach more children.')
     await page.get_by_role('button',name='GET MY FREE QUOTE' if i==len(details['question_snapshot'])-1 else 'SAVE AND CONTINUE',exact=True).click()
     if i<len(details['question_snapshot'])-1:await expect(page.get_by_text(f"Question {i+2} of {len(details['question_snapshot'])}",exact=True)).to_be_visible()
    await page.wait_for_url('**/services/recruitment/received/*');await expect(page.get_by_role('heading',name="Your Board Recruitment Quote Request Has Been Received.",exact=True)).to_be_visible();assert 'PAY $497' not in await page.locator('body').inner_text()

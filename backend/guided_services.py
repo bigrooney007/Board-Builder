@@ -377,6 +377,12 @@ async def calendly_event(db,event):
         {"$set":{"booking_status":status,"booking_event_at":stamp,"calendly_invitee":data.get("uri"),"calendly_event":data.get("event"),"meeting":data.get("scheduled_event") or {},"updated_at":now()}})
     return True
 
+def admin_view(row):
+    # GridFS identifiers remain server-side and are not JSON values or access links.
+    clean=copy.deepcopy({k:v for k,v in row.items() if k not in {"_id","access_token","token_hash","unsubscribe_token","checkout_url"}})
+    for video in [clean.get("video_followup") or {},*clean.get("video_followup_history",[])]:video.pop("recording_blob_id",None)
+    return clean
+
 def public_record(row):
     keys=("customer_id","service","name","organization","answers","question_snapshot","question_version","submitted_at","payment_status","booking_status","branding","branding_saved_at","resource_delivery_at","internal_test","client_flow_test","flow_kind","leader_question_snapshot","leader_answers","leader_completed_at","purchased_package","checkout_package","operator_status")
     return {**{key:row.get(key) for key in keys},"amount":record_package(row)["amount"],"packages":{},"currency":"usd","service_name":NAMES[row["service"]]}
@@ -528,7 +534,7 @@ def create_guided_services_router(db):
         row=await record_by_token(db,service,token)
         try:selected=record_package(row) if row.get("session_id") and not request.query_params.get("package") else package(service,request.query_params.get("package"))
         except ValueError as exc:raise HTTPException(422,str(exc))
-        if service in PACKAGES and selected["key"]!=("guided-setup" if service=="strategic-planning" else "self-facilitated") and not row.get("session_id"):raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
+        if service in PACKAGES and selected["key"]!=("guided-setup" if service=="strategic-planning" else "self-facilitated") and (request.query_params.get("package") or not row.get("session_id")):raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
         if row.get("internal_test") or row.get("client_flow_test"):raise HTTPException(409,"Use the authenticated sample payment action in the admin. This sample cannot create a real charge.")
         if not row.get("submitted_at"):raise HTTPException(409,"Complete your free submission first.")
         if row.get("payment_status")=="paid":return {"resume_url":continuation(row)}
@@ -539,6 +545,7 @@ def create_guided_services_router(db):
                 if record_package(row)["key"]!=selected["key"]:raise HTTPException(409,"An earlier checkout is still open. Cancel it before starting the current activation offer.")
                 return {"checkout_url":row["checkout_url"]}
             if row.get("checkout_status")!="expired":raise HTTPException(409,"Your existing payment is processing. Check it before starting another charge.")
+        if row.get("checkout_status")=="expired":selected=package(service)
         claim=await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"$or":[{"checkout_lock":{"$exists":False}},{"checkout_lock":{"$lt":time.time()-120}}]},{"$set":{"checkout_lock":time.time()}})
         if not claim.modified_count:raise HTTPException(409,"Your secure checkout is opening. Please wait a moment.")
         attempt=row.get("checkout_attempt",0)+1
@@ -650,13 +657,13 @@ def create_guided_services_router(db):
             if key=="status" and value in {"paid","unpaid","pending","failed","expired"}:filters["payment_status"]=value
             if key=="tests" and value in {"only","exclude"}:filters["client_flow_test"]=True if value=="only" else {"$ne":True}
         rows=await db.guided_service_customers.find(filters,{"_id":0,"access_token":0,"token_hash":0,"unsubscribe_token":0,"checkout_url":0}).sort("created_at",-1).skip(max(0,skip)).limit(50).to_list(50)
-        return {"customers":rows,"total":await db.guided_service_customers.count_documents(filters)}
+        return {"customers":[admin_view(row) for row in rows],"total":await db.guided_service_customers.count_documents(filters)}
 
     @router.get("/admin/services/{service}/customers/{ident}")
     async def get_customer(service:str,ident:str,request:Request):
         row=await admin_record(db,service,ident,request)
         deliveries=await db.workflow_email_deliveries.find({"user_id":owner_id(row)},{"_id":0,"link":0}).to_list(200)
-        clean={k:v for k,v in row.items() if k not in {"access_token","token_hash","unsubscribe_token","checkout_url"}}
+        clean=admin_view(row)
         return {"customer":clean,"deliveries":deliveries,"continuation_url":continuation(row),"resources_url":continuation(row,True)}
 
     @router.put("/admin/services/{service}/customers/{ident}/sequence")

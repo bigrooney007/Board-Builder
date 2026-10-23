@@ -57,7 +57,7 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         values={q['id']:(str(data['answers'].get(q['id']) or '3') if q['key'] in {'desired_count','board_size','board_count'} else data['answers'].get(q['id']) or ('100000' if q['type']=='number' else '2027-12-31' if q['type']=='date' else 'We help children access learning.')) for q in data['questions']}
         result=await self.req('PUT',base+'/leader-questions',{'answers':values,'submit':True})
         if service=='board-fundraising':
-            value={'audiences':{},'category_status':{'individuals':'skipped','businesses':'skipped','grantmakers':'skipped'},'involvement':'I can make introductions with permission.','workflow_version':7}
+            value={'audiences':{},'category_status':{'individuals':'complete','businesses':'complete','grantmakers':'complete'},'involvement':'I can make introductions with permission.','workflow_version':7}
             await self.req('POST','/game/play/'+result['audience_token']+'/audience-response/complete',value)
             await self.req('POST',base+'/leader-complete')
     async def test_free_form_snapshot_and_thank_you_never_reveals_profiles(self):
@@ -166,6 +166,7 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         event={'id':'evt_guided','type':'checkout.session.completed','data':{'object':self.sessions[row['session_id']]}};raw=json.dumps(event).encode();stamp=str(int(time.time()));sig=hmac.new(os.environ['STRIPE_WEBHOOK_SECRET'].encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
         bad=await self.client.post('/api/stripe/webhook',content=raw,headers={'Stripe-Signature':'t='+stamp+',v1=invalid'});self.assertEqual(bad.status_code,400)
         good=await self.client.post('/api/stripe/webhook',content=raw,headers={'Stripe-Signature':'t='+stamp+',v1='+sig});self.assertEqual(good.status_code,200,good.text)
+        await self.complete_leader(base,'recruitment')
         await self.req('PUT',base+'/branding',{'primary_color':'#123456'})
         event={'event':'invitee.created','created_at':'2026-10-30T10:00:00Z','payload':{'email':row['email'],'tracking':{'utm_content':row['customer_id']},'uri':'https://api.calendly.com/invitees/fixture','event':'https://api.calendly.com/events/fixture','scheduled_event':{'start_time':'2026-11-01T10:00:00Z'}}};raw=json.dumps(event).encode();sig=hmac.new(os.environ['CALENDLY_WEBHOOK_SIGNING_KEY'].encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
         r=await self.client.post('/api/consultations/calendly-webhook',content=raw,headers={'Calendly-Webhook-Signature':'t='+stamp+',v1='+sig});self.assertEqual(r.status_code,200,r.text);saved=await self.req('GET',base);self.assertEqual(saved['booking_status'],'booked')

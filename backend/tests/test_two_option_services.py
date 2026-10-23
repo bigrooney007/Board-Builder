@@ -36,6 +36,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def paid_option(self,service,choice='self-facilitated'):
         token,base,row=await self.lead(service)
+        if service=='strategic-planning' and choice=='self-facilitated':choice='guided-setup'
         if choice=='rooney-facilitated':
             # Historical paid checkout, created before the single-offer release.
             from types import SimpleNamespace
@@ -294,11 +295,11 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         def expire(sid,**kwargs):self.sessions[sid].update(status='expired');return self.sessions[sid]
         patch('stripe.checkout.Session.expire',side_effect=expire).start()
         token,base,row=await self.lead('strategic-planning')
-        await self.req('POST',base+'/checkout?package=self-facilitated')
+        await self.req('POST',base+'/checkout?package=guided-setup')
         await self.req('POST',base+'/checkout?package=rooney-facilitated',status=422)
         self.assertEqual(len(self.created),1)
         await self.req('POST',base+'/cancel-checkout',{})
         await self.req('POST',base+'/checkout')
         self.assertEqual(len(self.created),2)
-        self.assertEqual(self.created[-1]['metadata']['guided_package'],'self-facilitated')
+        self.assertEqual(self.created[-1]['metadata']['guided_package'],'guided-setup')
         self.assertEqual(sum(s['status']=='open' for s in self.sessions.values()),1)

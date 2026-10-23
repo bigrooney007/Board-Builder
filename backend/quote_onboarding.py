@@ -96,7 +96,9 @@ def register_routes(router, db):
         first = {q['key']:row.get('answers',{}).get(q['id'],'') for q in row['question_snapshot']}
         answers = {q['id']:first[q['key']] for q in row['leader_question_snapshot'] if q['key'] in first}
         answers.update(row.get('leader_answers') or {})
-        result = {'questions':row['leader_question_snapshot'], 'answers':answers, 'completed':bool(row.get('leader_completed_at')), 'details_completed':bool(row.get('leader_details_completed_at')), 'copy':config['customer_copy']}
+        from quote_personalization import mapping
+        values=mapping(row)
+        result = {'context':{'organization_name':row['organization'],'member':{'is_primary':True},'branding':row.get('branding') or {},'goal_display':str(values.get('fundraising_goal','')),'deadline':str(values.get('fundraising_deadline',''))},'questions':row['leader_question_snapshot'], 'answers':answers, 'completed':bool(row.get('leader_completed_at')), 'details_completed':bool(row.get('leader_details_completed_at')), 'copy':config['customer_copy']}
         if row['service']=='board-fundraising' and row.get('leader_details_completed_at') and not row.get('leader_completed_at'):
             from guided_workspace import delegated_request
             response = await delegated_request(request.app,db,row,'POST','game/self-play',{})

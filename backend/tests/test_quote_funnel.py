@@ -108,6 +108,18 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
             if service=='strategic-planning':
                 person=await self.db.sp_participants.find_one({'project_id':row['customer_id'],'role':'Lead User'});self.assertEqual(person['status'],'COMPLETED');self.assertEqual(person['response'],current['leader_answers'])
 
+    async def test_historic_pending_planning_payment_is_not_repriced(self):
+        _,base,row=await self.lead('strategic-planning')
+        chosen=package('strategic-planning','self-facilitated')
+        import stripe
+        old=stripe.checkout.Session.create(metadata={'offer_source':chosen['product'],'guided_customer_id':row['customer_id'],'guided_service':'strategic-planning','guided_package':'self-facilitated'},client_reference_id=row['customer_id'])
+        await self.db.guided_service_customers.update_one({'customer_id':row['customer_id']},{'$set':{'session_id':old.id,'checkout_package':'self-facilitated','checkout_url':old.url,'payment_status':'pending','checkout_status':'open'}})
+        response=await self.req('POST',base+'/checkout');self.assertEqual(response['checkout_url'],old.url)
+        await self.req('POST',base+'/checkout?package=rooney-facilitated',{},422)
+        self.sessions[old.id].update(payment_status='paid',status='complete')
+        paid=await self.req('POST',base+'/confirm',{});self.assertEqual(paid['amount'],49700)
+        self.assertEqual(len(self.created),1)
+
     async def test_current_detailed_questions_snapshot_survives_admin_edits(self):
         token,base,row=await self.lead()
         config=await self.req('GET','/admin/services/recruitment/settings',admin=True)
@@ -152,6 +164,8 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         response=await self.client.post('/api'+admin+'/video-recording',files={'file':('clip.webm',blob,'video/webm')},headers=self.headers);self.assertEqual(response.status_code,200,response.text)
         await self.req('POST',admin+'/video-assignment/submit',{},503,True)
         self.assertEqual((await self.req('GET',admin+'/video-recording',admin=True)).content,blob)
+        detail=await self.req('GET',admin,admin=True);self.assertNotIn('recording_blob_id',detail['customer']['video_followup'])
+        listing=await self.req('GET','/admin/services/recruitment/customers',admin=True);self.assertTrue(listing['customers'])
         await self.req('DELETE',admin+'/video-recording',{},409,True)
         public=await self.req('GET',base);self.assertNotIn('video_followup',public)
         self.assertEqual(self.mail.call_count,0)
