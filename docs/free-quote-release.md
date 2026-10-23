@@ -16,6 +16,33 @@ This release implements the October free quote brief. It supersedes earlier cont
 8. The customer then provides branding and opens the configured Calendly link. Board invitations are not required before the first session. Paid customers can return using their secure link without another charge.
 9. Rooney prepares and operates the existing customer workspace, then hands over the same saved project through the established secure access mechanism. Existing campaigns, applicant management, board forms, meeting controls, transcription, adopted decisions, document approvals, signatures and downloads remain in their original engines.
 
+## What happens in each service
+
+The question counts below are defaults after the three contact fields, not hardcoded limits. Published admin edits control the next new submission.
+
+| Service | Short quote | Paid preparation and service delivery |
+| --- | --- | --- |
+| Board Recruitment | Four questions: role, recruitment count, preferred location and desired outcome. | The established detailed recruitment questions collect mission, current board and recruitment needs. After branding and booking, Rooney reviews and agrees the desired profiles, prepares and approves the existing materials, then explicitly launches the campaign. Applicants use the original public application/CV system. Notifications, interview decisions, reference/appointment documents, agreements and onboarding remain available. The same project can be handed to the leader to continue independently. |
+| Board Recommitment | Four questions: role, number of members, reason and desired outcome. | The established detailed recommitment questions precede branding and booking. Rooney prepares the original branded recommitment form and reviewed invitations. Active, advisory and step-down responses remain distinct from confirmed organizational decisions. Interpretation, conversation guides, agreed portfolios, signatures and approved resource delivery continue through the existing workspace. |
+| Board Fundraising | Six questions: role, board size, goal, deadline, consequences and a separate positive outcome. | The leader completes the established organization questions, audience-by-audience Game and personal participation before branding and booking. Rooney uses the original workspace to prepare the board process and invitations. Participants keep their own answers. The Group Game, microphone/transcript controls, explicit audience adoption, agreed participation, strategy editing and final delivery are preserved. |
+| Guided Strategic Planning Setup | Four questions: role, board count, preferred meeting (or unscheduled) and desired outcome. | The $97 setup uses the extensive existing leader planning questions before branding and booking. The initial session prepares the original planning project. Board participants receive independent forms; programs retain their identifiers. The existing section-by-section discussion, explicit adopted decisions, contextual transcript, plan editor, versioned board review/adoption and approved downloads remain available. Professional meeting facilitation is separately quoted. |
+
+## Public links retained
+
+- Main service directory: https://nonprofitboardbuilder.com/
+- Recruitment: https://nonprofitboardbuilder.com/recruit
+- Recommitment: https://nonprofitboardbuilder.com/board-recommitment
+- Fundraising: https://nonprofitboardbuilder.com/board-fundraising (existing `/board-fundraising-game` remains valid)
+- Planning: https://nonprofitboardbuilder.com/strategic-planning
+- Meet Rooney: https://nonprofitboardbuilder.com/meet-rooney
+- Separate personal consultation: https://nonprofitboardbuilder.com/consultation
+- Board Applicant Network: https://nonprofitboardbuilder.com/join-a-board
+- Published board opportunities: https://nonprofitboardbuilder.com/board-opportunities
+- Blog: https://nonprofitboardbuilder.com/blog
+- RSS: https://nonprofitboardbuilder.com/api/blog/feed.xml
+
+These are public entry points. Customer-specific links, participant tokens and payment sessions are deliberately excluded. The release's read-only public audit checks existing production availability; it does not establish that this new GitHub build has been deployed.
+
 ## Emails
 
 Sender: `Rooney A. The Nonprofit Board Builder <rooney@nonprofitboardbuilder.com>`.
@@ -70,6 +97,18 @@ The original Game engine and questionnaire, Planning methodology, AI document re
 
 ## Verification and release state
 
-Local production build and existing 59 frontend tests passed. Current quote, scheduling, payment, onboarding, video staging, signed delivery-event and original service regression suites are included in CI, using disposable Mongo and controlled Stripe/email/AI adapters. Desktop/mobile browser acceptance exercises the actual application. Final run results and exact sync SHA are recorded in the final handoff.
+The complete CI run passed on application commit `d264d9ae3d79af6669d24ba8fbae681e942e3be8`: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071 . Any later release-documentation commit leaves this tested application code unchanged.
 
-Production transactions, actual Gmail receipt, real Calendly reservations and the pending AutoFundraiser connection must not be inferred from synthetic provider tests. GitHub commit, Emergent synchronization and user deployment are separate actions. Emergent instructions remain sync-only.
+- Backend: **184 passed** (83 guided quote/service/blog tests and 101 original regressions), using disposable Mongo and controlled Stripe/email/AI adapters.
+- Frontend: **60 passed**, across 14 suites.
+- Frozen-lockfile dependency installation, production build, Python compilation, protected-scope checks, metadata, redirects and consultation privacy checks passed.
+- Browser acceptance: **61 passed cases** across current entries/editors, the original Fundraising Game, consultation, Recruitment, Recommitment, Planning, secure handover, and the eight four-service desktop/mobile quote journeys. Browser recording was exercised with a controlled camera device; microphone permission and production audio quality are not inferred from this fixture.
+- The browser journeys covered campaign approval/publication and resource delivery, recommitment responses/decisions/portfolios, planning forms/programs/adoption/final delivery, and the retained Fundraising Game/adoption/strategy workflow. Provider calls were controlled and no real charge, live applicant campaign or production promotional email was made.
+- **173 actual screenshots** are in the run's `current-workflow-acceptance` artifact: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071/artifacts/12538590963 . Open `current-screenshots.html` after downloading. The gallery includes each service flow, admin/workstation editors, customer workspaces and mobile views. Compact review sheets were inspected.
+- The read-only production audit found the principal public pages available, along with the blog/RSS and applicant entries. The public payment configuration reports live Stripe mode; this is not a verified transaction. The older `/organize-board-fundraising-game` currently lands at `/` in production instead of the explanation page. This branch retains its explicit explanation-page redirect, which passed the build route checks. The deployed commit was not verified.
+
+### Integration and release limits
+
+Production transactions, actual Gmail receipt, real Calendly reservations, model output quality with the live provider and the pending AutoFundraiser connection remain **unverified**. Existing provider configuration was preserved. Signed email-event delivery reporting requires its hosting secret/provider webhook; no production setting was changed here. Automatic cross-site video callbacks and cleanup await the verified central contract, as agreed with the owner.
+
+The implementation and fixes are pushed to `feature/guided-board-services`; the final handoff supplies the final documentation-inclusive SHA. Emergent has not synchronized this release and production has not been deployed by Codex. GitHub commit, Emergent synchronization and user deployment remain separate actions. Emergent instructions are sync-only.

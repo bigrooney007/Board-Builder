@@ -1,3 +1,5 @@
+> Current customer entry, prices and email timing: [Free quote release guide](free-quote-release.md). The earlier entry and pricing descriptions below are historical; use the current guide for new quotes. Existing service-delivery tools described below remain available.
+
 > Current offer and operational instructions: [Activation services handoff](two-option-services-handoff.md). The latest instruction replaces the earlier public two-tier pricing with one $497 activation-and-platform offer for each of the four pathways. Historical prices in this document describe earlier releases.
 
 # Nonprofit Board Builder: customer journeys and operating guide

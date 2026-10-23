@@ -1,3 +1,5 @@
+> Current customer entry, prices and email timing: [Free quote release guide](free-quote-release.md). The earlier entry and pricing descriptions below are historical; use the current guide for new quotes. Existing service-delivery tools described below remain available.
+
 # Current activation services: operating and release guide
 
 Updated 20 October 2026. The latest instructions replace the earlier two-option offers. All four current pathways sell one $497 activation call and platform-access service. Additional execution assistance is discussed and paid separately during the call; it is not advertised as another online package. Historical purchases and their original entitlements remain valid.
