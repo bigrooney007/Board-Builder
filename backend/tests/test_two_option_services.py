@@ -14,12 +14,12 @@ import guided_services as gs
 class PackageContract(unittest.TestCase):
     def test_four_distinct_server_verified_products(self):
         self.assertEqual([p['amount'] for p in PACKAGES['board-fundraising'].values()],[49700,149700])
-        self.assertEqual([p['amount'] for p in PACKAGES['strategic-planning'].values()],[49700,199700])
-        self.assertEqual(len({p['product'] for choices in PACKAGES.values() for p in choices.values()}),4)
+        self.assertEqual([p['amount'] for p in PACKAGES['strategic-planning'].values()],[49700,199700,9700])
+        self.assertEqual(len({p['product'] for choices in PACKAGES.values() for p in choices.values()}),5)
         with self.assertRaises(ValueError):package('board-fundraising','client-supplied-cheap-price')
 
     def test_current_offer_is_497_for_every_service_and_old_products_remain_distinct(self):
-        self.assertTrue(all(package(s)['amount']==49700 for s in PRICES))
+        self.assertEqual({s:package(s)['amount'] for s in PRICES},PRICES)
         self.assertEqual(len({package(s)['product'] for s in PRICES}),4)
         self.assertEqual(PRODUCTS['strategic-planning'],'rooney_guided_strategic_planning_1997')
         self.assertEqual(PRODUCTS['board-fundraising'],'rooney_guided_board_fundraising_1497')
@@ -32,6 +32,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
     req=shared.GuidedHTTP.req
     lead=shared.GuidedHTTP.lead
     paid=shared.GuidedHTTP.paid
+    complete_leader=shared.GuidedHTTP.complete_leader
 
     async def paid_option(self,service,choice='self-facilitated'):
         token,base,row=await self.lead(service)
@@ -47,6 +48,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         row=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']},{'_id':0})
         self.sessions[row['session_id']].update(payment_status='paid',status='complete')
         await self.req('POST',base+'/confirm',{})
+        await self.complete_leader(base,service)
         await self.req('PUT',base+'/branding',{'primary_color':'#123456'})
         row=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']},{'_id':0})
         return token,base,row
@@ -63,7 +65,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
     async def test_free_fundraising_saves_six_questions_and_stops_before_payment(self):
         token,base,row=await self.lead('board-fundraising')
         self.assertEqual(len(row['question_snapshot']),6)
-        self.assertEqual(row['answers']['next_board_meeting']['timezone'],'Europe/London')
+        self.assertIn('desired_outcome_impact',row['answers'])
         self.assertEqual(row['payment_status'],'unpaid');self.assertFalse(self.created)
         self.assertEqual(await self.db.game_profiles.count_documents({}),0)
         await self.req('GET',base+'/fundraising',status=402)
@@ -75,10 +77,11 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             await self.req('POST',base+'/checkout')
             saved=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
             session=self.sessions[saved['session_id']]
-            self.assertEqual(session['amount_subtotal'],49700)
+            self.assertEqual(session['amount_subtotal'],PRICES[service])
             self.assertEqual(session['metadata']['offer_source'],package(service)['product'])
             session.update(payment_status='paid',status='complete')
             await self.req('POST',base+'/confirm',{})
+            await self.complete_leader(base,service)
             await self.req('PUT',base+'/branding',{'primary_color':'#123456'})
             await self.req('GET',base+'/book',status=303)
             current=await self.req('GET',base)
@@ -118,7 +121,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id']}))
             for _ in range(2):await gs.automation_tick(self.db,at+timedelta(hours=1),row['customer_id'])
             delivery=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'})
-            self.assertEqual(delivery['recipient'],row['email']);self.assertIn(token,delivery['link']);self.assertIn('$497',delivery['text'])
+            self.assertEqual(delivery['recipient'],row['email']);self.assertIn(token,delivery['link']);self.assertIn('$'+str(PRICES[service]//100),delivery['text'])
             self.assertEqual(delivery['secondary_links'],[]);self.assertIn('text-align:left',self.mail.call_args.args[0]['html']);self.assertNotIn('text-align:center',self.mail.call_args.args[0]['html']);self.assertIn('first call',delivery['text']);self.assertIn('dashboard',delivery['text']);self.assertNotRegex(delivery['text'],r'\$(?:1,?497|1,?997)')
             self.assertEqual(self.mail.call_args.args[0]['from'],'Rooney A. The Nonprofit Board Builder <rooney@nonprofitboardbuilder.com>')
             self.assertEqual(self.mail.call_args.args[0]['reply_to'],'rooney@nonprofitboardbuilder.com')
@@ -129,18 +132,14 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             await gs.automation_tick(self.db,at+timedelta(days=40),row['customer_id'])
             self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'user_id':row['workspace_user_id'],'event_key':{'$regex':'^guided-followup'}}),0)
 
-    async def test_one_hour_is_scheduled_from_contact_details_and_unfinished_answers_can_resume(self):
+    async def test_incomplete_quote_waits_for_submission_and_saved_answers_can_resume(self):
         token,base,row=await self.lead('recruitment',submitted=False)
         at=datetime.fromisoformat(row['created_at'])
-        self.assertEqual(datetime.fromisoformat(row['first_email_due_at']),at+timedelta(hours=1))
-        await gs.automation_tick(self.db,at+timedelta(seconds=3599),row['customer_id']);self.mail.assert_not_called()
-        await self.req('PUT',base+'/answers',{'answers':{row['question_snapshot'][0]['id']:'Our mission is saved.'},'submit':False})
-        for _ in range(2):await gs.automation_tick(self.db,at+timedelta(hours=1),row['customer_id'])
-        self.assertEqual(self.mail.call_count,1)
-        delivery=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id']})
-        self.assertIn('/start?lead='+token,delivery['link']);self.assertIn('not finished',delivery['text'])
-        self.assertIn('CONTINUE MY',delivery['cta_label'])
-        saved=await self.req('GET',base);self.assertEqual(saved['answers'][row['question_snapshot'][0]['id']],'Our mission is saved.')
+        self.assertNotIn('first_email_due_at',row)
+        await self.req('PUT',base+'/answers',{'answers':{row['question_snapshot'][0]['id']:'Our role is saved.'},'submit':False})
+        for _ in range(2):await gs.automation_tick(self.db,at+timedelta(hours=2),row['customer_id'])
+        self.mail.assert_not_called()
+        saved=await self.req('GET',base);self.assertEqual(saved['answers'][row['question_snapshot'][0]['id']],'Our role is saved.')
         await self.req('POST',base+'/checkout',status=409)
 
     async def test_current_email_copy_timing_and_video_remain_editable_independently(self):
@@ -151,7 +150,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             saved=await self.req('PUT','/admin/services/'+service+'/draft',{'config':config,'revision':settings['revision']},admin=True)
             await self.req('POST','/admin/services/'+service+'/publish',{'revision':saved['revision']},admin=True)
             token,base,row=await self.lead(service)
-            await gs.automation_tick(self.db,datetime.fromisoformat(row['created_at'])+timedelta(hours=1),row['customer_id'])
+            await gs.automation_tick(self.db,datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1),row['customer_id'])
             delivery=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'})
             self.assertEqual(delivery['subject'],'A personal invitation from Rooney');self.assertEqual(delivery['cta_label'],'ACTIVATE MY SERVICE')
             preview=await self.req('POST','/admin/services/'+service+'/customers/'+row['customer_id']+'/video-preview',{'video_url':'https://youtu.be/personal'},admin=True)

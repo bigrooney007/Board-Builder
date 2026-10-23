@@ -30,7 +30,7 @@ from guided_service_defaults import ACTIVE_SERVICES, FLOW_VERSION, NAMES, PRICES
 from workflow_delivery import deliver_once
 
 logger = logging.getLogger(__name__)
-VARIABLES = {"submission_update","first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline", "fundraising_goal", "fundraising_deadline"}
+VARIABLES = {"submission_update","first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline", "fundraising_goal", "fundraising_deadline", "organization_name", "submitted_details", "personalized_outcome", "board_count", "location_preference"}
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def new_id(): return str(uuid.uuid4())
@@ -47,22 +47,41 @@ async def settings(db, service, draft=False):
         if isinstance(base,dict) and isinstance(value,dict):return {key:merge(default,value.get(key,default)) for key,default in base.items()}
         return copy.deepcopy(value)
     value=copy.deepcopy(saved.get("draft" if draft else "published") or {})
-    # Retain stored edits and history. Only replace retired offer wording when
-    # reading it into the current funnel; customer records keep their purchases.
-    current=defaults(service);previous=_previous_offer_defaults(service)
-    from guided_service_defaults import FIRST
-    for key in ("first_email","paid_email","video_email"):
-        stored=value.get(key)
-        if stored and (stored.get("body")==previous.get(key,{}).get("body") or stored.get("body")==FIRST.get(service,{}).get("body") or re.search(r"\$(?:1,?497|1,?997)\b",stored.get("body",""))):
-            value[key]={**stored,**{k:current[key][k] for k in ("body","cta")}}
-    for index,item in enumerate(value.get("followups",[])):
-        if index<5 and (item.get("body")==previous["followups"][index]["body"] or re.search(r"\$(?:1,?497|1,?997)\b",item.get("body",""))):
-            item.update({k:current["followups"][index][k] for k in ("body","cta")})
-    if service=="strategic-planning" and value.get("first_email",{}).get("subject")=="Let's Get Your Board Working Together to Build Your Organization" and "Our professionally facilitated Strategic Planning service costs $1,997." in value.get("first_email",{}).get("body",""):
-        # Preserve custom edits; migrate only the exact earlier default template.
-        from guided_service_defaults import FIRST
-        if value["first_email"].get("body")==FIRST[service]["body"]:
-            value["first_email"]={**defaults(service)["first_email"],"delay_minutes":value["first_email"].get("delay_minutes",60),"enabled":value["first_email"].get("enabled",True)}
+    from quote_defaults import VERSION
+    current=defaults(service)
+    if value and value.get("quote_version")!=VERSION:
+        # Historic versions remain in the database. Preserve the former detailed
+        # entry questions as paid leader questions, including administrator edits.
+        groups=value.setdefault("question_groups",{})
+        if service!="strategic-planning" and groups.get("entry"):
+            groups.setdefault("leader",copy.deepcopy(groups["entry"]))
+        groups["entry"]=copy.deepcopy(current["question_groups"]["entry"])
+        from guided_service_defaults import _activation_defaults
+        prior=_activation_defaults(service)
+        for key in ("first_email","paid_email"):
+            existing=value.get(key,{})
+            if not existing or existing.get("body")==prior[key].get("body"):
+                value[key]=copy.deepcopy(current[key])
+            elif key=="first_email":
+                if "{{personalized_outcome}}" not in existing.get("body",""):
+                    existing["body"]=existing.get("body","")+"\n\n{{personalized_outcome}}"
+                if service=="strategic-planning":
+                    for field in ("body","cta","subject"):
+                        existing[field]=re.sub(r"\$(?:1,?997|497)\b","$97",existing.get(field,""))
+        for index,item in enumerate(value.get("followups",[])):
+            if index<5 and item.get("body")==prior["followups"][index].get("body"):
+                item.update(copy.deepcopy(current["followups"][index]))
+            elif service=="strategic-planning":
+                for field in ("body","cta","subject"):
+                    item[field]=re.sub(r"\$(?:1,?997|497)\b","$97",item.get(field,""))
+        # Replace only known previous default text, retaining custom public copy.
+        for key,text in list(value.get("customer_copy",{}).items()):
+            if text==prior["customer_copy"].get(key) and key in current["customer_copy"]:
+                value["customer_copy"][key]=current["customer_copy"][key]
+        for key,text in list(value.get("landing",{}).items()):
+            if text==prior["landing"].get(key) and key in current["landing"]:
+                value["landing"][key]=copy.deepcopy(current["landing"][key])
+        value["quote_version"]=VERSION
     config=merge(defaults(service),value)
     templates=[config['first_email'],config['paid_email'],config['video_email'],config['delivery_email'],config['handover_email'],*config['followups'],*config['operational_emails'].values()]
     for item in templates:
@@ -89,6 +108,10 @@ def validate_config(service, payload):
     if not isinstance(payload,dict) or set(payload)!=set(expected): raise HTTPException(422,"Reload the settings before saving. Some fields are missing or unsupported.")
     if set(payload["question_groups"])!=set(expected["question_groups"]): raise HTTPException(422,"Keep the service's independent question groups.")
     for rows in payload["question_groups"].values(): validate_questions(rows)
+    from quote_defaults import IMPACT_KEY, VERSION
+    if payload.get("quote_version")!=VERSION:raise HTTPException(422,"Reload the current quote settings before saving.")
+    impact=[q for q in payload["question_groups"]["entry"] if not q.get("archived") and (q.get("semantic_role")==IMPACT_KEY or q.get("key")==IMPACT_KEY)]
+    if len(impact)!=1 or not impact[0].get("required") or impact[0].get("type") not in {"text","textarea"}:raise HTTPException(422,"Keep one required open-text outcome-impact question. Its wording remains editable.")
     if service=="strategic-planning":
         for group in ("leader","board"):
             for q in payload["question_groups"][group]:
@@ -99,8 +122,8 @@ def validate_config(service, payload):
     if not isinstance(payload["followups"],list) or len(payload["followups"])!=5: raise HTTPException(422,"Keep the five independently editable follow-up messages.")
     if set(payload["operational_emails"])!=set(expected["operational_emails"]):raise HTTPException(422,"Keep the service's operational email templates.")
     for template in [payload["first_email"],payload["video_email"],payload["paid_email"],payload["delivery_email"],*payload["followups"],*payload["operational_emails"].values(), *([payload["handover_email"]] if "handover_email" in payload else [])]:
-        for key in ("subject","headline","body","cta","support","signature"):
-            value=template.get(key)
+        for key in ("subject","headline","body","cta","support","signature","preview_text"):
+            value=template.get(key,"")
             if not isinstance(value,str) or len(value)>18000 or (key in {"subject","body","cta"} and not value.strip()): raise HTTPException(422,"Email subject, message and button text are required.")
             if set(re.findall(r"{{\s*([a-z_]+)\s*}}",value))-VARIABLES: raise HTTPException(422,"An email contains an unsupported personalization variable.")
         if not isinstance(template.get("enabled"),bool): raise HTTPException(422,"Invalid email enabled setting.")
@@ -168,16 +191,19 @@ def record_package(row):
     return package(row["service"],key)
 
 def context(row,video_url=""):
-    answers=row.get("answers") or {};mapping={q["key"]:answers.get(q["id"],"") for q in row.get("question_snapshot",[])}
+    from quote_personalization import mapping as answer_mapping, impact_answer
+    from quote_defaults import BRIDGES
+    mapping=answer_mapping(row)
+    outcome=row.get("personalized_outcome") or ('You told us: “'+impact_answer(row)+'”\n\n'+BRIDGES[row['service']] if impact_answer(row) else '')
     ready=(row.get("analysis") or {}).get("status")=="ready"
-    return {"first_name":row.get("name","there").split()[0],"name":row.get("name",""),"organization":row.get("organization",""),"service_name":NAMES[row["service"]],"price":str(record_package(row)["amount"]//100),
+    return {"first_name":(row.get("name","").split() or ["there"])[0],"name":row.get("name",""),"organization":row.get("organization",""),"organization_name":row.get("organization",""),"personalized_outcome":outcome,"submitted_details":"\n".join(str(v) for v in mapping.values()),"board_count":str(mapping.get("desired_count") or mapping.get("board_count") or mapping.get("board_size") or "the"),"location_preference":str(mapping.get("location_preference") or "your preferred locations"),"service_name":NAMES[row["service"]],"price":str(record_package(row)["amount"]//100),
         "submission_update":"Your completed answers are saved." if row.get("submitted_at") else "Your details are saved. If you have not finished the introductory questions, use your personal link to continue from your saved answers before activating the service.","mission":str(mapping.get("mission","")),"fundraising_goal":str(mapping.get("fundraising_goal","your fundraising goal")),"fundraising_deadline":str(mapping.get("fundraising_deadline","your funding deadline")),"organization_context":"\n".join(str(v) for v in mapping.values())[:2000],
         "recommendation_update":"Based on your answers, we've prepared initial board member recommendations for us to review together. These are desired profiles, rather than candidates who have been found." if ready else "Your answers are saved. We will use the priorities you described to work through the board members your organization needs during your guided session.",
         "continuation_message":"Your payment is already confirmed. Use your continuation link to return to the next step of your service." if row.get("payment_status")=="paid" else f"When you are ready to begin the guided {NAMES[row['service']]} service, use your personal continuation link below.",
         "continuation_url":continuation(row),"payment_url":continuation(row),"video_url":video_url}
 
 def render(template,values):
-    return {key:re.sub(r"{{\s*([a-z_]+)\s*}}",lambda match:values.get(match[1],""),str(template.get(key,""))) for key in ("subject","headline","body","cta","support","signature","self_cta","incomplete_cta")}
+    return {key:re.sub(r"{{\s*([a-z_]+)\s*}}",lambda match:values.get(match[1],""),str(template.get(key,""))) for key in ("subject","headline","body","cta","support","signature","self_cta","incomplete_cta","preview_text")}
 
 def email_text(message): return "\n\n".join(message[k] for k in ("headline","body","support","signature") if message.get(k))
 
@@ -199,6 +225,7 @@ async def send_message(db,row,key,message,link=None,*,promotional=False,secondar
         if row.get("payment_status")=="paid" or await suppressed(db,row):return {"status":"stopped"}
     url=link or continuation(row)
     result=await deliver_once(db,owner_id(row),key,row["email"],message["subject"],email_text(message),url,
+        preview_text=message.get("preview_text",""),
         cta_label=message["cta"],secondary_links=secondary or [],
         unsubscribe_url=f"{origin()}/api/services/{row['service']}/unsubscribe/{row['unsubscribe_token']}" if promotional else None)
     return result
@@ -210,7 +237,8 @@ async def prepare_recommendations(db,row):
     if not claim.modified_count:return
     try:
         from ai_service import generate_structured
-        data={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row["question_snapshot"]}
+        from quote_personalization import mapping
+        data=mapping(row)
         instructions=("Apply the existing Board Recruitment framework to this organization's own answers. Identify a balanced set of desired board member profiles, not actual candidates. Compare existing capability, missing expertise, relationships, mission and intended number of new members. Do not duplicate strengths already covered without a supplied reason. Explain role_name, why_this_person_is_important, how_this_person_can_support and what_to_look_for. Do not invent organization details or claim a person has been found. Respect an explicitly supplied recruitment count; when uncertain, recommend a small practical set. Only draft recommendations, never approved decisions.")
         generated=await generate_structured("recruitment_assessment_profiles",json.dumps({"organization":row["organization"],"answers":data}),instructions)
         if not isinstance(generated,dict) or not isinstance(generated.get("priority_roles"),list) or not generated["priority_roles"]:raise ValueError("No board member profiles were returned")
@@ -235,19 +263,26 @@ async def automation_tick(db,at=None,only_id=None):
             await send_message(db,row,"guided-payment-confirmed",render(config["paid_email"],context(row)))
             continue
         config,_,_=await settings(db,row["service"])
+        if row.get("client_flow_test") and row.get("first_email_sent_at"):continue
         if config["sequence_paused"] or row.get("sequence_paused") or await suppressed(db,row):continue
         first=row.get("first_email_sent_at")
         if not first:
-            anchor=row.get("created_at") if row.get("offer_version")==ACTIVATION_OFFER_VERSION else row.get("submitted_at")
-            due=datetime.fromisoformat(anchor)+timedelta(minutes=config["first_email"]["delay_minutes"])
+            from quote_defaults import VERSION
+            if row.get("flow_kind")==VERSION and not row.get("submitted_at"):continue
+            anchor=row.get("created_at") if row.get("offer_version")==ACTIVATION_OFFER_VERSION and row.get("flow_kind")!=VERSION else row.get("submitted_at")
+            if not anchor:continue
+            due=datetime.fromisoformat(anchor)+timedelta(minutes=0 if row.get("client_flow_test") else config["first_email"]["delay_minutes"])
             await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"first_email_due_at":due.isoformat()}})
             if at<due or not config["first_email"]["enabled"]:continue
+            from quote_personalization import prepare
+            row=await prepare(db,row)
             message=render(config["first_email"],context(row))
             if not row.get("submitted_at"):message["cta"]=message["incomplete_cta"]
             result=await send_message(db,row,"guided-first-invitation",message,promotional=True)
             if result["status"] in {"sent","captured"}:
-                await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"first_email_sent_at":{"$exists":False}},{"$set":{"first_email_sent_at":at.isoformat(),"followup_previous_at":at.isoformat(),"followup_index":0}})
+                await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"first_email_sent_at":{"$exists":False}},{"$set":{"first_email_sent_at":at.isoformat(),"first_email_delivery_status":result["status"],"followup_previous_at":at.isoformat(),"followup_index":0}})
         else:
+            if row.get("client_flow_test"):continue
             index=row.get("followup_index",0)
             if index>=5:continue
             message=config["followups"][index]
@@ -284,7 +319,8 @@ async def provision_workspace(db,row):
     entitlements=["recruitment_self_guided","recruitment_selection_onboarding"] if row["service"]=="recruitment" else ["reactivation_self_guided"] if row["service"]=="board-recommitment" else []
     await db.members.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"email":alias,"notification_email":row["email"],"first_name":name[0],"last_name":name[1] if len(name)>1 else "","entitlements":entitlements,"lead_ids":[row["customer_id"]],"guided_service_workspace":row["service"],"guided_customer_id":row["customer_id"],"lifecycle_optout":True,"admin_notified":True,"internal_dashboard_preview":bool(row.get("internal_test")),"created_at":now()}},upsert=True)
     if row["service"]=="recruitment":await db.members.update_one({"user_id":uid,"guided_service_workspace":"recruitment"},{"$addToSet":{"entitlements":"recruitment_selection_onboarding"}})
-    answers={q["key"]:row.get("answers",{}).get(q["id"],"") for q in row["question_snapshot"]}
+    from quote_personalization import mapping
+    answers=mapping(row)
     data={"organization_name":row["organization"],"mission":answers.get("mission",""),"present_board":answers.get("current_board",""),"desired_board_members_founder_view":answers.get("desired_board_members",""),"priorities":answers.get("board_type",""),"founder_title":"Organization Leader"}
     await db.recruitment_profiles.update_one({"user_id":uid},{"$setOnInsert":{"user_id":uid,"data":data,"confirmed":True,"branding":row.get("branding",{}),"created_at":now()}},upsert=True)
     if row["service"]=="recruitment":
@@ -342,7 +378,7 @@ async def calendly_event(db,event):
     return True
 
 def public_record(row):
-    keys=("customer_id","service","name","organization","answers","question_snapshot","question_version","submitted_at","payment_status","booking_status","branding","branding_saved_at","resource_delivery_at","internal_test","purchased_package","checkout_package","operator_status")
+    keys=("customer_id","service","name","organization","answers","question_snapshot","question_version","submitted_at","payment_status","booking_status","branding","branding_saved_at","resource_delivery_at","internal_test","client_flow_test","flow_kind","leader_question_snapshot","leader_answers","leader_completed_at","purchased_package","checkout_package","operator_status")
     return {**{key:row.get(key) for key in keys},"amount":record_package(row)["amount"],"packages":{},"currency":"usd","service_name":NAMES[row["service"]]}
 
 class Start(BaseModel):
@@ -376,6 +412,7 @@ class EmailDraft(BaseModel):
     cta:str=Field(min_length=1,max_length=300)
     support:str=""
     signature:str=""
+    preview_text:str=Field(default="",max_length=1000)
     video_url:str=""
     expected_payment_status:str
     approved:bool=False
@@ -411,7 +448,7 @@ def create_guided_services_router(db):
             config,_,_=await settings(db,service)
             links=[{"label":"OPEN MY APPROVED RESOURCES","url":continuation(row,True)}]
             handover=row.get("handover") or {}
-            if handover and row.get("purchased_package") in {"guided","self-facilitated"}:
+            if handover and row.get("purchased_package") in {"guided","self-facilitated","guided-setup"}:
                 token=handover.get("token")
                 if not token or handover.get("expires_at","")<=now():
                     token=secrets.token_urlsafe(32)
@@ -427,6 +464,10 @@ def create_guided_services_router(db):
         if not await db.guided_service_customers.find_one({"request_id":str(payload.request_id)}):await rate_limit(db,request,"start:"+service)
         token=secrets.token_urlsafe(32);ident=new_id();timestamp=now()
         row={"service":service,"customer_id":ident,"request_id":str(payload.request_id),"name":payload.name,"email":str(payload.email).lower(),"organization":payload.organization,"access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"guided-service-"+ident,"flow_version":FLOW_VERSION,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","created_at":timestamp,"updated_at":timestamp,"offer_version":ACTIVATION_OFFER_VERSION,"first_email_due_at":(datetime.fromisoformat(timestamp)+timedelta(minutes=config["first_email"]["delay_minutes"])).isoformat()}
+        from quote_defaults import VERSION, TEST_EMAIL
+        row.update({"flow_kind":VERSION,"client_flow_test":row["email"]==TEST_EMAIL,"leader_question_snapshot":[q for q in config["question_groups"]["leader"] if not q["archived"]],"leader_question_version":version,"leader_answers":{}})
+        row.pop("first_email_due_at",None)
+        if row["client_flow_test"]:row["record_label"]="CLIENT FLOW TEST"
         await db.guided_service_customers.update_one({"request_id":row["request_id"]},{"$setOnInsert":row},upsert=True)
         saved=await db.guided_service_customers.find_one({"request_id":row["request_id"]},{"_id":0})
         if saved["service"]!=service or saved["email"]!=row["email"] or saved["name"]!=row["name"] or saved["organization"]!=row["organization"]:raise HTTPException(409,"This request was already saved with different contact details. Start a new request.")
@@ -440,7 +481,9 @@ def create_guided_services_router(db):
     @router.put("/services/{service}/customer/{token}/answers")
     async def answers(service:str,token:str,payload:Answers):
         row=await record_by_token(db,service,token)
-        if row.get("submitted_at"):raise HTTPException(409,"Your submission is saved. Contact us if it needs a correction.")
+        if row.get("submitted_at"):
+            if all(row.get("answers",{}).get(k)==v for k,v in payload.answers.items()):return public_record(row)
+            raise HTTPException(409,"Your submission is saved. Contact us if it needs a correction.")
         known={q["id"]:q for q in row["question_snapshot"]}
         if any(key not in known for key in payload.answers):raise HTTPException(422,"An answer does not belong to this saved question version.")
         merged={**row.get("answers",{}),**payload.answers}
@@ -469,17 +512,24 @@ def create_guided_services_router(db):
                 if any(item not in q["options"] for item in values):raise HTTPException(422,"Choose one of the configured options.")
         if payload.submit and any(q["required"] and (merged.get(q["id"]) in (None,"",[]) or isinstance(merged.get(q["id"]),str) and not merged[q["id"]].strip()) for q in known.values()):raise HTTPException(422,"Complete each required question before submitting.")
         updates={"answers":merged,"updated_at":now()}
-        if payload.submit:updates.update({"submitted_at":now(),"analysis":{"status":"queued" if service=="recruitment" else "not_required"},"followup_index":0})
+        if payload.submit:
+            from quote_defaults import VERSION
+            stamp=now();config,_,_=await settings(db,service)
+            updates.update({"submitted_at":stamp,"analysis":{"status":"awaiting_leader_details" if service=="recruitment" and row.get("flow_kind")==VERSION else "queued" if service=="recruitment" else "not_required"},"followup_index":0,"first_email_due_at":(datetime.fromisoformat(stamp)+timedelta(minutes=0 if row.get("client_flow_test") else config["first_email"]["delay_minutes"])).isoformat()})
+            from quote_personalization import impact_answer
+            updates["desired_outcome_impact"]=impact_answer({**row,"answers":merged})
         await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"submitted_at":{"$exists":False}},{"$set":updates})
-        return public_record({**row,**updates})
+        saved=await db.guided_service_customers.find_one({"customer_id":row["customer_id"]},{"_id":0})
+        if payload.submit and saved.get("client_flow_test"):await automation_tick(db,only_id=row["customer_id"])
+        return public_record(saved)
 
     @router.post("/services/{service}/customer/{token}/checkout")
     async def checkout(service:str,token:str,request:Request):
         row=await record_by_token(db,service,token)
-        try:selected=package(service,request.query_params.get("package"))
+        try:selected=record_package(row) if row.get("session_id") and not request.query_params.get("package") else package(service,request.query_params.get("package"))
         except ValueError as exc:raise HTTPException(422,str(exc))
-        if service in PACKAGES and selected["key"]!="self-facilitated":raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
-        if row.get("internal_test"):raise HTTPException(409,"Use the authenticated sample payment action in the admin. This sample cannot create a real charge.")
+        if service in PACKAGES and selected["key"]!=("guided-setup" if service=="strategic-planning" else "self-facilitated") and not row.get("session_id"):raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
+        if row.get("internal_test") or row.get("client_flow_test"):raise HTTPException(409,"Use the authenticated sample payment action in the admin. This sample cannot create a real charge.")
         if not row.get("submitted_at"):raise HTTPException(409,"Complete your free submission first.")
         if row.get("payment_status")=="paid":return {"resume_url":continuation(row)}
         if row.get("session_id"):
@@ -496,12 +546,12 @@ def create_guided_services_router(db):
             from payment_routes import resolve_offer_price_id
             stripe.api_key=os.environ["STRIPE_SECRET_KEY"]
             price=await asyncio.to_thread(resolve_offer_price_id,"STRIPE_"+selected["product"].upper()+"_PRICE_ID",selected["product"],selected["name"],selected["amount"])
-            kwargs={"line_items":[{"price":price,"quantity":1}],"mode":"payment","customer_email":row["email"],"client_reference_id":row["customer_id"],"metadata":{"offer_source":selected["product"],"guided_customer_id":row["customer_id"],"guided_service":service,"guided_package":selected["key"],"guided_offer_version":ACTIVATION_OFFER_VERSION},"success_url":continuation({**row,"payment_status":"paid"})+"?session_id={CHECKOUT_SESSION_ID}","cancel_url":continuation(row)+"?checkout=cancelled","idempotency_key":f"guided:{row['customer_id']}:{attempt}"}
+            kwargs={"line_items":[{"price":price,"quantity":1}],"mode":"payment","customer_email":row["email"],"client_reference_id":row["customer_id"],"metadata":{"offer_source":selected["product"],"guided_customer_id":row["customer_id"],"guided_service":service,"guided_package":selected["key"],"guided_offer_version":row.get("flow_kind") or ACTIVATION_OFFER_VERSION},"success_url":continuation({**row,"payment_status":"paid"})+"?session_id={CHECKOUT_SESSION_ID}","cancel_url":continuation(row)+"?checkout=cancelled","idempotency_key":f"guided:{row['customer_id']}:{attempt}"}
             try:session=await asyncio.to_thread(stripe.checkout.Session.create,**kwargs,managed_payments={"enabled":True})
             except stripe.InvalidRequestError as exc:
                 if "managed payments" not in str(exc).lower() and "ineligible" not in str(exc).lower():raise
                 session=await asyncio.to_thread(stripe.checkout.Session.create,**{**kwargs,"idempotency_key":kwargs["idempotency_key"]+":standard"},automatic_tax={"enabled":True},billing_address_collection="required")
-            await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"session_id":session.id,"checkout_url":session.url,"checkout_attempt":attempt,"checkout_package":selected["key"],"offer_version":ACTIVATION_OFFER_VERSION,"payment_status":"pending","checkout_status":"open","updated_at":now()},"$addToSet":{"checkout_history":session.id},"$unset":{"checkout_lock":""}})
+            await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"session_id":session.id,"checkout_url":session.url,"checkout_attempt":attempt,"checkout_package":selected["key"],"payment_status":"pending","checkout_status":"open","updated_at":now()},"$addToSet":{"checkout_history":session.id},"$unset":{"checkout_lock":""}})
             return {"checkout_url":session.url}
         except (stripe.StripeError,KeyError) as exc:
             await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$unset":{"checkout_lock":""}})
@@ -525,6 +575,8 @@ def create_guided_services_router(db):
     @router.put("/services/{service}/customer/{token}/branding")
     async def branding(service:str,token:str,payload:Branding):
         row=await record_by_token(db,service,token,paid=True)
+        from quote_onboarding import require_completed
+        await require_completed(db,row)
         if not re.fullmatch(r"#[0-9a-fA-F]{6}",payload.primary_color) or payload.secondary_color and not re.fullmatch(r"#[0-9a-fA-F]{6}",payload.secondary_color):raise HTTPException(422,"Choose a valid six-digit color code.")
         if payload.logo_data:
             import base64,io
@@ -545,6 +597,8 @@ def create_guided_services_router(db):
     @router.get("/services/{service}/customer/{token}/book")
     async def book(service:str,token:str):
         row=await record_by_token(db,service,token,paid=True)
+        from quote_onboarding import require_completed
+        await require_completed(db,row)
         if not row.get("branding_saved_at"):raise HTTPException(409,"Save your organization branding before booking.")
         config,_,_=await settings(db,service);parsed=urlparse(config["booking_url"]);params=dict(parse_qsl(parsed.query));params.update({"name":row["name"],"email":row["email"],"utm_content":row["customer_id"]})
         await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"booking_status":"not_booked"},{"$set":{"booking_status":"link_opened","booking_opened_at":now()}})
@@ -589,8 +643,14 @@ def create_guided_services_router(db):
     @router.get("/admin/services/{service}/customers")
     async def customers(service:str,request:Request,skip:int=0):
         await authenticate_admin(request,db);check_service(service)
-        rows=await db.guided_service_customers.find({"service":service},{"_id":0,"access_token":0,"token_hash":0,"unsubscribe_token":0,"checkout_url":0}).sort("created_at",-1).skip(max(0,skip)).limit(50).to_list(50)
-        return {"customers":rows,"total":await db.guided_service_customers.count_documents({"service":service})}
+        filters={"service":service}
+        for key in ("search","status","tests"):
+            value=request.query_params.get(key,"").strip()
+            if key=="search" and value:filters["$or"]=[{field:{"$regex":re.escape(value[:200]),"$options":"i"}} for field in ("name","email","organization")]
+            if key=="status" and value in {"paid","unpaid","pending","failed","expired"}:filters["payment_status"]=value
+            if key=="tests" and value in {"only","exclude"}:filters["client_flow_test"]=True if value=="only" else {"$ne":True}
+        rows=await db.guided_service_customers.find(filters,{"_id":0,"access_token":0,"token_hash":0,"unsubscribe_token":0,"checkout_url":0}).sort("created_at",-1).skip(max(0,skip)).limit(50).to_list(50)
+        return {"customers":rows,"total":await db.guided_service_customers.count_documents(filters)}
 
     @router.get("/admin/services/{service}/customers/{ident}")
     async def get_customer(service:str,ident:str,request:Request):
@@ -625,7 +685,7 @@ def create_guided_services_router(db):
         elif key=="operational_emails":template=config[key].get(payload.get("name"))
         else:template=config.get(key)
         if not isinstance(template,dict):raise HTTPException(422,"Choose an email template.")
-        sample={"customer_id":"sample","service":service,"name":"Sample Leader","organization":"Sample Nonprofit","answers":{"mission":"Support children in our community."},"question_snapshot":[{"id":"mission","key":"mission"}],"access_token":"sample-secure-link","payment_status":"unpaid","submitted_at":now(),"analysis":{"status":"ready"}}
+        sample={"customer_id":"sample","service":service,"name":"Sample Leader","organization":"Sample Nonprofit","answers":{"mission":"Support children in our community.","desired_outcome_impact":"Build partnerships so we can reach two more communities."},"question_snapshot":[{"id":"mission","key":"mission"},{"id":"desired_outcome_impact","key":"desired_outcome_impact","semantic_role":"desired_outcome_impact"}],"access_token":"sample-secure-link","payment_status":"unpaid","submitted_at":now(),"analysis":{"status":"ready"}}
         if key in {"paid_email","delivery_email","operational_emails"}:sample["payment_status"]="paid"
         values={**context(sample),"participant_name":"Sample Board Member","leader_name":"Sample Leader","applicant_name":"Sample Applicant","planning_period":"Next 12 to 24 months","meeting_details":"Your agreed meeting date, time and time zone","response_deadline":"Your agreed response deadline","agreed_purpose":"Clarify the contributions your board members can agree to make.","responsibilities":"Only the responsibilities the person has agreed to accept.","interview_details":"Your confirmed interview arrangements.","video_url":"https://www.youtube.com/watch?v=sample"}
         message=render(template,values);return {**message,"html":preview_email(message,continuation(sample),offer_links(sample,config)),"sample":True}
@@ -646,6 +706,8 @@ def create_guided_services_router(db):
         parsed=urlparse(payload.video_url)
         if parsed.scheme!="https" or parsed.hostname not in {"youtube.com","www.youtube.com","youtu.be","m.youtube.com"}:raise HTTPException(422,"Use a valid HTTPS YouTube video URL.")
         if row["payment_status"]!="paid" and await suppressed(db,row):raise HTTPException(409,"This prospect is unsubscribed or suppressed from promotional messages.")
+        central=row.get("video_followup") or {}
+        if central.get("youtube_url")==payload.video_url and central.get("status")!="approved":raise HTTPException(409,"Approve the completed central video before sending it to the customer.")
         message=payload.model_dump()
         result=await send_message(db,row,"guided-video-"+str(payload.request_id),message,promotional=row["payment_status"]!="paid",secondary=[{"label":"WATCH YOUR VIDEO","url":payload.video_url},*offer_links(row)])
         return result
@@ -655,6 +717,8 @@ def create_guided_services_router(db):
         actor=await authenticate_admin(request,db);check_service(service,True);config,_,version=await settings(db,service)
         ident=new_id();token=secrets.token_urlsafe(32)
         row={"customer_id":ident,"request_id":new_id(),"service":service,"flow_version":FLOW_VERSION,"name":"Sample Nonprofit Leader","email":"sample-leader@nonprofitboardbuilder.internal","organization":"Sample Community Organization","access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"admin-dashboard-preview-guided-"+ident,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","internal_test":True,"test_owner":actor["user_id"],"created_at":now(),"updated_at":now(),"offer_version":ACTIVATION_OFFER_VERSION}
+        from quote_defaults import VERSION
+        row.update({"flow_kind":VERSION,"leader_question_snapshot":[q for q in config["question_groups"]["leader"] if not q["archived"]],"leader_question_version":version,"leader_answers":{}})
         await db.guided_service_customers.insert_one(row.copy())
         return {"customer_id":ident,"url":f"/services/{service}/start?lead={token}","internal_test":True}
 
@@ -673,4 +737,20 @@ def create_guided_services_router(db):
         else:raise HTTPException(422,"Choose a supported sample action.")
         return {"url":continuation(row),"internal_test":True}
 
+    @router.get("/admin/service-overview")
+    async def service_overview(request:Request):
+        await authenticate_admin(request,db)
+        commercial={"internal_test":{"$ne":True},"client_flow_test":{"$ne":True}}
+        services=[]
+        for service in NAMES:
+            filters={**commercial,"service":service}
+            services.append({"service":service,"name":NAMES[service],"quotes":await db.guided_service_customers.count_documents({**filters,"submitted_at":{"$exists":True}}),"paid":await db.guided_service_customers.count_documents({**filters,"payment_status":"paid"}),"scheduled":await db.guided_service_customers.count_documents({**filters,"first_email_due_at":{"$exists":True},"first_email_sent_at":{"$exists":False},"payment_status":{"$ne":"paid"}})})
+        return {"services":services,"client_flow_tests":await db.guided_service_customers.count_documents({"client_flow_test":True}),"integrations":{"stripe_key_configured":bool(os.environ.get("STRIPE_SECRET_KEY")),"stripe_webhook_configured":bool(os.environ.get("STRIPE_WEBHOOK_SECRET")),"email_key_configured":bool(os.environ.get("RESEND_API_KEY")),"email_events_configured":bool(os.environ.get("RESEND_WEBHOOK_SECRET")),"central_video_connected":bool(getattr(request.app.state,"nbb_central_video_adapter",None) and getattr(request.app.state.nbb_central_video_adapter,"contract_verified",False))}}
+
+    from quote_onboarding import register_routes as quote_routes
+    from service_email_events import register_routes as email_event_routes
+    email_event_routes(router,db)
+    from service_video import register_routes as video_routes
+    quote_routes(router,db)
+    video_routes(router,db)
     return router

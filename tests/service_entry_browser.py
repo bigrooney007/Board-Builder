@@ -57,7 +57,7 @@ async def main():
      await modal.get_by_label('Email address',exact=True).fill(f'entry-{service}-{width}@example.org')
      await modal.get_by_label('Organization name',exact=True).fill('Sample Community Organization')
      await page.screenshot(path=f'test_reports/current-entry-modal-{service}-{width}.png',full_page=True)
-     await modal.get_by_role('button',name='CONTINUE',exact=True).click()
+     await modal.get_by_role('button',name='CONTINUE TO MY QUOTE',exact=True).click()
      await page.wait_for_url('**/services/'+service+'/start?lead=*')
      await expect(page.get_by_text('Question 1 of 2',exact=True)).to_be_visible()
      await expect(page.get_by_text(subtitle,exact=True)).to_be_visible()
@@ -72,7 +72,7 @@ async def main():
      await page.get_by_role('button',name='SAVE AND CONTINUE',exact=True).click()
      await expect(page.get_by_text('Question 2 of 2',exact=True)).to_be_visible()
      await page.get_by_label('Your answer',exact=True).fill('Agree on the contributions we can realistically make.')
-     await page.get_by_role('button',name='SAVE MY ANSWERS',exact=True).click()
+     await page.get_by_role('button',name='GET MY FREE QUOTE',exact=True).click()
      await page.wait_for_url('**/services/'+service+'/received/*')
      assert await page.locator('body').evaluate('element=>element.scrollWidth<=innerWidth+2')
      assert not errors,errors

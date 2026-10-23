@@ -1,3 +1,4 @@
+import {quoteCta} from '@/services/landingContent';
 import {publicContent} from '@/content/publicPresentation';
 import {useServiceContact} from "@/services/ServiceContactDialog";
 import {SiteBrand} from "@/components/SiteBrand";
@@ -32,7 +33,7 @@ export default function FundraisingPublicPage({how=false}){
  const checkout=async saved=>{if(!saved){setCapture(true);return}setBusy(true);setError('');try{const r=await memberApi.post('/payments/game-checkout',{origin_url:window.location.origin,result_token:saved,cancel_path:'/how-the-fundraising-game-works'});window.location.assign(r.data.checkout_url)}catch(e){setError(typeof e.response?.data?.detail==='string'?e.response.data.detail:'Secure checkout could not open. Please try again.');setBusy(false)}};
  const submit=async e=>{e.preventDefault();setBusy(true);setError('');try{const r=await memberApi.post('/fundraising/leads',{name:lead.name||'',email:lead.email||'',organization:lead.organization||'',visitor_id:visitorId(),resume_token:token});localStorage.setItem('fundraisingLeadToken',r.data.token);localStorage.setItem('fundraisingLeadDetails',JSON.stringify(lead));setCapture(false);if(how)await checkout(r.data.token);else navigate(r.data.next)}catch(e){setError(typeof e.response?.data?.detail==='string'?e.response.data.detail:'We could not save your details. Please try again.')}setBusy(false)};
  const c=publicContent(content[how?'how':'home']),action=openContact;
- const cta=(label=c.cta)=><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?'Opening…':label}</button>;
+ const cta=(label=c.cta)=><button className="nBB-home-primary" disabled={busy} onClick={action}>{busy?'Opening…':quoteCta(label)}</button>;
  return <div className="nBB-home fundraising-public-centered" data-testid={how?'fundraising-how-page':'fundraising-home-page'}>
  <header className="nBB-home-nav"><SiteBrand/><Link className="nBB-home-login" to="/blog">Blog</Link></header>
  <main><section className="nBB-home-hero"><p className="nBB-home-eyebrow">NONPROFIT BOARD BUILDER</p><h1>{c.title}</h1>{c.introduction&&<p className="nBB-home-lead">{c.introduction}</p>}{cta()}</section>

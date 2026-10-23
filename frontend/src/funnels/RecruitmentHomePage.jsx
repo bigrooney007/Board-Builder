@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useServiceContact } from "@/services/ServiceContactDialog";
-import { serviceLandingCopy } from "@/services/landingContent";
+import { serviceLandingCopy, quoteCta } from "@/services/landingContent";
 import { SiteBrand } from "@/components/SiteBrand";
 import { ArrowRight } from "lucide-react";
 import { TestimonialCarousel } from "@/components/TestimonialCarousel";
@@ -38,7 +38,7 @@ export default function RecruitmentHomePage({startOpen=false}) {
             <h1 id="recruit-headline" data-testid="recruitment-headline">{copy.headline}</h1>
             <p className="recruit-hero-sub">{copy.subheadline}</p>
             <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary" data-testid="recruit-home-cta">
-              {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
+              {quoteCta(copy.primaryCta)}<ArrowRight size={18} aria-hidden="true" />
             </button>
           </div>
         </section>
@@ -63,7 +63,7 @@ export default function RecruitmentHomePage({startOpen=false}) {
             ))}
           </ol>
           <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary recruit-section-cta">
-            {copy.primaryCta}<ArrowRight size={18} aria-hidden="true" />
+            {quoteCta(copy.primaryCta)}<ArrowRight size={18} aria-hidden="true" />
           </button>
         </section>
 
@@ -91,7 +91,7 @@ export default function RecruitmentHomePage({startOpen=false}) {
         <section className="recruit-closing" aria-labelledby="recruit-closing-heading">
           <h2 id="recruit-closing-heading">{copy.closingHeading}</h2>
           <p>{copy.closingText}</p>
-          <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary">{copy.primaryCta}<ArrowRight size={18} aria-hidden="true" /></button>
+          <button type="button" onClick={openContact} className="bfg-btn bfg-btn-primary">{quoteCta(copy.primaryCta)}<ArrowRight size={18} aria-hidden="true" /></button>
         </section>
       </main>
       <footer className="bfg-footer recruit-footer">

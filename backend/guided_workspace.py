@@ -66,6 +66,9 @@ async def work_tick(db,app,only_id=None):
     rows=await db.guided_service_customers.find(query,{"_id":0}).sort("work_checked_at",1).limit(30).to_list(30)
     for row in rows:
         await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"work_checked_at":now()}})
+        if row.get("desired_outcome_impact") and not row.get("personalized_outcome"):
+            from quote_personalization import prepare
+            row=await prepare(db,row)
         if row["service"]=="recruitment" and (row.get("analysis") or {}).get("status") in {"queued","failed","generating"} and row.get("analysis_attempts",0)<3:await prepare_recommendations(db,row)
         job=row.get("material_job") or {}
         if row.get("payment_status")!="paid" or job.get("status") not in {"queued","generating"}:continue

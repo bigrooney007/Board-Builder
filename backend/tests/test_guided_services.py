@@ -48,26 +48,34 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         r=await self.client.request(method,'/api'+path,json=body,headers=self.headers if admin else {});self.assertEqual(r.status_code,status,r.text[:1200]);return r.json() if 'json' in r.headers.get('content-type','') else r
     async def lead(self,service='recruitment',submitted=True,**extra):
         r=await self.req('POST',f'/services/{service}/start',{'request_id':str(uuid.uuid4()),'name':'Sample Leader','email':'leader@example.org','organization':'Sample Learning Nonprofit',**extra});token=r['token'];base=f'/services/{service}/customer/{token}'
-        if submitted:await self.req('PUT',base+'/answers',{'answers':{q['id']:({'date':'2026-12-01','time':'16:00','timezone':'Europe/London'} if q['type']=='meeting' else '3' if q['key']=='board_size' else '100000' if q['type']=='number' else '2027-12-31' if q['type']=='date' else 'We help children access learning.') for q in r['record']['question_snapshot']},'submit':True})
+        if submitted:await self.req('PUT',base+'/answers',{'answers':{q['id']:({'date':'2026-12-01','time':'16:00','timezone':'Europe/London'} if q['type']=='meeting' else '3' if q['key'] in {'board_size','desired_count','board_count'} else '100000' if q['type']=='number' else '2027-12-31' if q['type']=='date' or q['key']=='fundraising_deadline' else 'We help children access learning.') for q in r['record']['question_snapshot']},'submit':True})
         row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});return token,base,row
     async def paid(self,service='recruitment'):
-        token,base,row=await self.lead(service);await self.req('POST',base+'/checkout');row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});self.sessions[row['session_id']].update(payment_status='paid',status='complete');await self.req('POST',base+'/confirm',{});row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});return token,base,row
+        token,base,row=await self.lead(service);await self.req('POST',base+'/checkout');row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});self.sessions[row['session_id']].update(payment_status='paid',status='complete');await self.req('POST',base+'/confirm',{});await self.complete_leader(base,service);row=await self.db.guided_service_customers.find_one({'access_token':token},{'_id':0});return token,base,row
+    async def complete_leader(self,base,service):
+        data=await self.req('GET',base+'/leader-questions')
+        values={q['id']:(str(data['answers'].get(q['id']) or '3') if q['key'] in {'desired_count','board_size','board_count'} else data['answers'].get(q['id']) or ('100000' if q['type']=='number' else '2027-12-31' if q['type']=='date' else 'We help children access learning.')) for q in data['questions']}
+        result=await self.req('PUT',base+'/leader-questions',{'answers':values,'submit':True})
+        if service=='board-fundraising':
+            value={'audiences':{},'category_status':{'individuals':'skipped','businesses':'skipped','grantmakers':'skipped'},'involvement':'I can make introductions with permission.','workflow_version':7}
+            await self.req('POST','/game/play/'+result['audience_token']+'/audience-response/complete',value)
+            await self.req('POST',base+'/leader-complete')
     async def test_free_form_snapshot_and_thank_you_never_reveals_profiles(self):
         token,base,row=await self.lead();data=await self.req('GET',base)
         self.assertTrue(data['submitted_at']);self.assertNotIn('recommendations',data);self.assertNotIn('booking_url',data);self.assertEqual(await self.db.members.count_documents({}),0)
-        await self.req('PUT',base+'/answers',{'answers':{},'submit':True},409)
+        await self.req('PUT',base+'/answers',{'answers':{'leader_role':'Changed after submit'},'submit':True},409)
     async def test_dynamic_add_reorder_archive_and_historic_answers(self):
-        token,base,row=await self.lead();settings=await self.req('GET','/admin/services/recruitment/settings',admin=True);c=settings['config'];c['question_groups']['entry']=[{**c['question_groups']['entry'][1],'prompt':'Updated question'}]
+        token,base,row=await self.lead();settings=await self.req('GET','/admin/services/recruitment/settings',admin=True);c=settings['config'];c['question_groups']['entry']=[{**c['question_groups']['entry'][-1],'prompt':'Updated question'}]
         saved=await self.req('PUT','/admin/services/recruitment/draft',{'config':c,'revision':settings['revision']},admin=True);await self.req('POST','/admin/services/recruitment/publish',{'revision':saved['revision']},admin=True)
         current=await self.req('GET','/services/recruitment/questions');self.assertEqual(len(current['questions']),1);self.assertEqual(current['questions'][0]['prompt'],'Updated question')
-        original=await self.req('GET',base);self.assertEqual(len(original['question_snapshot']),7);self.assertEqual(original['answers'],row['answers'])
+        original=await self.req('GET',base);self.assertEqual(len(original['question_snapshot']),4);self.assertEqual(original['answers'],row['answers'])
         other=await self.req('GET','/admin/services/board-recommitment/settings',admin=True);self.assertNotEqual(other['config']['question_groups']['entry'][0]['prompt'],'Updated question')
     async def test_all_service_question_counts_subtitles_and_historic_answers(self):
         for service in PRICES:
             token,base,original=await self.lead(service)
             settings=await self.req('GET',f'/admin/services/{service}/settings',admin=True);config=settings['config']
             for index,question in enumerate(config['question_groups']['entry']):
-                question['archived']=index>=2
+                question['archived']=index not in {0,len(config['question_groups']['entry'])-1}
                 if index==0:question['help']='Explain your answer in your own words.'
             saved=await self.req('PUT',f'/admin/services/{service}/draft',{'config':config,'revision':settings['revision']},admin=True)
             await self.req('POST',f'/admin/services/{service}/publish',{'revision':saved['revision']},admin=True)

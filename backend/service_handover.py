@@ -37,7 +37,7 @@ async def operator_record(db, request, service=None):
         raise HTTPException(401, "Open your personal dashboard invitation to continue.") from exc
     if service and service != claim.get("service"):
         raise HTTPException(403, "This access belongs to another service.")
-    row = await db.guided_service_customers.find_one({"customer_id": claim.get("sub"), "service": claim.get("service"), "payment_status": "paid", "purchased_package": {"$in":["self-facilitated","guided"]}, "operator_status": {"$in": ["organization_operating", "completed"]}, "operator_session_version": claim.get("version")}, {"_id": 0})
+    row = await db.guided_service_customers.find_one({"customer_id": claim.get("sub"), "service": claim.get("service"), "payment_status": "paid", "purchased_package": {"$in":["self-facilitated","guided","guided-setup"]}, "operator_status": {"$in": ["organization_operating", "completed"]}, "operator_session_version": claim.get("version")}, {"_id": 0})
     if not row or row["service"] not in ACTIVE_SERVICES:
         raise HTTPException(403, "Your dashboard access is unavailable. Request a new invitation from Rooney.")
     return row
@@ -57,7 +57,7 @@ def create_handover_router(db):
     @router.post("/admin/services/{service}/customers/{ident}/handover")
     async def prepare(service: str, ident: str, payload: dict, request: Request):
         row = await admin_record(db, service, ident, request, True)
-        if service not in ACTIVE_SERVICES or row.get("purchased_package") not in {"self-facilitated","guided"}:
+        if service not in ACTIVE_SERVICES or row.get("purchased_package") not in {"self-facilitated","guided","guided-setup"}:
             raise HTTPException(403, "Dashboard access is included with the activation and platform service.")
         if not row.get("branding_saved_at") or payload.get("prepared_confirmed") is not True:
             raise HTTPException(409, "Save branding and confirm the project and invitations are prepared before handover.")
@@ -77,7 +77,7 @@ def create_handover_router(db):
     async def invitation(service, token):
         if service not in ACTIVE_SERVICES or not 40 <= len(token) <= 100:
             raise HTTPException(404, "This dashboard invitation was not found.")
-        row = await db.guided_service_customers.find_one({"service": service, "handover.token_hash": digest(token), "payment_status": "paid", "purchased_package": {"$in":["self-facilitated","guided"]}}, {"_id": 0})
+        row = await db.guided_service_customers.find_one({"service": service, "handover.token_hash": digest(token), "payment_status": "paid", "purchased_package": {"$in":["self-facilitated","guided","guided-setup"]}}, {"_id": 0})
         if not row or (row.get("handover") or {}).get("expires_at", "") <= now():
             raise HTTPException(410, "This invitation has expired. Ask Rooney for a new dashboard invitation. Your paid project is still saved.")
         return row

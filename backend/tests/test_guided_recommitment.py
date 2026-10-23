@@ -12,7 +12,7 @@ class RecommitmentConfiguration(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('RECOVERY_ACCEPTANCE')=='1','Requires disposable Mongo and controlled providers')
 class RecommitmentHTTP(unittest.IsolatedAsyncioTestCase):
- asyncSetUp=shared_tests.GuidedHTTP.asyncSetUp;asyncTearDown=shared_tests.GuidedHTTP.asyncTearDown;req=shared_tests.GuidedHTTP.req;lead=shared_tests.GuidedHTTP.lead;paid=shared_tests.GuidedHTTP.paid
+ asyncSetUp=shared_tests.GuidedHTTP.asyncSetUp;asyncTearDown=shared_tests.GuidedHTTP.asyncTearDown;req=shared_tests.GuidedHTTP.req;lead=shared_tests.GuidedHTTP.lead;paid=shared_tests.GuidedHTTP.paid;complete_leader=shared_tests.GuidedHTTP.complete_leader
  async def setup_service(self):
   token,base,row=await self.paid('board-recommitment');ab='/admin/services/board-recommitment/customers/'+row['customer_id']
   await self.req('PUT',base+'/branding',{'primary_color':'#123456'})

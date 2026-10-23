@@ -1,7 +1,7 @@
 """Independent defaults for Rooney's guided services, using stable question keys."""
 from copy import deepcopy
 
-PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 49700, "board-fundraising": 49700}
+PRICES = {"recruitment": 49700, "board-recommitment": 49700, "strategic-planning": 9700, "board-fundraising": 49700}
 NAMES = {"recruitment": "Board Recruitment", "board-recommitment": "Board Recommitment", "strategic-planning": "Strategic Planning", "board-fundraising": "Board Fundraising"}
 # Retain the original identifiers to verify historical payments. New Fundraising
 # and Planning purchases use their existing $497 preparation products below.
@@ -16,10 +16,11 @@ PACKAGES = {service: {
     "self-facilitated": {"amount": 49700, "product": "rooney_guided_" + service.replace("-", "_") + "_self_497", "name": "Guided Setup and Self-Facilitation"},
     "rooney-facilitated": {"amount": {"board-fundraising":149700,"strategic-planning":199700}[service], "product": PRODUCTS[service], "name": "Rooney-Facilitated " + NAMES[service]},
 } for service in ("board-fundraising", "strategic-planning")}
+PACKAGES["strategic-planning"]["guided-setup"] = {"amount": 9700, "product": "rooney_guided_strategic_planning_setup_97", "name": "Guided Strategic Planning Setup"}
 
 
 def package(service, key=None):
-    key = key or "self-facilitated"
+    key = key or ("guided-setup" if service == "strategic-planning" else "self-facilitated")
     if service in PACKAGES:
         if key not in PACKAGES[service]:
             raise ValueError("Choose a valid service option.")
@@ -330,3 +331,10 @@ def defaults(service):
     for key in ("self_heading","self_description","self_cta","professional_heading","professional_description","professional_cta"):
         result["customer_copy"].pop(key,None)
     return result
+
+# The quote funnel changes entry and onboarding, never historical purchase SKUs.
+_activation_defaults = defaults
+
+def defaults(service):
+    from quote_defaults import apply_defaults
+    return apply_defaults(service, _activation_defaults(service))

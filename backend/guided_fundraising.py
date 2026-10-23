@@ -6,7 +6,8 @@ from consultation_routes import no_cache
 
 async def provision(db, row):
     from guided_services import now, owner_id
-    values={q['key']:row.get('answers',{}).get(q['id'],'') for q in row['question_snapshot']}
+    from quote_personalization import mapping
+    values=mapping(row)
     meeting=values.get('next_board_meeting') or {}
     uid=owner_id(row)
     await db.members.update_one({'user_id':uid},{'$addToSet':{'entitlements':'board_fundraising_game'}})

@@ -2,6 +2,7 @@
 import asyncio,json,os,re
 from pathlib import Path
 from playwright.async_api import async_playwright,expect
+from quote_browser_helpers import complete_leader
 BASE='http://127.0.0.1:8765'
 assert os.environ.get('RECOVERY_ACCEPTANCE')=='1'
 async def main():
@@ -13,16 +14,17 @@ async def main():
    page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    try:
     await page.goto(BASE+'/strategic-planning');await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
-    await page.get_by_label('Full name',exact=True).fill('Sample Planning Leader');await page.get_by_label('Email address',exact=True).fill(f'planning-leader-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Planning Organization');await page.get_by_role('button',name='CONTINUE',exact=True).click();await page.wait_for_url('**/services/strategic-planning/start?lead=*');token=page.url.split('lead=')[1];public='/api/services/strategic-planning/customer/'+token
+    await page.get_by_label('Full name',exact=True).fill('Sample Planning Leader');await page.get_by_label('Email address',exact=True).fill(f'planning-leader-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Planning Organization');await page.get_by_role('button',name='CONTINUE TO MY QUOTE',exact=True).click();await page.wait_for_url('**/services/strategic-planning/start?lead=*');token=page.url.split('lead=')[1];public='/api/services/strategic-planning/customer/'+token
     row=await (await ctx.request.get(BASE+public)).json();ident=row['customer_id'];base='/api/admin/services/strategic-planning/customers/'+ident+'/planning'
-    assert len(row['question_snapshot'])==3
-    for i in range(3):
-     await page.get_by_label('Your answer',exact=True).fill('Expand access to learning through agreed programs and partnerships.');await page.get_by_role('button',name='SAVE MY ANSWERS' if i==2 else 'SAVE AND CONTINUE',exact=True).click()
-     if i<2:await expect(page.get_by_text(f'Question {i+2} of 3',exact=True)).to_be_visible()
-    await page.wait_for_url('**/services/strategic-planning/received/*');await page.goto(BASE+'/services/strategic-planning/offer/'+token);await page.get_by_role('button',name='ACTIVATE MY STRATEGIC PLANNING',exact=True).click();await page.get_by_role('button',name='Complete Payment',exact=True).click();await page.wait_for_url('**/services/strategic-planning/setup/*');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY STRATEGIC PLANNING ACTIVATION CALL →',exact=True).wait_for()
+    assert len(row['question_snapshot'])==4
+    for i in range(4):
+     await page.get_by_label('Your answer',exact=True).fill('Expand access to learning through agreed programs and partnerships.');await page.get_by_role('button',name='GET MY FREE QUOTE' if i==3 else 'SAVE AND CONTINUE',exact=True).click()
+     if i<3:await expect(page.get_by_text(f'Question {i+2} of 4',exact=True)).to_be_visible()
+    await page.wait_for_url('**/services/strategic-planning/received/*');await page.goto(BASE+'/services/strategic-planning/offer/'+token);await page.get_by_role('button',name='ACTIVATE MY STRATEGIC PLANNING',exact=True).click();await page.get_by_role('button',name='Complete Payment',exact=True).click();await page.wait_for_url('**/services/strategic-planning/setup/*');await complete_leader(page,'strategic-planning',token,width);await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY STRATEGIC PLANNING ACTIVATION CALL →',exact=True).wait_for()
     await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);await page.goto(BASE+'/admin/services/strategic-planning');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click();await page.get_by_label('Existing organization mission',exact=True).fill('Help children access learning.');await page.get_by_label('Board planning meeting date',exact=True).fill('2026-11-15');await page.get_by_label('Board planning meeting start time',exact=True).fill('10:00');await page.get_by_label('Individual response deadline',exact=True).fill('2026-11-10');await page.get_by_role('button',name='Add Existing Program',exact=True).click();await page.get_by_label('Program 1 name',exact=True).fill('After-School Education');await page.get_by_role('button',name='Add Existing Program',exact=True).click();await page.get_by_label('Program 2 name',exact=True).fill('Youth Coding');await page.screenshot(path=f'test_reports/current-workstation-planning-{package}-{width}.png',full_page=True);await page.get_by_role('button',name='Save Planning Setup',exact=True).click();await page.get_by_role('button',name='Prepare Lead User Planning Form',exact=True).click();await page.get_by_label('Planning participant full name',exact=True).fill('Sample Planning Board Member');await page.get_by_label('Planning participant email address',exact=True).fill(f'planning-board-{width}@example.org');await page.get_by_role('button',name='Add Planning Participant',exact=True).click();await expect(page.get_by_role('heading',name='Sample Planning Board Member · Board Member',exact=True)).to_be_visible()
     data=await (await ctx.request.get(BASE+base,headers=headers)).json();assert len(data['participants'])==2
     for person in data['participants']:
+     if person['role']=='Lead User':continue # Already completed during paid onboarding; historic answers remain intact.
      form=await (await ctx.request.get(BASE+'/api/strategic-planning-form/'+person['form_token'])).json();assert person['role']=='Lead User' or not form['existing_answers'];member=await ctx.new_page();await member.goto(BASE+'/strategic-planning-form/'+person['form_token']);questions=[q for s in form['form']['sections'] for q in s['questions']]
      for i,q in enumerate(questions):
       await member.get_by_label('Your answer',exact=True).fill('Support this agreed priority through our existing programs and confirmed contributions.');await member.get_by_role('button',name='SUBMIT MY PLANNING IDEAS' if i==len(questions)-1 else 'SAVE AND CONTINUE',exact=True).click()

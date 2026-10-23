@@ -2,6 +2,7 @@
 import asyncio,json,os,uuid
 from pathlib import Path
 from playwright.async_api import async_playwright,expect
+from quote_browser_helpers import complete_leader
 BASE='http://127.0.0.1:8765'
 assert os.environ.get('RECOVERY_ACCEPTANCE')=='1'
 async def main():
@@ -14,18 +15,18 @@ async def main():
    page=await context.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
    await page.goto(BASE+'/recruit');await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
    await page.get_by_label('Full name',exact=True).fill('Sample Guided Leader');await page.get_by_label('Email address',exact=True).fill(f'guided-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Learning Nonprofit')
-   await page.get_by_role('button',name='CONTINUE',exact=True).click();await page.wait_for_url('**/services/recruitment/start?lead=*')
+   await page.get_by_role('button',name='CONTINUE TO MY QUOTE',exact=True).click();await page.wait_for_url('**/services/recruitment/start?lead=*')
    await page.screenshot(path=f'test_reports/current-flow-recruitment-questions-{width}.png',full_page=True)
    token=page.url.split('lead=')[1];base='/api/services/recruitment/customer/'+token
    details=await (await context.request.get(BASE+base)).json();ident=details['customer_id'];ab='/api/admin/services/recruitment/customers/'+ident
    for i in range(len(details['question_snapshot'])):
     await page.get_by_label('Your answer',exact=True).fill('We help children access learning.' if i<len(details['question_snapshot'])-1 else '1')
-    await page.get_by_role('button',name='SAVE MY ANSWERS' if i==len(details['question_snapshot'])-1 else 'SAVE AND CONTINUE',exact=True).click()
+    await page.get_by_role('button',name='GET MY FREE QUOTE' if i==len(details['question_snapshot'])-1 else 'SAVE AND CONTINUE',exact=True).click()
     if i<len(details['question_snapshot'])-1:await expect(page.get_by_text(f"Question {i+2} of {len(details['question_snapshot'])}",exact=True)).to_be_visible()
-   await page.wait_for_url('**/services/recruitment/received/*');await expect(page.get_by_role('heading',name="Thank You. We've Received Your Board Recruitment Information.",exact=True)).to_be_visible();assert 'PAY $497' not in await page.locator('body').inner_text()
+   await page.wait_for_url('**/services/recruitment/received/*');await expect(page.get_by_role('heading',name="Your Board Recruitment Quote Request Has Been Received.",exact=True)).to_be_visible();assert 'PAY $497' not in await page.locator('body').inner_text()
    await page.screenshot(path=f'test_reports/current-flow-recruitment-received-{width}.png',full_page=True)
    await page.goto(BASE+'/services/recruitment/offer/'+token);await page.get_by_role('button',name='ACTIVATE MY BOARD RECRUITMENT',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-offer-{width}.png',full_page=True);await page.get_by_role('button',name='ACTIVATE MY BOARD RECRUITMENT',exact=True).click();await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click()
-   await page.wait_for_url('**/services/recruitment/setup/*');await page.get_by_label('Primary organization color',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-branding-{width}.png',full_page=True);await page.get_by_label('Primary organization color',exact=True).fill('#123456');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD RECRUITMENT ACTIVATION CALL →',exact=True).wait_for()
+   await page.wait_for_url('**/services/recruitment/setup/*');await complete_leader(page,'recruitment',token,width);await page.get_by_label('Primary organization color',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-flow-recruitment-branding-{width}.png',full_page=True);await page.get_by_label('Primary organization color',exact=True).fill('#123456');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD RECRUITMENT ACTIVATION CALL →',exact=True).wait_for()
    await context.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}])
    assert (await context.request.post(BASE+'/__test/guided-work/'+ident)).ok
    await page.goto(BASE+'/admin/services/recruitment');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click()

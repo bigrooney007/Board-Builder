@@ -10,10 +10,10 @@ import guided_planning as gp
 class PlanningConfiguration(unittest.TestCase):
     def test_three_entry_questions_and_independent_planning_groups(self):
         c=defaults('strategic-planning');gs.validate_config('strategic-planning',c)
-        self.assertEqual([q['key'] for q in c['question_groups']['entry']],['vision','goals','requirements'])
+        self.assertEqual([q['key'] for q in c['question_groups']['entry']],['leader_role','board_count','planning_meeting_preference','desired_outcome_impact'])
         self.assertEqual(len(c['followups']),5);self.assertEqual(len(set(t['subject'] for t in c['followups'])),5)
         self.assertNotEqual(c['question_groups']['leader'][0]['prompt'],c['question_groups']['board'][0]['prompt'])
-        self.assertEqual(PRICES['strategic-planning'],49700)
+        self.assertEqual(PRICES['strategic-planning'],9700)
         self.assertEqual(__import__('guided_service_defaults').package('strategic-planning','rooney-facilitated')['amount'],199700)
     def test_programs_keep_distinct_stable_ids_and_adopt_only_selected(self):
         c=defaults('strategic-planning');p={'mission':'Our actual mission','programs':[{'id':'school','name':'After-School Education'},{'id':'coding','name':'Youth Coding'}]}
@@ -28,6 +28,7 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
     req=shared_tests.GuidedHTTP.req
     lead=shared_tests.GuidedHTTP.lead
     paid=shared_tests.GuidedHTTP.paid
+    complete_leader=shared_tests.GuidedHTTP.complete_leader
 
     async def prepared(self):
         token,public,row=await self.paid('strategic-planning')
@@ -43,6 +44,7 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def contribute(self,token):
         form=await self.req('GET','/strategic-planning-form/'+token)
+        if form.get('submitted'):return form,form['existing_answers']
         answers={q['id']:'Agreed original idea for '+s['title'] for s in form['form']['sections'] for q in s['questions']}
         await self.req('PUT','/strategic-planning-form/'+token,{'answers':answers})
         await self.req('POST','/strategic-planning-form/'+token,{'full_name':form['prefill']['full_name'],'email':form['prefill']['email'],'answers':answers},201)
@@ -64,11 +66,11 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
         token,public,row=await self.lead('strategic-planning')
         at=datetime.fromisoformat(row['submitted_at']);await gs.automation_tick(self.db,at+timedelta(minutes=59));self.mail.assert_not_called()
         await gs.automation_tick(self.db,at+timedelta(hours=1));self.assertEqual(self.mail.call_count,1)
-        self.assertIn('$497',self.mail.call_args.args[0]['html']);self.assertNotIn('$1,997',self.mail.call_args.args[0]['html'])
+        self.assertIn('$97',self.mail.call_args.args[0]['html']);self.assertNotIn('$1,997',self.mail.call_args.args[0]['html'])
         await self.req('POST',public+'/checkout');r=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
         self.assertEqual(self.created[0]['metadata']['offer_source'],__import__('guided_service_defaults').package('strategic-planning')['product'])
         self.sessions[r['session_id']].update(payment_status='paid',status='complete');await self.req('POST',public+'/confirm',{})
-        await self.req('GET',public+'/book',status=409);await self.req('PUT',public+'/branding',{'primary_color':'#123456'});await self.req('GET',public+'/book',status=303)
+        await self.req('GET',public+'/book',status=409);await self.complete_leader(public,'strategic-planning');await self.req('PUT',public+'/branding',{'primary_color':'#123456'});await self.req('GET',public+'/book',status=303)
         previous=self.mail.call_count;await gs.automation_tick(self.db,at+timedelta(days=40));self.assertEqual(previous,self.mail.call_count)
         self.assertEqual(await self.db.payment_transactions.count_documents({'session_id':r['session_id'],'purchase_source':{'$in':['strategic_planning_497','strategic_planning_supported_2997']}}),0)
 

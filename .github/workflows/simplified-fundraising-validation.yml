@@ -37,7 +37,7 @@ jobs:
         run: |
           python tests/validate_guided_service_scope.py
           result=0
-          for suite in test_guided_services.py test_guided_recommitment.py test_guided_planning.py test_two_option_services.py test_blog_workstation.py; do
+          for suite in test_guided_services.py test_guided_recommitment.py test_guided_planning.py test_two_option_services.py test_quote_funnel.py test_blog_workstation.py; do
             python -m unittest discover -s backend/tests -p "$suite" -v || result=1
           done
           exit "$result"
@@ -132,7 +132,7 @@ jobs:
           PY
           result=0
           python tests/service_entry_browser.py || result=1
-          for check in simplified_fundraising_browser professional_entry_browser guided_services_browser guided_recommitment_browser guided_planning_browser two_option_services_browser release_gallery_browser; do
+          for check in simplified_fundraising_browser professional_entry_browser guided_services_browser guided_recommitment_browser guided_planning_browser two_option_services_browser quote_funnel_browser release_gallery_browser; do
             python "tests/$check.py" || result=1
           done
           python tests/screenshot_gallery.py
