@@ -3,6 +3,7 @@ from playwright.async_api import expect
 BASE='http://127.0.0.1:8765'
 
 async def complete_leader(page,service,token,width=None,audience_player=None):
+ await page.get_by_test_id('paid-leader-questionnaire').wait_for()
  data=await (await page.request.get(BASE+f'/api/services/{service}/customer/{token}/leader-questions')).json()
  if data.get('completed'):return
  await page.get_by_test_id('paid-leader-questionnaire').wait_for()

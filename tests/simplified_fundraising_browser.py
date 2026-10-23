@@ -28,7 +28,7 @@ async def main():
             await context.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}])
             await page.goto(BASE+'/board-fundraising-game')
             await page.get_by_test_id('fundraising-home-page').wait_for()
-            await page.get_by_role('heading',name='The Fundraising Game',exact=True).wait_for()
+            await page.get_by_role('heading',name='Get Your Board Members Fundraising by Your Next Board Meeting.',exact=True).wait_for()
             assert await page.get_by_text('Imagine walking into your next board meeting',exact=False).count()==1
             await expect(page.get_by_role('button',name='START MY BOARD FUNDRAISING FOR FREE',exact=True)).to_have_count(4)
             for slot in ('fundraising-cta-after-explanation','fundraising-cta-after-biography'):
