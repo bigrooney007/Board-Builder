@@ -97,14 +97,15 @@ The original Game engine and questionnaire, Planning methodology, AI document re
 
 ## Verification and release state
 
-Before the subsequent all-four-$497 pricing correction, the complete CI run passed on application commit `d264d9ae3d79af6669d24ba8fbae681e942e3be8`: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071 . Any later release-documentation commit leaves this tested application code unchanged.
+The complete CI run, including the all-four-$497 pricing correction, passed on application commit `859569b117124b1c73ecbb3ed3c81c71e0166f8d`: https://github.com/bigrooney007/Board-Builder/actions/runs/40039912149 . Any later release-documentation commit leaves this tested application code unchanged.
 
-- Backend: **184 passed** (83 guided quote/service/blog tests and 101 original regressions), using disposable Mongo and controlled Stripe/email/AI adapters.
+- Pricing-specific checks verified the actual $497 Stripe product/amount, rejection of $97 for new purchases, preservation of historical purchases, saved admin email migration without overwriting custom wording, and $497 in the first email and all five follow-ups.
+- Backend: **188 passed** (87 guided quote/service/blog tests and 101 original regressions), using disposable Mongo and controlled Stripe/email/AI adapters.
 - Frontend: **60 passed**, across 14 suites.
 - Frozen-lockfile dependency installation, production build, Python compilation, protected-scope checks, metadata, redirects and consultation privacy checks passed.
 - Browser acceptance: **61 passed cases** across current entries/editors, the original Fundraising Game, consultation, Recruitment, Recommitment, Planning, secure handover, and the eight four-service desktop/mobile quote journeys. Browser recording was exercised with a controlled camera device; microphone permission and production audio quality are not inferred from this fixture.
 - The browser journeys covered campaign approval/publication and resource delivery, recommitment responses/decisions/portfolios, planning forms/programs/adoption/final delivery, and the retained Fundraising Game/adoption/strategy workflow. Provider calls were controlled and no real charge, live applicant campaign or production promotional email was made.
-- **173 actual screenshots** are in the run's `current-workflow-acceptance` artifact: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071/artifacts/12538590963 . Open `current-screenshots.html` after downloading. The gallery includes each service flow, admin/workstation editors, customer workspaces and mobile views. Compact review sheets were inspected.
+- **173 actual screenshots** are in the run's `current-workflow-acceptance` artifact: https://github.com/bigrooney007/Board-Builder/actions/runs/40039912149/artifacts/12539605317 . Open `current-screenshots.html` after downloading. The gallery includes each service flow, admin/workstation editors, customer workspaces and mobile views. Compact review sheets were inspected.
 - The read-only production audit found the principal public pages available, along with the blog/RSS and applicant entries. The public payment configuration reports live Stripe mode; this is not a verified transaction. The older `/organize-board-fundraising-game` currently lands at `/` in production instead of the explanation page. This branch retains its explicit explanation-page redirect, which passed the build route checks. The deployed commit was not verified.
 
 ### Integration and release limits
