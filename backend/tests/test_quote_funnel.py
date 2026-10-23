@@ -176,6 +176,7 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         self.app.state.nbb_central_video_adapter=adapter
         response=await self.client.post('/api'+admin+'/video-recording',files={'file':('clip.webm',b'\x1aE\xdf\xa3'+b'video'*30,'video/webm')},headers=self.headers);self.assertEqual(response.status_code,200)
         await self.req('POST',admin+'/video-assignment/submit',{},admin=True);await self.req('POST',admin+'/video-assignment/submit',{},admin=True);self.assertEqual(adapter.submit.call_count,1)
+        task=adapter.submit.call_args.args[0];self.assertNotIn('desired_outcome',task['brief']);self.assertNotIn('email',task['brief']);self.assertNotIn('payment_status',task)
         await self.req('POST',admin+'/video-assignment/refresh',{},admin=True);self.assertEqual(self.mail.call_count,0)
         await self.req('POST',admin+'/video-assignment/review',{'action':'approve'},admin=True)
         await self.req('DELETE',admin+'/video-recording',{},admin=True)

@@ -89,10 +89,9 @@ def register_routes(router, db):
         video=row.get('video_followup') or {}
         if not video.get('recording_blob_id'):raise HTTPException(409,'Save a recording before submitting it for editing.')
         if video.get('central_assignment_id'):return {'video':summary(row)}
-        from quote_personalization import impact_answer
         # Adapter receives only the approved video brief and original recording;
         # never payment details, organization responses or admin credentials.
-        task={'source':'nonprofit-board-builder','source_customer_id':ident,'service':service,'recording_id':video['recording_id'],'brief':{'name':row['name'],'organization':row['organization'],'desired_outcome':impact_answer(row)},'recording_blob_id':video['recording_blob_id'],'idempotency_key':'nbb-video-'+video['recording_id']}
+        task={'source':'nonprofit-board-builder','source_customer_id':ident,'service':service,'recording_id':video['recording_id'],'brief':{'name':row['name'],'organization':row['organization']},'recording_blob_id':video['recording_blob_id'],'idempotency_key':'nbb-video-'+video['recording_id']}
         result=await adapter.submit(task,db)
         if not isinstance(result,dict) or not result.get('assignment_id'):raise HTTPException(502,'The central video service did not confirm an assignment. Your recording remains saved.')
         updates={'video_followup.central_assignment_id':str(result['assignment_id']),'video_followup.status':'submitted','video_followup.updated_at':now()}

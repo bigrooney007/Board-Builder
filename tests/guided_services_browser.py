@@ -31,7 +31,7 @@ async def main():
    assert (await context.request.post(BASE+'/__test/guided-work/'+ident)).ok
    await page.goto(BASE+'/admin/services/recruitment');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click()
    await page.get_by_label('Role or profile',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-workstation-recruitment-{width}.png',full_page=True);await page.get_by_role('button',name='Approve Agreed Board Member Profiles',exact=True).click()
-   await page.get_by_label('Available interview dates and times',exact=True).fill('October 30, 2026 at 10:00 UTC');await page.get_by_role('button',name='Save Interview Arrangements',exact=True).click();
+   await expect(page.get_by_role('button',name='Approve Agreed Board Member Profiles',exact=True)).to_have_count(1);await page.get_by_label('Available interview dates and times',exact=True).fill('October 30, 2026 at 10:00 UTC');await page.get_by_role('button',name='Save Interview Arrangements',exact=True).click();
    async with page.expect_response(lambda r: r.url.endswith('/generate-materials') and r.request.method=='POST') as queued:
     await page.get_by_role('button',name='GENERATE RECRUITMENT MATERIALS',exact=True).click()
    assert (await queued.value).ok

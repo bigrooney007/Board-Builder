@@ -41,7 +41,7 @@ Each service has a searchable/filterable customer table and a compact Actions me
 
 Manage This Offer opens the actual existing landing editor, quote form editor, first email, follow-ups, detailed post-payment questions, payment/booking controls and current journey tests. The outcome wording is editable; its required open-text semantic role is protected. Editing questions never changes historic snapshots.
 
-Test Post-Payment Journey is administrator-only and creates an isolated paid sample using current published questions. It starts at detailed onboarding, needs no charge or board invitations, and permits testing through branding and the booking handoff. Synthetic samples capture email and do not count as commercial sales.
+Test Post-Payment Journey is administrator-only and creates an isolated paid sample using current published questions. It starts at detailed onboarding with editable synthetic prefilled answers, needs no charge or board invitations, and permits testing through branding and the booking handoff. Synthetic samples capture email and do not count as commercial sales.
 
 ## Central video: prepared, not yet connected
 
@@ -55,7 +55,7 @@ Before connecting, AutoFundraiser must supply a verified contract covering:
 - Auth mechanism, credential scopes and rotation; signed callbacks with timestamp/replay protection, or verified polling.
 - Multipart/streaming upload or protected download contract and supported file/size limits.
 - Idempotent assignment creation using source application, source service, source customer ID and unique recording ID.
-- The minimal video brief permitted for Moses. NBB must not expose payment data or the customer's full confidential submission.
+- The minimal video brief permitted for Moses. NBB sends only the service, customer association, name and organization with the recording. Raw quote answers, outcome statements, contact email and payment data are not part of that brief. Rooney sees the full preparation details inside NBB.
 - A central assignment ID and actual submitted/editing/revision/ready status.
 - Returned source customer/service binding, completed HTTPS YouTube URL and transcript.
 - Error/retry behavior, 24-hour target turnaround and approval-aware storage cleanup.

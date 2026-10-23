@@ -5,7 +5,9 @@ import ServiceAdminPage,{QuestionEditor} from './ServiceAdminPage';
 import {api} from './shared';
 jest.mock('@/pages/AdminPage',()=>({Login:()=> <p>Administrator login</p>}));
 jest.mock('@/admin/HomepageTextSection',()=>({HomepageTextSection:()=>null}));
-jest.mock('./RecruitmentWorkspace',()=>()=>null);
+jest.mock('./RecruitmentWorkspace',()=>()=> <div data-testid="sample-recruitment-workspace"/>);
+jest.mock('./CustomerVideoRecorder',()=>()=> <div data-testid="sample-video-recorder"/>);
+jest.mock('./DashboardHandover',()=>()=>null);
 jest.mock('./RecommitmentWorkspace',()=>()=>null);
 jest.mock('./PlanningWorkspace',()=>()=>null);
 let node,root;
@@ -39,4 +41,17 @@ test('a customer-specific administrator link opens the correct saved service rec
  jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path==='/auth/me'?{user_id:'sample-admin'}:path.endsWith('/settings')?{config:{question_groups:{entry:rows}},revision:0,active:true,price:49700}:path.endsWith('/customers/requested')?{customer:{customer_id:'requested',organization:'Requested Organization',name:'Sample Leader',email:'leader@example.org',first_email_sent_at:'2026-10-23T12:00:00Z',first_email_delivery_status:'captured',payment_status:'unpaid',question_snapshot:[],answers:{}},deliveries:[],continuation_url:'/saved-next-step',resources_url:'/saved-resources'}:{customers:[],total:0}}));
  await act(async()=>root.render(<MemoryRouter initialEntries={['/admin/services/recruitment?customer=requested']}><Routes><Route path="/admin/services/:service" element={<ServiceAdminPage/>}/></Routes></MemoryRouter>));
  expect(api.get).toHaveBeenCalledWith('/admin/services/recruitment/customers/requested');expect(node.querySelector('[data-testid="guided-customer-workspace"]').textContent).toContain('Requested Organization');expect(node.querySelector('[data-testid="guided-customer-workspace"]').textContent).toContain('Captured sample');
+});
+
+
+test('refreshing a paid customer retains one service workspace and one video recorder',async()=>{
+ const warnings=jest.spyOn(console,'error').mockImplementation(()=>{});
+ jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path==='/auth/me'?{user_id:'sample-admin'}:path.endsWith('/settings')?{config:{question_groups:{entry:rows}},revision:0,active:true,price:49700}:path.endsWith('/customers/paid')?{customer:{customer_id:'paid',organization:'Paid Organization',name:'Sample Leader',email:'leader@example.org',payment_status:'paid',question_snapshot:[],answers:{}},deliveries:[],continuation_url:'/saved-next-step',resources_url:'/saved-resources'}:{customers:[],total:0}}));
+ await act(async()=>root.render(<MemoryRouter initialEntries={['/admin/services/recruitment?customer=paid']}><Routes><Route path="/admin/services/:service" element={<ServiceAdminPage/>}/></Routes></MemoryRouter>));
+ for(let i=0;i<3;i++){
+  await act(async()=>[...node.querySelectorAll('button')].find(b=>b.textContent==='Refresh Workspace').click());
+  expect(node.querySelectorAll('[data-testid="sample-recruitment-workspace"]')).toHaveLength(1);
+  expect(node.querySelectorAll('[data-testid="sample-video-recorder"]')).toHaveLength(1);
+ }
+ expect(warnings.mock.calls.filter(args=>args.join(' ').includes('same key'))).toHaveLength(0);
 });
