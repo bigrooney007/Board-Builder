@@ -13,7 +13,7 @@ class PlanningConfiguration(unittest.TestCase):
         self.assertEqual([q['key'] for q in c['question_groups']['entry']],['leader_role','board_count','planning_meeting_preference','desired_outcome_impact'])
         self.assertEqual(len(c['followups']),5);self.assertEqual(len(set(t['subject'] for t in c['followups'])),5)
         self.assertNotEqual(c['question_groups']['leader'][0]['prompt'],c['question_groups']['board'][0]['prompt'])
-        self.assertEqual(PRICES['strategic-planning'],9700)
+        self.assertEqual(PRICES['strategic-planning'],49700)
         self.assertEqual(__import__('guided_service_defaults').package('strategic-planning','rooney-facilitated')['amount'],199700)
     def test_programs_keep_distinct_stable_ids_and_adopt_only_selected(self):
         c=defaults('strategic-planning');p={'mission':'Our actual mission','programs':[{'id':'school','name':'After-School Education'},{'id':'coding','name':'Youth Coding'}]}
@@ -66,7 +66,7 @@ class PlanningHTTP(unittest.IsolatedAsyncioTestCase):
         token,public,row=await self.lead('strategic-planning')
         at=datetime.fromisoformat(row['submitted_at']);await gs.automation_tick(self.db,at+timedelta(minutes=59));self.mail.assert_not_called()
         await gs.automation_tick(self.db,at+timedelta(hours=1));self.assertEqual(self.mail.call_count,1)
-        self.assertIn('$97',self.mail.call_args.args[0]['html']);self.assertNotIn('$1,997',self.mail.call_args.args[0]['html'])
+        self.assertIn('$497',self.mail.call_args.args[0]['html']);self.assertNotIn('$97',self.mail.call_args.args[0]['html']);self.assertNotIn('$1,997',self.mail.call_args.args[0]['html'])
         await self.req('POST',public+'/checkout');r=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
         self.assertEqual(self.created[0]['metadata']['offer_source'],__import__('guided_service_defaults').package('strategic-planning')['product'])
         self.sessions[r['session_id']].update(payment_status='paid',status='complete');await self.req('POST',public+'/confirm',{})

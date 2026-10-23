@@ -47,7 +47,7 @@ async def settings(db, service, draft=False):
         if isinstance(base,dict) and isinstance(value,dict):return {key:merge(default,value.get(key,default)) for key,default in base.items()}
         return copy.deepcopy(value)
     value=copy.deepcopy(saved.get("draft" if draft else "published") or {})
-    from quote_defaults import VERSION
+    from quote_defaults import VERSION, PRICING_VERSION
     current=defaults(service)
     if value and value.get("quote_version")!=VERSION:
         # Historic versions remain in the database. Preserve the former detailed
@@ -67,13 +67,13 @@ async def settings(db, service, draft=False):
                     existing["body"]=existing.get("body","")+"\n\n{{personalized_outcome}}"
                 if service=="strategic-planning":
                     for field in ("body","cta","subject"):
-                        existing[field]=re.sub(r"\$(?:1,?997|497)\b","$97",existing.get(field,""))
+                        existing[field]=re.sub(r"\$(?:1,?997|97)\b","$497",existing.get(field,""))
         for index,item in enumerate(value.get("followups",[])):
             if index<5 and item.get("body")==prior["followups"][index].get("body"):
                 item.update(copy.deepcopy(current["followups"][index]))
             elif service=="strategic-planning":
                 for field in ("body","cta","subject"):
-                    item[field]=re.sub(r"\$(?:1,?997|497)\b","$97",item.get(field,""))
+                    item[field]=re.sub(r"\$(?:1,?997|97)\b","$497",item.get(field,""))
         # Replace only known previous default text, retaining custom public copy.
         for key,text in list(value.get("customer_copy",{}).items()):
             if text==prior["customer_copy"].get(key) and key in current["customer_copy"]:
@@ -82,6 +82,18 @@ async def settings(db, service, draft=False):
             if text==prior["landing"].get(key) and key in current["landing"]:
                 value["landing"][key]=copy.deepcopy(current["landing"][key])
         value["quote_version"]=VERSION
+    if service=="strategic-planning" and value and value.get("pricing_version")!=PRICING_VERSION:
+        # Update only obsolete price wording, preserving edited copy, questions,
+        # schedules, sent messages and historic purchase identifiers.
+        templates=[value.get(key,{}) for key in ("first_email","video_email","paid_email","delivery_email","handover_email")]
+        templates.extend(value.get("followups",[]))
+        templates.extend(value.get("operational_emails",{}).values())
+        for template in templates:
+            for field in ("subject","preview_text","headline","body","cta","support","signature"):
+                if isinstance(template.get(field),str):template[field]=re.sub(r"\$97\b","$497",template[field])
+        for key,text in list(value.get("customer_copy",{}).items()):
+            if isinstance(text,str):value["customer_copy"][key]=re.sub(r"\$97\b","$497",text)
+        value["pricing_version"]=PRICING_VERSION
     config=merge(defaults(service),value)
     templates=[config['first_email'],config['paid_email'],config['video_email'],config['delivery_email'],config['handover_email'],*config['followups'],*config['operational_emails'].values()]
     for item in templates:
@@ -534,7 +546,7 @@ def create_guided_services_router(db):
         row=await record_by_token(db,service,token)
         try:selected=record_package(row) if row.get("session_id") and not request.query_params.get("package") else package(service,request.query_params.get("package"))
         except ValueError as exc:raise HTTPException(422,str(exc))
-        if service in PACKAGES and selected["key"]!=("guided-setup" if service=="strategic-planning" else "self-facilitated") and (request.query_params.get("package") or not row.get("session_id")):raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
+        if service in PACKAGES and selected["key"]!="self-facilitated" and (request.query_params.get("package") or not row.get("session_id")):raise HTTPException(422,"This service offers activation and platform access. Additional assistance is discussed during your call.")
         if row.get("internal_test") or row.get("client_flow_test"):raise HTTPException(409,"Use the authenticated sample payment action in the admin. This sample cannot create a real charge.")
         if not row.get("submitted_at"):raise HTTPException(409,"Complete your free submission first.")
         if row.get("payment_status")=="paid":return {"resume_url":continuation(row)}

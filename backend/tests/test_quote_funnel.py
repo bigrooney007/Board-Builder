@@ -27,7 +27,8 @@ class Defaults(unittest.TestCase):
             self.assertEqual(impact['semantic_role'],IMPACT_KEY);self.assertTrue(impact['required'])
             self.assertIn('leader',config['question_groups']);self.assertIn('{{personalized_outcome}}',config['first_email']['body'])
             self.assertEqual(config['landing']['cta'],'GET A FREE QUOTE')
-        self.assertEqual(package('strategic-planning')['amount'],9700)
+        self.assertEqual(package('strategic-planning')['amount'],49700)
+        self.assertEqual(package('strategic-planning','guided-setup')['amount'],9700)
         self.assertEqual(package('strategic-planning','self-facilitated')['amount'],49700)
         self.assertEqual(package('strategic-planning','rooney-facilitated')['amount'],199700)
     def test_impact_role_survives_wording_edits_but_cannot_be_removed(self):
@@ -48,6 +49,29 @@ class Defaults(unittest.TestCase):
         self.assertEqual(verify(raw,headers,secret),ident)
         with self.assertRaises(HTTPException):verify(raw+b'X',headers,secret)
         with self.assertRaises(HTTPException):verify(raw,headers,secret,at=time.time()+400)
+
+class PricingMigration(unittest.IsolatedAsyncioTestCase):
+    async def test_saved_97_copy_is_corrected_without_replacing_admin_edits_or_questions(self):
+        config=defaults('strategic-planning');config.pop('pricing_version')
+        config['first_email'].update(subject='My planning offer: $97',body='My own introduction. Setup costs $97. {{personalized_outcome}}',cta='Begin for $97')
+        config['followups'][0]['body']='My follow-up wording for the $97 offer.'
+        config['video_email']['body']='My personal message about the $97 setup.'
+        config['question_groups']['entry'][0]['prompt']='My own role question'
+        config['first_email']['delay_minutes']=75
+        original=copy.deepcopy(config)
+        db=SimpleNamespace(guided_service_settings=SimpleNamespace(find_one=AsyncMock(return_value={'published':config,'draft':copy.deepcopy(config),'revision':9,'version':'saved-questions'})))
+        for draft in (False,True):
+            current,revision,version=await gs.settings(db,'strategic-planning',draft)
+            self.assertEqual(current['first_email']['body'],'My own introduction. Setup costs $497. {{personalized_outcome}}')
+            self.assertEqual(current['first_email']['cta'],'Begin for $497')
+            self.assertEqual(current['followups'][0]['body'],'My follow-up wording for the $497 offer.')
+            self.assertIn('$497',current['video_email']['body'])
+            self.assertEqual(current['question_groups'],original['question_groups'])
+            self.assertEqual(current['first_email']['delay_minutes'],75)
+            self.assertEqual((revision,version),(9,'saved-questions'))
+            gs.validate_config('strategic-planning',current)
+        self.assertEqual(config,original)
+
 
 @unittest.skipUnless(os.environ.get('RECOVERY_ACCEPTANCE')=='1','Disposable Mongo and controlled providers required')
 class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
@@ -99,7 +123,7 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
             _,base,row=await self.lead(service);original=copy.deepcopy(row['answers'])
             await self.req('POST',base+'/checkout');pending=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']});session=self.sessions[pending['session_id']]
-            self.assertEqual(session['amount_subtotal'],9700 if service=='strategic-planning' else 49700)
+            self.assertEqual(session['amount_subtotal'],49700)
             session.update(payment_status='paid',status='complete');await self.req('POST',base+'/confirm',{})
             await self.req('PUT',base+'/branding',{'primary_color':'#4438cc'},409);await self.req('GET',base+'/book',status=409)
             await self.complete_leader(base,service);await self.req('GET',base+'/book',status=409)
@@ -191,3 +215,48 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
             for _ in range(2):
                 r=await self.client.post('/api/webhooks/service-email',content=body,headers=headers);self.assertEqual(r.status_code,200,r.text)
         event=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id']});self.assertEqual(event['status'],'sent');self.assertEqual(event['delivery_status'],'delivered');self.assertEqual(await self.db.workflow_email_events.count_documents({}),1)
+
+    async def test_current_planning_checkout_rejects_97_and_uses_existing_497_stripe_product(self):
+        _,base,row=await self.lead('strategic-planning')
+        await self.req('POST',base+'/checkout?package=guided-setup',{},422)
+        with patch('payment_routes.resolve_offer_price_id',return_value='price_planning_497') as resolver:
+            await self.req('POST',base+'/checkout')
+        self.assertEqual(resolver.call_args.args[1],'rooney_guided_strategic_planning_self_497')
+        self.assertEqual(resolver.call_args.args[3],49700)
+        self.assertEqual(self.created[-1]['line_items'],[{'price':'price_planning_497','quantity':1}])
+        saved=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
+        session=self.sessions[saved['session_id']]
+        session.update(status='complete',payment_status='paid',amount_subtotal=9700,amount_total=9700)
+        await self.req('POST',base+'/confirm',{},409)
+        await self.req('GET',base+'/leader-questions',status=402)
+        session.update(amount_subtotal=49700,amount_total=49700)
+        paid=await self.req('POST',base+'/confirm',{})
+        self.assertEqual(paid['amount'],49700)
+        await self.req('GET',base+'/leader-questions')
+
+    async def test_historical_97_payment_remains_valid_without_another_charge(self):
+        _,base,row=await self.lead('strategic-planning')
+        import stripe
+        old=package('strategic-planning','guided-setup')
+        session=stripe.checkout.Session.create(metadata={'offer_source':old['product'],'guided_customer_id':row['customer_id'],'guided_service':'strategic-planning','guided_package':'guided-setup'},client_reference_id=row['customer_id'])
+        await self.db.guided_service_customers.update_one({'customer_id':row['customer_id']},{'$set':{'session_id':session.id,'checkout_package':'guided-setup','checkout_url':session.url,'payment_status':'pending','checkout_status':'open'}})
+        self.sessions[session.id].update(payment_status='paid',status='complete')
+        paid=await self.req('POST',base+'/confirm',{})
+        self.assertEqual(paid['amount'],9700)
+        resumed=await self.req('POST',base+'/checkout')
+        self.assertIn('/setup/',resumed['resume_url'])
+        self.assertEqual(len(self.created),1)
+        await self.complete_leader(base,'strategic-planning')
+        await self.req('PUT',base+'/branding',{'primary_color':'#4438cc'})
+        await self.req('GET',base+'/book',status=303)
+
+    async def test_planning_first_email_and_all_five_followups_quote_497(self):
+        _,_,row=await self.lead('strategic-planning')
+        first=datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1)
+        for index in range(6):
+            await gs.automation_tick(self.db,first+timedelta(days=3*index),only_id=row['customer_id'])
+            text=self.mail.call_args.args[0]['html']
+            self.assertIn('$497',text)
+            self.assertNotRegex(text,r'\$97\b')
+            self.assertIn(row['access_token'],text)
+        self.assertEqual(self.mail.call_count,6)

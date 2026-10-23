@@ -19,7 +19,7 @@ class PackageContract(unittest.TestCase):
         with self.assertRaises(ValueError):package('board-fundraising','client-supplied-cheap-price')
 
     def test_current_offer_is_497_for_every_service_and_old_products_remain_distinct(self):
-        self.assertEqual({s:package(s)['amount'] for s in PRICES},PRICES)
+        self.assertEqual({s:package(s)['amount'] for s in PRICES},{s:49700 for s in PRICES})
         self.assertEqual(len({package(s)['product'] for s in PRICES}),4)
         self.assertEqual(PRODUCTS['strategic-planning'],'rooney_guided_strategic_planning_1997')
         self.assertEqual(PRODUCTS['board-fundraising'],'rooney_guided_board_fundraising_1497')
@@ -36,7 +36,6 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def paid_option(self,service,choice='self-facilitated'):
         token,base,row=await self.lead(service)
-        if service=='strategic-planning' and choice=='self-facilitated':choice='guided-setup'
         if choice=='rooney-facilitated':
             # Historical paid checkout, created before the single-offer release.
             from types import SimpleNamespace
@@ -295,11 +294,11 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         def expire(sid,**kwargs):self.sessions[sid].update(status='expired');return self.sessions[sid]
         patch('stripe.checkout.Session.expire',side_effect=expire).start()
         token,base,row=await self.lead('strategic-planning')
-        await self.req('POST',base+'/checkout?package=guided-setup')
+        await self.req('POST',base+'/checkout?package=self-facilitated')
         await self.req('POST',base+'/checkout?package=rooney-facilitated',status=422)
         self.assertEqual(len(self.created),1)
         await self.req('POST',base+'/cancel-checkout',{})
         await self.req('POST',base+'/checkout')
         self.assertEqual(len(self.created),2)
-        self.assertEqual(self.created[-1]['metadata']['guided_package'],'guided-setup')
+        self.assertEqual(self.created[-1]['metadata']['guided_package'],'self-facilitated')
         self.assertEqual(sum(s['status']=='open' for s in self.sessions.values()),1)

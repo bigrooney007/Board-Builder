@@ -2,6 +2,7 @@
 from copy import deepcopy
 
 VERSION = "free-quote-2026-10"
+PRICING_VERSION = "all-four-497-2026-10-24"
 TEST_EMAIL = "fundraisingschoolfornonprofits@gmail.com"
 IMPACT_KEY = "desired_outcome_impact"
 IMPACT = {
@@ -41,7 +42,7 @@ FIRST_COPY = {
     "recruitment": ("Let's Launch Your Board Recruitment Campaign", "You indicated that your organization is looking to recruit {{board_count}} board members, preferably located in {{location_preference}}.", "We can work with you to identify the exact type of board members your organization needs, create your recruitment materials and launch your recruitment campaign.\n\nDuring our campaign launch session, we will work together to get your recruitment process started. You will also receive the materials needed to manage applications and appoint suitable candidates.", "The cost of launching your board recruitment campaign with us is $497.", "Launch My Recruitment Campaign | $497"),
     "board-recommitment": ("Let's Get Your Board Members Recommitted", "You indicated that {{board_count}} board members need to recommit to supporting your organization.", "First, we will prepare a recommitment form for your board members. As they respond, we will help you interpret their answers and prepare the appropriate conversation for each person.\n\nThis process is designed to help your board members make clear decisions about stepping up to their responsibilities or stepping down.", "The cost of our Board Recommitment process is $497.", "Get My Board Recommitted | $497"),
     "board-fundraising": ("Let's Get Your Board Members Fundraising", "You indicated that your organization has {{board_count}} board members and is working toward raising {{fundraising_goal}}.", "Through The Fundraising Game, you and your board members will identify the people and institutions with the strongest reasons to support your mission. You will work together to agree on how to reach those funders and how each board member will participate.\n\nDuring our setup session, I will show you how to prepare the process for your next board meeting.", "The cost of The Fundraising Game is $497.", "Get My Board Fundraising | $497"),
-    "strategic-planning": ("Let's Get Your Board Involved in Strategic Planning", "You indicated that you want to involve {{board_count}} board members in shaping your organization's future.", "You can facilitate this process yourself using our strategic planning system. During our guided setup session, I will show you how to prepare the process, invite your board members and facilitate the meeting. I will also show you how to turn the decisions made during the meeting into your organization's strategic plan.", "Guided Strategic Planning Setup costs $97. Professional facilitation of the actual board meeting is a separate service with its own quote, which we can discuss during our session.", "Prepare My Strategic Planning Session | $97"),
+    "strategic-planning": ("Let's Get Your Board Involved in Strategic Planning", "You indicated that you want to involve {{board_count}} board members in shaping your organization's future.", "You can facilitate this process yourself using our strategic planning system. During our guided setup session, I will show you how to prepare the process, invite your board members and facilitate the meeting. I will also show you how to turn the decisions made during the meeting into your organization's strategic plan.", "Guided Strategic Planning Setup costs $497. Professional facilitation of the actual board meeting is a separate service with its own quote, which we can discuss during our session.", "Prepare My Strategic Planning Session | $497"),
 }
 
 LANDINGS = {
@@ -61,11 +62,12 @@ def apply_defaults(service, base):
             result["question_groups"]["leader"] = [q for q in result["question_groups"]["leader"] if q["key"] != "next_board_meeting"]
     result["question_groups"]["entry"] = quote_questions(service)
     result["quote_version"] = VERSION
+    result["pricing_version"] = PRICING_VERSION
     subject, summary, process, price, cta = FIRST_COPY[service]
     result["first_email"] = email(subject, "Hi {{first_name}},\n\nThank you for requesting a free quote for {{service_name}} for {{organization_name}}.\n\n" + summary + "\n\n{{personalized_outcome}}\n\n" + process + "\n\nWe begin the work together on our first call. Your dashboard contains the tools and resources to continue independently.\n\n" + price + "\n\nOnce you make payment, you will complete the detailed leader questions, provide your organization's branding and choose a time to meet with me.", cta, delay_minutes=60, incomplete_cta="Complete My Quote Request", preview_text="Your next steps for {{organization_name}}")
     result["paid_email"] = email("Your {{service_name}} Payment Is Confirmed", "Hi {{first_name}},\n\nYour payment is confirmed. Complete your detailed leader questionnaire, save your organization's logo and colors, then choose a convenient time for our session. Your information is saved and you can return without paying again.", "Complete My Leader Questionnaire")
     for item in result["followups"]:
-        item["body"] = item["body"].replace("$497", "${{price}}" if service != "strategic-planning" else "$97")
+        item["body"] = item["body"].replace("$497", "${{price}}")
         item["after_previous_minutes"] = 4320
     headline, description, steps = LANDINGS[service]
     result["landing"].update(headline=headline, description=description, cta="GET A FREE QUOTE")

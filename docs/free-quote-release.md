@@ -2,7 +2,7 @@
 
 Starting point: `feature/guided-board-services` at `b07c6721c8c1caed0dfdef2e8997b93e53d9be15`.
 
-This release implements the October free quote brief. It supersedes earlier contact-anchored email timing and the $497 Strategic Planning activation price for **new quotes only**. Historical purchases, open checkouts, form versions, projects and entitlements remain valid.
+This release implements the October free quote brief with the owner's subsequent correction: **all four board services cost $497**. It supersedes earlier contact-anchored email timing and the briefly configured $97 Strategic Planning setup price for new checkouts. Historical purchases, open checkouts, form versions, projects and entitlements remain valid.
 
 ## Customer flow
 
@@ -11,7 +11,7 @@ This release implements the October free quote brief. It supersedes earlier cont
 3. They answer the short, independently editable quote questions. Each includes one required open-text outcome-impact question, with stable semantic role `desired_outcome_impact`. Names, email and organization are collected once.
 4. Submission preserves the exact answers and question snapshot. A normal first email is scheduled for one hour after **completed submission**, using the durable existing worker. An unfinished contact form does not start the new quote sequence.
 5. The email quotes the prospect's stated desired result and connects it to the service. The configured model may select a verbatim excerpt, but cannot rewrite offers or invent facts. A deterministic original-answer fallback handles model failures. Fundraising also references the stated consequences of missing the goal. The editable template controls the surrounding copy and CTA.
-6. Server-verified checkout is $497 for Recruitment, Recommitment and Fundraising; $97 for Guided Strategic Planning Setup. A separate quote covers professional facilitation of the actual planning meeting. The existing $197 personal consultation is unchanged.
+6. Server-verified checkout is $497 for each of Recruitment, Recommitment, Fundraising and Guided Strategic Planning Setup. A separate quote covers professional facilitation of the actual planning meeting. The existing $197 personal consultation is unchanged.
 7. Payment opens the detailed leader questionnaire. Earlier relevant answers are reused. Questions and progress are versioned and saved. Recruitment and Recommitment retain the established detailed questions; Planning uses its independently editable leader question group; Fundraising retains its audience-by-audience Game before booking.
 8. The customer then provides branding and opens the configured Calendly link. Board invitations are not required before the first session. Paid customers can return using their secure link without another charge.
 9. Rooney prepares and operates the existing customer workspace, then hands over the same saved project through the established secure access mechanism. Existing campaigns, applicant management, board forms, meeting controls, transcription, adopted decisions, document approvals, signatures and downloads remain in their original engines.
@@ -25,7 +25,7 @@ The question counts below are defaults after the three contact fields, not hardc
 | Board Recruitment | Four questions: role, recruitment count, preferred location and desired outcome. | The established detailed recruitment questions collect mission, current board and recruitment needs. After branding and booking, Rooney reviews and agrees the desired profiles, prepares and approves the existing materials, then explicitly launches the campaign. Applicants use the original public application/CV system. Notifications, interview decisions, reference/appointment documents, agreements and onboarding remain available. The same project can be handed to the leader to continue independently. |
 | Board Recommitment | Four questions: role, number of members, reason and desired outcome. | The established detailed recommitment questions precede branding and booking. Rooney prepares the original branded recommitment form and reviewed invitations. Active, advisory and step-down responses remain distinct from confirmed organizational decisions. Interpretation, conversation guides, agreed portfolios, signatures and approved resource delivery continue through the existing workspace. |
 | Board Fundraising | Six questions: role, board size, goal, deadline, consequences and a separate positive outcome. | The leader completes the established organization questions, audience-by-audience Game and personal participation before branding and booking. Rooney uses the original workspace to prepare the board process and invitations. Participants keep their own answers. The Group Game, microphone/transcript controls, explicit audience adoption, agreed participation, strategy editing and final delivery are preserved. |
-| Guided Strategic Planning Setup | Four questions: role, board count, preferred meeting (or unscheduled) and desired outcome. | The $97 setup uses the extensive existing leader planning questions before branding and booking. The initial session prepares the original planning project. Board participants receive independent forms; programs retain their identifiers. The existing section-by-section discussion, explicit adopted decisions, contextual transcript, plan editor, versioned board review/adoption and approved downloads remain available. Professional meeting facilitation is separately quoted. |
+| Guided Strategic Planning Setup | Four questions: role, board count, preferred meeting (or unscheduled) and desired outcome. | The $497 setup uses the extensive existing leader planning questions before branding and booking. The initial session prepares the original planning project. Board participants receive independent forms; programs retain their identifiers. The existing section-by-section discussion, explicit adopted decisions, contextual transcript, plan editor, versioned board review/adoption and approved downloads remain available. Professional meeting facilitation is separately quoted. |
 
 ## Public links retained
 
@@ -97,7 +97,7 @@ The original Game engine and questionnaire, Planning methodology, AI document re
 
 ## Verification and release state
 
-The complete CI run passed on application commit `d264d9ae3d79af6669d24ba8fbae681e942e3be8`: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071 . Any later release-documentation commit leaves this tested application code unchanged.
+Before the subsequent all-four-$497 pricing correction, the complete CI run passed on application commit `d264d9ae3d79af6669d24ba8fbae681e942e3be8`: https://github.com/bigrooney007/Board-Builder/actions/runs/40037914071 . Any later release-documentation commit leaves this tested application code unchanged.
 
 - Backend: **184 passed** (83 guided quote/service/blog tests and 101 original regressions), using disposable Mongo and controlled Stripe/email/AI adapters.
 - Frontend: **60 passed**, across 14 suites.
