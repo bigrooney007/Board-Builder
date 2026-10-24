@@ -11,7 +11,7 @@ async def main():
  async with async_playwright() as p:
   browser=await p.chromium.launch()
   for width in (1440,390):
-   ctx=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844});auth=(await (await ctx.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth};await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);page=await ctx.new_page();errors=[];requests=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:requests.append(r.url))
+   ctx=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844});auth=(await (await ctx.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth};await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);page=await ctx.new_page();errors=[];requests=[];page.on('pageerror',lambda e:errors.append(str(e)) if page.url.startswith(BASE) else None);page.on('request',lambda r:requests.append(r.url))
    await page.route('https://calendly.com/**',lambda route:route.fulfill(status=200,content_type='text/html',body='<h1>Configured Calendly destination reached</h1>'))
    for service in SERVICES:
     admin='/api/admin/services/'+service
@@ -34,7 +34,11 @@ async def main():
      assert await page.get_by_role('textbox',name='Your personal participation',exact=True).input_value()
      await page.get_by_role('button',name='REVIEW MY CONTRIBUTION',exact=True).click();await page.get_by_role('button',name='SUBMIT MY CONTRIBUTION',exact=True).click()
     await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();booking=page.get_by_role('link',name='BOOK MY',exact=False);await booking.wait_for();assert await page.locator('body').evaluate('e=>e.scrollWidth<=innerWidth+2');await page.screenshot(path=f'test_reports/current-admin-post-payment-{service}-booking-{width}.png',full_page=True)
-    await booking.click();await page.wait_for_url(re.compile(r'https://calendly\.com/'));await page.get_by_role('heading',name='Configured Calendly destination reached',exact=True).wait_for()
+    async with page.expect_response(lambda r:r.url==BASE+base+'/book') as handed_off:await booking.click(no_wait_after=True)
+    redirect=await handed_off.value;assert redirect.status==303;assert redirect.headers['location'].startswith('https://calendly.com/')
+    # Routing callbacks are not guaranteed to run again for a cross-origin
+    # redirect. Verify the real handoff rather than third-party page contents.
+    await page.wait_for_url(re.compile(r'https://calendly\.com/'),wait_until='commit')
     listed=await (await ctx.request.get(BASE+admin+'/customers',headers=headers)).json();assert listed['total']==before;assert sample['customer_id'] not in {row['customer_id'] for row in listed['customers']}
     saved=await (await ctx.request.get(BASE+admin+'/customers/'+sample['customer_id'],headers=headers)).json();assert saved['customer']['internal_test'];assert saved['customer']['leader_completed_at'];assert saved['customer']['branding_saved_at'];assert saved['customer']['payment_status']=='paid'
     results.append({'service':service,'width':width,'one_button_prefilled_paid_setup_to_calendly_without_quote_charge_or_existing_customer':True})
