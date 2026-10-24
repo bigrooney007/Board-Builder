@@ -12,7 +12,7 @@ let node,root;
 const rows=[{id:'mission',key:'mission',prompt:'What is your mission?',help:'Share your own words.',required:true,archived:false,type:'textarea',options:[]}];
 const customer={customer_id:'requested',organization:'Requested Organization',name:'Sample Leader',email:'leader@example.org',first_email_sent_at:'2026-10-23T12:00:00Z',first_email_delivery_status:'sent',payment_status:'paid',question_snapshot:rows,answers:{mission:'Our original mission.'},leader_question_snapshot:rows,leader_answers:{mission:'Our detailed mission.'}};
 const config={question_groups:{entry:rows},customer_copy:{quote_heading:'Request Your Quote',quote_subtitle:'Receive your quote in one hour',question_submit:'GET MY FREE QUOTE'}};
-function routes(path){return <MemoryRouter initialEntries={[path]}><Routes><Route path="/admin/services/:service" element={<ServiceAdminPage/>}/><Route path="/admin/services/:service/settings/:section" element={<ServiceOfferEditor/>}/><Route path="/admin/services/:service/customers/:ident" element={<ServiceCustomerPage/>}/></Routes></MemoryRouter>}
+function routes(path){return <MemoryRouter initialEntries={[path]}><Routes><Route path="/admin/services/:service" element={<ServiceAdminPage/>}/><Route path="/admin/services/:service/settings/:section" element={<ServiceOfferEditor/>}/><Route path="/admin/services/:service/customers/:ident" element={<ServiceCustomerPage/>}/><Route path="/services/:service/setup/:token" element={<p>After-payment customer page</p>}/></Routes></MemoryRouter>}
 function mockApi(){jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path==='/auth/me'?{user_id:'sample-admin'}:path.endsWith('/settings')?{config,revision:0,active:true,price:49700}:path.endsWith('/customers/requested')?{customer,deliveries:[]}: {customers:[customer],total:1000}}));}
 beforeEach(()=>{globalThis.IS_REACT_ACT_ENVIRONMENT=true;node=document.createElement('div');document.body.append(node);root=createRoot(node);global.crypto={randomUUID:()=> '00000000-0000-4000-8000-000000000001'}});
 afterEach(async()=>{await act(async()=>root.unmount());node.remove();jest.restoreAllMocks()});
@@ -30,6 +30,12 @@ test('editing links open their own route without keeping the customer table unde
  expect(node.querySelector('[data-testid="service-offer-editor"]')).toBeTruthy();
  expect(node.querySelector('[data-testid="service-customer-list"]')).toBeNull();
  expect(node.querySelector('textarea[aria-label="Question 1 wording"]').value).toBe('What is your mission?');
+});
+test.each(['recruitment','board-recommitment','board-fundraising','strategic-planning'])('%s has one post-payment test button beside its editors that opens paid setup directly',async(service)=>{
+ mockApi();jest.spyOn(api,'post').mockResolvedValue({data:{url:'/services/'+service+'/setup/private-sample'}});
+ await act(async()=>root.render(routes('/admin/services/'+service)));
+ const buttons=[...node.querySelector('.service-shortcuts').querySelectorAll('button')];expect(buttons).toHaveLength(1);expect(buttons[0].textContent).toBe('Test Post-Payment Flow');
+ await act(async()=>buttons[0].click());expect(api.post).toHaveBeenCalledWith('/admin/services/'+service+'/test-post-payment');expect(api.post).toHaveBeenCalledTimes(1);expect(node.textContent).toContain('After-payment customer page');expect(node.querySelector('[data-testid="service-customer-list"]')).toBeNull();
 });
 test('reducing the question count archives later questions without deleting historic identifiers',async()=>{
  const change=jest.fn(),questions=[...rows,{...rows[0],id:'needs',key:'needs'},{...rows[0],id:'count',key:'count'}];

@@ -149,7 +149,7 @@ def register_routes(router, db):
         snapshot=[q for q in config['question_groups']['entry'] if not q['archived']]
         # Synthetic quote answers only. The detailed questions are the current
         # published version and remain available for the owner to complete.
-        answers={q['id']:('100000' if q['key']=='fundraising_goal' else '3' if q['type']=='number' else '2027-12-31' if q['key']=='fundraising_deadline' else 'Sample organization priorities') for q in snapshot}
+        answers={}
         row={'customer_id':ident,'request_id':new_id(),'service':service,'flow_version':FLOW_VERSION,'flow_kind':VERSION,'name':'Sample Nonprofit Leader','email':'sample-leader@nonprofitboardbuilder.internal','organization':'Sample Community Organization','access_token':token,'token_hash':digest(token),'unsubscribe_token':secrets.token_urlsafe(32),'workspace_user_id':'admin-dashboard-preview-guided-'+ident,'question_snapshot':snapshot,'question_version':version,'answers':answers,'leader_question_snapshot':[q for q in config['question_groups']['leader'] if not q['archived']],'leader_question_version':version,'leader_answers':{},'payment_status':'paid','purchased_package':package(service)['key'],'amount_paid':0,'test_payment':True,'paid_at':now(),'booking_status':'not_booked','internal_test':True,'test_owner':actor['user_id'],'created_at':now(),'updated_at':now(),'submitted_at':now(),'sequence_stopped':True}
         def sample_value(q):
             if q['type']=='multiselect':return q.get('options',[])[:1]
@@ -157,8 +157,15 @@ def register_routes(router, db):
             if q['type']=='date':return '2027-12-31'
             if q['type']=='number':return '100000' if 'fund' in q['key'] else '3'
             if q['type']=='meeting':return {'date':'2027-12-01','time':'16:00','timezone':'Europe/London'}
+            if q['key'] in {'desired_count','board_count','board_size'}:return '3'
+            if q['key']=='leader_role':return 'Executive Director'
             return 'Sample Community Organization helps children access learning. Our board wants to agree on practical priorities, relationships and contributions.'
-        original={q['key']:answers.get(q['id'],'') for q in snapshot}
-        row['leader_answers']={q['id']:original.get(q['key']) or sample_value(q) for q in row['leader_question_snapshot']}
+        row['answers']={q['id']:sample_value(q) for q in snapshot}
+        row['leader_answers']={q['id']:sample_value(q) for q in row['leader_question_snapshot']}
         await db.guided_service_customers.insert_one(copy.deepcopy(row));await provision_workspace(db,row)
+        if service=='board-fundraising':
+            # Existing self-play copies this sample-only draft. The owner can
+            # navigate the optional audience categories without typing a new
+            # participation statement merely to reach branding and booking.
+            await db.game_free_responses.update_one({'user_id':row['workspace_user_id']},{'$setOnInsert':{'user_id':row['workspace_user_id'],'workflow_version':7,'involvement':'I will help our board agree on practical fundraising priorities and discuss the contribution I can make.','created_at':now()}},upsert=True)
         return {'customer_id':ident,'url':f'/services/{service}/setup/{token}','internal_test':True}

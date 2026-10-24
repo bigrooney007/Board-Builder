@@ -161,6 +161,15 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
             self.assertIn('/setup/',sample['url']);token=sample['url'].split('/')[-1];base='/services/'+service+'/customer/'+token
             row=await self.req('GET',base);self.assertTrue(row['internal_test']);self.assertEqual(row['payment_status'],'paid');self.assertFalse(row['leader_completed_at'])
             await self.req('POST',base+'/checkout',{},409)
+            details=await self.req('GET',base+'/leader-questions');self.assertTrue(all(details['answers'].get(q['id']) for q in details['questions']))
+            submitted=await self.req('PUT',base+'/leader-questions',{'answers':details['answers'],'submit':True})
+            if service=='board-fundraising':
+                play='/game/play/'+submitted['audience_token']+'/audience-response';draft=await self.req('GET',play);self.assertTrue(draft['response']['involvement'])
+                response=draft['response'];response['category_status']={key:'complete' for key in draft['configuration']['categories']}
+                await self.req('POST',play+'/complete',response);await self.req('POST',base+'/leader-complete',{})
+            await self.req('PUT',base+'/branding',{'primary_color':'#4338ca'})
+            booking=await self.req('GET',base+'/book',status=303);self.assertIn('calendly.com',booking.headers['location'])
+            self.assertEqual((await self.req('GET','/admin/services/'+service+'/customers',admin=True))['total'],0)
         self.assertFalse(self.created)
 
     async def test_personalization_failure_escapes_untrusted_original_answer(self):

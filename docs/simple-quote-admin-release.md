@@ -37,6 +37,8 @@ Each offer has these links above its searchable, paginated customer list. Every 
 
 Changes save to the existing database. Draft/publish controls apply to service configuration. Landing-page editors retain their existing save controls. Historic answers retain their original question snapshots when questions are edited, reduced, archived or removed.
 
+Beside those editing links, each offer has one **Test Post-Payment Flow** button. It opens an isolated sample directly on the page a customer sees after payment, with prefilled leader answers. Continue through the paid questions and branding, then click the booking button to reach that offer's configured Calendly destination. It does not ask you to choose a customer, complete a quote or make a payment. Samples remain outside the customer list, and their emails are captured. The sample always uses the published post-payment questions and current booking configuration.
+
 Click a customer's name to open a separate profile. It contains three areas: their quote request, their post-payment answers and branding, and their customer dashboard. Payment and first-email status appear above them. The customer list does not remain underneath the profile.
 
 For a paid customer, Open Customer Dashboard opens the existing operational workspace. The owner can perform the service there. Copy Customer Dashboard Link returns the same saved dashboard address. The address includes a private capability in its fragment. Sharing the full address lets that customer return without a customer login. The server exchanges the capability for an HttpOnly, tenant-scoped session and checks paid access. Existing access revocation also invalidates this link and its sessions. Treat it as private customer access.
