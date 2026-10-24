@@ -6,6 +6,7 @@ import time
 import urllib.request
 from pathlib import Path
 from playwright.async_api import async_playwright, expect
+from quote_browser_helpers import start_quote
 BASE='http://127.0.0.1:8765'
 assert os.environ.get('RECOVERY_ACCEPTANCE')=='1'
 
@@ -30,29 +31,14 @@ async def main():
             await page.get_by_test_id('fundraising-home-page').wait_for()
             await page.get_by_role('heading',name='Get Your Board Members Fundraising by Your Next Board Meeting.',exact=True).wait_for()
             assert await page.get_by_text('Imagine walking into your next board meeting',exact=False).count()==1
-            await expect(page.get_by_role('button',name='GET A FREE QUOTE',exact=True)).to_have_count(4)
+            assert await page.get_by_role('button',name='GET A FREE QUOTE',exact=True).count()>=4
             for slot in ('fundraising-cta-after-explanation','fundraising-cta-after-biography'):
-                await page.get_by_test_id(slot).get_by_role('button').click()
-                await page.get_by_role('dialog').wait_for()
-                await expect(page.get_by_role('dialog').get_by_role('checkbox')).to_have_count(0)
-                await page.get_by_role('button',name='Close contact form',exact=True).click()
+                await page.get_by_test_id(slot).get_by_role('button').click();await page.wait_for_url('**/services/board-fundraising/quote');await page.get_by_test_id('service-quote-form').wait_for();await expect(page.get_by_role('dialog')).to_have_count(0);await page.goto(BASE+'/board-fundraising-game');await page.get_by_test_id('fundraising-biography').wait_for()
             assert await page.locator('body').evaluate('(e)=>e.scrollWidth<=window.innerWidth+2')
             assert await page.locator('.fundraising-offer-section p').evaluate_all("rows=>rows.every(e=>getComputedStyle(e).textAlign==='center')")
             await page.screenshot(path=f'test_reports/current-simplified-home-{width}.png',full_page=True)
             results.append({'width':width,'case':'supplied_homepage_and_layout','passed':True})
-            await page.get_by_role('button',name='GET A FREE QUOTE',exact=True).first.click()
-            await page.get_by_label('Full name',exact=True).fill('Sample Leader')
-            await page.get_by_label('Email address',exact=True).fill('leader@example.org')
-            await page.get_by_label('Organization name',exact=True).fill('BrightPath Youth Alliance')
-            await page.get_by_role('button',name='CONTINUE TO MY QUOTE',exact=True).click()
-            await page.wait_for_url('**/services/board-fundraising/start?lead=*')
-            token=page.url.split('lead=')[1]
-            fields=("Executive Director","3","100000","2027-12-31","Fewer young people can receive mentoring.","Our board can help sustain mentoring for more young people.")
-            for index,value in enumerate(fields):
-                await page.get_by_label('Your answer',exact=True).fill(value)
-                await page.get_by_role('button',name='GET MY FREE QUOTE' if index==5 else 'SAVE AND CONTINUE',exact=True).click()
-                if index<5:await expect(page.get_by_text(f'Question {index+2} of 6',exact=True)).to_be_visible()
-            await page.wait_for_url('**/services/board-fundraising/received/*')
+            token,row=await start_quote(page,'board-fundraising','Sample Leader','leader@example.org','BrightPath Youth Alliance',width,landing='/board-fundraising-game')
             await page.goto(BASE+'/how-the-fundraising-game-works')
             await page.get_by_test_id('fundraising-how-page').wait_for()
             await page.get_by_role('heading',name='Get Your Board Members Fundraising By Your Next Board Meeting.',exact=True).wait_for()

@@ -64,7 +64,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
 
     async def test_free_fundraising_saves_six_questions_and_stops_before_payment(self):
         token,base,row=await self.lead('board-fundraising')
-        self.assertEqual(len(row['question_snapshot']),6)
+        self.assertEqual(len(row['question_snapshot']),4)
         self.assertIn('desired_outcome_impact',row['answers'])
         self.assertEqual(row['payment_status'],'unpaid');self.assertFalse(self.created)
         self.assertEqual(await self.db.game_profiles.count_documents({}),0)
@@ -142,7 +142,7 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
         saved=await self.req('GET',base);self.assertEqual(saved['answers'][row['question_snapshot'][0]['id']],'Our role is saved.')
         await self.req('POST',base+'/checkout',status=409)
 
-    async def test_current_email_copy_timing_and_video_remain_editable_independently(self):
+    async def test_current_email_copy_and_timing_remain_editable_independently(self):
         for service in PRICES:
             settings=await self.req('GET','/admin/services/'+service+'/settings',admin=True);config=settings['config']
             config['first_email'].update(subject='A personal invitation from Rooney',body='Hello {{first_name}},\n\nActivate {{service_name}} for $497. We begin on our call and you continue through your dashboard.',cta='ACTIVATE MY SERVICE',delay_minutes=60)
@@ -153,8 +153,6 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             await gs.automation_tick(self.db,datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1),row['customer_id'])
             delivery=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'})
             self.assertEqual(delivery['subject'],'A personal invitation from Rooney');self.assertEqual(delivery['cta_label'],'ACTIVATE MY SERVICE')
-            preview=await self.req('POST','/admin/services/'+service+'/customers/'+row['customer_id']+'/video-preview',{'video_url':'https://youtu.be/personal'},admin=True)
-            self.assertIn('/offer/',preview['html']);self.assertIn('text-align:left',preview['html'])
 
     async def test_old_pricing_promotions_stop_without_stopping_paid_customer_delivery_retries(self):
         from unittest.mock import AsyncMock,patch
@@ -237,17 +235,6 @@ class TwoOptionHTTP(unittest.IsolatedAsyncioTestCase):
             await self.req('POST','/admin/services/'+service+'/customers/'+row['customer_id']+'/revoke-handover',{},admin=True)
             self.assertEqual((await self.client.get(base,headers=headers)).status_code,403)
 
-    async def test_unpaid_and_paid_video_links_remain_independent_of_followup_schedule(self):
-        token,base,row=await self.lead('board-fundraising')
-        admin='/admin/services/board-fundraising/customers/'+row['customer_id']
-        at=datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1)
-        await gs.automation_tick(self.db,at,row['customer_id'])
-        preview=await self.req('POST',admin+'/video-preview',{'video_url':'https://www.youtube.com/watch?v=recorded'},admin=True)
-        self.assertIn('/offer/',preview['html']);self.assertNotIn('package=rooney-facilitated',preview['html']);self.assertIn('text-align:left',preview['html'])
-        await self.req('POST',admin+'/video-send',{**preview,'request_id':str(uuid.uuid4()),'approved':True},admin=True)
-        saved=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']});self.assertEqual(saved['followup_index'],0)
-        await self.req('POST',base+'/checkout?package=self-facilitated');saved=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']});self.sessions[saved['session_id']].update(payment_status='paid',status='complete');await self.req('POST',base+'/confirm',{})
-        preview=await self.req('POST',admin+'/video-preview',{'video_url':'https://youtu.be/recorded'},admin=True);self.assertIn('/setup/',preview['html']);self.assertNotIn('/offer/',preview['html'])
 
     async def test_fundraising_portfolios_reuse_confirmed_roles_approval_and_pdf(self):
         token,public,row=await self.paid_option('board-fundraising','rooney-facilitated');uid=row['workspace_user_id']

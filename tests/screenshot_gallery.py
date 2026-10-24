@@ -14,8 +14,9 @@ page='''<!doctype html><meta charset="utf-8"><meta name="viewport" content="widt
 (root/'current-screenshot-index.json').write_text(json.dumps([p.name for p in images],indent=2))
 # Compact contact sheets are included in the job log so the reviewing assistant
 # can retrieve and inspect actual browser pixels without a production session.
-for group in ('recruitment','recommitment','fundraising','planning','professional','workstations'):
- if group=='professional':selected=[p for p in images if any(x in p.name for x in ('meet-rooney','consultation','part-one-paid'))]
+for group in ('recruitment','recommitment','fundraising','planning','professional','workstations','admin'):
+ if group=='admin':selected=[p for p in images if p.name.startswith('current-admin-') and '-1440' in p.name]
+ elif group=='professional':selected=[p for p in images if any(x in p.name for x in ('meet-rooney','consultation','part-one-paid'))]
  elif group=='workstations':selected=[p for p in images if 'workstation' in p.name and '-1440' in p.name]
  else:selected=[p for p in images if group in p.name and ('flow-' in p.name or 'workstation-' in p.name) and '-1440' in p.name]
  selected=selected[:12]

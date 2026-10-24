@@ -2,7 +2,7 @@
 import asyncio,json,os,re
 from pathlib import Path
 from playwright.async_api import async_playwright,expect
-from quote_browser_helpers import complete_leader
+from quote_browser_helpers import complete_leader,start_quote,open_customer_dashboard
 BASE='http://127.0.0.1:8765'
 assert os.environ.get('RECOVERY_ACCEPTANCE')=='1'
 
@@ -26,17 +26,7 @@ async def main():
    ctx=await browser.new_context(viewport={'width':width,'height':1000 if width>390 else 844},accept_downloads=True);page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    auth=(await (await ctx.request.get(BASE+'/__test/session')).json())['token'];headers={'Authorization':'Bearer '+auth}
    try:
-    await page.goto(BASE+'/board-fundraising');await page.get_by_test_id('fundraising-home-page').wait_for()
-    await page.get_by_role('button',name='GET A FREE QUOTE',exact=True).first.click()
-    await page.get_by_label('Full name',exact=True).fill('Sample Fundraising Leader');await page.get_by_label('Email address',exact=True).fill(f'fundraising-{choice}-{width}@example.org');await page.get_by_label('Organization name',exact=True).fill('Sample Fundraising Organization')
-    await page.screenshot(path=f'test_reports/current-flow-fundraising-contact-{choice}-{width}.png',full_page=True)
-    await page.get_by_role('button',name='CONTINUE TO MY QUOTE',exact=True).click();await page.wait_for_url('**/services/board-fundraising/start?lead=*');token=page.url.split('lead=')[1]
-    row=await (await ctx.request.get(BASE+'/api/services/board-fundraising/customer/'+token)).json();ident=row['customer_id'];assert len(row['question_snapshot'])==6
-    await page.screenshot(path=f'test_reports/current-flow-fundraising-questions-{choice}-{width}.png',full_page=True)
-    for i,value in enumerate(['Executive Director','3','100000','2027-12-31','Children would lose access to our learning program.','Our board can help sustain access to learning.']):
-     await page.get_by_label('Your answer',exact=True).fill(value);await page.get_by_role('button',name='GET MY FREE QUOTE' if i==5 else 'SAVE AND CONTINUE',exact=True).click()
-     if i<5:await expect(page.get_by_text(f'Question {i+2} of 6',exact=True)).to_be_visible()
-    await page.wait_for_url('**/services/board-fundraising/received/*')
+    token,row=await start_quote(page,'board-fundraising','Sample Fundraising Leader',f'fundraising-{choice}-{width}@example.org','Sample Fundraising Organization',width,landing='/board-fundraising');ident=row['customer_id']
     await page.screenshot(path=f'test_reports/current-flow-fundraising-received-{choice}-{width}.png',full_page=True)
     await page.goto(BASE+'/services/board-fundraising/offer/'+token);price='497' if choice=='self-facilitated' else '1,497'
     button=page.get_by_role('button',name='ACTIVATE MY BOARD FUNDRAISING',exact=True);await button.wait_for();await page.screenshot(path=f'test_reports/current-flow-fundraising-offers-{choice}-{width}.png',full_page=True);await button.click()
@@ -44,9 +34,8 @@ async def main():
     await page.get_by_label('Primary organization color',exact=True).fill('#4438cc');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY BOARD FUNDRAISING ACTIVATION CALL →',exact=True).wait_for()
     await page.screenshot(path=f'test_reports/current-flow-fundraising-branding-booking-{choice}-{width}.png',full_page=True)
     await ctx.add_cookies([{'name':'admin_access_token','value':auth,'url':BASE,'httpOnly':True,'sameSite':'Lax'}]);data=await (await ctx.request.get(BASE+'/api/admin/services/board-fundraising/customers/'+ident,headers=headers)).json();uid=data['customer']['workspace_user_id']
-    await page.goto(BASE+'/admin/services/board-fundraising');await page.get_by_role('button',name='Open Service Workspace',exact=True).first.click();await page.get_by_test_id('dashboard-handover').wait_for();await page.screenshot(path=f'test_reports/current-workstation-fundraising-admin-{choice}-{width}.png',full_page=True)
-    await page.get_by_role('link',name='Open Fundraising Preparation and Facilitation',exact=True).click()
-    await page.get_by_test_id('fundraising-workspace').wait_for();member_headers={**headers,'X-Fundraising-Customer':uid}
+    await page.goto(BASE+'/admin/services/board-fundraising/customers/'+ident);await page.get_by_test_id('service-customer-profile').wait_for();await page.screenshot(path=f'test_reports/current-workstation-fundraising-admin-{choice}-{width}.png',full_page=True)
+    await page.get_by_role('button',name='Open Customer Dashboard',exact=True).click();await page.wait_for_url('**/services/board-fundraising/dashboard/**');await page.get_by_test_id('fundraising-workspace').wait_for();member_headers={**headers,'X-Fundraising-Customer':uid}
     meeting=await ctx.request.put(BASE+'/api/game/night',headers=member_headers,data={'meeting_date':'2026-12-01','start_time':'16:00','timezone_name':'Europe/London','funding_deadline':'2027-12-31'});assert meeting.ok,await meeting.text()
     added=await ctx.request.post(BASE+'/api/game/board-members',headers=member_headers,data={'full_name':'Alex Example','email':f'board-{choice}-{width}@example.org'});assert added.ok,await added.text();person=(await added.json())['board_member']
     sent=await ctx.request.post(BASE+'/api/game/board-members/'+person['member_id']+'/invite',headers=member_headers,data={'origin_url':BASE});assert sent.ok,await sent.text()

@@ -190,7 +190,7 @@ def create_marketing_router(db) -> APIRouter:
     @router.put("/admin/blog/settings")
     async def save_settings(payload: BlogSettings, request: Request):
         await authenticate_admin(request, db)
-        await db.marketing_settings.update_one({"key": "blog_weekday_drafts"}, {"$set": {**payload.model_dump(), "automation_version": 2}}, upsert=True)
+        await db.marketing_settings.update_one({"key": "blog_weekday_drafts"}, {"$set": {**payload.model_dump(), "automation_version": 3}}, upsert=True)
         return {"settings": await blog_settings(db)}
 
     @router.get("/admin/blog/posts")

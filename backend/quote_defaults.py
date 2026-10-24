@@ -2,11 +2,12 @@
 from copy import deepcopy
 
 VERSION = "free-quote-2026-10"
+FORM_VERSION = "single-page-quote-2026-10-24"
 PRICING_VERSION = "all-four-497-2026-10-24"
 TEST_EMAIL = "fundraisingschoolfornonprofits@gmail.com"
 IMPACT_KEY = "desired_outcome_impact"
 IMPACT = {
-    "recruitment": "When you recruit these board members, how would they help you and your organization?",
+    "recruitment": "How would these new board members help your organization?",
     "board-recommitment": "Getting your board members to recommit or step down, how would that help you and your organization?",
     "board-fundraising": "Getting your board members to raise money, how would that help your organization?",
     "strategic-planning": "Taking your board members through strategic planning, how would that help you and your organization?",
@@ -28,14 +29,13 @@ def quote_questions(service):
     from guided_service_defaults import question as q
     rows = [q("leader_role", "What is your role in the organization?", kind="text")]
     if service == "recruitment":
-        rows += [q("desired_count", "How many board members do you want to recruit?", "Tell us if you are not sure yet.", kind="text"), q("location_preference", "Where would you like these board members to be located?", "You can describe a location or say that remote participation is suitable.")]
+        rows += [q("desired_count", "How many board members do you want to recruit?", kind="text"), q("recruitment_timing", "How soon do you need to recruit them?", kind="text"), q("location_preference", "Where would you like these board members to be located?", kind="text"), q(IMPACT_KEY, IMPACT[service], semantic_role=IMPACT_KEY)]
     elif service == "board-recommitment":
-        rows += [q("board_count", "How many board members need to recommit?", kind="text"), q("why_recommit", "Why do these board members need to recommit?")]
+        rows += [q("board_count", "How many board members need to recommit?", kind="text"), q("why_recommit", "Why do these board members need to recommit or step down?", semantic_role=IMPACT_KEY), q("recommitment_timing", "How soon do you want them to recommit or step down?", kind="text")]
     elif service == "board-fundraising":
-        rows += [q("board_size", "How many board members do you have?", kind="number"), q("fundraising_goal", "How much money is your organization trying to raise?", "Enter the amount in US dollars.", kind="number"), q("fundraising_deadline", "When does your organization need this funding?", "Tell us the date or timing you are working towards.", kind="text"), q("funding_consequences", "What happens if your organization does not raise this money?")]
+        rows += [q("board_size", "How many board members do you have?", kind="number"), q("fundraising_goal", "How much money is your organization trying to raise?", kind="number"), q(IMPACT_KEY, IMPACT[service], semantic_role=IMPACT_KEY)]
     else:
-        rows += [q("board_count", "How many board members does your organization have?", kind="text"), q("planning_meeting_preference", "Which upcoming board meeting would you like to use for strategic planning?", "If your meeting is not scheduled yet, please say so.", kind="text")]
-    rows += [q(IMPACT_KEY, IMPACT[service], "Explain in your own words what achieving this result would mean for you and your organization.", semantic_role=IMPACT_KEY)]
+        rows += [q("board_count", "How many board members does your organization have?", kind="text"), q(IMPACT_KEY, IMPACT[service], semantic_role=IMPACT_KEY)]
     return rows
 
 FIRST_COPY = {
@@ -61,6 +61,8 @@ def apply_defaults(service, base):
         if service == "board-fundraising":
             result["question_groups"]["leader"] = [q for q in result["question_groups"]["leader"] if q["key"] != "next_board_meeting"]
     result["question_groups"]["entry"] = quote_questions(service)
+    result.pop("video_email", None)
+    result["quote_form_version"] = FORM_VERSION
     result["quote_version"] = VERSION
     result["pricing_version"] = PRICING_VERSION
     subject, summary, process, price, cta = FIRST_COPY[service]
@@ -68,9 +70,10 @@ def apply_defaults(service, base):
     result["paid_email"] = email("Your {{service_name}} Payment Is Confirmed", "Hi {{first_name}},\n\nYour payment is confirmed. Complete your detailed leader questionnaire, save your organization's logo and colors, then choose a convenient time for our session. Your information is saved and you can return without paying again.", "Complete My Leader Questionnaire")
     for item in result["followups"]:
         item["body"] = item["body"].replace("$497", "${{price}}")
-        item["after_previous_minutes"] = 4320
+        item["after_previous_minutes"] = 2880
     headline, description, steps = LANDINGS[service]
     result["landing"].update(headline=headline, description=description, cta="GET A FREE QUOTE")
     result["landing"]["steps"] = [[str(i+1), title, text] for i, (title, text) in enumerate(steps)]
     result["customer_copy"].update({"contact_heading": HEADINGS[service], "contact_cta": "CONTINUE TO MY QUOTE", "contact_email_notice": "Complete the short questions next. Look out for my email within one hour after submitting your quote request.", "question_submit": "GET MY FREE QUOTE", "received_heading": "Your " + ("Board Recommitment Request" if service == "board-recommitment" else "Board Fundraising Request" if service == "board-fundraising" else "Board Recruitment Quote Request" if service == "recruitment" else "Strategic Planning Quote Request") + " Has Been Received.", "received_body": "Thank you for sharing what you want to accomplish. We will email you the next steps within the next hour. Please look out for my email in your inbox.\n\nRooney A. The Nonprofit Board Builder", "leader_heading": "Tell Us More About Your Organization", "leader_intro": "Your payment is confirmed. Complete the leader questions below, then provide your branding and book our session. You can save and return through your secure link.", "leader_submit": "SAVE MY LEADER QUESTIONNAIRE", "leader_saved": "Your leader questionnaire is saved. Please confirm your organization branding below.", "offer_intro": "Complete your payment, answer the detailed leader questions, provide your organization's branding and choose a convenient time to meet with Rooney.", "activation_description": "Your guided setup session and platform provide the tools and structure to continue independently. We begin your process together on the first call. Additional professional facilitation, if needed, is quoted separately."})
+    result["customer_copy"].update({"quote_heading":HEADINGS[service], "quote_subtitle":"Complete this form to receive your free quote by email within one hour.", "quote_name_label":"Your name", "quote_email_label":"Email address", "quote_organization_label":"Organization name", "received_heading":"Thank You. We Have Received Your Request.", "received_body":"We will be in touch within the next few hours. Please look out for our email in your inbox."})
     return result

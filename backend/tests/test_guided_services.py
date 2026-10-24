@@ -68,7 +68,7 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         token,base,row=await self.lead();settings=await self.req('GET','/admin/services/recruitment/settings',admin=True);c=settings['config'];c['question_groups']['entry']=[{**c['question_groups']['entry'][-1],'prompt':'Updated question'}]
         saved=await self.req('PUT','/admin/services/recruitment/draft',{'config':c,'revision':settings['revision']},admin=True);await self.req('POST','/admin/services/recruitment/publish',{'revision':saved['revision']},admin=True)
         current=await self.req('GET','/services/recruitment/questions');self.assertEqual(len(current['questions']),1);self.assertEqual(current['questions'][0]['prompt'],'Updated question')
-        original=await self.req('GET',base);self.assertEqual(len(original['question_snapshot']),4);self.assertEqual(original['answers'],row['answers'])
+        original=await self.req('GET',base);self.assertEqual(len(original['question_snapshot']),5);self.assertEqual(original['answers'],row['answers'])
         other=await self.req('GET','/admin/services/board-recommitment/settings',admin=True);self.assertNotEqual(other['config']['question_groups']['entry'][0]['prompt'],'Updated question')
     async def test_all_service_question_counts_subtitles_and_historic_answers(self):
         for service in PRICES:
@@ -130,10 +130,6 @@ class GuidedHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('GET',base+'/materials/not-owned/download',status=404);await self.req('GET',base.replace(token,'x'*43),status=404)
         from member_auth import create_member_token
         member=await self.db.members.find_one({'user_id':row['workspace_user_id']});bad=await self.client.get('/api/workspace/profile',headers={'Authorization':'Bearer '+create_member_token(member['user_id'],member['email'])});self.assertEqual(bad.status_code,403)
-    async def test_manual_video_uses_paid_continuation_and_approval_with_dedupe(self):
-        token,base,row=await self.paid();ab='/admin/services/recruitment/customers/'+row['customer_id'];draft=await self.req('POST',ab+'/video-preview',{'video_url':'https://youtu.be/actualvideo'},admin=True);self.assertNotIn('PAY $497',draft['cta']);body={**draft,'request_id':str(uuid.uuid4()),'approved':True}
-        before=self.mail.call_count;await self.req('POST',ab+'/video-send',body,admin=True);await self.req('POST',ab+'/video-send',body,admin=True);self.assertEqual(self.mail.call_count,before+1)
-        await self.req('POST',ab+'/video-send',{**body,'approved':False},409,True);await self.req('POST',ab+'/video-preview',{'video_url':'https://evil.example/video'},422,True)
     async def test_admin_current_sample_has_no_real_charge_and_scoped_mail(self):
         sample=await self.req('POST','/admin/services/recruitment/test-start',{},admin=True);row=await self.db.guided_service_customers.find_one({'customer_id':sample['customer_id']});ab='/admin/services/recruitment/customers/'+sample['customer_id'];base='/services/recruitment/customer/'+row['access_token']
         await self.req('POST',ab+'/test-advance',{'action':'run-email'},409,True);await self.req('PUT',base+'/answers',{'answers':{q['id']:'Sample mission and needs' for q in row['question_snapshot']},'submit':True});await self.req('POST',base+'/checkout',{},409)

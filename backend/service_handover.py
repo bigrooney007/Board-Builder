@@ -37,7 +37,12 @@ async def operator_record(db, request, service=None):
         raise HTTPException(401, "Open your personal dashboard invitation to continue.") from exc
     if service and service != claim.get("service"):
         raise HTTPException(403, "This access belongs to another service.")
-    row = await db.guided_service_customers.find_one({"customer_id": claim.get("sub"), "service": claim.get("service"), "payment_status": "paid", "purchased_package": {"$in":["self-facilitated","guided","guided-setup"]}, "operator_status": {"$in": ["organization_operating", "completed"]}, "operator_session_version": claim.get("version")}, {"_id": 0})
+    query={"customer_id":claim.get("sub"),"service":claim.get("service"),"payment_status":"paid","operator_session_version":claim.get("version")}
+    if claim.get("kind")=="dashboard-link":
+        query["dashboard_access.enabled"]=True
+    else:
+        query.update({"purchased_package":{"$in":["self-facilitated","guided","guided-setup"]},"operator_status":{"$in":["organization_operating","completed"]}})
+    row = await db.guided_service_customers.find_one(query, {"_id": 0})
     if not row or row["service"] not in ACTIVE_SERVICES:
         raise HTTPException(403, "Your dashboard access is unavailable. Request a new invitation from Rooney.")
     return row
@@ -53,6 +58,38 @@ async def operator_for_workspace(db, request, workspace_id, service):
 def create_handover_router(db):
     from guided_services import admin_record, digest, now, settings, render, context, send_message
     router = APIRouter(prefix="/api", dependencies=[Depends(no_cache)])
+
+    @router.post("/admin/services/{service}/customers/{ident}/dashboard-access")
+    async def dashboard_access(service:str,ident:str,request:Request):
+        row=await admin_record(db,service,ident,request,True)
+        from guided_services import provision_workspace
+        await provision_workspace(db,row)
+        existing=row.get("dashboard_access") or {}
+        if existing.get("enabled") and existing.get("token"):
+            token=existing["token"]
+        else:
+            token=secrets.token_urlsafe(32)
+            version=row.get("operator_session_version") or secrets.token_urlsafe(24)
+            access={"token":token,"token_hash":digest(token),"enabled":True,"created_at":now()}
+            await db.guided_service_customers.update_one({"customer_id":ident,"payment_status":"paid"},{"$set":{"dashboard_access":access,"operator_session_version":version}})
+        # The fragment remains copyable in the address bar and is never sent to
+        # the web server or analytics as part of an HTTP page URL.
+        return {"url":origin()+f"/services/{service}/dashboard/{ident}#access="+token}
+
+    @router.post("/services/{service}/dashboard-access")
+    async def open_dashboard(service:str,payload:dict,request:Request):
+        from guided_services import rate_limit
+        if service not in ACTIVE_SERVICES:raise HTTPException(404,"This dashboard was not found.")
+        await rate_limit(db,request,"dashboard-access",120)
+        token=str(payload.get("token", ""))
+        if not 40<=len(token)<=100:raise HTTPException(404,"This dashboard link was not found.")
+        row=await db.guided_service_customers.find_one({"service":service,"dashboard_access.token_hash":digest(token),"dashboard_access.enabled":True,"payment_status":"paid"},{"_id":0})
+        if not row:raise HTTPException(404,"This dashboard link was not found. Request your current link from Rooney.")
+        if payload.get("customer_id") and payload["customer_id"]!=row["customer_id"]:raise HTTPException(403,"This link belongs to another organization.")
+        claim={"sub":row["customer_id"],"service":service,"version":row["operator_session_version"],"kind":"dashboard-link","aud":"guided-service-operator","iat":stamp(),"exp":stamp()+timedelta(hours=8)}
+        response=JSONResponse({"customer_id":row["customer_id"],"url":f"/services/{service}/dashboard/"+row["customer_id"]})
+        response.set_cookie(COOKIE,jwt.encode(claim,os.environ["JWT_SECRET"],algorithm="HS256"),httponly=True,secure=True,samesite="lax",path="/api",max_age=8*3600)
+        return response
 
     @router.post("/admin/services/{service}/customers/{ident}/handover")
     async def prepare(service: str, ident: str, payload: dict, request: Request):
@@ -120,7 +157,7 @@ def create_handover_router(db):
     @router.post("/admin/services/{service}/customers/{ident}/revoke-handover")
     async def revoke(service: str, ident: str, request: Request):
         await admin_record(db, service, ident, request, True)
-        await db.guided_service_customers.update_one({"customer_id": ident}, {"$set": {"operator_status": "rooney_preparing", "operator_session_version": secrets.token_urlsafe(24)}, "$unset": {"handover": ""}})
+        await db.guided_service_customers.update_one({"customer_id": ident}, {"$set": {"operator_status": "rooney_preparing", "operator_session_version": secrets.token_urlsafe(24)}, "$unset": {"handover": "", "dashboard_access": ""}})
         return {"status": "revoked"}
 
     @router.get("/services/{service}/operator/{ident}")

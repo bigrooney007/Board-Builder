@@ -45,8 +45,9 @@ async def main():
                 await page.goto(BASE + path)
                 await page.get_by_test_id(testid).wait_for()
                 await page.locator('.recruit-hero .bfg-btn-primary, .guided-hero-cta').first.click()
-                await page.get_by_role('dialog').wait_for()
-                assert page.url == BASE + path
+                await page.wait_for_url('**/services/*/quote')
+                await page.get_by_test_id('service-quote-form').wait_for()
+                await expect(page.get_by_role('dialog')).to_have_count(0)
                 await expect(page.locator("form").first).to_be_visible()
             await page.goto(BASE + "/board-fundraising?entry=directory")
             await page.wait_for_url(BASE + "/board-fundraising-game?entry=directory")

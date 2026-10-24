@@ -47,7 +47,7 @@ async def settings(db, service, draft=False):
         if isinstance(base,dict) and isinstance(value,dict):return {key:merge(default,value.get(key,default)) for key,default in base.items()}
         return copy.deepcopy(value)
     value=copy.deepcopy(saved.get("draft" if draft else "published") or {})
-    from quote_defaults import VERSION, PRICING_VERSION
+    from quote_defaults import VERSION, PRICING_VERSION, FORM_VERSION
     current=defaults(service)
     if value and value.get("quote_version")!=VERSION:
         # Historic versions remain in the database. Preserve the former detailed
@@ -94,8 +94,17 @@ async def settings(db, service, draft=False):
         for key,text in list(value.get("customer_copy",{}).items()):
             if isinstance(text,str):value["customer_copy"][key]=re.sub(r"\$97\b","$497",text)
         value["pricing_version"]=PRICING_VERSION
+    if value and value.get("quote_form_version")!=FORM_VERSION:
+        # New quote forms apply to new requests only. Submitted rows keep their
+        # original snapshots; paid leader questionnaires remain untouched.
+        value.setdefault("question_groups",{})["entry"]=copy.deepcopy(current["question_groups"]["entry"])
+        value["quote_form_version"]=FORM_VERSION
+        value.setdefault("first_email",{})["delay_minutes"]=60
+        for item in value.get("followups",[]):item["after_previous_minutes"]=2880
+        for key in ("quote_heading","quote_subtitle","quote_name_label","quote_email_label","quote_organization_label","received_heading","received_body"):
+            value.setdefault("customer_copy",{})[key]=current["customer_copy"][key]
     config=merge(defaults(service),value)
-    templates=[config['first_email'],config['paid_email'],config['video_email'],config['delivery_email'],config['handover_email'],*config['followups'],*config['operational_emails'].values()]
+    templates=[config['first_email'],config['paid_email'],config['delivery_email'],config['handover_email'],*config['followups'],*config['operational_emails'].values()]
     for item in templates:
         if item.get('signature')=='Rooney Akpesiri\nNonprofit Board Builder':item['signature']='Rooney A.\nThe Nonprofit Board Builder'
     return config, saved.get("revision", 0), saved.get("version", "initial")
@@ -120,10 +129,8 @@ def validate_config(service, payload):
     if not isinstance(payload,dict) or set(payload)!=set(expected): raise HTTPException(422,"Reload the settings before saving. Some fields are missing or unsupported.")
     if set(payload["question_groups"])!=set(expected["question_groups"]): raise HTTPException(422,"Keep the service's independent question groups.")
     for rows in payload["question_groups"].values(): validate_questions(rows)
-    from quote_defaults import IMPACT_KEY, VERSION
+    from quote_defaults import VERSION
     if payload.get("quote_version")!=VERSION:raise HTTPException(422,"Reload the current quote settings before saving.")
-    impact=[q for q in payload["question_groups"]["entry"] if not q.get("archived") and (q.get("semantic_role")==IMPACT_KEY or q.get("key")==IMPACT_KEY)]
-    if len(impact)!=1 or not impact[0].get("required") or impact[0].get("type") not in {"text","textarea"}:raise HTTPException(422,"Keep one required open-text outcome-impact question. Its wording remains editable.")
     if service=="strategic-planning":
         for group in ("leader","board"):
             for q in payload["question_groups"][group]:
@@ -133,7 +140,7 @@ def validate_config(service, payload):
     if not isinstance(payload["sequence_paused"],bool): raise HTTPException(422,"Invalid sequence setting.")
     if not isinstance(payload["followups"],list) or len(payload["followups"])!=5: raise HTTPException(422,"Keep the five independently editable follow-up messages.")
     if set(payload["operational_emails"])!=set(expected["operational_emails"]):raise HTTPException(422,"Keep the service's operational email templates.")
-    for template in [payload["first_email"],payload["video_email"],payload["paid_email"],payload["delivery_email"],*payload["followups"],*payload["operational_emails"].values(), *([payload["handover_email"]] if "handover_email" in payload else [])]:
+    for template in [payload["first_email"],payload["paid_email"],payload["delivery_email"],*payload["followups"],*payload["operational_emails"].values(), *([payload["handover_email"]] if "handover_email" in payload else [])]:
         for key in ("subject","headline","body","cta","support","signature","preview_text"):
             value=template.get(key,"")
             if not isinstance(value,str) or len(value)>18000 or (key in {"subject","body","cta"} and not value.strip()): raise HTTPException(422,"Email subject, message and button text are required.")
@@ -283,7 +290,7 @@ async def automation_tick(db,at=None,only_id=None):
             if row.get("flow_kind")==VERSION and not row.get("submitted_at"):continue
             anchor=row.get("created_at") if row.get("offer_version")==ACTIVATION_OFFER_VERSION and row.get("flow_kind")!=VERSION else row.get("submitted_at")
             if not anchor:continue
-            due=datetime.fromisoformat(anchor)+timedelta(minutes=0 if row.get("client_flow_test") else config["first_email"]["delay_minutes"])
+            due=datetime.fromisoformat(anchor)+timedelta(minutes=0 if row.get("client_flow_test") and not row.get("quote_form_version") else config["first_email"]["delay_minutes"])
             await db.guided_service_customers.update_one({"customer_id":row["customer_id"]},{"$set":{"first_email_due_at":due.isoformat()}})
             if at<due or not config["first_email"]["enabled"]:continue
             from quote_personalization import prepare
@@ -391,8 +398,7 @@ async def calendly_event(db,event):
 
 def admin_view(row):
     # GridFS identifiers remain server-side and are not JSON values or access links.
-    clean=copy.deepcopy({k:v for k,v in row.items() if k not in {"_id","access_token","token_hash","unsubscribe_token","checkout_url"}})
-    for video in [clean.get("video_followup") or {},*clean.get("video_followup_history",[])]:video.pop("recording_blob_id",None)
+    clean=copy.deepcopy({k:v for k,v in row.items() if k not in {"_id","access_token","token_hash","unsubscribe_token","checkout_url","video_followup","video_followup_history","dashboard_access"}})
     return clean
 
 def public_record(row):
@@ -409,6 +415,10 @@ class Start(BaseModel):
 class Answers(BaseModel):
     answers:dict
     submit:bool=False
+
+class QuoteRequest(Start):
+    answers:dict
+    question_version:str=""
 
 class ConfigSave(BaseModel):
     config:dict
@@ -431,7 +441,6 @@ class EmailDraft(BaseModel):
     support:str=""
     signature:str=""
     preview_text:str=Field(default="",max_length=1000)
-    video_url:str=""
     expected_payment_status:str
     approved:bool=False
 
@@ -455,7 +464,7 @@ def create_guided_services_router(db):
     @router.get("/services/{service}/questions")
     async def entry_questions(service:str):
         check_service(service,active=True);config,_,version=await settings(db,service)
-        return {"service":service,"name":NAMES[service],"questions":[q for q in config["question_groups"]["entry"] if not q["archived"]],"version":version,"landing":config["landing"],"contact":{key:config["customer_copy"][key] for key in ("contact_heading","contact_cta","contact_email_notice")}}
+        return {"service":service,"name":NAMES[service],"questions":[q for q in config["question_groups"]["entry"] if not q["archived"]],"version":version,"landing":config["landing"],"contact":{key:config["customer_copy"][key] for key in ("contact_heading","contact_cta","contact_email_notice")},"copy":config["customer_copy"]}
 
     @router.post("/services/{service}/recover")
     async def recover(service:str,payload:dict,request:Request):
@@ -482,7 +491,8 @@ def create_guided_services_router(db):
         if not await db.guided_service_customers.find_one({"request_id":str(payload.request_id)}):await rate_limit(db,request,"start:"+service)
         token=secrets.token_urlsafe(32);ident=new_id();timestamp=now()
         row={"service":service,"customer_id":ident,"request_id":str(payload.request_id),"name":payload.name,"email":str(payload.email).lower(),"organization":payload.organization,"access_token":token,"token_hash":digest(token),"unsubscribe_token":secrets.token_urlsafe(32),"workspace_user_id":"guided-service-"+ident,"flow_version":FLOW_VERSION,"question_snapshot":[q for q in config["question_groups"]["entry"] if not q["archived"]],"question_version":version,"answers":{},"payment_status":"unpaid","booking_status":"not_booked","created_at":timestamp,"updated_at":timestamp,"offer_version":ACTIVATION_OFFER_VERSION,"first_email_due_at":(datetime.fromisoformat(timestamp)+timedelta(minutes=config["first_email"]["delay_minutes"])).isoformat()}
-        from quote_defaults import VERSION, TEST_EMAIL
+        from quote_defaults import VERSION, TEST_EMAIL, FORM_VERSION
+        row["quote_form_version"]=FORM_VERSION
         row.update({"flow_kind":VERSION,"client_flow_test":row["email"]==TEST_EMAIL,"leader_question_snapshot":[q for q in config["question_groups"]["leader"] if not q["archived"]],"leader_question_version":version,"leader_answers":{}})
         row.pop("first_email_due_at",None)
         if row["client_flow_test"]:row["record_label"]="CLIENT FLOW TEST"
@@ -533,13 +543,30 @@ def create_guided_services_router(db):
         if payload.submit:
             from quote_defaults import VERSION
             stamp=now();config,_,_=await settings(db,service)
-            updates.update({"submitted_at":stamp,"analysis":{"status":"awaiting_leader_details" if service=="recruitment" and row.get("flow_kind")==VERSION else "queued" if service=="recruitment" else "not_required"},"followup_index":0,"first_email_due_at":(datetime.fromisoformat(stamp)+timedelta(minutes=0 if row.get("client_flow_test") else config["first_email"]["delay_minutes"])).isoformat()})
+            updates.update({"submitted_at":stamp,"analysis":{"status":"awaiting_leader_details" if service=="recruitment" and row.get("flow_kind")==VERSION else "queued" if service=="recruitment" else "not_required"},"followup_index":0,"first_email_due_at":(datetime.fromisoformat(stamp)+timedelta(minutes=0 if row.get("client_flow_test") and not row.get("quote_form_version") else config["first_email"]["delay_minutes"])).isoformat()})
             from quote_personalization import impact_answer
             updates["desired_outcome_impact"]=impact_answer({**row,"answers":merged})
         await db.guided_service_customers.update_one({"customer_id":row["customer_id"],"submitted_at":{"$exists":False}},{"$set":updates})
         saved=await db.guided_service_customers.find_one({"customer_id":row["customer_id"]},{"_id":0})
-        if payload.submit and saved.get("client_flow_test"):await automation_tick(db,only_id=row["customer_id"])
+        if payload.submit and saved.get("client_flow_test") and not saved.get("quote_form_version"):await automation_tick(db,only_id=row["customer_id"])
         return public_record(saved)
+
+    @router.post("/services/{service}/quote",status_code=201)
+    async def quote(service:str,payload:QuoteRequest,request:Request):
+        check_service(service,True)
+        existing=await db.guided_service_customers.find_one({"request_id":str(payload.request_id)},{"_id":0})
+        if not existing:
+            config,_,version=await settings(db,service)
+            if payload.question_version and payload.question_version!=version:raise HTTPException(409,"This form has changed. Refresh the form before submitting.")
+            from quote_onboarding import validate_answers
+            validate_answers([q for q in config["question_groups"]["entry"] if not q["archived"]],{},payload.answers,True)
+        saved=await start(service,Start(**payload.model_dump()),request)
+        if not existing:
+            # A normal quote is never a test merely because its owner previously
+            # used the same email address to check the website.
+            await db.guided_service_customers.update_one({"customer_id":saved["record"]["customer_id"]},{"$set":{"client_flow_test":False},"$unset":{"record_label":""}})
+        await answers(service,saved["token"],Answers(answers=payload.answers,submit=True))
+        return {"token":saved["token"],"customer_id":saved["record"]["customer_id"],"url":f"/services/{service}/received/{saved['token']}"}
 
     @router.post("/services/{service}/customer/{token}/checkout")
     async def checkout(service:str,token:str,request:Request):
@@ -661,14 +688,27 @@ def create_guided_services_router(db):
 
     @router.get("/admin/services/{service}/customers")
     async def customers(service:str,request:Request,skip:int=0):
-        await authenticate_admin(request,db);check_service(service)
-        filters={"service":service}
+        actor=await authenticate_admin(request,db);check_service(service)
+        filters={"service":service,"submitted_at":{"$exists":True},"internal_test":{"$ne":True},"client_flow_test":{"$ne":True},"test_payment":{"$ne":True},"archived_from_customer_list":{"$ne":True},"workspace_user_id":{"$not":{"$regex":"^admin-dashboard-preview-"}}}
+        test_contacts=["roacreativemarketing@gmail.com","fundraisingschoolfornonprofits@gmail.com","globalbusnonprofitsols@gmail.com","globalbusnonprofitsol@gmail.com"]
+        if actor.get("email"):test_contacts.append(actor["email"].lower())
+        cleanup_id="customer-list-cleanup-2026-10-24"
+        await db.guided_service_maintenance.update_one({"_id":cleanup_id},{"$setOnInsert":{"cutoff":now(),"test_contacts":test_contacts}},upsert=True)
+        cleanup=await db.guided_service_maintenance.find_one({"_id":cleanup_id})
+        from quote_defaults import FORM_VERSION
+        filters["$and"]=[{"$or":[{"email":{"$nin":cleanup["test_contacts"]}},{"created_at":{"$gte":cleanup["cutoff"]}},{"quote_form_version":FORM_VERSION}]}]
         for key in ("search","status","tests"):
             value=request.query_params.get(key,"").strip()
             if key=="search" and value:filters["$or"]=[{field:{"$regex":re.escape(value[:200]),"$options":"i"}} for field in ("name","email","organization")]
             if key=="status" and value in {"paid","unpaid","pending","failed","expired"}:filters["payment_status"]=value
-            if key=="tests" and value in {"only","exclude"}:filters["client_flow_test"]=True if value=="only" else {"$ne":True}
-        rows=await db.guided_service_customers.find(filters,{"_id":0,"access_token":0,"token_hash":0,"unsubscribe_token":0,"checkout_url":0}).sort("created_at",-1).skip(max(0,skip)).limit(50).to_list(50)
+            if key=="tests" and value=="only":
+                filters={"service":service,"$or":[{"client_flow_test":True},{"internal_test":True},{"test_payment":True}]}
+
+        rows=await db.guided_service_customers.find(filters,{"_id":0,"access_token":0,"token_hash":0,"unsubscribe_token":0,"checkout_url":0}).sort([("created_at",-1),("customer_id",1)]).skip(max(0,skip)).limit(50).to_list(50)
+        deliveries=await db.workflow_email_deliveries.find({"user_id":{"$in":[row.get("workspace_user_id") for row in rows]},"event_key":"guided-first-invitation"},{"_id":0,"user_id":1,"delivery_status":1,"status":1}).to_list(50)
+        status_by_owner={item["user_id"]:item.get("delivery_status") or item.get("status") for item in deliveries}
+        for row in rows:
+            if row.get("workspace_user_id") in status_by_owner:row["first_email_delivery_status"]=status_by_owner[row["workspace_user_id"]]
         return {"customers":[admin_view(row) for row in rows],"total":await db.guided_service_customers.count_documents(filters)}
 
     @router.get("/admin/services/{service}/customers/{ident}")
@@ -696,7 +736,7 @@ def create_guided_services_router(db):
     async def email_preview(service:str,payload:dict,request:Request):
         await authenticate_admin(request,db);check_service(service)
         config,_,_=await settings(db,service,True);key=payload.get("template","first_email")
-        if key not in {"first_email","video_email","paid_email","delivery_email","followups","operational_emails","handover_email"}:raise HTTPException(422,"Choose an email template.")
+        if key not in {"first_email","paid_email","delivery_email","followups","operational_emails","handover_email"}:raise HTTPException(422,"Choose an email template.")
         if key=="followups":
             index=payload.get("index",0)
             if type(index) is not int or not 0<=index<5:raise HTTPException(422,"Choose one of the five follow-ups.")
@@ -708,28 +748,6 @@ def create_guided_services_router(db):
         if key in {"paid_email","delivery_email","operational_emails"}:sample["payment_status"]="paid"
         values={**context(sample),"participant_name":"Sample Board Member","leader_name":"Sample Leader","applicant_name":"Sample Applicant","planning_period":"Next 12 to 24 months","meeting_details":"Your agreed meeting date, time and time zone","response_deadline":"Your agreed response deadline","agreed_purpose":"Clarify the contributions your board members can agree to make.","responsibilities":"Only the responsibilities the person has agreed to accept.","interview_details":"Your confirmed interview arrangements.","video_url":"https://www.youtube.com/watch?v=sample"}
         message=render(template,values);return {**message,"html":preview_email(message,continuation(sample),offer_links(sample,config)),"sample":True}
-
-    @router.post("/admin/services/{service}/customers/{ident}/video-preview")
-    async def video_preview(service:str,ident:str,payload:dict,request:Request):
-        row=await admin_record(db,service,ident,request);url=str(payload.get("video_url","")).strip();parsed=urlparse(url)
-        if parsed.scheme!="https" or parsed.hostname not in {"youtube.com","www.youtube.com","youtu.be","m.youtube.com"} or not parsed.path.strip("/"):raise HTTPException(422,"Paste a valid HTTPS YouTube video URL.")
-        config,_,_=await settings(db,service);message=render(config["video_email"],context(row,url))
-        if row.get("payment_status")=="paid":message["cta"]="CONTINUE MY "+NAMES[service].upper()
-        return {**message,"video_url":url,"expected_payment_status":row["payment_status"],"html":preview_email(message,continuation(row),[{"label":"WATCH YOUR VIDEO","url":url},*offer_links(row,config)])}
-
-    @router.post("/admin/services/{service}/customers/{ident}/video-send")
-    async def video_send(service:str,ident:str,payload:EmailDraft,request:Request):
-        row=await admin_record(db,service,ident,request)
-        if not payload.approved:raise HTTPException(409,"Review and approve this email before sending.")
-        if payload.expected_payment_status!=row["payment_status"]:raise HTTPException(409,"The customer's payment status changed. Refresh the video preview before sending.")
-        parsed=urlparse(payload.video_url)
-        if parsed.scheme!="https" or parsed.hostname not in {"youtube.com","www.youtube.com","youtu.be","m.youtube.com"}:raise HTTPException(422,"Use a valid HTTPS YouTube video URL.")
-        if row["payment_status"]!="paid" and await suppressed(db,row):raise HTTPException(409,"This prospect is unsubscribed or suppressed from promotional messages.")
-        central=row.get("video_followup") or {}
-        if central.get("youtube_url")==payload.video_url and central.get("status")!="approved":raise HTTPException(409,"Approve the completed central video before sending it to the customer.")
-        message=payload.model_dump()
-        result=await send_message(db,row,"guided-video-"+str(payload.request_id),message,promotional=row["payment_status"]!="paid",secondary=[{"label":"WATCH YOUR VIDEO","url":payload.video_url},*offer_links(row)])
-        return result
 
     @router.post("/admin/services/{service}/test-start")
     async def test_start(service:str,request:Request):
@@ -764,12 +782,10 @@ def create_guided_services_router(db):
         for service in NAMES:
             filters={**commercial,"service":service}
             services.append({"service":service,"name":NAMES[service],"quotes":await db.guided_service_customers.count_documents({**filters,"submitted_at":{"$exists":True}}),"paid":await db.guided_service_customers.count_documents({**filters,"payment_status":"paid"}),"scheduled":await db.guided_service_customers.count_documents({**filters,"first_email_due_at":{"$exists":True},"first_email_sent_at":{"$exists":False},"payment_status":{"$ne":"paid"}})})
-        return {"services":services,"client_flow_tests":await db.guided_service_customers.count_documents({"client_flow_test":True}),"integrations":{"stripe_key_configured":bool(os.environ.get("STRIPE_SECRET_KEY")),"stripe_webhook_configured":bool(os.environ.get("STRIPE_WEBHOOK_SECRET")),"email_key_configured":bool(os.environ.get("RESEND_API_KEY")),"email_events_configured":bool(os.environ.get("RESEND_WEBHOOK_SECRET")),"central_video_connected":bool(getattr(request.app.state,"nbb_central_video_adapter",None) and getattr(request.app.state.nbb_central_video_adapter,"contract_verified",False))}}
+        return {"services":services,"client_flow_tests":await db.guided_service_customers.count_documents({"client_flow_test":True}),"integrations":{"stripe_key_configured":bool(os.environ.get("STRIPE_SECRET_KEY")),"stripe_webhook_configured":bool(os.environ.get("STRIPE_WEBHOOK_SECRET")),"email_key_configured":bool(os.environ.get("RESEND_API_KEY")),"email_events_configured":bool(os.environ.get("RESEND_WEBHOOK_SECRET")),"blog_automation_enabled":(await __import__("blog_service").blog_settings(db))["enabled"]}}
 
     from quote_onboarding import register_routes as quote_routes
     from service_email_events import register_routes as email_event_routes
     email_event_routes(router,db)
-    from service_video import register_routes as video_routes
     quote_routes(router,db)
-    video_routes(router,db)
     return router

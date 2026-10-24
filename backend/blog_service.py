@@ -202,10 +202,10 @@ async def blog_settings(db):
     saved = await db.marketing_settings.find_one({"key": "blog_weekday_drafts"}, {"_id": 0}) or {}
     # This release reinstates the owner's five-pathway auto-publication instruction.
     # Once saved in this version, an explicit admin pause remains authoritative.
-    return {"enabled": saved.get("enabled", True) if saved.get("automation_version") == 2 else True,
+    return {"enabled": saved.get("enabled", True) if saved.get("automation_version") == 3 else True,
             "time": saved.get("time", os.environ.get("BLOG_PUBLISH_TIME", "08:00")),
             "timezone": saved.get("timezone", os.environ.get("BLOG_TIMEZONE", "America/New_York")),
-            "auto_publish": True, "automation_version": 2}
+            "auto_publish": True, "automation_version": 3}
 
 
 async def run_blog_schedule(db):

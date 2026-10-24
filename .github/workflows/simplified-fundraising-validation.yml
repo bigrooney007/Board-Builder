@@ -37,7 +37,7 @@ jobs:
         run: |
           python tests/validate_guided_service_scope.py
           result=0
-          for suite in test_guided_services.py test_guided_recommitment.py test_guided_planning.py test_two_option_services.py test_quote_funnel.py test_blog_workstation.py; do
+          for suite in test_guided_services.py test_guided_recommitment.py test_guided_planning.py test_two_option_services.py test_quote_funnel.py test_blog_workstation.py test_simple_admin_quote.py; do
             python -m unittest discover -s backend/tests -p "$suite" -v || result=1
           done
           exit "$result"

@@ -1,3 +1,7 @@
+import ServiceQuotePage from '@/services/ServiceQuotePage';
+import ServiceOfferEditor from '@/services/ServiceOfferEditor';
+import ServiceCustomerPage from '@/services/ServiceCustomerPage';
+import ServiceAdminHome, {AdminBlogPage} from '@/admin/ServiceAdminHome';
 import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "@/App.css";
@@ -147,9 +151,12 @@ function CleanRoutes() {
 
       <Route path="/services/:service/handover/:token" element={<ServiceOperatorPage handover />} />
       <Route path="/services/:service/dashboard/:ident" element={<ServiceOperatorPage />} />
+      <Route path="/services/:service/quote" element={<ServiceQuotePage />} />
       <Route path="/services/:service/start" element={<GuidedServicePage />} />
       <Route path="/services/:service/:stage/:token" element={<GuidedServicePage />} />
       <Route path="/admin/services/:service" element={<ServiceAdminPage />} />
+      <Route path="/admin/services/:service/settings/:section" element={<ServiceOfferEditor />} />
+      <Route path="/admin/services/:service/customers/:ident" element={<ServiceCustomerPage />} />
 
       {/* Board Recruitment */}
       <Route path="/recruit" element={<PublicProductEntry><RecruitmentHomePage /></PublicProductEntry>} />
@@ -267,7 +274,9 @@ function CleanRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-      <Route path="/admin" element={<FundraisingAdminPage />} />
+      <Route path="/admin" element={<ServiceAdminHome />} />
+      <Route path="/admin/blog" element={<AdminBlogPage />} />
+      <Route path="/admin/website" element={<FundraisingAdminPage />} />
       <Route path="/admin/fundraising/customer/:userId" element={<FacilitatorWorkspace />} />
       <Route path="/admin/fundraising/customer/:userId/group" element={<FacilitatorWorkspace group />} />
       <Route path="/admin/legacy" element={<AdminPage />} />

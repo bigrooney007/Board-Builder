@@ -149,7 +149,6 @@ def defaults(service):
     result = {"question_groups": groups, "first_email": deepcopy(FIRST[service]),
         "followups": [email(subject, "Hello {{first_name}},\n\n" + body + "\n\nYour information for {{organization}} remains saved.", after_previous_minutes=4320) for subject, body in FOLLOWUP_THEMES[service]],
         "sequence_paused": False,
-        "video_email": email("I Recorded a Video for You About Your {{service_name}}", "Hello {{first_name}},\n\nI've recorded a short video for you about the information you shared regarding {{organization}}.\n\nYou can watch your video using the link below.\n\n{{continuation_message}}"),
         "booking_url": "https://calendly.com/boardbuilder/recruitboard",
         "paid_email": email("Your {{service_name}} Payment Is Confirmed", "Hello {{first_name}},\n\nYour payment is confirmed. Use your secure link to upload your organization's logo and choose its colors. You can then book your guided session with Rooney. You can return through this link without paying again.", "CONTINUE TO BRANDING AND BOOKING"),
         "delivery_email": email("Your {{service_name}} Resources", "Hello {{first_name}},\n\nYour approved resources for {{organization}} are available through your secure link. You can review and download them whenever you need them.\n\nUse the materials to continue the process with your organization. Recruitment customers can share their published campaign and application link, then review applicants and prepare interviews from the same resources page.", "OPEN MY APPROVED RESOURCES"),

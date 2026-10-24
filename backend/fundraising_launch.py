@@ -63,10 +63,10 @@ async def content(db):
         override=price(override)
     result=merge(DEFAULT,override)
     for page in ('home','how'):
-        if result[page]['cta']==DEFAULT[page]['cta'] or re.search(r'(?:start|get started).*free',result[page]['cta'],re.I):result[page]['cta']='GET A FREE QUOTE'
+        if result[page]['cta']==DEFAULT[page]['cta'] or re.search(r'(?:start|get started).*free|see.*how.*(?:fundraising|game|works)',result[page]['cta'],re.I):result[page]['cta']='GET A FREE QUOTE'
     original_sections={s['id']:s for s in DEFAULT['how']['sections']}
     for section in result['how']['sections']:
-        if section['cta'] and section['cta']==original_sections.get(section['id'],{}).get('cta'):section['cta']='GET A FREE QUOTE'
+        if section['cta'] and (section['cta']==original_sections.get(section['id'],{}).get('cta') or re.search(r'see.*how.*(?:fundraising|game|works)',section['cta'],re.I)):section['cta']='GET A FREE QUOTE'
     from quote_defaults import LANDINGS
     title,intro,_=LANDINGS['board-fundraising']
     for key,value in (('title',title),('introduction',intro)):

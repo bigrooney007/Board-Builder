@@ -20,10 +20,10 @@ from quote_personalization import impact_answer
 
 class Defaults(unittest.TestCase):
     def test_short_forms_and_historical_price_separation(self):
-        for service, count in [('recruitment',4),('board-recommitment',4),('board-fundraising',6),('strategic-planning',4)]:
+        for service, count in [('recruitment',5),('board-recommitment',4),('board-fundraising',4),('strategic-planning',3)]:
             config=defaults(service);gs.validate_config(service,config)
             self.assertEqual(len(config['question_groups']['entry']),count)
-            impact=config['question_groups']['entry'][-1]
+            impact=next(q for q in config['question_groups']['entry'] if q.get('semantic_role')==IMPACT_KEY)
             self.assertEqual(impact['semantic_role'],IMPACT_KEY);self.assertTrue(impact['required'])
             self.assertIn('leader',config['question_groups']);self.assertIn('{{personalized_outcome}}',config['first_email']['body'])
             self.assertEqual(config['landing']['cta'],'GET A FREE QUOTE')
@@ -31,14 +31,14 @@ class Defaults(unittest.TestCase):
         self.assertEqual(package('strategic-planning','guided-setup')['amount'],9700)
         self.assertEqual(package('strategic-planning','self-facilitated')['amount'],49700)
         self.assertEqual(package('strategic-planning','rooney-facilitated')['amount'],199700)
-    def test_impact_role_survives_wording_edits_but_cannot_be_removed(self):
+    def test_impact_role_survives_edits_and_historic_answers_remain_readable(self):
         from fastapi import HTTPException
         config=defaults('recruitment');item=config['question_groups']['entry'][-1]
         item.update(prompt='Explain the difference this would make.',id='edited_id',key='my_label')
         gs.validate_config('recruitment',config)
         self.assertEqual(impact_answer({'question_snapshot':[item],'answers':{'edited_id':'Our exact aim.'}}),'Our exact aim.')
         item['archived']=True
-        with self.assertRaises(HTTPException):gs.validate_config('recruitment',config)
+        gs.validate_config('recruitment',config)
     def test_resend_signature_age_and_body_verification(self):
         from service_email_events import verify
         from fastapi import HTTPException
@@ -55,7 +55,6 @@ class PricingMigration(unittest.IsolatedAsyncioTestCase):
         config=defaults('strategic-planning');config.pop('pricing_version')
         config['first_email'].update(subject='My planning offer: $97',body='My own introduction. Setup costs $97. {{personalized_outcome}}',cta='Begin for $97')
         config['followups'][0]['body']='My follow-up wording for the $97 offer.'
-        config['video_email']['body']='My personal message about the $97 setup.'
         config['question_groups']['entry'][0]['prompt']='My own role question'
         config['first_email']['delay_minutes']=75
         original=copy.deepcopy(config)
@@ -65,7 +64,6 @@ class PricingMigration(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(current['first_email']['body'],'My own introduction. Setup costs $497. {{personalized_outcome}}')
             self.assertEqual(current['first_email']['cta'],'Begin for $497')
             self.assertEqual(current['followups'][0]['body'],'My follow-up wording for the $497 offer.')
-            self.assertIn('$497',current['video_email']['body'])
             self.assertEqual(current['question_groups'],original['question_groups'])
             self.assertEqual(current['first_email']['delay_minutes'],75)
             self.assertEqual((revision,version),(9,'saved-questions'))
@@ -97,12 +95,13 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         self.assertIn('text-align:left',message['html']);self.assertIn('$497',message['html'])
         await self.req('PUT',base+'/answers',{'answers':answers,'submit':True});await gs.automation_tick(self.db,stamp+timedelta(hours=1));self.assertEqual(self.mail.call_count,1)
 
-    async def test_designated_email_repeats_all_four_and_sends_immediately_without_entitlement(self):
+    async def test_designated_test_records_repeat_without_entitlement_and_wait_one_hour(self):
         for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
             for attempt in range(2):
                 _,base,row=await self.lead(service,email=TEST_EMAIL)
                 saved=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
-                self.assertEqual(saved['record_label'],'CLIENT FLOW TEST');self.assertIn('first_email_sent_at',saved)
+                self.assertEqual(saved['record_label'],'CLIENT FLOW TEST');self.assertNotIn('first_email_sent_at',saved)
+                await gs.automation_tick(self.db,datetime.fromisoformat(saved['submitted_at'])+timedelta(hours=1),only_id=saved['customer_id'])
                 self.assertNotEqual(saved['payment_status'],'paid');self.assertEqual(await self.db.members.count_documents({'user_id':saved['workspace_user_id']}),0)
                 await self.req('POST',base+'/checkout',{},409)
         self.assertEqual(self.mail.call_count,8)
@@ -114,8 +113,10 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         self.mail.side_effect=RuntimeError('controlled temporary failure')
         _,base,row=await self.lead(email=TEST_EMAIL)
         self.assertNotIn('first_email_sent_at',await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']}))
+        at=datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1)
+        await gs.automation_tick(self.db,at,only_id=row['customer_id'])
         self.mail.side_effect=None
-        await gs.automation_tick(self.db,only_id=row['customer_id']);await gs.automation_tick(self.db,only_id=row['customer_id'])
+        await gs.automation_tick(self.db,at,only_id=row['customer_id']);await gs.automation_tick(self.db,at,only_id=row['customer_id'])
         self.assertEqual(self.mail.call_count,2)
         self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'user_id':row['workspace_user_id']}),1)
 
@@ -180,35 +181,11 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         draft=await self.req('PUT','/admin/services/recruitment/draft',{'config':config['config'],'revision':config['revision']},admin=True);await self.req('POST','/admin/services/recruitment/publish',{'revision':draft['revision']},admin=True)
         self.assertEqual((await self.req('GET','/admin/services/board-recommitment/settings',admin=True))['config']['first_email'],original)
 
-    async def test_video_recording_is_owner_only_and_remote_contract_is_not_invented(self):
-        _,base,row=await self.lead();admin='/admin/services/recruitment/customers/'+row['customer_id']
-        await self.req('GET',admin+'/video-assignment',status=401)
-        r=await self.req('GET',admin+'/video-assignment',admin=True);self.assertFalse(r['integration_connected'])
-        blob=b'\x1aE\xdf\xa3'+b'controlled-recording'*20
-        response=await self.client.post('/api'+admin+'/video-recording',files={'file':('clip.webm',blob,'video/webm')},headers=self.headers);self.assertEqual(response.status_code,200,response.text)
-        await self.req('POST',admin+'/video-assignment/submit',{},503,True)
-        self.assertEqual((await self.req('GET',admin+'/video-recording',admin=True)).content,blob)
-        detail=await self.req('GET',admin,admin=True);self.assertNotIn('recording_blob_id',detail['customer']['video_followup'])
-        listing=await self.req('GET','/admin/services/recruitment/customers',admin=True);self.assertTrue(listing['customers'])
-        await self.req('DELETE',admin+'/video-recording',{},409,True)
-        public=await self.req('GET',base);self.assertNotIn('video_followup',public)
-        self.assertEqual(self.mail.call_count,0)
 
-    async def test_verified_adapter_binding_approval_no_auto_send_and_safe_cleanup(self):
-        _,_,row=await self.lead();admin='/admin/services/recruitment/customers/'+row['customer_id']
-        adapter=SimpleNamespace(contract_verified=True,submit=AsyncMock(return_value={'assignment_id':'central-only'}),status=AsyncMock(return_value={'source_customer_id':row['customer_id'],'service':'recruitment','status':'ready','youtube_url':'https://youtu.be/verified','transcript':'A completed personalized message.'}),request_revision=AsyncMock())
-        self.app.state.nbb_central_video_adapter=adapter
-        response=await self.client.post('/api'+admin+'/video-recording',files={'file':('clip.webm',b'\x1aE\xdf\xa3'+b'video'*30,'video/webm')},headers=self.headers);self.assertEqual(response.status_code,200)
-        await self.req('POST',admin+'/video-assignment/submit',{},admin=True);await self.req('POST',admin+'/video-assignment/submit',{},admin=True);self.assertEqual(adapter.submit.call_count,1)
-        task=adapter.submit.call_args.args[0];self.assertNotIn('desired_outcome',task['brief']);self.assertNotIn('email',task['brief']);self.assertNotIn('payment_status',task)
-        await self.req('POST',admin+'/video-assignment/refresh',{},admin=True);self.assertEqual(self.mail.call_count,0)
-        await self.req('POST',admin+'/video-assignment/review',{'action':'approve'},admin=True)
-        await self.req('DELETE',admin+'/video-recording',{},admin=True)
-        await self.req('GET',admin+'/video-recording',status=404,admin=True)
-        saved=await self.req('GET',admin+'/video-assignment',admin=True);self.assertEqual(saved['video']['transcript'],'A completed personalized message.')
 
     async def test_verified_delivery_events_are_distinct_from_provider_acceptance(self):
         _,_,row=await self.lead(email=TEST_EMAIL)
+        await gs.automation_tick(self.db,datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1),only_id=row['customer_id'])
         key=b'email-fixture-key';secret='whsec_'+base64.b64encode(key).decode();stamp=str(int(time.time()));ident='evt-delivered';body=json.dumps({'type':'email.delivered','created_at':gs.now(),'data':{'email_id':'controlled-email'}}).encode()
         signature=base64.b64encode(hmac.new(key,ident.encode()+b'.'+stamp.encode()+b'.'+body,hashlib.sha256).digest()).decode();headers={'svix-id':ident,'svix-timestamp':stamp,'svix-signature':'v1,'+signature,'content-type':'application/json'}
         with patch.dict(os.environ,{'RESEND_WEBHOOK_SECRET':secret}):

@@ -55,3 +55,13 @@ def install(app,db):
     async def work(ident:str):
         from guided_workspace import work_tick
         await work_tick(db,app,ident);return {'status':'done'}
+
+    @app.post('/__test/quote-clock/{ident}')
+    async def quote_clock(ident:str):
+        from guided_services import automation_tick
+        from datetime import datetime,timedelta
+        row=await db.guided_service_customers.find_one({'customer_id':ident},{'_id':0})
+        assert row and row['email'].endswith('@example.org')
+        await automation_tick(db,datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1),only_id=ident)
+        delivery=await db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'},{'_id':0})
+        return delivery

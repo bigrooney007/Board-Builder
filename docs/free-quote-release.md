@@ -1,5 +1,7 @@
 # Nonprofit Board Builder: current free quote journey
 
+> Historical release notes. The current single-page forms, separate admin editors/customer profiles, 48-hour follow-ups and removal of personalized video features are documented in [simple-quote-admin-release.md](simple-quote-admin-release.md).
+
 Starting point: `feature/guided-board-services` at `b07c6721c8c1caed0dfdef2e8997b93e53d9be15`.
 
 This release implements the October free quote brief with the owner's subsequent correction: **all four board services cost $497**. It supersedes earlier contact-anchored email timing and the briefly configured $97 Strategic Planning setup price for new checkouts. Historical purchases, open checkouts, form versions, projects and entitlements remain valid.

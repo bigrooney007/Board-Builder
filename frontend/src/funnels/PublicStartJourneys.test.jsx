@@ -93,9 +93,8 @@ test.each([
     if(_name==='fundraising')expect(links.every(link=>link.getAttribute('href')===path)).toBe(true);
     else {
       await act(async()=>links[0].click());
-      expect(node.querySelector('dialog[open]')).toBeTruthy();
-      expect([...node.querySelectorAll('dialog input')].map(input=>input.type)).toEqual(['text','email','text']);
-      expect(node.querySelector('input[type="password"]')).toBeNull();
+      expect(mockNavigate).toHaveBeenCalledWith('/services/'+(_name==='strategic planning'?'strategic-planning':_name==='recommitment'?'board-recommitment':'recruitment')+'/quote');
+      expect(node.querySelector('dialog, input[type="password"]')).toBeNull();
       expect(node.querySelector('a[href="/login"]')).toBeNull();
     }
     expect(memberApi.post).not.toHaveBeenCalled(); expect(axios.post).not.toHaveBeenCalled();
