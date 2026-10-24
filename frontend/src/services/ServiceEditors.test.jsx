@@ -4,7 +4,7 @@ import {MemoryRouter,Route,Routes} from 'react-router-dom';
 import ServiceAdminPage,{QuestionEditor} from './ServiceAdminPage';
 import ServiceOfferEditor from './ServiceOfferEditor';
 import ServiceCustomerPage from './ServiceCustomerPage';
-import ServiceQuotePage from './ServiceQuotePage';
+import ServiceQuotePage,{QuoteFields} from './ServiceQuotePage';
 import {api} from './shared';
 jest.mock('@/pages/AdminPage',()=>({Login:()=> <p>Administrator login</p>}));
 jest.mock('@/admin/HomepageTextSection',()=>({HomepageTextSection:()=>null}));
@@ -63,6 +63,13 @@ test('a quote displays contact details and all questions together, then submits 
  for(const [label,value] of [['Your name','Sample Leader'],['Email address','leader@example.org'],['Organization name','Sample Organization'],['What is your mission?','Help children learn.']]){
   const field=node.querySelector('[aria-label="'+label+'"]');await act(async()=>{Object.getOwnPropertyDescriptor(field.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(field,value);field.dispatchEvent(new Event('input',{bubbles:true}))});
  }
+ jest.spyOn(Storage.prototype,'removeItem').mockImplementation(()=>{throw new Error('Browser storage unavailable')});
  await act(async()=>node.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
  expect(api.post).toHaveBeenCalledTimes(1);expect(api.post).toHaveBeenCalledWith('/services/recruitment/quote',expect.objectContaining({name:'Sample Leader',email:'leader@example.org',organization:'Sample Organization',answers:{mission:'Help children learn.'},question_version:'published-1'}));expect(node.textContent).toContain('Request received');
+});
+test('custom choice and meeting formats display their administrator-edited question labels',async()=>{
+ const questions=[{...rows[0],id:'choices',type:'multiselect',prompt:'Which board contributions matter most?',options:['Partnerships','Fundraising']},{...rows[0],id:'meeting',type:'meeting',prompt:'When should our board discuss these ideas?'}];
+ await act(async()=>root.render(<QuoteFields copy={{}} questions={questions} contact={{}} answers={{}} setContact={jest.fn()} setAnswers={jest.fn()}/>));
+ expect([...node.querySelectorAll('legend')].map(x=>x.textContent)).toEqual(questions.map(x=>x.prompt));
+ expect(node.querySelector('input[type="checkbox"]')).toBeTruthy();expect(node.querySelector('input[type="date"]')).toBeTruthy();
 });
