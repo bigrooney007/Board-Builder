@@ -696,6 +696,7 @@ def create_guided_services_router(db):
         await db.guided_service_maintenance.update_one({"_id":cleanup_id},{"$setOnInsert":{"cutoff":now(),"test_contacts":test_contacts}},upsert=True)
         cleanup=await db.guided_service_maintenance.find_one({"_id":cleanup_id})
         from quote_defaults import FORM_VERSION
+        await db.guided_service_customers.update_many({"service":service,"archived_from_customer_list":{"$ne":True},"$or":[{"internal_test":True},{"client_flow_test":True},{"test_payment":True},{"email":{"$in":cleanup["test_contacts"]},"created_at":{"$lt":cleanup["cutoff"]},"quote_form_version":{"$ne":FORM_VERSION}}]},{"$set":{"archived_from_customer_list":True,"sequence_stopped":True,"archive_reason":"owner-requested-test-cleanup"}})
         filters["$and"]=[{"$or":[{"email":{"$nin":cleanup["test_contacts"]}},{"created_at":{"$gte":cleanup["cutoff"]}},{"quote_form_version":FORM_VERSION}]}]
         for key in ("search","status","tests"):
             value=request.query_params.get(key,"").strip()

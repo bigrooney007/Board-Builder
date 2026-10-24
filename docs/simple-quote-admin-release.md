@@ -45,7 +45,7 @@ All personalized video recording, upload, assignment and sending controls and en
 
 ## Samples and blog publication
 
-Explicit test/sample records are excluded from the normal customer list. Older records associated with the supplied test contacts and the administrator's email are hidden using a fixed cleanup cutoff. No customer record, purchase, document or signed agreement is deleted. New ordinary quote submissions use the normal customer journey, even if that email address was previously used to test.
+Explicit test/sample records are excluded from the normal customer list. Older records associated with the supplied test contacts and the administrator's email are archived from that list using a fixed cleanup cutoff, and their promotional sequences are stopped. No customer record, purchase, document or signed agreement is deleted. New ordinary quote submissions use the normal customer journey, even if that email address was previously used to test.
 
 Blog & Content opens the existing five-pathway generator, article editor and schedule. Automatic weekday generation and publication are enabled by the updated configuration default. Once this configuration is saved, an explicit administrative pause remains authoritative. Existing duplicate prevention, bounded retries, article validation, images, published URLs and RSS remain in place. Real generation still requires the deployed application's working AI credentials and background worker.
 

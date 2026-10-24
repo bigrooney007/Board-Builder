@@ -1,4 +1,4 @@
-> Current customer entry, prices and email timing: [Free quote release guide](free-quote-release.md). The earlier entry and pricing descriptions below are historical; use the current guide for new quotes. Existing service-delivery tools described below remain available.
+> Current forms and administration: [Single-page quotes and simple admin guide](simple-quote-admin-release.md). It covers the separate editors/customer profiles, $497 offers, one-hour first email, 48-hour follow-ups and removal of personalized video features. The earlier navigation and entry descriptions below are historical; existing service-delivery tools remain available.
 
 > Current offer and operational instructions: [Activation services handoff](two-option-services-handoff.md). The latest instruction replaces the earlier public two-tier pricing with one $497 activation-and-platform offer for each of the four pathways. Historical prices in this document describe earlier releases.
 

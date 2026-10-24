@@ -72,6 +72,7 @@ class SimpleHTTP(unittest.IsolatedAsyncioTestCase):
   records=await self.req('GET','/admin/services/recruitment/customers',admin=True)
   self.assertEqual(records['total'],1);self.assertEqual(records['customers'][0]['customer_id'],row['customer_id'])
   self.assertEqual(await self.db.guided_service_customers.count_documents({}),9)
+  self.assertEqual(await self.db.guided_service_customers.count_documents({'archived_from_customer_list':True,'sequence_stopped':True}),7)
   _,_,new=await self.quote(email='fundraisingschoolfornonprofits@gmail.com');self.assertFalse(new['client_flow_test'])
   self.assertEqual((await self.req('GET','/admin/services/recruitment/customers',admin=True))['total'],2)
  async def test_customer_pagination_has_no_embedded_workspace_and_keeps_records(self):

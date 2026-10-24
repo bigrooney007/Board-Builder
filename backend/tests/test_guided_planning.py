@@ -10,7 +10,7 @@ import guided_planning as gp
 class PlanningConfiguration(unittest.TestCase):
     def test_three_entry_questions_and_independent_planning_groups(self):
         c=defaults('strategic-planning');gs.validate_config('strategic-planning',c)
-        self.assertEqual([q['key'] for q in c['question_groups']['entry']],['leader_role','board_count','planning_meeting_preference','desired_outcome_impact'])
+        self.assertEqual([q['key'] for q in c['question_groups']['entry']],['leader_role','board_count','desired_outcome_impact'])
         self.assertEqual(len(c['followups']),5);self.assertEqual(len(set(t['subject'] for t in c['followups'])),5)
         self.assertNotEqual(c['question_groups']['leader'][0]['prompt'],c['question_groups']['board'][0]['prompt'])
         self.assertEqual(PRICES['strategic-planning'],49700)
