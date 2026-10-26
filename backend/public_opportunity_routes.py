@@ -384,7 +384,7 @@ def create_public_opportunity_router(db) -> APIRouter:
                 guided_row=await db.guided_service_customers.find_one({"workspace_user_id":record["owner_user_id"]},{"_id":0})
                 config,_,_=await settings(db,guided_row["service"])
                 message=render(config["operational_emails"]["signed_copy"],{**context(guided_row),"participant_name":payload.typed_signature})
-                await deliver_once(db,record["owner_user_id"],"guided-signed-participant-"+record["request_id"],record["board_member_email"] or payload.email,message["subject"],email_text(message),origin()+"/sign/"+token,cta_label=message["cta"])
+                await deliver_once(db,record["owner_user_id"],"guided-signed-participant-"+record["request_id"],record["board_member_email"] or payload.email,message["subject"],email_text(message),origin()+"/sign/"+token,cta_label=message["cta"],signature=message.get("signature"))
 
         except Exception:
             pass

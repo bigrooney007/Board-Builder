@@ -9,6 +9,7 @@ import time
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
+from html import escape
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -19,6 +20,40 @@ from quote_defaults import VERSION, TEST_EMAIL, IMPACT_KEY
 from quote_personalization import impact_answer
 
 class Defaults(unittest.TestCase):
+    def test_email_links_precede_custom_signatures_for_every_service_template(self):
+        from email_layout import email_html
+        for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+            config=defaults(service)
+            templates=[config[key] for key in ('first_email','paid_email','delivery_email','handover_email')]
+            templates.extend(config['followups']);templates.extend(config['operational_emails'].values())
+            for template in templates:
+                with self.subTest(service=service,subject=template['subject']):
+                    edited=copy.deepcopy(template)
+                    edited.update(body='My own introduction.\n\nKeep this paragraph & its wording.',support='My supporting words.',signature='Rooney A.\nMy edited signature & closing',cta='My edited payment button')
+                    before=copy.deepcopy(edited)
+                    link='https://nonprofitboardbuilder.com/services/'+service+'/offer/customer-specific'
+                    secondary=[{'label':'Another saved link','url':'https://nonprofitboardbuilder.com/my-link'}]
+                    preview=gs.preview_email(edited,link,secondary)
+                    sent=email_html(gs.email_text(edited),link,cta_label=edited['cta'],signature=edited['signature'],secondary_links=secondary,preview_text=edited.get('preview_text',''))
+                    self.assertEqual(preview,sent)
+                    self.assertLess(sent.index(link),sent.index('Rooney A.'))
+                    self.assertLess(sent.index(secondary[0]['url']),sent.index('Rooney A.'))
+                    self.assertEqual(sent.count('My edited signature &amp; closing'),1)
+                    self.assertIn('My own introduction.<br><br>Keep this paragraph &amp; its wording.',sent)
+                    self.assertIn('text-align:left',sent)
+                    self.assertEqual(edited,before)
+
+    def test_older_queued_signatures_and_messages_without_a_signature(self):
+        from email_layout import email_html
+        for closing in ('Rooney A.\nThe Nonprofit Board Builder','Rooney Akpesiri\nNonprofit Board Builder'):
+            markup=email_html('My saved email.\n\n'+closing,'https://example.org/pay',cta_label='PAY')
+            self.assertLess(markup.index('https://example.org/pay'),markup.index(closing.split('\n')[0]))
+            self.assertEqual(markup.count(closing.split('\n')[0]),1)
+        text='A message about Rooney A. with no closing signature.'
+        markup=email_html(text,'https://example.org/pay',cta_label='PAY',signature='')
+        self.assertIn(text,markup)
+        self.assertLess(markup.index(text),markup.index('https://example.org/pay'))
+
     def test_short_forms_and_historical_price_separation(self):
         for service, count in [('recruitment',5),('board-recommitment',4),('board-fundraising',4),('strategic-planning',3)]:
             config=defaults(service);gs.validate_config(service,config)
@@ -79,6 +114,72 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
     lead=shared.GuidedHTTP.lead
     paid=shared.GuidedHTTP.paid
     complete_leader=shared.GuidedHTTP.complete_leader
+
+    async def test_all_four_edited_emails_persist_and_send_links_above_the_signature(self):
+        for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+            admin='/admin/services/'+service
+            current=await self.req('GET',admin+'/settings',admin=True)
+            config=current['config']
+            for index,template in enumerate([config['first_email'],*config['followups']]):
+                template.update(subject=f'My saved {service} email {index}',headline='My edited heading',body='Hello {{first_name}},\n\nMy own words for {{organization}}. Keep them & this paragraph.',support='My own supporting text.',cta=f'My saved {service} button {index}',signature=f'Rooney A.\nMy own {service} closing {index}')
+            saved=copy.deepcopy(config)
+            draft=await self.req('PUT',admin+'/draft',{'config':config,'revision':current['revision']},admin=True)
+            await self.req('POST',admin+'/publish',{'revision':draft['revision']},admin=True)
+            reloaded=await self.req('GET',admin+'/settings',admin=True)
+            self.assertEqual(reloaded['config'],saved)
+            stored_before=await self.db.guided_service_settings.find_one({'service':service})
+            _,_,row=await self.lead(service,email=service+'@example.org')
+            first=datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1)
+            for index,template in enumerate([saved['first_email'],*saved['followups']]):
+                preview=await self.req('POST',admin+'/email-preview',{'template':'first_email' if index==0 else 'followups','index':max(0,index-1)},admin=True)
+                signature_html=escape(template['signature']).replace('\n','<br>')
+                self.assertLess(preview['html'].index('/offer/'),preview['html'].index(signature_html))
+                before=self.mail.call_count
+                at=first+timedelta(hours=48*index)
+                await gs.automation_tick(self.db,at,only_id=row['customer_id'])
+                await gs.automation_tick(self.db,at,only_id=row['customer_id'])
+                self.assertEqual(self.mail.call_count,before+1)
+                mail=self.mail.call_args.args[0]
+                self.assertEqual(mail['subject'],template['subject'])
+                self.assertIn('My own words for Sample Learning Nonprofit. Keep them &amp; this paragraph.',mail['html'])
+                self.assertIn(template['cta'],mail['html'])
+                self.assertLess(mail['html'].index(gs.continuation(row)),mail['html'].index(signature_html))
+                self.assertEqual(mail['html'].count(signature_html),1)
+                self.assertEqual(mail['reply_to'],'rooney@nonprofitboardbuilder.com')
+                self.assertIn('/unsubscribe/',mail['html'])
+            self.assertEqual(await self.db.guided_service_settings.find_one({'service':service}),stored_before)
+            # Editing again remains available after deliveries; no sent sequence is restarted.
+            reloaded['config']['first_email']['body']='My next saved revision.'
+            draft=await self.req('PUT',admin+'/draft',{'config':reloaded['config'],'revision':reloaded['revision']},admin=True)
+            await self.req('POST',admin+'/publish',{'revision':draft['revision']},admin=True)
+            self.assertEqual((await self.req('GET',admin+'/settings',admin=True))['config']['first_email']['body'],'My next saved revision.')
+            count=self.mail.call_count
+            await gs.automation_tick(self.db,first+timedelta(days=20),only_id=row['customer_id'])
+            self.assertEqual(self.mail.call_count,count)
+
+    async def test_retry_keeps_original_edited_email_signature_and_link_without_duplicates(self):
+        _,_,row=await self.lead()
+        original=gs.render(defaults('recruitment')['first_email'],gs.context(row))
+        original.update(body='My original saved email.',signature='Rooney A.\nMy original edited closing',cta='My original button')
+        self.mail.side_effect=RuntimeError('Controlled provider interruption')
+        result=await gs.send_message(self.db,row,'layout-retry',original)
+        self.assertEqual(result['status'],'failed')
+        queued=await self.db.workflow_email_deliveries.find_one({'event_key':'layout-retry'})
+        self.assertEqual(queued['text'],gs.email_text(original))
+        self.assertEqual(queued['signature'],original['signature'])
+        revised={**original,'body':'A later revision.','signature':'A later closing','cta':'A later button'}
+        self.mail.side_effect=None
+        result=await gs.send_message(self.db,row,'layout-retry',revised,link='https://example.org/other')
+        self.assertEqual(result['status'],'sent')
+        html=self.mail.call_args.args[0]['html']
+        self.assertIn('My original saved email.',html)
+        self.assertIn('My original button',html)
+        self.assertNotIn('A later',html)
+        self.assertNotIn('https://example.org/other',html)
+        self.assertLess(html.index(gs.continuation(row)),html.index('My original edited closing'))
+        count=self.mail.call_count
+        await gs.send_message(self.db,row,'layout-retry',revised)
+        self.assertEqual(self.mail.call_count,count)
 
     async def test_normal_quote_waits_for_completion_then_one_hour(self):
         token,base,row=await self.lead(submitted=False)

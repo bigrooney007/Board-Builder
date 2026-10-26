@@ -48,7 +48,7 @@ async def deliver_approved(db,strategy):
     if guided:
         from guided_services import settings,render,context,email_text
         config,_,_=await settings(db,'board-fundraising');message=render(config['operational_emails']['strategy_ready'],context(guided))
-        return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],guided['email'],message['subject'],email_text(message),origin()+'/strategy/'+strategy['share_token'],cta_label=message['cta'],secondary_links=[{'label':'Book a Conversation About Your Strategy','url':config['booking_url']}])
+        return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],guided['email'],message['subject'],email_text(message),origin()+'/strategy/'+strategy['share_token'],cta_label=message['cta'],signature=message.get("signature"),secondary_links=[{'label':'Book a Conversation About Your Strategy','url':config['booking_url']}])
     return await deliver_once(db,strategy['user_id'],'admin-strategy-approved:'+strategy['strategy_id'],owner.get('notification_email') or owner.get('email',''),
         "Your Board's Fundraising Strategy Is Ready",
         "Your board's adopted fundraising strategy has been reviewed and is ready to use. Open your strategy to read, download and share it with your board. You can also book a conversation with Rooney to discuss the strategy and its execution.",

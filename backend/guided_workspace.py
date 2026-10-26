@@ -121,13 +121,13 @@ async def material_snapshot(db,row,material_id,approved=False):
 async def notify_guided_owner(db,user_id,event,subject,body,query="",template_key=None,variables=None):
     row=await db.guided_service_customers.find_one({"workspace_user_id":user_id,"payment_status":"paid"},{"_id":0})
     if not row:return None
-    cta="VIEW YOUR RESOURCES"
+    cta="VIEW YOUR RESOURCES";signature=None
     if not template_key:
         prefixes={"guided-signed-":"signature_completed","guided-member-profile-completed":"profile_response_notice","guided-interview-guide":"interview_guide_ready","guided-campaign-launched":"campaign_launched","guided-approved-conversation":"conversation_guide_approved"}
         template_key=next((value for prefix,value in prefixes.items() if event.startswith(prefix)),None)
     if template_key:
-        config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"][template_key],{**context(row),**(variables or {})});subject=message["subject"];body=email_text(message);cta=message["cta"]
-    return await deliver_once(db,user_id,event,row["email"],subject,body,continuation(row,True)+query,cta_label=cta)
+        config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"][template_key],{**context(row),**(variables or {})});subject=message["subject"];body=email_text(message);cta=message["cta"];signature=message.get("signature")
+    return await deliver_once(db,user_id,event,row["email"],subject,body,continuation(row,True)+query,cta_label=cta,signature=signature)
 
 def create_guided_workspace_router(db):
     router=APIRouter(prefix="/api",dependencies=[Depends(no_cache)])
@@ -199,7 +199,7 @@ def create_guided_workspace_router(db):
         url=origin()+"/board-profile/"+link["token"]
         if payload.get("approved"):
             config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"]["board_profile_invitation"],context(row))
-            return {"url":url,**await deliver_once(db,owner_id(row),"guided-member-profile-"+application_id,application["applicant_email"],message["subject"],email_text(message),url,cta_label=message["cta"])}
+            return {"url":url,**await deliver_once(db,owner_id(row),"guided-member-profile-"+application_id,application["applicant_email"],message["subject"],email_text(message),url,cta_label=message["cta"],signature=message.get("signature"))}
         return {"url":url,"recipient":application["applicant_email"]}
 
     @router.post("/admin/services/recruitment/customers/{ident}/applicants/{application_id}/preview")
@@ -222,7 +222,7 @@ def create_guided_workspace_router(db):
         message={k:str(payload.get(k,default[k]))[:20000] for k in default}
         request_id=str(uuid.UUID(payload["request_id"]))
         opportunity=await db.opportunities.find_one({"user_id":owner_id(row)},{"_id":0}) or {}
-        result=await deliver_once(db,owner_id(row),"guided-candidate-"+application_id+"-"+request_id,application["applicant_email"],message["subject"],email_text(message),origin()+"/board-opportunities/"+opportunity.get("slug","")+"/apply",cta_label=message["cta"])
+        result=await deliver_once(db,owner_id(row),"guided-candidate-"+application_id+"-"+request_id,application["applicant_email"],message["subject"],email_text(message),origin()+"/board-opportunities/"+opportunity.get("slug","")+"/apply",cta_label=message["cta"],signature=message.get("signature"))
         if result["status"] in {"sent","captured"}:
             status="Interview Invited" if payload["action"]=="invite" else "Not Moving to Interview"
             # Use the exact stored status identifiers from the original application system.
@@ -243,7 +243,7 @@ def create_guided_workspace_router(db):
         if not payload.get("approved"):raise HTTPException(409,"Review and approve sending this agreement.")
         if item.get("status")=="Signed":return {"status":"already_signed"}
         config,_,_=await settings(db,row["service"]);message=render(config["operational_emails"]["signature_invitation"],context(row))
-        result=await deliver_once(db,owner_id(row),"guided-signature-invitation-"+signature_id,item["board_member_email"],message["subject"],email_text(message),origin()+"/sign/"+item["token"],cta_label=message["cta"])
+        result=await deliver_once(db,owner_id(row),"guided-signature-invitation-"+signature_id,item["board_member_email"],message["subject"],email_text(message),origin()+"/sign/"+item["token"],cta_label=message["cta"],signature=message.get("signature"))
         if result["status"] in {"sent","captured"}:await db.signature_requests.update_one({"request_id":signature_id,"status":{"$ne":"Signed"}},{"$set":{"status":"Sent","sent_at":now()}})
         return result
 

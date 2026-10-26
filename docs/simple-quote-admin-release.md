@@ -53,6 +53,8 @@ Blog & Content opens the existing five-pathway generator, article editor and sch
 
 ## Verification
 
+Email payment and continuation buttons appear before the sender's signature in all four services, including the first invitation, follow-ups and operational templates. The admin preview uses the same layout. This presentation change does not rewrite published or draft email settings; existing text, button labels, signatures and timing remain editable. Failed delivery retries retain their original content and links, and completed deliveries are not resent.
+
 Verification completed: 192 backend tests, 62 frontend tests and 61 browser checks passed. The production frontend build, SEO, privacy and route checks passed. The full database/browser run used the existing GitHub Actions workflow with disposable MongoDB, the production frontend build and Playwright. See [the verification record](simple-quote-admin-verification.md) for the exact tested revision and the final local edge-case checks.
 
 The release workflow exercised actual React/API navigation, all four quote/payment/post-payment paths, admin edit/save/reload, separate customer profiles, dashboard links in a fresh browser, full existing service workspaces, payment failure/security/legacy entitlement checks, email scheduling and duplicate suppression, and automatic blog publication. Stripe, email and AI providers were controlled in these tests. [Download the full desktop/mobile screenshot gallery](https://github.com/bigrooney007/Board-Builder/actions/runs/40094363241/artifacts/12560177707).

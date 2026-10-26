@@ -157,7 +157,7 @@ def create_guided_recommitment_router(db):
         row=await actor(request,ident,token);record=await participant(db,row,person_id);kind=payload.get('kind','board_invitation');default,link=await message_for(db,row,record,kind)
         if not payload.get('approved'):raise HTTPException(409,'Review and approve the email before sending.')
         message={k:str(payload.get(k,default[k]))[:20000] for k in default};key='guided-recommitment-'+person_id+'-'+str(uuid.UUID(payload['request_id']))
-        result=await deliver_once(db,owner_id(row),key,record['email'],message['subject'],email_text(message),link,cta_label=message['cta'])
+        result=await deliver_once(db,owner_id(row),key,record['email'],message['subject'],email_text(message),link,cta_label=message['cta'],signature=message.get("signature"))
         if result['status'] in {'sent','captured'} and kind=='board_invitation':
             await db.reactivation_board_members.update_one({'member_record_id':person_id,'status':{'$ne':'COMPLETED'}},{'$set':{'status':'SENT','last_sent_at':now(),'invitation_delivery':result['status']}})
         return result
@@ -221,7 +221,7 @@ def create_guided_recommitment_router(db):
             await db.signature_requests.insert_one(item.copy())
         if payload.get('approved'):
             config,_,_=await settings(db,SERVICE);message=render(config['operational_emails']['signature_invitation'],context(row))
-            result=await deliver_once(db,owner_id(row),'guided-signature-invitation-'+item['request_id'],record['email'],message['subject'],email_text(message),origin()+'/sign/'+item['token'],cta_label=message['cta'])
+            result=await deliver_once(db,owner_id(row),'guided-signature-invitation-'+item['request_id'],record['email'],message['subject'],email_text(message),origin()+'/sign/'+item['token'],cta_label=message['cta'],signature=message.get("signature"))
             return {'request_id':item['request_id'],**result}
         return {'request_id':item['request_id'],'preview_url':origin()+'/sign/'+item['token']}
     from service_handover import register_operator_routes

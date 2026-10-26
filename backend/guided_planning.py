@@ -270,7 +270,7 @@ def create_guided_planning_router(db):
         row=await admin_record(db,"strategic-planning",ident,request,True);person=await participant(row,pid);prepared=await message_for(row,person,kind)
         if not payload.approved:raise HTTPException(409,"Review and approve the message before sending.")
         from guided_services import email_text
-        result=await deliver_once(db,owner_id(row),f"planning-{kind}-{pid}-{payload.request_id}",person["email"],payload.subject,email_text(payload.model_dump()),prepared["url"],cta_label=payload.cta)
+        result=await deliver_once(db,owner_id(row),f"planning-{kind}-{pid}-{payload.request_id}",person["email"],payload.subject,email_text(payload.model_dump()),prepared["url"],cta_label=payload.cta,signature=payload.signature)
         if result["status"] in {"sent","captured"}:
             await db.sp_participants.update_one({"participant_id":pid},{"$set":{"last_invitation_sent_at":now(),"invitation_status":result["status"]}})
             if kind=="planning_invitation":await db.sp_participants.update_one({"participant_id":pid,"status":{"$ne":"COMPLETED"}},{"$set":{"status":"SENT"}})

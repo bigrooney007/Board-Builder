@@ -106,7 +106,7 @@ def register(router, db, base):
         recipient=customer['email'] if payload.get('recipient')=='leader' else item['email']
         from guided_services import settings,render,context as email_context,email_text
         config,_,_=await settings(db,'strategic-planning');message=render(config['operational_emails']['portfolio_delivery'],{**email_context(customer),'participant_name':item['name']})
-        result=await deliver_once(db,owner_id(customer),f"planning-portfolio:{pid}:{item['version']}:{recipient}",recipient,message['subject'],email_text(message),origin()+'/strategic-leadership-portfolio/'+item['token'],cta_label=message['cta'])
+        result=await deliver_once(db,owner_id(customer),f"planning-portfolio:{pid}:{item['version']}:{recipient}",recipient,message['subject'],email_text(message),origin()+'/strategic-leadership-portfolio/'+item['token'],cta_label=message['cta'],signature=message.get("signature"))
         if result['status'] in ('sent','captured'):
             item['sent_at']=now();await db.sp_plans.update_one({'project_id':ident},{'$set':{'leadership_portfolios':rows}})
         return result

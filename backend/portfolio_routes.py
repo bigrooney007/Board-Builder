@@ -720,7 +720,7 @@ def create_portfolio_router(db) -> APIRouter:
             if guided:
                 from guided_services import settings,render,context,email_text
                 config,_,_=await settings(db,"board-fundraising");message=render(config["operational_emails"]["fundraising_portfolio_delivery"],{**context(guided),"participant_name":portfolio["member_name"]})
-                delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],message["subject"],email_text(message),payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'],cta_label=message['cta'])
+                delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],message["subject"],email_text(message),payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'],cta_label=message['cta'],signature=message.get("signature"))
             else:
                 delivery=await deliver_once(db,member["user_id"],event_key,portfolio["member_email"],"Your Board Fundraising Portfolio Is Ready","Your organization has approved your individual fundraising portfolio. It describes the responsibility you agreed to undertake and includes the board’s adopted approaches.",payload.origin_url.rstrip('/')+'/board-portfolio/'+portfolio['token'])
             if delivery['status'] not in ('sent','captured'): raise HTTPException(502,"The portfolio is approved but its email needs a retry")

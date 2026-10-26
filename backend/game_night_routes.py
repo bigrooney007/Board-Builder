@@ -425,7 +425,7 @@ def create_game_night_router(db) -> APIRouter:
             config,_,_=await settings(db,"board-fundraising")
             details="Board meeting: "+str(night.get("meeting_date",""))+" at "+str(night.get("start_time",""))+" ("+str(night.get("timezone",""))+")."
             message=render(config["operational_emails"]["fundraising_invitation"],{**context(guided),"participant_name":record["full_name"],"leader_name":guided["name"],"meeting_details":details})
-            result=await deliver_once(db,member["user_id"],"guided-fundraising-invite:"+record["member_id"]+":"+(record.get("invited_at") or "initial"),record["email"],message["subject"],email_text(message),origin.rstrip("/")+"/play/"+record["token"],cta_label=message["cta"])
+            result=await deliver_once(db,member["user_id"],"guided-fundraising-invite:"+record["member_id"]+":"+(record.get("invited_at") or "initial"),record["email"],message["subject"],email_text(message),origin.rstrip("/")+"/play/"+record["token"],cta_label=message["cta"],signature=message.get("signature"))
             if result["status"] not in {"sent","captured"}:raise HTTPException(502,"The invitation is saved but its email needs a retry.")
             return
         organization = (profile.get("organization") or {}).get("name", "your organization")

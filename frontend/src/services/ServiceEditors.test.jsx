@@ -5,7 +5,7 @@ import ServiceAdminPage,{QuestionEditor} from './ServiceAdminPage';
 import ServiceOfferEditor from './ServiceOfferEditor';
 import ServiceCustomerPage from './ServiceCustomerPage';
 import ServiceQuotePage,{QuoteFields} from './ServiceQuotePage';
-import {api} from './shared';
+import {api,EmailComposer} from './shared';
 jest.mock('@/pages/AdminPage',()=>({Login:()=> <p>Administrator login</p>}));
 jest.mock('@/admin/HomepageTextSection',()=>({HomepageTextSection:()=>null}));
 let node,root;
@@ -16,6 +16,17 @@ function routes(path){return <MemoryRouter initialEntries={[path]}><Routes><Rout
 function mockApi(){jest.spyOn(api,'get').mockImplementation(path=>Promise.resolve({data:path==='/auth/me'?{user_id:'sample-admin'}:path.endsWith('/settings')?{config,revision:0,active:true,price:49700}:path.endsWith('/customers/requested')?{customer,deliveries:[]}: {customers:[customer],total:1000}}));}
 beforeEach(()=>{globalThis.IS_REACT_ACT_ENVIRONMENT=true;node=document.createElement('div');document.body.append(node);root=createRoot(node);global.crypto={randomUUID:()=> '00000000-0000-4000-8000-000000000001'}});
 afterEach(async()=>{await act(async()=>root.unmount());node.remove();jest.restoreAllMocks()});
+test('the email composer previews the saved button before the editable signature',async()=>{
+ const draft={subject:'My saved subject',headline:'My heading',body:'My own email wording.',support:'My supporting words.',cta:'My payment button',signature:'Rooney A.\nMy own closing'};
+ const change=jest.fn();await act(async()=>root.render(<EmailComposer draft={draft} onChange={change} onSend={()=>{}} onCancel={()=>{}}/>));
+ const preview=node.querySelector('.service-email-preview');
+ expect(preview.textContent.indexOf('My payment button')).toBeLessThan(preview.textContent.indexOf('Rooney A.'));
+ expect(preview.textContent).toContain('My own email wording.');
+ const signature=node.querySelector('[aria-label="Email signature"]');
+ await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(signature,'My next closing');signature.dispatchEvent(new Event('input',{bubbles:true}))});
+ expect(change).toHaveBeenCalledWith({...draft,signature:'My next closing'});
+ expect(draft.signature).toBe('Rooney A.\nMy own closing');
+});
 test('question wording and subtitles retain stable answer identifiers',async()=>{
  const change=jest.fn();await act(async()=>root.render(<QuestionEditor rows={[...rows,{...rows[0],id:'needs',key:'needs'}]} onChange={change}/>));
  expect(node.querySelector('textarea[aria-label="Question 1 wording"]').value).toBe('What is your mission?');

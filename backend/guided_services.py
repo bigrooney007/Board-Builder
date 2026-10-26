@@ -15,7 +15,6 @@ import secrets
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
-from html import escape
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import jwt
@@ -28,6 +27,7 @@ from auth_service import authenticate_admin
 from consultation_routes import no_cache, origin, safe_url
 from guided_service_defaults import ACTIVE_SERVICES, FLOW_VERSION, NAMES, PRICES, PRODUCTS, PACKAGES, ACTIVATION_OFFER_VERSION, _previous_offer_defaults, package, defaults
 from workflow_delivery import deliver_once
+from email_layout import email_html
 
 logger = logging.getLogger(__name__)
 VARIABLES = {"submission_update","first_name", "name", "organization", "service_name", "price", "mission", "organization_context", "recommendation_update", "continuation_message", "continuation_url", "payment_url", "video_url", "applicant_name", "participant_name", "leader_name", "agreed_purpose", "form_url", "decision", "responsibilities", "interview_details", "planning_period", "meeting_details", "response_deadline", "fundraising_goal", "fundraising_deadline", "organization_name", "submitted_details", "personalized_outcome", "board_count", "location_preference"}
@@ -227,8 +227,7 @@ def render(template,values):
 def email_text(message): return "\n\n".join(message[k] for k in ("headline","body","support","signature") if message.get(k))
 
 def preview_email(message,link,secondary=None):
-    extra=''.join(f'<p><a href="{escape(x["url"],quote=True)}">{escape(x["label"])}</a></p>' for x in secondary or [])
-    return '<div style="max-width:640px;margin:auto;font-family:Arial;line-height:1.7;text-align:left">'+escape(email_text(message)).replace('\n','<br>')+extra+f'<p><a href="{escape(link,quote=True)}">{escape(message["cta"])}</a></p></div>'
+    return email_html(email_text(message),link,cta_label=message["cta"],signature=message.get("signature"),secondary_links=secondary,preview_text=message.get("preview_text", ""))
 
 async def suppressed(db,row):
     if row.get("unsubscribed") or row.get("suppressed") or row.get("sequence_stopped"): return True
@@ -245,7 +244,7 @@ async def send_message(db,row,key,message,link=None,*,promotional=False,secondar
     url=link or continuation(row)
     result=await deliver_once(db,owner_id(row),key,row["email"],message["subject"],email_text(message),url,
         preview_text=message.get("preview_text",""),
-        cta_label=message["cta"],secondary_links=secondary or [],
+        cta_label=message["cta"],secondary_links=secondary or [],signature=message.get("signature"),
         unsubscribe_url=f"{origin()}/api/services/{row['service']}/unsubscribe/{row['unsubscribe_token']}" if promotional else None)
     return result
 
@@ -323,7 +322,7 @@ async def automation_tick(db,at=None,only_id=None):
         if item.get("unsubscribe_url"):continue
         # Promotional messages are retried through the stop-condition-aware sequence above.
         if item["event_key"].startswith(("guided-first-","guided-followup-","guided-video-")):continue
-        await deliver_once(db,item["user_id"],item["event_key"],item["recipient"],item["subject"],item["text"],item["link"],cta_label=item.get("cta_label","OPEN YOUR RESOURCE"),secondary_links=item.get("secondary_links") or [])
+        await deliver_once(db,item["user_id"],item["event_key"],item["recipient"],item["subject"],item["text"],item["link"],cta_label=item.get("cta_label","OPEN YOUR RESOURCE"),secondary_links=item.get("secondary_links") or [],signature=item.get("signature"))
 
 async def service_loop(db):
     while True:

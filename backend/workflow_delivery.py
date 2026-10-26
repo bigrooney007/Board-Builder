@@ -10,13 +10,14 @@ import os
 from datetime import datetime, timezone, timedelta
 import resend
 from email_identity import SENDER, REPLY_TO
+from email_layout import email_html
 
 
 def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *, unsubscribe_url=None, secondary_links=None, cta_label="OPEN YOUR RESOURCE", preview_text=""):
+async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *, unsubscribe_url=None, secondary_links=None, cta_label="OPEN YOUR RESOURCE", preview_text="", signature=None):
     recipient = str(recipient or "").strip().lower()
     key = hashlib.sha256(f"{user_id}:{event_key}:{recipient}".encode()).hexdigest()
     events = db.workflow_email_deliveries
@@ -24,7 +25,7 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *
     from admin_test_safety import _scope
     captured = bool(_scope.get() or owner.get("internal_dashboard_preview") or user_id.startswith("admin-dashboard-preview-") or recipient.endswith(".internal"))
     await events.update_one({"_id": key}, {"$setOnInsert": {"user_id": user_id, "event_key": event_key, "recipient": recipient, "subject": subject, "preview_text":preview_text,
-        "text": text, "link": link, "cta_label":cta_label, "secondary_links":secondary_links or [], "status": "pending", "created_at": now()}}, upsert=True)
+        "text": text, "link": link, "signature": signature, "cta_label":cta_label, "secondary_links":secondary_links or [], "status": "pending", "created_at": now()}}, upsert=True)
     # Recover a worker interrupted after claiming delivery. The provider receives
     # the same idempotency key on every attempt.
     await events.update_one({"_id":key,"status":"sending","updated_at":{"$lt":(datetime.now(timezone.utc)-timedelta(minutes=5)).isoformat()}}, {"$set":{"status":"failed"}})
@@ -32,6 +33,7 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *
     subject,text,link=doc['subject'],doc['text'],doc['link']
     cta_label=doc.get('cta_label', 'OPEN YOUR RESOURCE')
     secondary_links=doc.get('secondary_links') or []
+    signature=doc.get('signature', signature)
     if doc.get("status") in {"sent", "captured", "sending"}:
         return {"recipient": recipient, "status": doc["status"], "provider_id": doc.get("provider_id", "")}
     claimed = await events.update_one({"_id": key, "status": {"$in": ["pending", "failed"]}}, {"$set": {"status": "sending", "updated_at": now()}})
@@ -44,9 +46,9 @@ async def deliver_once(db, user_id, event_key, recipient, subject, text, link, *
             resend.api_key = os.environ["RESEND_API_KEY"].strip('"')
             footer = ("<p><a href='" + html.escape(unsubscribe_url, quote=True) + "'>Unsubscribe from these follow-up emails</a></p>") if unsubscribe_url else ""
             headers = {"List-Unsubscribe": "<" + unsubscribe_url + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"} if unsubscribe_url else {}
-            extra=''.join("<p><a href='"+html.escape(item['url'],quote=True)+"'>"+html.escape(item['label'])+"</a></p>" for item in secondary_links if str(item.get('url','')).startswith('https://'))
+            content=email_html(text,link,cta_label=cta_label,signature=signature,secondary_links=secondary_links,preview_text=doc.get("preview_text", ""))
             response = await resend.Emails.send_async({"headers": headers,"from": SENDER, "reply_to": REPLY_TO, "to": [recipient], "subject": subject,
-                "html": "<span style='display:none;max-height:0;overflow:hidden'>"+html.escape(doc.get("preview_text", ""))+"</span><div style='max-width:640px;margin:auto;font-family:Arial;line-height:1.6;text-align:left'><p>" + html.escape(text).replace("\n", "<br>") + "</p><p><a href='" + html.escape(link, quote=True) + "'>"+html.escape(cta_label)+"</a></p>"+extra+"<p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p>" + footer + "</div>"},
+                "html": content.removesuffix("</div>")+"<p>Add our sending address to your contacts and mark important emails as favorites so you can find these links again.</p>" + footer + "</div>"},
                 {"idempotency_key": key})
             provider_id = response.get("id", "") if isinstance(response, dict) else getattr(response, "id", "")
             if not provider_id: raise ValueError("The email provider did not confirm acceptance")
