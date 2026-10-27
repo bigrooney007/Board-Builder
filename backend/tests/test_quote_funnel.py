@@ -115,6 +115,81 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
     paid=shared.GuidedHTTP.paid
     complete_leader=shared.GuidedHTTP.complete_leader
 
+    async def test_all_four_sales_email_links_open_stripe_before_paid_questions(self):
+        for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+            token,base,row=await self.lead(service,email=service+'@example.org')
+            at=datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1)
+            await gs.automation_tick(self.db,at,only_id=row['customer_id'])
+            delivery=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'})
+            self.assertEqual(delivery['link'],gs.payment_link(row))
+            self.assertEqual(gs.context(row)['payment_url'],delivery['link'])
+            self.assertEqual(gs.context(row)['continuation_url'],delivery['link'])
+            path='/services/'+service+'/pay/'+token
+            count=len(self.created)
+            first=await self.req('GET',path,status=303)
+            self.assertTrue(first.headers['location'].startswith('https://checkout.stripe.com/'))
+            self.assertEqual(first.headers['cache-control'],'no-store')
+            self.assertEqual(first.headers['referrer-policy'],'no-referrer')
+            again=await self.req('GET',path,status=303)
+            self.assertEqual(first.headers['location'],again.headers['location'])
+            self.assertEqual(len(self.created),count+1)
+            self.assertEqual(self.created[-1]['metadata']['guided_service'],service)
+            self.assertEqual(self.created[-1]['client_reference_id'],row['customer_id'])
+            session=self.sessions[(await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']}))['session_id']]
+            self.assertEqual(session['amount_subtotal'],49700)
+            self.assertIn('/offer/'+token+'?checkout=cancelled',session['cancel_url'] if 'cancel_url' in session else self.created[-1]['cancel_url'])
+            await self.req('GET',base+'/leader-questions',status=402)
+            await self.req('GET',base+'/resources',status=402)
+            await self.req('PUT',base+'/branding',{'primary_color':'#4338ca'},402)
+            await self.req('POST',base+'/confirm',{})
+            await self.req('GET',base+'/leader-questions',status=402)
+            session.update(payment_status='paid',status='complete')
+            resume=await self.req('GET',path,status=303)
+            self.assertIn('/services/'+service+'/setup/'+token,resume.headers['location'])
+            await self.req('GET',base+'/leader-questions')
+            self.assertEqual(len(self.created),count+1)
+            for index in range(5):
+                await gs.automation_tick(self.db,at+timedelta(hours=48*(index+1)),only_id=row['customer_id'])
+            self.assertEqual(await self.db.workflow_email_deliveries.count_documents({'user_id':row['workspace_user_id'],'event_key':{'$regex':'^guided-followup-'}}),0)
+            for other in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+                if other!=service:await self.req('GET','/services/'+other+'/pay/'+token,status=404)
+
+    async def test_old_emailed_links_checkout_first_and_keep_original_partial_answers(self):
+        for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+            token,base,row=await self.lead(service,submitted=False,email='legacy-'+service+'@example.org')
+            original_questions=copy.deepcopy(row['question_snapshot'])
+            original_answers={original_questions[0]['id']:'My original saved role.'}
+            await self.db.guided_service_customers.update_one({'customer_id':row['customer_id']},{'$unset':{'flow_kind':'','leader_question_snapshot':'','leader_question_version':'','leader_answers':''},'$set':{'answers':original_answers,'first_email_sent_at':gs.now()}})
+            saved=await self.req('GET',base)
+            self.assertTrue(saved['legacy_email_payment']);self.assertIn('/pay/',saved['payment_url'])
+            await self.req('GET','/services/'+service+'/pay/'+token,status=303)
+            pending=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
+            self.assertTrue(pending['legacy_details_after_payment']);self.assertNotIn('submitted_at',pending)
+            self.assertEqual(pending['answers'],original_answers);self.assertEqual(pending['question_snapshot'],original_questions)
+            await self.req('GET',base+'/leader-questions',status=402)
+            self.sessions[pending['session_id']].update(payment_status='paid',status='complete')
+            await self.req('GET','/services/'+service+'/pay/'+token,status=303)
+            await self.req('PUT',base+'/branding',{'primary_color':'#4338ca'},409)
+            questions=await self.req('GET',base+'/leader-questions')
+            self.assertTrue(questions['questions'])
+            await self.complete_leader(base,service)
+            await self.req('PUT',base+'/branding',{'primary_color':'#4338ca'})
+            await self.req('GET',base+'/book',status=303)
+            final=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']})
+            self.assertEqual(final['answers'],original_answers);self.assertEqual(final['question_snapshot'],original_questions)
+            self.assertNotIn('submitted_at',final)
+            customers=await self.req('GET','/admin/services/'+service+'/customers',admin=True)
+            self.assertIn(row['customer_id'],[r['customer_id'] for r in customers['customers']])
+
+    async def test_payment_links_reject_missing_quotes_and_admin_samples(self):
+        for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
+            token,base,row=await self.lead(service,submitted=False)
+            await self.req('GET','/services/'+service+'/pay/'+token,status=409)
+            sample=await self.req('POST','/admin/services/'+service+'/test-post-payment',admin=True)
+            sample_token=sample['url'].rsplit('/',1)[-1]
+            await self.req('GET','/services/'+service+'/pay/'+sample_token,status=409)
+        self.assertEqual(len(self.created),0)
+
     async def test_all_four_edited_emails_persist_and_send_links_above_the_signature(self):
         for service in ('recruitment','board-recommitment','board-fundraising','strategic-planning'):
             admin='/admin/services/'+service
@@ -133,7 +208,7 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
             for index,template in enumerate([saved['first_email'],*saved['followups']]):
                 preview=await self.req('POST',admin+'/email-preview',{'template':'first_email' if index==0 else 'followups','index':max(0,index-1)},admin=True)
                 signature_html=escape(template['signature']).replace('\n','<br>')
-                self.assertLess(preview['html'].index('/offer/'),preview['html'].index(signature_html))
+                self.assertLess(preview['html'].index('/pay/'),preview['html'].index(signature_html))
                 before=self.mail.call_count
                 at=first+timedelta(hours=48*index)
                 await gs.automation_tick(self.db,at,only_id=row['customer_id'])
@@ -143,7 +218,7 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(mail['subject'],template['subject'])
                 self.assertIn('My own words for Sample Learning Nonprofit. Keep them &amp; this paragraph.',mail['html'])
                 self.assertIn(template['cta'],mail['html'])
-                self.assertLess(mail['html'].index(gs.continuation(row)),mail['html'].index(signature_html))
+                self.assertLess(mail['html'].index(gs.payment_link(row)),mail['html'].index(signature_html))
                 self.assertEqual(mail['html'].count(signature_html),1)
                 self.assertEqual(mail['reply_to'],'rooney@nonprofitboardbuilder.com')
                 self.assertIn('/unsubscribe/',mail['html'])
@@ -280,7 +355,7 @@ class QuoteHTTP(unittest.IsolatedAsyncioTestCase):
         await self.req('PUT',base+'/answers',{'answers':values,'submit':True})
         with patch('quote_personalization.select_excerpt',side_effect=RuntimeError('provider offline')):
             await gs.automation_tick(self.db,datetime.now(timezone.utc)+timedelta(hours=2))
-        mail=self.mail.call_args.args[0];self.assertNotIn('<script>',mail['html']);self.assertIn('&lt;script&gt;',mail['html']);self.assertIn('/offer/',mail['html'])
+        mail=self.mail.call_args.args[0];self.assertNotIn('<script>',mail['html']);self.assertIn('&lt;script&gt;',mail['html']);self.assertIn('/pay/',mail['html'])
         current=await self.db.guided_service_customers.find_one({'customer_id':row['customer_id']});self.assertEqual(current['personalization_method'],'source_fallback')
 
     async def test_customer_search_status_and_independent_email_edits(self):

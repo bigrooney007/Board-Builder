@@ -15,7 +15,7 @@ export default function GuidedServicePage({fixedService}){
  const [row,setRow]=useState(null),[questions,setQuestions]=useState([]),[answers,setAnswers]=useState({}),[index,setIndex]=useState(0),[branding,setBranding]=useState({logo_data:'',primary_color:'#334155',secondary_color:''}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const prefix=`/services/${service}/customer/${token}`;
  const run=async fn=>{setBusy(true);setError('');try{await fn()}catch(e){setError(problem(e))}finally{setBusy(false)}};
- const load=async()=>{const r=await api.get(prefix);setRow(r.data);setQuestions(r.data.question_snapshot);setAnswers(r.data.answers||{});setBranding(r.data.branding||{logo_data:'',primary_color:'#334155',secondary_color:''})};
+ const load=async()=>{const r=await api.get(prefix);if(stage==='start'&&r.data.legacy_email_payment&&r.data.payment_url){window.location.replace(r.data.payment_url);return}setRow(r.data);setQuestions(r.data.question_snapshot);setAnswers(r.data.answers||{});setBranding(r.data.branding||{logo_data:'',primary_color:'#334155',secondary_color:''})};
  useEffect(()=>{if(token)run(async()=>{if(stage==='setup'){const r=await api.post(prefix+'/confirm',{session_id:search.get('session_id')||''});await load()}else {if(stage==='offer'&&search.get('checkout')==='cancelled')await api.post(prefix+'/cancel-checkout');await load()}});else if(stage==='start')navigate('/services/'+service+'/quote',{replace:true}); // eslint-disable-next-line react-hooks/exhaustive-deps
  },[service,token,stage]);
  useEffect(()=>{const meta=document.createElement('meta');meta.name='referrer';meta.content='no-referrer';document.head.appendChild(meta);return()=>meta.remove()},[]);
@@ -23,7 +23,7 @@ export default function GuidedServicePage({fixedService}){
  const save=e=>{e.preventDefault();run(async()=>{const final=index===questions.length-1;await api.put(prefix+'/answers',{answers,submit:final});if(final)navigate(`/services/${service}/received/${token}`);else{setIndex(index+1);window.scrollTo(0,0)}})};
  const checkout=option=>run(async()=>{const r=await api.post(prefix+'/checkout'+(option?'?package='+option:''));window.location.assign(r.data.checkout_url||r.data.resume_url)});
  const copy=publicContent(row?.copy||{});
- const leaderRequired=row?.flow_kind==='free-quote-2026-10'&&!row?.leader_completed_at;
+ const leaderRequired=(row?.flow_kind==='free-quote-2026-10'||row?.legacy_details_after_payment)&&!row?.leader_completed_at;
  const title=(stage==='received'&&copy.received_heading)||(stage==='offer'&&copy.offer_heading)||(stage==='received'?`Thank You. We've Received Your ${serviceNames[service]} Information.`:stage==='setup'?`Your ${serviceNames[service]} Session`:stage==='offer'?`Let's Begin Your Guided ${serviceNames[service]}`:stage==='resources'?`Your ${serviceNames[service]} Resources`:'');
  if(stage==='resources'&&service==='board-fundraising')return <FundraisingResources token={token}/>;
  if(stage==='resources')return <ServiceResources service={service} token={token}/>;

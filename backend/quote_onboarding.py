@@ -48,7 +48,7 @@ def validate_answers(questions, previous, incoming, submit):
 
 
 async def require_completed(db, row):
-    if row.get('flow_kind') != VERSION: return
+    if row.get('flow_kind') != VERSION and not row.get('legacy_details_after_payment'): return
     if not row.get('leader_completed_at'):
         raise HTTPException(409, 'Complete your detailed leader questionnaire before booking.')
     if row['service'] == 'board-fundraising':

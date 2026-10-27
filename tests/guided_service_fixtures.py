@@ -65,3 +65,22 @@ def install(app,db):
         await automation_tick(db,datetime.fromisoformat(row['submitted_at'])+timedelta(hours=1),only_id=ident)
         delivery=await db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id'],'event_key':'guided-first-invitation'},{'_id':0})
         return delivery
+
+    @app.post('/__test/legacy-sales-lead/{service}')
+    async def legacy_sales_lead(service:str):
+        from guided_services import settings,check_service,now,digest
+        from guided_service_defaults import FLOW_VERSION,ACTIVATION_OFFER_VERSION
+        import secrets
+        check_service(service,True)
+        config,_,version=await settings(db,service)
+        questions=[q for q in config['question_groups']['leader'] if not q['archived']]
+        def value(q):
+            if q['type']=='number':return '100000' if 'fund' in q['key'] else '3'
+            if q['type']=='date':return '2027-12-31'
+            if q['type']=='multiselect':return q['options'][:1]
+            if q['type']=='select':return q['options'][0]
+            if q['key'] in {'board_count','board_size','desired_count'}:return '3'
+            return 'Our original saved response supports learning in our community.'
+        token=secrets.token_urlsafe(32);ident=uuid.uuid4().hex
+        await db.guided_service_customers.insert_one({'customer_id':ident,'request_id':uuid.uuid4().hex,'service':service,'flow_version':FLOW_VERSION,'offer_version':ACTIVATION_OFFER_VERSION,'name':'Legacy Email Customer','email':'legacy-email-'+ident+'@example.org','organization':'Legacy Learning Organization','access_token':token,'token_hash':digest(token),'unsubscribe_token':secrets.token_urlsafe(32),'workspace_user_id':'guided-service-'+ident,'question_snapshot':questions,'question_version':version,'answers':{q['id']:value(q) for q in questions[:-1]},'payment_status':'unpaid','booking_status':'not_booked','first_email_sent_at':now(),'created_at':now(),'updated_at':now()})
+        return {'url':'http://127.0.0.1:8765/services/'+service+'/start?lead='+token,'token':token,'customer_id':ident}

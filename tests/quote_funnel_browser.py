@@ -32,8 +32,8 @@ async def main():
     record=await (await ctx.request.get(BASE+admin,headers=headers)).json();assert not record['customer'].get('first_email_sent_at');assert not record['deliveries']
     # Advance only this synthetic record's scheduler clock. The production
     # route and background engine still enforce the configured 60-minute delay.
-    delivery=await (await ctx.request.post(BASE+'/__test/quote-clock/'+ident)).json();assert delivery['status']=='sent';assert '$497' in delivery['text'];assert '/services/'+service+'/offer/' in delivery['link']
-    await page.goto(delivery['link']);await page.get_by_role('button',name='ACTIVATE MY',exact=False).click();await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.get_by_role('button',name='Complete Payment',exact=True).click()
+    delivery=await (await ctx.request.post(BASE+'/__test/quote-clock/'+ident)).json();assert delivery['status']=='sent';assert '$497' in delivery['text'];assert '/api/services/'+service+'/pay/' in delivery['link']
+    await page.goto(delivery['link']);await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for();await page.screenshot(path=f'test_reports/current-email-checkout-{service}-{width}.png',full_page=True);await page.get_by_role('button',name='Complete Payment',exact=True).click()
     await page.wait_for_url('**/services/'+service+'/setup/*');await complete_leader(page,service,token,width)
     await page.locator('input[type="file"]').set_input_files(logo);await page.get_by_label('Primary organization color',exact=True).fill('#4338ca');await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY',exact=False).wait_for()
     response=await ctx.request.get(BASE+f'/api/services/{service}/customer/{token}/book',max_redirects=0);assert response.status==303
@@ -56,6 +56,14 @@ async def main():
     await customer.screenshot(path=f'test_reports/current-workstation-{service}-shared-customer-{width}.png',full_page=True);await customer.reload();await dashboard_ready(customer,service);await fresh.close()
     record=await (await ctx.request.get(BASE+admin,headers=headers)).json();assert record['customer']['payment_status']=='paid';assert record['customer']['leader_completed_at'];assert record['customer']['branding']['primary_color']=='#4338ca'
     results.append({'service':service,'width':width,'single_page_quote_hour_delayed_email_497_payment_paid_form_branding_profile_and_shareable_dashboard':True})
+   legacy=await (await ctx.request.post(BASE+'/__test/legacy-sales-lead/board-fundraising')).json()
+   await page.goto(legacy['url']);await page.get_by_role('heading',name='Controlled Stripe checkout: $497',exact=True).wait_for()
+   await expect(page.locator('.guided-question')).to_have_count(0)
+   await page.screenshot(path=f'test_reports/current-legacy-email-checkout-{width}.png',full_page=True)
+   await page.get_by_role('button',name='Complete Payment',exact=True).click();await page.wait_for_url('**/services/board-fundraising/setup/*')
+   await complete_leader(page,'board-fundraising',legacy['token'],width)
+   await page.get_by_role('button',name='SAVE ORGANIZATION BRANDING',exact=True).click();await page.get_by_role('link',name='BOOK MY',exact=False).wait_for()
+   results.append({'service':'board-fundraising','width':width,'previously_sent_start_link_goes_to_checkout_before_paid_questions':True})
    await page.goto(BASE+'/admin');await page.get_by_role('link',name='Blog & Content',exact=True).click();await page.wait_for_url('**/admin/blog');await page.get_by_test_id('admin-blog-section').wait_for();await page.get_by_text('Automatic generation and publishing',exact=True).click();await expect(page.get_by_role('checkbox',name='Generate and publish weekday articles automatically',exact=True)).to_be_checked();await page.screenshot(path=f'test_reports/current-admin-blog-automation-{width}.png',full_page=True)
    assert not errors,errors;await ctx.close()
   await browser.close()

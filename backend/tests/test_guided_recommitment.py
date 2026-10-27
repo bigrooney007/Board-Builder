@@ -30,7 +30,7 @@ class RecommitmentHTTP(unittest.IsolatedAsyncioTestCase):
   return person,r,answers
  async def test_free_submission_independent_price_and_one_hour_email(self):
   token,base,row=await self.lead('board-recommitment');self.assertEqual(len(row['question_snapshot']),4);from datetime import datetime,timedelta
-  await gs.automation_tick(self.db,datetime.fromisoformat(row['submitted_at'])+timedelta(minutes=60));email=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id']});self.assertIn('Recommitted',email['subject']);self.assertIn('/services/board-recommitment/offer/',email['link'])
+  await gs.automation_tick(self.db,datetime.fromisoformat(row['submitted_at'])+timedelta(minutes=60));email=await self.db.workflow_email_deliveries.find_one({'user_id':row['workspace_user_id']});self.assertIn('Recommitted',email['subject']);self.assertIn('/api/services/board-recommitment/pay/',email['link'])
   await self.req('POST',base+'/checkout');self.assertEqual(self.created[0]['metadata']['offer_source'],'rooney_guided_board_recommitment_497')
  async def test_invitation_unique_form_and_duplicate_send_idempotent(self):
   token,base,row,ab=await self.setup_service();pid=await self.add_person(ab);again=await self.add_person(ab);self.assertEqual(pid,again)
